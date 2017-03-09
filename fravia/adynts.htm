@@ -1,0 +1,273 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>adynts</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+<CENTER><H2>Adynt's essay<BR>
+
+(how to crack wdasm)</H2><H4><I>by adynts</I></H4>
+
+<BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">Courtesy of Fravia's page 
+
+of reverse engineering
+
+<BR>~<BR><I>
+
+A good essay, adynts is a &quot;clean cut&quot; +cracker</I></CENTER>
+
+<HR size="2">
+
+<PRE>
+
+Alright, you wanted to know how I cracked wdasm, so here it is :
+
+
+
+I will crack here W32Dasm 6.4 [w32demo6.exe] which is 604 192 bytes long. 
+
+There's two things to crack here. First, we want to do as many operations 
+
+as we want during one session. We want also to be able to save the 
+
+disassembly listing to a text file.
+
+
+
+Part I : limited number of operations
+
+
+
+This is the harder part of the crack, I did it sometime ago and I didn't 
+
+use a very zen way. Here a much better way ( in my opinion ). We know 
+
+that there is a counter, let's supose this counter is decremented each 
+
+time. So there should be a dec each time you use command, so that dec 
+
+should appear often. We have a 32bits application, so let's search in the 
+
+disassembly listing for &quot;dec dword ptr&quot; whith grep. Using grep is 
+
+important here for it allows you to see the multiples occurence of the 
+
+same location. Here it is :
+
+
+
+
+
+:004070E9 FF8B34674000            dec dword ptr [ebx+00406734]
+
+:00407100 FF8B34674000            dec dword ptr [ebx+00406734]
+
+:00407117 FF8B34674000            dec dword ptr [ebx+00406734]
+
+:0042618F FF8B34674000            dec dword ptr [ebx+00406734]
+
+:004261A6 FF8B34674000            dec dword ptr [ebx+00406734]
+
+:004261BD FF8B34674000            dec dword ptr [ebx+00406734]
+
+:004261F8 FF8BDE5E4000            dec dword ptr [ebx+00405EDE]
+
+:00443923 FF8BAA5D4000            dec dword ptr [ebx+00405DAA]
+
+:00443EC5 FF8BAA5D4000            dec dword ptr [ebx+00405DAA]
+
+:00445281 FF8BAA5D4000            dec dword ptr [ebx+00405DAA]
+
+:00445A9C FF8BAA5D4000            dec dword ptr [ebx+00405DAA]
+
+:00445E01 FF8BAA5D4000            dec dword ptr [ebx+00405DAA]
+
+:00446090 FF8BAA5D4000            dec dword ptr [ebx+00405DAA]
+
+:004467F0 FF8BAA5D4000            dec dword ptr [ebx+00405DAA]
+
+:0044695D FF8BAA5D4000            dec dword ptr [ebx+00405DAA]
+
+:0044795D FF8BAA5D4000            dec dword ptr [ebx+00405DAA]
+
+:00447A3A FF8BAA5D4000            dec dword ptr [ebx+00405DAA]
+
+:00448771 FF8B6E5A4000            dec dword ptr [ebx+00405A6E]
+
+:00448782 FF8BDAE30100            dec dword ptr [ebx+0001E3DA]
+
+:00448ED8 FF8B9E5F4000            dec dword ptr [ebx+00405F9E]
+
+:00452A56 FF8BAA5D4000            dec dword ptr [ebx+00405DAA]
+
+:00452CF1 FF8B9E5F4000            dec dword ptr [ebx+00405F9E]
+
+:004531EC FF8BDEE30100            dec dword ptr [ebx+0001E3DE]
+
+:00458610 FF8BDAE30100            dec dword ptr [ebx+0001E3DA]
+
+:004586CC FF8BDAE30100            dec dword ptr [ebx+0001E3DA]
+
+:00459AFA FF88EAE30100            dec dword ptr [eax+0001E3EA]
+
+:00459B8A FF889E5D4000            dec dword ptr [eax+00405D9E]
+
+
+
+So [ebx+0405DAA] is the one that appears the most often, let's look at 
+
+that location closer. There is only one initialisation of this address, 
+
+and many comparison, that looks nice, let's change the initialisation 
+
+value :
+
+
+
+   :00442381 C783AA5D40002C010000 mov dword ptr [ebx+405DAA], 0000012C
+
+to replace with :
+
+   :00442381 C783AA5D4000FFFF0F00 mov dword ptr [ebx+405DAA], 000FFFFF
+
+ 
+
+And everything works nice.
+
+
+
+Ok, the first time, I used winice, set a breakpoint when the window 
+
+saying that you had to restart wdasm was poping. Then using backtracing I 
+
+found a first location ( I think that was ebx+405F1A but my notes are not 
+
+very easy to read ). And usr bpr I found the interesting location : 
+
+ebx+00405DAA. That's not zen. Anyway I think the method I've described 
+
+earlier is valuable even if I knew the solution before starting.
+
+
+
+
+
+Part II : Saving in a text file
+
+
+
+The routine to save in a text file is not in w32demo6.exe, so we connot 
+
+use this way to enable the function save to text file. But w32demo6.exe 
+
+is nice and in any case save the disassembly into a text file named 
+
+winsys (in the same directory as the the program your are disassembling). 
+
+This file is deleted when you quit the program. We just have to copy this 
+
+file somewhere else while the program is running (in the background). The 
+
+problem is that we do not have reading access to winsys. Let's change 
+
+that. Looking at the disassembly listing and searching for winsys, you 
+
+will find this section of code :
+
+
+
+* Possible StringData Ref from Data Obj -&gt;&quot;\winsys&quot;
+
+                                  |
+
+:004517AF 68BFEB4600              push 0046EBBF
+
+:004517B4 8D838E5A4000            lea eax, [ebx+00405A8E]
+
+:004517BA 50                      push eax
+
+* Reference To: _strncat, Ord:0000h in cw3220.DLL
+
+                                  |
+
+:004517BB E87CC00000              call 0045D83C
+
+:004517C0 83C40C                  add esp, 0000000C
+
+:004517C3 8D8B8E5A4000            lea ecx, [ebx+00405A8E]
+
+:004517C9 51                      push ecx
+
+:004517CA 8D8300A13500            lea eax, [ebx+0035A100]
+
+:004517D0 50                      push eax
+
+* Reference To: lstrcpyA, Ord:0000h in KERNEL32.dll
+
+                                  |
+
+:004517D1 E878C00000              call 0045D84E
+
+:004517D6 6A00                    push 00000000
+
+:004517D8 6802010000              push 00000102
+
+:004517DD 6A02                    push 00000002
+
+:004517DF 8D93789F3500            lea edx, [ebx+00359F78]
+
+:004517E5 52                      push edx
+
+:004517E6 6A00                    push 00000000   <FDWSHAREMODE :004517E8 68000000C0 push C0000000 :004517ED 81C300A13500 add ebx, 0035A100 :004517F3 53 push ebx * Reference To: CreateFileA, Ord:0000h in KERNEL32.dll | :004517F4 E867C00000 call 0045D860 and the declaration of CreateFile is this one : HANDLE CreateFile( LPCTSTR lpszName, // address of name of the file DWORD fdwAccess, // access (read-write) mode DWORD fdwShareMode, // share mode LPSECURITY_ATTRIBUTES lpsa, // address of security descriptor DWORD fdwCreate, // how to create DWORD fdwAttrsAndFlags, // file attributes HANDLE hTemplateFile // handle of file with attributes to copy ); So we want to change fdwShareMode located at 004517E6. Let's do this : :004517E6 6A01 push 00000001 And our problem is solved, we can now read winsys while wdasm is running. adynts.</pre>
+
+<BR>
+
+<HR ALIGN="CENTER" WIDTH="100%" SIZE="3">
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</I></CENTER>
+
+<BR><CENTER>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#84'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#84"> homepage</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"> 
+
+<A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#73'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#73"> links</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0">
+
+<A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm"> anonymity</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm"> +ORC</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#82'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#82"> students' essays</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm"> tools</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm"> cocktails</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm"> search_forms</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm"> mailFraVia</A><BR>
+
+
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm"> Is reverse engineering illegal?</A></CENTER>
+
+<CENTER><HR ALIGN="CENTER" WIDTH="100%" SIZE="2"></CENTER>
+
+</BODY>
+
+</HTML>

@@ -1,0 +1,462 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>xoanon</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR=#C0C0C0 TEXT=#001010 VLINK=#405040>
+
+<CENTER><H2>The TimeLOCK_DLL cracking (TL32V20.DLL)<BR>
+
+(a cracking approach to a "model" protection scheme)</H2><H4><I>by Xoanon/PNC</I></H4>
+
+<BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALIGN=BOTTOM BORDER=0 VSPACE=0 HSPACE=0 width="13" height="13">Courtesy of Fravia's page of reverse engineering<BR>
+
+<I>As you'll read, this was intended as a message to +ORC, since anon.penet 
+
+has unfortunately closed, Xoanon sent it to me. I'll simply publish it here (I think it's worth)
+
+and hope that +ORC will see it (and may be he'll also start thinking about REOPENING a 
+
+bilateral channel asap :-)<BR>About this essay: the interest of it lays (IMHO) in the 
+
+following three elements 1)It's a "model" protection scheme, i.e. a scheme that 
+
+protectionists "buy" and use "ready-made", which is interesting; 2) there is 
+
+a "double checking", as Xoanon explains, the protection checks TWICE if you 
+
+entered the correct unlock sequence; 3) Xoanon style is "refreshing", he 
+
+cracks with enthusiasm and good will</CENTER></I>
+
+<HR size=2>
+
+<PRE>
+
+
+
+Hi +ORC! I'm an italian cracker, my name is Xoanon and i crack for PiNNACLE
+
+(an utility group). D'ya know them? I hope you do! 
+
+First, sorry for my english... i don't think it's too bad, yet maybe 
+
+sometimes i don't explain myself very well! :) 
+
+In advance, i want to thank you for all your work! I think every
+
+(or nearly every) new cracker in the world has learned this art from your
+
+tutorial (me, i'm one of them!) .... So, back to the reason of this email:
+
+you said "if u discover something new about protections, tell me.... i
+
+will admit you to my +HCU and you will receive the missing lessons" ...
+
+Well, i think i've something for you! Surely u'd know this already, or
+
+maybe some of your +HCU students discovered it already.... but i'll try! :)
+
+Well, my work is about a DLL used to protect W95 programs, the TL32V20.DLL.
+
+I think the real name of this DLL is TimeLOCK, but who cares? i found a lot
+
+of programs protected with it, like NetFusion Object 2.0, E-BroadCaster 1.0,
+
+GeoBoy 1.3.1 .... and there are many others out there! I hope ya'll like it.
+
+
+
+-----------------------------------------------------------------------------
+
+                                 TimeLOCK DLL
+
+                      "a cracking approach", by Xoanon/PNC
+
+-----------------------------------------------------------------------------
+
+
+
+The DLL i will talk about is a DLL frequently used to protect commercial
+
+programs distributed on the web. This DLL provide a time limit protection: 
+
+after xx days your program will not run anymore without purchasing.
+
+The protection scheme is quite simple:
+
+
+
+1) You are given a serial number by the program itself
+
+2) You are asked to enter an unlock code calculated from this #
+
+3) Name,Company and other stuffs doesn't interest the protection
+
+  
+
+Here the intersting findings:
+
+1)	Everytime the program is installed the serial provided changes.
+
+2)	The registering information are stored in the W95 Registry AND 
+
+in a file .TSF stored in some locations of your HD, in encrypted form.
+
+
+
+For example, in GeoBoy v1.3.1 (one of the many programs protected with TimeLOCK) 
+
+if you search the registry for the word "GeoBoy" you will find some locations 
+
+where there are a bunch of strange characters.... that's your information, 
+
+encrypted. 
+
+
+
+But in this approach we will crack the DLL brutally, so we will not care 
+
+much about the registry!
+
+Finally, if you want to reinstall it after the trial is expired (eh eh....
+
+are you too lazy to try cracking it??? :) you have to COMPLETELY clean up
+
+the registry (all branches where the word "Geoboy" dwells).
+
+
+
+Now some Frequently Asked Questions:
+
+
+
+Q:So, WHICH programs use this DLL? Where can I find them?
+
+
+
+A:Well, i found a lot of programs that do use this DLL .... for example:
+
+  E-BroadCaster, NetObject Fusion v2.0, GeoBoy v1.3.1. They're all on the web,
+
+  search them using AltaVista or some other engine. Simply put in the name 
+
+  of the program you are looking for, and then get it!
+
+
+
+Q:Ok dude, i found that program! how can i see if it's protected with
+
+  the DLL ?
+
+
+
+A:Obvious..... it has to load it from your HD everytime it runs... so, simply
+
+  search it with a DIR /S (will dwell most of the time inside the installation 
+
+  directory of your new program, or else inside WIN/SYSTEM)
+
+
+
+Ok boyz, now let's go cracking!
+
+In this approach i will use as example target the program GeoBoy v1.3.1. 
+
+Find it on the web, it's done by NDG Software so i think you'll easily find
+
+it (every software house has at least an homepage!).
+
+Well, fire your SoftICE as usually, light your cigarette (like me, or if
+
+you prefer the +ORC way, prepare a good Martini Vodka!) and install GeoBoy.
+
+Installed? Ok, now run it! You will see the classic TimeLOCK window (it's
+
+the same in all the programs protected with it, this makes it easy to see 
+
+if a program use this protection scheme). Enter a name, a company and an 
+
+unlock code. As you can see, you have in the window 3 edit lines.
+
+Now enter in SoftICE and act as usual with password-protected programs:
+
+
+
+.TASK
+
+
+
+ hmmmm is GeoBoy its task name? ...... found! Let's do an HWND on it!
+
+
+
+.HWND GEOBOY
+
+
+
+ good! let's see... we're searching for some edit boxes.... found!
+
+
+
+ Handle         hQueue  SZ      QOwner  Class Name      Window Procedure
+
+ .......        ....    ..      ......  ....            .............
+
+ 052C(2)        0D57    32      GEOBOY  Edit            177F:00000BF4 *
+
+ 0508(2)        0D57    32      GEOBOY  Edit            177F:00000BF4 *
+
+ 050C(2)        0D57    32      GEOBOY  Static          178f:000052FA
+
+ 0510(2)        0D57    32      GEOBOY  Edit            177f:00000BF4 *
+
+ .......        ....    ..      ......  ....            .............
+
+
+
+ We found 3 edit references.... let's try BMSGging the first (but will work
+
+ alsoBMSGging on the others)
+
+
+
+. BMSG 052C WM_GETTEXT
+
+
+
+  Break due to BMSG 052C WM_GETTEXT !!! SoftICE pops up again!!!
+
+  Well, now you are inside Windos95 Kernel (if i remember well) ...
+
+  First, disable the breakpoint with BD 00 (or it will break on anyother
+
+  GETWINDOWTEXT function.... generally if you found an entry point you
+
+  should disable the BP after...).
+
+  Now step some instructions (not too many) until you reach TL32V20.
+
+  We have reached the DLL, now you have to show all your cracking capabilities!
+
+  Well.... step step step and step, watching the EAX,ECX,EDI,ESI after every
+
+  CALL or MOV EAX or MOV ECX or LEA EAX or LEA ECX (with D <REGISTER>).
+
+  You'll soon find that the DLL use these register to store the addresses to
+
+  everything you enter (name,company,unlock code) and also for the serial
+
+  number (generated at every install) and the correct unlock code.
+
+  You will also notice that the unlock code (es. 121212) you entered is stored
+
+  at EBP-14, while the correct one is stored at EBP-28.
+
+  Can we crack our target faking the MOV and LEA to these register? YES!
+
+  Watch this piece of code (you will reach it after some stepping once you
+
+  are working inside the DLL):
+
+  ......
+
+  LEA EAX, [EBP-28]
+
+  PUSH EAX
+
+  CALL 10001D08     <GENERATE the correct unlock code "for.class" tppabs="http://fravia.org/for.class" the serial number
+
+                      you're provided with
+
+  ADD ESP,04
+
+  LEA EAX,[EBP-14]  < do "D [EBP-14]" and you'll see the code you entered
+
+  LEA ECX,[EBP-28]  < do "D [EBP-28]" and you'll see the CORRECT code
+
+  PUSH EAX          < save the location
+
+  PUSH ECX          < save the location
+
+  ......
+
+
+
+  Well..... we found something interesting, don't you think? Try immediately 
+
+  to change the LEA EAX,[EBP-14] in LEA EAX,[EBP-28]. In this way, the correct
+
+  code is moved in EAX instead of the bogus code that we have entered.
+
+  Act as usual (write down some bytes after and some before these LEA,
+
+  write down also the bytes of the changed instructions, search them with
+
+  your hex-editor inside TL32V20.DLL and patch it). To make your life easy, 
+
+  write down and use as search string a LOT of bytes before the LEA instruction, 
+
+  or you will find a lot of occurences of the same sequence inside the file.
+
+  Ok, patched? Well, now try it and look if it works! Load back GeoBoy and 
+
+  enter whatever you want as unlock code. Wow! it seems to work! it says 
+
+  "Thanks for purchasing!" Eh eh.... Xoanon rulez!! :) Now you think that your 
+
+  program is completely registered. But...... But? Try to load it another 
+
+  time...... AAARGH!!!! The time-limit reminder pops up again! Why?
+
+  Well, it seems there are some other instructions referring to the code you
+
+  entered... Ok! Fire SoftICE again and back to work! Reach again the point
+
+  where you found the LEA EAX,[EBP-14] (now changed in [EBP-28]). Step a
+
+  little ahead and...... eh eh... look at this (some instructions after):
+
+
+
+  ..........
+
+  ADD ESP,08
+
+  TEST EAX,EAX     < checks if the values at [EAX] and [ECX] are the same....
+
+                     now they are, 'coz we patched the DLL before.
+
+
+
+  JNZ 10004028     < if EAX isn't 0 (bad unlock code) will jump. Now no, 'coz
+
+                     EAX is 0.
+
+
+
+  LEA EAX,[EBP-14] < Eh eh.... this is the instruction we are searching for!
+
+                     As you see with "D EAX", it will move again in EAX the
+
+                     code you entered (which is a bad code, obviously)....
+
+                     Probably we need to change it too? YEAH!!!
+
+
+
+  PUSH EAX         < Saves the location
+
+  ..........
+
+
+
+  This is the end. Act as you did before, changing this occurrence of 
+
+  LEA EAX,[EBP-14] in a LEA EAX,[EBP-28], in order to move again inside
+
+  EAX the correct code), then search and replace these bytes in
+
+  TL32V20.DLL. 
+
+  Try again to run the program..... it WORKS!!!!!!!!
+
+  To be really sure, do the following:
+
+	1) Save your patched *.dll
+
+	2) clean from the registry all the entries which refer to GeoBoy 
+
+	3) delete the file .TSF inside the GeoBoy directory and 
+
+	4) reinstall the whole program anew
+
+  Now simply copy your patched DLL over the original one and run GeoBoy.
+
+  Enter whatever you want, it says "Ok,registered"... Exit, run again and
+
+  again and again for ever... you won't see anymore the timelimit screen!
+
+
+
+-----------------------------------------------------------------------------
+
+
+
+Done by Xoanon/PiNNACLE in May 1997
+
+
+
+</pre>
+
+
+
+<HR ALIGN=CENTER WIDTH=100% SIZE=3>
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</I><BR>
+
+<BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALIGN=BOTTOM BORDER=0 VSPACE=0 HSPACE=0 width="13" height="13"><A
+
+HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html"> homepage</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALIGN=BOTTOM BORDER=0 VSPACE=0 HSPACE=0 width="13" height="13"> 
+
+<A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm"> links</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0>
+
+<A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm"> anonymity</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN=BOTTOM
+
+BORDER=0 VSPACE=0 HSPACE=0 width="13" height="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm"> +ORC</A>
+
+
+
+<IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN=BOTTOM BORDER=0 VSPACE=0 HSPACE=0 width="13" height="13"><A
+
+HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm"> students' essays</A>
+
+<IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN=BOTTOM BORDER=0 VSPACE=0 HSPACE=0 width="13" height="13"><A
+
+HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm"> tools</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN=BOTTOM
+
+BORDER=0 VSPACE=0 HSPACE=0 width="13" height="13"><A
+
+HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm"> cocktails</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALIGN=BOTTOM BORDER=0 VSPACE=0 HSPACE=0 width="13" height="13"><A
+
+HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm"> search_forms</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALIGN=BOTTOM BORDER=0 VSPACE=0 HSPACE=0 width="13" height="13"><A
+
+HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm"> mailFraVia</A></CENTER>
+
+<CENTER><HR ALIGN=CENTER WIDTH=100% SIZE=2></CENTER>
+
+
+
+
+

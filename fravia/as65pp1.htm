@@ -1,0 +1,370 @@
+<html><TITLE>as65pp1</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+<CENTER><FONT size="+3">A crippled tl32v20.dll protection scheme: diskeeper</FONT><BR><BR>
+
+(Cracking efficiently)<BR> <BR>
+
+<H4>by as65pp<BR>
+
+<BR>
+
+(12 October 1997, slightly edited by fravia+)</H4>
+
+<HR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">Courtesy of fravia's page 
+
+of reverse engineering<BR><BR>
+
+<I>Well, another very interesting essay from a &quot;new&quot; collaborator... 
+
+Timelock protection scheme, once more... this new &quot;breed&quot; of 
+
+tl32v20.dll protection (timelock) must have been created as a 
+
+consequence of our own work on these pages, which is pretty 
+
+interesting... not all shareware authors have the courtesy of 
+
+telling us that they learned from our site :-)</I></CENTER><HR size="6">
+
+
+
+<CENTER><FONT size="+2">
+
+
+
+Cracking efficiently - by as65pp - 12 October 1997<BR>
+
+A crippled tl32v20.dll protection scheme: diskeeper<BR> </FONT>
+
+<HR size="2" width="33%">                                
+
+
+
+Hidden register button<BR>
+
+tl32v20.dll once more: Timelock-protected software<BR>
+
+A small +HCU exercise for you clever reverser<BR><BR>
+
+</CENTER>
+
+Here as65pp's letter to  the +HCU Caretakers (i.e. me and +gthorne :-)<I>
+
+         <BR><BR>
+
+Hi Fravia, Hi Greythorne <BR><BR>
+
+
+
+I've followed your site for quite a while now and I 
+
+have to say it's for sure the most interesting place on 
+
+the net. Thank you for maintaining it for such a long 
+
+time and giving us the chance to learn!<BR> I must admit 
+
+that I'm not that excited about staring at huge 
+
+code-listings for hours on end, so your &quot;dead-listing&quot; 
+
+approach is definitely not for me.       <BR>
+
+To be honest, I wasn't any good at maths in school either :(<BR>
+
+Nevertheless I was able to crack some programs by using 
+
+a bit of common-sense and imagination. This one is a 
+
+good example:                                <BR></I><PRE>
+
+
+
+- &quot;Fooling&quot; Diskeeper -
+
+-----------------------
+
+
+
+Diskeeper from Executive Software is a defragmentation 
+
+tool for Windows NT, it can handle NTFS- and 
+
+FAT-Partitions and comes in two flavours: a 
+
+'lite'-version (free of charge) and a 'pro'-version 
+
+(prices from around $200 to $1500 for the NT-Server 
+
+version), the main difference being that the 
+
+pro-version can defrag in the background. 
+
+Now guess which version I wanted to use :)
+
+A free 30-day-demo of the pro-version can be downloaded 
+
+from their website at www.execsoft.com. 
+
+As I fetched and installed it, I saw that one of the files 
+
+copied was named tl32v20.dll :)))
+
+Great, I thougt, this will be dead in two minutes. 
+
+(See Xoanon's essay on how to crack this lame 
+
+protection). I didn't plan to patch the whole dll, I 
+
+just wanted to use SoftICE to sniff the correct 
+
+'unlock-code' from memory, as I had done many times 
+
+before. Generally I prefer not to change too much of 
+
+the code, if I can avoid it. So I started Diskeeper and 
+
+up comes the familiar Nagscreen with it's three 
+
+buttons... But hey, where is the infamous 'Purchase' 
+
+button gone? Nothing there just 'OK' &amp; 'Cancel'! The 
+
+Nag-Text says something about contacting 
+
+Executive-Software by phone if you would like to spend 
+
+big bucks for their efforts (Ha!), but there is no 
+
+option to 'Register by phone', as there normally would. 
+
+
+
+What's going on here? In my opinion, the people at 
+
+Executive-Software had read Xoanon's essay too (grin) 
+
+and decided to be clever: 
+
+&quot;Let's disable the 'purchase' option, so bad, bad cracker 
+
+gets no chance to sniff our unlock-code&quot;. 
+
+By looking a bit deeper on 'tl32v20.dll' you can see that 
+
+it has a different size than usual (86.528 bytes to 91.648 
+
+bytes for the regular version). 
+
+So what do we have here? A crippled protection scheme! 
+
+Nice one, this.
+
+
+
+Think a (tiny) bit about it all:
+
+
+
+-  tl32v20.dll has to be called by the main module (DkWork.exe)
+
+-  there are two copys of the dll installed by the program, one in 
+
+   the main program directory and another one in the \defrag subdir
+
+	IMPORTANT: If you haven't installed any Timelock-software before, 
+
+        it is possible that another copy will be installed in the \WINNT 
+
+        directory. 
+
+        This wasn't the case on my machine, as I already had a 'uncrippled' 
+
+        tl32v20.dll (91.648 bytes) from an earlier Timelock-protected 
+
+        software (Boundschecker 5.0).
+
+-  most likely, 'dkwork.exe' will call 'tl32v20.dll' only by it's name 
+
+   no size-checking)
+
+-  the whole point of the missing 'Purchase' option is that, if you enter 
+
+   the correct code, it will modify an existing '*.tsf' - file (different 
+
+   for each product) and put the correct code in there. 
+
+   If 'tl32v20.dll' is called the next time (by 'DkWork.exe') it will in 
+
+   turn look for the '*.tsf' - file, check the code in it, and won't pop-up 
+
+   anymore if the code is right.
+
+
+
+Got it ?! Exactly! We just have to replace the crippled 
+
+version of 'tl32v20.dll' with the uncrippled one (both 
+
+copyes of it must be replaced), run the app (Now the 
+
+purchase-button is right there where it should be, 
+
+fine), sniff the correct code with SoftICE and Bang!: 							
+
+Thank you for your purchase!
+
+
+
+For some reason, after you've done all this and let 
+
+Diskeeper defrag for the first time, it will pop up 
+
+with a &quot;copy protect violation&quot;. You are then again 
+
+presented with the Nagscreen - dont worry! Just enter 
+
+the sniffed code for a second time and you'll be safe, 
+
+it won't bother you again. I suppose this has something 
+
+to do with the second copy of 'tl32v20.dll' in the 
+
+\defrag - subdir, but that's only a guess.<HR></PRE><CENTER><IMG SRC="trainin7.gif" tppabs="http://www.anticrack.de/fravia/trainin7.gif" ALT="training" ALIGN="center" WIDTH="114" HEIGHT="43" BORDER="0" VSPACE="0" HSPACE="0"></A>
+
+</CENTER><BR>
+
+<I>This is intended as +HCU (easy) exercise for 
+
+beginners: EXPLAIN this point. Best explanation(s) will 
+
+be inserted here with the name of the author(s) on 1 
+
+Novemeber 1997, so don't rush, work deep: you have 
+
+enough time to explain well this point (which is 
+
+important)... send solutions to </I>fravia+ and/or  
+
++gthorne<HR><PRE>As you see there are three things needed to crack 
+
+Diskeeper: 
+
+- SoftICE for NT (3.0 or higher) to sniff the code 
+
+  (you'll find it everywhere on the Net) 
+
+- Xoanons essay about cracking the Timelock scheme 
+
+  (read the others timelock essays too) 
+
+- an 'uncrippled' copy of the Timelock-dll 
+
+  (peruse your old &quot;magazines&quot; CD-roms or download any Timelock-protected 
+
+  software (GeoBoy, Boundschecker, etc.) 
+
+Small hint if you follow Xoanons essay: 'task' &amp; 'hwnd' won't work in NT 
+
+(error: no LDT), so a reverse engineer has to use 'bpx getwindowtexta' instead.
+
+
+
+Conclusion: Well, nothing special really, except that 
+
+it is possible to crack without knowing much about 
+
+Assembler and without risking to get lost in the dark 
+
+codewoods - just by using your brain and trying to 
+
+understand the protectionist's reasons. 
+
+In a quite similar way I managed to avoid the whole checksum-stuff 
+
+(far too complicated!) when cracking SoftICE 3.01 for NT, but that's a 
+
+different story (and maybe not that interesting anymore since v3.20 is 
+
+already out).
+
+
+
+That's all folks - bye for now!
+
+
+
+-- as65pp  
+
+</PRE>                              
+
+<FONT color="green">(c) as65pp 1997. All rights reversed</FONT>
+
+   <HR size="6">
+
+
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</I></CENTER>
+
+<BR><CENTER>
+
+
+
+
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#84'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#84">homepage</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#73'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#73">links</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#82'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#82">students' essays</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut CGI-scripts</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering legal?</A></CENTER>
+
+<CENTER><HR ALIGN="CENTER" WIDTH="100%" SIZE="2"></CENTER>
+
+</BODY>
+
+</HTML>
+

@@ -1,0 +1,990 @@
+<HTML>
+
+<HEAD><TITLE>int13asm</TITLE></HEAD>
+
+<BODY>
+
+<CENTER><H1>int13asm.htm</H1></CENTER>
+
+<HR size="1">
+
+<PRE>
+
+PAGE 64,132
+
+;
+
+;         This program intercepts Int 13H calls and prints
+
+;         the drive, side, track, sector, # of sectors, operation,
+
+;         and return code.
+
+;
+
+;--------------------------------------------------------------
+
+DISKSTAT segment at 040h ;segment starts at abs. addr. 0400h
+
+         org 042h
+
+ST0      db ?        ;Disk status area used after
+
+ST1      db ?        ;  int 13h calls
+
+ST2      db ?
+
+CYLINDER db ?
+
+HEAD     db ?
+
+RECORD   db ?
+
+NUMBER   db ?
+
+DISKSTAT ends
+
+;--------------------------------------------------------------
+
+;
+
+cseg    segment
+
+        org 100h
+
+INT13   proc far
+
+        assume cs:cseg,ds:cseg
+
+;
+
+        jmp install                    ;install and make routine resident
+
+;
+
+redef13      label      word
+
+oldint13     dd         0              ;save area for old int13 vector
+
+int13loc     equ        13h*4h         ;vector location for int13h
+
+drive_a      equ         'A'
+
+drive_b      equ         'B'
+
+drive_c      equ         'C'
+
+drive_d      equ         'D'
+
+drive_x      equ         'X'
+
+save_ip      dw         0              ;save area for calling pgm's IP
+
+save_cs      dw         0              ;save area for calling pgm's CS
+
+save_st0     db         ?
+
+save_st1     db         ?
+
+save_st2     db         ?
+
+save_c       db         ?
+
+save_h       db         ?
+
+save_r       db         ?
+
+save_n       db         ?
+
+;
+
+message      db 0fh        ;   code for compressed printing
+
+             db 'Drv: '
+
+drive        db ?
+
+             db ' Side: '
+
+side1        db ?
+
+side2        db ?
+
+             db '   Tr: '
+
+track1       db ?
+
+track2       db ?
+
+             db ' Sec: '
+
+sector1      db ?
+
+sector2      db ?
+
+             db '  # secs: '
+
+sec_cnt1     db ?
+
+sec_cnt2     db ?
+
+             db ' Op: '
+
+op_1         db ?
+
+op_2         db ?
+
+             db '   Retcd: '
+
+status1      db ?
+
+status2      db ?
+
+             db '  Addr: '
+
+cs_1         db ?
+
+cs_2         db ?
+
+cs_3         db ?
+
+cs_4         db ?
+
+             db ':'
+
+ip_1         db ?
+
+ip_2         db ?
+
+ip_3         db ?
+
+ip_4         db ?
+
+             db '  '     ;2 spaces
+
+             db ' ST0: '
+
+sto0_1       db ?
+
+sto0_2       db ?
+
+             db ' ST1: '
+
+sto1_1       db ?
+
+sto1_2       db ?
+
+             db ' ST2: '
+
+sto2_1       db ?
+
+sto2_2       db ?
+
+             db '  '     ;2spaces
+
+             db ' C: '
+
+c_1          db ?
+
+c_2          db ?
+
+             db ' H: '
+
+h_1          db ?
+
+h_2          db ?
+
+             db ' R: '
+
+r_1          db ?
+
+r_2          db ?
+
+             db ' N: '
+
+n_1          db ?
+
+n_2          db ?
+
+             db 0ah,0dh
+
+;------------------------------
+
+unin_msg     db 'INT13 no longer active.......$'
+
+inst_msg     db 'INT13 is now installed.......$'
+
+;
+
+newint13:
+
+        sti
+
+        push ax
+
+        push bp
+
+        mov bp,sp
+
+        mov ax,[bp+4]                  ;Retrieve return IP value
+
+        mov cs:save_ip,ax              ;    from stack.
+
+        mov ax,[bp+6]                  ;Retrieve return CS value
+
+        mov cs:save_cs,ax              ;    from stack.
+
+        pop bp                         ;Save anything which will be
+
+        pop ax                         ;    be changed during
+
+        pushf                          ;    processing.
+
+        push di
+
+        push si
+
+        push ds
+
+        push es
+
+        push bx
+
+        push cx
+
+        push dx
+
+        push ax
+
+        mov ax,cs
+
+        mov ds,ax
+
+;---------------DRIVE------------------
+
+        cmp dl,00h                     ;Drive A? (dl=00)
+
+        jne chk1                       ; Note: processing is in place for
+
+        mov drive,drive_a              ;    logging disk activity on all
+
+        jmp drv_exit                   ;    drives, if desired.  See below
+
+chk1:   cmp dl,01h                     ;Drive B?
+
+        jne chk2
+
+        mov drive,drive_b
+
+        jmp drv_exit
+
+chk2:   cmp dl,02h                     ;Drive C?
+
+        jne chk3
+
+        mov drive,drive_c
+
+        jmp drv_exit
+
+chk3:   cmp dl,03h
+
+        jne chkx
+
+        mov drive,drive_d&127;
+
+        jmp drv_exit
+
+chkx:   mov drive,drive_x
+
+drv_exit:
+
+;---------------SIDE  (DH) ------------
+
+        mov ah,dh                      ;record side being requested-left digit
+
+        call leftdig                   ;convert to ASCII code for printing
+
+        mov cs:side1,ah                ;move code to message area
+
+        mov ah,dh                      ;same for right digit
+
+        call rightdig
+
+        mov cs:side2,ah
+
+;---------------TRACK NO. (CH)----------
+
+        mov ah,ch
+
+        call leftdig
+
+        mov cs:track1,ah
+
+        mov ah,ch
+
+        call rightdig
+
+        mov cs:track2,ah
+
+;----------------------------------------
+
+;
+
+;----------------SECTOR NO. (CL)---------
+
+        mov ah,cl
+
+        call leftdig
+
+        mov cs:sector1,ah&127;
+
+        mov ah,cl
+
+        call rightdig
+
+        mov cs:sector2,ah
+
+;------------------------------------------
+
+;
+
+;----------------NO. OF SECTORS (AL)-------
+
+;
+
+        pop ax      ;recall ax
+
+        push ax     ;save it again
+
+        mov ah,al
+
+        call leftdig
+
+        mov cs:sec_cnt1,ah
+
+        pop ax
+
+        push ax
+
+        mov ah,al
+
+        call rightdig
+
+        mov cs:sec_cnt2,ah
+
+;--------------------------------------------------
+
+;
+
+;--------------OPERATION TYPE (AH)-----------------
+
+; 00:reset 01:read status 02:read sectors 03:write sec. 04:verify 05:format
+
+;
+
+
+
+        pop ax      ;recall ax
+
+        push ax     ;save it again
+
+        call leftdig
+
+        mov cs:op_1,ah
+
+        pop ax
+
+        push ax
+
+        call rightdig
+
+        mov cs:op_2,ah
+
+;-------------- RETURN ADDRESS CS:IP -------------------
+
+;
+
+        mov ax,cs:save_ip
+
+        call leftdig
+
+        mov cs:ip_1,ah
+
+        mov ax,cs:save_ip
+
+        call rightdig
+
+        mov cs:ip_2,ah
+
+        mov ax,cs:save_ip
+
+        xchg ah,al
+
+        call leftdig
+
+        mov cs:ip_3,ah
+
+        mov ax,cs:save_ip
+
+        xchg ah,al
+
+        call rightdig
+
+        mov cs:ip_4,ah
+
+;
+
+        mov ax,cs:save_cs
+
+        call leftdig
+
+        mov cs:cs_1,ah
+
+        mov ax,cs:save_cs
+
+        call rightdig
+
+        mov cs:cs_2,ah
+
+        mov ax,cs:save_cs
+
+        xchg ah,al
+
+        call leftdig
+
+        mov cs:cs_3,ah
+
+        mov ax,cs:save_cs
+
+        xchg ah,al
+
+        call rightdig
+
+        mov cs:cs_4,ah
+
+;--------------------------------
+
+             pop ax                    ;Restore the things which were
+
+             pop dx                    ;    saved
+
+             pop cx
+
+             pop bx
+
+             pop es
+
+             pop ds
+
+             pop si
+
+             pop di
+
+             popf
+
+;--------------------
+
+             pushf           ; Put flags, CS and IP onto stack for return to
+
+             push cs         ;  routine below after standard int 13h processing
+
+             call intcall    ; IP will point to next instruction
+
+;
+
+;---------------------------Report status of int 13h call----------
+
+;
+
+             pushf
+
+             push bx
+
+             push ax                   ;Save it again
+
+             call leftdig
+
+             mov cs:status1,ah
+
+             pop ax
+
+             push ax
+
+             call rightdig
+
+             mov cs:status2,ah
+
+;
+
+;retrieve the status codes from 0442-0448h
+
+;
+
+             push ds
+
+             assume ds:diskstat
+
+             mov ax,diskstat
+
+             mov ds,ax
+
+             mov ah,st0
+
+             mov cs:save_st0,ah
+
+             mov ah,st1
+
+             mov cs:save_st1,ah
+
+             mov ah,st2
+
+             mov cs:save_st2,ah
+
+             mov ah,cylinder
+
+             mov cs:save_c,ah
+
+             mov ah,head
+
+             mov cs:save_h,ah
+
+             mov ah,record
+
+             mov cs:save_r,ah
+
+             mov ah,number&127;
+
+             mov cs:save_n,ah
+
+             pop ds
+
+             assume ds:cseg
+
+;--------------
+
+             mov ah,cs:save_st0
+
+             call leftdig
+
+             mov cs:sto0_1,ah
+
+             mov ah,cs:save_st0
+
+             call rightdig
+
+             mov cs:sto0_2,ah
+
+                mov ah,cs:save_st1
+
+                call leftdig
+
+                mov cs:sto1_1,ah
+
+                mov ah,cs:save_st1
+
+                call rightdig
+
+                mov cs:sto1_2,ah
+
+                   mov ah,cs:save_st2
+
+                   call leftdig
+
+                   mov cs:sto2_1,ah
+
+                   mov ah,cs:save_st2
+
+                   call rightdig
+
+                   mov cs:sto2_2,ah
+
+             mov ah,cs:save_c
+
+             call leftdig
+
+             mov cs:c_1,ah
+
+             mov ah,cs:save_c
+
+             call rightdig
+
+             mov cs:c_2,ah
+
+                 mov ah,cs:save_h
+
+                 call leftdig
+
+                 mov cs:h_1,ah
+
+                 mov ah,cs:save_h
+
+                 call rightdig
+
+                 mov cs:h_2,ah
+
+                     mov ah,cs:save_r
+
+                     call leftdig
+
+                     mov cs:r_1,ah
+
+                     mov ah,cs:save_r
+
+                     call rightdig
+
+                     mov cs:r_2,ah
+
+                         mov ah,cs:save_n
+
+                         call leftdig
+
+                         mov cs:n_1,ah
+
+                         mov ah,cs:save_n
+
+                         call rightdig
+
+                         mov cs:n_2,ah
+
+             pop ax
+
+             pop bx
+
+;------------  PRINT THE MESSAGE --------------------------
+
+             cmp dl,00h  ;******** REMOVE THESE TWO LINES IF YOU WISH
+
+             jne goback  ;********   ALL DISK ACTIVITY TO BE LOGGED
+
+             push ax
+
+             push cx
+
+             push dx
+
+             push si
+
+             mov cx,87h                ; Length of message
+
+             mov si,offset message
+
+             xor dx,dx
+
+prnloop:     mov ah,00h
+
+             mov al,cs:[si]
+
+             int 17h
+
+             inc si
+
+             loop prnloop
+
+             pop si
+
+             pop dx
+
+             pop cx
+
+             pop ax
+
+goback:      popf
+
+;-------------------------------------------------------
+
+             ret  2          ; Go back to calling program.
+
+                             ; Note:&quot;iret&quot; is not used because the flags
+
+                             ;   would be popped (and we wish to pass back
+
+                             ;   the changed set of flags).  The &quot;2&quot; ensures
+
+                             ;   that the stack is restored by incrementing
+
+                             ;   the stack pointer by two extra bytes.
+
+;-----------------------
+
+intcall      PROC near     ; get set to go to standard int 13h routine
+
+             pushf
+
+             push cs:[redef13 + 2]     ; &quot;cs&quot; of int 13h routine
+
+             push cs:[redef13]         ; &quot;ip&quot; of int 13h routine
+
+             iret                      ; Branch to normal int13h code in ROM
+
+intcall      endp
+
+;--------------------------
+
+;   Routine to convert high-order digit in AH to an ASCII character
+
+;
+
+leftdig      PROC
+
+             and ah,11110000b ; Mask right 4 bits
+
+             shr ah,1         ; Move high-order digit to low-order pos.
+
+             shr ah,1
+
+             shr ah,1
+
+             shr ah,1
+
+             cmp ah,0ah       ; Check for value 0 through 9
+
+             jnb b37          ; If value hex A through F, jump
+
+             add ah,30h       ; Add 30h to make ASCII character
+
+             jmp b2
+
+       b37:  add ah,37h       ; If hex A-F, add 37h to make ASCII character
+
+        b2:  ret
+
+leftdig      endp
+
+;-----------------------
+
+;   Routine to convert low-order digit in AH to an ASCII character
+
+;
+
+rightdig     PROC near
+
+             and ah,00001111b ; mask left 4 bits
+
+             cmp ah,0ah
+
+             jnb a37
+
+             add ah,30h
+
+             jmp a1
+
+       a37:  add ah,37h
+
+        a1:  ret
+
+rightdig     endp
+
+;-----------------------
+
+install:
+
+
+
+;     First, determine if INT13 has already been installed...
+
+             push ds                   ;Save DS
+
+             mov ax,0000h
+
+             mov ds,ax                 ;Need 0 in DS
+
+             mov di,int13loc           ;Move 4C to DI
+
+             mov bx,[di]               ;&quot;IP&quot; of current Int 13 routine
+
+             mov ax,[di+2]             ;&quot;CS&quot; of current Int 13 routine
+
+             mov ds,ax                 ;Establish new DS register value
+
+             mov ch,[bx-1]             ;Get byte just before entry point
+
+             pop ds                    ;Restore DS value at entry
+
+             cmp ch,024h               ;Look for a &quot;$&quot;
+
+             je un_inst                ;If =, then Int13 is already active
+
+;     Proceed with installation
+
+             mov ax,0
+
+             mov es,ax
+
+             mov di,int13loc           ;Save old
+
+             mov ax,es:[di]            ;   interrupt 13h
+
+             mov bx,es:[di+2]          ;   vector
+
+             mov si,offset oldint13    ;     &quot;
+
+             mov [si],ax               ;     &quot;
+
+             mov [si+2],bx             ;     &quot;
+
+             mov ax,0
+
+             mov es,ax
+
+             mov bx,ds
+
+             cli                       ;Turn off interrupts
+
+             mov di,int13loc           ;Change int13h ....
+
+             mov ax,offset newint13    ;   vector to...
+
+             mov es:[di],ax            ;   point to...
+
+             mov es:[di+2],bx          ;   this program.
+
+             sti                       ;Turn interrupts back on&127;
+
+             mov dx,offset inst_msg
+
+             mov ah,09h                ;Print string function
+
+             int 21h                   ;Print &quot;install&quot; message
+
+;
+
+;---Check if compressed printing is to be disabled (&quot;8&quot; in parameter string)
+
+;       Note: parameter string begins at offset 81h into COM file header,
+
+;             and offset 80h contains length of parameter string.
+
+;
+
+             mov ax,ds                 ;Make sure ES is the same
+
+             mov es,ax                 ;   as DS
+
+             cmp byte ptr es:[80h],00h ;Length of parm. string
+
+             je no_chng                ;If zero, no change
+
+             mov di,081h               ;Start of parm. string
+
+             mov al,038h               ;38h = &quot;8&quot;
+
+             xor ch,ch                 ;Zero high-order byte
+
+             mov cl,es:[80h]           ;Length of parm. string
+
+             cld                       ;Clear direction flag (forward)
+
+             repne scasb               ;Scan ES:DI 'til match with AL,or CX=0
+
+             jne no_chng               ;No match means &quot;8&quot; not in parm. strng
+
+             mov message,00h           ;&quot;8&quot; found, so zero out compress char.
+
+;----------------------------------------------------------------------------
+
+no_chng:     mov dx,offset install     ;Address of end of resident routine
+
+             int 27h                   ;Terminate and stay resident
+
+;
+
+;----------------------------------------------------------------------------
+
+;
+
+un_inst:     push ds                   ;Save DS again
+
+             mov ds,ax                 ;AX has CS value of current int 13
+
+             mov si,bx                 ;BX has entry point of current int 13
+
+             sub bx,0d2h               ;Backup D2 bytes to find &quot;old&quot; int 13
+
+             mov si,bx                 ;Establish &quot;source&quot; string start point
+
+             mov ax,0h
+
+             mov es,ax                 ;Zero out ES register for move
+
+             mov di,int13loc           ;Establish &quot;destination&quot; (004Ch)
+
+             mov cx,04h                ;4 bytes to move
+
+             cld                       ;Set forward direction for move
+
+             rep movsb                 ;Move from DS:SI to ES:DI until CX=0
+
+;
+
+;At this point, the int 13h vector at 0000:004C has been restored to
+
+;       the value it had when INT13 was previously invoked.
+
+;
+
+             pop ds                    ;Restore entry DS value
+
+             mov dx,offset unin_msg    ;Location of &quot;un-install&quot; message
+
+             mov ah,09h                ;Prepare for printing
+
+             int 21h                   ;Print the message
+
+             int 20h                   ;Terminate
+
+INT13        endp
+
+;----------------------------------------------------------------------------
+
+cseg         ends
+
+end          INT13
+
+</PRE>
+
+<BR>
+
+<HR ALIGN="CENTER" WIDTH="100%" SIZE="3">
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</I></CENTER>
+
+<BR><CENTER>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#84'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#84"> homepage</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"> 
+
+<A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#73'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#73"> links</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0">
+
+<A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm"> anonymity</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm"> +ORC</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#82'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#82"> students' essays</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm"> tools</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm"> cocktails</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm"> search_forms</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm"> mail_fravia</A><BR>
+
+
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm"> Is reverse engineering illegal?</A></CENTER>
+
+<CENTER><HR ALIGN="CENTER" WIDTH="100%" SIZE="2"></CENTER>
+
+</BODY>
+
+</HTML>
+

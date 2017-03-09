@@ -1,0 +1,989 @@
+<html>
+
+<head>
+
+   <title>cryptunt.htm: On cryptosystems untrustworthiness</title>
+
+  
+
+</head>
+
+<body bgcolor="#C0C0C0" text="#001010" vlink="#405040" alink="#00FF50">
+
+<center><font size="+3">CRYPTOREVERSING</font><hr width="22%">
+
+Courtesy of fravia's page of reverse engineering<hr width="44%">
+
+This was orginally at <a href="javascript:if(confirm('http://ns.ssl.stu.neva.ru/psw/publications/crypto_eng.html  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://ns.ssl.stu.neva.ru/psw/publications/crypto_eng.html'" tppabs="http://ns.ssl.stu.neva.ru/psw/publications/crypto_eng.html">http://ns.ssl.stu.neva.ru/psw/publications/crypto_eng.html</a>
+
+<hr>
+
+
+
+<h2><b><font FACE="Times New Roman Cyr">On cryptosystems untrustworthiness</font></b></h2>
+
+
+
+<center><p><b><font FACE="Times New Roman Cyr"><a HREF="javascript:if(confirm('http://www.ssl.stu.neva.ru/psw/  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.ssl.stu.neva.ru/psw/'" tppabs="http://www.ssl.stu.neva.ru/psw/">Pavel
+
+V. Semjanov </a></font></b></p></center>
+
+
+
+<center><p><tt><a HREF="javascript:if(confirm('http://www.ssl.stu.neva.ru/  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.ssl.stu.neva.ru/'" tppabs="http://www.ssl.stu.neva.ru/">Information security
+
+centre</a>, St. Petersburg Technical University</tt></p></center>
+
+
+
+<center><p><b><a HREF="mailto:psw@ssl.stu.neva.ru?subject=Crypto systems">psw@ssl.stu.neva.ru</a></b></p></center>
+
+</center>
+
+<ul>
+
+<p><b>Abstract</b></p>
+
+</ul>
+
+
+
+<ul>
+
+<p><font FACE="Times New Roman Cyr"><font SIZE="-1">The reasons of cryptosystems
+
+untrustworthiness can be divided into 4 main groups: application of weak
+
+algorithms, cryptalgorithms wrong implementation or application and human
+
+factor. There is clear parallel between these reasons and computer system
+
+security violation ones.</font></font></p>
+
+
+
+<p><font FACE="Times New Roman Cyr"><font SIZE="-1">Because of pointed reasons
+
+there were and still there are security problems in all kinds of software,
+
+where cryptalgorithms are used, be it operating systems; cryptographic
+
+protocols; clients and servers supporting them; office programs; user encryption
+
+utilities or popular archivers.</font></font></p>
+
+
+
+<p><font FACE="Times New Roman Cyr"><font SIZE="-1">To proper implement your
+
+own cryptosystem you should not only learn somebodyís mistakes and understand
+
+the reasons of their occurrence, but perhaps use sophisticated protection
+
+programming approaches and special design tools.</font></font></p>
+
+</ul>
+
+
+
+<p><font FACE="Times New Roman Cyr">Cryptalgorithms are widely used in
+
+modern software not only for data encryption but also for authentication
+
+and integrity. To date there exist well-known and approved cryptalgorithms
+
+(both symmetric and asymmetric), whose strength is either mathematically
+
+proved or based on mathematically hard computational problem (factorization,
+
+discrete logarithm, etc.). The most famous ones are<i> <a HREF="javascript:if(confirm('http://www.rsa.com/rsalabs/faq/html/3-2-1.html  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.rsa.com/rsalabs/faq/html/3-2-1.html'" tppabs="http://www.rsa.com/rsalabs/faq/html/3-2-1.html">DES</a>,
+
+<a HREF="javascript:if(confirm('http://www.jetico.sci.fi/gost.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.jetico.sci.fi/gost.htm'" tppabs="http://www.jetico.sci.fi/gost.htm">GOST</a>, <a HREF="javascript:if(confirm('http://www.rsa.com/rsalabs/faq/html/3-1-1.html  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.rsa.com/rsalabs/faq/html/3-1-1.html'" tppabs="http://www.rsa.com/rsalabs/faq/html/3-1-1.html">RSA</a>.
+
+</i>These algorithms can be breaked only by solving this problem or by
+
+brute force.</font></p>
+
+
+
+<p><font FACE="Times New Roman Cyr">On the other hand, information on errors
+
+and flaws in one or other program or on cracking some programs (including
+
+those using cryptalgorithms) appears in computer world and about all the
+
+time. It causes distrust to both specific programs and ability to protect
+
+anything with cryptography in general, not only against secret services,
+
+but also against hackers.</font></p>
+
+
+
+<p><font FACE="Times New Roman Cyr">Thus, when designing secure systems
+
+it is necessary to learn history of attacks and flaws in cryptosystems
+
+and to understand the reasons of their occurrence. The promising research
+
+branch in this field is the analysis of successful attacks or detected
+
+cryptosystem vulnerabilities in order to generalize, classify and detect
+
+the reasons and regularity of their appearance and existence. This is the
+
+item of this paper.</font></p>
+
+
+
+<p><font FACE="Times New Roman Cyr">By analogy with computer systems security
+
+violation reasons taxonomy [<a HREF="#l1">1</a>], let us pick out the reasons
+
+for which cryptographic programs cannot be considered secure (see figure
+
+1.):</font></p>
+
+
+
+<ol>
+
+<ol>
+
+<li><font FACE="Times New Roman Cyr"><a HREF="#p1">Impossibility of strong
+
+cryptalgorithms use;</a></font></li>
+
+
+
+<li><font FACE="Times New Roman Cyr"><a HREF="#p2">Cryptalgorithm implementation
+
+errors;</a></font></li>
+
+
+
+<li><font FACE="Times New Roman Cyr"><a HREF="#p3">Cryptalgorithm wrong
+
+application;</a></font></li>
+
+
+
+<li><font FACE="Times New Roman Cyr"><a HREF="#p4">Human factor.</a></font></li>
+
+</ol>
+
+</ol>
+
+
+
+<p><font FACE="Times New Roman Cyr">Note that reasons in concern cover
+
+only two potential threats, namely <i>confidentiality</i> and <i>integrity</i>
+
+ones, leaving aside <i>denial of service</i>, which becomes more and more
+
+significant with the development of distributed cryptosystems.</font></p>
+
+
+
+<center><p><img SRC="cuima12.gif" tppabs="http://www.anticrack.de/fravia/cuima12.gif" HEIGHT="1022" WIDTH="804"></p></center>
+
+
+
+<center><p><b><font FACE="Times New Roman Cyr">Figure 1. Cryptosystems
+
+untrustworthiness reasons.</font></b></p></center>
+
+
+
+<h3><b><font FACE="Times New Roman Cyr">1.<a NAME="p1"></a> Impossibility
+
+of applying strong cryptalgorithms</font></b></h3>
+
+
+
+<p><font FACE="Times New Roman Cyr">This kind of reasons is the most prevalent
+
+because of following factors.</font></p>
+
+
+
+<p><i><font FACE="Times New Roman Cyr">Low rate of strong cryptalgorithms</font></i></p>
+
+
+
+<p><font FACE="Times New Roman Cyr">It is one of the main factors hampering
+
+good algorithms usage in total ciphering or &quot;on-the-fly&quot; ciphering
+
+systems. In particular, while <i>Norton DiskReet</i> program is <i>DES</i>-implemented,
+
+it may not encrypt all the disk when the user changes his key, as it will
+
+take too much time. Just so, there is the option of compressed data password
+
+protection in <i><a HREF="javascript:if(confirm('http://www.stac.com/  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.stac.com/'" tppabs="http://www.stac.com/">Stac Electronics</a></i>í
+
+<i>Stacker</i> on fly compression program. But it is physically unable
+
+to encipher its own file (usually of hundreds megabytes) with this password,
+
+thatís why it contents with very weak algorithm and keeps hash-function
+
+of password along with data being protected. Cryptographic strength<sup><a HREF="#r1">1</a></sup>
+
+of this function was examined and appeared to be 2<sup>8</sup>, i.e. a
+
+password <a HREF="javascript:if(confirm('http://www.ssl.stu.neva.ru/psw/DOWNLOAD/stacpswd.com  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.ssl.stu.neva.ru/psw/DOWNLOAD/stacpswd.com'" tppabs="http://www.ssl.stu.neva.ru/psw/DOWNLOAD/stacpswd.com">can
+
+be breaked trivially</a>.</font></p>
+
+
+
+<p><i><font FACE="Times New Roman Cyr">Export restrictions</font></i></p>
+
+
+
+<p><font FACE="Times New Roman Cyr">This reason is connected with cryptalgorithm
+
+export or with necessity of getting patent or rights. In particular, U.S.
+
+<a HREF="javascript:if(confirm('http://www.cypher.net/info/itar.html  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.cypher.net/info/itar.html'" tppabs="http://www.cypher.net/info/itar.html">cryptalgorithms export</a>
+
+is limited to 40-bit key length<sup><a HREF="#r2">2</a></sup>. Such strength
+
+evidently cannot be secure because of modern computer power. Even for personal
+
+computer, setting exhaustive search rate to 50000 passwords per second,
+
+we get exhaustive search time of about 4 months at average.</font></p>
+
+
+
+<p><font FACE="Times New Roman Cyr">Among known export restricted software
+
+last versions of Internet browsers, <i><a HREF="javascript:if(confirm('http://home.netscape.com/  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://home.netscape.com/'" tppabs="http://home.netscape.com/">Netscape
+
+Communications</a></i>í <i>Netscape Navigator </i>and <i><a HREF="javascript:if(confirm('http://www.microsoft.com/  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.microsoft.com/'" tppabs="http://www.microsoft.com/">Microsoft</a></i>ís
+
+<i>Internet Explorer</i>, can be mentioned. They represent encryption with
+
+128-bit key for U.S. users and with 40-bit key for the rest. The last version
+
+of <a HREF="javascript:if(confirm('http://www.arjsoftware.com/  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.arjsoftware.com/'" tppabs="http://www.arjsoftware.com/">ARJ 2.60</a> archiver, known for
+
+its weak archive enciphering algorithm, also can be referred to this group.
+
+Today U.S. users can use cryptographically strong GOST. The funny side
+
+of situation is that while algorithm is Russian, due to U.S. law even Russians
+
+still cannot use it in ARJ program.</font></p>
+
+
+
+<p><i><font FACE="Times New Roman Cyr">Own cryptalgorithms usage</font></i></p>
+
+
+
+<p><font FACE="Times New Roman Cyr">Paradoxical situation, when developers
+
+ignore known algorithms, often occurs, especially with freeware and shareware,
+
+in archivers or file encryption tools, for instance.</font></p>
+
+
+
+<p><font FACE="Times New Roman Cyr">As we have already mentioned, ARJ archiver
+
+(up to version 2.60 inclusive) uses very weak encryption algorithm, simple
+
+XOR with password. It may seem that it could be used, because archived
+
+text must not absolutely be redundant and statistical cryptanalysis methods
+
+would not do here. But after detailed consideration it appeared that archived
+
+text possesses some nonrandom information (and it holds for any archiver),
+
+for example, Huffman table and other housekeeping information. Thatís why,
+
+if one knows exactly or can predict with certain probability the values
+
+of these housekeeping variables, he can also determine corresponding password
+
+characters with the same probability.</font></p>
+
+
+
+<p><font FACE="Times New Roman Cyr">Further usage of such a weak algorithm
+
+leads to successful <i>plaintext attack</i>: if an adversary knows at least
+
+one file from encrypted archive he could <a HREF="javascript:if(confirm('http://www.ssl.stu.neva.ru/psw/DOWNLOAD/solvepwd.com  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.ssl.stu.neva.ru/psw/DOWNLOAD/solvepwd.com'" tppabs="http://www.ssl.stu.neva.ru/psw/DOWNLOAD/solvepwd.com">easily
+
+determine</a> archive password and extract all the rest files (for given
+
+plaintext, ARJ strength is 2<sup>0 </sup>!). Even if all the files are
+
+encrypted, simple XOR <a HREF="javascript:if(confirm('http://www.ssl.stu.neva.ru/psw/DOWNLOAD/yaac097b.arj  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.ssl.stu.neva.ru/psw/DOWNLOAD/yaac097b.arj'" tppabs="http://www.ssl.stu.neva.ru/psw/DOWNLOAD/yaac097b.arj">allows
+
+to get</a> exhaustive search rate of 350000 password per second on Pentium.</font></p>
+
+
+
+<p><font FACE="Times New Roman Cyr">The same we have in the case of popular
+
+programs from <a HREF="javascript:if(confirm('http://www.microsoft.com/office/  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.microsoft.com/office/'" tppabs="http://www.microsoft.com/office/">Microsoft Office</a>
+
+95, where to <a HREF="javascript:if(confirm('http://ftpsearch.lycos.com/cgi-bin/search/?form=advanced&query=msof0104.zip&doit=Search&type=Case+insensitive+substring+search&hits=15&matches=&hitsprmatch=&limdom=&limpath=&limsize1=&limsize2=10000&limtime1=&limtime2=&f1=Count&f2=Mode&f3=Size&f4=Date&f5=Host&f6=Path&header=none&sort=none&trlen=20  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://ftpsearch.lycos.com/cgi-bin/search/?form=advanced&query=msof0104.zip&doit=Search&type=Case+insensitive+substring+search&hits=15&matches=&hitsprmatch=&limdom=&limpath=&limsize1=&limsize2=10000&limtime1=&limtime2=&f1=Count&f2=Mode&f3=Size&f4=Date&f5=Host&f6=Path&header=none&sort=none&trlen=20'" tppabs="http://ftpsearch.lycos.com/cgi-bin/search/?form=advanced&query=msof0104.zip&doit=Search&type=Case+insensitive+substring+search&hits=15&matches=&hitsprmatch=&limdom=&limpath=&limsize1=&limsize2=10000&limtime1=&limtime2=&f1=Count&f2=Mode&f3=Size&f4=Date&f5=Host&f6=Path&header=none&sort=none&trlen=20">determine</a>
+
+a password one must know only 16 plain bytes of .doc or .xls file which
+
+are to be present there, whereupon it is sufficient to look through only
+
+2<sup>4 </sup>variants. Microsoft Office 97 contains improved encryption
+
+algorithms, allowing exhaustive search only, but... not everywhere! <a HREF="javascript:if(confirm('http://www.microsoft.com/access/  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.microsoft.com/access/'" tppabs="http://www.microsoft.com/access/">MS
+
+Access</a> 97 uses absolutely primitive algorithm, while XOR-encrypting
+
+with fixed constant not data but password!</font></p>
+
+
+
+<p><a NAME="novell"></a><i><font FACE="Times New Roman Cyr"><a HREF="javascript:if(confirm('http://www.novell.com/  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.novell.com/'" tppabs="http://www.novell.com/">Novell
+
+Netware</a> </font></i><font FACE="Times New Roman Cyr">network operating
+
+system<i> </i>(3.x and 4.x versions) also uses its <a HREF="javascript:if(confirm('http://www.ssl.stu.neva.ru/psw/DOWNLOAD/logintof.c  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.ssl.stu.neva.ru/psw/DOWNLOAD/logintof.c'" tppabs="http://www.ssl.stu.neva.ru/psw/DOWNLOAD/logintof.c">own
+
+hash algorithm</a>. Hash-function has 32-byte value, derived from user
+
+original password by truncation a password with the length of more than
+
+32 characters with XOR operation or by replication a password with the
+
+length of less than 32 characters, in the input and 16-byte hash-value
+
+(<i>Hash16</i>) in the output. It is this value (for Novell Netware 3.x)
+
+to be stored in bindery data base as <i>&quot;PASSWORD&quot;</i> property.</font></p>
+
+
+
+<p><font FACE="Times New Roman Cyr">One of the main features of cryptographically
+
+strong hash-function is that it should not allow easy collisions (such
+
+as <i>crypt()</i> function<i>, </i>used in UNIX and based on mathematically
+
+strong cryptalgorithm DES). It is this feature that is violated in Novell
+
+Netwareís hash function.</font></p>
+
+
+
+<p><font FACE="Times New Roman Cyr">The <a HREF="javascript:if(confirm('http://www.ssl.stu.neva.ru/psw/DOWNLOAD/npg.c  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.ssl.stu.neva.ru/psw/DOWNLOAD/npg.c'" tppabs="http://www.ssl.stu.neva.ru/psw/DOWNLOAD/npg.c">procedure</a>
+
+was built, which for given hash-value after some search (about few seconds
+
+on 80386+ computer) generates 32-byte sequence, which is not, of course,
+
+a true password, but is perceived by Novell Netware as such, since being
+
+processed by hash algorithm it has exactly available hash value in the
+
+output.</font></p>
+
+
+
+<p><font FACE="Times New Roman Cyr">The same hash algorithm remained also
+
+in Novell Netware 4 version.</font></p>
+
+
+
+<p><font FACE="Times New Roman Cyr">Microsoft, in turn, also has significant
+
+shortcomings in its main hash algorithm, applied for local (NetBIOS protocol)
+
+and global (CIFS and http protocols) networks authentication in all of
+
+its operating systems since Windows 3.11, so called LM-hash (Lan Manager-hash)
+
+[<a HREF="#l4">4</a>]. (However, Microsoft pleads that it remained since
+
+OS/2 and was designed by IBM).</font></p>
+
+
+
+<p><font FACE="Times New Roman Cyr">It runs as follows:</font></p>
+
+
+
+<ol>
+
+<li><font FACE="Times New Roman Cyr">Password is converted into 14-character
+
+string by truncating longer passwords or by complementing shorter passwords
+
+with zeros.</font></li>
+
+
+
+<li><font FACE="Times New Roman Cyr">All the lowercase characters are changed
+
+into uppercase ones. Numeric and special characters are stayed unchanged.</font></li>
+
+
+
+<li><font FACE="Times New Roman Cyr">14-byte string is divided into two
+
+7-byte halves.</font></li>
+
+
+
+<li><font FACE="Times New Roman Cyr">Fixed constant is encrypted on each
+
+of these halves as on DES-key, resulting in two 8-byte strings.</font></li>
+
+
+
+<li><font FACE="Times New Roman Cyr">These strings are merged to form 16-bit
+
+hash-value.</font></li>
+
+</ol>
+
+
+
+<p><font FACE="Times New Roman Cyr">It is obvious that attacks against
+
+LM-hash are easily crowned with success due to the following:</font></p>
+
+
+
+<ul>
+
+<li><font FACE="Times New Roman Cyr">Converting all the characters into
+
+the uppercase further restricts a few number of possible combinations (26+10+32=68)
+
+for each one.</font></li>
+
+
+
+<li><font FACE="Times New Roman Cyr">Two 7-byte ìhalvesî are encrypted
+
+independently, i.e. two ìhalvesî may be chosen by exhaustive search independently;
+
+and passwords of length more than 7 characters are not stronger than 7-character
+
+length passwords. Thus, to guarantee password disclosure we must look through
+
+only (68<sup>0</sup>+68<sup>1</sup>+...+68<sup>7</sup>) </font><font FACE="Symbol">ª</font><font FACE="Times New Roman Cyr">
+
+7</font><font FACE="Symbol">×</font><font FACE="Times New Roman Cyr"> 10<sup>12
+
+</sup>instead of 94<sup>0</sup>+94<sup>1</sup>+... 94<sup>14</sup> </font><font FACE="Symbol">ª</font><font FACE="Times New Roman Cyr">
+
+4</font><font FACE="Symbol">×</font><font FACE="Times New Roman Cyr"> 10<sup>27
+
+</sup>(i.e. nearly 10<sup>15</sup> times less) combinations. Moreover,
+
+passwords with the length of less than or equal 7 characters are easy to
+
+recognize, because the second half of hash is the same value <i>AAD3B435B51404EE</i>,
+
+resulting from fixed constant encryption on the seven-zero key.</font></li>
+
+
+
+<li><font FACE="Times New Roman Cyr">There is no <i>salt</i>, as in crypt(),
+
+so two users with the same password will always get the same hash-value.
+
+So we may compile a dictionary of hashed passwords beforehand and search
+
+the unknown password in it.</font></li>
+
+</ul>
+
+
+
+<h3><b><font FACE="Times New Roman Cyr">2. <a NAME="p2"></a>Cryptalgorithm
+
+implementation errors</font></b></h3>
+
+
+
+<p><font FACE="Times New Roman Cyr">Although cryptographically strong or
+
+certified algorithms are used in this case, this group of reasons leads
+
+to cryptosystem security violation because of algorithms wrong implementation.</font></p>
+
+
+
+<p><i><font FACE="Times New Roman Cyr">Decrease of cryptographic strength
+
+while key generation</font></i></p>
+
+
+
+<p><font FACE="Times New Roman Cyr">This reason has various examples, when
+
+cryptosystem truncates user password or generates data from it of the bit
+
+length less than a password one is. For example:</font></p>
+
+
+
+<ol>
+
+<li><font FACE="Times New Roman Cyr">A lot of (old) UNIX versions truncate
+
+user password up to 8 byte before hashing. Itís interesting, that Linux
+
+2.0, for example, while keeping users to enter alphanumerical passwords,
+
+does not test if 8-character password beginning is also alphanumerical.
+
+That is why the user, having set the highly safe <i>passwordIsgood19</i>
+
+password, will be surprised at hacker logging in on his behalf with a trivial
+
+<i>password</i> password.</font></li>
+
+
+
+<li><font FACE="Times New Roman Cyr">Novell Netware allows user passwords
+
+up to 128 byte, i.e. 68<sup>128</sup> </font><font FACE="Symbol">ª</font><font FACE="Times New Roman Cyr">
+
+2<sup>779 </sup>combinations (including case-insensitive Latin alphabetic,
+
+numeric and special characters). But here hash-function (<a HREF="#novell">vide
+
+supra</a>) has only 32-byte value in the input, limiting effective password
+
+length to the same value. Moreover, hash output has only 128 bit length,
+
+i.e. 2<sup>128</sup> combinations. It causes further decrease of effective
+
+length to <img SRC="cuima2.gif" tppabs="http://www.anticrack.de/fravia/cuima2.gif" ALT="log68(2^128)" WIDTH="90" HEIGHT="36">=21 characters<sup><a HREF="#r3">3</a></sup>,
+
+i.e. 6 times as against original.</font></li>
+
+
+
+<li><font FACE="Times New Roman Cyr">Entirely the same situation is with
+
+<a HREF="javascript:if(confirm('http://www.rarsoft.com/  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.rarsoft.com/'" tppabs="http://www.rarsoft.com/">RAR-archiver</a> of 1.5x version, where
+
+password of 10 characters length does not increase time for its <a HREF="javascript:if(confirm('http://www.ssl.stu.neva.ru/psw/DOWNLOAD/crark15b.rar  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.ssl.stu.neva.ru/psw/DOWNLOAD/crark15b.rar'" tppabs="http://www.ssl.stu.neva.ru/psw/DOWNLOAD/crark15b.rar">disclosure</a>.</font></li>
+
+</ol>
+
+
+
+<p><font FACE="Times New Roman Cyr">While the upper bound of password length
+
+is formed by cryptalgorithms use, the lower limitation is connected with
+
+bit or entropy notation. In case with Novell Netware to get hash-value
+
+with 128-bit entropy one must use a password of at least <img SRC="cuima3.gif" tppabs="http://www.anticrack.de/fravia/cuima3.gif" ALT="128*8/log2(68)" WIDTH="120" HEIGHT="63">=69
+
+bit<sup><a HREF="#r4">4</a></sup> length or at least 22 characters<sup><a HREF="#r5">5</a></sup>.
+
+Unlimiting minimal password length in a lot of cryptosystems results in
+
+successful exhaustive search when searching not for keys but for passwords.</font></p>
+
+
+
+<p><i><font FACE="Times New Roman Cyr">Lack of weak key testing</font></i></p>
+
+
+
+<p><font FACE="Times New Roman Cyr">Some cryptalgorithms (in particular,
+
+DES, IDEA), when ciphering on specific keys, cannot guarantee proper cryptographic
+
+strength level. Such keys are called <i>weak. </i>It is known 4 weak and
+
+12 semi-weak keys for DES. And while the probability of meeting them is
+
+<img SRC="cuima4.gif" tppabs="http://www.anticrack.de/fravia/cuima4.gif" ALT="16/2^56" WIDTH="34" HEIGHT="51"></font><font FACE="Symbol">ª</font><font FACE="Times New Roman Cyr">
+
+2</font><font FACE="Symbol">×</font><font FACE="Times New Roman Cyr"> 10<sup>-16</sup>,
+
+we should not neglect it in serious cryptographic systems.</font></p>
+
+
+
+<p><font FACE="Times New Roman Cyr">The cardinality of weak keys set for
+
+IDEA is neither more nor less than 2<sup>51</sup> (however, since there
+
+are 2<sup>128</sup> keys on the whole, the probability of meeting them
+
+is 3</font><font FACE="Symbol">×</font><font FACE="Times New Roman Cyr">
+
+10<sup>7 </sup>less than in DES).</font></p>
+
+
+
+<p><i><font FACE="Times New Roman Cyr">Insufficient protection against
+
+malicious software</font></i></p>
+
+
+
+<p><font FACE="Times New Roman Cyr">Malicious software includes computer
+
+viruses, Trojan horses and other software, able to eavesdrop secret key
+
+or plaintext and to substitute strong algorithm for weak one. If the programmer
+
+does not provide for sufficient protection against malicious software,
+
+it can violate cryptosystem security. It is mostly topical for operating
+
+systems without built-in security or access control services, such as MS
+
+DOS or Windows 95:</font></p>
+
+
+
+<ol>
+
+<li><font FACE="Times New Roman Cyr"><i>Password eavesdropping</i>. Let
+
+us recall the oldest way of password eavesdropping, known since mainframe,
+
+when the ìphantomî program emulates operating system prompt, suggesting
+
+a user to enter his name and password, stores it in certain file and terminates
+
+with the message <i>ìInvalid passwordî</i>. In MS DOS and Windows there
+
+exists a lot of<font COLOR="#0000FF"> </font>logic bombs<font COLOR="#0000FF">
+
+</font>for reading and storing keyed-in passwords (by eavesdropping suitable
+
+interrupt), for example, when DiskReet v. 6.0 utility is running.</font></li>
+
+
+
+<li><font FACE="Times New Roman Cyr"><i>Cryptalgorithm substitution.</i>
+
+As an example we may consider a logic bomb,<font COLOR="#0000FF"> </font>posed
+
+as accelerator application, <i>Turbo Krypton</i>, for instance. This<font COLOR="#0000FF">
+
+</font>logic bomb<font COLOR="#0000FF"> </font>substitutes GOST 28147-89
+
+encryption algorithm, implemented by ì<i>Krypton-3î</i> board (demo version),
+
+for another simple and easy decryptable algorithm [<a HREF="#l1">1</a>].</font></li>
+
+
+
+<li><font FACE="Times New Roman Cyr"><i>E-mail Trojan horse.</i> The last
+
+example is the attempt of ìTrojan horseî to percolate through electronic
+
+mail, occurred in June 1998. The letter contained a pornographic picture
+
+and FREECD.EXE file, which decrypted provider connection passwords (Dial-Up)
+
+and sent them to ispp@usa.net, while user was amusing himself by the letter.</font></li>
+
+</ol>
+
+
+
+<p><i><font FACE="Times New Roman Cyr">Dependence on time of key processing</font></i></p>
+
+
+
+<p><font FACE="Times New Roman Cyr">This is relatively new aspect of cryptalgorithms
+
+incorrect implementation, called &quot;Timing attacks&quot; and discussed
+
+in [<a HREF="#l2">2</a>], where it is shown that a lot of cryptosystems
+
+process different inputs for different time interval. The reasons for this
+
+are both hardware (different number of cycles per operation, hitting into
+
+processor cash, etc.) and software (especially while time optimization
+
+of the program). Time interval may depend on both encryption key and encrypted
+
+data.</font></p>
+
+
+
+<p><font FACE="Times New Roman Cyr">Hence, an adversary, possessing detailed
+
+information on cryptalgorithm implementation or encrypted data and being
+
+able to measure the time of data processing somehow (for example, by analysis
+
+of data packet sending time), can try to fit a secret key. This paper [2]
+
+describes in detail attacks against RSA, <a HREF="javascript:if(confirm('http://www.rsa.com/rsalabs/faq/html/3-6-1.html  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.rsa.com/rsalabs/faq/html/3-6-1.html'" tppabs="http://www.rsa.com/rsalabs/faq/html/3-6-1.html">Diffie-Hellman</a>
+
+and <a HREF="javascript:if(confirm('http://www.rsa.com/rsalabs/faq/html/3-4-1.html  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.rsa.com/rsalabs/faq/html/3-4-1.html'" tppabs="http://www.rsa.com/rsalabs/faq/html/3-4-1.html">DSS</a> implementing
+
+systems, while the key can be obtained by elaboration bit by bit, a number
+
+of necessary time measuring is proportionate to key length.</font></p>
+
+
+
+<p><font FACE="Times New Roman Cyr">While these research has not been brought
+
+to specific result (to compute a secret key), considered example demonstrates
+
+that crucial systems (including cryptosystems) programming is to be extremely
+
+careful and perhaps require special secure programming approaches and special
+
+design tools (especially compilers).</font></p>
+
+
+
+<p><i><font FACE="Times New Roman Cyr">Software implementation errors</font></i></p>
+
+
+
+<p><font FACE="Times New Roman Cyr">It is clear that this factor will always
+
+be present until programs are written by human beings. Novell Netware 3.12
+
+operating system can serve a good example, where in spite of highly considered
+
+authentication system, in which, as Novell says, ìunencrypted password
+
+is never transmittedî, a bug in SYSCON program v. 3.76 was detected, due
+
+to which just plain password finds itself in one of network packets. This
+
+is not the case in neither earlier nor later versions of this program,
+
+so we may call it pure programmerís error. This error can be revealed only
+
+if supervisor changes oneís password (including himself). Apparently, keyboard
+
+buffer gets somehow into network packet.</font></p>
+
+
+
+<p><i><font FACE="Times New Roman Cyr">Trapdoors</font></i></p>
+
+
+
+<p><font FACE="Times New Roman Cyr">Trapdoors occur in cryptosystems for
+
+obvious reasons: the designer wishes to control information, being processed
+
+in his system, and reserves the right to decrypt it without user key. Perhaps,
+
+they are used for debugging too and are left in finished products for certain
+
+reasons. Naturally it becomes known to sufficiently wide circle of persons
+
+sooner or later and the value of such cryptosystem becomes next to nothing.
+
+The most wide-known ones are AWARD BIOS (up to 4.51PG version) with its
+
+universal ì<i>AWARD_SWî</i> password and <i><a HREF="javascript:if(confirm('http://www.borland.com/paradox/  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.borland.com/paradox/'" tppabs="http://www.borland.com/paradox/">Paradox</a></i>
+
+database management system from <i>Borland International</i>, also including
+
+ìsuperpasswordsî ì<i>jIGGAeî</i> and ì<i>nx66ppxî</i>.</font></p>
+
+
+
+<p><font FACE="Times New Roman Cyr">In real earnest of implementation trapdoors
+
+(in this case they evidently use explicitly weak algorithms or store a
+
+key along with data) are those algorithms, which allow a third party to
+
+read encrypted message, as in caused a sensation <a HREF="javascript:if(confirm('http://www.rsa.com/rsalabs/faq/html/6-2-4.html  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.rsa.com/rsalabs/faq/html/6-2-4.html'" tppabs="http://www.rsa.com/rsalabs/faq/html/6-2-4.html">CLIPPER
+
+project</a>, where the state, known for snooping its citizensí secrets,
+
+had played a role of a third party.</font></p>
+
+
+
+<p><i><font FACE="Times New Roman Cyr">Random number generator (RNG) shortcomings</font></i></p>
+
+
+
+<p><font FACE="Times New Roman Cyr">Strong, mathematically tested and correctly
+
+implemented RNG is of great importance for cryptosystem as well as mathematically
+
+strong and correct cryptalgorithm, otherwise its shortcomings may influence
+
+overall cryptographic strength of the system. Moreover, pseudorandom number
+
+generator (PRNG) is generally used for RNG computer modeling, characterized
+
+by period, dispersion and seed. PRNG application can be scarcely called
+
+a happy choice for cryptosystems, so strong cryptosystems use physical
+
+RNG (special board) for these purposes, or at least generate a number for
+
+PRNG initialization, with the use of physical values (time of userís keystroke,
+
+for instance).</font></p>
+
+
+
+<p><font FACE="Times New Roman Cyr"><i>Short period </i>and <i>bad dispersion</i>
+
+are among mathematical shortcomings of RNG and appear when you take your
+
+own RNG for some reasons. In other words, it is dangerous to use your own
+
+RNG, as well as your own cryptalgorithm.</font></p>
+
+
+
+<p><font FACE="Times New Roman Cyr">In a case of short period (when a number
+
+of pseudorandom values, produced by generator, is less than a number of
+
+possible key values) an adversary can cut down time overhead for key searching,
+
+by looking through not keys, but pseudorandom values and generating keys
+
+from these values.</font></p>
+
+
+
+<p><font FACE="Times New Roman Cyr">Given generator with a bad dispersion,
+
+an adversary can also cut down average search overhead, if he looks through
+
+the most likely pseudorandom numbers.</font></p>
+
+
+
+<p><font FACE="Times New Roman Cyr">The most common error, even for tested
+
+PRNG, is its <i>wrong initialization</i>. Here initialization number either
+
+has less information bits than generator itself or is being chosen from
+
+nonrandom numbers and can be predicted with one or other probability.</font></p>
+
+
+
+<p><font FACE="Times New Roman Cyr"><a HREF="javascript:if(confirm('http://www.ddj.com/articles/1996/9601/9601h/9601h.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.ddj.com/articles/1996/9601/9601h/9601h.htm'" tppabs="http://www.ddj.com/articles/1996/9601/9601h/9601h.htm">Such
+
+situation</a> occurred with Netscape Navigator of version 1.1. It initiated
+
+PRNG with current time in seconds (<i>sec</i>) and microseconds (<i>usec</i>)
+
+and process identificators (<i>pid</i> and <i>ppid</i>). The researches
+
+have cleared up that such scenario gives 47 significant bits of information
+
+at most (note, that this generator was used for getting 40- or 128(!)-bit
+
+keys). But when adversary</font></p>
+
+
+
+<ol>
+
+<li><font FACE="Times New Roman Cyr">was able to intercept network transferred
+
+packets, and</font></li>
+
+
+
+<li><font FACE="Times New Roman Cyr">had an account at the computer with
+
+running program,</font></li>
+
+</ol>
+
+
+
+<p><font FACE="Times New Roman Cyr">he could easily learn <i>sec</i>, <i>pid</i>
+
+and <i>ppid</i> with high probability. When the second condition was not
+
+met, an adversary could try to set time with network demon <i>time</i>;
+
+<i>pid</i> could be obtained through SMTP demon (generally it was located
+
+in Message-ID field). Furthermore, <i>ppid</i> was either a few different
+
+from <i>pid</i>, or just equal to 1.</font></p>
+
+
+
+<p><font FACE="Times New Roman Cyr">The <a HREF="javascript:if(confirm('http://hplyot.obspm.fr/~dl/netscapesec/unssl.c  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://hplyot.obspm.fr/~dl/netscapesec/unssl.c'" tppabs="http://hplyot.obspm.fr/~dl/netscapesec/unssl.c"><i>unssl
+
+</i>program</a> was written, which found 40-bit secret key in a minute
+
+at average, searching for microseconds.</font></p>
+
+
+
+<h3><b><font FACE="Times New Roman Cyr">3.<a NAME="p3"></a> Cryptalgorithms
+
+wrong application</font></b></h3>
+
+
+
+<p><font FACE="Times New Roman Cyr">Because of this group of reasons cryptographically
+
+strong and correctly implemented algorithms appear to be untrustworthy.</font></p>
+
+
+
+<p><a NAME="_Ref397431632"></a><i><font FACE="Times New Roman Cyr">Short
+
+key</font></i></p>
+
+
+
+<p><font FACE="Times New Roman Cyr">This is the most obvious reason. The
+
+question arises: why strong cryptalgorithms may use short keys? Perhaps,
+
+because of following:</font></p>
+
+
+
+<ol>
+
+<li><font FACE="Times New Roman Cyr">some algorithms can work with variable-length
+
+key, providing different cryptographic strength; it is the designer to
+
+choose necessary length for desirable strength and efficiency. Sometimes
+
+this desire is limited by other circumstances, such as export restrictions.
+
+(An example here is <a HREF="javascript:if(confirm('ftp://ftp.symantec.com/misc/nss.exe  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='ftp://ftp.symantec.com/misc/nss.exe'" tppabs="ftp://ftp.symantec.com/misc/nss.exe">Norton Secret Stuff</a> program that can be 
+
+<a HREF="javascript:if(confirm('http://www.ssl.stu.neva.ru/psw/DOWNLOAD/nmss10.zip  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.ssl.stu.neva.ru/psw/DOWNLOAD/nmss10.zip'" tppabs="http://www.ssl.stu.neva.ru/psw/DOWNLOAD/nmss10.zip">breaked</a> in a few
+
+days because of 32-bit Blowfish key use).</font></li>
+
+

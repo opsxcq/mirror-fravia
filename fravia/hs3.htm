@@ -1,0 +1,877 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>Homesite 3.0 Evaluation: Old bottle, new wine</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR=#C0C0C0 TEXT=#001010 VLINK=#405040>
+
+<CENTER><FONT size=+3>Homesite 3.0 Evaluation: Old bottle, new wine</FONT>
+
+<BR>(A protection scheme with fake serial number (a crackers' bait :-)<BR>
+
+<!--
+
+<a href="protecti.htm" tppabs="http://www.anticrack.de/fravia/protecti.htm"><IMG SRC="tough.gif" tppabs="http://www.anticrack.de/fravia/tough.gif" ALT="tough" ALIGN=BOTTOM WIDTH=114 
+
+HEIGHT=43 BORDER=0 VSPACE=0 HSPACE=0></a>
+
+<br>
+
+-->
+
+
+
+
+
+<H2><B>by ml+am</B></H2>
+
+<H4>(28 December 1997, slightly edited by fravia+)</H4>
+
+
+
+<HR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALIGN=BOTTOM BORDER=0 VSPACE=0 HSPACE=0 width="13" height="13">Courtesy of fravia's page 
+
+of reverse engineering<HR>       
+
+<I>Well, here you have a LOT of interesting snippets out of a very silly protection 
+
+scheme (which blows wdasm, yet leaves the stupid hex </I><FONT color=red>0x1E</FONT>
+
+<I> (for a 30 days compare) around... tssch, tssch)<BR>
+
+Enjoy the 
+
+following 'main points' and I would say that although ml+am's 'scientific' attitude in 
+
+reversing is 
+
+the most important teaching you'll get out of this, there is a lot more inside!</I></CENTER><PRE>
+
+- protection scheme with Wdasm32 busting
+
+- protection scheme with fake serial number (a crackers' bait :-) 
+
+- correct 'case study' reversing approach
+
+- 'try and error' approach</PRE><I><CENTER>
+
+Yes, you have in this target an "heavy checking" protection scheme with a stupid 0x1E left behind... 
+
+quite interesting for protectionists and crackers alike, I woudl say! 
+
+</I></CENTER><HR size=6><PRE><CENTER>
+
+<FONT size=+2>Homesite 3.0 Evaluation: Old bottle, new wine<BR>
+
+by <FONT color=green>ml+am</FONT></FONT>
+
+
+
+(My HS3 essay - part of it can replace the <IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" 
+
+ALT="red" ALIGN=CENTER WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 
+
+HSPACE=0><A href="epiclo-1.htm" tppabs="http://www.anticrack.de/fravia/epiclo.htm">HS2 essay</A> by EpicLord)
+
+</CENTER>
+
+HomeSite is the HTML editor that changed the way I look at everything
+
+of its kind - its slick, often-imitated interface cleverly borrowed
+
+from Borland Delphi, new ideas and features from all kinds of
+
+software...like M$ Visual Basic 5's code completion, has inspired a
+
+lot of other HTML editors wannabes.  The company is the first that has
+
+ever tried to publish a usable HTML editor for free - HomeSite Free -
+
+better than a lot of expensive technical craps out there.  If you want
+
+to buy an editor - HomeSite is it.  OK, now, on with the study !!
+
+
+
+As soon as I knew HomeSite 3 (HS3) was out, I rushed to get a copy
+
+(from www.allaire.com and many shareware sites).  Besides the many
+
+features that I liked, there are two bugs that I decided to 
+
+eliminate:
+
+
+
+1. It allows you to use it for 50 times or 30 days, whichever comes
+
+   first, after then it stops functioning - try setting the calendar 
+
+   forward a year and run it, then back - found that it still works.
+
+
+
+2. There are nag screens telling you how many times you have used and
+
+   how many days you have left, politely displayed at the beginning 
+
+   and at the end of each session. 
+
+   Worth noticing is, when the 30-day deadline is close, an additional 
+
+   dialog pops up, kindly reminding you to purchase.
+
+  
+
+
+
+So, I decided to start the third crack I've ever made (the first and
+
+the second ones being WinJammer Shareware and Opera 2.12, easy stuffs =)
+
+
+
+Tools used:
+
+1. w32dasm89 (just to demonstrate how useless it is)
+
+2. regmon
+
+3. regedit
+
+4. windbg    (I'm still reluctant to install SoftICE...)
+
+5. IDA Pro 3.7
+
+6. little gray cells (the best analysis tool anyone can have - from
+
+   your parents =)
+
+
+
+
+
+Episode 1:
+
+==========
+
+
+
+Since I did WinJammer and Opera with just w32dasm, I tried to load HS3
+
+with it.  To my surprise, w32dasm crashes everytime it loads or
+
+attaches to HS3, either on 95 or on NT.  Since the only tools that
+
+I've got are windbg and IDA, the first thing I did was to - guess
+
+what, to uninstall it and install it again under regmon - yes, don't
+
+go beserk disassembling it YET. =)
+
+
+
+What was done:
+
+--------------
+
+1. uninstall HS3 completely
+
+2. run regmon
+
+3. install HS3, using anything as the serial number
+
+4. watch regmon...
+
+5. save regmon result and restart it
+
+6. run HS3 and exit it while still watching regmon
+
+
+
+What was observed:
+
+------------------
+
+1. The installation program writes the user name and the serial number
+
+   to the registry, but these values are never retrieved again by HS3 
+
+   itself.  
+
+   It means the serial number is redundant - there is no way to just 
+
+   "register" it.
+
+
+
+2. The only suspicious registry read upon startup is at
+
+  
+
+  
+
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\StatMan\Config]
+
+	"dtst"="12/23/1997"
+
+	"Usr"=""
+
+	
+
+   It turned out that "dtst" stores the date of installation and "Usr"
+
+   the number of times the software is used (in ASCII).  
+
+   Extractions, modifications and restorations of this key with 
+
+   Regedit further confirmed this idea.
+
+
+
+3. "dtst" was once again read while "Usr" was read -as well as written
+
+   to- upon shutting down HS3.
+
+
+
+Progress:
+
+---------
+
+Export
+
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\StatMan\Config]
+
+and merge it back, after modification, whenever I want to extend the
+
+evaluation period indefinitely.
+
+
+
+
+
+Episode 2:
+
+==========
+
+
+
+Of course, the progress resulted from Episode 1 was just a temporary
+
+cure to the 2 bugs above.  After tracing with windbg for some time, 
+
+I came up with something I thought could disable writing the "Usr" 
+
+value (usage count) back to the registry:
+
+
+
+4468BF: 50		push eax
+
+4468C0: 8B 43 04	mov eax, dword ptr [ebx+4]
+
+4468C3: 50		push eax
+
+4468C4: E8 13 00 FC FF	call 4068DC
+
+4468C9: 85 C0		test eax, eax
+
+4468CB: 74 2E		je 4468FB
+
+
+
+The call at 4468C4 was the villain that I first thought were - it was
+
+the final call before Usr was written and the target of the call was a
+
+huge jump table.  Maybe I've hit the runtime library.  Maybe it is
+
+advapi.dll.  It is trivial to tell that on a successful call to
+
+4068DC, eax will be zeroed.  So I changed the call at 4468C4 to
+
+
+
+4468C4: 33 C0	xor eax, eax
+
+4468C6: 90	nop
+
+4468C7: 90	nop
+
+4468C8: 90	nop
+
+
+
+And saw what happened...
+
+
+
+Observation:
+
+
+
+1. The "Usr" count never increases in the registry.
+
+2. The rest of the program still worked correctly.
+
+
+
+Thought it's done, heh?  I wished it was.  Unfortunately, after trying
+
+to customize it, I found that all my changes were not 'remembered' 
+
+when I ran the target next time. 
+
+I realized I've made a serious mistake: disabling ALL registry 
+
+saves rather than specifying the value of "Usr".  
+
+I nopped it at a much too 'low' level.  
+
+Being a novice reverser, I tried to get some help from the +HCU essays...
+
+of course the first thing that I took a look at was the <A href="epiclo-1.htm" tppabs="http://www.anticrack.de/fravia/epiclo.htm">HS2 essay</A> by 
+
+EpicLord (HS2).  
+
+To my surprise, HS2 uses the same protection technique (only without 
+
+the installation date check) and what I've done was exactly what it 
+
+says to be "a gentle way" (the second method on the essay) to crack 
+
+the program.  
+
+Even the codes were extremely similar.  So I restored the original
+
+executable and tried the first method described in the essay on HS3.  
+
+Below is what I've done according to that essay:
+
+
+
+
+
+4468B1 8B45FC           mov         eax,dword ptr [ebp-4]
+
+4468B4 50               push        eax
+
+4468B5 56               push        esi
+
+4468B6 6A00             push        0
+
+4468B8 8BC7             mov         eax,edi
+
+4468BA E8E5D8FBFF       call        004041A4
+
+4468BF 50               push        eax
+
+4468C0 8B4304           mov         eax,dword ptr [ebx+4]
+
+4468C3 50               push        eax
+
+4468C4 E81300FCFF       call        004068DC
+
+4468C9 85C0             test        eax,eax
+
+4468CB 742E             je          004468FB
+
+
+
+patch line 4468B8 to
+
+4468B8 8BC0             move eax, eax
+
+
+
+It worked again...but still didn't pass the customization test - of
+
+course, this patch is at the SAME procedure as my erronous patch.
+
+(later confirmed by IDA Pro that what I've disabled at 4468C4 was to
+
+call advapi32.RegSetValueExA, and, sadly, this piece of code was
+
+called  ; if more than 255,
+
+4F21A1 BBFF000000       mov ebx,0FFh       ;stuff ebx with 255
+
+
+
+WHY is the number "fixed" after checking?  It SHOULD be of no use at
+
+all!  Is it still of some FUTURE USE?  Maybe in registry writes??  
+
+So it is pretty obvious what to do:
+
+
+
+**********
+
+*Patch 1:*
+
+**********
+
+change
+
+    4F2193 43               inc  ebx
+
+to
+
+    4F2193 90               nop
+
+
+
+
+
+This works perfectly without disabling any other registry saves.  Wow. 
+
+Great progress.  Better get some sleep now.
+
+
+
+
+
+Episode 4:
+
+==========
+
+
+
+It's time to take care of the check of installaton date.  It turned
+
+out to be more difficult than I thought.  If you don't think so after
+
+reading this, forgive me.  I'm still a newbie =)
+
+For the first time, the reference power of IDA is put to use.  After
+
+reading the dead listing, the following is extracted and analyzed
+
+using my little gray cells =)  The code should be self-explanatory:
+
+
+
+
+
+4F20BB                      loc_4F20BB:
+
+4F20BB E8 D0 7D F1 FF             call    sub_409E90        ; first check
+
+4F20C0 DC 65 EC                   fsub    [ebp+var_14]
+
+4F20C3 D8 1D 18 23 4F 00          fcomp   ds:flt_4F2318
+
+4F20C9 DF E0                      fnstsw  ax
+
+4F20CB 9E                         sahf
+
+4F20CC 77 0D                      ja      short EXPIRED_1   ; expired
+
+
+
+4F20CE E8 BD 7D F1 FF             call    sub_409E90        ; second check
+
+4F20D3 DC 5D EC                   fcomp   [ebp+var_14]
+
+4F20D6 DF E0                      fnstsw  ax
+
+4F20D8 9E                         sahf
+
+4F20D9 73 23                      jnb     short OK_1        ; ok, within trial period
+
+
+
+4F20DB                      EXPIRED_1:
+
+4F20DB E8 B0 FE FF FF             call    sub_4F1F90
+
+4F20E0 6A 00                      push    0
+
+4F20E2 66 8B 0D 1C 23 4F 00       mov     cx, ds:word_4F231C
+
+4F20E9 B2 01                      mov     dl, 1
+
+4F20EB B8 28 23 4F 00             mov     eax, offset aThisDemoVer
+
+4F20F0 E8 0B 39 F5 FF             call    sub_445A00        ; display dialog
+
+4F20F5 C6 45 FE 00                mov     [ebp+var_2], 0
+
+4F20F9 E9 CC 01 00 00             jmp     loc_4F22CA        ; exit program
+
+
+
+
+
+4F20FE                      OK_1:
+
+4F20FE E8 8D 7D F1 FF       call    sub_409E90        ; third check for days remaining
+
+4F2103 DC 65 EC             fsub    [ebp+var_14]
+
+4F2106 D8 1D AC 23 4F 00    fcomp   dword ptr ds:unk_4F23AC
+
+4F210C DF E0                fnstsw  ax
+
+4F210E 9E                   sahf
+
+4F210F 76 15                jbe     short OK_2        ; ok, many days left...
+
+
+
+; expiration is close...
+
+; make a dialog saying "only XXX days remaining!"
+
+
+
+4F2111 6A 00                     push    0
+
+4F2113 66 8B 0D 1C 23 4F 00      mov     cx, ds:word_4F231C
+
+4F211A 33 D2                     xor     edx, edx
+
+4F211C B8 B8 23 4F 00            mov     eax, offset aThisEvaluat
+
+4F2121 E8 DA 38 F5 FF            call    sub_445A00
+
+
+
+4F2126                      OK_2:
+
+4F2126 E8 65 7D F1 FF            call    sub_409E90
+
+4F212B DC 65 EC                  fsub    [ebp+var_14]
+
+4F212E E8 D1 0A F1 FF            call    sub_402C04
+
+4F2133 BE 1E 00 00 00            mov     esi, 1Eh          ; 30 days (how stupid!)
+
+4F2138 2B F0                     sub     esi, eax          ; minus days elapsed
+
+4F213A 8D 45 D8                  lea     eax, [ebp+var_28] ; display it...
+
+4F213D 50                        push    eax
+
+4F213E 33 C0                     xor     eax, eax
+
+4F2140 88 45 C5                  mov     [ebp+var_3B], al
+
+4F2143 C6 45 C4 01               mov     [ebp+var_3C], 1
+
+4F2147 8D 45 C8                  lea     eax, [ebp+var_38]
+
+4F214A 8D 55 C4                  lea     edx, [ebp+var_3C]
+
+4F214D E8 72 30 F1 FF            call    sub_4051C4
+
+4F2152 8D 4D C8                  lea     ecx, [ebp+var_38]
+
+
+
+
+
+After reading this a couple of times and making a backup copy of the
+
+executable, I was all ready to see if it actually is it.
+
+
+
+**********
+
+*Patch 2:*
+
+**********
+
+change
+
+    4F20CC 77 0D                 ja      short Beggar_Off_1;
+
+to
+
+    4F20CC 90                    nop
+
+    4F20CD 90                    nop
+
+
+
+change
+
+    4F20D9 73 23                 jnb     short OK_1
+
+to
+
+    4F20D9 EB 23                 jmp     short OK_1
+
+
+
+change
+
+    4F210F 76 15                 jbe     short OK_2
+
+to
+
+    4F210F EB 15                 jmp     short OK_2
+
+
+
+
+
+worked as expected =)  Time to get some sleep again...
+
+
+
+Episode 4:
+
+==========
+
+
+
+Although now HS3 can be used indefinitely, the nag screen is still
+
+very annoying - especially when it is "expired" and you'll see
+
+negative "days remaining" on it =\  Let's get rid of it
+
+altogether.  By tracing it again using windbg and watching the IDA
+
+explanation at the same time, I came up with this:
+
+
+
+4F222C 55                                   push    ebp
+
+4F222D 68 C3 22 4F 00                       push    offset loc_4F22C3
+
+4F2232 64 FF 30                             push    dword ptr fs:[eax]
+
+4F2235 64 89 20                             mov     fs:[eax], esp
+
+4F2238 6A 32                                push    32h         ;no need to explain...
+
+4F223A 6A 1E                                push    1Eh         ;getting so used to...
+
+4F223C 8B CE                                mov     ecx, esi
+
+4F223E 8B D3                                mov     edx, ebx
+
+4F2240 8B 45 E8                             mov     eax, [ebp+var_18]
+
+4F2243 E8 28 F8 FF FF                       call    sub_4F1A70
+
+4F2248 8B 45 E8                             mov     eax, [ebp+var_18]
+
+4F224B E8 40 0A F4 FF                       call    sub_432C90
+
+4F2250 8B 45 E8                             mov     eax, [ebp+var_18]
+
+4F2253 83 B8 50 01 00 00 01                 cmp     dword ptr [eax+150h], 1
+
+4F225A 75 04                                jnz     short loc_4F2260
+
+4F225C C6 45 FE 01                          mov     [ebp+var_2], 1
+
+
+
+The call to 432C90 at 4F224B is the last call I could get before I see
+
+the nag.  Further more, IDA told me that the procedure at 432C90 has a
+
+lot of calls like "getfocus" - that are only used at the lowest level
+
+before getting a message from the click of a button.  This tempted me
+
+to do:
+
+
+
+**********
+
+*Patch 3:*
+
+**********
+
+change
+
+    4F224B E8 40 0A F4 FF                       call    sub_432C90
+
+to
+
+    4F224B 90                                   nop
+
+    4F224C 90                                   nop
+
+    4F224D 90                                   nop
+
+    4F224E 90                                   nop
+
+    4F224F 90                                   nop
+
+
+
+If some of you are observant enough, you should have seen another
+
+mistake that I've made...
+
+Well, kind of.  I overlooked the lines preceding and proceding the
+
+call.  HS3 didn't start at all.  Take a closer look at these lines:
+
+
+
+4F2248 8B 45 E8                       mov     eax, [ebp+var_18] ; this
+
+4F224B E8 40 0A F4 FF                 call    sub_432C90
+
+4F2250 8B 45 E8                       mov     eax, [ebp+var_18] ; and this
+
+4F2253 83 B8 50 01 00 00 01           cmp     dword ptr [eax+150h], 1
+
+4F225A 75 04                          jnz     short loc_4F2260
+
+
+
+WHY does the code have to move a memory variable into eax both before
+
+and after the call?  The only reason is that THE VALUE AT [ebp+var_18]
+
+MUST HAVE BEEN CHANGED BY THE CALL.  i.e. call by reference.  And the
+
+comparison at 4F2253 refers to [eax+150h] - hinted me that...yes, a
+
+pointer was passed by reference.  And if this [eax+150h] is not 1
+
+after the call, the program will quit (4F2260).  It must be checking
+
+if the nag screen procedure returns "success".  Now what?
+
+
+
+**********
+
+*Patch 4:*
+
+**********
+
+change
+
+    4F225A 75 04                   jnz     short loc_4F2260
+
+to
+
+    4F225A 90                      nop
+
+    4F225B 90                      nop
+
+
+
+And, better protection next time, Allaire !!
+
+
+
+
+
+Optionals (not recommended by the author, just ideas):
+
+======================================================
+
+You can change the "EVALUATION VERSION" on the title bar by changing
+
+the pascal-style string embeded in the executable, and the whole about
+
+screen by resource editing - I'll leave it as an exercise to absolute
+
+newbies.
+
+
+
+ml+am</PRE>
+
+<HR>
+
+<FONT color=green>(c) <FONT color=#5500AA>ml+am</FONT> All rights reversed</FONT>
+
+<HR ALIGN=CENTER WIDTH=100% SIZE=3>
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</I></CENTER>
+
+<BR><CENTER>
+
+<!--
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM 
+
+WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 
+
+HSPACE=0><A HREF="project4.htm" tppabs="http://www.anticrack.de/fravia/project4.htm">Back to Project 4</A> 
+
+           <hr width=33%>
+
+-->
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN=BOTTOM
+
+BORDER=0 VSPACE=0 HSPACE=0 width="13" height="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut CGI-scripts</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering legal?</A></CENTER>
+
+<CENTER><HR ALIGN=CENTER WIDTH=100% SIZE=2></CENTER>
+
+</BODY>
+
+</HTML>

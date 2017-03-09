@@ -1,0 +1,1483 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>ULTRAEDIT 5.00 S/N Generator</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+<CENTER><FONT size="+3">ULTRAEDIT 5.00 S/N Generator</FONT>
+
+<BR>(a very funny dynamic addressing process as copy procedure)
+
+<H2>by <FONT color="#5500AA">Aesculapius</FONT></H2>
+
+<H4>(24 November 1997, slightly edited by fravia+)</H4>
+
+
+
+<HR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">Courtesy of fravia's page 
+
+of reverse engineering<HR>       
+
+<I>Well, Aesculapius is back, and he is pretty crossed... somebody 
+
+has annoyed him. He opens with a &quot;war declaration&quot; against harassing protectionists... Tsch, tsch...<BR>
+
+I like Ultraedit a lot, it's a very good program, and I'm seriously thinking 
+
+to buy it (when my ALLOWED 45 days trial will be finished, of course)... the only thing that 
+
+really annoys me about Uedit is the completely nut &quot;thank-god page&quot; of its 
+
+Author Mead... man, I have never seen something so crazy, you won't believe it 
+
+until you <A href="javascript:if(confirm('http://www.idmcomp.com/  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.idmcomp.com/'" tppabs="http://www.idmcomp.com/">read it</A> :-)<BR>Anyway I like this program a lot, and therefore I have checked 
+
+the situation before releasing this essay (that explains the delay, Aescu) and found out that the target is already 
+
+irremediably compromised: there are at least 
+
+6 different ready made cracks for version 5.0 (this target here explained by Aesculapius 
+
+to-day) all over the web and, as if those were not enough, there are 
+
+hundreds of 'regged' userid/registration 
+
+combinations, the most common one being the ubiquitous userID: &quot;<FONT color="red">lxcore97</FONT>&quot; 
+
+(no, I won't give you the 16-chars registration code as well... how many time d'I have to 
+
+repeat it: LEARN HOW TO REVERSE YOUR TARGETS, don't use ready made code like thiefs and 
+
+lusers... the whole fun is to reverse our targets, to 'earn' them somehow even if we won't use 
+
+them... if you are here in order 
+
+to find some software for free you have chosen a damn complicated way to get 
+
+at it... you better jump over to the 'warez-world', farewell).<BR>
+
+So I checked, and this good program is everywhere to have, regged, for free. I think therefore that 
+
+Aesculapius work, far from damaging him, can actually be USEFUL to Ian Mead... here is the point he 
+
+should take care of:</I></CENTER><PRE>however, the program still has to read the registration file to 
+
+gather its initiation values, so a bpx on readfile should be enough to find 
+
+a fairly close entry point to it
+
+</PRE><I><CENTER>Learn here 
+
+from Aesculapius how this protection scheme works. It's interesting and the keygenerator in asm at the 
+
+bottom can easily be modified for other targets. If you crack Ultraedit register it 
+
+after 45 days, it deserves it (IMHO). Enjoy!
+
+</I><HR size="6"><PRE>
+
+<FONT size="+2">
+
+ULTRAEDIT 5.00 S/N Generator
+
+&quot;What has God brought&quot;
+
+By Aesculapius</FONT>
+
+</CENTER>
+
+	
+
+	Well, I've been retired for a while due to heavy censoring, however 
+
+I think the best way to solve this problem is facing it, striking back. 
+
+All the programs which protection scheme I have only cracked, will be 
+
+extensively explained so even a less than 50 IQ lamer will be able to 
+
+defeat them; if this harassment continues, I'll then apply some virii 
+
+techniques to the cracks which will ruin any protection scheme making it 
+
+totally useless, the apps will be cracked without the user even noticing 
+
+it, and eventually a gorgeous computer virus will be released to strike my 
+
+enemies only; after they and their customers are infected with the virus, 
+
+not even Aesculapius himself, the mighty Greek God of Healing will be able 
+
+to cure them and they will die under the shadow of a new breed of 
+
+biological computer warfare.
+
+
+
+	To successfully complete this essay, you will need: wdsm89, SoftICE 
+
+3.X, any hex editor. The program is located at www.idmcomp.com, named 
+
+uedit32.exe and is less than 1MB long.
+
+
+
+
+
+	This scheme is not as strong as I thought it would be, given the 
+
+fact that UltraEdit's author changes the algorithm with every new version. 
+
+UltraEdit has become a standard for us to write our cracking essays, so it 
+
+should be worthy to unveil the scheme behind it. UltraEdit author learned a 
+
+lot since <A href="ueditcrk.htm" tppabs="http://www.anticrack.de/fravia/ueditcrk.htm">+Rezident and I</A> cracked his baby. In this new version, Windows 
+
+API's use is kept at minimum to avoid possible intrusion via SoftICE 
+
+breakpointing on them. Even the string lengths are calculated trough a 
+
+rather old fashion custom mathematical procedure to avoid the use of any 
+
+API; however, the program still has to read the registration file to 
+
+gather its initiation values, so a bpx on readfile should be enough to find 
+
+a fairly close entry point to it.
+
+
+
+	Once we're in, you'll eventually find this:
+
+
+
+
+
+:0045BE35 56                      push esi 
+
+:0045BE36 8BF1                    mov esi, ecx 
+
+:0045BE38 E8C8FAFFFF              call 0045B905 ; Copy your name to 
+
+						  memory location :0094229C
+
+:0045BE3D 8B06                    mov eax, dword ptr [esi] ; Your name 
+
+						             location 
+
+							     offset in EAX
+
+:0045BE3F 8B542408                mov edx, dword ptr [esp+08] ; 02H in EDX
+
+:0045BE43 8A4C240C                mov cl, byte ptr [esp+0C] ; 09H in CL
+
+:0045BE47 5E                      pop esi 
+
+:0045BE48 880C10                  mov byte ptr [eax+edx], cl ; Move byte 
+
+							       09H to 
+
+							       substitute 
+
+							       the third 
+
+							       letter of
+
+							       your name
+
+:0045BE4B C20800                  ret 0008 ; return
+
+
+
+
+
+	This piece of code prepares the address offset, where EAX points to 
+
+your name, EDX is 02H so EAX+EDX points to the third character in your 
+
+name, finally CL which is equal to 09H is copied over the third character 
+
+of your name. In my case, Aesculapius, the first 's' letter is substituted 
+
+with 09H.
+
+
+
+:00426813 E81D560300              call 0045BE35 ; Return from the previous
+
+						  code	
+
+:00426818 A1E0014A00              mov eax, dword ptr [004A01E0]; Memory
+
+								 offset of
+
+								 your name 
+
+:0042681D 8D4D0C                  lea ecx, dword ptr [ebp+0C]    
+
+:00426820 8A4005                  mov al, byte ptr [eax+05]      Load fifth
+
+								 character
+
+								 of your
+
+								 name in AL
+
+:00426823 0C55                    or al, 55 			 Inclusive 
+
+								 OR of that 
+
+								 character 
+
+:00426825 50                      push eax 
+
+:00426826 6A05                    push 00000005 
+
+:00426828 E808560300              call 0045BE35 ; We'll continue here
+
+
+
+	As you can see, there are two copies of your name at :004A01E0 and 
+
+:0094229C. The last location contains a copy from first one. The copy 
+
+procedure is a very funny dynamic addressing process located somewhat 
+
+before. As you can see, the original offset memory location of your name at 
+
+:004A01E0 is stored in EAX, then at :00426820 the fifth character of your 
+
+name is loaded in AL and then, the code executes an 'Inclusive or' with it. 
+
+Now lets trace inside call at :004268B8;
+
+
+
+
+
+:0045BE35 56                      push esi 
+
+:0045BE36 8BF1                    mov esi, ecx 
+
+:0045BE38 E8C8FAFFFF              call 0045B905               ; Checks some characters
+
+						              ; in your name
+
+:0045BE3D 8B06                    mov eax, dword ptr [esi]    ; Points to your name
+
+:0045BE3F 8B542408                mov edx, dword ptr [esp+08] ; 05H in EDX
+
+:0045BE43 8A4C240C                mov cl, byte ptr [esp+0C]   ; Inclusive 
+
+								OR result
+
+								(see 
+
+								previous
+
+								snippet)
+
+								on CL
+
+:0045BE47 5E                      pop esi 
+
+:0045BE48 880C10                  mov byte ptr [eax+edx], cl ; Substitute
+
+							       fifth 
+
+							       character in
+
+							       your name
+
+							       with the
+
+							       Inclusive OR
+
+							       result
+
+:0045BE4B C20800                  ret 0008
+
+
+
+
+
+	The Inclusive OR calculation of the fifth character in your name is 
+
+stored, then it substitutes the real fifth character in your name.
+
+	Until now this is the result of the previous code: The third 
+
+character in your name has been substituted with byte 09H and the fifth 
+
+character after an Inclusive OR with byte 55H is copied back to its place.
+
+
+
+
+
+	All these mathematical games could be there to ease the task of 
+
+changing the algorithm very often, as in fact happens with this 
+
+application. 
+
+
+
+
+
+:0040B645 6A3C                    push 0000003C; push 60 bytes in stack
+
+
+
+:0040B647 8D45C0                  lea eax, dword ptr [ebp-40] ; Points to
+
+								the memory
+
+								location
+
+								where the
+
+								valid code
+
+								will be
+
+								stored
+
+* Possible Reference to String Resource ID=00046: &quot;Line: &quot; 
+
+| 
+
+:0040B64A 6A2E                    push 0000002E ; Store 2E into the stack
+
+:0040B64C 50                      push eax      ; Push valid code offset into
+
+					        ; the stack
+
+:0040B64D E85E8A0300              call 004440B0 ; Lets trace inside this
+
+						  CALL
+
+
+
+	The memory location where the valid code will be calculated is 
+
+stored in EAX and then pushed to the stack. Byte 2EH '.' is also pushed.
+
+Lets now trace inside call at :0040B64D;
+
+
+
+
+
+:004440B0 8B54240C                mov edx, dword ptr [esp+0C]; Load hex
+
+							       value 3CH 
+
+							       equal to 60 
+
+							       dec. from 
+
+							       the stack
+
+							          
+
+:004440B4 8B4C2404                mov ecx, dword ptr [esp+04]; Load offset
+
+							       of valid
+
+							       code memory
+
+							       location in
+
+							       ECX
+
+:004440B8 85D2                    test edx, edx
+
+:004440BA 7447                    je 00444103
+
+:004440BC 33C0                    xor eax, eax
+
+:004440BE 8A442408                mov al, byte ptr [esp+08]; load Hex value
+
+							     2C equal to
+
+							     '.' decimal
+
+:004440C2 57                      push edi
+
+:004440C3 8BF9                    mov edi, ecx ; Load offset of valid code
+
+						 memory location to EDI
+
+:004440C5 83FA04                  cmp edx, 4
+
+:004440C8 722D                    jb 004440F7
+
+:004440CA F7D9                    neg ecx
+
+:004440CC 83E103                  and ecx, 3
+
+:004440CF 7408                    je 004440D9
+
+:004440D1 2BD1                    sub edx, ecx
+
+
+
+* Referenced by a Jump at Address:004440D7(C)
+
+|
+
+:004440D3 8807                    mov byte ptr [edi], al; Move 2EH to first
+
+							  byte of valid
+
+							  code memory
+
+						          location
+
+:004440D5 47                      inc edi		  next byte
+
+:004440D6 49                      dec ecx		  decrease counter
+
+							  from 3CH==60 
+
+							  bytes
+
+:004440D7 75FA                    jne 004440D3		  Repeat cycle
+
+							  until ECX==0
+
+
+
+	Well, what happens now: the memory location where the final valid 
+
+code will be calculated is filled with 60 bytes containing Hexadecimal 
+
+value 2EH which is a dot '.' in decimal. Why? How the hell would I know? 
+
+I'm a cracker not a magician! However I think this could be some sort of 
+
+future expansion configuration. We later see that the valid code is only 
+
+16 characters long (10H) but the code memory location is prepared with 60 
+
+characters (3CH) instead. Probably the programmer thought to leave some 
+
+additional space, so it is possible that in the future, Ultraedit valid 
+
+code will be 18 or even 20 characters long, who knows.
+
+
+
+
+
+:0040B655 8D45C0                  lea eax, dword ptr [ebp-40]; Loads the
+
+							       valid code
+
+							       memory
+
+							       offset
+
+:0040B658 56                      push esi
+
+:0040B659 57                      push edi
+
+:0040B65A 50                      push eax
+
+:0040B65B E860860300              call 00443CC0		       Moves 
+
+							       modified
+
+							       name to
+
+						               the valid
+
+							       code memory
+
+							       location
+
+:0040B660 83C40C                  add esp, 0000000C
+
+:0040B663 32C0                    xor al, al ; Erase AL
+
+:0040B665 33C9                    xor ecx, ecx; Erase ECX
+
+:0040B667 3BF3                    cmp esi, ebx; Load your name lenght in ESI
+
+:0040B669 885C35C0                mov byte ptr [ebp+esi-40], bl; Terminates
+
+								 your name
+
+								 with 00H
+
+:0040B66D 7E09                    jle 0040B678
+
+
+
+* Referenced by a Jump at Address:0040B676(C)
+
+|
+
+:0040B66F 02440DC0                add al, byte ptr [ebp+ecx-40]; Add Hex
+
+								 value of 
+
+								 first
+
+								 byte of
+
+								 your name
+
+								 to AL
+
+:0040B673 41                      inc ecx			 Increase
+
+								 counter
+
+:0040B674 3BCE                    cmp ecx, esi; All characters in your
+
+						name added? No repeat
+
+						cycle, otherwise go on
+
+:0040B676 7CF7                    jl 0040B66F
+
+
+
+
+
+	This is very simple. All Hex values of every character in your 
+
+modified name (the name with the 09H in the third position and the 
+
+Inclusive OR of the fifth character in fifth position) are added and the 
+
+result is stored in AL. This is a checksum procedure.
+
+
+
+* Referenced by a Jump at Address:0040B66D(C)
+
+|
+
+:0040B678 884508                  mov byte ptr [ebp+08], al; Addition 
+
+							     Result
+
+							     stored in 
+
+							     EBP+08H
+
+:0040B67B 33F6                    xor esi, esi ; Erase ESI
+
+:0040B67D F65508                  not [ebp+08] ; Executes complement 
+
+						 negation of your name's
+
+						 checksum
+
+* Referenced by a Jump at Address:0040B6D6(C)
+
+|
+
+:0040B680 8BC6                    mov eax, esi
+
+* Possible Reference to String Resource ID=00004: &quot;*.MAC&quot;
+
+
+
+	This segment calculates the offset of the magic numbers block 
+
+location using a funny dynamic addressing system:
+
+
+
+                                  |
+
+:0040B682 6A04                    push 00000004
+
+:0040B684 99                      cdq
+
+:0040B685 5F                      pop edi
+
+:0040B686 8D4C35C0                lea ecx, dword ptr [ebp+esi-40]; 
+
+				  ; Offset of valid code memory location
+
+				    in ECX
+
+:0040B68A F7FF                    idiv edi
+
+:0040B68C 8BC6                    mov eax, esi
+
+
+
+* Possible Reference to String Resource ID=00016: &quot;All Files, (*.*)&quot;
+
+                                  |
+
+:0040B68E 6A10                    push 00000010
+
+:0040B690 5B                      pop ebx
+
+:0040B691 8BFA                    mov edi, edx
+
+:0040B693 99                      cdq
+
+:0040B694 F7FB                    idiv ebx
+
+:0040B696 8BC2                    mov eax, edx
+
+:0040B698 99                      cdq
+
+:0040B699 2BC2                    sub eax, edx
+
+:0040B69B 8B14BDE08B4900          mov edx, dword ptr [4*edi+00498BE0]
+
+			          ; First byte of magic block in EDX
+
+
+
+:0040B6A2 D1F8                    sar eax, 1
+
+:0040B6A4 8A0402                  mov al, byte ptr [edx+eax]; Load first
+
+							      byte of magic
+
+							      block in AL
+
+:0040B6A7 324508                  xor al, byte ptr [ebp+08]; XOR magic byte
+
+							     with 
+
+							     complement NOT
+
+							     of your 
+
+							     modified name
+
+							     result in AL
+
+:0040B6AA FEC0                    inc al		  ; Increase result
+
+							    in one
+
+:0040B6AC 3001                    xor byte ptr [ecx], al; XOR result with
+
+							  first byte of
+
+							  your modified
+
+							  name, result
+
+							  is stored
+
+							  directly in
+
+							  valid code memory
+
+							  location
+
+:0040B6AE 8A09                    mov cl, byte ptr [ecx]; Load first byte
+
+							  of valid code in
+
+							  CL
+
+:0040B6B0 0FB6C1                  movzx eax, cl; Load it in EAX
+
+:0040B6B3 83FE08                  cmp esi, 00000008; If we reach eight
+
+						     character of the
+
+						     valid code then jump
+
+						     at :0040B6B7
+
+:0040B6B6 99                      cdq
+
+:0040B6B7 7D0A                    jge 0040B6C3
+
+
+
+* Possible Reference to String Resource ID=00026: &quot;Run Windows Program&quot;
+
+                                  |
+
+:0040B6B9 6A1A                    push 0000001A ; Push value 1AH into the
+
+						  stack
+
+:0040B6BB 59                      pop ecx	; Pop it in ECX  
+
+:0040B6BC F7F9                    idiv ecx	; Signed divide it with 
+
+						  EAX and remainder in DL
+
+:0040B6BE 80C241                  add dl, 41    ; Add 41H to remainder
+
+
+
+:0040B6C1 EB08                    jmp 0040B6CB  ; Jump ahead
+
+
+
+* Referenced by a Jump at Address:0040B6B7(C)
+
+|
+
+
+
+* Possible Reference to String Resource ID=00010: &quot;Thank you for supporting Shareware.&quot;
+
+                                  |
+
+:0040B6C3 6A0A                    push 0000000A; If ESI was 8 or greater
+
+						 then code continues here
+
+						 from :0040B6B7; Push 0A
+
+						 into the stack
+
+:0040B6C5 59                      pop ecx      ; Pop it in ECX
+
+:0040B6C6 F7F9                    idiv ecx     ; Signed divide ECX with
+
+						 EAX; remainder in DL
+
+:0040B6C8 80C230                  add dl, 30   ; Add 30H to remainder
+
+
+
+* Referenced by a Jump at Address:0040B6C1(U)
+
+|
+
+	This piece of code follows two possible paths; from character 1 to 
+
+8 of the valid code, all result characters are letters and from 9 
+
+to 16, all characters are numbers. There are two XORing processes, the 
+
+first between a magic number and the Complement NOT of the checksum from 
+
+your modified name and the second one between the result from the first and 
+
+one byte of your modified name. Finally the two paths will assure that the 
+
+first eight characters of the valid code are letters and the last ones 
+
+numbers.
+
+On very important fact is that the result from all the calculations is 
+
+directly stored in the valid code memory location. Unfortunately, as you 
+
+will notice, the first eight letters of the code are unprintable ASCII 
+
+characters, so the author created a second valid code, which is stored in 
+
+the next lines:
+
+
+
+
+
+:0040B6CB 88943540FFFFFF          mov byte ptr [ebp+esi-000000C0], dl
+
+				  ; Store second valid code in ebp+esi-C0
+
+:0040B6D2 46                      inc esi; Increase counter
+
+:0040B6D3 83FE3C                  cmp esi, 0000003C ; Process 60 bytes
+
+:0040B6D6 7CA8                    jl 0040B680 ; repeat cycle
+
+
+
+	Now the following code fixes the final validation code:   
+
+
+
+:0040B6D8 33DB                    xor ebx, ebx
+
+:0040B6DA 33D2                    xor edx, edx
+
+
+
+* Referenced by a Jump at Address:0040B732(C)
+
+|
+
+:0040B6DC 8A4C15C0                mov cl, byte ptr [ebp+edx-40]
+
+				  ; Load first byte of first valid code
+
+				    in CL
+
+:0040B6E0 8D4415C0                lea eax, dword ptr [ebp+edx-40]
+
+				  ; Load offset of first valid code
+
+:0040B6E4 80F980                  cmp cl, 80; Compare first byte with 80H
+
+:0040B6E7 7205                    jb 0040B6EE; Jump if below
+
+:0040B6E9 80C180                  add cl, 80 ; otherwise add 80H
+
+:0040B6EC 8808                    mov byte ptr [eax], cl; Store it back
+
+
+
+* Referenced by a Jump at Address:0040B6E7(C)
+
+|
+
+:0040B6EE 8A08                    mov cl, byte ptr [eax]; Move first
+
+							  corrected byte to
+
+							  CL 							  
+
+:0040B6F0 80F97F                  cmp cl, 7F; Compare it with 7FH
+
+:0040B6F3 7C05                    jl 0040B6FA; Jump if less
+
+:0040B6F5 80E97F                  sub cl, 7F ; otherwise subtract 7FH
+
+:0040B6F8 8808                    mov byte ptr [eax], cl; Store it back
+
+
+
+* Referenced by a Jump at Address:0040B6F3(C)
+
+|
+
+:0040B6FA 8A08                    mov cl, byte ptr [eax]; Move corrected 
+
+							  first byte to CL							  
+
+:0040B6FC 80F921                  cmp cl, 21; Compare it with 21H
+
+:0040B6FF 7F05                    jg 0040B706; if greater jump
+
+:0040B701 80C121                  add cl, 21 ; Add 21H otherwise
+
+:0040B704 8808                    mov byte ptr [eax], cl; Store it back
+
+
+
+* Referenced by a Jump at Address:0040B6FF(C)
+
+|
+
+:0040B706 803822                  cmp byte ptr [eax], 22; Compare first
+
+							  Corrected byte
+
+							  with 22H
+
+:0040B709 7503                    jne 0040B70E ; if not equal jump
+
+:0040B70B C60023                  mov byte ptr [eax], 23; otherwise
+
+							  substitute it
+
+							  with 23H
+
+* Referenced by a Jump at Address:0040B709(C) | 
+
+:0040B70E 803827                  cmp byte ptr [eax], 27; Compare first 
+
+                                                          Corrected byte 
+
+							  with 27H 
+
+:0040B711 7503                    jne 0040B716 
+
+:0040B713 C60028                  mov byte ptr [eax], 28; substitute it
+
+							  with 28H
+
+
+
+* Referenced by a Jump at Address:0040B711(C)
+
+|
+
+:0040B716 80382E                  cmp byte ptr [eax], 2E ; Compare first
+
+							   corrected
+
+							   byte with 2EH
+
+:0040B719 7503                    jne 0040B71E
+
+:0040B71B C6002F                  mov byte ptr [eax], 2F; If equal 
+
+							  substitute it 
+
+							  with 2FH
+
+* Referenced by a Jump at Address:0040B719(C)
+
+|
+
+:0040B71E 803860                  cmp byte ptr [eax], 60; Compare it with 60H
+
+:0040B721 7503                    jne 0040B726
+
+:0040B723 C60061                  mov byte ptr [eax], 61; If equal
+
+							  substitute it
+
+							  with 61H
+
+
+
+* Referenced by a Jump at Address:0040B721(C)
+
+|
+
+:0040B726 80387C                  cmp byte ptr [eax], 7C; Compare it with
+
+							  7CH							
+
+:0040B729 7503                    jne 0040B72E
+
+:0040B72B C6006C                  mov byte ptr [eax], 6C; If equal
+
+							  substitute it
+
+							  with 6C
+
+
+
+* Referenced by a Jump at Address:0040B729(C) 
+
+| 
+
+:0040B72E 42                      inc edx; Increase counter-pointer 
+
+:0040B72F 83FA3C                  cmp edx, 0000003C ; repeat cycle for
+
+						      all bytes until 3CH
+
+						      or 60 bytes are
+
+						      reached
+
+:0040B732 7CA8                    jl 0040B6DC ; Repeat cycle
+
+
+
+
+
+As the first 8 characters of the first valid code are filled with loads of 
+
+unreadable characters, the following lines substitute bytes: 22H, 27H, 2EH, 
+
+60H AND 7CH with 23H, 28H, 2FH, 61H and 6CH. It also carries out some 
+
+additional corrections to every single byte in the code.
+
+
+
+	Well, as Samuel Morse said: <FONT color="blue">What has God brought!</FONT>
+
+
+
+	There are two valid codes; the first one is partially calculated 
+
+and stored in [EBP-40]; then a second valid code derivates from the first 
+
+and is stored in [EBP-C0]; the code you typed is stored in [ebp-80];
+
+finally, the first valid code is corrected to substitute the unreadable 
+
+ASCII characters. As the second code is not corrected and perfectly 
+
+readable in the first place, we will use it in the S/N Generator along with 
+
+the partially calculated first code. The final first valid code wont be 
+
+calculated in this essay, bacause although is easy to do it, since we 
+
+clearly understood all the process, it is not neccessary to do it. 
+
+Remember, always do what you got to do, nothing more, nothing less (who 
+
+said this?).
+
+
+
+	The S/N generator is finally coded:</PRE><XMP>
+
+;*************************************************************** 
+
+;*              UltraEdit v. 5.00 S/N Generator                * 
+
+;*                   Coded by Aesculapius                      * 
+
+;*   Instructions: Compile this file as an .COM executable     * 
+
+;*               with TASM 4.1 and Tlink 7.1                   * 
+
+;*             File name should be: UEDT5KEY.COM               * 
+
+;*                                                             * 
+
+;*                                                             * 
+
+;***************************************************************
+
+
+
+.MODEL SMALL
+
+.CODE
+
+ORG     100H
+
+START:  JMP BEGIN
+
+
+
+CODE1        DB 60 DUP (2EH); Prepare first code location with 2EH byte
+
+			    ; in all locations
+
+
+
+CODE2        DB 60 DUP (2EH); Prepare second code location with 2EH
+
+
+
+MAGIC1       DB 1  DUP (' '); Prepare location to store Complement NOT
+
+			    ; of your name's checksum
+
+
+
+; These block of magic numbers were ripped with softICE
+
+
+
+MAGIC2       DB 6EH,35H,0F7H,74H,0DEH,6FH,32H,85H,0FFH,36H,0A8H,59H,0DEH,0DEH,79H,88H
+
+             DB 6EH,35H,0F7H,74H,0DEH,6FH,32H,85H,0FFH,36H,0A8H,59H,0DEH,0DEH,79H,88H
+
+
+
+
+
+FINAL_CODE1  DB 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,'$' ; Final partially
+
+						      ; calculated first
+
+						      ; code storage
+
+
+
+LENGHT       DB 00H ; Name lenght storage
+
+
+
+CR           EQU 0AH ; Carriage return definition
+
+
+
+LF           EQU 0DH ; Line Feed definition
+
+
+
+BEEP         EQU 07H ; Internal speaker definition
+
+
+
+; Presentation and Ask for name message
+
+
+
+GETNAME      DB CR,LF,'UltraEdit v. 5.00 S/N Generator'
+
+             DB CR,LF,'Coded by Aesculapius - November 1997'
+
+             DB CR,LF,'Home Page: aesculapius.home.ml.org'      
+
+             DB CR,LF,'Email Box: aesculapius@cryogen.com',CR,LF
+
+             DB CR,LF,'Please, Type Your First and Last Name (6-21 Char): '
+
+             DB '$'
+
+
+
+; Second final validation code will be presented with final message
+
+
+
+FINALMESS    DB CR,LF
+
+             DB CR,LF,'Authorization Code successfully calculated!',BEEP
+
+             DB CR,LF,CR,LF,'Authorization Code: '
+
+FINAL_CODE2  DB 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,CR,LF,CR,LF,'$'
+
+
+
+; User name storage location - no more than 21 characters long name allowed
+
+
+
+NAMESTOR     DB 15H,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+
+
+
+
+
+GET_NAME        PROC    NEAR
+
+
+
+        MOV     AH, 09H
+
+        MOV     DX, OFFSET GETNAME
+
+        INT     21H                  ; Ask for user's name
+
+
+
+        MOV     AH, 0AH
+
+        MOV     DX, OFFSET NAMESTOR
+
+        INT     21H                  ; Store it in NAMESTOR location
+
+
+
+        MOV     SI, OFFSET NAMESTOR+02H; Load name lenght in SI
+
+        MOV     DI, OFFSET CODE1       ; First code offset in DI
+
+        XOR     CX, CX
+
+        MOV     CL, [SI-1]             ; Name lenght in CL
+
+        MOV     BX, OFFSET LENGHT 
+
+        MOV     BYTE PTR [BX], CL      ; Store name lenght in LENGHT 
+
+				       ; location
+
+        REP     MOVSB                  ; Move name from NAMESTOR to CODE1
+
+        XOR     CX, CX                 ; Terminate it with 00H
+
+        MOV     [DI], CL               ; Store 00H
+
+
+
+
+
+
+
+        RET
+
+
+
+GET_NAME ENDP
+
+
+
+CODE_GEN        PROC    NEAR ; Calculate valid code
+
+
+
+        XOR     AX, AX                 ; Erase AX, BX, CX
+
+        XOR     BX, BX
+
+        XOR     CX, CX
+
+        MOV     SI, OFFSET CODE1       ; Offset of first valid code in SI
+
+        MOV     BYTE PTR [SI+02H], 09H ; Substitute first character 
+
+				       ; of user's name with 09H
+
+        OR      BYTE PTR [SI+05H], 55H ; Inclusive OR of fifth character
+
+				       ; with 55H
+
+        MOV     DI, OFFSET LENGHT      ; Load name lenght in DI
+
+        MOV     CL, BYTE PTR [DI]      ; Load lenght in CL
+
+AGAIN1: ADD     AL, BYTE PTR [SI]      ; Add all characters of modified
+
+				       ; name to AL
+
+        INC     SI                     ; Increase pointer
+
+        INC     BX                     ; Increase counter
+
+        CMP     CX, BX                 ; Compare counter with name lenght
+
+				       ; if checksum is not finished
+
+				       ; then repeat cycle
+
+        JNZ AGAIN1                     ; otherwise go ahead
+
+        NOT     AL                     ; Complement NOT of
+
+        MOV     DI, OFFSET MAGIC1      ; Offset of magic1 storage location
+
+				       ; in DI
+
+        MOV     BYTE PTR [DI], AL      ; Store Complement NOT of modified
+
+				       ; name checksum in MAGIC1
+
+        XOR     CX, CX                 ; Erase CX and BX
+
+        XOR     BX, BX
+
+
+
+AGAIN2: MOV     DI, OFFSET CODE1       ; Offset of first valid code in DI
+
+        MOV     SI, OFFSET MAGIC2      ;Offset of magic numbers block in SI
+
+        MOV     AL, BYTE PTR [SI+BX]   ; Move first byte of magic block
+
+				       ; to AL
+
+        MOV     SI, OFFSET MAGIC1      ; Complement NOT checksum result in
+
+				       ; SI
+
+        MOV     AH, BYTE PTR [SI]      ; First byte of magic block in AH
+
+        XOR     AL, AH                 ; Xor AH with AL; result in AL
+
+        INC     AL                     ; Increase AL in one
+
+        XOR     AL, BYTE PTR [DI+BX]   ; XOR result with first byte of
+
+				       ; first valid code; result in AL 
+
+        MOV     DI, OFFSET CODE1       ; Store result in first valid code
+
+				       ; memory location
+
+        MOV     BYTE PTR [DI+BX], AL   ; Store it
+
+        XOR     AX, AX                 ; Erase AX and DX
+
+        XOR     DX, DX
+
+        MOV     AL, BYTE PTR [DI+BX]   ; Load first byte of already
+
+				       ; partially calculated first
+
+				       ; valid code
+
+        CMP     BX, 08H                ; Eight digits already?
+
+        JAE     NUMBER                 ; No then continue, otherwise JUMP
+
+        MOV     CL, 1AH                ; Load 1AH in CL
+
+        IDIV    CX                     ; Integer divide with AL
+
+        ADD     DL, 41H                ; Remainder in DL+41H
+
+        JMP     LETTER                 ; JUMP
+
+NUMBER: MOV     CL, 0AH                ; If eight digit reached execute
+
+				       ; this code. Load 0AH in CL
+
+        IDIV    CX                     ; Integer divide CL with AL
+
+        ADD     DL, 30H                ; Remainder in DL+30H
+
+
+
+LETTER: MOV     DI, OFFSET CODE2       ; Load offset of second valid
+
+				       ; code
+
+
+
+        MOV     BYTE PTR [DI+BX], DL   ; Store remainder in it
+
+        INC     BX                     ; Increase counter
+
+        CMP     BX, 003CH              ; 60 bytes reached?
+
+        JNZ     AGAIN2                 ; No? then repeat cycle for
+
+				       ; the rest of both codes
+
+
+
+        XOR     CX, CX                 ; Erase CX
+
+        MOV     CX, 0010H              ; Load 16 bytes in CL
+
+        MOV     SI, OFFSET CODE1       ; Points to CODE1 offset
+
+        MOV     DI, OFFSET FINAL_CODE1 ; Points to partially calculated
+
+				       ; first valid code
+
+        REP     MOVSB                  ; Store it in FINAL_CODE1
+
+        MOV     CX, 0010H              ; Do the same with second valid code
+
+        MOV     SI, OFFSET CODE2
+
+        MOV     DI, OFFSET FINAL_CODE2 ; Store final second valid code
+
+        REP     MOVSB
+
+
+
+
+
+        RET
+
+
+
+CODE_GEN        ENDP
+
+
+
+
+
+BEGIN           PROC    NEAR
+
+
+
+        CALL    GET_NAME
+
+        CALL    CODE_GEN
+
+
+
+        MOV     AH, 09H
+
+        MOV     DX, OFFSET FINALMESS
+
+        INT     21H                    ; Present final message and second
+
+				       ; valid code
+
+
+
+EXIT:   MOV     AX, 4C00H
+
+        INT     21H                    ; Terminate program
+
+
+
+BEGIN           ENDP        
+
+
+
+        END     START</XMP><PRE>
+
+	In the S/N generator, 60 bytes of code are also calculated, even 
+
+when only 16 bytes are used; off course, I'm thinking in the future too, 
+
+he, he..
+
+	
+
+	Well, that's it; as always if you have any doubt, write me, I'm 
+
+willing to help you understand...
+
+
+
+
+
+					Aesculapius - November 97
+
+					Email Box: <A href="Mailto:aesculapius@cryogen.com">aesculapius@cryogen.com</A>
+
+					Home Page: <A href="javascript:if(confirm('http://aesculapius.home.ml.org/  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://aesculapius.home.ml.org/'" tppabs="http://aesculapius.home.ml.org/">aesculapius.home.ml.org</A></PRE>
+
+<FONT color="green">(c) <FONT color="#5500AA">Aesculapius</FONT> All rights reversed</FONT>
+
+<HR ALIGN="CENTER" WIDTH="100%" SIZE="3">
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</I></CENTER>
+
+<BR><CENTER>
+
+<!--<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A HREF="protecti.htm" tppabs="http://www.anticrack.de/fravia/protecti.htm">Our Protections</A>            <hr width=33%>-->
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut CGI-scripts</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering legal?</A></CENTER>
+
+<CENTER><HR ALIGN="CENTER" WIDTH="100%" SIZE="2"></CENTER>
+
+</BODY>
+
+</HTML>

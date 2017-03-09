@@ -1,0 +1,437 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>kovi1</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+<CENTER><H2>How to crack w32dasm version 8<BR>
+
+(wdasm cracking... an &quot;add on&quot;)</H2><H4><I>by Kovi</I></H4>
+
+<BR>
+
+<BR>with a small addition by Frog's print)<BR>
+
+<HR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">Courtesy of Fravia's page of reverse engineering</CENTER>
+
+<HR size="2">
+
+<PRE>
+
+
+
+Welcome W32dasm ver. 8.0 users!
+
+   As you will easily constate, after disassembling w32dsm80.exe using
+
+W32dasm, :-) there is no sign of  a &quot;winsys&quot; string inside the new version
+
+of the program, but a new function is imported from the Kernel32 module,
+
+namely GetTempPathA. Searching for this function inside the listing,
+
+you should find this interesting snippet of code:
+
+
+
+* Reference To: KERNEL32.GetTempPathA, Ord:0000h
+
+                                  |
+
+:00464EA9 E810940100              Call 0047E2BE
+
+:00464EAE 8D8DD8FEFFFF            lea ecx, [ebp+FFFFFED8]
+
+:00464EB4 51                      push ecx
+
+:00464EB5 6804010000              push 00000104
+
+* Reference To: KERNEL32.GetTempPathA, Ord:0000h
+
+                                  |
+
+:00464EBA E8FF930100              Call 0047E2BE
+
+:00464EBF 0FBE9405D7FEFFFF        movsx byte ptr edx, [ebp + eax - 00000129]
+
+:00464EC7 83FA5C                  cmp edx, 0000005C
+
+:00464ECA 7508                    jne 00464ED4
+
+:00464ECC C68405D7FEFFFF00        mov byte ptr [ebp + eax - 00000129], 00
+
+* Referenced by a Jump at Address:00464ECA(C)
+
+|
+
+:00464ED4 8BC6                    mov eax, esi
+
+:00464ED6 46                      inc esi
+
+:00464ED7 50                      push eax
+
+
+
+* Possible StringData Ref from Data Obj -&gt;&quot;\w32dsm%02d.tmp&quot;
+
+                                  |       ^^^^^^^^^^^^^^^^
+
+:00464ED8 6838584900              push 00495838
+
+
+
+This is our new baby, a &quot;hidden&quot; file that is created inside 
+
+your &quot;temp&quot; directory. As we could expect, this file is created
+
+(parameter passing *IS VERY IMPORTANT*:-) with the following
+
+parameters:
+
+
+
+:00464F0C 6A00                    push 00000000 ;non shared,
+
+:00464F0E 6802010000              push 00000102 ;hidden &amp; temporary
+
+:00464F13 6A02                    push 00000002 ;and is &quot;created
+
+                                                ;always, which means that
+
+                                                ;if such a file exists in
+
+                                                ; your temp dir, it will be
+
+                                                ;overwritten each time! So
+
+                                                ;better move it somewhere
+
+                                                ;or rename...
+
+To make life easier lets change 6802010000 
+
+:00464F0E 6802010000              push 00000102 ;hidden &amp; temporary
+
+to 6880000000
+
+:00464F0E 6880000000              push 00000008 
+
+ and our favorite
+
+file will not be hidden any more. It's also worth doing a search for
+
+&quot;\w32dsm%02d.tmp&quot; 
+
+string inside the w32dsm80.exe, in order to change it to
+
+&quot;\w32dsm%02d.txt&quot;
+
+
+
+:00464F15 8D93604D4900            lea edx, [ebx+00494D60]
+
+:00464F1B 52                      push edx
+
+:00464F1C 6A00                    push 00000000
+
+:00464F1E 68000000C0              push C0000000
+
+:00464F23 8D8BE0504900            lea ecx, [ebx+004950E0]
+
+:00464F29 51                      push ecx
+
+
+
+* Reference To: KERNEL32.CreateFileA, Ord:0000h
+
+                                  |
+
+:00464F2A E8E7920100              Call 0047E216
+
+
+
+How can we prevent the deletion of this file? One will obviously 
+
+and istintively perform a first search for the DeleteFileA function,
+
+but this function occurs many times in the code, and probably (?)
+
+is used for deleting also other files which do not mean anything
+
+for us. 
+
+Therefore we need to understand from which location, inside the target,
+
+DeleteFileA is called when the file that interests us is about to be 
+
+deleted. Perhaps some other +ORC students would use the &quot;zen method&quot; 
+
+for this, but since I am not an +ORC student myself, let's use good 
+
+old Winice. 
+
+Just bpx DeleteFileA... after closing W32dasm you will land smack
+
+inside Kernel32!DeleteFileA.
+
+Then trace back (hint: F12 is a very useful key indeed thank to the 
+
+winice default settings :-) until you will get back inside the W32dasm 
+
+code again. If everything went OK, you should land here:
+
+                                                            |
+
+:0045C47A E8EA56FEFF              call 00441B69             |
+
+:0045C47F 83C408                  add esp, 00000008  *------|
+
+:0045C482 58                      pop eax
+
+:0045C483 8B953087ABFF            mov edx, [ebp+FFAB8730]
+
+:0045C489 64891500000000          mov fs:[00000000], edx
+
+:0045C490 EB42                    jmp 0045C4D4
+
+:0045C492 66C7854087ABFF0800      mov word ptr [ebp+FFAB8740], 0008
+
+
+
+Call 00441B69 is the one call we should disable. I've changed it into
+
+424A90424A... which correspond to the &quot;nooping&quot; sequence
+
+                 inc edx,dec edx, nop, inc edx, dec edx 
+
+(OK, I'll admit it, I'm an +ORC student too, at least to certain extents :-)
+
+	OK, so now we can fight the operations counter. The approach used 
+
+in order to crack the older versions of W32dasm will lead us nowhere. 
+
+Of course &quot;dec dword ptr ...&quot; occurs many times in the code, but 
+
+the correct &quot;move dword ptr...&quot; cannot be found anywhere... probably 
+
+because Mr. Urbanek did read himself the cracking instructions
+
+kindly provided on the web and changed the counter a little, just
+
+enough to make those cracking instructions obsolete.
+
+But that's the way it should be :-)
+
+As you probably will notice, dec dword ptr [ebx+00544C36] is one of the
+
+more frequently used instructions. The code near it should look similar 
+
+to the following snippet:
+
+
+
+:00442E23 8B93364C5400            mov edx, [ebx+00544C36]
+
+:00442E29 8993A1585400            mov [ebx+005458A1], edx
+
+
+
+If you search the listing for [ebx+005458A1], you will find that
+
+this location is initialized with a 17Ch value. And then you should find 
+
+this snippet inside the code of our target:
+
+
+
+:004446B7 55                      push ebp
+
+:004446B8 8BEC                    mov ebp, esp
+
+:004446BA 53                      push ebx
+
+:004446BB 56                      push esi
+
+:004446BC 8B750C                  mov esi, [ebp+0C]
+
+:004446BF 8B5D08                  mov ebx, [ebp+08]
+
+:004446C2 8B83A1585400            mov eax, [ebx+005458A1];load counter to eax
+
+:004446C8 05E9020000              add eax, 000002E9      ;add 2E9h
+
+:004446CD 3D01040000              cmp eax, 00000401      ;is it below 401h?
+
+:004446D2 7314                    jnb 004446E8           ;no,let him work
+
+:004446D4 8B93B1E20100            mov edx, [ebx+0001E2B1];yes, check demo_flag
+
+:004446DA 85D2                    test edx, edx
+
+:004446DC 740A                    je 004446E8 ;if flag is clear then OK,
+
+                                              ;let him work
+
+:004446DE C78341E4010001000000    mov dword ptr [ebx+0001E441], 1
+
+                                              ;no, flag is set, so
+
+                                              ; set &quot;too many operations&quot; flag
+
+
+
+&quot;Too many operations&quot; flag stored in [ebx+0001E441] is then used here:
+
+
+
+:0044485C 8B750C                  mov esi, [ebp+0C]
+
+:0044485F 8B5D08                  mov ebx, [ebp+08]
+
+:00444862 8B8341E40100            mov eax, [ebx+0001E441];load &quot;too many
+
+                                                         ;operations&quot; flag
+
+:00444868 85C0                    test eax, eax          ;
+
+:0044486A 0F848E000000            je 004448FE            ;if its clear - let
+
+                                                         ;him work
+
+:00444870 6AFF                    push FFFFFFFF          ;if its on, display
+
+                                                         ;message and go to
+
+                                                         ;hell.
+
+* Reference To: USER32.MessageBeep, Ord:0000h
+
+                                  |
+
+:00444872 E8019B0300              Call 0047E378
+
+
+
+
+
+As you probably discovered, the demo version of W32dasm8 limits us to
+
+as little as (17Ch + 2E9h)-401h=64h (100) operations per session. That's
+
+enough for me :-) but for some of you it might be not enough. The easiest
+
+solution is, I believe, to change the flag at :004446DE, but you can crack 
+
+that scheme in many other ways.
+
+Bye for now,
+
+                                                     -kovi
+
+PS. Sorry for my bad English :-(
+
+</PRE>
+
+<HR size="2"><I><CENTER><H3><B>
+
+And here a small addition by Frog's print, 7 May 1997
+
+<HR size="2"></I></CENTER></H3></B>
+
+<PRE>
+
+As a W32DasmXX specialist (just kidding!) here is my &quot;work&quot;:
+
+
+
+First of all, the counter:
+
+We can easily find the right &quot;dec dword ptr&quot; which is:
+
+ dec dword ptr [ebx + 00544C36]
+
+BUT, as usual, **THERE IS** a &quot;mov dword ptr [ebx + 00544C36]...&quot; 
+
+which is located at offset 0044111D:
+
+
+
+:0044111D  C783364C540054010000      mov dword ptr [ebx+00544C36], 154
+
+
+
+So the counter is set to 154 Hex (340 Dec) when you start W32Dasm8.
+
+
+
+Then, the counter allows you up to **60** (not 100) operations before 
+
+you get the &quot;The Demo limits the number of operations for one session&quot; message.
+
+That's pretty easy to see:
+
+1/ If you're too lazy to disassemble W32Dasm8 just run it, load any file 
+
+and then press 60 times the &quot;Goto Code start&quot; button and you'll get fucked up 
+
+if you press it just one more time.
+
+
+
+2/ But if you're not that much lazy just have a look at the following 
+
+pieces of code (these are just few of them) following some of the 
+
+&quot;dec dword ptr [ebx + 00544C36]&quot; occurences. I added comments on the 
+
+right part of them and I will assume that we still haven't press any keys 
+
+so that we still have our 60 &quot;credits&quot;:
+
+
+
+
+
+:00442B8F  8B83364C5400   mov eax, [ebx+00544C36]  ; EAX:= 154
+
+:00442B95  83E82D         sub eax, 0000002D        ; 154-2D:=127
+
+:00442B98  3DEB000000     cmp eax, 000000EB        ; 127-EB:=3C <=here! :00442B9B 730C jnb 00442BAB ... :00442E4D 8B83364C5400 mov eax, [ebx+00544C36] ; EAX:="154" :00442E53 83C017 add eax, 00000017 ; 154+17:="16B" :00442E56 3D2F010000 cmp eax, 0000012F ; 16B-12F:="3C" <="HERE!" :00442E5B 730C jnb 00442E69 ... :0044344E 8B83364C5400 mov eax, [ebx+00544C36] ; EAX:="154" :00443454 83C015 add eax, 00000015 ; 154+15:="169" :00443457 3D2D010000 cmp eax, 0000012D ; 169-12D:="3C" <="HERE!" :0044345C 730C jnb 0044346A .... We have all we need here as 3C (Hex)="60" (Decimal). You can crack the counter using the same method used for the previous versions of W32Dasm: Search fo: :0044111D C783364C540054010000 mov dword ptr [ebx+00544C36], 0154 Change to: :0044111D C783364C5400FF0F0000 mov dword ptr [ebx+00544C36], FFFF This will allow you 65,255 operations (FEE7 Hex); enough to crack any program! About the call to KERNEL32.DeleteFileA function, here is the way to crack it: Search for: :0047E210 FF2548D74900 Jmp dword ptr [0049D748] Change to: :0047E210 C3C3C3C3C3C3 For information, this function is not used to delete any other file than "w32dsmXX.tmp". There are severals calls to it, but they may not be even used in the demo version (just have a look deep inside W32Dasm8 with HexWorkshop and you'll be amazed to see how may things (datas, string references, dialog boxes...) are unused! URSoft may think that Windows programs are not big enough to leave them in the demo version...). You don't have to worry about the hidden attributes or the share mode since W32Dasm will get rid of them before you close it. Anyway I feel a little sorry for Peter Urbanik (he's a cool guy, he DID answer to one of my E-Mail and explained to me how to get rid of one little bug I had with W32Dasm7!)... Frog's Print May 1997 </pre>
+
+<BR>
+
+<CENTER><HR ALIGN="CENTER" WIDTH="100%" SIZE="3">
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</I></CENTER>
+
+<BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#84'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#84"> homepage</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"> 
+
+<A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#73'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#73"> links</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0">
+
+<A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm"> anonymity</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm"> +ORC</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#82'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#82"> students' essays</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm"> tools</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm"> cocktails</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm"> search_forms</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm"> mailFraVia</A></CENTER>
+
+<CENTER><HR ALIGN="CENTER" WIDTH="100%" SIZE="2"></CENTER>

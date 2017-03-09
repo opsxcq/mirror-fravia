@@ -1,0 +1,1028 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>porvbo1.htm: Redirection Revisited -- Achieving Redirection Through API Spoofing</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR=#C0C0C0 TEXT=#001010 VLINK=#405040><P><CENTER>
+
+<H3>
+
+	Redirection Revisited -- Achieving Redirection Through API Spoofing
+
+</H3><BR>
+
+	by	Victor Porguen<BR>
+
+	vporguen(at)yahoo(point)com<BR>
+
+	12 December 1998<BR><BR><A href="papers.htm" tppabs="http://www.anticrack.de/fravia/papers.htm"><IMG SRC="papers.gif" tppabs="http://www.anticrack.de/fravia/papers.gif" 
+
+ALT="papers" ALIGN=BOTTOM WIDTH=114 
+
+EIGHT=43 BORDER=0 VSPACE=0 HSPACE=0></A><BR><FONT color=gray>Back to the +HCU 
+
+papers</FONT><BR><BR>
+
+	Target: Anything Protected by VBOX 4.10 Trial or Commercial such as<BR>
+
+	ftp://ftp.previewsoft.com/DoileyTrial.exe<BR>
+
+	or<BR>
+
+	ftp://ftp.previewsoft.com/Doileycommerce.exe
+
+<BR><BR>
+
+	Tools: SoftIce, Hexeditor</CENTER>
+
+<HR><I>Well, a very interesting development... more and more reversers are 'specialising' on 
+
+particular themes... and a very fascinating theme indeed is what Victor Porguen is following: 
+
+Of course there are many tricks and approaches that you can apply 
+
+to our art and have been taken from the incredible findings, 
+
+experiences and tricks devised by the viri makers... <BR>
+
+See? There's nothing under our sun that cannot be used to gain knowledge...
+
+</I><HR><BR>
+
+In Fravia's prologue to my previous <A href="redirect.htm" tppabs="http://www.anticrack.de/fravia/redirect.htm">essay</A>, "Defeating File Integrity
+
+Checks Through
+
+Redirection," he observed that "viral research applied to reversing
+
+has quite a lot to offer...."  This article
+
+will describe traditional viral coding techniques as applied to time
+
+limited software.  Specifically, I will
+
+detail a simple, straightforward concept of code redirection and apply
+
+it to the VBOX 4.10 protection
+
+system by Preview Systems (www.previewsoftware.com).  The resulting
+
+patch will allow the full use of
+
+any program protected by either the trial version or commercial
+
+version of the product.  However, as an
+
+initial caveat I will point out that "all "VBOXx410.DLL" files are not
+
+identical; indeed, they are not even
+
+compatible between themselves (which would most assuredly be an
+
+irritant if you had actually purchased
+
+a VBOX protected application that relied on a version that was
+
+subsequently replaced during a "trial"
+
+session of another  product).  While the specific coding described
+
+herein may be readily applied to any
+
+VBOXx410.DLL "set of files," and indeed I have tested it successfully
+
+on every set I could find, it is
+
+important that the reader realize that there are differences between
+
+the sets themselves.
+
+<BR><BR>
+
+As a matter of professional courtesy, I will reference the reader to
+
+the recent essay by Marigold, 
+
+whom I regard with respect, entitled "VBOX The Hellraiser or the Paper
+
+Tiger" (for a fleeting moment I
+
+was tempted to subtitle this essay "Hellraiser II, Pinhead's Crack"
+
+but better judgment overcame me). 
+
+The reader should note the references contained in that article to the
+
+"debugger check" used by VBOX in
+
+light of the fact that the patching technique that I outline will
+
+leave that code untouched, thus VBOX
+
+protected programs will continue not to function if a debugger is in
+
+the background.  The defeating of
+
+that routine is not difficult, however, but I shall leave that pursuit
+
+to the reader.
+
+<BR><BR>
+
+The Goals - I began this essay with three goals in mind: 1) Devise a
+
+simple crack that would
+
+thoroughly defeat all VBOXx410 protected applications; 2) Do so with a
+
+minimum amount of byte
+
+changes, say no more than 250; and 3) In view of the integrity checks
+
+that are rampant in VBOX , make
+
+no code changes to the program.  This last goal may sound impossible
+
+(perhaps it is if one takes a truly
+
+strict interpretation of the meaning), but the goal was indeed
+
+achieved through the use of API redirection
+
+(and the overwriting of some unused text). 
+
+<BR><BR>
+
+What Viruses Can Teach Us - When we initially began writing computer
+
+viruses, and using
+
+"stealth" techniques to hide their presence, we did so by replacing
+
+the address for the DOS interrupt 21
+
+and BIOS Int 13 handlers in the interrupt vector table.  Calls by
+
+integrity checking programs to open and
+
+read files or sectors could then be intercepted and the viral code
+
+replaced with the original code. 
+
+However, simply hooking the address in the IVT was of no help if the
+
+integrity checking routine had
+
+already hooked the interrupt and thus was sitting below us (FluShot
+
+was an example, as where the
+
+myriad of "write protect your hard drive" programs that hooked
+
+interrupt 13).  Our first attempt to
+
+overcome this obstacle was the 4096 virus in which we placed a FAR JMP
+
+to the viral code at the
+
+beginning of the interrupt 21 handler which would then replace the
+
+five byte "cut-out" allowing us full
+
+access to the DOS routines.  The trap flag was then set placing the
+
+CPU in single-step mode.  A few
+
+instructions into a DOS call our interrupt 1 routine would then
+
+reinsert the five byte "cut-out" thus
+
+always maintaining control over the DOS operating system.  Detecting
+
+the "lowest point" of either the
+
+DOS or BIOS interrupt vector chain was easily accomplished by setting
+
+the trap flag and sending an
+
+innocuous call through the chain and observing the address on the
+
+stack during the interrupt 1 routine. 
+
+<BR><BR>
+
+Why This is Important - The stealth routine implemented by the 4096
+
+virus was quite
+
+successful (so much so, in fact, that it "escaped" into the wild
+
+before we had a chance to fully complete
+
+it ... but that is another story).  If you can take control of the
+
+operating system, there are virtually no
+
+restraints on your abilities.  By implementing the FAR JMP of the 4096
+
+virus we actually modified the
+
+DOS operating system.  We can do the same with a time limited, heavily
+
+protected, WIN95 application
+
+(well, almost - we will not directly modify the operating system
+
+because of ring transition problems,
+
+however we will do just as well).  By taking hold of the appropriate
+
+APIs we can dole out the required
+
+return values to the application as well as "feed" the correct
+
+parameters to both the application and
+
+operating system itself - this is what I mean by "Achieving
+
+Redirection Through API Spoofing."
+
+<BR><BR>
+
+VBOXx410: How to Crack It, Step by Step - The first step in cracking
+
+any time limited
+
+program is to achieve a successful execution of the application, while
+
+under a debugger, after the time
+
+limitation has expired; only then may the "theoretical" crack be
+
+written to the executable.  The VBOX
+
+protection system, however, uses a routine to detect the presence of a
+
+debugger and Marigold describes it
+
+in his essay.  While it may be time consuming to locate such a routine
+
+with software tools only,
+
+executing the application simultaneously on identical machines, one
+
+equipped with SoftIce and the other
+
+with a hardware based in-circuit emulator, readily highlights the
+
+discrepancy in the return value of EAX
+
+from the CALL 7019240 at offset 7006F5A.  It is understandable that
+
+the vast majority of readers do not
+
+have access to hardware based debugging tools and it is sufficient to
+
+merely keep in mind that a BMPB
+
+7006F5A X followed by an execution of the CALL and manually setting
+
+EAX to zero while under
+
+SoftIce will suffice to allow the program to execute normally under a
+
+debugger.  The reader is cautioned
+
+that, because of the VBOX code integrity routines, only debug register
+
+breakpoints should be used
+
+(except, of course, within our stealth routine) as opposed to
+
+traditional CC breakpoints.
+
+<BR><BR>
+
+Stepping through the code we come to the DialogBoxParamA call at
+
+offset 70025C3 in the "Trial"
+
+version or offset 8002912 in the "Commercial" version, which displays
+
+the VBOX Time Limitation
+
+screen.  The return value for "Try" is zero, the value for "Quit" is
+
+one.  Again, clicking the "Quit" button
+
+and then manually setting the value of EAX to zero while under SoftIce
+
+will allow the program to
+
+continue.  The final procedure is to step through the code until we
+
+reach the RaiseException call at offset
+
+7035629 which displays an expiration message and exits.  If we simply
+
+"step over" this call, and adjust
+
+the stack accordingly, the program executes flawlessly.  Thus, the
+
+crack to the entire VBOX protection
+
+system, whether it be the Trial or Commercial edition is to have the
+
+DialogBoxParamA call return
+
+zero and to have the RaiseException call return without executing. 
+
+Nothing could be more simple; the
+
+challenging part, however, is implementing the crack in view of the
+
+varied and diverse protection
+
+routines that VBOX implements (i.e., packing, memory image checks,
+
+encryption, etc.)
+
+<BR><BR>
+
+Obviously we can not simply NOP out the code, since it is both packed
+
+and repeatedly checked. 
+
+However, does VBOX require the CALLs be executed at all?  We know the
+
+answer is "No" for the
+
+RaiseException call, but does the DialogBoxParamA call have to be
+
+executed or does VBOX merely
+
+check the EAX register upon the return?  Again we step through the
+
+code with SoftIce (remembering to
+
+deal with the debug check routine) and break on DialogBoxParamA. 
+
+Instead of executing the CALL, we
+
+manually set the EIP register to the offset of the instruction
+
+following the CALL and adjust the stack
+
+accordingly.  We then set EAX to zero and allow execution of the
+
+program ... and the program fails.  We
+
+now know that the DialogBoxParamA call must be executed to satisfy the
+
+VBOX protection system.
+
+<BR><BR>
+
+The next step is to determine where our "working room" will reside. 
+
+Looking through the
+
+VBOXP410.DLL we see it was compiled with the Microsoft Visual C++ Run
+
+Time Library, which
+
+politely includes a variety of wasted and useless code and text.  An
+
+area that immediately jumps out as a
+
+possible working area is the vast list of geographic sites beginning
+
+around file offset 206D4 or so. 
+
+Starting with the beloved homestead of Turkey (at file offset 20718)
+
+we simply overwrite two or three
+
+hundred bytes of text with zeroes and execute the program - and it
+
+runs perfectly.  VBOX is not
+
+checking this portion of the file either in memory or on disk; thus we
+
+now have plenty of room in which
+
+to insert our "stealth cracking routine."  Once again, we fire up
+
+SoftIce and break (remembering to use
+
+debug registers only because of the integrity checking routines) on
+
+the entry point to VBOXP410.DLL,
+
+which is at memory offset 5001F99 .  This corresponds to file offset
+
+1399 and is where we will insert our
+
+"cut-out" to the stealth routine.  But before we modify the executable
+
+on disk we must first determine
+
+whether VBOX is checking the integrity of the replaced code from the
+
+disk file itself (we are not
+
+concerned whether VBOX checks the code in memory because we will have
+
+restored it).  However, since
+
+our stealth routine will be changing memory, we must modify the PE
+
+header so that the .text and .rdata
+
+sections are writable.  Currently, the characteristics for .text are
+
+Code, Executable, Readable (60000020)
+
+while .rdata has the characteristics of Initialized Data, Readable
+
+(40000040).  Both of these double word
+
+entries must be modified so that the sections are writable (otherwise
+
+our stealth modifications will create
+
+page faults).  The determination of whether VBOX is checking the
+
+integrity of these code areas from the
+
+disk file is easily made: Simply make the header changes on the disk
+
+file and overwrite the "cut-out"
+
+with five NOPs, then we set a BMPB 5001F99 X and execute the
+
+application.  When SoftIce breaks on
+
+the loading of VBOXP410.DLL at 5001F99 we manually insert the original
+
+code and allow the
+
+application to continue loading and executing normally (still
+
+remembering the debug detection code). 
+
+The program executes normally and thus confirms that VBOX is not
+
+checking the integrity of either the
+
+header or the location of the cut-out code from the disk file - it is
+
+essentially all "down hill" from here.
+
+<BR><BR>
+
+For ease of understanding, the following is the cut-out and stealth
+
+routines in "source code"
+
+format.  Appendix A has the SoftIce dump of the actual byte values
+
+that correspond to the memory
+
+offsets and byte values of the code.  This is the crack that defeats
+
+VBOX 4.10:
+
+<PRE>
+
+
+
+Entry_Point:  				
+
+   jmp Restore_Original_Code
+
+
+
+^
+
+|
+
+|--- VBOXP410.DLL Code Is Here
+
+|
+
+v
+
+
+
+Restore_Original_Code:    					
+
+   mov dword ptr [Entry_Point],020496B8
+
+   mov byte ptr [Entry_Point+4],05
+
+   mov eax,[KERNEL32!EnterCriticalSection]
+
+   mov dword ptr [KERNEL32!EnterCriticalSection],New_Critical_Handler
+
+   mov [Critical_Section_Hdlr],eax
+
+   jmp Entry_Point
+
+
+
+Counter:
+
+   dw 0
+
+Critical_Section_Hdlr:
+
+   dd 0
+
+DLG_Hdlr:
+
+   dd 0
+
+DLG_Procedure_Hdlr:
+
+   dd 0
+
+Return_From_DLG:
+
+   dd 0
+
+
+
+New_Critical_Handler:
+
+   inc word ptr [Counter]
+
+   cmp word ptr [Counter],4000
+
+   jz Hook_DialogBox_for_VBOXC410
+
+   cmp word ptr [Counter],2EOO
+
+   jnz True_Critical_Handler
+
+ Hook_APIs_for_VBOXT410:
+
+   mov dword ptr [KERNEL32!RaiseException],New_Exception_Handler
+
+   mov eax,[USER32!DialogBoxParamA]
+
+   mov [DLG_Hdlr],eax
+
+   mov dword ptr [USER32!DialogBoxParamA],New_Dialog_Handler
+
+   jmp True_Critical_Handler
+
+ Hook_DialogBox_for_VBOXC410:
+
+   mov eax,[USER32!DialogBoxParamA]
+
+   mov [DLG_Hdlr],eax
+
+   mov dword ptr [USER32!DialogBoxParamA],New_Dialog_Handler
+
+ True_Critical_Handler:
+
+   jmp [Critical_Section_Hdlr]
+
+
+
+New_Exception_Handler:
+
+   ret 10
+
+
+
+New_Dialog_Handler:
+
+   mov eax,[esp+1O]
+
+   mov [DLG_Procedure_Hdlr],eax
+
+   mov dword ptr [esp+1O],New_DLG_Procedure_Handler
+
+   pop dword ptr [Return_From_DLG]
+
+   push Back_From_DLG_Call
+
+   jmp [Dlg_Hdlr]
+
+ Back_From_DLG_Call:
+
+   xor eax,eax
+
+   mov word ptr [New_Critical_Handler],4feb
+
+   jmp [Return_From_DLG]
+
+ New_DLG_Procedure_Handler:
+
+   cmp dword ptr [esp+08],18
+
+   jnz True_DLG_Procedure_Handler
+
+   mov dword ptr [esp+08],111
+
+   mov dword ptr [esp+OC],495
+
+ True_DLG_Procedure_Handler:
+
+   jmp [DLG_Procedure_Hdlr]</PRE>
+
+
+
+
+
+An Explanation of the Code - The entry point is the location of the
+
+five byte "cut-out" code
+
+and, specifically, is located at file offset 1399 and memory offset
+
+5001F99.  Upon loading of the DLL,
+
+this cut-out code is immediately restored by the RestoreOriginalCode
+
+routine, thus all of VBOX's code
+
+is now identical to the unpatched version.  We have achieved Goal #3
+
+and consequently all of VBOX's
+
+memory checking routines will confirm the integrity of that code.  The
+
+RestoreOriginalCode routine also
+
+serves another purpose: It "hooks" the EnterCriticalSection API that
+
+VBOX must call to allow for
+
+mutual exclusion synchronization and replaces it with
+
+New_Critical_Handler. 
+
+<BR><BR>
+
+The New_Critical_Handler routine is responsible for waiting for the
+
+VBOXT410.DLL (and
+
+VBOXC410.DLL, for the commercial version) to unpack and then it will
+
+hook the RaiseException and
+
+DialogBoxParamA APIs, which are the focal point of our crack.  The
+
+RaiseException API is vectored to
+
+the instruction RET 10, which of course does nothing more than RETURN
+
+with a bit of stack cleanup. 
+
+DialogBoxParamA is vectored to New_Dialog_Handler, which is a bit more
+
+clever.
+
+<BR><BR>
+
+The New_Dialog_Handler routine accomplishes two tasks: 1) It replaces
+
+the RETURN value on
+
+the stack with the offset of Back_From_DLG_Call; and 2) It hooks the
+
+DialogBoxProcedure that
+
+processes messages sent to the dialog box with
+
+New_DLG_Procedure_Handler. 
+
+New_DLG_Procedure_Handler watches for the ShowWindow message to be
+
+sent by the operating
+
+system to the dialog box and replaces it with the message and
+
+parameter necessary to close the box. 
+
+Control is then returned to Back_From_DLG_Call which places a zero in
+
+the EAX register and then
+
+"closes the door" on the New_Critical_Handler by placing a JMP
+
+True_Critical_Handler instruction (EB
+
+4F) as the first instruction of that routine.  We then JMP back to the
+
+VBOX code that followed the CALL
+
+DialogBoxParamaA that had transferred control to our
+
+New_Dialog_Handler.  Shortly thereafter VBOX
+
+will attempt to display the "expired" message by way of the
+
+RaiseException API.  Of course, we have
+
+hooked that code with New_Exception_Handler and will courteously
+
+return to VBOX without executing
+
+the CALL.  The program will then execute normally. 
+
+<BR><BR>
+
+A Summary, Please - Here is the logic flow: 1) VBOXP410.DLL loads; the
+
+cut-out code jumps
+
+to the stealth routine that replaces the cut-out code, hooks
+
+EnterCriticalSection, and chains back to 
+
+VBOXP410.DLL.  2) The New_Critical_Handler waits for VBOX to "drop its
+
+pants" and then hooks the
+
+RaiseException and DialogBoxParamA. 3) The New_Dialog_Handler then
+
+"spoofs" the ending of the
+
+dialog box, and the return values to the application, by feeding the
+
+VBOX dialog box procedure the
+
+values it would like to see, at exactly the right time that it would
+
+like to see them, and by intercepting the
+
+return.  4) The RaiseException call by VBOX is then intercepted and
+
+RETURNs without doing anything.
+
+<BR><BR>
+
+A Request To The Reader - Of course, this essay is not intended to
+
+encourage the theft of 
+
+software programs, or any intellectual property for that matter. 
+
+Instead it is designed to foster a better
+
+understanding of reverse engineering techniques and software
+
+protection systems.  I hope you enjoyed
+
+reading this essay, and perhaps learned something as well.  If you
+
+did, I would appreciate it if you would
+
+drop me an email letting me know your thoughts.  I am Victor Porguen
+
+(yes, that's my real name) and
+
+my address is vporguen@yahoo.com -  I would very much enjoy hearing
+
+from you.	
+
+<BR><PRE>
+
+
+
+	Appendix A - Byte Values and Memory Offsets
+
+
+
+;(The Cut-Out Code) This corresponds to File offset 1399 in
+
+VBOXP410.DLL
+
+5001F99  E97AF90100           JMP 05021918
+
+
+
+^
+
+|
+
+|--- VBOXP410.DLL Code Is Here
+
+|
+
+v
+
+
+
+;(The Stealth Routine) This corresponds to File offset 20718 in
+
+VBOXP410.DLL
+
+5021918  C705991F0005B8960402 MOV DWORD PTR [05001F99],020496B8
+
+5021922  C6059D1F000505       MOV BYTE PTR [05001F9D],05
+
+5021929  A1AOB50205           MOV EAX,[0502B5A0]
+
+502192E  C705AOB5020554190205 MOV DWORD PTR [0502B5A0],05021954
+
+5021938  A344190205           MOV [05021944],EAX
+
+502193D  E95706FEFF           JMP 05001F99
+
+5021942  0000              
+
+5021944  0000      
+
+5021946  0000   
+
+5021948  0000   
+
+502194A  0000   
+
+502194C  0000   
+
+502194E  0000   
+
+5021950  0000   
+
+5021952  0000   
+
+5021954  66FF0542190205       INC WORD PTR [05021942]
+
+502195B  66813D421902050040   CMP WORD PTR [05021942],4000
+
+5021964  742B                 JZ  05021991
+
+5021966  66813D42190205002E   CMP WORD PTR [05021942],2EOO
+
+502196F  7534                 JNZ 050219A5
+
+5021971  C70590890507AB190205 MOV DWORD PTR [07058990],050219AB
+
+502197B  A1348A0507           MOV EAX,[07058A34]
+
+5021980  A348190205           MOV [05021948],EAX
+
+5021985  C705348A0507AE190205 MOV DWORD PTR [07058A34],050219AE
+
+502198F  EB14                 JMP 050219A5
+
+5021991  A1E8760808           MOV EAX,[080876E8]
+
+5021996  A348190205           MOV [05021948],EAX
+
+502199B  C705E8760808AE190205 MOV DWORD PTR [080876E8],050219AE
+
+50219A5  FF2544190205         JMP [05021944]
+
+50219AB  C21000               RET 0010
+
+50219AE  8B442410             MOV EAX,[ESP+10]
+
+50219B2  A34C190205           MOV [0502194C],EAX
+
+50219B7  C7442410E1190205     MOV DWORD PTR [ESP+10],050219E1
+
+50219BF  8F0550190205         POP DWORD PTR [05021950]
+
+50219C5  68D0190205           PUSH 050219DO
+
+50219CA  FF2548190205         JMP [05021948]
+
+50219DO  33CO                 XOR EAX,EAX
+
+50219D2  66C70554190205EB4F   MOV WORD PTR [05021954],4FEB
+
+50219DB  FF2550190205         JMP [05021950]
+
+50219E1  837C240818           CMP DWORD PTR [ESP+08],18
+
+50219E6  7510                 JNZ 050219F8
+
+50219E8  C744240811010000     MOV DWORD PTR [ESP+08],00000111
+
+50219FO  C744240C95040000     MOV DWORD PTR [ESP+OC],00000495
+
+50219F8  FF254C190205         JMP [0502194C]
+
+</PRE>
+
+
+
+<HR ALIGN=CENTER WIDTH=100% SIZE=3>
+
+
+
+<CENTER><I>You are deep inside fravia's pages of reverse engineering,  
+
+choose your way out:</I>
+
+<BR><BR><A href="papers.htm" tppabs="http://www.anticrack.de/fravia/papers.htm"><IMG SRC="papers.gif" tppabs="http://www.anticrack.de/fravia/papers.gif" 
+
+ALT="papers" ALIGN=BOTTOM WIDTH=114 
+
+EIGHT=43 BORDER=0 VSPACE=0 HSPACE=0></A><BR><FONT color=gray>Back to the +HCU 
+
+papers</FONT><BR><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0> 
+
+<A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links </A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0>
+
+<A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity </A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN=BOTTOM
+
+BORDER=0 VSPACE=0 HSPACE=0 width="13" height="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC </A>
+
+
+
+<IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="enemy.htm" tppabs="http://www.anticrack.de/fravia/enemy.htm">enemy stalking </A>
+
+
+
+<IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database </A><BR>
+
+<IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut </A>
+
+
+
+<IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 
+
+VSPACE=0 HSPACE=0><A
+
+HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13
+
+BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia </A><BR>
+
+
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering illegal? </A></CENTER>
+
+
+
+</BODY>
+
+</HTML>
+

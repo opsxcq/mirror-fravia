@@ -1,0 +1,438 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>riddcd2</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+<CENTER><FONT size="+3">CD-Rom reversing MechWarrior2 Mercenaries</FONT><BR><BR>
+
+(&quot;Another Approach to the Cd-Check scheme&quot;)<BR> <BR>
+
+<H4>by +-=Riddler=-+<BR>
+
+<BR>
+
+(26 September 1997)</H4>
+
+<HR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">Courtesy of fravia's page 
+
+of reverse engineering<BR><BR>
+
+<I>Well, Riddler is slowly &quot;specialising&quot; in this very interesting 
+
+cracking subject! Here is his SECOND essay in a very short time. 
+
+Let's hope he keeps sending material, as I will 
+
+repeat (once more): &quot;I hope that with the help of this addition many 
+
++crackers will be stimulated and work on such schemes, bringing ahead 
+
+this poor and neglected (yet important) project 4</I>!&quot;
+
+<HR size="6"><PRE> <FONT size="+2">
+
+How to Crack MechWarrior2 Mercenaries
+
+(Another Approach to the Cd-Check scheme)
+
+</FONT><FONT size="+1">
+
+by +-=Riddler=-+ </FONT></CENTER>
+
+
+
+	This is a well known game and should be widely availible from 
+
+the internet. I personally purchased this game. I played it for a bit
+
+and then I discarded it into the box with the rest of my cd's. I tired
+
+of it and it was in a way a waste of my money. But it makes a good 
+
+program to write a tutorial on due to the fact that it can be widely
+
+found and also that I am going to approach this program and also 
+
+sucessfully crack it. 
+
+
+
+	Ok, as usual let's get down to business. MechWarrior2 Mercenaries 
+
+is a 3-D fighting game and is well known. Even if you do a FULL INSTALL
+
+at 150MB, it still requires the cd to start. This kind of protection is 
+
+in effect controling the consumer. I personally beleive that if you pay
+
+$55 for a game like I did, that you should be at least able to play 
+
+against a friend over a network or modem or whatever. But in a case like
+
+this that means you would need 2 cd's, to play like, that or more depending
+
+on the number of players.
+
+
+
+	Ok, now this cd comes with 2 versions on it. It has a Windows95
+
+version of the program and a DOS version of the program. In this case 
+
+we are going to crack the protection in the Windows95 Version. Now if 
+
+you read my essay on the WarLords3 Cd-Check crack we where able to make
+
+the program jump to the good code to continue no matter what the procedure 
+
+GetLogicalDrives returned with, a success or a failure. 
+
+So in this case instead of making it jump wheather it is a sucess or a 
+
+failure, we are going to approach it another way and that being the fact 
+
+that we are going to change where it looks for the file. 
+
+I am going to walk through it and this, for example, maybe an easier
+
+way to crack a cd-check because say for example you have a program that will 
+
+acutually verify the file, (which this one doesn't) you can copy that file
+
+to the harddisk and tell it to look there. 
+
+That way if it needs data to run off the cd, it can
+
+still get the data and it won't really require the cd to run. 
+
+That's how we are going to crack this program.  
+
+
+
+	Ok, I began this crack by loading &quot;mercswin.exe&quot; into w32dsm 
+
+and I decompiled it. Ok now I decided to start off looking in the dissembled 
+
+text for &quot;GetLogicalDrives&quot; because as we all know is a well used function 
+
+to begin to verify a cd-rom. 
+
+Along with with &quot;GetLogicalDrives&quot; you can also have several others such
+
+as &quot;GetDriveType&quot; and &quot;GetLogicalDriveStrings&quot;. 
+
+It turns out that &quot;GetLogicalDrives&quot; is not used in this program at all, 
+
+but searching for it, it brought me to &quot;GetLogicalDriveStrings&quot; and in 
+
+this case it's right where we need and want to be. 
+
+Ok, so this is the code that we find when we search for 
+
+&quot;GetLogicalDriveStrings&quot;:
+
+
+
+* Reference To: KERNEL32.GetLogicalDriveStringsA, Ord:00E5h
+
+                                  |
+
+:00401036 FF1568B14000            Call dword ptr [0040B168]
+
+:0040103C 8D442410                lea eax, dword ptr [esp+10]
+
+
+
+* StringData Ref from Data Obj -&gt;&quot; :\OLD_MERC.DRV&quot;  &lt;--This is the file verified
+
+                                  |
+
+:00401040 6838804000              push 00408038
+
+:00401045 50                      push eax
+
+:00401046 E875090000              call 004019C0
+
+:0040104B C7053480400000000000    mov dword ptr [00408034], 00000000
+
+:00401055 83C408                  add esp, 00000008
+
+:00401058 803F00                  cmp byte ptr [edi], 00
+
+:0040105B 7442                    je 0040109F
+
+
+
+Ok that we know the file that the program is going to look for...Let's
+
+scroll down some and take a careful look at the code that follows:
+
+
+
+
+
+* Reference To: KERNEL32.FindFirstFileA, Ord:0079h
+
+                                  |
+
+:0040105D 8B3574B14000            mov esi, dword ptr [0040B174] &lt;--Load offset of
+
+                                                                   filename 
+
+* Reference To: KERNEL32.GetDriveTypeA, Ord:00CEh
+
+                                  |
+
+:00401063 8B2D64B14000            mov ebp, dword ptr [0040B164]
+
+
+
+* Referenced by a Jump at Address:00401094(C)
+
+|
+
+:00401069 53                      push ebx
+
+:0040106A FFD5                    call ebp       &lt;--Call GetDriveTypeA Function  
+
+:0040106C 83F805                  cmp eax, 5     &lt;--Is Drive CD-Rom?????
+
+:0040106F 751D                    jne 0040108E   &lt;--IF it's not get cd-rom
+
+:00401071 8D4C2424                lea ecx, dword ptr [esp+24] 
+
+:00401075 FF0534804000            inc dword ptr [00408034]
+
+:0040107B 8A03                    mov al, byte ptr [ebx]
+
+:0040107D 51                      push ecx
+
+:0040107E 88442414                mov byte ptr [esp+14], al
+
+:00401082 8D442414                lea eax, dword ptr [esp+14]
+
+:00401086 50                      push eax
+
+:00401087 FFD6                    call esi
+
+:00401089 83F8FF                  cmp eax, FFFFFFFF &lt;--Does Function Fail?
+
+:0040108C 750A                    jne 00401098      &lt;--If it doesn't continue
+
+
+
+Now before we do anything else with the program we are going to concentrate on
+
+one thing and that being the fact that the &quot;cmp eax,00000005&quot; at Code Offset
+
+&quot;0040106C&quot;. Let's Review the Properties of &quot;GetDriveTypeA&quot;
+
+
+
+GetDriveTypeA Return Function codes:
+
+
+
+Value               Meaning
+
+0                 Drive Cannot Be determined
+
+1                 Root Dir Does not exist
+
+2                 DriveRemoveable
+
+3                 A Fixed Disk (HardDrive)  
+
+4                 Remote Drive(Network)
+
+5                 Cd-Rom Drive
+
+6                 RamDisk
+
+
+
+Ok now when &quot;eax&quot; is compared to &quot;5&quot; it is just seeing that the drive 
+
+it has found is indeed a cd-rom. 
+
+Ok Break out Hiew and load up &quot;mercswin.exe&quot; and we are going 
+
+to goto the offset of the &quot;cmp eax, 5&quot; we can see that is at offset 
+
+&quot;046Ch&quot; now we are going to change that 5 in the instruction to a &quot;3&quot; 
+
+that way it will look for a HardDrive instead of a Cd-Rom. 
+
+Ok, so save that change and then stop a second and think. 
+
+OK, we have patched the code and it should work but there
+
+is still the manner of &quot;:\OLD_MERC.DRV&quot; ok so we know that 
+
+it will look at it in the root dir of the drive. 
+
+In this case the drive where &quot;mercswin.exe&quot; installed to.
+
+Ok so create a file &quot;OLD_MERC.DRV&quot; in the root dir. 
+
+Now after you have done that go and try to run &quot;mercswin.exe&quot; and 
+
+you will see that is works without a hitch.
+
+The program will fire right up. This program simply checks for the 
+
+presence of the file but does not verify it's contents nor does it 
+
+verify its date, size, time, attributes or anything of that nature. 
+
+Now we can run the program without the cd by changing one byte in 
+
+the file. 
+
+I have seen a crack for this before, published by the PhroZen Crew. 
+
+They packaged the &quot;OLD_MERC.DRV&quot; file and fakecd to run it. 
+
+I personally prefer the method I have explained above, due to the 
+
+fact that this is in essence a &quot;worldwide crack&quot;, for any cd-rom 
+
+based protection that will call that function to verify if
+
+the drive is a cd-rom.                   
+
+
+
+I hope that this has shed some light on cd-protection. 
+
+I should have some more essays in the near future. 
+
+
+
+Thanks and Take Care, 
+
++-=Riddler=-+
+
+Riddler@oceansintl.com                   
+
+ </PRE>                              
+
+<FONT color="green">(c) Riddler 1997. All rights reversed</FONT>
+
+   <HR size="6"><I> 
+
+Indeed, Riddler, you are right! Teaching people interested in learning 
+
+<U>and working on</U> this stuff 
+
+HOW TO reverse engineer all protection of a given kind (all software 
+
+for that matter, not only protections) seems to us (and I believe and hope 
+
+that I'm speaking  
+
+for the whole +HCU) much more interesting and constructive (and correct) 
+
+than releasing ready made &quot;pre-cooked&quot; (easy) cracks for all lusers 
+
+and leechers. People that would eventually have been able to help us, if 
+
+we had only helped them a little to develop, will never learn anything thattaway!
+
+Whatta waste!<BR> C'mon fellow crackers of all the groups of the alphabet... 
+
+you know as well as I do how much fun our activity is... how rewarding and interesting 
+
+it is to understand alien code... once you know how to proceed... once you 
+
+have learned at least some of the hundred little tricks... C'mon! Share your 
+
+knowledge with those that deserve it, instead of showing off for the greedy 
+
+eyes of the &quot;me-too&quot; lusers!
+
+Teach people how to start, some need only a little 
+
+help to get rolling, and they will send us back TREASURES of knowledge 
+
+once they have learned the basic stuff (and the advanced techniques as well :-)<BR>
+
+We should never forget the words that +ORC printed in each lesson of his 
+
+tut:</I><PRE ALIGN="CENTER"><CENTER>&quot;Give a man a crack, and he'll be hungry again tomorrow,
+
+<BR>teach him how to crack, and he'll never be hungry again&quot;</CENTER></PRE>
+
+
+
+
+
+<HR ALIGN="CENTER" WIDTH="100%" SIZE="3">
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</I></CENTER>
+
+<BR><CENTER>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="project4.htm" tppabs="http://www.anticrack.de/fravia/project4.htm">Back to Project 4</A> (&quot;CD-Rom protections&quot;)
+
+<HR width="33%">&gt;
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#84'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#84">homepage</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#73'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#73">links</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#82'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#82">students' essays</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut CGI-scripts</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering legal?</A></CENTER>
+
+<CENTER><HR ALIGN="CENTER" WIDTH="100%" SIZE="2"></CENTER>
+
+</BODY>
+
+</HTML>
+

@@ -1,0 +1,622 @@
+<HTML>
+
+<HEAD>
+
+<META Name="Voluntary Content Rating" content="it's
+
+fravia's: great!">
+
+
+
+
+
+<TITLE>dongle_n.htm: Simple dongle reversing</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR=#C0C0C0 TEXT=#001010 ALINK=#405040
+
+VLINK=#8850AA><P><CENTER>
+
+
+
+<H3>Simple dongle reversing<BR>
+
+by 932452<BR>
+
+21 October 1998
+
+</H3>
+
+
+
+<BR><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" BORDER="0" VSPACE="0"
+
+HSPACE="0" WIDTH="613" HEIGHT="4"><BR><BR></CENTER><PRE>
+
+INTRODUCTION
+
+
+
+I have been watching all these sites on cracking and hacking..
+
+and I have not found any crack on EDA tools...may be that 
+
+very few people use it.  Some time back I needed a crack for
+
+VERIWELL and I had posted a request on alt.2600, for which
+
+I did not get any reply, so then and there I decided to get 
+
+into cracking and I learned lot of things about cracking 
+
+from fravia's page... now I am in a postion to write an essay
+
+on cracking...please understand that this is my first essay
+
+and that I am very bad at writing long essays
+
+
+
+	Well in this essay I will tell you how I cracked
+
+some targets which have been protected by STUPID dongles. 
+
+I hope you all will like it, and I hope this will teach all 
+
+shareware programmers reading this, that dongles, contrarily 
+
+to their advertisement, are not a very good option if you 
+
+intend to protect seriously... you don't believe me? Just read 
+
+on...
+
+
+
+TOOLS REQUIRED
+
+
+
+Hexedit (I like the win 3.1 version, as it is very fast)
+
+Win32dis (You all know it)
+
+(So I won't even use softice to crack a couple of dongles :-)
+
+
+
+TARGET URLs
+
+
+
+www.wellspring.com
+
+ftp.interhdl.com
+
+
+
+THINGS YOU MUST REMEMBER 
+
+
+
+1) Always try to find the golden routine that checks for the dongle.
+
+2) Try to understand what it is doing...before jumping into patching it.
+
+3) Have lot of patience.
+
+
+
+ESSAY
+
+
+
+
+
+PART I
+
+
+
+Download any PC version tool from interhdl..as all the tools from
+
+interhdl has got same stupid dongle protection (why can't they think
+
+something better :-)
+
+Here my target is verilint..after downloading you have
+
+install it and after that just go to dos prompt and 
+
+type verilint example.v
+
+
+
+this will give a error message and then it will terminate.
+
+
+
+the error message is "checking out hardware key"
+
+
+
+so there are two things going on
+
+1) check for hardware lock
+
+2) terminate if hardware lock not found
+
+
+
+first we will disable the call responsible for dongle check
+
+so search for the string "checking out hardware key" 
+
+
+
+* Referenced by a CALL at Address:00482081   
+
+|
+
+:00482090 81EC00080000            sub esp, 00000800
+
+:00482096 E895050000              call 00482630
+
+:0048209B 83F803                  cmp eax, 00000003
+
+:0048209E 7507                    jne 004820A7
+
+
+
+* Possible StringData Ref from Data Obj -&gt;"Checking out hardware key..."
+
+                                  |
+
+:004820A0 68EC3F5000              push 00503FEC
+
+
+
+once you have found this, just scroll up till you find the call which
+
+has called this routine. below is the code which has called this
+
+routine.
+
+you see that this routine has been called by another call instruction at
+
+location 0004821f...so please go to the location 0004821f.
+
+
+
+* Referenced by a CALL at Address:0048217F   
+
+|
+
+:00482070 8B44240C                mov eax, dword ptr [esp+0C]
+
+:00482074 8B4C2408                mov ecx, dword ptr [esp+08]
+
+:00482078 8B542404                mov edx, dword ptr [esp+04]
+
+:0048207C 6A00                    push 00000000
+
+:0048207E 50                      push eax
+
+:0048207F 51                      push ecx
+
+:00482080 52                      push edx
+
+:00482081 E80A000000              call 00482090
+
+:00482086 83C410                  add esp, 00000010
+
+:00482089 C3                      ret
+
+
+
+
+
+
+
+this is the code which you find at that location..and this is the
+
+code which refers to that golden call
+
+
+
+well what do you see here...
+
+:0048217F E8ECFEFFFF              call 00482070
+
+//just returned from call
+
+
+
+:00482184 83C40C                  add esp, 0000000C
+
+:00482187 83F801                  cmp eax, 00000001
+
+//compare eax with 01
+
+
+
+:0048218A 740A                    je 00482196
+
+// if good guy jump to 00482196
+
+
+
+:0048218C 6A01                    push 00000001
+
+:0048218E E81DF40100              call 004A15B0
+
+//if bad guy call terminate the program...
+
+//you may ask how do I know...well trace the call 004a15b0
+
+
+
+
+
+:004A15B0 8B442404                mov eax, dword ptr [esp+04]
+
+:004A15B4 6A00                    push 00000000
+
+:004A15B6 6A00                    push 00000000
+
+:004A15B8 50                      push eax
+
+:004A15B9 E832000000              call 004A15F0
+
+// this is the main call which call the KERNEL32.TerminateProcess,
+
+//if you don't think so ...you can trace the above call
+
+
+
+
+
+
+
+* Referenced by a CALL at Addresses:004A15B9   , :004A15D9   
+
+|
+
+:004A15F0 A11C045100              mov eax, dword ptr [0051041C]
+
+:004A15F5 53                      push ebx
+
+:004A15F6 55                      push ebp
+
+:004A15F7 8B6C240C                mov ebp, dword ptr [esp+0C]
+
+:004A15FB 83F801                  cmp eax, 00000001
+
+:004A15FE 56                      push esi
+
+:004A15FF 750E                    jne 004A160F
+
+:004A1601 55                      push ebp
+
+
+
+* Reference To: KERNEL32.GetCurrentProcess, Ord:00D3h
+
+                                  |
+
+:004A1602 FF15D8215100            Call dword ptr [005121D8]
+
+:004A1608 50                      push eax
+
+
+
+* Reference To: KERNEL32.TerminateProcess, Ord:0246h
+
+                                  |
+
+:004A1609 FF15D4215100            Call dword ptr [005121D4]
+
+//so atlast that compare eax.01 as resulted in this terminate program
+
+
+
+
+
+all you have to do is make that jump on equal to Always jump
+
+
+
+:0048218A 740A                    je 00482196 //change 74 to EB
+
+
+
+Don't forget to nop the call that checks for dongle..other
+
+wise your program will waste lot of your time.
+
+
+
+:0048217F E8ECFEFFFF              call 00482070
+
+          9090909090              nop
+
+        
+
+        
+
+        PART-II
+
+
+
+
+
+Second target is a verilog simulator tool from wellsring, this target 
+
+has got bit good protection then the first....it checks for the
+
+hardware lock and if present it stores some values in some 
+
+locations and it checks for dongle four time.from four different 
+
+location...you need to patch only first two..but don't worry 
+
+about it every dongle protection can be cracked............ 
+
+first Download the veriwell.zip from the download page of 
+
+www.wellspring.com and install it. Once you are through this you 
+
+can follow what I'll tell you 
+
+
+
+	Now run the veriwell, you see that it shows the following
+
+message " this is free version of bla..bla..bla"
+
+			
+
+
+
+Hey I forgot to tell you that this software runs in demo mode
+
+if hardware lock is not present, the above message was therefore 
+
+due to this feature of veriwell. Now that you have found this, you can
+
+fire your win32disa and dissamble the veriwell.exe and search for the
+
+string "this is free bla..bla" or you can search for the string
+
+"serial number"			
+
+ 
+
+:0041015F A122785500              mov eax, dword ptr [00557822]
+
+:00410164 50                      push eax
+
+
+
+* Possible StringData Ref from Data Obj -&gt;"  Serial number %d"
+
+                                  |
+
+:00410165 68A4255300              push 005325A4
+
+:0041016A E8AD33FFFF              call 0040351C
+
+
+
+Veriwell reaches this line only if the hardware lock is preset
+
+so We need to trace where this was done..to do this
+
+we just page-up till we reach this piece of the code
+
+
+
+:00410052 F6058078550001          test byte ptr [00557880], 01
+
+:00410059 7522                    jne 0041007D 
+
+
+
+//hardware lock is present then jump to 00410070
+
+
+
+:0041005B 33C0                    xor eax, eax 
+
+
+
+//if bad guy store zero in following locations
+
+
+
+:0041005D A35CC95400              mov dword ptr [0054C95C], eax
+
+:00410062 A33CCA5400              mov dword ptr [0054CA3C], eax
+
+:00410067 A324CA5400              mov dword ptr [0054CA24], eax
+
+:0041006C A32CCA5400              mov dword ptr [0054CA2C], eax
+
+:00410071 A348CA5400              mov dword ptr [0054CA48], eax
+
+:00410076 A320CA5400              mov dword ptr [0054CA20], eax
+
+:0041007B EB5F                    jmp 004100DC
+
+
+
+I bet this is very easy to patch all you have to do is  open the hexedit
+
+and find the byte and nop them 
+
+
+
+jne &lt;= nop
+
+xor &lt;= nop
+
+
+
+after you have doen this run the veriwell again, you see that it does not 
+
+show the "free version banner" but still we have a problem...when ever we 
+
+run the veriwell it takes lot of time to run...so we have to disable the
+
+dongle check routine..So we page-up till we reach this peace of code
+
+
+
+
+
+:0041001E E85FE40500              call 0046E482
+
+//this is tha call that chscks for the dongle..just get into the call and
+
+change the first bye of the call to C3..so that the call returs back as soon
+
+as it executes the reutrn code.
+
+
+
+now once again run the veriwell ...we find that it display the following message
+
+                     "this is (%) of free version 
+
+once again we search for the this string and again pageup till
+
+we reach up to this code
+
+
+
+* Referenced by a Jump at Address:0042E1E7(C)
+
+|
+
+:0042E1C7 A1A4785500              mov eax, dword ptr [005578A4]
+
+:0042E1CC 03C1                    add eax, ecx
+
+:0042E1CE 83C102                  add ecx, 00000002
+
+:0042E1D1 81F980000000            cmp ecx, 00000080
+
+:0042E1D7 8A10                    mov dl, byte ptr [eax]
+
+:0042E1D9 8A5801                  mov bl, byte ptr [eax+01]
+
+:0042E1DC 8818                    mov byte ptr [eax], bl
+
+:0042E1DE A1A4785500              mov eax, dword ptr [005578A4]
+
+:0042E1E3 885408FF                mov byte ptr [eax+ecx-01], dl
+
+:0042E1E7 7CDE                    jl 0042E1C7
+
+:0042E1E9 B901000000              mov ecx, 00000001
+
+:0042E1EE 66850D80785500          test word ptr [00557880], cx
+
+:0042E1F5 7525                    jne 0042E21C            //change this to nop
+
+:0042E1F7 33C0                    xor eax, eax            //change this to nop
+
+
+
+:0042E1F9 890D3CCA5400            mov dword ptr [0054CA3C], ecx
+
+:0042E1FF A35CC95400              mov dword ptr [0054C95C], eax
+
+:0042E204 890D24CA5400            mov dword ptr [0054CA24], ecx
+
+:0042E20A 890D2CCA5400            mov dword ptr [0054CA2C], ecx
+
+:0042E210 A348CA5400              mov dword ptr [0054CA48], eax
+
+:0042E215 A320CA5400              mov dword ptr [0054CA20], eax
+
+:0042E21A EB5F                    jmp 0042E27B
+
+
+
+once you have have done this...veriwell is yours..
+
+
+
+FINAL NOTES
+
+
+
+ This EDA tools are very "costly" compared to normal software, but I don't
+
+understand one thing..if their software is really so costly, why don't they
+
+protect it better? It would be pretty easy, seen the above code...</PRE>
+
+<BR>
+
+<CENTER>
+
+<HR width="33%" align="center">
+
+
+
+<P align="center"><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" BORDER="0" VSPACE="0"
+
+HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage</A> <IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A
+
+HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links</A> <IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" BORDER="0"
+
+VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity</A> <IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13"
+
+HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC</A> <IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM"
+
+BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="javascri.htm" tppabs="http://www.anticrack.de/fravia/javascri.htm">javascript
+
+wars</A> <IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0"
+
+WIDTH="13" HEIGHT="13"><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database</A> <BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0"
+
+WIDTH="13" HEIGHT="13"><A HREF="botstart.htm" tppabs="http://www.anticrack.de/fravia/botstart.htm">bots' wars</A> <IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A
+
+HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools</A> <IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" BORDER="0"
+
+VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails</A> <IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13"
+
+HEIGHT="13"><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut CGI-scripts</A> <IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red"
+
+ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A
+
+HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search forms</A> <IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM"
+
+BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail fravia+</A>
+
+<BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0"
+
+WIDTH="13" HEIGHT="13"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering legal?</A> </P>
+
+
+
+</BODY>
+
+</HTML>
+
+
+

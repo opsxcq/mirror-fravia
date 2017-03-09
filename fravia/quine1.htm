@@ -1,0 +1,1326 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>quine1.htm</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+<CENTER><FONT size="+3">Cracking THE tool of the trade (bye bye Wdasm)</FONT>
+
+<BR>(Interactive Disassembler Pro v3.7)
+
+  <BR>
+
+<H4><BR>  by Quine<BR>
+
+(19 October 1997)</H4><BR>
+
+<IMG SRC="xtranio.gif" tppabs="http://www.anticrack.de/fravia/xtranio.gif" ALT="advanced" ALIGN="BOTTOM" WIDTH="114" HEIGHT="43" BORDER="0" VSPACE="0" HSPACE="0"></A>
+
+<BR>Advanced cracking series
+
+
+
+<HR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">Courtesy of fravia's page 
+
+of reverse engineering<BR>
+
+<BR><I>Well, this is SERIOUS ADVANCED CRACKING. You better read and UNDERSTAND each point of this 
+
+beautiful essay by Quine, which shines methodologically and has a relevance that encompasses 
+
+almost all fields of our trade. There are things inside here, like patching pointers and 
+
+Boundchecker API-intercepting,   
+
+wich clearly are NOT FOR NEWBYES, and the whole essay is GOLD worth 
+
+for all serious reverse engineers. This essay has been added to the +HCU didactic material 
+
+(pending Quine's authorization) and will from now on be distributed to all 
+
++HCUkers that begin the courses together with the other main files.<BR> I'm 
+
+proud and happy to host such a well written and interesting 
+
+essay, I like VERY MUCH the approach that Quine utilizes, and hope that he will 
+
+be so kind to send us MANY MORE essays.<BR>Enjoy!
+
+
+
+           </CENTER></I>
+
+<HR size="6">
+
+<FONT size="+2"><CENTER>
+
+Cracking THE tool of the trade (bye bye Wdasm) 
+
+<BR>
+
+Interactive Disassembler Pro v3.7</CENTER></FONT>
+
+  <PRE>
+
+Interactive Disassembler Pro v3.7 Demo
+
+This is a brand new version which is much superior to version 3.6.
+
+
+
+Source:
+
+
+
+<A href="javascript:if(confirm('http://www.datarescue.com/ida.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.datarescue.com/ida.htm'" tppabs="http://www.datarescue.com/ida.htm">http://www.datarescue.com/ida.htm</A> (homepage)
+
+<A href="javascript:if(confirm('http://www.datarescue.com/ida/demo37.zip  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.datarescue.com/ida/demo37.zip'" tppabs="http://www.datarescue.com/ida/demo37.zip">http://www.datarescue.com/ida/demo37.zip</A> (9,884,100 bytes)
+
+
+
+Tools used:
+
+
+
+W32DASM 8.9 (soon to be a thing of the past :-)
+
+BoundsChecker Pro 5.0 (look for the poorly protected demo on NuMega's
+
+site)
+
+SoftICE for NT v3.2 (that new video driver is amazing)
+
+(if you can't get Pinnacle's version to install, change the byte at
+
+2B6C in setup.ins from 2B to B8)
+
+Ultraedit32 (just for multifile searching)
+
+HexWorkshop32 (any hex editor will do the trick-including Ultraedit32)
+
+
+
+Sections in this article:
+
+
+
+I         Why IDA Pro 3.7 is so great
+
+II        What's disabled in the demo version
+
+III       Cracking the 64k file size limitation
+
+IV        Reflections on the protection scheme
+
+V         The Expiration Date
+
+VI        Summary of the patch
+
+VII       The function at 43A314
+
+APPENDIX  Stack frames and function calls
+
+
+
+<B>
+
+I.  Why IDA Pro 3.7 is so great
+
+</B>
+
+IDA Pro is by far the best disassembler available for PCs (and
+
+probably for any platform).  It is ultimately, I think, much, much
+
+better than W32dasm.  Why?  To begin with, IDA Pro disassembles
+
+properly.  (1)  It starts disassembling at the program entry point and
+
+then follows every possible execution route from there.  Having done
+
+that, it then looks for functions which are not directly accessible
+
+from the main program flow (e.g., window procedures, thread
+
+procedures, and other callback functions of various sorts).  This
+
+method of disassembly enables to perform much greater levels of
+
+analysis of the target program.  For example, the beginning and ending
+
+of functions are identified and properly marked.  Passed arguments and
+
+local variables (both referenced off the stack) are identified and
+
+marked.  Switch statements are identified and the case values are
+
+determined (W32dasm does this to a very limited extent).  Furthermore,
+
+you have complete decision over what it marks as code and what it marks 
+
+as data.  This allows it to disassemble code &quot;hidden&quot; or located in 
+
+the data section, which happens more often than you might think, 
+
+because W32dasm can't disassemble it.  
+
+Also, a trick I saw in a dongle driver (ssidppd.drv
+
+from the program WiT) complete flusters disassemblers like w32dasm,
+
+which disassemble blindly straight through the code segment.  Here's
+
+the trick:
+
+<FONT color="blue">ANTI-WDASM trick</FONT>
+
+         mov eax, edx
+
+         jmp loc_1
+
+         db 0F
+
+loc_1:   inc eax
+
+         jmp loc_2
+
+         db 85
+
+loc_2:   call sub_1
+
+... and so on
+
+
+
+w32dasm produces garbage for this code, but IDA Pro does it right
+
+because it's following the path of execution.  (2)  IDA can recognize
+
+an amazing range of library functions within a target's body.  This
+
+greatly reduces the amount of code to plow through when trying to get
+
+an understanding of the target.  It also, of course, provides a wealth
+
+of clues about what a program is doing at any particular place.  (3)
+
+IDA also has a fairly robust macro language which enables high levels
+
+of customization.  (4)  It can disassemble damn near anything:  all
+
+pc-based binary formats (all exe formats, lib files, obj files, etc.),
+
+code for almost any microprocessor (several of which I've never heard
+
+of), Java classes --- that's right full blown interactive Java
+
+disassembly, which, as fravia+ says, is the future of cracking!  (5)
+
+Names, labels, etc. can be changed on the fly so that you can
+
+gradually accumulate and save more and more information about the
+
+target (working the fields, as I like to think of it).  (6)  Comments
+
+can be added.  There are undoubtedly more features that I am leaving
+
+out, but you get the idea.  In other words, this is __the__
+
+disassembling tool for our trade.  Combined with SoftICE and
+
+BoundsChecker (more on the power of BoundsChecker below), no target is
+
+safe any more (not that they had been safe howhever :-)  
+
+
+
+<B>
+
+II.  What's disabled in the demo version
+
+</B>
+
+(1) It expires on Jan 1, 1998
+
+(2) It cannot load files larger than 64k
+
+(3) It cannot load saved databases (project files)
+
+(4) It cannot produce list (.lst) or asm source files
+
+
+
+Limitation 
+
+<FONT color="blue">(1)</FONT> will prove, as you might have expected, to be trivial to crack.  
+
+
+
+<FONT color="blue">(2)</FONT> is the biggest issue.  The size limitation makes the
+
+demo almost useless as it is.  Cracking this limitation is the main
+
+objective for this discussion.  
+
+
+
+<FONT color="blue">(3)</FONT> would be very nice to crack, but perhaps long and hard if the 
+
+loading code is simply not present in the demo (I think, however, 
+
+that it is).  
+
+There are two big problems this limitation (3) creates:  
+
+(a) IDA's power comes at a price---it's slow, so it would be nice 
+
+not to have to have it redisassemble with every session.  
+
+(b) Any comments or name changes, etc. will not be accessible after 
+
+you quit a session.  
+
+Problem (b), fortunately, is avoidable, because the demo will let you 
+
+create a macro file (a file with an idc extension) that records all 
+
+of your changes which can be reloaded and run for future sessions.  
+
+
+
+<FONT color="blue">(4)</FONT> I consider to be the least important because looking at a dumb 
+
+listing in a text editor is a pale comparison to viewing it in the 
+
+IDA environment.  It might be fun, though, to try to produce compilable 
+
+asm files from targets.  Now, on to the good stuff.
+
+
+
+<B>
+
+III.  Cracking the 64k file size limitation
+
+</B>
+
+I will be concerned with the win32 version of IDA.  This version is
+
+run by executing the idaw.exe file.  This file is quite small and does
+
+nothing more than load ida.wll [sic], which is a large dll that does
+
+most of the work.  This is the file that needs cracking.  The other
+
+files with w32 extensions are the various disassembler modules.
+
+pc.w32 is the modules to handle x86 code.  When you start idaw, it
+
+loads ida.wll (hereinafter simply referred to as ida), which asks you
+
+which file you want to disassemble.  ida determines which module to
+
+load based on the file type and then hands control over to that
+
+module.  The disassembly module then drives execution for the rest of
+
+the session, calling functions in ida where necessary.  This is a
+
+brilliant design, because it allows the programmer to quite easily add
+
+modules for completely different file types without having to rewrite
+
+the whole program (witness the Java module.  One would think Java
+
+disassembly is so different from x86 disassembly that the two could
+
+not happily co-exist in one environment).  ida is responsible for
+
+loading the file and for all subsequent file i/o along with a lot of
+
+other things, so let's start by loading ida.wll into w32dasm (I spoke
+
+harshly of w32dasm above and that was unfair.  I do have a fondness
+
+for it---however, now that I have a useable IDA Pro, I will never go
+
+back to it :-).
+
+
+
+The first thing to do is find the place where IDA decides that a file
+
+bigger 64k is too big.  Our first bet might be to look for the text of
+
+the message that pops up when you try to open a file that is too big:
+
+&quot;The demo version...&quot;  Unfortunately it is not in the list of strings
+
+w32dasm provides for ida.wll.  So, I used UltraEdit32 to do a file
+
+search through the entire idademo directory for the string in
+
+question.  It turns out to be in a file called ida.hlp (which is not a
+
+Windows help file, but is in a proprietary format).
+
+
+
+Looking at ida.hlp with a hex editor (it's not strictly an ASCII file)
+
+we see that the strings are zero-terminated and appear to be prefixed
+
+with a word which gives their length.  Also, at the beginning of the
+
+file is a long series of dwords that appear to be offsets into the
+
+file.  You guessed it, the dwords point to the length/string pairs.
+
+This is undoubtedly how the program gets at the strings.  There are D
+
+(i.e., 13 (decimal)) bytes at the beginning of the file before the
+
+dword list begins.  So, the index to a particular string can be
+
+calculated in the following way:
+
+1. find the string in ida.hlp and record the offset where the length
+
+word starts
+
+2. look up the offset in the list of dwords at the beginning of the
+
+file and record the offset of the dword.
+
+3. Subtract D from the offset of the dword and divide the result by 4
+
+4. What you end up with is the index ida uses to reference a string in
+
+the help file.
+
+The index for the file-too-big message is 556.  Using w32dasm to
+
+search for this value in ida.wll, we find the following code:
+
+
+
+:00403CE7 81FD00000100            cmp ebp, 00010000 ; cmp file size,64k
+
+:00403CED 760B                    jbe 00403CFA ; go ahead and load file
+
+:00403CEF 6856050000              push 00000556 ; ida.hlp index of demo msg
+
+:00403CF4 E85FD10500              call 00460E58 ; message box routine
+
+
+
+This looks too good to be true (don't worry - it is).  It compares ebp
+
+(which must contain the size of the file) with 10000 (i.e., 64k) and
+
+jumps past the bad message if ebp is less than 64k.  No problem.
+
+Let's patch the program to force the jump, replacing 76 at 403CED with
+
+EB (jmp) and see what happens.
+
+
+
+Running the program, we find that it now lets us open files of any
+
+size and it goes about disassembling them.  The problem is that it
+
+appears to be disassembling only a small part of the file (I'm using
+
+ida.wll, by the way, as the large test file to disassemble).  Fairly
+
+quickly into the disassembly the message &quot;Execution flows beyond
+
+limits&quot; repeatedly appears at the bottom of the screen and nothing
+
+past (what appears to be) the 64k boundary is disassembled.  In fact,
+
+nothing past the 64k boundary is even represented by raw bytes in the
+
+disassembly listing.  There's another check somewhere.
+
+
+
+I was stuck at this point for some time.  I tried using the help file
+
+method above to search out references to &quot;Execution flows beyond
+
+limits&quot;, but, while I found one, no hacking around in that area of the
+
+program seemed to help.  It then occurred to me that maybe ida never
+
+even loaded more than 64k of the file.  However, that couldn't be
+
+right because it would load the entire DATA segment for ida.wll, which
+
+is well past the 64k mark.  Maybe it only loaded 64k of each segment.
+
+To investigate this, I ran IDA with BoundsChecker in order to look at
+
+how much of the file was actually being read in.
+
+
+
+So, fire up BoundsChecker (other API spies will probably work, but
+
+they won't give you the wealth of information BC does), and load
+
+idaw.exe.  In the program settings, be sure to set it to collect all
+
+event data and to load the module ida.wll.  Run the program from BC
+
+and open ida.wll from ida.  Let it run for a while (at least
+
+until you start getting the &quot;Execution flows beyond limits&quot; messages),
+
+and then quit ida.  You've got one hell of a lot of API calls recorded
+
+in BC.  In BC, search for calls to CreateFile (which, remember also
+
+opens files in Win32) until you find one that passes &quot;ida.wll&quot; as the
+
+file name.  The return value from CreateFile is the handle to ida.wll,
+
+so write that down and start searching for the handle (this will catch
+
+all API calls having to do with ida.wll).  You'll come across a whole
+
+bunch of calls to SetFilePointer and to ReadFile.  A lot of these
+
+calls set the file pointer to places in the PE Header and read 200
+
+bytes.  Forget about these-it's just reading in relevant info about
+
+the file.  Eventually, though, you'll hit a call the sets the pointer
+
+to the beginning of the code segment and reads 7A00 bytes, and then
+
+another that sets the pointer to the beginning of the data segment and
+
+reads DE00 bytes.  600 is the offset to the beginning of the code
+
+segment and 88000 is the offset to the DATA segment.  Why is it
+
+reading 7A00 bytes instead of 10000 bytes?  We'll answer that question
+
+in a moment.  Write down the location in ida.wll (4316DC) that called
+
+ReadFile (this can be found in the right hand pane in BC --- isn't BC
+
+great? NuMega wins again) and switch over to w32dasm to see what's
+
+going on there.
+
+
+
+It was in switching over to w32dasm at this point that I had a bit of
+
+dumb luck (dumb because I should have figured this out rather than
+
+stumbling across it).  W32dasm happened to be positioned at the top of
+
+the file where it tells you the segment information.  Guess what the
+
+size of the code segment is?  87A00.  The size of the data segment?
+
+DE00.  So, it's only <FONT color="blue">taking the low 2 bytes of the segment sizes to
+
+get the number of bytes to read in</FONT> from the file.  That's why all of
+
+the DATA segment but only part of the CODE segment is read.  This can
+
+be verified if you load ida.wll into ida and jump to address 408A00.
+
+At exactly that address, the code cuts off and you get question marks
+
+instead of data/code.
+
+
+
+Now, there are two ways to proceed.  The quick and easy way versus the
+
+methodical way.  I naturally first opted for the quick and easy way
+
+which is to search through the w32dasm listing for 0000FFFF and'ed
+
+with something else (searching for &quot;,{space}0000FFFF&quot; is a
+
+sufficiently narrow choice).  This, I assumed, was what the program
+
+did to prevent longer files from being read.  While I found some
+
+places where there were such and instructions, nothing panned out.  I
+
+won't bore you with the mess I created fiddling around with code in
+
+these sections.  IDA is designed to disassemble 16 bit programs as
+
+well as others, so 64k is relevant to it for many other reasons than
+
+the protection scheme (the length of a segment in 16 bit mode is 64k),
+
+so there are a lot of 64k red herrings in the program.  Well, the
+
+quick and easy way wasn't quick or easy and didn't work.  I'm
+
+impatient (a bad quality in a cracker), but it's always better to try
+
+to understand what the code is doing, rather than trying to get lucky.
+
+If you're methodical, the luck will find you.  Time for SoftICE.
+
+
+
+The strategy now is to set a breakpoint in SI at the ReadFile call,
+
+with the condition that the 3rd parameter be equal to 7A00 (otherwise
+
+we'd have to wade through the hundreds of other 200 byte calls).  This
+
+can be done with the following command:
+
+
+
+bpx 4316DC if *(esp+8)==7a00
+
+
+
+Load idaw.exe into SoftICE, set the breakpoint, and load ida.wll into
+
+IDA.  When the bp hits, we need to trace the 7A00 back until we find
+
+the point at which it was changed from 87A00.  This will be done by
+
+unwinding the stack within softice, which I will explain as we go
+
+along.
+
+
+
+So, the breakpoint has hit and we're sitting in a function which
+
+begins at 4316AC.  Looking at the code, we know that 7A00 came into
+
+this function as the third argument passed on the stack --- [ebp+10]
+
+(see the Appendix to this article for a discussion of parameter
+
+passing in C and C++ programs).  The strategy is to find the function
+
+that called the one we're in and figure out where it got the value
+
+7A00 that it passed to the function we're in.  We continue to apply
+
+this method, walking back through the call stack until we find out how
+
+87A00 got to be 7A00.  Here's how it works.
+
+
+
+Use the command dd esp to display the memory at the top of the stack.
+
+The first address within the program's code starting from the stack
+
+top and going forward (i.e., higher) in memory is the return address
+
+for the call to the function we're in.  Disassemble from that address
+
+and scroll up a little.  Directly above the address from which you
+
+disassembled you'll see the call instruction.  So, 4316AC was called
+
+by the function at 43088C:
+
+
+
+:004308CD 8B4D10        mov ecx, dword ptr [ebp+10] ; 3rd arg passed to this
+
+                                                    ; func == 7A00
+
+:004308D0 51            push ecx    ; arg3 to 004316AC
+
+:004308D1 50            push eax    ; arg2 to 004316AC
+
+:004308D2 8B4508        mov eax, dword ptr [ebp+08]
+
+:004308D5 50            push eax    ; arg1 to 004316AC
+
+:004308D6 E8D10D0000    call 004316AC
+
+
+
+From this code we see that 7A00 came in as the 3 rd argument passed to
+
+43088C.  So, who called 43088C.  Look a little further up the stack
+
+(which you should keep in the SoftICE data window) to find a call at
+
+42EB4C, which is in the function that starts at 42EAD4.  Keep
+
+following the same stack tracing method until you hit a call at 43A395
+
+to a function at 42EC04 (it should only be 2 more steps).  43A395 is
+
+in the function that starts at 43A314 and this where we hit pay-dirt.
+
+I have included almost the entire function below because what
+
+happens here is very interesting.  I've commented many of the lines
+
+and will also refer to the code as I continue.  At 43A389, we notice 
+
+that the local variable [ebp-18] is passed as the relevant argument 
+
+to 43088C.
+
+Therefore, it contains 7A00.  Let's trace backwards from 43A389 and
+
+see how [ebp-18] gets its value.  It comes in through the cx register,
+
+which of course can only hold a 16 bit (i.e., <=64k) value. There's the key to our problem. One more trace back up the stack will take us to the conversion from 87A00 to 7A00. We find the call to 43A314 at 48A836 and looking at the code "fragment.class" tppabs="http://fravia.org/fragment.class" immediately below we can see where the conversion occurs: :0043A822 8BD7 mov edx, edi :0043A824 8BC3 mov eax, ebx :0043A826 E885FFFFFF call 0043A7B0 :0043A82B 53 push ebx ;="=" start addr of segment="=" 401000 :0043A82C 8BCF mov ecx, edi ;="=" end addr of segment="=" 488A00 :0043A82E 662BCB sub cx, bx ;="=seg" length="=" 7A00 this is our bad guy :0043A831 8BD6 mov edx, esi :0043A833 8B45FC mov eax, dword ptr [ebp-04] :0043A836 E8D9FAFFFF call 0043A314 ; cx and edx are passed to this func Now we have to figure out how to crack it. That means we've got to change a 16 bit data type into a 32 bit data type in the functions at 48A804 and 48A314. In 48A804 it's not so hard. sub cx, bx needs to be sub ecx, ebx. This can be done by changing 66 to 90 (nop) at 43A82E. 66 is the opcode prefix representing an operand size override. <b>A brief digression</B><FONT color="purple">
+
+Intel chips can operate in 32 bit or 16 bit mode.  
+
+Win32 programs run in 32 bit mode and therefore default to accessing 
+
+the 32 bit registers and 32 bit memory operands.
+
+However, an instruction in 32 bit mode with the operand size override
+
+prefix accesses 16 bit registers and 16 bit memory operands.  
+
+End digression.</FONT>  
+
+So, changing 66 to a nop (90) switches the instruction
+
+back to accessing 32 bit registering.  This strategy is very useful
+
+for 48A314 as well.  Turning our attention to that function, however,
+
+we see that things are much more complicated.  The instruction at
+
+43A31D has an opsize prefix, but it accessing a memory location
+
+([ebp-06]) as well as a register.  We're going to need 2 more bytes of
+
+memory from sonewhere.  [ebp-06] is a local variable and we can't have
+
+it writing over other local variables.  So, let's lay out the local
+
+variables on the stack for this function:
+
+
+
+ebp          : prev ebp
+
+ebp-04       : local_1 (4 bytes)
+
+ebp-06       : our little friend, local_2 (2 bytes)
+
+ebp-0C       : 10000 (see function code below) (4 bytes)
+
+and so on.
+
+
+
+ebp-0C is a dword pointer and therefore only takes up 4 bytes.  It
+
+stops at ebp-08.  What is there at ebp-08?  [ebp-08] is never
+
+referenced in the function, so it looks like there's nothing there.
+
+Guess what we're going to put there, though?  You got it, the rest of
+
+the segment length.  This can be done by changing all the references
+
+to ebp-06 to ebp-08.  So, our instruction at 43A31D needs to change
+
+from:
+
+
+
+:0043A31D 66894DFA        mov word ptr [ebp-06], cx
+
+
+
+to:
+
+
+
+:0043A31D 90              nop
+
+:0043A31E 894DF8          mov dword ptr [ebp-08], ecx
+
+
+
+Removing the 66 takes care of changing cx to ecx and word ptr to dword
+
+ptr, while changing FA to F8 changes the ebp offset.  The same
+
+strategy can be applied at 43A35E, 43A3ED, and 43A414.  The
+
+instructions at 43A369 and 43A377 also need to be changed.  Movzx
+
+means move with sign extended and is used for moving smalling operands
+
+into larger operands while preserving the sign.  We want to change
+
+these to simple move instructions, moving our new 32 bit local
+
+variable into a 32 bit register.  This can be done fairly easily:
+
+
+
+:0043A369 0FB745FA        movzx eax, word ptr [ebp-06]
+
+:0043A377 0FB755FA        movzx edx, word ptr [ebp-06]
+
+
+
+becomes
+
+
+
+:0043A369 908B45F8        (nop) mov eax, dword ptr [ebp-08]
+
+:0043A377 908B55F8        (nop) mov edx, dword ptr [ebp-08]
+
+
+
+That takes care of all the instances of our local variable, but we're
+
+not done.  At first, it looks like [ebp-0C] is doing some dirty work
+
+here.  It gets assigned 10000, which is then compared with the # of
+
+bytes to read.  If the number of bytes is bigger, then only 10000
+
+bytes are read.  It looks for all the world like part of the
+
+protection scheme, but it isn't.  If, after having applied the patches
+
+I've mentioned so far, you force the jump at 43A370, the program
+
+crashes.  What ebp-0C does is simply make sure that the prog is
+
+reading only 64k at a time.  Notice that most of the function is a
+
+loop that reads 64k chunks until it's read everything it needs to.
+
+Another 64k red herring.  However, the instruction at 43A324 needs to
+
+be changed.  Remember that edx contains the start address of the
+
+segment.  For the code segment, this is less than 64k (i.e., 600), but
+
+for the data segment it's &gt; 64k.  I missed this instruction at first
+
+and ended up with a very frustrating problem.  The patches I've
+
+described so far work, but IDA was lining up the data segment in
+
+entirely the wrong place.  I spent hours looking for some alternate
+
+protection scheme, before I came back and realized what I had missed.
+
+43A324 was the culprit, so that needs to be patched in the same manner
+
+as 43A369 and 43A377.
+
+
+
+That's it.  No more 64k boundary and all files are disassembled
+
+properly.
+
+
+
+IV.  Reflections on the protection scheme
+
+
+
+At first, I thought that this must have been done in assembly.
+
+Operand override prefixes seemed pretty arcane.  However, it was odd
+
+to leave that 2 byte whole in the stack.  If you're programming in
+
+assembly, why do that?  Of course, even if that whole hadn't been
+
+there, we could have simply added space for a local variable (see the
+
+Appendix).  Upon further reflection, I realized what the programmer
+
+did and he did it in C/C++.  The function at 43A314 was changed from
+
+taking a long int argument to taking a short int argument and the
+
+argument passed to it at 43A804 was cast from a long int to a short
+
+int.  Two tiny changes in the source code produced exactly this effect
+
+(changes, of course, from the real, unlimited version of the program).
+
+The 2 bytes we needed on the stack were there because all compilers
+
+align 32bit values on dword boundaries and the other surrounding local
+
+variable were 32 bit.  Furthermore, when you run ida.wll through the
+
+cracked IDA you see that the call at 0043A395 to 43EC04 is actually a
+
+call to the Borland C library routine _fread (read from file).  Why
+
+are some of the arguments to 43A314 passed through registers instead
+
+of on the stack?  See the description of the _fastcall calling
+
+convention in the Appendix.  All in all, however, this is an
+
+interesting protection scheme, and certainly not of a kind that I have
+
+ever heard of before.  Now all we need to do is get those idb files
+
+loaded and produce asm and lst files (I think the code is in there,
+
+it's just a matter of getting to it).
+
+
+
+V.  The Expiration Date
+
+
+
+This crack is utterly trivial.  The code that checks the date is
+
+immediately after the test for 64k files at the beginning of the
+
+program.  I'll leave this crack as a mindless exercise.
+
+
+
+
+
+VI.  Summary of the patch
+
+
+
+:00403CED 760B            jbe 00403CFA  (change 76 to EB)
+
+:0043A82E 662BCB          sub cx, bx  (change 66 to 90)
+
+:0043A31D 66894DFA        mov word ptr [ebp-06], cx (change to 90894DF8)
+
+:0043A324 0FB7C2          movzx eax, dx  (change to 908BC2)
+
+:0043A35E 66837DFA00      cmp word ptr [ebp-06], 0000 (change to 90837DF800)
+
+:0043A369 0FB745FA        movzx eax, word ptr [ebp-06] (change to 908B45F8)
+
+:0043A377 0FB755FA        movzx edx, word ptr [ebp-06] (change to 908B55F8)
+
+:0043A3ED 66295DFA        sub word ptr [ebp-06], bx (change to 90295DF8)
+
+:0043A414 66837DFA00      cmp word ptr [ebp-06], 0000 (change to 90837DF800)
+
+
+
+VII.  The function at 43A314
+
+
+
+:0043A314 55              push ebp
+
+:0043A315 8BEC            mov ebp, esp
+
+:0043A317 83C4E0          add esp, FFFFFFE0
+
+:0043A31A 53              push ebx
+
+:0043A31B 56              push esi
+
+:0043A31C 57              push edi
+
+:0043A31D 66894DFA        mov word ptr [ebp-06], cx      ; here we go!
+
+       ; 7A00 is passed through cx (a 16bit register-that's no good!)
+
+:0043A321 8945FC          mov dword ptr [ebp-04], eax
+
+:0043A324 0FB7C2          movzx eax, dx           ; what's this about?
+
+         ; it's about hours of headache for me (see above)
+
+:0043A327 8BD0            mov edx, eax
+
+:0043A329 8B45FC          mov eax, dword ptr [ebp-04]
+
+:0043A32C 8B7D08          mov edi, dword ptr [ebp+08]
+
+:0043A32F E83065FEFF      call 00420864
+
+:0043A334 F60532EF490010  test byte ptr [0049EF32], 10
+
+:0043A33B C745F400000100  mov [ebp-0C], 00010000 ; 64k?! is this relevant? NO
+
+:0043A342 BA02000000      mov edx, 00000002
+
+:0043A347 7501            jne 0043A34A
+
+:0043A349 4A              dec edx 
+
+
+
+|:0043A347(C)
+
+|
+
+:0043A34A 8955F0          mov dword ptr [ebp-10], edx
+
+:0043A34D 8B4DF0          mov ecx, dword ptr [ebp-10]
+
+:0043A350 0FAF4DF4        imul ecx, dword ptr [ebp-0C]
+
+:0043A354 51              push ecx
+
+:0043A355 E8028BFFFF      call 00432E5C
+
+:0043A35A 59              pop ecx
+
+:0043A35B 8945EC          mov dword ptr [ebp-14], eax
+
+:0043A35E 66837DFA00      cmp word ptr [ebp-06], 0000 ; cmp 7A00, 0
+
+:0043A363 0F86B6000000    jbe 0043A41F
+
+
+
+|:0043A419(C)
+
+|
+
+:0043A369 0FB745FA        movzx eax, word ptr [ebp-06] ; needs patching
+
+:0043A36D 3B45F4          cmp eax, dword ptr [ebp-0C] ; [ebp-c]==10000
+
+:0043A370 7605            jbe 0043A377
+
+:0043A372 8B55F4          mov edx, dword ptr [ebp-0C]
+
+:0043A375 EB04            jmp 0043A37B    
+
+
+
+|:0043A370(C)
+
+|
+
+:0043A377 0FB755FA        movzx edx, word ptr [ebp-06] ; [ebp-06]==7A00  
+
+
+
+|:0043A375(U)
+
+|
+
+:0043A37B 8955E8          mov dword ptr [ebp-18], edx ;edx==7A00
+
+:0043A37E 8BC7            mov eax, edi
+
+:0043A380 E84B51FEFF      call 0041F4D0
+
+:0043A385 8B4DFC          mov ecx, dword ptr [ebp-04]
+
+:0043A388 51              push ecx
+
+:0043A389 8B45E8          mov eax, dword ptr [ebp-18] ;==7A00
+
+:0043A38C 50              push eax  ; # of bytes to read
+
+:0043A38D 8B55F0          mov edx, dword ptr [ebp-10]
+
+:0043A390 52              push edx
+
+:0043A391 8B4DEC          mov ecx, dword ptr [ebp-14]
+
+:0043A394 51              push ecx
+
+:0043A395 E86A48FFFF      call 0042EC04  ; this is the call that ends up
+
+                                     ; at ReadFile and takes #of bytes
+
+                                     ; to read as third arg
+
+
+
+. . . . . some irrelevant code removed . . . . .
+
+
+
+|:0043A3AF(C), :0043A3C8(U), :0043A3D4(C)
+
+|
+
+:0043A3ED 66295DFA        sub word ptr [ebp-06], bx ; this needs patching
+
+:0043A3F1 3B5DE8          cmp ebx, dword ptr [ebp-18]
+
+:0043A3F4 7419            je 0043A40F
+
+:0043A3F6 8B55EC          mov edx, dword ptr [ebp-14]
+
+:0043A3F9 52              push edx
+
+:0043A3FA E8F589FFFF      call 00432DF4
+
+:0043A3FF 59              pop ecx
+
+:0043A400 68BE000000      push 000000BE ; message from ida.hlp:
+
+                         ; &quot;Error during read, not all of file read&quot;
+
+:0043A405 E872640200      call 0046087C
+
+:0043A40A 59              pop ecx
+
+:0043A40B 33C0            xor eax, eax
+
+:0043A40D EB1F            jmp 0043A42E  
+
+
+
+|:0043A3F4(C)
+
+|
+
+:0043A40F E8D8FEFFFF      call 0043A2EC
+
+:0043A414 66837DFA00      cmp word ptr [ebp-06], 0000 ; needs patching
+
+:0043A419 0F874AFFFFFF    ja 0043A369    
+
+
+
+|:0043A363(C)
+
+|
+
+:0043A41F 8B55EC          mov edx, dword ptr [ebp-14]
+
+:0043A422 52              push edx
+
+:0043A423 E8CC89FFFF      call 00432DF4
+
+:0043A428 59              pop ecx
+
+:0043A429 B801000000      mov eax, 00000001 
+
+
+
+|:0043A40D(U)
+
+|
+
+:0043A42E 5F              pop edi
+
+:0043A42F 5E              pop esi
+
+:0043A430 5B              pop ebx
+
+:0043A431 8BE5            mov esp, ebp
+
+:0043A433 5D              pop ebp
+
+:0043A434 C20400          ret 0004
+
+
+
+
+
+APPENDIX:  Stack frames and calling conventions
+
+
+
+The most common way for a program to set up the stack during a
+
+function call is to use the ebp register (the base register) to hold
+
+the base of the stack relative to that function.  An amount is then
+
+subtracted from esp which represents the amount of space reserved for
+
+local variables.  This is done with the following code which is at the
+
+beginning of most functions:
+
+
+
+push ebp
+
+mov ebp,esp
+
+add esp, -10 (FFFFFFF0) ; 10 bytes for local variables
+
+
+
+The funcion can then use positive offsets to ebp to reference
+
+arguments and negative offsets to reference local variables.
+
+
+
+For example:
+
+
+
+loc1:	push arg3
+
+loc2:	push arg2
+
+loc3:	push arg1
+
+loc4:	call sub
+
+loc5:	mov [ebp-8], eax
+
+
+
+proc sub
+
+sub1:	push ebp       ; save ebp from calling function
+
+sub2:	mov ebp, esp   ; set ebp to point at stack base for this
+
+function
+
+sub3:	sub esp, 10    ; reserve 10 bytes for four local variables
+
+sub4:	mov eax, [ebp+8]   ; move arg1 into eax
+
+sub5:	mov ecx, [ebp+C]   ; move arg2 into ecx
+
+sub6:	mov edx, [ebp+10]  ; move arg3 into edx
+
+sub7:	mov [ebp-4], eax   ; move arg1 into local_1
+
+sub8:	mov [ebp-8], edx   ; move arg3 into local_2
+
+sub9:	push [ebp+C]       ; push arg2 onto stack
+
+
+
+At sub1, the stack looks like this:
+
+
+
+arg3    <ESP-C arg2 <-- esp-8 arg1 <-- esp-4 loc5 <-- esp at sub4 it looks like this: arg3 <-- ebp+10 arg2 <-- ebp+C arg1 <-- ebp+8 loc5 <-- the return address ebp from calling function <-- current ebp local_1 <-- ebp-4 local_2 <-- ebp-8 local_3 <-- ebp-C local_4 <-- ebp-10 <-- esp Things are not always this pretty, unfortunately. There are three factors that can disrupt this happy picture. 1. Stack frame optimization 2. Alternate calling conventions 3. Enregistered local variables 1. Most compilers these days (certainly M$ VC++ and Borland C++) have an optimization setting that allows you to turn off ebp based stack frames. This makes the function overhead smaller and frees up the ebp register for other uses. The function still references arguments and local variables off the stack, but the ebp register doesn't point to the function's stack base. Instead, esp is used to reference the srguments and locals. The problem is that every time something is pushed onto or popped off of the stack, the value of esp changes. The compiler is able to compensate for this by adjusting the amount esp is offset when referencing the arguments and locals. Here's an example: sub1: mov eax, [esp+4] ; mov arg1 into eax sub2: push ebx ; push ebx onto the stack for whatever reason sub3: mov edx, [esp+8] ; move arg1 into edx---the offset has changed ; because we pushed ebx onto the stack at sub2 This is annoying because it makes much harder for things that aren't compilers (like us) to keep track of what's getting referenced where. The nice thing about IDA Pro is that marks all these references for you! That's why it *must* be cracked. 2. A calling convention determines the order in which arguments are passed and how they are passed. The two most common calling convention are the Pascal and C calling conventions, which fravia+ has explained quite well elsewhere. However, there are two other conventions, which pass arguments through registers, that are worth being aware of. The first is the _thiscall convention, which follows the C calling convention, but also passes a pointer to the object this (in C++, this refers to the current object) through register ecx. The second is the _fastcall convention, which passes the first two arguments that are 32 bits or less through registers ecx and edx, and then passes the rest of the arguments on the stack with the C calling order. 3. Local variables are not always stored on the stack after the return address. For optimization purposes (it's much faster to get a value from a register than from memory), registers are sometimes used to hold local variables. Of course, there being a limited number of general registers in Intel chips (RISC chips can have 5-10 times as many registers) this can only be true to a limited extent. Furthermore, the compiler has to use some registers as what are called scratch registers (i.e., places to temporarily hold values) while it moves values in and out of memory. Detecting enregistered local variables can be difficult. </prE>
+
+<HR size="2">
+
+<I><CENTER>And you better don't joke with this request of Quine either, because
+
+I'll find out if you do.</I></CENTER><PRE>
+
+fravia+,
+
+
+
+	I was wondering if you could add to my essay(s) the note that I
+
+would very much like for no one to release the cracks to IDA as crack
+
+programs (those vulgar little .com files) on the web or for anyone to
+
+publish the cracks <U>without</U> the full essay.  I have too much respect
+
+for the author of the program to have the demo crack tossed about the
+
+web for people who are not serious about reverse engineering.  He has
+
+written such a beautiful program that those of us who really cannot 
+
+afford to buy it ought to -at least- earn the right to use it.
+
+
+
+Thanks,
+
+Quine</PRE>
+
+<FONT color="green">(c) Quine 1997. All rights reversed</FONT>
+
+<HR ALIGN="CENTER" WIDTH="100%" SIZE="3">
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</I></CENTER>
+
+<BR><CENTER>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="advanced.htm" tppabs="http://www.anticrack.de/fravia/advanced.htm">Back to Advanced Cracking</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="project1.htm" tppabs="http://www.anticrack.de/fravia/project1.htm">Back to Project 1</A>
+
+<HR width="33%">
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut CGI-scripts</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering legal?</A></CENTER>
+
+<CENTER><HR ALIGN="CENTER" WIDTH="100%" SIZE="2"></CENTER>
+
+</BODY>
+
+</HTML>
+

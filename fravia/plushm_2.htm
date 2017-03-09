@@ -1,0 +1,340 @@
+<html><HEAD>
+
+<TITLE>plushm_2</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+<CENTER><FONT size="+3">How to crack Business Card Designer Plus v5.00b</FONT><BR>
+
+<FONT size="+2">
+
+(&quot;The Maths behind a Key Generator&quot;)</FONT>
+
+
+
+<BR>
+
+<H4><I>by plushmm</I>
+
+<BR>(25 July 1997)</H4>
+
+<HR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">
+
+Courtesy of Fravia's page of reverse engineering<BR><HR size="2">
+
+	<I>
+
+Well, a pretty interesting essay: how to quickly identify the expected input of 
+
+a protection scheme (basing on Windoze's &quot;c&quot; compilation constraints)... some sound 
+
+elements of reverse engineering here, and a serious lesson for all shareware programmers!</I>	</CENTER>
+
+<HR size="2">
+
+<PRE><CENTER><FONT size="+2">How to crack Business Card Designer Plus v5.00b
+
+ </FONT><FONT size="+1">
+
+(The Maths behind a Key Generator)
+
+ </FONT>
+
+by plushmm
+
+
+
+(25 July 1997)</CENTER>
+
+
+
+It is my idea to discuss about Key Generators since I notice that very few 
+
+crackers have written Essays about how to go about creating them.  
+
+As such, this is my first attempt at writing one that deals with that 
+
+subject matter. 
+
+
+
+You can obtain our target from: <A href="tppmsgs/msgs2.htm#247" tppabs="http://www.anticrack.de/fravia/tppmsgs/msgs2.htm#247">http://www.camdevelopment.com</A> 
+
+
+
+Run the program, choose Register, and bpx on GetDlgItemTextA. 
+
+
+
+Softice snaps, and you're tracing.  
+
+If you display the contents of the registers (indirect addressing of 
+
+course), you come across this: 
+
+ <FONT color="red">
+
+* Possible StringData Ref from Data Obj -&gt;&quot;BCD5-@??????-CAM1&quot; 
+
+				 </FONT>
+
+We now know that our input must be 17 chars long, and is checked against 
+
+the above &quot;sample&quot;. Think about it now.  What does &quot;?&quot; normally mean?  
+
+Any value right?  So then what does the &quot;@&quot; mean then?  Probably some 
+
+kinda checksum! 
+
+
+
+Anyway, we break into Softice here: 
+
+
+
+* Reference To: USER32.GetDlgItemTextA, Ord:0000h 
+
+:00492C45 E8E9470000     Call 00497433              ;here 
+
+:00492C4A 8B4B19         mov ecx, dword ptr [ebx+19] 
+
+:00492C4D 51             push ecx 
+
+:00492C4E E851EDFFFF     call 004919A4              ;key checking routine 
+
+:00492C53 59             pop ecx 
+
+:00492C54 85C0           test eax, eax 
+
+:00492C56 0F8EEA000000   jle 00492D46               ;evil jump-but don't patch 
+
+  
+
+Tracing into the key checking routine (00492C4E), we arrive here... 
+
+
+
+Note:  From now, we assume that the key we input is &quot;BCD5-ABCDEFG-CAM1&quot; 
+
+Remember also that the &quot;sample&quot; given is            &quot;BCD5-@??????-CAM1&quot;  
+
+
+
+...skipping non-important code... 
+
+...and going straight into the key calculation routine...
+
+
+
+:00491A88 8B55F8          mov edx, dword ptr [ebp-08] 
+
+:00491A8B 0FBE0A          movsx ecx, byte ptr [edx] 
+
+:00491A8E 83F940          cmp ecx, 00000040    ;checking against the &quot;sample&quot; to
+
+                                               ;see if we reached &quot;@&quot; (40 hex=&quot;@&quot;) 
+
+:00491A91 7542            jne 00491AD5                 ;dont jump if &quot;@&quot; is true 
+
+:00491A93 0FBE0B          movsx ecx, byte ptr [ebx]    ;ecx = B 
+
+:00491A96 0FBE4301        movsx eax, byte ptr [ebx+01] ;eax = C 
+
+:00491A9A 03C8            add ecx, eax                 ;ecx = B+C 
+
+:00491A9C 0FBE5302        movsx edx, byte ptr [ebx+02] ;edx = D 
+
+:00491AA0 03CA            add ecx, edx                 ;ecx = B+C+D 
+
+:00491AA2 0FBE4303        movsx eax, byte ptr [ebx+03] ;eax = E 
+
+:00491AA6 03C8            add ecx, eax                 ;ecx = B+C+D+E 
+
+:00491AA8 0FBE5304        movsx edx, byte ptr [ebx+04] ;edx = F 
+
+:00491AAC 03CA            add ecx, edx                 ;ecx = B+C+D+E+F 
+
+:00491AAE 0FBE4305        movsx eax, byte ptr [ebx+05] ;eax = G 
+
+:00491AB2 03C8            add ecx, eax                 ;ecx = B+C+D+E+F 
+
+:00491AB4 8BC1            mov eax, ecx                 ;eax = ecx...preparing to mod 
+
+:00491AB6 B91A000000      mov ecx, 0000001A            ;1A is the quotient...1A = 26
+
+                                                       ;decimal which is the spanning 
+
+													   ;length of the Alphabet (A-Z)! 
+
+:00491ABB 99              cdq                          ;make 64 bit 
+
+:00491ABC F7F9            idiv ecx           ;division done...edx has the remainder 
+
+:00491ABE 83C241          add edx, 00000041            ;0 <= edx <="25." 41="A" ... ;therefore we get an Uppercased Alphabet! :00491AC1 8BCA mov ecx, edx ;ecx, the checksum, is an ;Uppercased Alphabet :00491AC3 8A43FF mov al, byte ptr [ebx-01] ;This is A :00491AC6 84C0 test al, al :00491AC8 7407 je 00491AD1 :00491ACA 0FBED0 movsx edx, al :00491ACD 3BCA cmp ecx, edx ;Compare our "first" input "A" ;with the correct checksum :00491ACF 7404 je 00491AD5 ;is equal...then good guy...jump :00491AD1 33FF xor edi, edi ;if edi="0" then bad guy :00491AD3 EB12 jmp 00491AE7 We see that the only values that matters are "ABCDEFG". Ok...lets see what the checksum should be: sum="B" +"C"+"D"+"E"+"F"+"G"="19B" (hex addition) remainder="19B" mod 1A="15" checksum="41+15" in ascii Since "A" <> &quot;V&quot;, therefore we're the bad guys!  Therefore...changing our &quot;A&quot; to &quot;V&quot; 
+
+will get you regged. 
+
+
+
+Want the Reg Key to include +HCU? 
+
+sum       = &quot;_&quot; + &quot;+&quot; + &quot;H&quot; + &quot;C&quot; + U&quot; + &quot;_&quot; = 1C9 
+
+remainder = 1C9 mod 1A    = F 
+
+checksum  = 41+F          = 50 = &quot;P&quot; in ascii 
+
+
+
+Therefore a valid Reg Code would be &quot;BCD5-P_+HCU_-CAM1&quot; 
+
+
+
+Wanna have &quot;Plushm&quot; in the Reg Code? 
+
+
+
+checksum  =   &quot;P&quot;   =    50 - 41  = F 
+
+sum       =   &quot;l&quot;+&quot;u&quot;+&quot;s&quot;+&quot;h&quot;+&quot;m&quot; = 229 
+
+remainder = 229 mod 1A            = 7 
+
+checksum - remainder              = F-7 = 8 
+
+
+
+Therefore any character in the equation 8 + 1A(n), where n is any positive integer, will be
+
+valid.  Lets choose &quot;<", since "<"="8" + 1A(2)="3C" ascii. Therefore another equally valid Reg Code "could.class" tppabs="http://fravia.org/could.class" be "BCD5-Plushm<-CAM1" Anyway, here's the (main) Reg calculation code (in Pascal)...have fun! <hr><font size="+2">plushmm -= RiP'97 =-</font><hr><font color="purple"> 
+
+  RegCode := 'BCD5-@??????-CAM1'; 
+
+  WriteLn; 
+
+  i := 6; 
+
+  Randomize; 
+
+  value := 0; 
+
+
+
+  Writeln('Press &lt;S&gt; for something special...'); 
+
+  Writeln; 
+
+  TemChar := ReadKey; 
+
+
+
+  If UPCASE(TemChar) <> 'S' Then            {Random letters used} 
+
+
+
+     Repeat 
+
+           i := i+1; 
+
+           TemInt := Random(26)+65; 
+
+           Value := Value + TemInt; 
+
+           TemChar := Chr(TemInt); 
+
+           RegCode[i] := TemChar; 
+
+     Until i = 12 
+
+
+
+  else 
+
+     Repeat                                  {Built your own Key!} 
+
+           i := i+1; 
+
+           Write('What do you want your Reg Key to be :'); 
+
+           TemChar := ReadKey; 
+
+           Writeln(TemChar); 
+
+           RegCode[i] := TemChar; 
+
+           TemInt := Ord(TemChar); 
+
+           Value := Value + TemInt; 
+
+     until i = 12; 
+
+  Remainder := Value mod 26; 
+
+  RegCode[6] := Chr(Remainder+65); 
+
+  Writeln; 
+
+  Write('Your registration code is:'); 
+
+  Writeln(RegCode); </font>
+
+
+
+<font color="blue">(c) plushmm 1997.</font> All rights reserved.
+
+   </pre>
+
+
+
+<hr ALIGN="CENTER" WIDTH="100%" SIZE="3">
+
+<center><i>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</i></center>
+
+<br><center>
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><a HREF="tppmsgs/msgs0.htm#84" tppabs="http://www.anticrack.de/fravia/tppmsgs/msgs0.htm#84">homepage </a><img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"> 
+
+<a HREF="tppmsgs/msgs0.htm#73" tppabs="http://www.anticrack.de/fravia/tppmsgs/msgs0.htm#73">links </a> 
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0">
+
+<a HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity </a> 
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><a HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC </a>
+
+
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><a HREF="tppmsgs/msgs0.htm#82" tppabs="http://www.anticrack.de/fravia/tppmsgs/msgs0.htm#82">students' essays </a>
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><a HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools </a><img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><a HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails </a><br>
+
+
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><a HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut </a>
+
+
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><a HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms </a>
+
+
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><a HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mailFraVia </a><br>
+
+
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><a HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">is reverse engineering legal? </a></center>
+
+<center><hr ALIGN="CENTER" WIDTH="100%" SIZE="2"></center>
+
+
+
+</body>
+
+</html>
+

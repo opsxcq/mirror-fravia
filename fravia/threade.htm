@@ -1,0 +1,388 @@
+<HTML>
+
+<HEAD>
+
+<META Name="Voluntary Content Rating" content="it's fravia's: great!">
+
+<TITLE>threade.htm: another way to control packed target</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR=#C0C0C0 TEXT=#001010 ALINK=#405040 VLINK=#8850AA>
+
+<CENTER><B><FONT size=+3>Cracking a packed exe. _packer: azpack: _program: AZPR 2.31.</FONT></B>
+
+
+
+<BR><FONT size=+2>by staier<BR></FONT>(September 1999)<BR><BR>
+
+<A href="projunpa.htm" tppabs="http://www.anticrack.de/fravia/projunpa.htm"><IMG SRC="projunpa.gif" tppabs="http://www.anticrack.de/fravia/projunpa.gif" ALT="projunpa" ALIGN=BOTTOM WIDTH=114 
+
+HEIGHT=43 BORDER=0 VSPACE=0 HSPACE=0></A>
+
+<BR><FONT color=gray>Packers</FONT><BR>
+
+<HR>Courtesy of fravia's pages of reverse engineering ~ slightly edited by fravia+
+
+<HR></CENTER></FONT>
+
+
+
+
+
+<CENTER>
+
+<FONT color =red size=+1>
+
+Cracking a packed exe. _packer: azpack: _program: AZPR 2.31.
+
+</FONT>
+
+</CENTER>
+
+
+
+<PRE>
+
+	After  investigating the program with softice,procdump and IDA we  easily can find that
+
+the program 'd be cracked at once  , (if unpacked).But what if we can not unpack the 
+
+program?-Actually i could not-.The first  way is to make a  little program, and  patch the
+
+target with WriteProcessMemory .
+
+
+
+here i show you the source in Pascal, wich could be  compiled in any DELPHI32.
+
+
+
+LISTING 1 "AZPRLOADER.DPR"
+
+
+
+<HR color=red>
+
+
+
+program azprloader;
+
+uses windows;<FONT COLOR = GREEN>// WIN32 API headers</FONT>
+
+     i:cardinal;
+
+const     buf:array[0..4 ]of byte=($0,$0,$90,$90,$e3);
+
+<FONT COLOR = GREEN>
+
+{codes buffer 
+
+ BUF[0..1]- read bytes accumulator 
+
+ BUF[2..3]- NOP NOP -opcodes for writing
+
+ BUF[4]   -amother patch- jmp addr correction}
+
+</FONT>
+
+   const appname='azpr.exe';<FONT COLOR = GREEN>// target name</FONT>
+
+var
+
+<FONT COLOR = GREEN>//structures ,defined in windows.pas(windows.h)</FONT>
+
+sti:_startupinfoa;
+
+lpPi:_process_information;
+
+
+
+begin
+
+
+
+   if not CreateProcess(nil,AppName,nil,nil,false,
+
+                        CREATE_NEW_CONSOLE or NORMAL_PRIORITY_CLASS,<FONT COLOR = GREEN>//attributes</FONT>
+
+                        nil,nil,StartupInfo,<FONT COLOR = GREEN>//applications params</FONT>
+
+                        lpPI)<FONT COLOR = GREEN>//returning attributes</FONT>
+
+   then
+
+   begin
+
+   messageboxa(0,'cannot find AZPR.exe','AZPRloader',0);//<FONT COLOR = GREEN>// no such a file</FONT>
+
+   exit;
+
+   end;
+
+
+
+while (true )do<FONT COLOR = GREEN>//endless cycle</FONT>
+
+
+
+if readprocessmemory(lppi.hprocess,pointer($40fbb5),@buf,2,i) then <FONT COLOR=GREEN>//read  bytes</FONT>
+
+    if (buf[0]=$eb) and (buf[1]=5) then<FONT COLOR = GREEN>//if the bytes already unpacked(Jnz +5)</FONT>
+
+    begin
+
+    writeprocessmemory(lppi.hProcess,pointer($40fbb5),@buf[2],2,i);<FONT COLOR = GREEN>//change to NOP NOP</FONT>
+
+    writeprocessmemory(lppi.hProcess,pointer($40fb78),@buf[4],1,i);<FONT COLOR = GREEN>//another patch</FONT>
+
+    closehandle(lppi.hprocess);<FONT COLOR = GREEN>//Close process handle</FONT>
+
+    exit;
+
+    end;
+
+
+
+end.
+
+<BR>
+
+<HR color=red>
+
+EOLISTING .1
+
+<BR>
+
+<FOMT color=blue>actually the skeleton of the program was decompiled from TNO loader for aspack packer</FONT>
+
+
+
+<HR color=red>
+
+</PRE>
+
+	Now i will describe another approach ,rather universal too,It can be applied to huge quantity of programs
+
+either packet or  not. The approach can be expressed in short as an  "installation of 
+
+new thread, wich controls
+
+target's thread(s)"
+
+<BR><BR>
+
+
+
+
+
+
+
+	First
+
+<BR>
+
+	We need to find some detales :Imagebase, GetModuleHandleA @ GepProcAddress addresses and "kernel32.dll" 
+
+string address.All these detales we can clearly see in IDA exellent disassembler. 
+
+<BR><BR>
+
+
+
+	Second 
+
+<BR>
+
+	let us start  hiew, and find entrypoint and some space for new code. the space can be fount at 
+
+the end of file  at .0016A96E
+
+ so at the entrypoint, let us  write  a jump to our new code
+
+<BR><BR>
+
+
+
+.169000    jmp .0016A96E. -instead of      pushad ;
+
+					   call 00000000;
+
+	<BR><BR>
+
+	Third<BR>
+
+	Now,let us  be a compiler(assembler).
+
+<BR><BR>
+
+As the imagebase of program is  400000 , then the program will hardly be relocated to another address, so we can 
+
+hardcode absolute addresses,in other case we'd have to ÚÓ extend relocation table after coding.
+
+
+
+<BR><BR>
+
+
+
+     <PRE>
+
+LISTING 2 "putch for the AZPR.exex"
+
+
+
+<HR color=red>
+
+
+
+
+
+
+
+
+
+.0016A96E: B860E80000                   mov    eax,00000E860 	; restore code
+
+.0016A973: A300905600                   mov    [000569000],eax	; at the 
+
+.0016A978: C6050590560000               mov    b,[000569005],000; entrypoint      
+
+.0016A97F: 689C975600                   push   00056979C   	;'kernel32.dll'.
+
+.0016A984: 90                           nop
+
+.0016A985: FF1590975600                 call   d,[000569790]    ;GetModuleHandleA('kernel32.dll').
+
+.0016A98B: 50                           push   eax              ;save handle of kernel32.dll.
+
+.0016A98C: 6A44                         push   044		;ordinal 0x44-CreateThread.
+
+.0016A98E: 90                           nop			;
+
+.0016A98F: 50                           push   eax		;'kernel32.dll'.
+
+.0016A990: FF158C975600                 call   d,[00056978C]	;GepProcAddress(kernlhandle,0x44L).
+
+.0016A996: A3C7A95600                   mov    [00056A9C7],eax  ;save address of CreateThread.
+
+.0016A99B: 58                           pop    eax		;restore handle of kernel32.dll. 
+
+.0016A99C: 6A6D                         push   06D		;ordinal 0x44-ExitThread.
+
+.0016A99E: 50                           push   eax		;kernel32.dll
+
+.0016A99F: FF158C975600                 call   d,[00056978C]	;GepProcAddress(kernlhandle,0x6dL);
+
+.0016A9A5: A3CBA95600                   mov    [00056A9CB],eax	;save ExitThread address.
+
+.0016A9AA: 68CF975600                   push   0005697CF	;address for dword,returned from CreateThread;
+
+.0016A9AF: 6A00                         push   000		
+
+.0016A9B1: 6A00                         push   000		
+
+.0016A9B3: 68D3A95600                   push   00056A9D3	;our thread function
+
+.0016A9B8: 6A00                         push   000		
+
+.0016A9BA: 6A00                         push   000
+
+.0016A9BC: FF15C7A95600                 call   d,[00056A9C7]	;CreateThread(0,0,threadhandler,0,0,&returned);
+
+.0016A9C2: E939E6FFFF                   jmp   .000169000   	;jump to restored code at the entrypoint
+
+.0016A9C7: 1111                         adc    [ecx],edx	;this is not a command ,DWORD - CreateThread address
+
+.0016A9C9: 1111                         adc    [ecx],edx	;
+
+.0016A9CB: 2222                         and    ah,[edx]		;this is not a command ,DWORD - ExitThread address 
+
+.0016A9CD: 2222                         and    ah,[edx]		;
+
+.0016A9CF: 3333                         xor    esi,[ebx]	;this is not a command,DWORD -returned
+
+.0016A9D1: 3333                         xor    esi,[ebx]	;
+
+
+
+<FONT color =red >;new thread procedure</FONT> DWORD winapi threadproc(void*); 
+
+
+
+.0016A9D3: 66813DB5FB4000EB05           cmp    w,[00040FBB5],005EB     ;if bytes unpacked
+
+.0016A9DC: 75F5                         jne   .00016A9D3               ;no, repeat cmp
+
+.0016A9DE: 66C705B5FB40009090           mov    w,[00040FBB5],09090     ;patch teh program jmp +05 to NOP NOP
+
+.0016A9E7: C60578FB40003E               mov    b,[00040FB78],03E       ;another jmp address
+
+.0016A9EE: 6A00                         push   000			
+
+.0016A9F0: FF15CBA95600                 call   d,[00056A9CB]	       ;Exit‰hread(0);
+
+.0016A9F6: C20400                       retn   00004		       ;return 
+
+
+
+ that's all,falks
+
+<HR>
+
+(c) 1999 Staier from http://staier.cjb.net
+
+<HR>
+
+
+
+</PRE>
+
+
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering, choose your way out:
+
+</I>
+
+<HR width=33%>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" BORDER=0 HEIGHT=13 WIDTH=13 ALIGN=BOTTOM><A HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage</A>&nbsp;<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" BORDER=0 HEIGHT=13 WIDTH=13 ALIGN=BOTTOM><A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links</A>&nbsp;<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" BORDER=0 HEIGHT=13 WIDTH=13 ALIGN=BOTTOM><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms</A>&nbsp;<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" BORDER=0 HEIGHT=13 WIDTH=13 ALIGN=BOTTOM><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC</A>&nbsp;<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" BORDER=0 HEIGHT=13 WIDTH=13 ALIGN=BOTTOM><A HREF="protec.htm" tppabs="http://www.anticrack.de/fravia/protec.htm">how
+
+to protect</A>&nbsp;<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" BORDER=0 HEIGHT=13 WIDTH=13 ALIGN=BOTTOM><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy
+
+database</A></CENTER>
+
+
+
+<CENTER><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" BORDER=0 HEIGHT=13 WIDTH=13 ALIGN=BOTTOM><A HREF="realicra.htm" tppabs="http://www.anticrack.de/fravia/realicra.htm">reality
+
+cracking</A>&nbsp;<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" BORDER=0 HEIGHT=13 WIDTH=13 ALIGN=BOTTOM><A HREF="howtosea.htm" tppabs="http://www.anticrack.de/fravia/howtosea.htm">how
+
+to search</A>&nbsp;<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" BORDER=0 HEIGHT=13 WIDTH=13 ALIGN=BOTTOM><A HREF="javascri.htm" tppabs="http://www.anticrack.de/fravia/javascri.htm">javascript
+
+wars</A></CENTER>
+
+
+
+<CENTER><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" BORDER=0 HEIGHT=13 WIDTH=13 ALIGN=BOTTOM><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools</A>&nbsp;<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" BORDER=0 HEIGHT=13 WIDTH=13 ALIGN=BOTTOM><A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity
+
+academy</A>&nbsp;<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" BORDER=0 HEIGHT=13 WIDTH=13 ALIGN=BOTTOM><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails</A>&nbsp;<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" BORDER=0 HEIGHT=13 WIDTH=13 ALIGN=BOTTOM><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut
+
+CGI-scripts</A>&nbsp;<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" BORDER=0 HEIGHT=13 WIDTH=13 ALIGN=BOTTOM><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia+</A></CENTER>
+
+
+
+<CENTER><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" BORDER=0 HEIGHT=13 WIDTH=13 ALIGN=BOTTOM><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is
+
+reverse engineering legal?</A></CENTER>
+
+
+
+<HR><!-- THAT'S ALL, THANKS A LOT this will allow automated retrieval -->
+
+</BODY>
+
+</HTML>
+

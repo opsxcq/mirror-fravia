@@ -1,0 +1,480 @@
+<HTML>
+
+<HEAD>
+
+<META Name="Voluntary Content Rating" content="it's fravia's: great!">
+
+<TITLE>pepper2.htm: Information Manager - another joke to write Registration Schemes</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR=#C0C0C0 TEXT=#001010 ALINK=#405040 VLINK=#8850AA>
+
+<CENTER><B><FONT size=+3>Information Manager - another joke to write Registration Schemes</FONT></B>
+
+
+
+<BR><FONT size=+2>by Pepper [PC]<BR>(November 1997)
+
+<HR>
+
+Courtesy of fravia's pages of reverse engineering
+
+<HR></CENTER>
+
+<PRE>
+
+And here my second "script"
+
+Pepper [PC]
+
+===============================================================
+
+
+
+Information Manager - another joke to write Registration Schemes.
+
+Or how MS helps to open a nice program...
+
+
+
+Have you ever found a program which resists any attack by WinIce
+
+and where no Decompiler exists ? Even no other tool works ? No,
+
+I dont talk about ugly VB 4.0 (thanks to Razzia and others we 
+
+learned a lot on that stuff). Let me introduce a very interesting
+
+set of programs:
+
+
+
+Information Manager 2.0
+
+Information Manager ViP 2.0
+
+Music Manager 2.0
+
+
+
+All from the same Software House and using a similar Registration
+
+Scheme: just enter a RegCode, no Name, nothing else. So it is no
+
+Shareware to be registered to someone but a Try and Buy program
+
+and maybe excellent (?) protected. Hunting around with WinIce shows
+
+a lot but no final solution. So let us check what kind of Language
+
+is used, perhaps a useful tool, Decompiler or whatever may help.
+
+
+
+When breaking into the code we never get into a typcal EXE-File but
+
+tracing around sometimes we run into MSACCESS. Is that a Language ?
+
+Yes, it is more than a Database but has implemented a Basic like
+
+Language. So let us open the Database. It is always a file named
+
+xxx.MDB and really when we open the main MDB-File using MSACCESS
+
+we see: there are not only Data Bases but also Messages, Reports
+
+AND MODULES ! Thats it. A group of modules like xxx.BAS is there.
+
+Now let us open a Module.
+
+
+
+Ahh, not possible. We know MsAccess is a complex program and has
+
+features for several protection levels (the User's right to open,
+
+view or modify datas and whatever). Now its time to run WinIce again
+
+but not on the program to be registered. No, we run WinIce and open
+
+MSACCESS. Then open the MDB-File and try a few BPX. Fastest success
+
+is with MessageBeep (DialogBox... also will work). Anyway we jump
+
+right into MSACCESS close to our ErrorMessage "access to the module
+
+is not possible".
+
+
+
+I used MsAccess 2.0 (16-bit) in Win 3.11 and all addresses are
+
+from that Version. If using other versions you hopefully will find
+
+the same principle.
+
+
+
+When we break into the ErrorMessage let us jump over (F11) and
+
+trace until we pass 2 or 3 RET instructions. Then have a look
+
+some codelines back and you will see a conditional jump:
+
+
+
+   MSACCESS(44):203    cmp ax,0
+
+                       jne ...
+
+
+
+Here set a BPX and next time let us jump (JMP instead JNE).
+
+Wow! We get another Message: Write Protected, but we can
+
+open and read. Fine, we never asked for more. So let us open
+
+the Module. Great, we got it all. Lets open one after the
+
+other and with a Module "Main..." we see something like:
+
+
+
+   x = Format(Now, "########")
+
+   y = (x * 6) / 2
+
+   z = Hex(y)
+
+   ... some kind of compare follows ...
+
+
+
+The Source Code looks exactly like VB Code and indeed it is
+
+(both are from MS - thanks to "Billy the Gate"). Now we see
+
+the trick and why there is no simple RegCode: it is generated
+
+from the actual Date:
+
+
+
+"Now" is today and "Format ########" converts the Date to an
+
+integer number. Rest is simple. The Compare is done with the
+
+right 5 digits of "z". A KeyGen is now easy and we may create
+
+8 digits where the left 3 digits maybe random and the right 5
+
+are calculated from actual Date.
+
+
+
+So far so good. But for further projects we should create a
+
+"special" tool. And why not also enable full access on any
+
+MDB-File, also writing ? We may need it for further projects.
+
+
+
+The above patch from JNE to JMP only enables to read a file
+
+if locked in a certain way. For those using MSACCESS 2.0 here
+
+is a "final" solution. After some more tracing we find that a
+
+special DLL is used whenever a decision is made wether access
+
+is allowed or not:
+
+
+
+   MSAJT200.DLL
+
+
+
+That DLL is a standard one of MS and used for many purposes.
+
+Changing one single byte is the solution for all our problems:
+
+
+
+   MSAJT200.DLL    absolute offset 0x3B0F1 is 0x99
+
+                                     patch to 0x90
+
+
+
+0x99 is CWD and sets a flag for the later instructions. We disable
+
+that flag by 0x90, the well known NOP. As the DLL is very small
+
+we make a MSAJT200.PAT and a MSAJT200.ORI and whenever we need
+
+our "special" tool we copy the PAT to the DLL (the ORI we may use
+
+to get back our original DLL). Or we write a patcher switching
+
+between - why not.
+
+
+
+I think the most exciting was to see: some difficult looking
+
+protection is often very weak. Take one night sleep, think a bit
+
+of the theory and next day there is the AHH! - lets work others
+
+for us like MS.
+
+
+
+Pepper [PC]                                  November 1997
+
+
+
+</PRE></FONT>
+
+<HR>
+
+
+
+<BR><CENTER><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=88% HEIGHT=6 BORDER=0
+
+VSPACE=0 HSPACE=0><BR><BR><I>You'r deep inside fravia's pages of reverse engineering, choose your way out!</I><BR>
+
+<!-- Begin Javascript relocator <font color=gray><b>~</b></fonT> Javascript code by fravia+ -->
+
+<FORM name="FraviasForm">
+
+<SCRIPT LANGUAGE="javascript">
+
+<!--
+
+
+
+function FravPage(list) {
+
+	      location.href = list.options[list.selectedIndex].value
+
+}
+
+
+
+// -->
+
+</SCRIPT>
+
+<DIV align="center">
+
+<CENTER>
+
+<P center="&lt;center&gt;&lt;/center&gt;">&nbsp;<SELECT name="fraviale" size="1">
+
+
+
+<OPTION>Choose another page!</OPTION>
+
+<OPTION value="index.htm">Main page</OPTION>
+
+<OPTION value="academy.htm">Software reversing Lab</OPTION>
+
+<OPTION value="realicra.htm">Reality cracking Lab</OPTION>
+
+<OPTION value="noanon.htm">Anonymity Lab</OPTION>
+
+<OPTION value="ideale.htm">Site busting Lab</OPTION>
+
+<OPTION value="howtosea.htm">How to search Lab</OPTION>
+
+<OPTION value="sealight.htm">--Search engines (light)</OPTION>
+
+<OPTION value="searengi.htm">--Search engines (heavy)</OPTION>
+
+<OPTION value="links.htm">Links</OPTION>
+
+<OPTION value="tools.htm">Tools</OPTION>
+
+<OPTION value="javascri.htm">Javascript reversing</OPTION>
+
+<OPTION value="screamin.htm">Screaming truth</OPTION>
+
+<OPTION value="entran.htm">Main entrance</OPTION>
+
+<OPTION value="new_what.htm">What's new on fravia's</OPTION>
+
+<OPTION value="info.htm">Mail fravia+</OPTION>
+
+<OPTION value="http://greythorne.home.ml.org">+Greythorne's</OPTION>
+
+<OPTION value="http://www.InsideTheWeb.com/mbs.cgi/mb186724">Tools of our trade msgboard</OPTION>
+
+<OPTION value="http://www.InsideTheWeb.com/mbs.cgi/mb155985">Main msgboard</OPTION>
+
+</SELECT>
+
+
+
+<INPUT type="button" value="Let's go!" onclick="FravPage(this.form.elements[0])">
+
+<BR>
+
+</DIV>
+
+
+
+</FORM>
+
+<!-- end Javascript relocator -->
+
+<BR><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=88% HEIGHT=6 BORDER=0
+
+VSPACE=0 HSPACE=0><BR><BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0
+
+VSPACE=0 HSPACE=0><A
+
+HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0
+
+VSPACE=0 HSPACE=0>
+
+<A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links </A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0>
+
+<A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity </A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC </A>
+
+
+
+<IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays </A>
+
+
+
+<IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database </A>
+
+
+
+<IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="botstart.htm" tppabs="http://www.anticrack.de/fravia/botstart.htm">bots wars</A>
+
+
+
+<BR>
+
+<IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut </A>
+
+
+
+<IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 BORDER=0
+
+VSPACE=0 HSPACE=0><A
+
+HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13
+
+BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13
+
+BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="javascri.htm" tppabs="http://www.anticrack.de/fravia/javascri.htm">javascript wars </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0
+
+VSPACE=0 HSPACE=0><A
+
+HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0
+
+VSPACE=0 HSPACE=0><A
+
+HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia </A><BR>
+
+
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0
+
+VSPACE=0 HSPACE=0><A
+
+HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering illegal?
+
+</A></CENTER>
+
+
+
+</BODY>
+
+</HTML>
+

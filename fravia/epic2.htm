@@ -1,0 +1,304 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>epic2</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+<CENTER><FONT size="+3">FrontPage 98 English beta 1 for Windows 95 &amp; NT 4.0<BR></FONT><FONT size="+2">
+
+(They are getting tougher)</FONT>
+
+
+
+<H4>by Epic Lord<BR>
+
+<BR>
+
+(14 August 1997, slightly edited by Fravia)</H4>
+
+<HR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">Courtesy of Fravia's page 
+
+of reverse engineering<BR><BR><I>Well, Epic Lord has worked 'in a hurry', but his 
+
+crack is nevertheless quite effective and interesting... so Micro$oft is now writing 
+
+&quot;scarecrow&quot; phrases like <B>&quot;This copy of Microsoft FrontPage has been modified in a way which 
+
+is in violation of the license aggreement&quot;</B>... poor sods! And some antiwinice tricks as well...
+
+ mmm, we'll have to keep half-awake to drefeat M$ protections in the future :-)
+
+
+
+
+
+ </I></CENTER><HR size="3">
+
+<PRE>
+
+Well, I hope this essay will become my contribution to Project 9, 
+
+namely reverse engineering all the Micro$oft products' protection 
+
+schemes! I apologize for my English.
+
+
+
+The target is &quot;FrontPage 98 - English Beta 1 for Windows 95 &amp; NT 4.0 - US
+
+English Version&quot;. A long name. It can be found at Microsoft, located at 
+
+<A href="tppmsgs/msgs2.htm#252" tppabs="http://www.anticrack.de/fravia/tppmsgs/msgs2.htm#252">http://www.microsoft.com/msdownload/fp98/05000.htm</A>, if you're lucky, 
+
+anyway, even if they retire/modify it after the publication of this essay, 
+
+too many people will already have downloaded it (and too many magazines 
+
+will have already published it) to halt this snowball rolling :-)
+
+
+
+BTW, it is approximately 20 MB. Pretty big to download with a 14400
+
+connection, but I wanted to be the first one on the subject :=)
+
+
+
+The product is really overbloated; it spans more than 80 folders and 950
+
+files. In the BIN folder alone there are more than 30 files.
+
+
+
+Let's begin.
+
+
+
+I started the FrontPage Explorer (fpexplor.exe), target starts. Changed my
+
+system time to a couple of years ahead, started again, target did not start. 
+
+Started FrontPage editor (fpeditor.exe), target started. 
+
+Tried again, it did not. 
+
+Well, the various programs under examination are writing something 
+
+somewhere (huh? a clever conclusion :=)
+
+
+
+I disassembled first of all the target file (fpeditor.exe) and found 
+
+nothing. The same happened while I was working on M$ Publisher. 
+
+The protection must dwell somewhere outside the main code, it must be 
+
+easily editable and must be undercover. 
+
+YES! look at the .dll files.
+
+
+
+Well there are 22 .dll files in the BIN folder. A couple more are in the
+
+SYSTEM directory. 
+
+Lets get tougher :=) 
+
+I searched the files to find the word &quot;expired&quot; and couldn't get 
+
+anything at all (DUH). 
+
+Multibyte characters !!! Therefore I searched the sequence 
+
+&quot;65 00 78 00 70 00 69 00 72 00 65 00&quot; 
+
+which is &quot;expired&quot; interpolated with 0h seperators. 
+
+I could forget cracking this target... I couldn't find the target itself yet! 
+
+The search string is in &quot;fp30cutl.dll&quot;... bingo!
+
+
+
+Ok ok. I cheated. I could not feel the multibyte problem at the beginning 
+
+so I did start Softice and checked what actually was going on. 
+
+This approach let me suspect the file &quot;fp30cutl.dll&quot;. 
+
+Do what I say, not what I did. 
+
+BTW try softice. 
+
+You will not find anything. The &quot;Expiry&quot; dialog box will pop and in spite of 
+
+all the debugging capability you have, none of the breakpoints will
+
+activate. 
+
+Fravia+ is right. They are getting tougher.
+
+
+
+Using a debugger will not be enough. 
+
+This target calls the .dll, and the .dll calls in turn another one. 
+
+&quot;FpEditor.Exe&quot; <FP30CUTL.dll" <- "mfc42.dll" and so on. For this crack, I used both the "live" Softice and the "dead listing" approach. I pressed F12 and kept pressing till the nag screen appeared, and eventually I found the following code "snippet.class" tppabs="http://fravia.org/snippet.class" in "fp30cutl.dll": :67B497CD E89A760000 Call 67B50E6C ;MFC42:NoName0103, Ord:09D2h :67B497D2 5F pop edi :67B497D3 5E pop esi :67B497D4 C3 ret not very informative ha? I backtraced to the caller in the editor (not through Softice, through the dead code) and found the activator... here it is: Exported fn(): ExpFn0115() Ord:0074h :67B2CC60 55 push ebp :67B2CC61 8BEC mov ebp, esp :67B2CC63 81EC50010000 sub esp, 00000150 :67B2CC69 53 push ebx :67B2CC6A 33DB xor ebx, ebx :67B2CC6C 381D6B54B567 cmp byte ptr [67B5546B], bl :67B2CC72 56 push esi :67B2CC73 57 push edi :67B2CC74 750B jne 67B2CC81 :67B2CC76 891D6054B567 mov dword ptr [67B55460], ebx :67B2CC7C E941020000 jmp 67B2CEC2 Well, <font color="red">I added &quot;fp30cutl.dll&quot; to the exports list of Softice</font> and 
+
+restarted my system. 
+
+I put a breakpoint on fp30cutl.!ORD_0074 and let the babe run.
+
+Nothing happened. No bp popup. Gee! hat was wrong? 
+
+Well... I put a memory RW breakpoint at [67B5546B] and now! Look! it pops! 
+
+I played a little with the code, and wow! a system error dialog appeared,
+
+saying <font color="blue"><b>&quot;This copy of Microsoft FrontPage has been modified in a way which 
+
+is in violation of the license aggreement&quot;</b></font>.
+
+
+
+Nice! We are getting somewhere!
+
+
+
+I studied the code and found no CRC, nor any similar checking. 
+
+It was because of comparing fixed memory locations. 
+
+However, it's getting late 05:30 in the morning, the cracking session 
+
+was heavy... sorry for the short climax, but that's all, the rest you'll 
+
+understand yourselves...
+
+
+
+I will not dwelve into the details of date checking and other comparisons
+
+(put 1990 in EAX, add 7 find 1997 etc) let's crack it stright on.
+
+
+
+The suspect culprit is the jump below:
+
+:67B2CC74 750B                    jne 67B2CC81
+
+
+
+Patching the values of BX in order to get some correct flags after the 
+
+comparison makes you Micro$oft_guilty. 
+
+Study the code piece above. 
+
+Therefore, quite simply...
+
+
+
+	LETS IGNORE THE JUMP, REPLACE IT WITH 40 48
+
+
+
+Ok. Thats all folks. I'm fast ha? :=). BTW, with this patch, all other
+
+components will run smoothly.
+
+
+
+Best wishes, Epic Lord, epic@lords.com.
+
+
+
+Thank you Fravia+
+
+
+
+note: I do not claim any right for this essay :=)</pre>
+
+ <font color="green">(c) Epic Lord 1997. No rights whatsoever reserved</font>
+
+<hr ALIGN="CENTER" WIDTH="100%" SIZE="3">
+
+<center><i>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</i></center>
+
+<br><center>
+
+
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">
+
+<a HREF="project9.htm" tppabs="http://www.anticrack.de/fravia/project9.htm">project 9 </a><br>
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">
+
+<a HREF="tppmsgs/msgs0.htm#84" tppabs="http://www.anticrack.de/fravia/tppmsgs/msgs0.htm#84">homepage </a>
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"> 
+
+<a HREF="tppmsgs/msgs0.htm#73" tppabs="http://www.anticrack.de/fravia/tppmsgs/msgs0.htm#73">links </a> 
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0">
+
+<a HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity </a> 
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><a HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC </a>
+
+
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><a HREF="tppmsgs/msgs0.htm#82" tppabs="http://www.anticrack.de/fravia/tppmsgs/msgs0.htm#82">students' essays </a>
+
+
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><a HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">Academy database </a><br>
+
+
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><a HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools </a>
+
+
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><a HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails </a>
+
+
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><a HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut CGI-scripts </a>
+
+
+
+
+
+
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><a HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms </a>
+
+
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><a HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_Fravia </a><br>
+
+
+
+
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><a HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering illegal? </a></center>
+
+<center><hr ALIGN="CENTER" WIDTH="100%" SIZE="2"></center>
+
+</body>
+
+</html>
+

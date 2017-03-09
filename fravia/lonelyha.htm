@@ -1,0 +1,395 @@
+<HTML>
+
+
+
+<CENTER><H2>Hacking Windows 95 Screen Saver Passwords</H2>
+
+<H4><I>(and a bit of cryptography)<BR>by Lonely Hawk</I></H4>
+
+<BR>Courtesy of Fravia's page of reverse engineering</CENTER>
+
+<HR size="2">
+
+
+
+<PRE>
+
+I have been cracking programs ever since I owned a ZX Spectrum. To be 
+
+honest, the only ones I was really interested in at first, were the
+
+games I played and couldn't win. I remember my first crack was at a
+
+game called JetPac, and I was only 15 years old. 
+
+   But then came the horrible times of studying in the Univ. Non stop.
+
+Completely destroying any creative impulse God gave me, by trying to
+
+'guide' it. Oh well. It was until I saw the great +ORC's tutorials
+
+that I realized my supressed 'hobby' could not die. I immediately
+
+scanned the Web for the necessary tools and started spying Win 95
+
+programs. 
+
+  I litteraly cracked my way in every direction: I created 4 pages of 
+
+program codes, producing my own serials for every shareware program I
+
+had. Some of the programs I cracked needed a little bit more of 'zen' 
+
+thinking, to put it in +ORC's words. Most of them though, were of the
+
+BOZO-PROGRAMMERS-R-LIVE-HERE kind. So I relaxed, and enjoyed my supreme
+
+power over the Windows 95 architecture.
+
+  Then one day, in the lab I work, I wanted to get something from a
+
+friend's hard disk. I already knew the machine's password (not by hacking,
+
+he's my friend), so I sat down in front of the monitor and moved the
+
+mouse to remove the screen saver. Yikes! A dialog box popped up, asking
+
+for the screen saver password. I tried my friend's 'global' password,
+
+but it didn't work. Hmmm. I returned to my machine and searched the
+
+Web for screen saver hacks. I found one for Windows 3.1 and tested it on 
+
+my NT 4.0. Great! I just run the program and it says the password. Good.
+
+Let's run it on my friend's PC (rebooted and logged in - I had already
+
+lost my interest in what I wanted from his disk and wanted to know his
+
+screen saver password). I run it and it says 'screen saver password is 
+
+'BacB'. I try it - nothing. It's wrong. Hmm, time to do some hacking.
+
+  Allright, Microsoft, where do you store these passwords? In Windows 3.1,
+
+says the proggy I downloaded, it's inside control.ini. The same happens
+
+in Windows NT 4.0, but not in Windows 95! Strange... (obviously some mixup
+
+in the sources used inside these monster OS's). I GREP'ed inside all my
+
+friend's PC *.ini files for 'pass'. Nothing related to my needs. In most
+
+of these situations, one must then try the registry. I fired up regedit,
+
+and looked for &quot;saver&quot;. After some searching, I got in the following 
+
+interesting place:
+
+
+
+\HKEY_CURRENT_USER\Control Panel\desktop\ScreenSave_Data
+
+
+
+This hosted a list of numbers, which in the test I immediately did, was
+
+exactly twice the size of the password I gave. If for example I gave the
+
+password &quot;testing&quot;, the list had 14 numbers. This looked suspicious enough,
+
+so I fired SoftIce, and got to the dialog box asking for the new password 
+
+two times. I wrote my favorite one, 'POTATOES', in both edit fields, and 
+
+pressed CTRL-D. I then searched the memory to BPR in, so 
+
+
+
+s 30:0 lffffffff &quot;POTAT&quot;
+
+
+
+BTW, always use a subset of the password, since this way you avoid mixing
+
+up the real password image with the one in the OS dustbin. The real one
+
+will show up in the data window as POTATOES, the false one as POTAT.
+
+I found two occurences, one immediately after the other (remember, you
+
+input it twice in the dialog box), so I BPR there.
+
+
+
+BPR 30:80XXXXXX 30:80XXXXXX+8 RW
+
+BPR 30:80ZZZZZZ 30:80ZZZZZZ+8 RW
+
+
+
+Ctrl-D again, and pressing OK, made Softice pop up again, this time in
+
+the well known KERNEL HMEMCPY part. The two password images were copied in
+
+memory, and by BPR in the new positions, I found out that they were 
+
+compared bytewise to see if they match. A normal operation for passwords,
+
+so I cotinued. The next SoftIce popup was inside a REP MOVSB to a new
+
+location, so I BPR it again. I was beggining to feel frustrated - how
+
+many times does this stupid OS copy the string - I already had 5 copies
+
+of it! (no wonder Win 95 needs 16 MB RAM). Oh well, Ctrl-D again (continue
+
+running).
+
+  Luckily, the next popup was right where I wanted it:
+
+
+
+        sub ebp, ebp  ; ebp=0, first character of the password
+
+                      ; will be processed
+
+        ...
+
+      loop1:
+
+        ....
+
+        ....    ; code that produces a special number into eax
+
+        ....    ; eax is in range of 0-255
+
+        ....
+
+        mov cl, [7E125010+eax]   ; read from a table of 256 values
+
+        mov eax, offset password
+
+        xor [eax+ebp], al        ; xor the ebp-letter of the password
+
+        inc ebp
+
+        cmp ebp, [length of password]
+
+        jl looop1
+
+
+
+After this ridiculous xoring loop, the transformed password was read,
+
+and typed into a string, using wsprintf. If for example POTATOES was
+
+transformed to 8 numbers like a1, 54, a2, 32, ... then with wsprintf
+
+these numbers will be typed in the registry as 41, 31, (asciiz of a1)
+
+35, 34 (asciiz of 54), etc. What a coincidence, when I discovered that
+
+these numbers were the same with the ones in the registry!
+
+  OK, so how do I crack this? Well, first I examined how the table was
+
+getting filled (the table is supposed to be pseudorandom) and I recreated
+
+the table, using C (i mean the table placed at 7E125010 in the above code
+
+snip). Then I started scratching my head to find a way back to the original
+
+password, when I realized this: each output value, was produced from
+
+exactly one character of the password! there was no interleaving in the
+
+XOR's! Each letter of the original password was XOR'ed with a value, and
+
+that's it! This means that by checking every entry in the table to see
+
+which one produces the value you search after XORING, you could find the 
+
+original password!
+
+  For example: Suppose you have a table of random values a(i),i=0..N-1, 
+
+where each a(i) is different from all others a(j), j<>i. You then choose 
+
+i randomly, and XOR password[0] with a(i). The same is done with all 
+
+letters of the password. To crack this code, all you have to do is:
+
+
+
+  for each transformed code of the password, password[k]
+
+     find by testing all the matrix elements, matrix[j]
+
+        which ASCII code XOR'd with matrix[j] gives password[k]
+
+
+
+This is not computationally expensive brute force, since you check 256
+
+values for each letter! A ZX Spectrum would compute the password in 
+
+half a second. A PC, say, in 1 sec :)
+
+
+
+OK, here's the code:
+
+
+
+<#INCLUDE <stdio.h>
+
+#include <STDLIB.h>
+
+#include <STRING.h>
+
+
+
+unsigned char matrix[256+2];
+
+unsigned char matrixok[256+2];
+
+unsigned char mystery[4]={ 0xb2, 0xdc, 0x90, 0x8f };
+
+unsigned char h1;
+
+unsigned char pa[79], passwd[80];
+
+unsigned char tofind[30];
+
+int h2=4;
+
+unsigned int lentofind;
+
+int len;
+
+
+
+void fixmatrix()
+
+{
+
+    unsigned char orig, mys, help1, last;
+
+    int i,j, help2;
+
+
+
+    for(i=0; i<256; i++) matrix[i]="i;" matrix[256]="0;" matrix[256+1]="0;" h1="0;" last="0;" for(j="0;j&lt;256;j++)" { orig="matrix[j];" mys="mystery[h1];" help2="(mys+last+matrix[j])" & 0xff; help1="matrix[help2];" matrix[j]="help1;" matrix[help2]="orig;" last="help2;" h1++; h1="h1%4;" } memcpy(matrixok, matrix, sizeof(matrix)); } void check(char *test) { unsigned char help1, oldh2; int i; strcpy(passwd, test); strcpy(pa, passwd); len="strlen(pa);" memcpy(matrix, matrixok, sizeof(matrix)); h1="0;" h2="0;" for(i="0;i&lt;len;i++)" { h1++; h1="h1&amp;0xff;" oldh2="matrix[h1];" h2="(h2+matrix[h1])" & 0xff; help1="matrix[h1];" matrix[h1]="matrix[h2];" matrix[h2]="help1;" help1="(matrix[h1]+oldh2)" & 0xff; help1="matrix[help1];" pa[i]^="help1;" } } int is_ok(char a) { if ((a<="9" ) && (a>='0'))
+
+        return 1;
+
+    else if ((a<='f') && (a>='A'))
+
+        return 1;
+
+    else
+
+        return 0;
+
+}
+
+
+
+int nibble(char c)
+
+{
+
+    if((c&gt;='A') &amp;&amp; (c<='f')) return (10+c-'A'); else if((c>='0') &amp;&amp; (c<='9')) return (c-'0'); } void parse(char *inpt) { char *tok; char num[2]; lentofind="0;" tok="strtok(inpt," "\t ,\n"); while(tok!="NULL)" { num[0]="tok[0];" num[1]="tok[1];" if ((!is_ok(num[0])) || (!is_ok(num[1]))) { puts("Please input strings like: a1,b1,05,c3,d2,f3"); exit(0); } tofind[lentofind++]="16*nibble(num[0])+nibble(num[1]);" tok="strtok(NULL," "\t ,\n"); } tofind[lentofind]="0;" } void main() { unsigned int i; int j,found="0;" unsigned char tst[80]; char inpt[120]; fixmatrix(); printf("Windows 95 Screen Saver Cracker.\nMade by Lonely Hawk.\n\n"); printf("Give me the codes, separated by commas (in hex):\n>&quot;);
+
+    gets(inpt);
+
+    for(i=0;i<strlen(inpt);i++) inpt[i]="toupper(inpt[i]);" parse(inpt); for(i="0;" i<lentofind; i++) tst[i]="A" ; tst[lentofind]="0;" for(i="0;" i<lentofind; i++) { for(j=" " ; j<="Z" ; j++) { tst[i]="j;" check(tst); if(pa[i]="=tofind[i])" break; } } printf("Password is: %s", tst); }>
+
+This kind of stupid Microsoft coding makes me think a little. What would be
+
+the ideal way to hide these passwords? The reason I cracked Microsoft's code
+
+is NOT because I have SoftIce. The reason is because the algorithm is 
+
+ridiculous. The way I see it, to do real cryptography, you must use an
+
+algorithm that cannot be reversed, but cannot also be cracked by brute
+
+force. Take the UNIX algorithm for instance: everyone has the code for
+
+it, but no one can reverse it. And to brute force it, you need a 
+
+supercomputer running for ages. If Microsoft used such an algorithm,
+
+I would have to crack the system to get in: alter the code to do a
+
+jnz instead of a jz. And if the code is only deletable from administrative
+
+accounts, I would not be able to do anything. 
+
+  Or at least, that's what I would let them think... :)
+
+
+
+Lonely Hawk
+
+
+
+</pre>
+
+
+
+<br>
+
+
+
+<hr ALIGN="CENTER" WIDTH="100%" SIZE="3">
+
+<center><i>You are deep inside fravia's page of reverse engineering, 
+
+choose your way:</i></center>
+
+<br>
+
+<center>
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">
+
+<a HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#84'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#84"> homepage</a>
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"> 
+
+<a HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#73'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#73"> links</a> 
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0">
+
+<a HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm"> anonymity</a> 
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">
+
+<a HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm"> +ORC</a>
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">
+
+<a HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm"> tools</a>
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">
+
+<a HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm"> cocktails</a>
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">
+
+<a HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm"> search_forms</a>
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">
+
+<a HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm"> mailFraVia</a></center>
+
+<hr ALIGN="CENTER" WIDTH="100%" SIZE="2">
+
+</center>
+
+
+
+</html>

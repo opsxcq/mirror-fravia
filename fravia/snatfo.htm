@@ -1,0 +1,290 @@
+<HTML>
+
+<HEAD><TITLE>Fooling Disassemblers (Protecting Applications Against Disassembly)</TITLE></HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+<CENTER><FONT size="+3">Fooling Disassemblers<BR>(Protecting Applications Against Disassembly)</FONT>
+
+<BR>(The &quot;non-conditional&quot; conditional jump and other tricks)<BR>
+
+<A href="progcor.htm" tppabs="http://www.anticrack.de/fravia/progcor.htm"><IMG SRC="useful.gif" tppabs="http://www.anticrack.de/fravia/useful.gif" ALT="USEFUL" ALIGN="BOTTOM" WIDTH="114" HEIGHT="43" BORDER="0" VSPACE="0" HSPACE="0"></A><BR>
+
+<BR><H4>by Snatch<BR>
+
+<BR>
+
+(07 December 1997)</H4>
+
+<HR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">Courtesy of fravia's page 
+
+of reverse engineering<BR>
+
+<BR><I>Well, a minimum for protectionists' future scheme, I would say...</I>
+
+</CENTER><HR size="6">
+
+<PRE><FONT size="+1"><CENTER>
+
+Fooling Disassemblers(Protecting Applications Against Disassembly)
+
+By Snatch</CENTER>
+
+</FONT>
+
+I have recently been working on a disassembler and have thought about 
+
+the ways protectionists can fool them, pretty easily.  
+
+Note that disassemblers do not have artificial intelligence :-)
+
+<B><FONT size="+1">
+
+Approaches that disassemblers may be able to bypass:
+
+</B></FONT>
+
+1 - Jump statements jumping onto themselves
+
+
+
+Suppose you had a part of your code that was never called.  
+
+You could put in an infinite loop:
+
+<HR>
+
+0000: EB FF jmp 0000
+
+<HR>
+
+same as
+
+0000: F4    hlt
+
+<HR>
+
+The disassembler may loop forever, whereas with hlt it would not.
+
+
+
+2 - Fake jump statements
+
+
+
+If the next statement you plan to use is an inc, dec, call, jmp, or a 
+
+push and it begins with opcode FF.  Try this:
+
+<HR>
+
+0000: EB FF jmp 0001
+
+0002: ?? ?? 
+
+<HR>
+
+same as
+
+0000: 90    nop
+
+0001: FF ?? inc,dec,call,jmp,push
+
+<HR>
+
+This should confuse disassemblers.
+
+
+
+3 - One way calls
+
+
+
+If you are going to jump to a subroutine but never return, consider 
+
+calling the subroutine and popping the bytes off of the stack.
+
+<HR>
+
+0000: call sub1
+
+...
+
+1000: sub1
+
+1000: pop dx - get rid of bytes for returning
+
+1001: pop dx
+
+<HR>
+
+same as
+
+0000: jmp sub1
+
+...
+
+1000: sub1
+
+1000: pop dx
+
+<HR>
+
+A disassembler usually will think there is code after the call statement 
+
+and continue to scan.
+
+
+
+4 - Ret used as jump
+
+If you are going to call a subroutine, consider this:
+
+<HR>
+
+1000: push 92F(address of sub)
+
+1003: ret
+
+<HR>
+
+same as
+
+1000: jmp 92F
+
+<HR>
+
+Disassemblers will not find your sub at 92F.  You may find this in packed files.
+
+<B><FONT size="+1">
+
+Approaches that disassemblers can not bypass:
+
+</B></FONT>
+
+5 - fake conditional jumps
+
+
+
+Only one way will come out of the jump:
+
+<HR>
+
+1000: cmp ax,ax
+
+1002: je loc1
+
+...
+
+1040: loc1:
+
+<HR>
+
+same as
+
+1000: jmp loc1
+
+1040: loc1
+
+<HR>
+
+Disassemblers will have to assume that there is code on the other side of 
+
+the jump, and will have no way of differentiating because they do not yet 
+
+have brains!
+
+
+
+Summary:
+
+
+
+Note that on approaches 1,2, and 5, if you use a jump with rel 16 
+
+or rel 32, you will need to fix the distance of the jumps.
+
+Note that on approaches 3 and 4, if you are using full segment 
+
+address, more will need to be pushed and popped.
+
+These approaches can only be used if you program assembly language 
+
+or use c with assembly language.  You may have to have a good grasp 
+
+of assembly language to understand these 5 concepts.  
+
+Good luck for your proctections!
+
+
+
+Snatch '97</PRE>
+
+<FONT color="green">(c) Snatch 1997. All rights reversed</FONT>
+
+<HR ALIGN="CENTER" WIDTH="100%" SIZE="3">
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</I></CENTER>
+
+<BR><CENTER> 
+
+
+
+<A href="progcor.htm" tppabs="http://www.anticrack.de/fravia/progcor.htm"><IMG SRC="useful.gif" tppabs="http://www.anticrack.de/fravia/useful.gif" ALT="USEFUL" ALIGN="BOTTOM" WIDTH="114" HEIGHT="43" BORDER="0" VSPACE="0" HSPACE="0"></A><BR>
+
+<FONT color="gray">Back to the programmer's corner</FONT><HR width="33%">
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="progcor.htm" tppabs="http://www.anticrack.de/fravia/progcor.htm">protectionist's corner</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut CGI-scripts</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering legal?</A></CENTER>
+
+<CENTER><HR ALIGN="CENTER" WIDTH="100%" SIZE="2"></CENTER>
+
+</BODY>
+
+</HTML>
+

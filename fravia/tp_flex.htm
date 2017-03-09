@@ -1,0 +1,984 @@
+<HTML>
+<HEAD>
+<!--  formamus.htm version 09 January 1999
+      INSTRUCTIONS FOR SUBMITTING: DO NOT USE HTML
+EDITORS!
+      SEARCH THIS TEXT FOR THE STRING "Your_"
+      AND REPLACE WITH WHATEVER YOU WANT TO PUBLISH!
+      THANKS A LOT: this will allow automated
+retrieval -->
+<TITLE>tp_flex.htm: Analysis of Key Generation Techniques within FlexLM
+</TITLE></HEAD><BODY BGCOLOR=#C0C0C0 TEXT=#001010
+VLINK=#405040>
+<TABLE CELLPADDING="1" CELLSPACING="2" BORDER="1"
+WIDTH= "100%"  HEIGHT="22">
+<TR><TD></TD><TD>
+<!-- Choose  a TITLE and a subtitle, choose well! -->
+<CENTER><FONT SIZE="+2">
+This document describes an attack on the keys for
+FlexLM itself.
+</FONT><BR><FONT SIZE="+1">
+
+</FONT></CENTER></TD><TD>
+<!-- Choose  a PROJECT GIF, leave this if unsure -->
+<CENTER><A href="papers.htm" tppabs="http://www.anticrack.de/fravia/papers.htm"><IMG
+SRC="papers.gif" tppabs="http://www.anticrack.de/fravia/papers.gif"
+ALT="papers" ALIGN=CENTER WIDTH=114 HEIGHT=43
+BORDER=0 VSPACE=0
+HSPACE=0></A><BR><FONT color=gray>Not Assigned</FONT>
+</CENTER></TD></TR><TR><TD
+bgcolor="#FFFFEA"><CENTER><FONT
+COLOR="890000">
+<!-- CHOOSE A DATE (will probably be changed) -->
+30 July 1999
+</FONT></CENTER></TD><TD bgcolor="#FFFFEA"><CENTER>by
+<FONT size=+3>
+<!-- CHOOSE A HANDLE , i.e. your pseudo (wont be
+changed) -->
+Nolan Blender
+</FONT></CENTER></TD><TD VALIGN="center"
+bgcolor="#FFFFEA">
+<!--
+<a href="hcu98_3.htm" tppabs="http://www.anticrack.de/fravia/hcu98_3.htm"><IMG SRC="hcu1.gif" tppabs="http://www.anticrack.de/fravia/hcu1.gif"
+ALT="+cracker" ALIGN=BOTTOM
+WIDTH=114 HEIGHT=43 BORDER=0 VSPACE=0 HSPACE=0></a>
+-->
+</TD></TR><TR><TD><CENTER><A href="index.html" tppabs="http://www.anticrack.de/fravia/index.html"><IMG
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+ALIGN="BOTTOM"
+BORDER="0" VSPACE="0" HSPACE="0"></A></CENTER></TD>
+<TD BGCOLOR="898030"><CENTER>Courtesy of Fravia's page
+of
+reverse engineering</CENTER>
+</CENTER></TD><TD BGCOLOR="898030"></TD></TR>
+<!-- this is for the
+data.....fra_00xx....yymmdd....handle..beg+int...not
+ass... -->
+<TR><TD><FONT
+color="#C4C0CF">fra_00xx<BR>98xxxx<BR>Nolan Blender<BR>0100<BR>NA<BR>PC<BR></FONT></TD><TD><I><CENTER>
+
+A very well written and competent essay. Unix reversers will 
+enjoy it a lot. I suggest to all readers to read and understand the Question and 
+answers part of this essay. Ach ja: red oranges from Sicily or from Israel 
+(spanish oranges are a no-no-no) and it's more or less a tea-spoon of honey, Nolan, 
+that goes into the <A href="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">Traitor</A>. Serve chill.
+</I> :-)</CENTER></TD><TD></TD></TR><TR><TD></TD>
+<!-- Leonard Coehn's old song, because we are poets,
+not only crackers
+-->
+<TD BGCOLOR="898030"><CENTER></I><B>There is a crack,
+a crack in
+everything
+That's how the light gets in</B></CENTER>
+<!-- Leonard Coehn's old song, because we are poets,
+not only crackers
+-->
+</CENTER></TD><TD></TD></TR><TR><TD VALIGN= "MIDDLE"
+bgcolor="#C6E7C6"><FONT
+color=blue><CENTER>Rating</FONT></FONT></CENTER>
+
+</TD><TD VALIGN = "MIDDLE" bgcolor="#C6E7C6"><FONT
+color=blue><CENTER>
+<!-- CHOOSE A RATING (may be changed) -->
+( )<B>Beginner</B> (X)<B>Intermediate</B> (
+)<B>Advanced</B> (
+)<B>Expert</B></FONT>
+</CENTER></TD><TD></TD></TR></TABLE>
+<!-- END HEAD  --><BR>
+<!-- CORPUS  -->
+<!-- CHOOSE A COMMENT (may be changed)  -->
+<BR>
+This document describes some of the algorithms used
+within FlexLM
+to generate the license keys, and more importantly the
+process used to analyze this algorithm.  Although the
+entire
+reversing is not described, sufficient information to
+significantly
+assist the student is provided, and the rest is left
+as an exercise
+to the reader.
+
+
+<HR><CENTER><FONT SIZE="+2">
+<!-- Repeat your TITLE  -->
+This document describes an attack on the keys for
+FlexLM itself.
+   </FONT><BR>
+   <FONT SIZE="+2">
+<!-- Repeat your SUBTITLE -->
+   </FONT><BR><FONT COLOR="0B7FC1">
+<!-- REPEAT YOUR CHOSEN HANDLE HERE -->Written by
+Nolan Blender
+</FONT></CENTER><BR><BR>
+
+<!-- INTRO STARTS HERE -->
+<TABLE CELLPADDING="1" CELLSPACING="2" BORDER="1"
+WIDTH= "100%"
+HEIGHT="22" >
+<TR><TD bgcolor="#C6E7C6"><CENTER><FONT size=+2><FONT
+color=blue>Introduction</FONT>
+</FONT></CENTER></TD></TR></TABLE>
+<P>
+FlexLM, or the Flexible License Manager, is a
+licensing product
+that is a descendant of the original Highland License
+Manager.
+This product is sold to organizations or individuals
+that wish
+to restrict or meter usage of their software products,
+and who
+don't wish to write their own licensing code.
+
+
+<P> A problem is the requirements for a  mass release
+product conflict
+with the requirement of being resistant to cracking.
+<BR> Consider:  The product must have a clearly
+defined public interface, and the interface must be
+robust and
+easy to understand and use.   Reverse engineering
+individuals will have a clearly defined set of inputs
+to the
+license server code, and a clear understanding of what
+the returned
+values mean.
+<BR> The product must be as defect free as possible,
+and be easily ported to other platforms.  The  code
+must be
+understood, so that product defects can be  corrected
+quickly and
+easily.
+
+The code in key subroutines appear to be reasonably
+small,
+highly modular, generally perform only one task, and
+only interact with
+other modules through parameters and return values.
+The downside of this is the modules are more easily
+analyzed if there
+are
+few parameters, the number of data types is small, and
+there
+aren't any globals or assembly modules.
+<P>
+Support on the product must be as minimal as possible.
+ According to
+the metrics that we have, over half of the real man
+hours spent on a
+product are on support.   Successful reverse
+engineering of FlexLM does
+not affect Globetrotter to any significant degree -
+their customers
+have already purchased the software, and most of the
+money derived from
+the product comes from maintenance contracts.  Piracy
+costs,  or for
+that
+matter, perceived piracy costs will be borne almost
+entirely
+by the vendor who uses FlexLM in their product.
+<P>
+When a software product is cracked,  the crack usually
+isn't
+communicated
+back to the vendor.   When a software defect is
+located that prevents
+paying end customers on maintenance from using the
+software, the problem
+is
+communicated back to the software vendor.   The vendor
+will concentrate
+on
+fixing bugs or adding requested features rather than
+hunting down a
+problem that isn't preventing users from working.
+<P>
+The project was tested under HP-UX 10.20.  Although
+the debuggers are
+different
+for other platforms, the techniques in this project
+should work for the
+unix platforms supported by Globetrotter.
+
+<!-- PASTE HERE YOUR INTRODUCTION -->
+<BR><BR>
+
+<!-- TOOLS STARTS HERE -->
+<TABLE CELLPADDING="1" CELLSPACING="2" BORDER="1"
+WIDTH= "100%"
+HEIGHT="22" >
+<TR><TD bgcolor="#C6E7C6"><CENTER><FONT size=+2><FONT
+color=blue>Tools
+required</FONT>
+</FONT></CENTER></TD></TR></TABLE>
+An ANSI C compiler.
+<BR>
+A debugger. (DDE on HP-UX will do nicely)
+<BR>
+Your basic HP-UX 10.20 machine with ANSI compiler.
+<BR>
+The FlexLM development kit for your platform (See
+siulflex.htm)
+
+<!-- PASTE HERE YOUR REQUIRED TOOLS -->
+<BR><BR>
+
+<!-- TARGET URL STARTS HERE -->
+<TABLE CELLPADDING="1" CELLSPACING="2" BORDER="1"
+WIDTH= "100%"
+HEIGHT="22" >
+<TR><TD bgcolor="#C6E7C6"><CENTER><FONT size=+2><FONT
+color=blue>Target's URL/FTP</FONT>
+</FONT></CENTER></TD></TR></TABLE>
+<!-- DON'T FORGET TO PASTE HERE THE URL/FTP OF YOUR
+TARGET(S) -->
+<A href="javascript:if(confirm('ftp://ftp.globes.com/  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='ftp://ftp.globes.com/'" tppabs="ftp://ftp.globes.com/" target=_blank>ftp://ftp.globes.com</A>
+<BR><BR>
+
+<!-- PROGRAM HISTORY STARTS HERE -->
+<TABLE CELLPADDING="1" CELLSPACING="2" BORDER="1"
+WIDTH= "100%"
+HEIGHT="22" >
+<TR><TD bgcolor="#C6E7C6"><CENTER><FONT size=+2><FONT
+color=blue>Program
+History</FONT>
+</FONT></CENTER></TD></TR></TABLE>
+<!-- PASTE HERE YOUR TARGET'S HISTORY (if any) -->
+
+Originally the Highland License Manager, this software
+was one
+of the original floating license managers.  It
+competed against
+NetLS, hwever NetLS required the Network Computing
+Service (NCS)
+to be running, which reqired system administration
+personel capable
+of  understanding glbd and llbd.  The Highland sofware
+was  acquired
+by Globetrotter, who had the savvy to make a product
+which was easy
+to install and maintain, not to mention capable of
+supporting most
+licensing models and product structures that marketing
+can think of.
+
+Today the company has an easy to install, stable,
+supportable,
+multiplatform
+floating licensing product that is implemented in an
+insecure manner.
+
+<BR><BR>
+
+<!-- REAL ESSAY  STARTS HERE -->
+<TABLE CELLPADDING="1" CELLSPACING="2" BORDER="1"
+WIDTH= "100%"
+HEIGHT="22" >
+<TR><TD bgcolor="#C6E7C6"><CENTER><FONT size=+2><FONT
+color=blue>Essay</FONT></FONT>
+</CENTER></TD></TR></TABLE>
+<!-- PASTE HERE THE TEXT OF YOUR ESSAY
+     THIS IS OF COURSE THE MOST IMPORTANT PART
+     PLEASE CHECK THE MARGINS WHEN YOU ARE FINISHED!
+     SHOULD NOT BLAST OPERA'S MARGINS OUT! HAVE A LOOK
+INSIDE
+     YOUR OWN BROWSER WHEN YOU FINISH!  -->
+<P>
+There are several tasks which we need to look at in
+order to reverse
+this
+product.  Locating the relevant routines, then
+modifying the code so
+that
+we can intercept the calls or replace them will make
+the reversing task
+easier.  It is helpful if you have read the excellent
+articles by
+Pilgrim
+and SiuL+Hacky.
+<P>
+The first task is to examine the construction of the
+conveniently
+supplied
+key generator.  By looking at the makefile we can see
+<PRE>
+CLIENTLIB   = liblmgr.a
+</PRE>
+and later
+<PRE>
+makekey:    $(SRCDIR)/makekey.c $(SRCDIR)/lm_code.h \
+                $(SRCDIR)/lmclient.h $(CLIENTLIB)
+    $(CC) $(CFLAGS) $(SRCDIR)/makekey.c
+    $(CC) -o makekey makekey.o $(CLIENTLIB) $(XTRALIB)
+    rm makekey.o
+</PRE>
+<P>
+All the components that are required to build the key
+generator are in
+liblmgr.a.
+<P>
+The next step is to extract the objects from this
+library, and locate
+the
+object which has the routine we are particularly
+interested in.  In this
+
+case, we are interested in a routine called l_svk.  In
+this instance, we
+
+are not as interested in the value it returns,
+VENDORCODE5, as the
+method
+which it arrives at this value.
+<PRE>
+ndceh024 [77]% mkdir extract
+0.0u 0.0s 0:01 3%
+ndceh024 [78]% cd extract
+ndceh024 [79]% cp ../liblmgr.a .
+0.0u 0.1s 0:01 11%
+ndceh024 [80]% ar x liblmgr.a
+0.0u 0.4s 0:02 22%
+ndceh024 [81]% foreach i ( *.o )
+? echo $i
+? nm $i | grep l_svk
+? end
+</PRE>
+<P>
+From this process, we find that l_svk is in
+lm_ckout.o.  The next step
+is
+to extract this file from the archived library file,
+delete the object
+lm_ckout.o from the archive, and build the executable
+from the
+remainder of the library and the object file. The nm
+tool is one which
+extracts information about entry points and variables
+from an object.
+<BR><PRE>
+ndceh024 [83]% ar x liblmgr.a lm_ckout.o
+ndceh024 [84]% ar d liblmgr.a lm_ckout.o
+</PRE>
+Then the makefile is modified thusly:
+<PRE>
+makekey:    $(SRCDIR)/makekey.c $(SRCDIR)/lm_code.h \
+                $(SRCDIR)/lmclient.h $(CLIENTLIB)
+    $(CC) $(CFLAGS) $(SRCDIR)/makekey.c
+    $(CC) -o makekey makekey.o lm_ckout.o $(CLIENTLIB)
+$(XTRALIB)
+    rm makekey.o
+</PRE>
+The critical item is the addition of lm_ckout.o to the
+object build
+line.
+<P>
+Build the executable by typing make makekey.  At this
+point, some of the
+
+other executables won't build because lm_ckout is
+missing from the
+archive.
+Check to make sure makekey builds without errors
+though.
+<P>
+As an exercise, we are going to add code to makekey to
+utilize the l_svk
+
+call.
+<P>
+In the main code, declare an unsigned long variable,
+and then
+add something like this just before the lc_init call:
+<PRE>
+    vcode = l_svk(VENDOR_NAME,&amp;site_code);
+    printf ("VENDORCODE5: %08x\n", vcode);
+</PRE>
+Verify that the value received is indeed vendorcode5
+by running the
+program.
+<PRE>
+ndceh024 [98]% ./makekey
+VENDORCODE5: aefa9027
+</PRE>
+Now it's time to add the mechanism for intercepting
+the call to l_svk.
+The
+way this will be done is to change the name of l_svk
+to something else,
+and
+then add a routine that will reroute the call to the
+renamed routine.
+<P>
+We change all occurrences of l_svk to l_nbk in that
+file. You can use
+your
+favorite binary editor to do this, or write your own.
+<PRE>
+ndceh024 [105]% mv lm_ckout.o lm_ckout.save.o
+0.0u 0.0s 0:00 2%
+ndceh024 [106]% ./repstr l_svk l_nbk lm_ckout.save.o
+lm_ckout.o
+0.2u 0.0s 0:01 18%
+</PRE>
+Of course building now will fail.
+<PRE>
+ndceh024 [110]% make makekey
+        cc -c -g -I../machind -DHP -DHP700 -Aa
+-D_HIUX_SOURCE
+-D_HPUX_SOURCE +DA1.0 +DS1.0 ../machind/makekey.c
+        cc -o makekey makekey.o lm_ckout.o liblmgr.a
+/usr/ccs/bin/ld: Unsatisfied symbols:
+   l_svk (code)
+*** Error exit code 1
+</PRE>
+<P>
+We now add a source file nb_patch.c to the build rule
+for makekey.
+nb_patch.o
+is first added to the list of objects, and the build
+rule for makekey
+changed to include the required object.
+The count of arguments is determined by examining the
+arguments loaded
+into
+the register before the call.  We can pass too many
+arguments without
+problems
+but if we try and dereference them a memory access
+violation occurs.
+There
+is some reverse engineer required still.
+<PRE>
+makekey:    $(SRCDIR)/makekey.c $(SRCDIR)/lm_code.h \
+                $(SRCDIR)/lmclient.h nb_patch.o
+$(CLIENTLIB)
+    $(CC) $(CFLAGS) $(SRCDIR)/makekey.c
+    $(CC) -o makekey makekey.o lm_ckout.o nb_patch.o
+$(CLIENTLIB)
+$(XTRALIB)
+    rm makekey.o
+</PRE>
+
+Now the program runs, and with the nb_patch.o object
+linked against
+makekey, we get the following.
+<PRE>
+ndceh024 [145]% ./makekey
+l_svk() vendorname: blenderd
+l_svk() ptr[0]: 00040000
+l_svk() ptr[1]: 00cd2176
+l_svk() ptr[2]: c124e9be
+l_svk() ptr[3]: c450f9f4
+l_svk() ptr[4]: 4d12be88
+l_svk() ptr[5]: f52bcf4d
+l_svk() ptr[6]: 3309994c
+l_svk() retval: aefa9027
+VENDORCODE5: aefa9027
+</PRE>
+The true value of this technique becomes apparent once
+we choose other
+routines to examine.
+<PRE>
+ndceh024 [165]% ar x liblmgr.a l_key.o
+0.0u 0.0s 0:00 6%
+ndceh024 [166]% ar d liblmgr.a l_key.o
+0.0u 0.2s 0:00 26%
+ndceh024 [167]% mv l_key.o l_key.sav.o
+0.0u 0.0s 0:00 3%
+ndceh024 [168]% ./repstr l_key l_nby l_key.sav.o
+l_key.o
+</PRE>
+Of course, we have to modify the patch file to include
+a patch for this
+one too.
+<PRE>
+ndceh024 [257]% ./makekey
+l_svk() vendorname: blenderd
+l_svk() ptr[0]: 00040000
+l_svk() ptr[1]: 00cd2176
+l_svk() ptr[2]: c124e9be
+l_svk() ptr[3]: c450f9f4
+l_svk() ptr[4]: 4d12be88
+l_svk() ptr[5]: f52bcf4d
+l_svk() ptr[6]: 3309994c
+l_key() vendorname: blenderd
+l_key() ptr[0]: c450f9f4
+l_key() ptr[1]: 4d12be88
+l_key() ptr[2]: f52bcf4d
+l_key() ptr[3]: 3309994c
+l_key() retptr: 40006b90
+l_key() retptr[0]: bffffffe
+l_key() retptr[1]: ffffffe2
+l_key() retptr[2]: ffffffff
+l_key() retptr[3]: 03eea001
+l_svk() retval: aefa9027
+</PRE>
+As it turns out, the output of l_key is the
+unencrypted data enabling
+various platforms and features.  A001 is the expiry
+date.
+l_key calls many other functions, many
+of which satisfy (x==F(F(x))).  Once this routine has
+been completely
+reverse engineered, an inverse algorithm can be easily
+created without
+having to go through the effort of reverse engineering
+the actual
+inverse
+function used in their code.
+<P>
+The process of sequentially examining functions and
+replacing them with
+stubs can greatly speed up the reverse engineering
+process.  Lower level
+
+functions such as l_hbs() can be replaced with our own
+code, and the
+replacement code verified one module at a time.  Once
+the code has
+been rewritten, a full understanding of the FlexLM
+vendor key generation
+
+and a full vendor key generator will be had.
+<P>
+It should be noted that the data returned by l_key()
+must pass certain
+checksum procedures, however reversing this procedure
+is not difficult.
+If you are satisfied with the features provided by
+this mask, the
+provided
+data will be sufficient.  If we decode other vendor
+keys, the data
+provides a glimpse as to what the software vendor
+purchased.
+<P>
+I am providing these keys for your experiments.  To
+the best of my
+knowledge, DAEMON blenderd has never been issued by
+Globetrotter, so
+the licenses generated by these keys won't unlock
+anything already
+issued.
+<PRE>
+#define ENCRYPTION_SEED1 0xae37b151
+#define ENCRYPTION_SEED2 0x6fde7999
+</PRE>
+version 6 sdk keys to be placed in lm_code.h
+<PRE>
+VENDOR_NAME blenderd
+VENDOR_KEY1 0xc450f9f4
+VENDOR_KEY2 0x4d12be88
+VENDOR_KEY3 0xf52bcf4d
+VENDOR_KEY4 0x3309994c
+VENDOR_KEY5 0xaefa9027
+</PRE>
+version 5 sdk keys to be placed in lm_code.h
+<PRE>
+VENDOR_NAME blenderd
+VENDOR_KEY1 0x6a7bdad3
+VENDOR_KEY2 0x15450f8a
+VENDOR_KEY3 0x058a5891
+VENDOR_KEY4 0x26f97f61
+VENDOR_KEY5 0xaefa9027
+</PRE>
+Here is the final nb_patch.c code.
+<PRE>
+#include&amp;lt;stdio.h&amp;gt
+
+unsigned long *l_nby(char *vendorname, unsigned long *ptr);
+
+unsigned long l_svk (char *vendorname, unsigned long *ptr) {
+  unsigned long  retval;
+  int i;
+  printf ("l_svk() vendorname: %s\n", vendorname);
+  for (i = 0; i &amp;lt; 7; i++)
+   printf ("l_svk() ptr[%d]: %08x\n", i, ptr[i]);
+
+  /* Now call the original routine */
+  retval = l_nbk(vendorname, ptr);
+  printf ("l_svk() retval: %08x\n", retval);
+  return(retval);
+}
+/*
+ * code after this point must be commented out for the first part of the
+ * exercise, as l_key will be a duplicate symbol until the original is
+ * renamed.
+ */
+
+unsigned long *l_key(char *vendorname, unsigned long *ptr){
+  unsigned long  *retptr;
+  int i;
+  printf ("l_key() vendorname: %s\n", vendorname);
+  for (i = 0; i &amp;lt; 4; i++)
+   printf ("l_key() ptr[%d]: %08x\n", i, ptr[i]);
+
+  /* Now call the original routine */
+  retptr = l_nby(vendorname, ptr);
+  printf ("l_key() retptr: %08x\n", retptr);
+  for (i = 0; i &amp;lt; 4; i++)
+   printf ("l_key() retptr[%d]: %08x\n", i, retptr[i]);
+  return(retptr);
+}
+</PRE>
+Code to replace a string with another one. This is
+provided for those
+who
+don't have a binary editor on the unix platform they
+are using.
+<PRE>
+
+#include&amp;lt;stdio.h&amp;gt;
+#include&amp;lt;string.h&amp;gt;
+
+#define BUF_SIZ 4096
+
+typedef struct buf_s {
+ char buf[BUF_SIZ];
+ int buf_start;
+ int buf_len;
+} buf_t;
+int buf_add(buf_t *bptr, int inchar);
+int buf_replace(buf_t *bptr, char *instr, char *replace_str);
+
+void main(int argc,char *argv[])
+{
+ int c;
+ int i;
+ int worklen;
+ FILE *infile, *outfile;
+ buf_t mybuf;
+
+ infile = stdin;
+ outfile = stdout;
+ if (argc &amp;gt; 5 || argc &amp;lt; 3) {
+  fprintf(stderr, "Usage: repstr str_to_replace replacement_str [infile [outfile]]\n");
+  exit(1);
+ }
+ if (strlen(argv[1]) != strlen(argv[2])) {
+  fprintf (stderr, "str_to_replace and replacement_str must be same length.\n");
+  fprintf (stderr, "This is for modifying binary files.\n");
+  exit(1);
+ }
+
+ if (argc == 4 || argc == 5) {
+  if ((infile = fopen(argv[3], "r")) == NULL) {
+   fprintf(stderr, "Failed on read open of %s\n", argv[3]);
+   perror("fopen");
+   exit(2);
+  }
+ }
+ if (argc == 5) {
+  if ((outfile = fopen(argv[4], "w")) == NULL) {
+   fprintf(stderr, "Failed on write open of %s\n", argv[4]);
+   perror("fopen");
+   exit(2);
+  }
+ }
+ mybuf.buf_start = 0;
+ mybuf.buf_len = 0;
+ worklen = strlen(argv[1]);
+
+ while ((c=getc(infile)) != EOF) {
+  buf_add(&amp;mybuf, c);
+  if (mybuf.buf_len &amp;gt;= worklen) {
+   buf_replace(&amp;mybuf, argv[1], argv[2]);
+   putc(mybuf.buf[mybuf.buf_start], outfile);
+   mybuf.buf_start += 1;
+   mybuf.buf_len -= 1;
+  }
+ }
+ for (i = 0; i &amp;lt; mybuf.buf_len; i++) {
+  putc(mybuf.buf[mybuf.buf_start+i], outfile);
+ }
+
+ if (infile != stdin) {
+  fclose(infile);
+ }
+ if (outfile != stdout) {
+  fclose(outfile);
+ }
+ exit(0);
+}
+
+/*
+ * buf_add:  add an entry
+ */
+int buf_add(buf_t *bptr, int inchar)
+{
+ int addpos;
+ int i;
+ char *p;
+
+ addpos = bptr-&amp;gt;buf_start + bptr->buf_len;
+ if (addpos &amp;lt; BUF_SIZ) { /* still OK */
+  bptr-&amp;gt;buf[addpos] = (char) inchar;
+  bptr-&amp;gt;buf_len += 1;
+ }
+ else { /* need to move values to start of buffer */
+  p = bptr-&amp;gt;buf;
+  for (i = 0; i &amp;lt; bptr-&amp;gt;buf_len; i++) {
+   *p++=bptr-&amp;gt;buf[bptr->buf_start+i];
+  }
+  bptr-&amp;gt;buf_start = 0;
+  addpos = bptr-&amp;gt;buf_start + bptr->buf_len;
+  bptr-&amp;gt;buf[addpos] = (char) inchar;
+  bptr-&amp;gt;buf_len += 1;
+ }
+ return(0);
+}
+
+/*
+ * buf_replace
+ */
+int buf_replace(buf_t *bptr, char *instr, char
+*replace_str)
+{
+ int i;
+ int replen;
+
+ replen = strlen(instr);
+
+ if (strncmp(&amp;(bptr-&amp;gt;buf[bptr->buf_start]), instr, replen) == 0) {
+  for (i = 0; i &amp;lt; replen; i++) {
+   bptr-&amp;gt;buf[bptr->buf_start + i] = replace_str[i];
+  }
+ }
+ return(0);
+}
+</PRE>
+<BR><BR>
+
+<!-- FINAL NOTES STARTS HERE -->
+<TABLE CELLPADDING="1" CELLSPACING="2" BORDER="1"
+WIDTH= "100%"
+HEIGHT="22" >
+<TR><TD bgcolor="#C6E7C6"><CENTER><FONT size=+2><FONT
+color=blue>Final
+Notes</FONT>
+</FONT></CENTER></TD></TR></TABLE>
+
+FlexLM as it is distributed provides a degree of
+protection from
+unauthorized
+use of software, however it is not sufficient to
+prevent cracking of
+products
+licensed through FlexLM.  The degree of protection it
+provides is
+probably
+sufficient to keep typical commercial users from using
+unlicensed
+software.
+Concerned vendors should consider using the vendor
+string to encode
+additional information so generic attacks on FlexLM
+will not comprimise
+their product.
+<BR><BR>
+I would especially like to thank Wally for making
+FlexLM available, and
+paying for multiplatform support and maintenence on
+this product out of
+his cost centre.
+<BR><BR>
+Questions, some answers only obtained by reversing:
+<BR><BR>
+1.  a) What method does Globetrotter use to ensure old
+vendor codes
+won't work
+    on newer versions of the FlexLM SDK?<BR>
+    b) How can the information for newer versions be
+recovered?
+<BR><BR>
+2.  What methods can be used to prevent a generic
+crack of FlexLM from
+    compromising a given vendor's software?
+<BR><BR>
+3.  How are dates encoded by the FlexLM software?
+<BR><BR>
+4.  What value indicates no expiry?
+<BR><BR>
+Exercises:<BR>
+<BR>
+1.  Build a key generator that will generate valid
+FlexLM vendor keys
+for
+    all known versions of FlexLM.
+<BR><BR>
+2.  Determine the meaning of the bits in the
+unencrypted data, and build
+a
+    key generator which can make keys that have
+certain platforms
+disabled
+    and expire on a given date.
+<BR><BR>
+Answers:<BR>
+<BR>
+1.  A checksum routine is seeded with different values
+for different
+versions of
+    the software.  The seed can be recovered by
+passing a null string
+into the
+    routine.
+<BR><BR>
+2.  Either use vendor defined encryption or use
+additional checking via
+the
+    VENDOR_STRING.  This won't prevent dedicated
+crackers from reversing
+the
+    product, however a generic crack for FlexLM won't
+be enough to crack
+the
+    product.
+<BR><BR>
+3.<PRE>
+
+char *montharr[12] = {"JAN", "FEB", "MAR", "APR", "MAY", "JUN",
+                      "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"};
+
+int l_interpret_date ( unsigned long intime, char
+*outday)
+{
+ unsigned long sday;
+ unsigned long smonth;
+ unsigned long syear;
+
+ sday = intime &amp; 0x0000001f;
+ smonth = (intime >> 5) &amp; 0x0000000f;
+ syear = (intime >> 9) &amp; 0x0000007f;
+ if (smonth > 11) {
+  return(-1);
+ }
+ sprintf(outday,"%d-%s-%d", sday, montharr[smonth],
+syear+1900);
+ return(0);
+}
+</PRE>
+4. A001
+
+<!-- PASTE HERE YOUR FINAL NOTES (if any) -->
+</PRE>
+<BR><BR>
+
+<!-- OB DUH STARTS HERE -->
+<TABLE CELLPADDING="1" CELLSPACING="2" BORDER="1"
+WIDTH= "100%"
+HEIGHT="22" >
+<TR><TD bgcolor="#C6E7C6"><CENTER><FONT size=+2><FONT
+color=blue>Ob
+Duh</FONT></FONT>
+</CENTER></TD></TR></TABLE><CENTER><I>I wont even
+bother explaining you
+   that you should BUY this target program if you
+intend to use it for a
+
+   longer period than the allowed one. Should you want
+to STEAL this
+   software instead, you don't need to crack its
+protection scheme at
+all:
+   you'll find it on most Warez sites, complete and
+already regged,
+   farewell, don't come back.</I></CENTER>
+
+<!-- WAY OUT STARTS HERE -->
+<HR><CENTER><I>You are deep inside fravia's page of
+reverse engineering,
+
+choose your way out:<BR><BR></I></CENTER>
+<BR><CENTER>
+<!-- EITHER A NICE GIF LIKE THIS -->
+<!--
+<a href="project3.htm" tppabs="http://www.anticrack.de/fravia/project3.htm"><IMG SRC="project3.gif" tppabs="http://www.anticrack.de/fravia/project3.gif"
+ALT="projecT3" ALIGN=CENTER WIDTH=114 HEIGHT=43
+BORDER=0 VSPACE=0
+HSPACE=0></a>
+<br>
+<font color=gray>Back to project 3</FonT>
+<br><bR>
+-->
+<!-- OR JUST A LINK LIKE THIS -->
+
+<!--
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+HEIGHT=13
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="project1.htm" tppabs="http://www.anticrack.de/fravia/project1.htm">Back
+to
+Your_chosen_project</A>
+<hr width=33%>
+-->
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+HEIGHT=13
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html"
+>homepage</A>
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+HEIGHT=13
+BORDER=0 VSPACE=0 HSPACE=0><A
+HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links</A>
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+HEIGHT=13
+BORDER=0 VSPACE=0 HSPACE=0><A
+HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms</A>
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+HEIGHT=13
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC</A>
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+HEIGHT=13
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="protec.htm" tppabs="http://www.anticrack.de/fravia/protec.htm">how to
+protect</A>
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+HEIGHT=13
+BORDER=0 VSPACE=0 HSPACE=0><A
+HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database</A>
+<BR>
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+HEIGHT=13
+BORDER=0 VSPACE=0 HSPACE=0><A
+HREF="realicra.htm" tppabs="http://www.anticrack.de/fravia/realicra.htm">reality cracking</A>
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+HEIGHT=13
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="howtosea.htm" tppabs="http://www.anticrack.de/fravia/howtosea.htm">how
+to search</A>
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+HEIGHT=13
+BORDER=0 VSPACE=0 HSPACE=0><A
+HREF="javascri.htm" tppabs="http://www.anticrack.de/fravia/javascri.htm">javascript wars</A>
+<BR>
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+HEIGHT=13
+BORDER=0 VSPACE=0 HSPACE=0><A
+HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools</A>
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+HEIGHT=13
+BORDER=0 VSPACE=0 HSPACE=0><A
+HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity academy</A>
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+HEIGHT=13
+BORDER=0 VSPACE=0 HSPACE=0><A
+HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails</A>
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+HEIGHT=13
+BORDER=0 VSPACE=0 HSPACE=0><A
+HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut CGI-scripts</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+HEIGHT=13
+BORDER=0 VSPACE=0 HSPACE=0><A
+HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia+</A>
+<BR>
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+HEIGHT=13
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is
+reverse engineering
+legal?</A>
+</CENTER>
+<HR>
+<!-- THAT'S ALL, THANKS A LOT this will allow
+automated retrieval -->
+</BODY>

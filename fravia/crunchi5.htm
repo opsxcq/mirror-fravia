@@ -1,0 +1,2857 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>crunchi5.htm: Little essay about the various methods and viewpoints of crunching</TITLE>
+
+</HEAD>
+
+
+
+<BODY BGCOLOR=#C0C0C0 TEXT=#001010 VLINK=#405040>
+
+<CENTER><CENTER><A href="papers.htm" tppabs="http://www.anticrack.de/fravia/papers.htm"><IMG SRC="papers.gif" tppabs="http://www.anticrack.de/fravia/papers.gif" ALT="papers" ALIGN=BOTTOM WIDTH=114 
+
+EIGHT=43 BORDER=0 VSPACE=0 HSPACE=0></A><BR><FONT color=gray>+HCU papers</FONT><BR><BR>
+
+<FONT size=+6><FONT color=blue>Little essay about the various methods and viewpoints of crunching</FONT></FONT>
+
+<BR>
+
+~ version July 1998 ~<BR>
+
+by Joa Part V
+
+<BR>
+
+
+
+
+
+<HR>Courtesy of fravia's page of reverse engineering<BR>
+
+<HR></CENTER><P>
+
+<P>
+
+
+
+Well, Joa continues his fundamental paper on crunching, this is part V<BR>enjoy!<P>
+
+<TABLE border=1>
+
+<TR><TD HEIGHT="33">10 July 98</TD><TD>
+
+Joa
+
+</TD><TD>~</TD><TD>
+
+<A href="crunchi1.htm" tppabs="http://www.anticrack.de/fravia/crunchi1.htm">crunchi1.htm</A>
+
+</TD><TD>Little essay about the various methods and viewpoints of crunching
+
+</TD><TD VALIGN="center" bgcolor="#E2A221"><A HREF="papers.htm" tppabs="http://www.anticrack.de/fravia/papers.htm">papers</A>
+
+</TD><TD>~</TD><TD>fra_0126</TD></TR>
+
+
+
+<TR><TD HEIGHT="33">10 June 98</TD><TD>
+
+Joa
+
+</TD><TD>~</TD><TD>
+
+<A href="crunchi2.htm" tppabs="http://www.anticrack.de/fravia/crunchi2.htm">crunchi2.htm</A>
+
+</TD><TD>Little essay about the various methods and viewpoints of crunching II
+
+</TD><TD VALIGN="center" bgcolor="#E2A221"><A HREF="papers.htm" tppabs="http://www.anticrack.de/fravia/papers.htm">papers</A>
+
+</TD><TD>~</TD><TD>fra_0129</TD></TR>
+
+
+
+<TR><TD HEIGHT="33">17 June 98</TD><TD>
+
+Joa
+
+</TD><TD>~</TD><TD>
+
+<A href="crunchi3.htm" tppabs="http://www.anticrack.de/fravia/crunchi3.htm">crunchi3.htm</A>
+
+</TD><TD>Little essay about the various methods and viewpoints of crunching III
+
+</TD><TD VALIGN="center" bgcolor="#E2A221"><A HREF="papers.htm" tppabs="http://www.anticrack.de/fravia/papers.htm">papers</A>
+
+</TD><TD>~</TD><TD>fra_012E</TD></TR>
+
+
+
+<TR><TD HEIGHT="33">17 June 98</TD><TD>
+
+Joa
+
+</TD><TD>~</TD><TD>
+
+<A href="crunchi4.htm" tppabs="http://www.anticrack.de/fravia/crunchi4.htm">crunchi4.htm</A>
+
+</TD><TD>Little essay about the various methods and viewpoints of crunching IV
+
+</TD><TD VALIGN="center" bgcolor="#E2A221"><A HREF="papers.htm" tppabs="http://www.anticrack.de/fravia/papers.htm">papers</A>
+
+</TD><TD>~</TD><TD>fra_012F</TD></TR>
+
+
+
+
+
+
+
+<TR><TD HEIGHT="33">10 July 98</TD><TD>
+
+Joa
+
+</TD><TD>~</TD><TD>
+
+<A href="crunchi5.htm" tppabs="http://www.anticrack.de/fravia/crunchi5.htm">crunchi5.htm</A>
+
+</TD><TD>Little essay about the various methods and viewpoints of crunching V
+
+</TD><TD VALIGN="center" bgcolor="#E2A221"><A HREF="papers.htm" tppabs="http://www.anticrack.de/fravia/papers.htm">papers</A>
+
+</TD><TD>~</TD><TD>fra_0133</TD></TR>
+
+
+
+
+
+</TABLE></CENTER>
+
+<HR><PRE>
+
+Little essay about the various methods and viewpoints of crunching.
+
+
+
+Part V: Interlude and the Mystery of Lempel-Ziv Part I
+
+
+
+
+
+---Joa's little essay on performing the art of compressing data - little big interlude---
+
+(Pre-Chapter V)
+
+
+
+And YET Garbage... ;((
+
+
+
+In chapter IV ;) i told you some ways of compressing runs of bytes with certain 
+
+techniques. But the last one, the No Garbage, technique has a little problem.
+
+(thanks go to rudeboy for clearly pointing that out! Your EMail has brought me
+
+some new ideas. Thanks again.)
+
+
+
+
+
+Consider the following bytes:
+
+
+
+xyz1112
+
+
+
+As the coder would start upon a run of at least three bytes and would subtract one
+
+we would get the following sequence:
+
+
+
+xyz11{0x00}2.
+
+
+
+The decoder would interpret the file in the following way:
+
+
+
+actual   last byte  crunch 
+
+x                    false
+
+y        x           false
+
+z        y           false
+
+1        z           false
+
+1        1           true
+
+0x00     1           true     
+
+copy '1' one time
+
+continue with reading
+
+                     false
+
+2        1
+
+(EOF)
+
+done
+
+
+
+and now consider the following byte-sequence:
+
+
+
+
+
+xyz1122
+
+
+
+The coder would code this verbatim:
+
+
+
+xyz1122
+
+
+
+The decoder would interpret this in the following way:
+
+
+
+actual   last byte   crunch
+
+x                     false
+
+y        x            false
+
+z        y            false
+
+1        z            false
+
+1        1            true
+
+{0x32}   1            true
+
+[CRASH] - our decoder writes bytes incorrectly!!!
+
+
+
+Hey what's going on? Last time i told you this - now i tell you that.
+
+Well, to be honest, i didn't implement this last one (trusting the 
+
+basic sample i received) and so didn't test it out. For this i officially 
+
+apologize <SIGH> :(.
+
+
+
+Now the least i can do is to tell you what you can do, as there are a 
+
+lot of capable +crackers out there, trying their own implementations and
+
+they are just asking: How do i code this and that in an INTELLIGENT 
+
+(= bits-saving) way?
+
+
+
+This is a very good question. What can we (i) do in our actual situation?
+
+
+
+Well, there are some ways would be:
+
+
+
+
+
+- adding an entry list with all those 'dangerous' addresses. With this 
+
+we would only have to enhance our coder with a security check whether
+
+the third byte would be the same as the second one or not. If not (our
+
+dangerous case) we would add this address to the 'dangerous list' and
+
+the decoder could look up, whether the actual decoding address would 
+
+be dangerous or not. To save space we would have to write a little 
+
+managment (for example: was the last address one byte in the past, or 
+
+one word or doubleword?) but we want to keep it simple. Anyway, on the 
+
+byte level we would add a big chunk of garbage to the file.
+
+
+
+
+
+
+
+
+
+- coding the real values and not subtracting one releases the zero, 
+
+thus enabling us to code the dangerous sequence in a way like this:
+
+
+
+xyz1122 -> xyz11{0x00}22{0x00}
+
+
+
+As you can clearly see, we are adding garbage to the file. And as you can
+
+imagine, two-byte-runs are so common, our cruncher would become useless.
+
+
+
+One way out of this misery would be to lower the quality of the cruncher
+
+and start up by 4 bytes instead of 3. Still we would add garbage!
+
+
+
+
+
+
+
+- to be honest, on the bytelevel i have no idea how to implmenent an 
+
+easy, garbageless cruncher (yet), but when we leave the bytelevel 
+
+and enter the bitlevel we have a universe of possibilities ready for us
+
+(still with garbage but much less garbage than expected).
+
+
+
+
+
+
+
+
+
+So let's start with the first solution on the bitlevel:
+
+(a bitwasting version - optimizing comes later)
+
+
+
+%'?' means that a char is added (8 bit binary)
+
+
+
+Ok, here we go:
+
+
+
+crunchable file:
+
+
+
+xyz1112
+
+
+
+the first three bytes cannot be crunched, so:
+
+
+
+%'x'%'y'%'z'
+
+
+
+the next two bytes, too,  are coded normally:
+
+
+
+%'1'%'1'
+
+
+
+this is what we normally would do: 
+
+we count the following '1's, subtract one, AND with 0xff for 8bit-coding. 
+
+After that we set the crunch flag to false to code the 
+
+next byte(s) normally. If we have more than 256 bytes in a run, we loose
+
+two byte every block of 256s. But except for bitmaps RLE will seldom meet
+
+runs of more than 256. 
+
+Counter gives us 1 so the counter is coded:
+
+
+
+%0000 0000 		<SPACE for optimation here
+
+
+
+we encounter '2' and code "it.class" tppabs="http://fravia.org/it.class" normally:
+
+
+
+%'2'.
+
+
+
+Looking back we have nothing gained :(
+
+
+
+
+
+And here the dangerous file:
+
+xyz1122
+
+
+
+The first three chars are coded:
+
+
+
+%'x'%'y'%'z'
+
+
+
+
+
+The next two chars are also coded normally:
+
+
+
+%'1'%'1'
+
+</prE>
+
+Now the Encoder would recognize that the next charakter is NOT a '1' and we have to solve this
+
+problem. One way of doing this would be to count the number of equal chars following and 
+
+if the counter was zero add a signal bit and code the run. But if we code a signal bit, we have
+
+to code it in normal files, too. So, if the run was no run, we would add a %0, if we could run a 
+
+crunch we send a %1. So for now we add a %0:<PRE>
+
+
+
+%0
+
+
+
+After that we code the next two bytes normally:
+
+
+
+%'2'%'2'
+
+
+
+and as the last run isn't a crunch, we add a %0:
+
+
+
+
+
+%0
+
+
+
+So, the whole file would look like this (SPACEs inserted for clarity):
+
+
+
+%'x'%'y'%'z' %'1'%'1'%0 %'2'%'2'%0
+
+</PRE>
+
+So for the cases where we couldn't crunch we would only add one bit. But hey, we forgot to 
+
+adapt this new format to the crunchable data. Let's check out the new format on a crunchable run:
+
+<PRE>
+
+xyz1112 becomes
+
+
+
+%'x'%'y'%'z' %'1'%'1' %1 %00000001 (+1 as we DO have a crunch - so makes a counter of 1) %'2'
+
+
+
+
+
+Ooops. What happened? Now we enlarged our crunchable file by one bit. Damn. We want to be sure
+
+that a three byte run doesn't create garbage, not even one bit. As a good solution we would 
+
+reduce the maximum run length from 256 (255 +1) down to 128 (127 +1)  which can be encoded in
+
+7 bits. Done that we look again on our file:
+
+
+
+%'x'%'y'%'z' %'1'%'1' %1 %0000000 (+1 as we DO have a crunch - so makes a counter of 1) %'2'
+
+
+
+Good. We crunched the file. The filelength hasn't changed, but we didn't produce garbage. And
+
+when we enter runs greater than 3 we have win situation. We can only hope that we have more
+
+wins than (garbabe-bits / 8). 
+
+
+
+But, ahem...
+
+
+
+Yes, Watson?
+
+
+
+I would like to implement another way...
+
+
+
+Yes?
+
+
+
+What about this dangerous address-list, you mentioned?
+
+
+
+Well, yes, we could implement one. All right. The secret to this method
+
+is that the intervalls rely on a straight direction. The intervalls are
+
+always positive. And when the file has a lot of dangerous addresses, the
+
+distances are relatively short. Therefore the distances can be expressed
+
+in only a few bits and not a word or long.
+
+
+
+The first 'dangerous' address is encoded as long in the crunched file.
+
+
+
+But 'how?' do you ask? Well, it's clear that we would have to add some kind
+
+of switch to the dangerous-address list, isn't it? 
+
+How would a crunchable file and our dangerous file look like?
+
+
+
+
+
+First, we would encode dangerous runs as garbage:
+
+
+
+xyz11abcd334455 would be encoded verbatim. 
+
+
+
+But we would start a 'dangerous' list:
+
+
+
+The encoder recognizes the dangerous run (by checking, if the third byte of the 
+
+possible run is the same as the second or first) and initializes/updates the list.
+
+The decoder, on the other side reads one entry (if available) AHEAD and knows the
+
+next dangerous address from decoding it. But back to the encoder.
+
+
+
+When the first run is to be done, we should code it as a long:
+
+
+
+The "11" is found on address 0x00000003 (zero-based of course) and should be coded
+
+as long. Then we go along, code "abcd" and enter "33". As this is a dangerous run, 
+
+we have to code it (the difference that is), but we want to code it with as 
+
+few bits as possible. And here the great sparks of creativity are fanned. 
+
+We could possibly do:
+
+
+
+Code two signal bits for four different modes: 
+
+%00 for long
+
+%01 for three bytes
+
+%10 for word
+
+%11 for byte
+
+
+
+and let those headerbits follow the specified number of bits (32, 24, 16, 8). Yes, this means,
+
+we have to implement a bitreading routine for our decruncher. But hey, those are 
+
+very useful for a lot of purposes. Don't be lazy. Once you've written a pair of
+
+bitswriting/bitsreading-routines, you'll be amazed about the new possibilities of 
+
+addressing things. 
+
+
+
+Another way would be to do a Huffman-Version of these two bits:
+
+%0   for byte (should be the most happening intervall)
+
+%10  for word
+
+%110 for three bytes
+
+%111 for long
+
+
+
+followed by the appropiate number of bits.
+
+If you are crazy enough you could run a counter along and 
+
+calculate adaptively an always optimized Huffman-tree for these two bits ;)
+
+
+
+Next possibility, please:
+
+if you are sure that the distances will be VERY short - you could do a variable coding:
+
+divide the distance by 3. Save the remainder. In a loop running from 1 to the counter add
+
+%11 into your dangerous-list. Then add the remainder in binary, but with two bits. Examples:
+
+Intervall   added bits:
+
+0           %00
+
+1           %01
+
+2           %10
+
+3           %11 00
+
+4           %11 01
+
+5           %11 10
+
+6           %11 11 00
+
+7           %11 11 01
+
+8           %11 11 10
+
+9           %11 11 11 00
+
+10          %11 11 11 01
+
+...
+
+
+
+
+
+
+
+<ADVANCED Mode>
+
+To complicate things, i thought: what, if i want to create a flexible and variable code, giving
+
+me good ranges without exploding numbers of bits when i reach higher numbers? I searched my 
+
+library and came up with an idea i'll explain now. 
+
+But first the useful, but expensive unary code:
+
+The unary code has as condition that the number to be encoded is greater 0.
+
+
+
+Imagine you want to code a number with bits. Imagine you don't have a single idea, what the
+
+binary system is. You could came up with the idea of writing %1 as often as your number
+
+indicates. After that you would send a %0 as delimiter. Examples:
+
+value      bits (all binary):
+
+1          0
+
+2          10
+
+3          110
+
+4          1110
+
+5          11110
+
+6          111110
+
+7          1111110
+
+8          11111110
+
+9          111111110
+
+10         1111111110
+
+...
+
+</PRE>
+
+For normal cases this coding method is not useful, but for some cases it is the foundation.
+
+And for values between 1 and 3 nothing is better.
+
+Now Imagine, you would use the number of %1 you read as SHL-argument. You would get a power of 2.
+
+But what about the lower bits? When i code %1110 i read three %1 (plus %0 as delimiter) and know
+
+that i have a basic value of 2^3 = 8. If i code %11110 i get 2^4 = 16. What about the rest?
+
+Well, it just has to be inserted, that's all. The remainder is just added to the binary. 
+
+This method is called y - code (it's an greek y-char). You tell the decoder what he has still to read 
+
+and you also know the power of 2 that these other bits are to be added.<BR> 
+
+Let's create a y code for the number 9:<BR>
+
+<BR>
+
+First we have to find the powers of 2 our number lies in:<BR>
+
+The number 9 is between 8 and 16, so we use 8 as base. 8 is 2^3 so we use the unary code to code
+
+3: %1110. Then we subtract 8 from 9 giving us a rest of 1. As our power of 2 is three the rest
+
+of the code MUST be expressable in 3 bits. And it is. We code the remaining 1 in three bits:
+
+%001. So the whole code for 9 would be: %1110 001. Here are the numbers 0 to 10 (decimal):<PRE>
+
+Number      Code (in binary)
+
+1           0
+
+2           10 0
+
+3           10 1
+
+4           110 00
+
+5           110 01
+
+6           110 10
+
+7           110 11
+
+8           1110 000
+
+9           1110 001
+
+10          1110 010
+
+
+
+</PRE>
+
+And now we could combine the above mentioned divide-by-three method with the last part of the y-code,
+
+that is, exchange the first, the unary part with the divide-by-three-method.<BR>
+
+Let's code the number 9 again:
+
+<PRE>
+
+9 is 2^3 + 1. So our power of two is 3. To code 3 we do:
+
+3/3 = 1 remainder 0. So 1 x %11 and remainder %00 -> %11 00. 
+
+
+
+And after that we would encode the rest in three bits: %001. 
+
+So the whole encoding would look like: 
+
+%1100 %001.
+
+
+
+Now let's encode 129 with both methods:
+
+129 = 2^7 + 1 = %11111110 0000001  (y code)       (8 + 7 = 15 bits)
+
+129 = 2^7 + 1. 7 = %11 11 01 -> %111101 %0000001  (6 + 7 = 13 bits)
+
+</ADVANCED Mode>
+
+</PRE>
+
+Of course you are free to combine all mentioned methods together. It may be a good idea to pre-create
+
+a dummy-entry, counting the number of bits needed for writing the entry. By looping thru all your
+
+available methods you could switch to the best method for the actual intervall. The only premise is
+
+that the decoder uses the same routines as the encoder.
+
+<BR><BR>
+
+I hope that helped. May be i will refer to these methods in later chapters, so study them and take
+
+your time. For more information on coding bits - go to your local library and lend:
+
+"Managing Gigabytes" from Ian H. Witten, Alistair Moffat, Timothy C. Bell. But be warned: This it
+
+not an easy book to read! Quite the contrary: I would be happy if i'd understand  half of the
+
+book with it's thousands of formulas ;)<PRE>
+
+
+
+But now let's pass to chapter 5
+
+---Joa's little essay on performing the art of compressing data - little big interlude END---
+
+
+
+
+
+By Joa Koester (JoKo2000@HotMail.Com) 
+
+This essay is free to be copied and read and spread as long as
+
+you are decent enough to leave my name in it. 
+
+If you have corrections, comments, better examples than the ones used 
+
+in this essay, etc. - drop me a line.
+
+
+
+OK, let's dive into the world of crunchers and munchers...
+
+
+
+
+
+Lempel - Ziv 
+
+A Milestone in crunching history
+
+
+
+
+
+Pease porridge hot, pease porridge cold,
+
+Pease porridge in the pot,
+
+Nine days old.
+
+Some like it hot, some like it cold,
+
+Some like it in the pot,
+
+Nine days old.
+
+
+
+(...now he has gone totally nuts ;)
+
+*Ahem*</PRE>
+
+No, i'm not nuts. This is just a textbase suitable for crunching. Just look at it. Aren't there a lot of 
+
+bytesequences identical? Shouldn't there be an elegant way of crunching this? Yes, of course there is.
+
+The secret lies in the observation, that bytes (symbols) that appeared right now had ALREADY appeared
+
+in the recent past. Consider the second line as our actual line. The bytesequence "Pease porridge " is the same
+
+as in line one. In the sixth line the bytesequence "Nine days old.{0x0d, 0x0a}" is identical to the third.
+
+But if we already HAVE the bytes that we need, we don't need to write them anymore. Just for the sixth 
+
+line, we could just write a reference to the file, like:
+
+<PRE>
+
+Pease porridge hot, pease porridge cold,
+
+Pease porridge in the pot,
+
+Nine days old.
+
+Some like it hot, some like it cold,
+
+Some like it in the pot,
+
+[ ->Line 3, 16 bytes]
+
+
+
+If we could express this [ ->Line 3, 16 bytes] in fewer bytes than 16 we 
+
+would have crunched a good portion of our file.
+
+In the first line, we could put a reference to the bytes of "ease porridge" 
+
+as the initial 'p' is not identical to the 'P' of the first "Pease". But 
+
+with a reference we would write something like:
+
+
+
+Pease porridge hot, p[->Line 1, Byte 1, 14 bytes]cold. 
+
+
+
+If we write this sequence in less than 14 bytes we crunch. 
+
+</PRE>
+
+Some thought like that must have been spinning thru the heads of Jacob Ziv and Abraham Lempel when 1977
+
+and 1978 they came up with totally new ways of compressing data. The '77 version is exactly what i'm 
+
+explaining here. The output of your crunch is something with a reference and a counter. But how do
+
+you come up with it?
+
+<P>
+
+Well, the original LZ77 alg uses something called a 'window' and the source is sliding thru the window,
+
+scanning for repeatings. Well, this window is - in the end - nothing but a loop into the past of your
+
+data you are crunching. You have a current point. This point points to your actual data to be crunched.
+
+What you do is to look for occurences of the bytes you are looking at right now in your past. Somehow
+
+these occurences are in the near past (a good guess: about 8 kbyte) and the more you look into the past the more
+
+unprobable a crunch gets. Let's have an example:
+
+<PRE>
+
+abcdxyz000abcd123
+
+
+
+YOU recognize immediately the second appearance of "abcd", but how 
+
+does the algorithm?
+
+
+
+Well, let's imagine your point was already on the last '0' and now 
+
+we are entering the 'a' of "abcd".
+
+
+
+          *
+
+abcdxyz000abcd123
+
+          
+
+		  
+
+We must have a past pointer ready. As a past pointer it starts one 
+
+byte 'behind' our actual pointer:
+
+
+
+          *
+
+abcdxyz000abcd123
+
+         ^
+
+		 
+
+Now we compare - and fail. So we move our past pointer down by one 
+
+back into our past:
+
+
+
+          *
+
+abcdxyz000abcd123
+
+        ^
+
+		  
+
+Now we compare - and fail. So we move our past pointer down by one 
+
+back into our past:
+
+
+
+
+
+          *
+
+abcdxyz000abcd123
+
+       ^
+
+
+
+... This is what Lempel-Ziv meant with their window: A pointer that 
+
+scans the past.
+
+When we finally reach the 'a', our compare flags:
+
+
+
+
+
+          *
+
+abcdxyz000abcd123
+
+^
+
+
+
+Jippieh! Hit! And now? Well, we make a copy of our pointers and install runpointers.
+
+From then on we run back into the future, until we reach the end of the data or the
+
+compare fails - whichever comes first.
+
+
+
+
+
+          *'
+
+          *
+
+abcdxyz000abcd123
+
+^
+
+^'
+
+
+
+
+
+flags until...
+
+
+
+
+
+              *'
+
+          *
+
+abcdxyz000abcd123
+
+^
+
+    ^'
+
+</PRE>
+
+Well, the compare fails after four bytes. That means, we have a possible crunch of four bytes
+
+ahead. That is information number one. Information number two is the distance between our
+
+two pointers. A simple subtraction gives us this distance. Now all we have to do is to encode
+
+a format with the distance and the number of crunched bits and we will have our own 
+
+implementation of LZ77. I think the original format was 12 bits fix for distance and 4 bits fix
+
+for the number of bytes crunched. I don't think i'm going to surprise you if i tell you that
+
+in a normal file 16 equal sequence-bytes are very seldom. Most occuring byteruns are 2, 3, 4, 5+.
+
+In that order. And you don't need 12 bits fix. Use your imagination. There a lot of ways of
+
+creating such a distance format. One good beginning would to connect the runlength and the 
+
+distance. It is most reasonable to allow a bigger distance for a 5+ run and to truncate the
+
+distance for the more occuring 2-runs, thus giving you less bits to write for the most occuring
+
+crunches. As you are crunching 2 bytes you will only have 16 bits space (2 bytes = 2 * 8 = 16). 
+
+As you want to gain something here too, i suggest a distance of 9 bits maximum. <BR>
+
+When you manage to stay under 15 bits for the 2 crunch, you will have a good format.<BR> 
+
+A format i used (with a scan of 2048 byte), was:<PRE>
+
+
+
+2crunch (16 bits original): %0%000000000 (%0 for 2crunch, 9bits distance)
+
+3crunch (24 bits original): %10%0000000000 (%10 for 3crunch, 10bits distance)
+
+4crunch (32 bits original): %110%00000000000 (%110 for 4crunch, 11bits distance)
+
+5+crunch (40+ bits original): %111%(variable)(%111 for 5crunch plus sequencing bitd 
+
+                                              for coding distance and number of bytes)
+
+
+
+You are of course free to use whatever comes into your mind. And do yourself a favor 
+
+and DO IT! It is good fun and you learn a lot.
+
+
+
+But back to our scanning algorithm. We have a few problems to examine:
+
+
+
+What happens if i come up with a sequence like: abcdefg123abcd###abcdef  ???
+
+What about the start and the ending of our data (beginning and ending of scanning)?
+
+What about speed?
+
+What about garbage?
+
+
+
+all right, all right.
+
+We will crunch the above mentioned bytes together. Then your questions will be answered.
+
+
+
+Important points: 
+
+We install a crunch-counter, telling us, how many bytes we have crunched. 
+
+If the counter remains at 1 we will have not crunched anything and the 
+
+current byte is to be written as garbage.
+
+We also install a Crunch-Distance for comparisons.
+
+
+
+
+
+Let's begin.
+
+Obviously we start at the first byte: 
+
+
+
+*
+
+abcdefg123abcd###abcdef
+
+</PRE>
+
+Now, as we don't have a window yet, we have to write this as garbage. And as we now recognize,
+
+that we don't know how many bytes garbage we will have, we have two options: write the garbage
+
+away binary reversed and build the decruncher to read your file from behind back to the front<BR> 
+
+OR<BR> 
+
+to write the garbage into some temporary memory/file/whatever and when you reach your crunch 
+
+you know how many bytes garbage you had, code this number and append the garbagebytes from your tmp.
+
+The first solution would also mean that the scan-alg would have to scan the actual future (which
+
+would be the decrunchers past), but there's no real difference between an incremental scan or 
+
+decremental scan.
+
+<PRE>
+
+Solution ONE would look like: (when we reach the second 'abcd')
+
+
+
+321gfedcba (not completely binary reversed for clarity)
+
+  then we have the count of our garbage (0x0a) and i code it for example using 
+
+  the 'divide-by-three' method: 10 / 3 = 3 rem 1 -- %11 %11 %11 %01 
+
+  this would make -- binary reversed -- :
+
+%10 %11 %11 %11 
+
+  plus a %0 for garbage --
+
+%0
+
+
+
+and if we add this:
+
+
+
+(321gfedcba (not completely binary reversed for clarity) ) %10 %11 %11 %11 %0
+
+
+
+As in this variation the decoder would read the bits from behind it 
+
+would get the codes in correct order:
+
+%0 				for garbage
+
+%11 %11 %11 %01			counter of garbage
+
+abcdefg123          		and then the garbage bytes re-reversed to original state
+
+
+
+The other way would be to save the byte somewhere.
+
+So when we reach the crunch at 'abcd'
+
+we would have:
+
+
+
+[tmp]abcdefg123
+
+
+
+we would code 
+
+the %0 for garbage, the counter %11 %11 %11 %01
+
+and the bytes.
+
+In this version the decruncher would read the file from the start 
+
+and not from behind. Both versions have their advantages and 
+
+disadvantages and it's just a matter of taste not of difficulty.
+
+
+
+For this example i assume a [tmp]-solution, so we write the 'a' to our [tmp]-area.
+
+After that we increment our pointer and start anew. 
+
+The Crunch-Counter is set back to 1.
+
+
+
+
+
+ *
+
+abcdefg123abcd###abcdef
+
+
+
+
+
+Now we can have a look into the past. 
+
+We install our PastPointer one byte behind the actual pointer and
+
+run a compare.
+
+
+
+
+
+ *
+
+abcdefg123abcd###abcdef
+
+^
+
+</PRE>
+
+Whew. 'b' and 'a' don't match. So we'll continue our scan either until we reach the start of the file
+
+or we reach the end of our scan-reach. As we have reached the start of the file we look at our 
+
+Crunch-Counter: still 1. So this byte is also garbage. Away with it ;)<BR>
+
+Reset your Crunch-Counter (redundant in this case, i know, but when you code the alg you'll see that
+
+an If-Then construct is more timewasting than the move-operation) and increment your actual pointer by
+
+the Crunch-Counter (1):<PRE>
+
+
+
+
+
+  *
+
+abcdefg123abcd###abcdef
+
+ 
+
+
+
+Install the Scan-Pointer:
+
+
+
+
+
+  *
+
+abcdefg123abcd###abcdef
+
+ ^
+
+
+
+And start scanning. 
+
+As the Byte at distance -1 is not equal to the actual byte we'll decrement 
+
+our pointer by one and do this until we:
+
+ - reach an equal byte, 
+
+ - reach the start of the file
+
+ - reach the end of our scan-reach.
+
+ 
+
+Our Scan-Pointer is at the 'a' and the start of the file is reached. 
+
+As we look at our Crunch-Counter, we still have a 1. So away with it.
+
+This goes on until we reach the second 'a' at position {0x0a} (zero-based).
+
+
+
+We'll continue the situation one byte BEFORE the crunch:
+
+
+
+         *
+
+abcdefg123abcd###abcdef
+
+^
+
+</PRE>
+
+After this last comparison we write the '3' as garbage. Our [tmp] look like: [tmp]abcdefg123, we
+
+have a garbagecounter of 0x0a and a Crunch-Counter of 1. Now we go ahead and increment our 
+
+crunch-pointer by the Crunch-Counter (1).<PRE>
+
+
+
+          *
+
+abcdefg123abcd###abcdef
+
+         ^
+
+
+
+
+
+The scan will fail until the very first byte of the file:
+
+
+
+
+
+          *
+
+abcdefg123abcd###abcdef
+
+^
+
+
+
+Now, as written some paragraphs above, we install copies of our 
+
+pointers and let the copies run until either we reach the end of 
+
+the file or the cmp fails.
+
+
+
+          *'
+
+          *
+
+abcdefg123abcd###abcdef			is ok.
+
+^
+
+^'
+
+
+
+           *'
+
+          *
+
+abcdefg123abcd###abcdef			is ok.
+
+^
+
+ ^'
+
+
+
+            *'
+
+          *
+
+abcdefg123abcd###abcdef			is ok.
+
+^
+
+  ^'
+
+
+
+             *'
+
+          *
+
+abcdefg123abcd###abcdef			is ok.
+
+^
+
+   ^'
+
+
+
+              *'
+
+          *
+
+abcdefg123abcd###abcdef			fails.
+
+^
+
+    ^'
+
+</PRE>
+
+We compute the runlength and compare it with our Crunch-Counter (currently 1). As 4 is greater than 1 we
+
+have a crunch and continue happily. We also set the Crunch-Counter to our new value (4) and adjust the
+
+Crunch-Distance to 0x0a.<BR>
+
+So we have 0x0e (the pos of our crunch-point-copy) - 0x0a (the pos of our crunch-point) = 4 as runlength and
+
+0x0e - 0x04 = 0x0a as distance.
+
+<P>
+
+
+
+We want to encode this. But first we have to get rid of the garbage. As i assumed we had the bytes in some
+
+kind of [tmp] and now, before we encode the crunch, we encode the garbage:
+
+<PRE>
+
+%0            for garbage
+
+%11111101     the counter
+
+abcdefg123    the bytes themselves
+
+
+
+Now, as we have a telling bit for garbage and crunch 
+
+(0 for garbage, 1 for crunch), we have to encode the
+
+telling bit for the crunch, right?
+
+
+
+
+
+Think for a minute...
+
+
+
+.....
+
+
+
+
+
+
+
+Back?
+
+Did you get it? 
+
+Yes, in this case you don't need a telling bit for crunch.
+
+
+
+The explanation goes as follows:
+
+
+
+These are the cases we have (theorethically):
+
+
+
+garbage, garbage
+
+garbage, crunch
+
+crunch, garbage
+
+crunch, crunch
+
+
+
+
+
+Can we have a crunch after a crunch? Yes.
+
+Can we have crunch followed by garbage? of course
+
+Can we have garbage followed by crunch? Yep.
+
+Can we have garbage after garbage? In this system we implemented - NO!!!
+
+
+
+That means, that, after coding garbage we don't need to ouput a 
+
+telling-bit for crunch. This saves us a lot of bits, believe me.
+
+
+
+So after the garbage we code the crunch-sequence:
+
+
+
+(%1)			omitted due to using brain ;)
+
+%110			for 4crunch
+
+%00000001010 	for distance
+
+
+
+We increment our original crunch-pointer by the Crunch-Counter (4),
+
+reset the Crunch-Counter back to 1 and continue our normal scan.
+
+
+
+              
+
+              *
+
+abcdefg123abcd###abcdef			
+
+             ^
+
+			 
+
+The first '#' will be emitted as garbage. Our Crunch-Counter is reset to 1.
+
+But the next one is quite interesting:
+
+
+
+    
+
+               *
+
+abcdefg123abcd###abcdef
+
+              ^
+
+			  
+
+Just one byte behind we find a crunch. And now? Well, we continue as before.
+
+We install copies of our actual pointer and let them run.
+
+
+
+                *'
+
+               *
+
+abcdefg123abcd###abcdef    is ok
+
+              ^
+
+               ^'
+
+			   
+
+			   
+
+                 *'				
+
+               *
+
+abcdefg123abcd###abcdef    fails.
+
+              ^
+
+                ^'
+
+
+
+As we compute the run length (2), we compare it with our Crunch-Counter (1) 
+
+we see, that we are greater. So we have a crunch. 
+
+
+
+We compute the difference (1) and set the Crunch-Counter to our new run-length (2).
+
+We also set the Crunch-Distance to the right difference (in this case 1)
+
+
+
+THEN WE CONTINUE OUR SCAN!!! 
+
+But as we don't have a second '#' in the file we come up with the values we just
+
+computed.
+
+
+
+As we just had a garbage out, we don't emit the telling bit for crunch and 
+
+send:
+
+
+
+%0           for 2crunch
+
+%0000000001  for distance.
+
+
+
+After that we increment the Crunch-Pointer by the Crunch-Counter (2), reset the 
+
+Crunch-Counter to 1 and continue.
+
+
+
+
+
+                 *
+
+abcdefg123abcd###abcdef    
+
+                ^
+
+
+
+
+
+The scan will fail until the first 'a' on position 0x0a:
+
+
+
+
+
+                 *
+
+abcdefg123abcd###abcdef    
+
+          ^
+
+
+
+
+
+We react as we are now used to:
+
+Install pointer-copies and let them run.
+
+
+
+                  *'
+
+                 *
+
+abcdefg123abcd###abcdef    is ok
+
+          ^
+
+           ^'
+
+
+
+
+
+                   *'
+
+                 *
+
+abcdefg123abcd###abcdef    is ok
+
+          ^
+
+            ^'
+
+			
+
+                    *'
+
+                 *
+
+abcdefg123abcd###abcdef    is ok
+
+          ^
+
+             ^'
+
+
+
+                     *'
+
+                 *
+
+abcdefg123abcd###abcdef    fails.
+
+          ^
+
+              ^'
+
+
+
+So, we compute the runlength (4) and compare it with our actual Crunch-Counter (1).
+
+As it is greater (= better) we save it into our Crunch-Counter. We also save the
+
+distance in the Crunch-Distance. 
+
+After that, we continue.
+
+
+
+
+
+                 *
+
+abcdefg123abcd###abcdef    fails.
+
+         ^
+
+
+
+We will have lots of fails until the second 'a':
+
+
+
+
+
+                 *
+
+abcdefg123abcd###abcdef    fails.
+
+^
+
+
+
+Now, we have a crunch again. You already know whats happening, so let's watch the
+
+movie :)
+
+
+
+                  *'
+
+                 *
+
+abcdefg123abcd###abcdef    is ok.
+
+^
+
+ ^'
+
+
+
+                   *'
+
+                 *
+
+abcdefg123abcd###abcdef    is ok.
+
+^
+
+  ^'
+
+
+
+                    *'
+
+                 *
+
+abcdefg123abcd###abcdef    is ok.
+
+^
+
+   ^'
+
+
+
+                     *'
+
+                 *
+
+abcdefg123abcd###abcdef    is ok.
+
+^
+
+    ^'
+
+
+
+                      *'
+
+                 *
+
+abcdefg123abcd###abcdef    is ok.
+
+^
+
+     ^'
+
+</PRE>
+
+unfortunately, after this step we cannot continue, as our file is at end. So we stop our loop
+
+and compute our crunch-len: 6. We compare it with our Crunch-Counter (4) and find it greater (=better).
+
+So we actualize our values and set Crunch-Counter to 6 and the Crunch-Distance to 0x11.
+
+<PRE>
+
+Then we continue our loop.
+
+Hm, the crunch-pointer is at EOF, so we look, what we have:
+
+Crunch-Counter > 1, in fact even 6, so we have a great crunch here. 
+
+
+
+As the last action was a crunch, we send our telling bit for crunch 
+
+and after that we encode the Crunch-Counter and the distance 
+
+
+
+%1
+
+%111
+
+%(your code here)
+
+
+
+And then we are finished. Flush all streams, close all files, delete all mem and exit.
+
+
+
+
+
+This way of scanning for the best (=longest) match is called 'greedy evaluation', btw.
+
+
+
+
+
+
+
+The decoder is much easier to program:
+
+
+
+//assuming that the original length of the file is known and
+
+//we have a output, which is incremented after each byte written.
+
+//we also must have a pointer to our actual address to be written,
+
+//or else we could not have references to our past.
+
+while (Actual_Address <SHOULDBE_Pos)
+
+{	
+
+	get bit
+
+	if (bit == 0)
+
+	{
+
+		//garbage
+
+		sum = 0;
+
+		x = 0;
+
+		read two bits into x
+
+		while (x == %11)	
+
+		{
+
+			sum += x;	//add 3 to sum
+
+			read two bits into x
+
+		}	
+
+		sum += x;		//add remainder to sum
+
+
+
+		for (int t = 0; t < sum; t++)	
+
+		{
+
+			char c;
+
+			read 8 bits into c;
+
+
+
+			output c;	//output char and increment Actual_Address
+
+		}
+
+		
+
+		//We know, that after garbage ALWAYS follows crunch
+
+		call Do_Crunch;		slightly redundant call-structure
+
+	}
+
+	else
+
+	{	//clean crunch
+
+		call Do_Crunch;		slightly redundant call-structure
+
+	}
+
+}
+
+ret
+
+
+
+Do_Crunch:
+
+{
+
+	mode = 0
+
+	read bit
+
+	if (bit == 0)	
+
+	{
+
+		mode = 2
+
+	}
+
+	else
+
+	{ //first bit was one
+
+		read bit
+
+		if (bit == 0)
+
+		{
+
+			mode = 3
+
+		}
+
+		else
+
+		{ //third bit decides
+
+			read bit
+
+			if (bit == 0)
+
+			{
+
+				mode = 4
+
+			}
+
+			else
+
+			{
+
+				mode = 5
+
+			}
+
+		}
+
+	}
+
+	
+
+	//only one mode explained. The rest is either analog or dependend to your codes
+
+	switch (mode)
+
+	{
+
+		case 2:
+
+		{
+
+			int distance = 0
+
+			read 9 bits into distance
+
+			
+
+		//as we assume a forward cruncher, this decruncher references to the past
+
+		//and writes into it's actual future.
+
+		pointer back = Actual_Address;
+
+		back = back - distance;
+
+		
+
+		//we have already written out these bytes, so we can just get them.
+
+		//if we are decrunching into memory, that's childsplay, but if we write
+
+		//into a file, you really should buffer things up. As you have a 
+
+		//certain scan-reach, you should buffer exactly the amount of this
+
+		//reach for faster access. After processing you can then increment
+
+		//your pointer and write the first bytes of your buffer to the
+
+		//destination file. You will have to flush your buffer, before you 
+
+		//exit the decruncher!!!
+
+		//Here decrunching into memory is assumed.
+
+	for (int t = 0; t < 2; t++)
+
+		{
+
+			char c = *back;	 //get char
+
+			output c;	 //output it (plus incrementing Actual_Address)
+
+			back = back + 1; //increment pointer				
+
+		}			
+
+	}
+
+    }
+
+}
+
+ret
+
+
+
+</pre>
+
+The Scan-Method i showed you is of course pretty slow. Every time you scan thru a 8 kbyte area
+
+you read the bytes x-thousand times. A lot of tricks were invented to ease this problem.<BR>
+
+One trick is to save the following byte of the actual byte. When you than scan into your past
+
+and you get to the same byte you than can immediately scan, if the second byte is also equal.
+
+If it is, you will at least have a 2crunch. Example:
+
+<PRE>
+
+              *
+
+abcd12345a6789abcd
+
+             ^
+
+			 
+
+Scanning thru your memory with this trick would lead to a 
+
+Crunch-Second-Guess-Bytes with the value 'b' in this case. 
+
+Now after some scanning we reach the following situation:
+
+
+
+              *
+
+abcd12345a6789abcd
+
+         ^
+
+</PRE>
+
+We reached an 'a', so we normally enter a compare loop - but not now. Before this we compare our saved
+
+Guess-Byte ('b') with the second byte after the scan-byte ('6'). As the compare fails, we continue
+
+our scan without having to enter a timeconsuming loop.<BR>
+
+The evolution to this trick is to check not the second byte but the [Crunch-Counter]-byte.
+
+As in the normal loop it will be 1 we have exact our second byte. But if we already had a 
+
+crunch, we save the last byte of the crunch into this Guess-Byte. When we reach another
+
+byte signalling a possible crunch, we check ahead the Scan-Pointer[Guess-Byte]-byte and
+
+see if it's worth it. <BR>
+
+When you think it over, you realize that we can then exterminate the Guess-Byte again and 
+
+just compare to the [Crunch-Counter]-offset. Example:
+
+<PRE>
+
+abcdefg..abcX..abcd..abcdefg
+
+
+
+Now, when we reach the following situation:
+
+
+
+                     *
+
+abcdefg..abcX..abcd..abcdefg
+
+                    ^
+
+					 
+
+We start to scan into our past. The first promising compare comes up:
+
+
+
+
+
+                     *
+
+abcdefg..abcX..abcd..abcdefg
+
+               ^
+
+
+
+
+
+We now compare the ^[Crunch-Counter]-byte with the *[Crunch-Counter]-byte and as the 
+
+Crunch-Counter is 1 we compare 'b' with 'b', so we continue. 
+
+Our loops stops with a run of 4. We now set our Crunch-Counter to 4 and continue 
+
+our scan. Then the next 'a' appears:
+
+
+
+
+
+                     *
+
+abcdefg..abcX..abcd..abcdefg
+
+         ^
+
+
+
+We now again compare the ^[Crunch-Counter]-byte with the *[Crunch-Counter]-byte (should
+
+really be saved into a register) and see, we compare a 'X' with a 'd'. As the compare
+
+fails we just ignore this byte and continue our scan into our past. Soon we reach the 
+
+last 'a':
+
+
+
+                     *
+
+abcdefg..abcX..abcd..abcdefg
+
+^
+
+
+
+When we now compare the [Crunch-Counter]-bytes we have a positive flag and can begin
+
+to crunch.
+
+
+
+
+
+
+
+
+
+Another method of speeding up the main-scanning alg is to implement a jump-table.
+
+The table would look like this (excerpt for the values 'a' to 'd'):
+
+
+
+[a] [b] [c] [d]
+
+ 0   4   4   4
+
+
+
+for the following source:
+
+
+
+abcd.bcd...
+
+
+
+The DISTANCE between the first 'b' and the second 'b' is stated in this table. 
+
+Now our scan algorithm would just have to look at the actual byte, look it up
+
+in the table and if the value is > 0 sent the scan directly there. If the
+
+value IS 0, we have a garbage byte. Sounds pretty fast, isn't it? Yes it is.
+
+But the building of such a table is a little bit difficult. I explain ONE way
+
+of creating such a table. For the sake of clearness i will explain for BYTES
+
+but it's not so difficult to enhance this mechanism for WORDS.
+
+
+
+Ok, what do we need? Watson?
+
+
+
+Here, Sir. Well, i think we need something the size of our scan-area, namely the
+
+distance-table. And then i would think for constructing a 256-entry-table would 
+
+be useful.
+
+
+
+Very good, Watson. That's exactly what i wanted to hear. There will be just
+
+a little change, but don't sweat it.
+
+Yes, we have a table for the scanner and 
+
+for constructing we have a temporary table for the 256 possible Byte-possibilities.
+
+
+
+Now, what do we do?
+
+Assume we have the following source:
+
+
+
+abcd..bbc
+
+
+
+and we want to create our jump-table. 
+
+At first we would initialize all tables with zeros. Then, in a loop we read a byte
+
+and from the 256-table we read the last address. We subtract this from the actual address
+
+and if the adresspointer was 0x00000000 before we write this difference into our jump-table. 
+
+Explained on the example, this would be something like:
+
+
+
+012345678	(Address)
+
+abcd..bbc	(Source)
+
+
+
+We read 'a'. We look up 'a' and come up with 0x00000000 as we just initialized the table.
+
+Our actual adress is 0x00000000, so the difference is also 0x00000000. As our scanreach
+
+is just under 8 KByte, we can save the difference as short (16 bit). So our tables 
+
+would look like:
+
+
+
+char	256-Bytetable		Adresspointer	Jumptable
+
+a	0x00000000		0x00000000	0x0000
+
+b	0x00000000				0x0000
+
+c	0x00000000				0x0000
+
+d	0x00000000				0x0000
+
+.	0x00000000				0x0000		('.' just for the clarity)
+
+.	0x00000000				0x0000		('.' just for the clarity)
+
+b						0x0000
+
+b						0x0000
+
+c						0x0000
+
+
+
+</PRE>
+
+We compute the next char: 'b'.<BR>
+
+Adresspointer is now 0x00000001. We write down the difference to 0x00000000 into the table,
+
+but as the entry was zero before, we don't write it into our jump adress. This is to 
+
+prevent a jump to an address where the actual char should be, but won't. Imagine we 
+
+would write a jump-table-entry with the calculated offset. We would then indicate
+
+that the next 'b' in reach would be 0x0001 bytes in our past. But when you look into
+
+Address 0x00000001-0x00000001 = 0x00000000 you see an 'a' there and not a 'b'. Therefore
+
+we only write into the jumptable when we already have an offset. This only happens 
+
+until the char is reached the first time.<BR> 
+
+The tables would look like this now:<PRE>
+
+
+
+
+
+char	256-Bytetable		Adresspointer	Jumptable
+
+a	0x00000000		0x00000001	0x0000
+
+b	0x00000001				0x0000
+
+c	0x00000000				0x0000
+
+d	0x00000000				0x0000
+
+.	0x00000000				0x0000		('.' just for the clarity)
+
+.	0x00000000				0x0000		('.' just for the clarity)
+
+b						0x0000
+
+b						0x0000
+
+c						0x0000
+
+
+
+Now with 'c', 'd' and the noninteresting '.' (just imagined as 
+
+random bytes) we have the same situations. After processing the last '.' 
+
+we have the following table:
+
+
+
+
+
+char	256-Bytetable		Adresspointer	Jumptable
+
+a	0x00000000		0x00000005	0x0000
+
+b	0x00000001				0x0000
+
+c	0x00000002 				0x0000
+
+d	0x00000003 				0x0000
+
+.	0x00000004 				0x0000		('.' just for the clarity)
+
+.	0x00000005				0x0000		('.' just for the clarity)
+
+b						0x0000
+
+b						0x0000
+
+c						0x0000
+
+
+
+
+
+And now we come to the next char: 'b'. We look it up in out table and we find a
+
+non-zero entry. We get 0x00000001 and we have an actual Adresspointer of 0x00000006.
+
+We subtract this and get a difference of 0x0005. 
+
+We write this into our jump table at the entry [Adresspointer] of our Jumptable - 0x00000006 -, 
+
+we write the Addresspointer into our 256-Byte-Table 
+
+and we get the following states:
+
+
+
+
+
+char	256-Bytetable		Adresspointer	Jumptable
+
+a	0x00000000		0x00000006	0x0000
+
+b	0x00000006				0x0000
+
+c	0x00000002 				0x0000
+
+d	0x00000003 				0x0000
+
+.	0x00000004 				0x0000		('.' just for the clarity)
+
+.	0x00000005				0x0000		('.' just for the clarity)
+
+b						0x0005
+
+b						0x0000
+
+c						0x0000
+
+
+
+
+
+As we continue with the next byte, we get another 'b'. We look it up in our 256-byte-table
+
+and receive a 0x00000006. As our actual Addresspointer is 0x00000007 we get a difference
+
+of 0x0001. And as there is a non-zero entry in the 256 byte-table we can write the
+
+difference into the jumptable at the 7th position of our Jumptable:
+
+
+
+
+
+
+
+char	256-Bytetable		Adresspointer	Jumptable
+
+a	0x00000000		0x00000007	0x0000
+
+b	0x00000007				0x0000
+
+c	0x00000002 				0x0000
+
+d	0x00000003 				0x0000
+
+.	0x00000004 				0x0000		('.' just for the clarity)
+
+.	0x00000005				0x0000		('.' just for the clarity)
+
+b						0x0005
+
+b						0x0001
+
+c						0x0000
+
+
+
+Now the next char is a 'c'. And as we can see we have a non-zero entry in our 256-table.
+
+We take our actual Addresspointer - 0x00000008 - and 
+
+subtract the value of the entry   - 0x00000002 - and 
+
+finally come up with a jump of:         0x0006.
+
+We write the entries down and have our final jump-table ready for use:
+
+
+
+
+
+char	256-Bytetable		Adresspointer	Jumptable
+
+a	0x00000000		0x00000007	0x0000
+
+b	0x00000007				0x0000
+
+c	0x00000002 				0x0000
+
+d	0x00000003 				0x0000
+
+.	0x00000004 				0x0000		('.' just for the clarity)
+
+.	0x00000005				0x0000		('.' just for the clarity)
+
+b						0x0005
+
+b						0x0001
+
+c						0x0006
+
+
+
+</PRE>
+
+Now, how do we search with this kind of table? Let's do it together. You will be amazed:
+
+We initialize our Crunch-Counter with 1 and our Crunch-Distance with 0. Then we get our
+
+first entry FROM THE JUMP_TABLE!!!. We fetch a 0x0000 and immediately write out garbage.
+
+Now that's fast!!! We increment our Jump_Table-Offset by the number of the Crunch-Counter
+
+(in that case 0x0001) and continue.<BR>
+
+The bytes 'b', 'c', 'd', '.', '.' are also written out as garbage. And now we enter
+
+our first non-zero entry. We get a 0x0005. We install copies of our actual pointers,
+
+subtract 0x0005 from the copies, subtract 0x0005 from the Jump_Table-Offset-Copy 
+
+and start the second compare-loop. Our Jump_table_copy would point to the 1st offset
+
+in the jump_table, our address-pointer-copy would point to the 1st byte of the area we 
+
+are crunching.<BR>
+
+Unfortunately the compare fails immediately after the first byte. 
+
+So we look after the entry at the now-actual Jump_Table: 0x0000. Garbage. We return,
+
+write out one byte garbage, return to our normal pointers, increment the Jump_Table pointer
+
+by the number of Crunch-Counter (1 in that case) and continue.
+
+We reach a further non-zero entry. We install copies of our pointers, subtract the fetched
+
+values from them (0x0001) and let a compare-loop run. <BR>
+
+Our copies would look at address 0x00000006 and 0x00000007.<BR>
+
+Unfortunately we fail after the first byte. <BR>
+
+Now we fetch the Jump_Table-offset at the now-actual byte and we get a 0x0005.<BR>
+
+We jump further 0x0005 bytes into the past and start a compare loop. <BR>
+
+Our copies would look at address 0x00000001 and 0x00000007.<BR>
+
+Now we fail after two bytes. Our Crunch-Counter should now be two.<BR> 
+
+We save the distance to the real actual address as well (0x0006). <BR>
+
+After the outer-loop finished we have a two byte-crunch ready.
+
+<P>
+
+Now as you can see this kind of comparing is a zillion times faster than the one explained
+
+before. But it most important that you understand how the basic mechanism was implemented 
+
+to understand the following improvements.
+
+<P>
+
+
+
+There is just one thing to be explained now:<BR>
+
+We have a Jump_Table. We scan thru our file using this Jump_Table. How can i keep this table
+
+as small as my scanreach is?<BR>
+
+Well, the answer is: swapping!<P>
+
+
+
+When you scan thru the file and you create a table 
+
+you want to use the whole reach of the table, right?
+
+<P>
+
+Imagine you would use a table with a reach of 8 bytes. You would have a reach of 8 bytes
+
+until you come to position 7. When you then go address 8 you have to recreate your
+
+table. Now, there is nothing wrong with this. But imagine that on position 8, when
+
+scanning thru the bytes you should have a reference to bytes on position 6. But you
+
+haven't, because you cut all references to the past and create a new 8-byte wide
+
+area. This would work, but you would loose some crunches. And there is an easy way
+
+of staying in the flow of references: You double your scanreach in the Jump_Table!
+
+With this trick you have still all references without any problems.<BR> 
+
+And now you can do your swapping easily: When you reach the final end of the 
+
+Jump_Table-Area you copy the upper half into the lower half of the Jump_Table-Mem and create
+
+the upper half anew:<PRE>
+
+
+
+(Source viewed in 8 byte blocks)
+
+0		1	   2       3
+
+0123456712345670123456701234567.....
+
+
+
+
+
+
+
+
+
+(jumptable)
+
+0       1       		  1       2                2       3
+
+0123456701234567 becomes  0123456701234567 becomes 0123456701234567 becomes...
+
+
+
+
+
+
+
+You only have to set your Jump-Table pointer into the lower half of the table again.
+
+With the next increment it will enter the upper half again and will have a full
+
+reach ready. 
+
+
+
+Phew! That was a long essay. But i hope i could bring you something nearer. 
+
+
+
+Next time i'll explain LZ78 and LZW, the basic algorithm of RAR!
+
+
+
+
+
+
+
+Till then,
+
+
+
+Joa
+
+
+
+
+
+P.S.
+
+(delran: Your sorting idea is welcomed and i will see, if i can come back to 
+
+this idea when i'll explain Burrows-Wheeler-Transformation)
+
+</PRE>
+
+<CENTER>
+
+<HR size=3><A href="mailto:JoKo2000@hotmail.com">
+
+<IMG SRC="tellme.gif" tppabs="http://www.anticrack.de/fravia/tellme.gif" width="140" height="21"></A>
+
+<BR><BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links</A> 
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm"> anonymity</A> 
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC</A> 
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays</A> 
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database</A>
+
+ <BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="coumes.htm" tppabs="http://www.anticrack.de/fravia/coumes.htm">counter measures</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="botstart.htm" tppabs="http://www.anticrack.de/fravia/botstart.htm">bots wars</A> 
+
+ 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia</A>
+
+<BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering legal?</A>
+
+</CENTER></CENTER>
+
+<HR SIZE=2>
+
+
+
+</BODY>
+
+</HTML>

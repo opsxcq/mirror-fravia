@@ -1,0 +1,854 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>desert</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+<CENTER><H2>HOW TO CRACK VideoCraft Gif Animator (Win 3.1)<BR>
+
+(magic numbers galore)</H2><H4><I>by Desert Eagle</I></H2>
+
+<BR>
+
+
+
+<HR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">Courtesy of Fravia's page of reverse engineering<BR>
+
+~
+
+<BR><I>A very interesting essay, this target calculates a different checksum based 
+
+on the BIOS of your PC!
+
+</I><BR></CENTER><HR size="2">
+
+<PRE>
+
+I wrote this tutorial a couple weeks ago hoping to get it published on
+
+your page. But unfortunately, I have been busy (lazy) lately  so I just got 
+
+around to finishing (plus testing) it up yesterday. 
+
+Originally when I cracked this program, I  modified -easily- certain registers 
+
+using Winice to accomplish the crack. Unfortunately again, for a cheap $30 
+
+program, this target has many layers of protection and knows if its executable has been 
+
+modified (thus the cracks only work through Winice). I don't think my tutorial 
+
+would make sense if it didn't solve this problem (at least not how Phrozen Crew 
+
+did it) so I decide to pass on what I wrote to you since you might find it 
+
+interesting. Anyway, along with the others that have learnt thru you guys 
+
+(+Orc &amp; students), THANKS. 
+
+
+
+
+
+HOW TO CRACK VideoCraft Gif Animator (Win 3.1)
+
+
+
+VGA, as the name suggests, is a gif animator with numerous video special
+
+effects (overlay, morphing, warp, etc) but unfortunately you're limited to a
+
+30 day trial period which is disabled as usual when you register. 
+
+ 
+
+In this tutorial I will explain the two different methods I used in order to 
+
+defeat this copy protection. Method two, is more a dead listings/softice approach
+
+and surprising quick, it took about 5 minutes. However method one, although more
+
+interesting, is pretty time consuming (you're getting the time saving version).
+
+I still recommend trying it nevertheless, since it offers an alternative. 
+
+Method one is based on +RCG essay on Cuteftp... where he explains how to crack 
+
+programs, like VGA, which read a file to determine the user's registration status. 
+
+Like CuteFtp, VGA does this by manipulating and checking specific data in its 
+
+control file (vidcra.ctl) in order to determine if you are registered or not 
+
+(also checking your computer), along with other things. 
+
+ 
+
+<H2><B>Method 1
+
+=========</B></H2>
+
+Fire Winice
+
+ 
+
+In Windows 3.1 there are two API functions used in order to read files :
+
+ 
+
+_LREAD
+
+_HREAD - files &gt; 64 Kb
+
+ 
+
+Therefore, BPX _LREAD and run our target VGA.
+
+ 
+
+When the breakpoint is triggered you will be in the _LREAD call, therefore 
+
+exit the call (F11). You should see the following code:
+
+ 
+
+ PUSH WORD PTR [0592]  file buffer segment -&gt; DS
+
+ PUSH WORD PTR [0590]  file buffer offset   
+
+ PUSH 02A4  # of bytes to read (676 bytes, the exact length of vidcra.ctl)
+
+ CALL KERNEL!_LREAD
+
+ CMP AX, 02A4   check file length
+
+ JZ 324C  jump if correct else sorry, your time limit has expired
+
+ 
+
+Since we know the segment, offset and length of the file buffer we can BPR it
+
+and observe what our target VGA does with it. So...
+
+ 
+
+BPR DS:buffer_offset  DS:buffer_offset+2A4 R
+
+ 
+
+Your first stop will land you inside this code snippet:
+
+ 
+
+ 0001.327D  MOV BX, DI                     DI = buffer_offset
+
+ 0001.327F  MOV ES, [BP-04]                BX = buffer_offset
+
+ 0001.3282  MOV AL , ES [BX+SI]            [BP-04] = buffer_segment
+
+ 0001.3285  SUB BX, SI                     SI = 0
+
+ 0001.3287  MOV [BP-01], AL 
+
+ 0001.328A  MOV AL , ES [BX+02A3]
+
+ 0001.328F  LEA CX, [BX+02A3]
+
+ 0001.3293  MOV BX, DI
+
+ 0001.3295  MOV ES [BX+SI], AL 
+
+ 0001.3298  MOV BX, CX
+
+ 0001.329A  MOV AL , [BP-01]
+
+ 0001.329D  MOV ES [BX], AL 
+
+ 0001.32A0  INC SI
+
+ 0001.32A1  INC SI
+
+ 0001.32A2  CMP SI, 0150
+
+ 0001.32A6  JB 327D
+
+ 
+
+Examining the code, you'll see that our target VGA is switching every other byte 
+
+at the beginning of the buffer with every other byte from the end (hmmm). 
+
+Now if you BPR some more, then the fun really starts and we get into the 
+
+decryption of vidcra.ctl... look!
+
+ 
+
+SI = 0  ES = buffer_segment  DI = 0   key = dbfrsmftrtu
+
+ 
+
+ 0001.1D37  LES BX, [BP+06]        BX points to buffer_offset
+
+ 0001.1D3A  MOV AL , ES [BX+SI]    move byte in AL for decryption
+
+ 0001.1D3D  LES BX, [BP+0A]        BX points to decryption_key_offset
+
+ 0001.1D40  MOV CX, AX
+
+ 0001.1D42  MOV AX, [BP-04]        [BP-04] = 40
+
+ 0001.1D45  SUB AX, [BP-06]        [BP-06] = 0xA = # of bytes to be decrypted 
+
+ 0001.1D48  ADD AX, SI
+
+ 0001.1D4A  DEC AX
+
+ 0001.1D4B  MOV DX, 00FE
+
+ 0001.1D4E  MOV [BP-0C], DX
+
+ 0001.1D51  CWD                    prepare for division
+
+ 0001.1D52  IDIV WORD PTR [BP-0C]  divide AX by 0xFE and put remainder and
+
+                                   quotient in AX
+
+ 0001.1D55  INC DX
+
+ 0001.1D56  MOV [BP-04], DX
+
+ 0001.1D59  XOR DL, ES [BX+DI]     xor DL with decryption key then...
+
+ 0001.1D5C  XOR CL , DL            xor result with CL (byte to be decrypted)
+
+ 0001.1D5E  JE 1D67
+
+ 0001.1D60  LES BX, [BP+0E]        BX points to offset where the decrypted
+
+                                   bytes are to be placed
+
+ 0001.1D63  MOV AL , CL 
+
+ 0001.1D65  JMP 1D70
+
+ 0001.1D67  LES BX, [BP+06]        BX points to buffer_offset
+
+ 0001.1D6A  MOV AL , ES [BX+SI]
+
+ 0001.1D6D  LES BX, [BP+0E]        BX points to offset where the decrypted
+
+                                   bytes are to be placed
+
+ 0001.1D70  MOV ES [BX+SI], AL     move decrypted bytes into their new home 
+
+ 0001.1D73  CMP [BP-08], DI        [BP-08] = length of decryption key
+
+ 0001.1D76  JG 1D7C                if [BP-08] &gt; DI...
+
+ 0001.1D78  XOR DI, DI             then zero DI (start at beginning of decrypt
+
+                                   ion key again)  else
+
+ 0001.1D7A  JMP 1D7D
+
+ 0001.1D7C  INC DI
+
+ 0001.1D7D  INC SI
+
+ 0001.1D7E  CMP [BP-06], SI
+
+ 0001.1D81  JG 1D37                loop until decryption is finished
+
+ 
+
+This decrypts the first 10 bytes into 0000009531, which our target VGA checks, 
+
+in order to see if the file is indeed vidcra.ctl. There is also no need to 
+
+breakpoint this memory location. I think this also serves as an id. number for 
+
+the control file so that it can't be used with another program that North Coast 
+
+Software writes, which employs the same copy protection scheme.
+
+ 
+
+If we continue breakpointing we eventually return to the same decryption code
+
+again and again. Therefore, to make a long essay shorter, a bunch of shit is
+
+decoded:
+
+ 
+
+[BP-04] = 0xD8 (for all)    key = jkebmbmfbdfmbm009531 (for all)
+
+ 
+
+Beginning at
+
+DS:buffer_offset +      Decrypted message                Comment
+
+=============================================================================
+
+0xD                 North Coast Software, Inc    Thelma &amp; Lewis employers
+
+ 
+
+0x3E                Thelma &amp; Lewis               bored programmers?
+
+ 
+
+0xC5                Barrington                   guess what city N.S.C. is in
+
+                     
+
+0xF3                NH                           now for the daily double, can
+
+                                                 you name this state?
+
+ 
+
+0xF7                03825                        zip code
+
+ 
+
+0x10F               VideoCraft GIF Animator      ?
+
+ 
+
+0x13D               263726376237                 Hmmm! (maybe different for u)
+
+ 
+
+0x24C               07 04 CD 07                  installation date (7/4/1997)
+
+ 
+
+0x252               17 2E 3B                     I think it was the time
+
+ 
+
+0x256               07 05 CD 07                  expiration date
+
+ 
+
+Knowing what most of the decrypted stuff is, the only important thing to us are
+
+those suspicious numbers. The rest -excluding the time and dates-, if you check,
+
+is only 'filler' to beef up the file, therefore our target VGA blindly recompiles 
+
+(encrypt it and shifts it around) back into vidcra.ctl without checking it. So...
+
+ 
+
+BPR DS:decrypted_bytes_home  DS:decrypted_bytes_home+C  R
+
+ 
+
+Before this new breakpoint get a chance to be triggered, our previous BPR comes 
+
+back into play and brings us here:
+
+ 
+
+ 0001.35F5  MOV AL , ES [BX+025C]    
+
+ 0001.35FA  MOV BX, 27A4
+
+ 0001.35FD  ADD AL, 24
+
+ 0001.35FF  MOV [BX+025C], AL    --&gt; Very important. BPMB DS:2A00 R. You could
+
+ 0001.3603  LES SI, [0590]           also BPR the entire memory location 
+
+ 0001.3607  MOV AL , ES [SI+025E]    affected but it would prove to be a waste 
+
+ 0001.360C  SUB AL, 15               of time
+
+ 0001.360E  MOV [BX+025E], AL 
+
+ 0001.3612  LES SI, [0590]
+
+ 0001.3616  MOV AL , ES [SI+025F]
+
+ 0001.361B  SUB AL, 15
+
+ 0001.361D  MOV [BX+025F], AL 
+
+ 0001.3621  LES SI, [0590]
+
+ 0001.3625  MOV AL , ES [SI+0260]
+
+ 0001.362A  SUB AL, 15
+
+ 0001.362C  MOV [BX+0260], AL 
+
+ .
+
+ .
+
+ .
+
+ .
+
+ 0001.367B  LES SI, [0590]
+
+ 0001.367F  MOV AL , ES [SI+0266]
+
+ 0001.3684  SUB AL, 15
+
+ 0001.3686  MOV [BX+0266], AL 
+
+ 0001.368A  LES SI, [0590]
+
+ 0001.368E  MOV AL , ES [SI+0267]
+
+ 0001.3693  SUB AL, 15
+
+ 
+
+After that, our old breakpoint, BPR DS:buffer_offset  DS:buffer_offset+2A4 R,
+
+will not be needed again. If you decide to keep it (and waste time) you'll only 
+
+see our target VGA recompiling the file (among other tedious things).
+
+As expected our *NEW* breakpoint is now triggered and at the second instance 
+
+you'll land into another crucial part of the program:
+
+ 
+
+ 0001.2294  CMP BYTE PTR [2A00], 44
+
+ 0001.2299  JE 22BA
+
+ 0001.229B  CMP BYTE PTR [2A00], 45
+
+ 0001.22A0  JE 22BA
+
+ 0001.22A2  CMP BYTE PTR [2A00], 53
+
+ 0001.22A7  JE 22BA
+
+ 0001.22A9  CMP BYTE PTR [2A00], 50
+
+ 0001.22AE  JE 22BA
+
+ 0001.22B0  CMP BYTE PTR [2A00], 4E
+
+ 0001.22B5  JE 22BA
+
+ 0001.22B7  MOV AL, 20
+
+ 0001.22B9  RETF
+
+ 0001.22BA  MOV AL, [2A00]
+
+ 0001.22BD  RETF
+
+ 
+
+As you can see, DS:[2A00] could have 5 different values and hence the target could
+
+switch to 5 possible directions. In order to find the right path without wasting
+
+time we need to use a process of elimination. Remember this piece of code that we 
+
+have seen earlier?
+
+ 
+
+ 0001.35F5  MOV AL , ES [BX+025C]
+
+ 0001.35FA  MOV BX, 27A4
+
+ 0001.35FD  ADD AL, 24
+
+ 0001.35FF  MOV [BX+025C], AL    
+
+ 
+
+BPX on CS:35F5 and clear the remaining breakpoints. Restart VGA and edit the
+
+memory location ES [BX+025C], BEFORE 0x24 is added, then enter the hex value
+
+that, when 0x24 is added, equals one of the 5 values we have seen above. 
+
+Let VGA run and observe the results:
+
+ 
+
+Hex   ASCII            Result
+
+============================================================
+
+0x53    S     Normal - registration screen comes up
+
+0x50    P     Normal - registration screen comes up
+
+0x45    E     Trial time expired
+
+0x4E    N     Registered but to a different machine - Bingo! 
+
+0x44    D     Trial time expired
+
+        |_ Hmmm
+
+        
+
+Talk about luck. If changing the memory location didn't produce a visible
+
+result, we would have had to set breakpoints and trace through the code for 
+
+each of the 5 hex values we saw
+
+ 
+
+Now, you must know (or suspect) that 0x4E is the right value for a
+
+registered VGA target and that the suspicious numbers are supposed to be 
+
+(or to be part of) the correct machine number needed. 
+
+I don't think I need to go into much detail about what needs to be done next 
+
+nor about how tp do it. 
+
+All you should need is a BPR on the suspicious numbers and the right hex value 
+
+(0x2A) in the correct memory location (as showed earlier). 
+
+The breakpoint will reveal that the numbers are copied to another location 
+
+(BPR it!) afterwhich they are copied oncemore from that location to another. 
+
+To save time, clear the original BPR once the numbers are copied to a new memory 
+
+location.
+
+ 
+
+Eventually, you will land inside this code snippet... which proves to be quite 
+
+interesting:
+
+ 
+
+ 0041.22F7  LODSB            load first number
+
+ 0041.22F8  CMP AL, 20
+
+ 0041.22FA  JE 22F7
+
+ 0041.22FC  CMP AL, 09
+
+ 0041.22FE  JE 22F7
+
+ 0041.2300  PUSH AX          save first number
+
+ 0041.2301  CMP AL, 2D       compare number to &quot;-&quot; 
+
+ 0041.2303  JE 2309
+
+ 0041.2305  CMP AL, 2B       compare number to &quot;+&quot;
+
+ 0041.2307  JNE 230A
+
+ 0041.2309  LODSB            load number
+
+ 0041.230A  CMP AL, 39       \
+
+ 0041.230C  JA 232D           |
+
+ 0041.230E  SUB AL, 30        |- if not between 0 &amp; 9 jump to 232D 
+
+ 0041.2310  JB 232D          / 
+
+ 0041.2312  SHL BX, 01       shift bits in BX to the left once (BX x 2)
+
+ 0041.2314  RCL DX, 01       rotate bits in DX to the left once. DX becomes
+
+                             (DX x 2) + 1 if CF set or (DX x 2) if CF not set
+
+                             (or something like that :-)
+
+ 0041.2316  MOV CX, BX
+
+ 0041.2318  MOV DI, DX
+
+ 0041.231A  SHL BX, 01
+
+ 0041.231C  RCL DX, 01
+
+ 0041.231E  SHL BX, 01
+
+ 0041.2320  RCL DX, 01
+
+ 0041.2322  ADD BX, CX
+
+ 0041.2324  ADC DX, DI       add DI (+1 if CF set) to DX 
+
+ 0041.2326  ADD BX, AX
+
+ 0041.2328  ADC DX, 0000     add 1 to DX if CF is set
+
+ 0041.232B  JMP 2309
+
+ 0041.232D  POP AX           get first number
+
+ 0041.232E  CMP AL, 2D
+
+ 0041.2330  XCHG AX,BX
+
+ 0041.2331  JNE 233A
+
+ 0041.2333  NEG AX
+
+ 0041.2335  ADC DX, 0000
+
+ 0041.2338  NEG DX
+
+ 0041.233A  POP SI
+
+ 0041.233B  POP DI
+
+ 0041.233C  POP BP
+
+ 0041.233D  RETF
+
+ 
+
+Analysing the code you'll notice that the AX &amp; DX registers will
+
+eventually contain the results from the calculations performed. Now we
+
+must single step through the code in order to see what happens next to 
+
+these registers. Once you exit the call and single step a little 
+
+you'll the see the following code snippet...
+
+ 
+
+ 0040.04ED  MOV SI, AX
+
+ 0040.04EF  MOV DI, DX
+
+ 0040.04F1  CALL WARP.PP_COMPNO  -&gt; compute no.?
+
+ 0040.04F6  CMP SI, AX
+
+ 0040.04F8  JNE 04FE
+
+ 0040.04FA  CMP DI, DX
+
+ 0040.04FC  JE 0556
+
+ 0040.04FE  XOR AX, AX
+
+ 0040.0500  PUSH AX
+
+ 0040.0501  MOV CX, 1701
+
+ 0040.0504  PUSH DS
+
+ 0040.0505  PUSH CX
+
+ 0040.0506  MOV CX, 16F8
+
+ 0040.0509  PUSH DS
+
+ 0040.050A  PUSH CX
+
+ 0040.050B  MOV CX, 0010
+
+ 0040.050E  PUSH CX
+
+ 0040.050F  CALL USER.MESSAGEBOX
+
+ 
+
+...and notice that our two magic numbers are moved into the SI &amp; DI registers
+
+Immediately after the next call, SI &amp; DI (most likely ours), are compared
+
+with AX &amp; DX. Now notice that if the comparision fails a message will be
+
+displayed. 
+
+ 
+
+You don't need a bigger sign than that to know we have reached the infamous
+
+JE/JNZ/JNE/JZ crossroad, tipical of most copy protected programs. To test our
+
+hunch, step over the call (F10) and edit the SI &amp; DI registers, and enter the
+
+right values.
+
+ 
+
+R SI=AX
+
+R DI=DX
+
+ 
+
+Give control back to our target VGA and bingo!, we have finished our cracking 
+
+session. Well not quite, since VGA reads vicra.ctl every time it starts, even 
+
+when we're registered, we have to modify vidcraft.exe and add the following 
+
+changes:
+
+ 
+
+ 0040.04F6  CMP SI, AX
+
+ 0040.04F8  JNE 04FE becomes JE 04FE 
+
+ 0040.04FA  CMP DI, DX                     
+
+ 0040.04FC  JE 0556  becomes JNE 0556 
+
+ 
+
+Since we already edited the file buffer and placed 0x2A in it, VGA will save a
+
+new vidcra.ctl with this new value, so now we're really done.
+
+ 
+
+If you were interested to know how VGA generates the correct machine number
+
+VGA, in the PP_COMPNO call... it copies your BIOS into a new memory location 
+
+and using the code below calculates your PECULIAR machine number.
+
+ 
+
+ 0001.394D  PUSH SI
+
+ 0001.394E  SUB AX, AX                zero ax
+
+ 0001.3950  MOV [BP-02], AX           zero [BP-02]
+
+ 0001.3953  MOV [BP-04], AX           zero [BP-04]
+
+ 0001.3956  XOR SI, SI                zero SI
+
+ 0001.3958  MOV DI, [BP+06]           move BIOS_offset into DI
+
+ 0001.395B  JMP 3972
+
+ 0001.395D  MOV ES, [BP+08]           move BIOS_segment in ES
+
+ 0001.3960  MOV BX, DI
+
+ 0001.3962  ADD BX, SI                increment BIOS_offset
+
+ 0001.3964  SUB AH, AH
+
+ 0001.3966  MOV AL , ES [BX]          copy BIOS_byte into AL
+
+ 0001.3969  SUB DX, DX                
+
+ 0001.396B  ADD [BP-04], AX           add new BIOS_byte to previous BIOS_byte
+
+ 0001.396E  ADC [BP-02], DX           add DX (+1 if CF set) to [BP-02] 
+
+ 0001.3971  INC SI
+
+ 0001.3972  CMP SI, 1FE0
+
+ 0001.3976  JBE 395D
+
+ 0001.3978  MOV AX, [BP-04]           move correct_machine_number #1 into AX
+
+ 0001.397B  MOV DX, [BP-02]           move correct_machine_number #2 into DX
+
+ 0001.397E  POP SI                    get vidcra.ctl_machine_number #1 
+
+ 0001.397F  POP DI                    get vidcra.ctl_machine_number #2
+
+ 0001.3980  LEAVE
+
+ 0001.3981  RETF
+
+ 
+
+BTW, the numbers are generated again later, in order to create your Product 
+
+Identification number.
+
+ 
+
+<H2><B>Method 2
+
+=========</B></H2>
+
+In writing warp.dll, the silly programmers aptly named every function.
+
+Of course this can be all revealed when you disassemble warp.dll with your
+
+favourite disassembler and can as usual be used to our advantage. If you 
+
+examine the list of functions you can't help but notice the PP_UNLOCK function 
+
+and know that it must be there exactly for that... to unlock the software.
+
+ .
+
+ .
+
+ Addr:0001.147E Ord:0032d Type:FFh Name: PP_COMPNO {Exported}
+
+ Addr:0001.1092 Ord:0033d Type:FFh Name: PP_NEXECT {Exported}
+
+ Addr:0001.13F6 Ord:0034d Type:FFh Name: PP_UNLOCK {Exported}  <HMMM! Addr:0001.0E50 Ord:0035d Type:FFh Name: PP_SERIAL {Exported} Addr:0001.101E Ord:0036d Type:FFh Name: PP_NEXPTYPE {Exported} . . Disassembly of vidcraft.exe :0040.014E 9A81010000 call USER.GETDLGITEMTEXT get 1st serial # :0040.0153 80BE64FF00 cmp byte ptr [bp+FF64], 00 :0040.0158 7415 je 016F :0040.015A 8D8664FF lea ax, [bp-009C] :0040.015E 50 push ax :0040.015F 9A80079401 call 0041.0780 :0040.0164 83C402 add sp, 0002 :0040.0167 898660FF mov [bp-00A0], ax :0040.016B 899662FF mov [bp-009E], dx :0040.016F FF760E push word ptr [bp+0E] :0040.0172 B86101 mov ax, 0161 :0040.0175 50 push ax :0040.0176 8D8664FF lea ax, [bp-009C] :0040.017A 16 push ss :0040.017B 50 push ax :0040.017C B91000 mov cx, 0010 :0040.017F 51 push cx :0040.0180 9AFFFF0000 call USER.GETDLGITEMTEXT get 2nd serial # :0040.0185 80BE64FF00 cmp byte ptr [bp+FF64], 00 :0040.018A 7415 je 01A1 :0040.018C 8D8664FF lea ax, [bp-009C] :0040.0190 50 push ax :0040.0191 9A8007FFFF call 0041.0780 :0040.0196 83C402 add sp, 0002 :0040.0199 89865CFF mov [bp-00A4], ax :0040.019D 89965EFF mov [bp-00A2], dx :0040.01A1 FFB662FF push word ptr [bp+FF62] :0040.01A5 FFB660FF push word ptr [bp+FF60] :0040.01A9 FF368A3B push word ptr [3B8A] :0040.01AD FF36883B push word ptr [3B88] :0040.01B1 B80100 mov ax, 0001 :0040.01B4 99 cwd :0040.01B5 52 push dx :0040.01B6 50 push ax :0040.01B7 9AD8010000 call WARP.PP_UCODE :0040.01BC 3D0500 cmp ax, 0005 1st check :0040.01BF 757B jne 023C :0040.01C1 FFB65EFF push word ptr [bp+FF5E] :0040.01C5 FFB65CFF push word ptr [bp+FF5C] :0040.01C9 FF368A3B push word ptr [3B8A] :0040.01CD FF36883B push word ptr [3B88] :0040.01D1 B80100 mov ax, 0001 :0040.01D4 99 cwd :0040.01D5 52 push dx :0040.01D6 50 push ax :0040.01D7 9AFFFF0000 CALL WARP.PP_UCODE :0040.01DC 3D0C00 CMP AX, 000C 2nd check :0040.01DF 755B JNE 023C :0040.01E1 9AFFFF0000 CALL WARP.PP_UNLOCK unlock VGA :0040.01E6 B80100 MOV AX, 0001 :0040.01E9 99 CWD :0040.01EA 52 PUSH DX Looking above the PP_UNLOCK call, you'll notice that there are two calls with conditional jumps after them. If we breakpoint just before the first jump then we can give each CMP what it needs and merrily go on our way. So... Fire Winice Run our target program VGA until the registration nag comes up HEAP VIDCRAFT (That's the name) Look for the 0x28 segment BPX 0x28_segment:1BC R AX="5" Step over everything until you reach the 2nd comparision R AX="C" Return control to VGA and enjoy The beauty of this method is that VGA modifies vicra.ctl for you, putting in your machine number and the right hex value, so there is no need to modify any file. And of course its damn quick. Desert Eagle, May 1997 </pre>
+
+
+
+<BR>
+
+<CENTER><HR ALIGN="CENTER" WIDTH="100%" SIZE="3">
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</I></CENTER>
+
+<BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#84'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#84"> homepage</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"> 
+
+<A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#73'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#73"> links</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0">
+
+<A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm"> anonymity</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm"> +ORC</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#82'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#82"> students' essays</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm"> tools</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm"> cocktails</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm"> search_forms</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm"> mailFraVia</A></CENTER>
+
+<CENTER><HR ALIGN="CENTER" WIDTH="100%" SIZE="2"></CENTER>
+

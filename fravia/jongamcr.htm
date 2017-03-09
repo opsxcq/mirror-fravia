@@ -1,0 +1,810 @@
+<html><CENTER><FONT size=+4>Game hack secrets</FONT><BR><FONT size=+2>
+
+how to stop lamers from hex-editing your cracks</FONT>
+
+<BR>
+
+by Jon
+
+<BR>
+
+5 January 1997
+
+<BR><BR>
+
+<FONT size=+2>please reformat using <A href="formamus.htm" tppabs="http://www.anticrack.de/fravia/formamus.htm">formamus.htm</A>
+
+<BR>(please refer to <A href="rules.htm" tppabs="http://www.anticrack.de/fravia/rules.htm">rules.htm</A> for an explanation)
+
+</FONT>
+
+<BR><BR>
+
+(Sorry about this, Jon, I'm "overworked"... but I corrected both links 
+
+you asked me to)
+
+</CENTER>
+
+
+
+<HR size=15><PRE>
+
+GameHack 1.0 -- Cracked by Jon, January 4, 1998!
+
+
+
+Hi, and a happy (and crack-filled) new-year everybody!
+
+
+
+In this essay I'll describe how I cracked GameHack 1.0. GameHack is an
+
+utility that runs
+
+in the background of a game, and it's activated by a hot-key. GameHack
+
+is sort of a 
+
+"debugger for games" in other words: A trainer. It allows you to enter a
+
+value (like number
+
+of lives, energy, etc.), go back to the game, then go back to the
+
+trainer and enter the new
+
+value, which will make the list of possible addresses smaller. This
+
+process is VERY simple, 
+
+and allows you to gain total control over your games, another way to put
+
+this: Cheat! 
+
+As always, the greedy shareware programmer has crippled this program in
+
+the following ways: 
+
+
+
+1. You're not able to save the cheats to a file, for later usage. 
+
+2. You're not able to enter addresses and values (the cheats) manually. 
+
+3. And finally it has a NAG text.
+
+
+
+Well, let's go!
+
+
+
+
+
+What you'll need:
+
+
+
+GameHack itself -- Fetch it from http://www.gamehack.com/ in order to
+
+follow this essay!
+
+W32Dasm 8.9     -- My favorite tool (because it's so much more faster
+
+than IDA).
+
+A Hex-editor    -- To apply the patch on the EXE.
+
+BRW             -- To check out the dialogs inside the EXE.
+
+Tasm/Tlink      -- To compile the patch included later in this essay.
+
+
+
+
+
+The Crack.
+
+
+
+Start by making a copy of the executable, gamehack.exe --> backup.exe.
+
+Now load backup.exe inside W32Dasm. While W32Dasm disassembles, open the
+
+help file
+
+in Netscape (to search for hints). At the first picture, you should see
+
+that the NAG
+
+text title-bar has been replaced by a name -- the pictures are from a
+
+regged version!
+
+This could mean that you're able to register it with a name/serial, but
+
+you can't.
+
+Anyway, open gamehack.exe inside BRW. Besides noticing that all the
+
+dialogs have a
+
+Spanish version, we discover a Register dialog at number 151! But
+
+there's no way to
+
+start it from the program. Maybe the programmer did as Nico Mak did with
+
+the early 
+
+versions of WinZip -- made the dialog a secret, with a special hot-key
+
+to activate it.
+
+I sure don't know (and I don't really care, because we don't need that
+
+dialog :-))
+
+Anyway, W32Dasm should be done by now... Go to string reference,
+
+double-click
+
+" - UNREGISTERED copy" *TWICE* (the first is not interesting). You
+
+should see this:
+
+
+
+* Referenced by a (U)nconditional or (C)onditional Jump at Addresses:
+
+|:00405FB5(C), :00405FBC(C)                                             
+
+;Where it's referenced from.
+
+|
+
+:00406021 8DBE88000000            lea edi, dword ptr [esi+00000088]
+
+
+
+* Possible Reference to Dialog: DialogID_0088 
+
+                                  |
+
+
+
+* Possible Reference to String Resource ID=00136: " - UNREGISTERED copy"
+
+;The NAG text we wish to avoid.
+
+                                  |
+
+:00406027 6888000000              push 00000088
+
+:0040602C 8BCF                    mov ecx, edi
+
+
+
+Let's take a look from where it was referenced from:
+
+
+
+* Reference To: MSVCRT._stricmp, Ord:01BEh
+
+                                  |
+
+:00405F93 FF1554D94000            Call dword ptr [0040D954]
+
+:00405F99 8944241C                mov dword ptr [esp+1C], eax
+
+:00405F9D 83C408                  add esp, 00000008
+
+:00405FA0 DB442414                fild dword ptr [esp+14]
+
+:00405FA4 D825109B4000            fsub dword ptr [00409B10]
+
+:00405FAA D81D149B4000            fcomp dword ptr [00409B14]
+
+:00405FB0 DFE0                    fstsw ax
+
+:00405FB2 F6C440                  test ah, 40                           
+
+;First check.
+
+:00405FB5 746A                    je 00406021                           
+
+;If equal jmp to bad_guy.
+
+:00405FB7 8B17                    mov edx, dword ptr [edi]
+
+:00405FB9 395AF8                  cmp dword ptr [edx-08], ebx           
+
+;Second check.
+
+:00405FBC 7463                    je 00406021                           
+
+;If equal jmp to bad_guy.
+
+:00405FBE 57                      push edi
+
+:00405FBF 8D442418                lea eax, dword ptr [esp+18]
+
+
+
+* Possible StringData Ref from Data Obj ->" - "                         
+
+;This is what we want the title-bar to say.
+
+                                  |
+
+:00405FC3 687CC24000              push 0040C27C
+
+:00405FC8 50                      push eax
+
+
+
+Now, we patch the target:
+
+at 53B5h change: 746A --> 4048 (inc eax, dec eax -- like nops)
+
+at 53BCh change: 7463 --> 4048 (inc eax, dec eax -- like nops)
+
+
+
+This will force the target to always display " - " instead of " -
+
+UNREGISTERED copy".
+
+I myself though that more patching would be necessary, but it isn't.
+
+This is because
+
+the code below :00405FC8 unlocks the crippled functions. (and we have
+
+just made sure that 
+
+it always does that).
+
+
+
+
+
+Here's the source code for the patcher:
+
+
+
+<START cutting here!]=-------------------->
+
+
+
+
+
+.Model   Small
+
+.Code
+
+Org      100h
+
+
+
+Crack Proc
+
+ Start:
+
+  Mov    Dx,OffSet Intro
+
+  Call   Print
+
+  Mov    Dx,OffSet FileName
+
+  Call   OpenFile
+
+  Call   FindError
+
+  Mov    Cx,0
+
+  Mov    Dx,53B5h
+
+  Call   FileSeek
+
+  Call   FindError
+
+  Mov    Si,OffSet Chg1.1
+
+  Call   CheckByte
+
+  Mov    Cx,0
+
+  Mov    Dx,53B5h
+
+  Call   FileSeek
+
+  Call   FindError
+
+  Mov    Cx,1
+
+  Mov    Dx,OffSet Chg1.0
+
+  Call   FileWrite
+
+  Call   FindError
+
+  Mov    Cx,0
+
+  Mov    Dx,53B6h
+
+  Call   FileSeek
+
+  Call   FindError
+
+  Mov    Si,OffSet Chg2.1
+
+  Call   CheckByte
+
+  Mov    Cx,0
+
+  Mov    Dx,53B6h
+
+  Call   FileSeek
+
+  Call   FindError
+
+  Mov    Cx,1
+
+  Mov    Dx,OffSet Chg2.0
+
+  Call   FileWrite
+
+  Call   FindError
+
+  Mov    Cx,0
+
+  Mov    Dx,53BCh
+
+  Call   FileSeek
+
+  Call   FindError
+
+  Mov    Si,OffSet Chg3.1
+
+  Call   CheckByte
+
+  Mov    Cx,0
+
+  Mov    Dx,53BCh
+
+  Call   FileSeek
+
+  Call   FindError
+
+  Mov    Cx,1
+
+  Mov    Dx,OffSet Chg3.0
+
+  Call   FileWrite
+
+  Call   FindError
+
+  Mov    Cx,0
+
+  Mov    Dx,53BDh
+
+  Call   FileSeek
+
+  Call   FindError
+
+  Mov    Si,OffSet Chg4.1
+
+  Call   CheckByte
+
+  Mov    Cx,0
+
+  Mov    Dx,53BDh
+
+  Call   FileSeek
+
+  Call   FindError
+
+  Mov    Cx,1
+
+  Mov    Dx,OffSet Chg4.0
+
+  Call   FileWrite
+
+  Call   FindError
+
+  Call   CloseFile
+
+  Call   FindError
+
+  Mov    Dx,OffSet CrackOK
+
+  Call   Print
+
+  Call   Quit
+
+
+
+  CrackOK  Db 'The crack was Successfull!',13,10,'$'
+
+  FHand  Dw 0
+
+  FileName  Db 'GAMEHACK.EXE',0
+
+  Chg1   Db 40h,74h
+
+  Chg2   Db 48h,6Ah
+
+  Chg3   Db 40h,74h
+
+  Chg4   Db 48h,63h
+
+  Buffer Db 1 Dup(1)
+
+  Intro  Db 13,10,'GameHack 1.0 -- Cracked by Jon, January 4, 1998!'
+
+         Db 13,10,'Patching: GAMEHACK.EXE',13,10,13,10,'$'
+
+         Db 'Happy Cheating! Enjoy :-)$'
+
+Crack EndP
+
+
+
+Quit Proc
+
+  Mov    Ax,4C00h
+
+  Int    21h
+
+Quit EndP
+
+
+
+Print Proc
+
+  Mov    Ah,9
+
+  Int    21h
+
+  Ret
+
+Print EndP
+
+
+
+OpenFile Proc
+
+  Mov    Ax,3D02h
+
+  Int    21h
+
+  Jnc    Open
+
+  Xor    Ax,Ax
+
+  Stc
+
+ Open:
+
+  XChg   Ax,Bx
+
+  Mov    FHand,Bx
+
+  Ret
+
+OpenFile EndP
+
+
+
+FileSeek Proc
+
+  Mov    Ax,4200h
+
+  Int    21h
+
+  Jnc    Seek
+
+  Mov    Ax,4
+
+  Stc
+
+ Seek:
+
+  Ret
+
+FileSeek EndP
+
+
+
+FileRead Proc
+
+  Mov    Ah,3Fh
+
+  Int    21h
+
+  Jnc    Read
+
+  Mov    Ax,2
+
+  Stc
+
+ Read:
+
+  Ret
+
+FileRead EndP
+
+
+
+FileWrite Proc
+
+  Mov    Ah,40h
+
+  Int    21h
+
+  Jnc    Write
+
+  Mov    Ax,3
+
+  Stc
+
+ Write:
+
+  Ret
+
+FileWrite EndP
+
+
+
+CloseFile Proc
+
+  Mov    Bx,FHand
+
+  Mov    Ah,3Eh
+
+  Int    21h
+
+  Jnc    Close
+
+  Mov    Ax,1
+
+  Stc
+
+ Close:
+
+  Ret
+
+CloseFile EndP
+
+
+
+FindError Proc
+
+  Jnc    Exit
+
+  Cmp    Al,0
+
+  Jne    Er1
+
+  Mov    Dx,OffSet FnFErr
+
+  Call   Print
+
+  Jmp    Quit2
+
+ Er1:
+
+  Cmp    Al,1
+
+  Jne    Er2
+
+  Mov    Dx,OffSet FcErr
+
+  Call   Print
+
+  Jmp    Quit2
+
+ Er2:
+
+  Cmp    Al,2
+
+  Jne    Er3
+
+  Call   CloseFile
+
+  Mov    Dx,OffSet FrErr
+
+  Call   Print
+
+  Jmp    Quit2
+
+ Er3:
+
+  Cmp    Al,3
+
+  Jne    Er4
+
+  Call   CloseFile
+
+  Mov    Dx,OffSet FwErr
+
+  Call   Print
+
+  Jmp    Quit2
+
+ Er4:
+
+  Cmp    Al,4
+
+  Jne    Er5
+
+  Call   CloseFile
+
+  Mov    Dx,OffSet FsErr
+
+  Call   Print
+
+  Jmp    Quit2
+
+ Er5:
+
+  Cmp    Al,5
+
+  Jne    Quit2
+
+  Call   CloseFile
+
+  Mov    Dx,OffSet SneErr
+
+  Call   Print
+
+  Jmp    Quit2
+
+ Exit:
+
+  Ret
+
+ Quit2:
+
+  Int    20h
+
+
+
+  SneErr Db 'Wrong version (or file already patched)!',13,10,'$'
+
+  FnFErr Db 'File not found!',13,10,'$'
+
+  FcErr  Db 'File close error!',13,10,'$'
+
+  FrErr  Db 'File read error!',13,10,'$'
+
+  FwErr  Db 'File write error!',13,10,'$'
+
+  FsErr  Db 'File seek error!',13,10,'$'
+
+FindError EndP
+
+
+
+CompareString Proc
+
+  Push   Bx
+
+  Xor    Bx,Bx
+
+ Cmp1:
+
+  LodSb
+
+  Cmp    Es:[Di],Al
+
+  Jnz    CmpEr
+
+  Inc    Di
+
+  Inc    Bx
+
+  Cmp    Cx,Bx
+
+  Jz     CmpOk
+
+  Jmp    Cmp1
+
+ CmpOk:
+
+  Clc
+
+  Jmp    CmpEx
+
+ CmpEr:
+
+  Mov    Ax,5
+
+  Stc
+
+ CmpEx:
+
+  Pop    Bx
+
+  Ret
+
+CompareString EndP
+
+
+
+CheckByte Proc
+
+  Mov    Cx,1
+
+  Mov    Dx,OffSet Buffer
+
+  Call   FileRead
+
+  Call   FindError
+
+  Mov    Di,OffSet Buffer
+
+  Mov    Cx,1
+
+  Call   CompareString
+
+  Call   FindError
+
+  Ret
+
+CheckByte EndP
+
+
+
+End Start
+
+
+
+<STOP cutting here!]=-------------------->
+
+
+
+This should be compiled with:
+
+tasm crack.asm
+
+tlink /t crack.asm
+
+
+
+BTW, if you don't want lamers to hex-edit your cracks (I hate that!),
+
+take the following steps:
+
+1. Encrypt your crack.com about 5-10 times with a com-cryptor.
+
+2. Convert the encrypted com-file to a exe with a convert utility.
+
+3. Use an exe-protector to protect crack.exe
+
+
+
+This should make it difficult for the stupid hex'ers!
+
+
+
+Enjoy this app! Happy cheating! :-)
+
+
+
+Greetings to:
+
++ORC, The +HCU, all +crackers, and everybody reading this!
+
+
+
+Jon
+
+
+
+---------------------------------------------------------------------
+
+</PRE>
+

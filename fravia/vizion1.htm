@@ -1,0 +1,186 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>vizion1</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+
+
+<P><CENTER><FONT SIZE="+3">TTFPlus 3.3 32-bit demo<BR>
+
+</FONT><FONT SIZE="+2">A &quot;quiver&quot; in Visual Basic 5</FONT>
+
+<BR>
+
+</CENTER>
+
+
+
+<H4><CENTER><I>by Vizion</I><BR>
+
+(18 September 1997)</CENTER></H4>
+
+
+
+<CENTER><HR><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"> Courtesy of Fravia's page of reverse engineering<BR>
+
+<HR> <I>Well, 
+
+A visual basic 5 target (without strings) 
+
+with a quiver protection, very well reversed 
+
+by Vizion, even if, as usual with protectionists that are NOT 
+
+careful enough, you could have 
+
+directly searched insie the dead listing the 
+
+strings: <FONT color="blue">
+
+&quot;MSVBVM50.rtcMsgBox&quot;</FONT>  
+
+and               <FONT color="blue">
+
+&quot;cmp ax, 000A&quot;</FONT><HR size="6">
+
+ 
+
+    </I></CENTER>
+
+ <PRE>
+
+ :::: TARGET
+
+ TTFPlus 3.3 32-bit demo (url : <A href="javascript:if(confirm('http://129.105.116.5/fravia/www.wmsoftware.com  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://129.105.116.5/fravia/www.wmsoftware.com'" tppabs="http://129.105.116.5/fravia/www.wmsoftware.com">www.wmsoftware.com</A>)
+
+
+
+ :::: TOOLS 
+
+ W32Dasm 8.9, SoftIce for NT 3.01, UltraEdit-32 4.40b
+
+
+
+ :::: PROTECTiON
+
+ Quiver protection (see +ORC, lesson 4.1). Internal counter. 
+
+ The demo counts the number of times you select a font you like to see.
+
+
+
+ :::: REMARK(s)
+
+ You will need to change winice.dat for this crack. Open winice.dat in your
+
+ favorite text editor and add the next line,
+
+
+
+ EXP=<DRIVE>:\<DIRECTORY>\msvbvm50.dll
+
+
+
+ Save the file and restart your computer if SoftIce is loaded.
+
+
+
+ :::: FiND THE COUNTER
+
+ Like always, I start with loading the target in W32Dasm. The first thing I
+
+ noticed was that there were no String References. Pretty annoying if you
+
+ ask me. If you take a look at the list of .dll files that are used you'll
+
+ see only one :
+
+
+
+  MSVBVM50.DLL aka. Microsoft Visual Basic Virtual Machine 5.0 (I think)
+
+
+
+ Ok, this is quite new, and I haven't seen any tutorials on a VB5 program.
+
+ Due to the lack of String References and the usage of only one .dll file
+
+ we need a &quot;new&quot; approach to crack this baby, I suggest you sit down and
+
+ start thinking about the way to crack this target...
+
+
+
+ Well I came up with the following idea.
+
+
+
+ Start the target and select several times a font, after 10x clicking you'll
+
+ get the nag screen telling you... well read it :). The problem is that you
+
+ need to restart the target if you want to use it some more.
+
+
+
+ Back in W32Dasm, take a look at the imported functions from the .dll,
+
+
+
+ Addr:0F0D3109 hint(0000) Name: __vbaStrBool
+
+ Addr:0F01A5AE hint(0000) Name: __vbaExitProc
+
+ Addr:0F0239B1 hint(0000) Name: __vbaFileCloseAll
+
+ Addr:0F023FA0 hint(0000) Name: __vbaOnError
+
+ Addr:0F04F618 hint(0000) Name: __vbaObjSet
+
+ Addr:0F0CF404 hint(0253) Name: rtcMsgBox                    <INTERESTING Addr:0F0E326C hint(0000) Name: _adj_fdiv_m16i Addr:0F023EA8 hint(0000) Name: __vbaObjSetAddref Addr:0F0E336C hint(0000) Name: _adj_fdivr_m16i Addr:0F0391DB hint(0256) Name: rtcDoEvents Addr:0F0450B1 hint(0000) Name: __vbaBoolVar Addr:0F0FDBB6 hint(0000) Name: __vbaBoolVarNull Because I didn't had any other clues what to look for, I started the target again and I fired SoftIce (SI) and I suggest you do that too. In SI (ctrl-d to enter SI) set a breakpoint on rtcMsgBox, type (in SI) : bpx rtcMsgBox If SI reports "Symbol not defined (rtcMsgBox)", read the REMARK(s) part again. Ok, exit SI (ctrl-d again), select 10x a font. You should be back in SI, press F11 to get in the code "of.class" tppabs="http://fravia.org/of.class" the target. Write down the address (for me it was xxxx:0046A2F6). :::: Intermezzo : :::: Make sure that the target is running, before you set your breakpoints. :::: I noticed that SI will work properly only when the target is loaded, I :::: guess that's because MSVBVM50.DLL needs to be loaded when you activate :::: any breakpoints. Another thing, clear and create your breakpoints every :::: time you start the target, else SI won't work like it should. Ok, disable the breakpoint and exit SI. Get back in W32Dasm and goto the code location with the address you wrote down. You should see the following code, *Reference To: MSVBVM50.rtcMsgBox, Ord:0253h | :0046A2F1 E8A28AF9FF Call 00402D98 :0046A2F6 8D45A8 lea eax, dword ptr [ebp-58] :0046A2F9 50 push eax :0046A2FA 8D45B8 lea eax, dword ptr [ebp-48] :0046A2FD 50 push eax :0046A2FE 8D45C8 lea eax, dword ptr [ebp-38] :0046A301 50 push eax :0046A302 6A03 push 00000003 This event happens after we selected a font for the 10th time. So what we do now? What do we look for? Use some Zen, sit down and start thinking (again ;). No ideas? Well, check out any manual on the "8086 General Purpose Registers". I read the following in two manuals I got, (1) "The ax register (Accumulator) is where most arithmetic and logical computations take place. Although you can do ..." (2) "AH/AL AX (EAX) or Accumulator..." We need to look for some code that manipulates the counter of our target, probably using the ax register (this is just a feeling I had after reading some parts of the manual I refered to). Ok, so start scrolling up the code in W32Dasm, until I arrived at a first jump reference, :0046A1FC E82D8CF9FF Call 00402E2E * Referenced by a Jump at Address:0046A1EE(C) | :0046A201 83A570FFFFFF00 and dword ptr [ebp+FFFFFF70], 00000000 :0046A208 83EC10 sub esp, 00000010 :0046A20B C78568FFFFFF0B000000 mov dword ptr [ebp+FFFFFF68], 0000000B Use Goto|Goto Code Location from the menu with 0046A1EE. Continue to scroll up till the next jump reference, goto that code location... Repeat this 6 times untill you get at the next code, * Reference To: MSVBVM50.__vbaObjSet, Ord:0000h | :0046A099 E8368DF9FF Call 00402DD4 :0046A09E 8BF0 mov esi, eax :0046A0A0 8B06 mov eax, dword ptr [esi] :0046A0A2 6811000080 push 80000011 :0046A0A7 56 push esi :0046A0A8 FF5064 call [eax+64] :0046A0AB 85C0 test eax, eax :0046A0AD 7D0E jge 0046A0BD <--- you should be here :0046A0AF 6A64 push 00000064 :0046A0B1 6878E34000 push 0040E378 :0046A0B6 56 push esi :0046A0B7 50 push eax Remember we need to find some code that manipulates the counter aka. ax register. So start scrolling up again, until you reach the following code, :00469F1E 89B568FFFFFF mov dword ptr [ebp+FFFFFF68], esi :00469F24 89B558FFFFFF mov dword ptr [ebp+FFFFFF58], esi :00469F2A 0F85DE030000 jne 0046A30E :00469F30 66393556904700 cmp word ptr [00479056], si :00469F37 0F8524060000 jne 0046A561 :00469F3D 66A158904700 mov ax, word ptr [00479058] (1) :00469F43 6640 inc ax (2) :00469F45 0F801F060000 jo 0046A56A :00469F4B 663D0A00 cmp ax, 000A (3) :00469F4F 66A358904700 mov word ptr [00479058], ax (4) :00469F55 0F8CB3030000 jl 0046A30E (5) :00469F5B 8B8314030000 mov eax, dword ptr [ebx+00000314] After everything I told you till now this should give you that real good warm feeling. We're getting very close to the solution. Let me explain the code above, (1) load something in ax from memory (2) increase ax by 1 (3) compare ax with 10 (4) store new value of ax back in memory (5) jump if ax is smaller then 10 That could be it! To check if we found the right place, load the target and get back in SI, set a breakpoint on 00479058 type (in SI) : bpm 479058 Get out of SI and select a font in TTFPlus, you should be back in SI right at line (2), press F10. Get out of SI and repeat this several times you'll notice that it's here where the counter is kept and updated. :::: THE CRACK Well, I think there are several solutions here. Let me show you some, you could change line (1) into mov ax, 0 OR- replace line (2) with 2 NOP (90h) instructions OR- change line (5) into jmp 0046A30E. All three solutions will do the job. To go on with this tutorial I will use the 2nd solution. Go back to W32Dasm and get the offset of line (2). Now load the target (make a back-up copy) in UltraEdit or any hex-editor and goto the offset you wrote down (for me it was : 0006:9343). Now you should see the following line, 00069340h: 90 47 66 40 0F 80 1F 06 00 00 66 3D 0A 00 66 ^^ ^^ change this to 00069340h: 90 47 90 90 0F 80 1F 06 00 00 66 3D 0A 00 66 ^^ ^^ This should do it. Now the counter will never reach 10, so the demo will never "expire". Save the file, exit, and enjoy... Voila, another target cracked. So that's all folks, I hoped you enjoyed. Vizion, 09/97. :::::::::::::::::::::::::::: GREETS FLY 2 ALL SiT AND MEMBERS OF MeX/C4N ::::::::::::::::::::::::::::: </pre>
+
+
+
+<FONT color="green"> (c) Vizion 1997. All rights reversed</FONT><HR>
+
+<CENTER><I>You are deep inside fravia's page of reverse
+
+engineering, choose your way out:</I></CENTER>
+
+
+
+
+
+<P><CENTER>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#84'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#84">homepage </A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"> <A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#73'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#73">links
+
+</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0" NATURALSIZEFLAG="0"> <A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity
+
+</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#82'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#82">students' essays </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools
+
+</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails </A><BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database </A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia
+
+</A><BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">is reverse engineering legal? </A></FONT></CENTER></P>
+
+
+
+<P><CENTER><FONT SIZE="-1"><HR></FONT></CENTER>
+
+</BODY>
+
+</HTML>
+

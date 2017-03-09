@@ -1,0 +1,1928 @@
+<HTML>
+
+<HEAD>
+
+
+
+<TITLE>iceman2.htm: Extending NuMega's SoftIce for Windows 95</TITLE>
+
+</HEAD>
+
+
+
+<BODY BGCOLOR=#C0C0C0 TEXT=#001010 VLINK=#405040>
+
+
+
+
+
+<CENTER><A href="papers.htm" tppabs="http://www.anticrack.de/fravia/papers.htm"><IMG SRC="papers.gif" tppabs="http://www.anticrack.de/fravia/papers.gif" ALT="papers" ALIGN=BOTTOM WIDTH=114 
+
+HEIGHT=43 BORDER=0 VSPACE=0 HSPACE=0></A>
+
+<BR><FONT color=gray>Back to the HCU Papers</FONT></CENTER><HR>
+
+<PRE>
+
+             	Extending NuMega's SoftIce for Windows 95 using Protected Mode
+
+				   Debugger services API	
+
+			           ---------------------
+
+							by Iceman	
+
+</PRE>
+
+	
+
+<P>	As you all know very well Soft-Ice is the best debugger available on the market.
+
+A powerful tool which combined with IDA 3.7+ give you the power to reverse just about 
+
+anything in this wrold.The idea of extending Soft-Ice is not new , I've seen many 
+
+implementations of new commands (not so many , in fact) but no one used the mechanism of
+
+dot commands which I describe below.
+
+</P><P>	This paper is accompanied by a sample skeleton VxD which implements an extension
+
+to Soft-Ice for Windows95.It provides no real functionality at this time , it is designed to
+
+illustrate how .dot commands are implememted.The source code is available , too.
+
+</P><P>	You will need at least Windows95 DDK and MASM 6 to build the example VxD , Soft-Ice 
+
+to see for your own eyes that it's works , IDA 3.7 comes handy to follow chapter 7.No more 
+
+tools required , a basic knowledge of VxD programming still required.Chapter 6 and 7 are not 
+
+directly related to dot commands , it is more an introduction to basic reverse engineering 
+
+techniques for VxD's.Still, it  is linked with the general subject , it show you how you can 
+
+talk to  SoftIce from ring3 user code.<PRE>
+
+	The document is structured as below:
+
+
+
+	Chapter 1: VxD introduction.
+
+	Chapter 2: What are dot command's?
+
+	Chapter 3: INT 41h - protected mode debugger interface.
+
+	Chapter 4: Extending Soft-Ice 
+
+	Chapter 5: The sample: icecmd.vxd
+
+	Chapter 6: Moving to ring 3
+
+	Chapter 7: How Numega's Loader works?
+
+	Chapter 8: Notes for Windows NT users.
+
+
+
+        Appendix A: Some useful equates for VxD reverse engineering
+
+	Appendix B: INT 22h - Win32 Protected mode interface requests API
+
+		
+
+		Chapter 1: VxD introduction
+
+		---------------------------
+
+</PRE>
+
+<P>	Virtual device drivers , referred further as VxD , are basically 32 bit executables that
+
+run at the highest privilege level (on ring0).They are used to manage critical system 
+
+resources.The executable type is not PE but the older type LE (linear executable).Their 
+
+importance becomes higher than Microsoft added to Windows95 the ability to dynamically load
+
+VxD's.In the past , VxD where used almost only for virtualizing hardware devices or to control
+
+hardware periphereals.In this days you can see lot of code who heavily relays on VxD to improve
+
+execution speed , or to gain access to critical system resources.
+
+<BR>	Now , since the purpose of this material is not to be a VxD programming introductory 
+
+material I will jump directly to Chapter2.If you want me to write a introductory material to 
+
+VxD programming mail me directly and if I find the number of requests high enough i will  write
+
+one.(over 30 requests will do the job)
+
+<PRE>
+
+
+
+		Chapter 2: What are dot commands?
+
+		----------------------------------
+
+
+
+	 The protected mode debugger interface API under Windows 95 class OS provides a very 
+
+convenient way for 32 bit system DLL's and VxD to talk to a system debugger.In Windows95 this
+
+interface is accessed via INT 41h.Between other things , INT 41h interface allow a VxD to 
+
+provide debug specific routines which can be called from the  system level debugger's console.
+
+	In theory , any system level debugger can be extended in this way.Care must be taken
+
+because not all the functions provided by INT 41h API are necessary implemented by your debugger.
+
+SoftIce , as well as Microsoft's Wdeb386 supports them.Issueing a dot command is as simple as
+
+breathing.In debugger's console type:
+
+
+
+				.Command 
+
+
+
+where command is the command that you want to be executed.By a more technical point of view
+
+two types of dot commands are available.Let's see them:
+
+
+
+	A.Debug Query dot commands
+
+
+
+	Now fire up SoftIce and type: 
+
+		
+
+				.vmm
+
+
+
+	Instantly the command window shows you a menu with several debug options what are not
+
+part of SoftIce but implemented through vmm.vxd (Virtual machine manager).What happened behind
+
+our back?When you issue a .VxDname command a Debug_Query message will be sent to the specified
+
+virtual device.If the ControlDispatch procedure of target VxD supports a handler for this 
+
+message control will be passed to it.The handler procedure  for Debug_Query message must reside
+
+in a looked code segment.If it is in pageable code-segment your system may hang if the handler
+
+procedure is paged to disk.If the target VxD does not handle Debug_Query message nothing bad
+
+happens , so you can experimentate this freely.
+
+
+
+	B.Registered dot commands
+
+
+
+	Fire up SoftIce again and type:
+
+
+
+				.my
+
+
+
+	(This command should be available even if you don't have the debug version of W95).You
+
+are in reverse engineering business and still using a retail build of your OS? Belief me , you
+
+miss a LOT of cool things.Get a debug build for at least vmm.vxd , vwin386.vxd , vxdldr.vxd ,
+
+and ring3 kernel components.
+
+	What you see now on your screen is the valid ranges of physical memory.At this point
+
+is important for us to know how the debugger called this code and not how to get valid 
+
+boundaries of physical memory.Things are a little more complicated now.Implementing a dot 
+
+command of this type impose a certain architecture to the server VxD.Be careful.Here the dot 
+
+command is .M and not .MY. The Y following .M is merely a parameter passed to handler for this
+
+command.When the server VxD is initializing it's debug interface , usually but not necessary
+
+inside the procedure that handles Device_Init message broadcasted by virtual machine manager,
+
+it must call a function called RegisterDotCommand (INT 41h , AX=70h) to register the command in
+
+question to the system debugger (see chapter 3 for details).Basically , registering a dot 
+
+command  provides the system debugger with an entry point which will be called when that
+
+command will be issued.To see which dot commands are registered in your system simply type
+
+
+
+				.?
+
+	This will show you all the dot commands available , in the order in which they where
+
+registered.				 
+
+	
+
+ 	
+
+	Chapter 3: INT 41h - protected mode debugger interface.
+
+	-------------------------------------------------------
+
+
+
+
+
+	The Protected Mode Debugger Interface API is implemented via INT 41h.This interrupt
+
+calls into the system debugger through a 32 bit interrupt gate , directing it to perform
+
+various actions.The called function is identified by the value contained in AX register.
+
+This interface is partial undocumented , you can find some useful things by reading the
+
+debugsys.inc file that comes with Windows 95 DDK.In this file the API is documented at the
+
+bare minimum , but it's better than nothing.Anyway , for those of you who don't posses the 
+
+DDK I will list below some of the most useful functions.
+
+
+
+
+
+	AX=00h --  Display character on debug terminal
+
+		  entry : 
+
+			AL = character to display
+
+		     
+
+	AX=01h -- Read character from debug terminal 
+
+		  returns:  
+
+		         AL = readed char
+
+
+
+	AX=02h -- Displays a string on debug terminal
+
+       		   entry:  
+
+			 DS:ESI pointer to null terminated string to display
+
+
+
+	AX=12h -- Displays a string on debug terminal (called by 16 bit code )
+
+		  entry:  
+
+		         DS:SI pointer to null terminated string to display
+
+	
+
+	AX=40h -- Run debugee until specified  CS:IP  is reached
+
+		  entry : 
+
+			  CX = desired CS
+
+			  BX = desires IP
+
+
+
+	AX=70h -- Register dot command (32 bit code )
+
+		  entry:  
+
+			  BL = dot command to register
+
+			  ESI = linear address of the handler routine
+
+			  EDI = linear address of the help text 	
+
+		  returns:
+
+			  AX == 0 if successful
+
+		          AX != 0 if registration failed
+
+
+
+	AX=71h -- Register dot command (called by 16 bit code )
+
+		   entry:  
+
+			  BL = dot command to register
+
+			  CX:SI = linear address of the handler routine
+
+			  DX:DI = linear address of the help text 	
+
+		  returns:
+
+			  AX == 0 if successful
+
+		          AX != 0 if registration failed
+
+	    	  		
+
+        AX=72h -- Unregister dot command (unregister dot commands registered by both 70h & 71h)
+
+		  entry:	
+
+	  	          BL = dot command to de-register
+
+
+
+
+
+	AX=73h -- Debug prinf ( C like printf function >> output on debugger terminal ) 32 bit
+
+		  entry:
+
+			 DS:ESI = address of format string
+
+			 DS:EDI = address of first parameter passed ( all parameter are DWORD's )
+
+		  returns:
+
+			 EAX = nr. of characters printed on debug terminal
+
+
+
+	AX=74h -- Debug printf (C like printf function >> out on debugger terminal) 16 bit
+
+		  entry:
+
+			DS:SI = address of format string
+
+			ES:DI = address of the start of the word or dword arguments
+
+		  returns:
+
+			AX = nr of chars outputed
+
+
+
+	AX=75h -- Get Register Set 
+
+		   entry :
+
+			DS:ESI = address of a SaveRegs_Struc type  structure
+
+
+
+	AX=76h -- Set Alternate Register Set
+
+		    entry:
+
+			 CX = thread ID (0 for current thread)
+
+			 DS:ESI =  address of a SaveRegs_Struc type structure
+
+
+
+	
+
+	AX=77h -- Get Command Line Chararacter
+
+		    entry:
+
+			BL = 0 -> get char ,  text pointer not incremented , leading space not ignored
+
+			   = 1 -> get char , increment text pointer , leading blank is skipped
+
+			   = 2 -? get char , text pointer not incremented ,leading blank is skipped
+
+		    exit:
+
+			AL = command line character retrieved
+
+		        AH = 0 if EOL encountered , !0 if more characters await parsing
+
+
+
+	AX=78h -- Evaluate Expression
+
+		  entry:
+
+			ds:esi expression to evaluate
+
+
+
+		  returns:
+
+			AX: -> 0, returns a data value
+
+			    -> !0 returns a linear address
+
+		 CX = TID 
+
+		 EBX = evaluated value
+
+
+
+	AX=79h -- Verify Memory
+
+		  entry:
+
+			ECX = length of memory region
+
+			DS:ESI = starting address of memory to verify
+
+
+
+		  returns:
+
+			 AX: -> 0 OK
+
+			     -> !0 memory range is invalid
+
+
+
+	AX=7A -- Directs debugger to dump current registers
+
+
+
+	AX=7b -- Directs debugger to perform a stack dump
+
+		 entry:
+
+		      BX:  -> 01h - verbose stack dump
+
+			   -> 02h - 16 bit stack dump
+
+			   -> 04h - 32 bit stack dump
+
+	
+
+			
+
+	AX=7dh -- Execute Debugger Command
+
+  		  entry:
+
+			DS:ESI = pointer to the command script
+
+			CX = 	 size in bytes of script
+
+
+
+Some structures:
+
+
+
+	SaveRegs_Struc	struc
+
+	Debug_EAX		dd	?
+
+	Debug_EBX		dd	?
+
+	Debug_ECX		dd	?
+
+	Debug_EDX		dd	?
+
+	Debug_ESP		dd	?
+
+	Debug_EBP		dd	?
+
+	Debug_ESI		dd	?
+
+	Debug_EDI		dd	?
+
+	Debug_ES		dw	?
+
+	Debug_SS		dw	?
+
+	Debug_DS		dw	?
+
+	Debug_FS		dw	?
+
+	Debug_GS		dw	?
+
+	Debug_EIP		dd	?
+
+	Debug_CS		dw	?
+
+				dd	?
+
+	Debug_EFlags		dd	?
+
+	Debug_CR0		dd	?
+
+	Debug_GDT		dq	?
+
+	Debug_IDT		dq	?
+
+	Debug_LDT		dw	?
+
+	Debug_TR		dw	?
+
+	Debug_CR2		dd	?
+
+	Debug_CR3		dd	?
+
+	Debug_DR0		dd	?
+
+	Debug_DR1		dd	?
+
+	Debug_DR2		dd	?
+
+	Debug_DR3		dd	?
+
+	Debug_DR6		dd	?
+
+	Debug_DR7		dd	?
+
+	Debug_DR7_2		dd	?
+
+	Debug_TR6		dd	?
+
+	Debug_TR7		dd	?
+
+	Debug_TrapNumber	dw	-1	
+
+	Debug_ErrorCode		dw	0	
+
+SaveRegs_Struc ends
+
+
+
+	There are more functions implemented through INT 41h.There is no point in list them
+
+here because those are advanced things and are beyond the purpose of this paper who is
+
+wanted to be a introductory and didactic material.If someone really wants them I suggest
+
+browsing the DDK or directly e-mail me and I will try to help.
+
+
+
+
+
+		Chapter 4: Extending Soft-Ice 
+
+		-----------------------------
+
+
+
+	In this chapter you will find some guidelines for writing helper VxD's for extending
+
+Soft-Ice, or other system debuggers (Soft-Ice is the best tool , so don't bother with 
+
+other debuggers , does not worth the effort).You can develop those VxD's in assembly language
+
+or in C/C++.If you choose to write them in C I recommend you buying Vtools from Vireo Software,
+
+this is a great tool.It is not very hard to write them totally in assembly , so this is also
+
+a good choice.
+
+	In the first place we will need a unique device id.This is not mandatory but in 
+
+the sample VxD who accompanies this article I've used this device ID to prevent loading the
+
+VxD if it's already loaded (duplicate init strings in system.ini or registry).
+
+	The  loading order is not very important as long as you not relay on third-party
+
+VxD's to carry out part of your routines.The only VxD's  required  to be loaded before our 
+
+device are the VMM and the Debug Device.No special precautions required since vmm.vxd and debug
+
+device have Init_Order equal to 0. This number means that the VMM will start loading VxD's 
+
+starting with lower values first and finishing with UNDEFINED_INIT_ORDER values last.So simply
+
+specifying UNDEFINED_INIT_ORDER will be OK.
+
+	The next thing very important is the Virtual Device's control procedure.You should
+
+always put this procedure in a locked code segment.This routine is a callback who responds
+
+at messages broadcasted by Vmm and directs our VxD to take appropriate measures (generally this
+
+routine merely pass control to user code procedures responsible with managing those messages.
+
+Remember that returning with Carry Flag set from your handlers means that an error occurred ,
+
+ and a cleared Carry Flag means that everything went OK.A debug helper VxD should manage at 
+
+least two messages.They are Device_Init and Debug_Query.If your plan to write your VxD as a
+
+Dynamic loadable device driver the control procedure is REQUIRED to manage more two messages.
+
+Those are Sys_Dynamic_Device_Init and Sys_Dynamic_Device_Exit.Talking from ring3 user code
+
+to your device is also possible (see Chapter7 for details).In this case I recommend you to use
+
+the DEVICE_IO control mechanism.For this to be possible you must also process W32_DeviceIocontrol
+
+message and write an appropriate handler to dispatch control to your procedures.Please note
+
+that even if your VxD does not handle any messages , a control procedure is still required.
+
+	We already said that the Control Procedure must be in a looked code segment.Also
+
+the procedures that handles Debug_Query events and .dot commands are required to be in looked
+
+code segments.This is due to the way in which system debuggers pass control to those handlers.
+
+Also when you build the VxD the debug level passed to MASM must be at least one.This is because
+
+if you do a retail build on a VxD a lots of Debug Macros defined in Vmm.inc becomes unavailable.
+
+Your code will compile and link without any problem , but you will notice that your Trace_Out
+
+messages and other debug macros there stripped out.
+
+	If your device provide a handler for Debug_Query message , issuing a type one dot
+
+command ( a dot followed by your VxD name ) will be automatic processed.You can strip this out
+
+if you want , processing Debug_Query is not required.
+
+	To use type two dot commands you are required to inform the debugger about their 
+
+existence.The best place where you can do this is inside the handler for Device_Init message.
+
+This handler can be safely put in a discardable code segment , so after completely initializing
+
+the device and registering dots this code will be discarded (You never have enough RAM , so
+
+even if you think that several Kb  are not much ...).You always must try to keep pagelocked
+
+code and data at the very minimum.
+
+	Before you try to register a dot command you should always check if a system debugger 
+
+is present.Issueing INT 41h without a system debugger installed cause protection faults.
+
+If such a protection fault occurs inside a Device_Init message handler of a statically loaded
+
+device , not only the device will not complete initialization but also Windows95 itself will
+
+fail initialization.The simplest way to check for a debugger is to use  Test_Debug_Installed
+
+provided by vmm (VxdCall Test_Debug_Installed).This will return with zero flag clear if
+
+a debugger is present.If ZF if set the a system level debugger is not present.
+
+	If the debugger is not present then you should not load your device.You simply
+
+do this by returning with CF set from the Device_Init message , informing the virtual machine 
+
+manager that the initialization procedure failed . The VMM will not load the device.
+
+	Once you are sure that a debugger is present you can proceed with registering dot
+
+commands . This is accomplished by INT 41h with Ax set to 70h.The other registers must be set
+
+as following: 
+
+		BL = dot command to register.Example mov bl , 'z'.Used to inform the debugger
+
+that it should respond at a .Z command transferring control as below.
+
+		ESI must contain the linear address of the dot command handler routine.
+
+		EDI must contain the linear address of the help string.The help string must
+
+		     end with a CR 
+
+	The following special restriction apply to the handler:
+
+	1.The handler must stay on the same stack used when called Int41h
+
+	2.The handler must not change provided flat CS , DS , and try to access invalid 
+
+	selectors or  memory.
+
+	3.The handler is runned on ring0.
+
+
+
+	After you register the dot command you will can access it from within your debugger.
+
+	When you don't wont the command anymore you should de-register it.
+
+If your VxD is statically loaded there is no point in de-registering dot command , since the
+
+code will be there until Windows shuts down. But if your VxD is designed to be a dynamically 
+
+loaded VxD care must be take.If you unload the VxD and a de-register of the dot command is
+
+not performed , the dot command will be considerated as available by debugger , and you can
+
+call it.The only problem is that since the VxD who provide the handler is no longer in memory,
+
+control will be passed to garbage instructions,...I think you get my point.So is a very good 
+
+idea to de-register dot commands in a dynamic VxD. De-registering is performed calling INT 41h
+
+whit AX set to 72h and BL containing the command you want to de-register.Your best choice is
+
+to this thing inside the handler for Sys_Dynamic_Device_Exit.
+
+	Also , while processing a dot or a Debug_Query message , it is not a good idea to
+
+try to leave Soft-Ice by pressing the assigned hot-key.This will hang your machine imediatly.
+
+	Now several things about the dot command handler routine.When the debugger calls the
+
+handler it will set DS and CS to a flat selector. Usually the flat CS will be 28h.It also 
+
+load the first character of the command line in the AL register.The handler routine must
+
+perform a far return (you must return to the debugger which resides in another code segment).
+
+Note that this is not sensed by assembler so it's your duty to explicitly use RETF.The value
+
+returned in AX register can be 0 , indicating that all went OK , any other value means that
+
+an error occurred (usualy a command line error).The first thing you should do after entering
+
+your handler is to parse the command line. This can be accomplished by using INT 41h , AX=77h
+
+(Get command line character) . A pointer to the current character in command line is 
+
+maintained by the debugger.The value specified in BL register choose how this pointer 
+
+is managed.Also the flag specified in BL sets the way in which one or more blank spaces are 
+
+treated.They can be ignored , the pointer value will be updated to the next valid character
+
+in the command line or you can choose to parse them as well.The GetCommandLine function will
+
+return with AH set to 0 if end of line was encountered , and a value !0 otherwise.The 
+
+command line character is retrieved in AL.
+
+	Not much things left to say.It's up to you in which way you will used the facilities
+
+presented here.Your code runs on ring 0 , so you can do just about anything you imagine.The
+
+only thing I want to say is that you should take care about what you are doing.Programming
+
+in ring0 requires a very serious understanding of protection mechanism , page-mode memory
+
+management , x86 internal architecture and the way in which Windows'95 virtual memory manager
+
+manages those facilities.Remember , you have absolute power but using it in a wrong way can
+
+cause your machine to hang , and you can cause loose of data from your hard drives.Fair warning!
+
+
+
+  	
+
+
+
+		Chapter 5: The sample: icecmd.vxd
+
+		---------------------------------
+
+
+
+
+
+	Accompanying this article there is a sample VxD who employees most of the techniques 
+
+described in the pervious chapter.The VxD does not provide any real functionality , it is
+
+intended only for didactic purposes.It implements a new dot command .Z and a DebugQuery
+
+handler routine.The sample dot command .Zs will dump the stack trace on the debug console.
+
+You can accomplish same thing issuing STACK command in Soft-Ice.It also show you very
+
+basic command line parsing.The VxD is implemented as a static VxD.It also present a mechanism
+
+in which a VxD can detect if it was previously loaded , preventing multiple instances.Since
+
+the code is commented I will not insist in presenting it once again inside the article.Read
+
+the source code ,I tryed to keep things easy to understand.
+
+	The only thing unexplained is the code what prevents the VxD being loaded twice.
+
+This code resides in VxD_REAL_INIT_SEG code segment.This code is auto called at the time when
+
+the system is still in real mode and the Virtual Device Drivers are loaded.When the system
+
+reach this entrypoint the BX register contain a value that indicates if the device is already
+
+loaded or not.The method requires a unique device Id.To allow loading you must exit with
+
+AX set to a certain value , as shown below.
+
+
+
+		Abort_Device_Load -- tells to VMM that this VxD should not be loaded
+
+		Abort_Win386_Load -- tells to VMM to end Windows loading (WIN 95 itself will 
+
+				     fail loading if this value is passed to AX
+
+		Device_Load_Ok    -- tells to VMM that al is OK , device can be loaded
+
+		No_Fail_Message   -- use with Abort_Device_Load and Abort_Device_Load.Instructs
+
+				     the VMM to not display an error message.If not specified
+
+				     the VMM will print an error message on screen.
+
+
+
+Also , you must return with BX , EDX , SI registers set to the folowing values:
+
+
+
+		BX  --- must contain a pointer to a null terminated page array table
+
+			containing the physical pages reserved for VxD own use.Valid adress
+
+			ranges are 0 to 100h. (That's it the table must reside in very low
+
+			memory.
+
+			MUST be set to 0 if no pages are reserved
+
+
+
+		SI --  must contain a pointer to a null terminated area of data items
+
+		 	MUST be set to 0 if there are no specific instance objects.
+
+
+
+		EDX -- contain a value who it is passed to the protected mode procedure
+
+		       what is the handler for  Sys_Critical_Init message broadcasted 
+
+		       by VMM.This value is re-loaded in EDX just before the protected mode
+
+		       init procedure is called
+
+		       Usualy set to 0 , but it will not harm anything if contain other
+
+		       values. (This is because it's up to you if the handler for 
+
+		       Sys_Critical_Init will use it or no)			
+
+				
+
+This is not my creation , ive learned this from W. Oney's code.
+
+
+
+	<A HREF="javascript:if(confirm('http://129.105.116.5/fravia/icecmd.zip  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://129.105.116.5/fravia/icecmd.zip'" tppabs="http://129.105.116.5/fravia/icecmd.zip">Download icecmd.zip & source code</A>
+
+
+
+	      
+
+               	
+
+	
+
+		Chapter 6: Moving to ring 3
+
+		---------------------------
+
+
+
+
+
+	Part of the Protected Mode Debug API is available also on ring3.In fact , some 
+
+functions from WIN32 API like OutputDebugString relays on INT 41h to carry out the job.
+
+This opens more interesting possibilities , since you can write ring3 programs that 
+
+interacts with a system debugger , retrieving info from it and instructing it to carry
+
+out various actions.
+
+	Note that not entire API is disponible on ring3.Generally, experimenting won't
+
+harm as long as you are sure that a system debugger is installed.
+
+
+
+
+
+	      Chapter 7: How Numega's Loader works?
+
+	      -------------------------------------
+
+
+
+	Although this chapter is not directly related to extending system debuggers under
+
+Windows95 ive decided to present it inside this document because it treats a very important
+
+problem: Talking to VxD's from ring3.The basic problem is the question: How can I call the 
+
+code from a VxD and how do I retrieve data from it?Well , there are more than one method
+
+to to this, but I will present only one.This method uses the DEVICE_IO_CONTROL mechanism
+
+to talk to a VxD.It also provides a very convenient way to manipulate complex data structures
+
+between ring3 and ring0.The only downside is that a certain architecture is imposed to the
+
+VxD which will be called using this method.The device driver is required to process the
+
+W32_DeviceIoControl message and to use a table of offsets to dispatch control to desired
+
+procedures.
+
+	NuMega's loader uses this method to instruct SoftIce VxD to perform various actions.
+
+The mechanism is implemented within nmtrans.dll. The executable is a simple shell for
+
+an easy user interaction.Now let's see the API used to communicate in this way with a VxD
+
+and then let's look how NuMega's loader use them.Three WIN32 API functions are used:
+
+CreateFile , CloseHandle and DeviceIoControl.
+
+	I'm sure that all of you know very well CreateFile & CloseHandle so let's see
+
+DeviceIoControl. The DeviceIoControl function sends a control code directly to a specified 
+
+device driver, causing the device to perform the specified operation. 
+
+
+
+BOOL DeviceIoControl(
+
+
+
+    	    HANDLE  hDevice,		// handle of the device
+
+ 	    DWORD  dwIoControlCode,	// control code of operation to perform
+
+	    LPVOID  lpvInBuffer,	// address of buffer for input data
+
+	    DWORD  cbInBuffer,		// size of input buffer
+
+	    LPVOID  lpvOutBuffer,	// address of output buffer
+
+	    DWORD  cbOutBuffer,		// size of output buffer
+
+	    LPDWORD  lpcbBytesReturned,	// address of actual bytes of output
+
+	    LPOVERLAPPED  lpoOverlapped // address of overlapped structure
+
+   );
+
+
+
+
+
+DIOCParams	STRUC
+
+Internal1	DD	?
+
+VMHandle	DD	?
+
+Internal2	DD	?
+
+dwIoControlCode	DD	?
+
+lpvInBuffer	DD	?
+
+cbInBuffer	DD	?
+
+lpvOutBuffer	DD	?
+
+cbOutBuffer	DD	?
+
+lpcbBytesReturned	DD	?
+
+lpoOverlapped	DD	?
+
+hDevice	DD	?
+
+tagProcess	DD	?
+
+DIOCParams	ENDS
+
+
+
+Hope the structure is self-explanatory , tired of typing.Anyway it is used to pass and retrieve
+
+data to the called VxD service,as well as passing desired code of operation.
+
+How Numega use this functions? First CreateFile is called with  LPCSTR lpszName parameter
+
+set to " \\\\.\\SICE".If Softice VxD is loaded this call will return a handle to the virtual
+
+device driver.After that DeviceIoControl is called with HANDLE  hDevice set to the value
+
+returned by previously called CreateFile and DWORD  dwIoControlCode set to a integer value
+
+which unique identifies what routine we want to be called from VxD.If the function succeeds
+
+the return value is TRUE.
+
+	"\\\\.\\SICE" passed to CreateFile is the name of the virtual device we want to
+
+open.You can figure out very easy this name , IDA gives it to you for any VxD.
+
+	When DeviceIoControl is called the system wraps to called VxD routine through a 
+
+standard Windows95 VxD called vwin32.vxd.A DEVICE_IO_CONTROL message is broadcasted to the
+
+target VxD.In this moment esi register points to a DIOCParams type structure.The VxD code
+
+is responsible to annalize the requested service code ( DWORD  dwIoControlCode) and see if
+
+it's a valid one. If it's valid , control is passed to the service routine witch must 
+
+return with carry flag cleared  to indicate success. If the service code does not exist,
+
+or an error occurs (insufficient nr. of parameters ...and so on ) we must return with
+
+carry flag set to indicate an error.Finally , Close Handle is called to destroy the 
+
+handle.
+
+Let's annalize , for example , how the command history is saved to a file (the first listing
+
+is from nmtrans.dll , the second from winice.exe ver 3.22).
+
+A simple quick view in nmtrans.dll shows some interesting names.Two of them are interesting
+
+in our problem. They are DevIO_ConnectToSoftIce and DevIO_CopyLogInfo.Very suggestive names,
+
+isn't it?When we want to save log info control is passed to DevIO_CopyLogInfo.
+
+
+
+...............................!!!!SEVERAL LINES STRIPED OUT!!!................................
+
+
+
+disasembly listing of nmtrans.dll
+
+DevIO_CopyLogInfo
+
+-------------------
+
+
+
+10019999		 call	 DevIO_ConnectToSoftICE        // In fact this calls CreateFile
+
+							       // to open a handle to VxD	
+
+								
+
+1001999E		 mov	 [ebp+var_1C], eax
+
+100199A1		 cmp	 eax, 0FFFFFFFFh	       // If we don't have a valid handle	
+
+100199A4		 jz	 short loc_100199EA	       // jump out of here	
+
+100199A6		 push	 0
+
+100199A8		 lea	 eax, [ebp+var_24]
+
+100199AB		 push	 eax
+
+100199AC		 push	 1Ch
+
+100199AE		 lea	 eax, [ebp+var_40]
+
+100199B1		 push	 eax
+
+100199B2		 push	 0
+
+100199B4		 push	 0
+
+100199B6		 push	 9C406018h		      //Push control code of operation
+
+							      //Remember this , it is a critical
+
+							      //value.It decides what service 
+
+							      // will eventualy execute winice.
+
+							      // See below!		 			
+
+100199BB		 mov	 eax, [ebp+var_1C]
+
+100199BE		 push	 eax			      //Push the handle to winice VxD on stack	
+
+100199BF		 call	 ds:DeviceIoControl	      //Call DeviceIoControl
+
+							      //At this point control will be passed to
+
+							      //Soft-Ice VxD.
+
+							      //Remember that the OS have to execute
+
+							      // several auxiliary operations , you
+
+							      // will not land directly in Winice!					
+
+100199C5		 mov	 [ebp+var_20], eax
+
+100199C8		 lea	 esi, [ebp+var_40]
+
+100199CB		 mov	 edi, ebx
+
+100199CD		 mov	 ecx, 7
+
+100199D2		 repe movsd
+
+100199D4		 jmp	 short loc_100199EA
+
+
+
+
+
+	So we learned that the dll's call into SoftIce VxD through DeviceIoControl Win32 API
+
+function.To figure out exactly what service will be called from target VxD we have to remember
+
+several things about VxD architecture.First of all we must know that every VxD have a 
+
+ControlDispatch routine that receives mesages broadcasted by system.This control block identifies
+
+the messages and call coresponding routines.When this proc. is entered eax contain message code.
+
+Ida Pro 3.7 identifies very well this procedure,giving us a very good starting point.
+
+
+
+
+
+00000096 Control_0	 proc near		 ; DATA	XREF: LCOD:0000055Ao
+
+00000096					 ; LCOD:0000407Co
+
+00000096		 call	 sub_7C8BB
+
+0000009B		 cmp	 eax, 0			 // case SYS_CRITICAL_INIT	
+
+0000009E		 jz	 loc_93E
+
+000000A4		 cmp	 eax, 1			 // case DEVICE_INIT	
+
+000000A7		 jz	 short loc_D8
+
+000000A9		 cmp	 eax, 2			 // case INIT_COMPLETE		
+
+000000AC		 jz	 loc_BDC
+
+000000B2		 cmp	 eax, 6			 // case SYS_CRITICAL_EXIT
+
+000000B5 
+
+000000B5 loc_B5:				 ; DATA	XREF: LCOD:000B4640o
+
+000000B5		 jz	 loc_BDE
+
+000000BB		 cmp	 eax, 23h ; '#'		 // case W32_DEVICEIOCONTROL
+
+							 // 
+
+							 // Using DeviceIoControl for talking
+
+							 // to VxD requires that this message
+
+							 // is processed!
+
+000000BE		 jz	 loc_5FD		 // than jump to this location
+
+
+
+000000C4		 cmp	 eax, 0Fh		 //  case SET_DEVICE_FOCUS
+
+000000C7		 jz	 loc_15F
+
+000000CD		 cmp	 eax, 0Ch		 // case DESTROY_VM
+
+000000D0		 jz	 loc_19B
+
+000000D6		 clc	 
+
+000000D7		 retn	 
+
+
+
+The control is passed to the handler for  W32_DeviceIocontrol message (loc_5FD in this case).
+
+
+
+000005FD loc_5FD:				 ; CODE	XREF: Control_0+28
+
+000005FD		 push	 ebx			//
+
+000005FE		 push	 esi		 	//Save those registers	
+
+000005FF		 push	 edi			//
+
+
+
+00000600		 push	 10h			// EnterMutex param2 
+
+00000602		 push	 ds:dword_40BF		// EnterMutex param1
+
+00000608		 VMMcall _EnterMutex		// Create a mutex to ensure that only
+
+							// one thread will acces this code at 
+
+							// a given time
+
+
+
+0000060E		 add	 esp, 8			// restore stack as at 5ff
+
+00000611		 push	 esi			// save esi
+
+00000612		 mov	 esi, offset dword_40C3	    // pointer to an Exception_Handler_Struc
+
+							    // in this struct are defined the
+
+							    // type of handler and memory range
+
+							    // what is guarded
+
+		
+
+00000617		 VMMcall Install_Exception_Handler  // install a ring0 exception handler
+
+							    // if something goes wrong we can
+
+							    // trap the problem	
+
+0000061D		 pop	 esi			// restore the esi 
+
+							// esi contain a pointer to a DIOCparams 
+
+							// struct (All info you pass to ring3 
+
+							// DeviceIOControl + some not very 
+
+							// important things for us	
+
+0000061E		 call	 sub_4B4F5		// ??? unexplored by me
+
+00000623		 mov	 ds:dword_40B7,	1
+
+0000062D		 push	 1
+
+0000062F		 call	 sub_8595C		// ??? unexplored by me
+
+00000634		 push	 eax
+
+00000635		 mov	 ds:dword_40BB,	esp
+
+0000063B		 mov	 dword ptr [esi+20h], 0  // set number of bytes returned
+
+							 // may be modified by the requested
+
+							 // service
+
+00000642		 mov	 ecx, [esi+0Ch]		 //load in eax dwIoControlCode 
+
+							 //from DIOCParams.dwIoControlCode
+
+00000645		 mov	 edx, ecx
+
+00000647		 shr	 edx, 10h
+
+0000064A		 cmp	 edx, 9C40h		 // check for validity and reduction	
+
+00000650		 jnz	 short loc_672
+
+00000652		 mov	 edx, ecx
+
+00000654		 shr	 edx, 2
+
+00000657		 and	 edx, 0FFFh
+
+0000065D		 cmp	 edx, 800h
+
+00000663		 jl	 loc_8BD
+
+00000669		 sub	 edx, 800h
+
+0000066F		 inc	 edx
+
+00000670		 mov	 ecx, edx		// end check for validity and reduction
+
+							// load basic service code in ecx
+
+						        // maximum value for a valid request
+
+							// will be 0xB	
+
+00000672 
+
+00000672 loc_672:				 ; CODE	XREF: LCOD:00000650
+
+
+
+00000672		 inc	 ecx		 // services are 0 based so increment
+
+00000673		 cmp	 ecx, 0Ch	 // is service available?
+
+00000679		 jnb	 loc_8BD	 // if no , Get Out of here!	
+
+0000067F		 jmp	 ds:off_7584[ecx*4]  //else jump to the requested routine
+
+						     // it's address is stored in a DWORD
+
+						     // array begining in this case at
+
+						     // off_7584  			
+
+						     
+
+
+
+// The mutex object is removed elsewhere in the code as well as the exception handler
+
+// Not listed here because it's unimportant for our problem
+
+						     
+
+
+
+Remember the control code of operation passed to DeviceIoControl?.This is the moment 
+
+then it becomes crucial.As already told , at this moment the ESI register points to
+
+a DIOCParams type structure.This structure contains all info passed to DeviceIoControl.
+
+Now if you watch the code above you will notice that from 0x635 to 0x672 a reduction
+
+of this value to a much smaller one  is performed.In fact , the maximum value contained
+
+in ecx at this step is OxB , which BTW is the number of services that SoftIce expose
+
+through this interface. ( in fact , the maximum number of services is 0xC ,but this
+
+contains the default DIOC_GETVERSION service).
+
+At location 673 the code looks if this service is in range (in SICE are implemented 0x0c 
+
+services what can be called using this method).If it determines that it's a valid service , 
+
+the code jumps to the start adress of requested service. This adress is stored in a table , 
+
+in our case at ds:off_7584.
+
+
+
+00007584 off_7584	 dd offset off_686	 // if ecx = 0
+
+00007588		 dd offset off_68B	 // if ecx = 1
+
+0000758C		 dd offset loc_690	 // if ecx = 2
+
+00007590		 dd offset loc_6E8	 // if ecx = 3
+
+00007594		 dd offset loc_71C	 // if ecx = 4
+
+00007598		 dd offset loc_7F6	 // if ecx = 5
+
+0000759C		 dd offset loc_825	 // if ecx = 6	
+
+000075A0		 dd offset loc_75C       // if ecx = 7
+
+000075A4		 dd offset loc_78B       // if ecx = 8  
+
+000075A8		 dd offset loc_7BA       // if ecx = 9
+
+000075AC		 dd offset loc_8B6       // if ecx = A
+
+000075B0		 dd offset loc_85D       // if ecx = B
+
+
+
+ECX == 0 coresponds to a default DIOC_GETVERSION service .All others values between 0x1 and 0xb
+
+at VxD services called by one  of the folowing functions:
+
+
+
+			   DevIO_ConnectToSoftICE  (00019490)
+
+            		   DevIO_CopyLogInfo  (00019940)
+
+	                   DevIO_LoadExports  (00019760)
+
+                           DevIO_LoadNm32SymbolTable  (00019630)
+
+                           DevIO_Nm32QueryTableInfoFirst  (00019C50)
+
+                           DevIO_Nm32QueryTableInfoNext  (00019D60)
+
+                           DevIO_Nm32QueryTables  (00019B40)
+
+                           DevIO_Nm32RemoveSymbolTable  (00019E40)
+
+                           DevIO_Nm32TranslateError  (000194F0)
+
+                           DevIO_Nm32VersionInfo  (00019840)
+
+                           DevIO_SetWLDRBreak  (00019A30)
+
+
+
+	All this functions exported by nmtrans.dll use the same mechanism.Of course , operation
+
+codes ar different , as well as the data passed and retrieved.
+
+	Looking at this table we have a clear picture of the starting adress of the VxD routines 
+
+what are called from ring3.Pretty interesting , isn't it? And we can call them any time
+
+now , once we figured what code of operation coresponds to it.
+
+Note : al C++ style comments in the listing there are NOT auto generated by IDA.
+
+
+
+
+
+
+
+	Chapter 8: Notes for Windows NT users
+
+	-------------------------------------
+
+
+
+
+
+<P>	Windows NT does not support the dot commands interface.Anyway , there is a potential
+
+method to extend kernel mode debuggers under NT through so-called bang commands.At least 
+
+Microsoft's Windeb can be extended in this way , I know nothing about NTICE at this time.
+
+<BR>	The method involves building some strange dynamic link libraries and them register 
+
+them from debugger's console.If NTICE supports this interface than we have a gold mine
+
+because programing this kind of dll's is not so restrictive as programming VxD's and we
+
+have much more "high level" exposed by Windows NT native API and ntoskernel.exe
+
+<BR>	Worth a investigation !
+
+</P>
+
+
+
+
+
+	Appendix A: Some useful equates for VxD reverse engineering
+
+	-----------------------------------------------------------
+
+
+
+
+
+SYS_CRITICAL_INIT		0000H
+
+DEVICE_INIT			0001H
+
+INIT_COMPLETE			0002H
+
+SYS_VM_INIT			0003H
+
+SYS_VM_TERMINATE		0004H
+
+SYSTEM_EXIT			0005H
+
+SYS_CRITICAL_EXIT		0006H
+
+CREATE_VM			0007H
+
+VM_CRITICAL_INIT		0008H
+
+VM_INIT	EQU			0009H
+
+VM_TERMINATE			000AH
+
+VM_NOT_EXECUTEABLE		000BH
+
+DESTROY_VM			000CH
+
+VM_SUSPEND			000DH
+
+VM_RESUME			000EH
+
+SET_DEVICE_FOCUS		000FH
+
+BEGIN_MESSAGE_MODE		0010H
+
+END_MESSAGE_MODE		0011H
+
+REBOOT_PROCESSOR		0012H
+
+QUERY_DESTROY			0013H
+
+DEBUG_QUERY			0014H
+
+BEGIN_PM_APP			0015H
+
+END_PM_APP			0016H
+
+DEVICE_REBOOT_NOTIFY		0017H
+
+CRIT_REBOOT_NOTIFY		0018H
+
+CLOSE_VM_NOTIFY			0019H
+
+POWER_EVENT			001AH
+
+SYS_DYNAMIC_DEVICE_INIT		001BH
+
+SYS_DYNAMIC_DEVICE_EXIT		001CH
+
+CREATE_THREAD			001DH
+
+THREAD_INIT			001EH
+
+TERMINATE_THREAD		001FH
+
+THREAD_Not_Executeable		0020H
+
+DESTROY_THREAD			0021H
+
+PNP_NEW_DEVNODE			0022H
+
+W32_DEVICEIOCONTROL		0023H
+
+
+
+
+
+
+
+	Appendix B: INT 22h - Win32 Protected mode interface requests API
+
+	-----------------------------------------------------------------
+
+<P>
+
+Int this appendix you will find some useful functions that Windows expose through INT 22h.You
+
+can use this to gather data about diferent kernel objects, or to perform Win32 specific debug
+
+operations.
+
+</P>
+
+	AX=02h -- Converts a physical address to a linear address in curent context
+
+		  entry:
+
+		      ECX=phisycal address
+
+		  returns:
+
+		      ESI=linear address
+
+		      AX= 1 if success , otherwise 0
+
+	AX=07h -- Check to see if an address is within a VxD object
+
+		   entry: 	
+
+		      DS:ESI = buffer to receive object name
+
+		      BX  =  thread number
+
+		      EDX  = linear address to query
+
+		   returns:
+
+		      If EAX == 0, EDX = base address of object
+
+		      If EAX != 0, error						  	
+
+	AX=08h --  Get PDE for a specific context
+
+		    entry:	
+
+		     BX = thread number
+
+	             EDX = linear address
+
+		    returns:	
+
+		     if EAX == 0, ECX = PDE
+
+		     if EAX != 0, error
+
+	AX=0Ah --    Get LDT base
+
+		    entry:	
+
+		     BX = thread number
+
+		    returns:	
+
+		      if EAX == 0
+
+		      EDI = pointer to LDT
+
+		      ECX = LDT limit
+
+		      if EAX != 0, error
+
+
+
+
+
+	Credits (in alphabetic order)
+
+	-----------------------------
+
+
+
+	This time credits go to:
+
+
+
+	fravia+, (aot) for hosting my documents :-)
+
+	+Mammon, for being a main +HCU backbone
+
+	Stone, United Cracking Force 98, (aot) for knowledge
+
+	+Undertaker, for 
+
+	AfterDeath
+
+
+
+	To all others of you who asked my challenging questions , or gave useful idees,
+
+	       directly or in wonderful electronic disscussions.		
+
+
+
+	Final notes
+
+	-----------
+
+
+
+<P>This document is providing " as is " whithout any warranties.It expose some potentialy
+
+dangerous techniques.Incorect use of the interfaces presented may harm the OS integrity , causing
+
+loose of data.Nor I , or fravia+, or any other Web_masters who may host this document and attached 
+
+source code  can be held responsable for anything this info or code do to you or your's machine.
+
+<BR>	The present document may not be modified whithout my express permission.Slightly editing
+
+for correcting typos may be done in place , whithout permission from me.
+
+<BR>Note that:	
+
+<BR>	Masm 6 and Windows 95 DDK are trademarks of Microsoft Corporation
+
+<BR>	IDA is a trademark of Data Rescue company
+
+<BR>	SoftIce is a trademark of NuMega Technologies
+
+<BR>	
+
+<BR>	You can contact me at ice_man81@hotmail.com".Feedback is always apreciated.		
+
+</PRE>
+
+
+
+<!-- WAY OUT STARTS HERE -->
+
+<HR>
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</I></CENTER>
+
+<BR><CENTER>
+
+<!-- EITHER A NICE GIF LIKE THIS -->
+
+
+
+<CENTER><A href="papers.htm" tppabs="http://www.anticrack.de/fravia/papers.htm"><IMG SRC="papers.gif" tppabs="http://www.anticrack.de/fravia/papers.gif" ALT="papers" ALIGN=BOTTOM WIDTH=114 
+
+EIGHT=43 BORDER=0 VSPACE=0 HSPACE=0></A><BR><FONT color=gray>Back to the HCU Papers</FONT></CENTER><HR>
+
+<BR><BR>
+
+
+
+
+
+<!-- OR JUST A LINK LIKE THIS -->
+
+
+
+<!--
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="project1.htm" tppabs="http://www.anticrack.de/fravia/project1.htm">Back to Your_chosen_project</A> 
+
+<hr width=33%>
+
+-->
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database</A>
+
+<BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="realicra.htm" tppabs="http://www.anticrack.de/fravia/realicra.htm">reality cracking</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="howtosea.htm" tppabs="http://www.anticrack.de/fravia/howtosea.htm">how to search</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="javascri.htm" tppabs="http://www.anticrack.de/fravia/javascri.htm">javascript wars</A>
+
+<BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity academy</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut CGI-scripts</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia+</A>
+
+<BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering legal?</A>
+
+</CENTER>
+
+<HR>
+
+<!-- THAT'S ALL, THANKS A LOT this will allow automated retrieval -->
+
+</BODY>
+
+</HTML>
+
+	
+
+
+
+
+
+
+
+			  			 
+
+		  
+
+			
+
+			   
+
+			   	 
+
+				
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+		
+
+
+
+				
+

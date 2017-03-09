@@ -1,0 +1,1024 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>malamirc.htm: mIRC 5.*  A KEY GENERATOR EXPLAINED by +Malattia</TITLE>
+
+</HEAD>
+
+
+
+<BODY BGCOLOR=#C0C0C0 TEXT=#001010 VLINK=#405040>
+
+<CENTER><A href="papers.htm" tppabs="http://www.anticrack.de/fravia/papers.htm"><IMG SRC="papers.gif" tppabs="http://www.anticrack.de/fravia/papers.gif" ALT="papers" ALIGN=BOTTOM WIDTH=114 
+
+EIGHT=43 BORDER=0 VSPACE=0 HSPACE=0></A><BR><FONT color=gray>+HCU papers</FONT><BR><BR>
+
+<FONT size=+6><FONT color=blue> mIRC 5.*  A KEY GENERATOR EXPLAINED by +Malattia</FONT></FONT>
+
+<BR>
+
+~ version July 1998 ~<BR>
+
+by +Malattia
+
+<BR>
+
+
+
+
+
+<HR>Courtesy of fravia's page of reverse engineering<BR>
+
+<HR></CENTER><PRE>
+
+				mIRC 5.* KEY GENERATOR
+
+				    by .+MaLaTTiA.
+
+
+
+In this essay we'll study mIRC 5.* keygenerator. I'm talking about version 5.* because
+
+keygens (differently from patches which are related to an offset which always change) 
+
+can be often used for different versions of a program: in this case, i made the keygen 
+
+for mIRC v5.11 and now it still works with 5.31, and who knows for how many other 
+
+versions it'll work... (hey, I've tried it with 5.4 too... and it works!)
+
+This essay is intended for newbies: I'll try to explain my ideas and techniques in the
+
+_easiest_ way I can. You just have to know how to use ONE  tool, Wdasm (choose 
+
+whichever version you like, I used 8.5 but there's 8.9 outside there too!), and if you
+
+want to build a keygen you just have to know some programming (in whatever language: 
+
+I'll just help you to build an algorithm, then you can choose what programming language
+
+you want to use!).
+
+
+
+... Ok, let's start.
+
+The first thing you have to do is to find where the serial check is located: I've 
+
+found it quite quickly using the dead listing approach (in most of the password 
+
+protected programs this is the quickest way... Wdasm-SoftIce 1-0):
+
+
+
+
+
+:00437DE7 68CC074C00              push 004C07CC
+
+:00437DEC 6810054C00              push 004C0510
+
+:00437DF1 E8DAA40400              call 004822D0
+
+:00437DF6 83C408                  add esp, 00000008
+
+:00437DF9 85C0                    test eax, eax
+
+:00437DFB 746A                    je 00437E67
+
+
+
+How did I reach it? Easy, I just searched for the string "Sorry, your registration
+
+name and number don't match!" that appears when you enter a wrong serial, and then I
+
+"backtraced" in the dead listing... Also, you'll see that the jump
+
+
+
+:00437DFB 746A                    je 00437E67
+
+
+
+takes you to the "bad" routine, so you can easily guess that eax value should be 
+
+DIFFERENT FROM ZERO.
+
+Now you can guess also that the call is to a procedure which checks the name and the 
+
+serial you entered, so the two PUSHes before the call should be the name and the pw: 
+
+well, you'll have to check this with S-Ice if you want to be sure (SoftIce-Wdasm 1-1).
+
+Remember that you can guess if you're "just" cracking, but you can't if you have to 
+
+study an algorithm for some time...  it would become all lost time if you've failed 
+
+your guess! Anyway, if you check with S-Ice you'll find this:
+
+
+
+:00437DE7 68CC074C00              push 004C07CC	--> Name
+
+:00437DEC 6810054C00              push 004C0510 --> Pass
+
+
+
+(As you can see, I'm ALWAYS right... ;))
+
+Now, we should give a look to that 4822d0 call:
+
+
+
+**************
+
+ CALL 4822D0:
+
+**************
+
+
+
+* Referenced by a CALL at Addresses:
+
+|:00437DF1   , :00482482
+
+|
+
+First of all, notice that the check of the password is called in two different parts of
+
+the program: this is particularly useful when you have to patch! In fact, if you just 
+
+patch the jump at 437dfb, ie. from:
+
+
+
+:00437DFB 746A                    je 00437E67
+
+
+
+to:
+
+
+
+:00437DFB 7400                    je 00437DFD
+
+
+
+or (less elegantly):
+
+
+
+:00437DFB 90                      nop
+
+:00437DFC 90                      nop
+
+
+
+... erm... I was writing... if you just patch that address, you won't crack the program:
+
+the next time you will execute it, it will delete your info and restart unregistered. So,
+
+if you plan to patch a password protected program using the dead-listing technique, you 
+
+have to FOLLOW the call which you think checks for the pw, then check WHERE it is called,
+
+then go and patch all those places, or if you want to make a more "professional" crack 
+
+you can just change the called procedure so that it always returns the value you want. 
+
+
+
+Now, let's see what is contained inside that call... A good way to start is to remember 
+
+what value you want and look at the END of the procedure (before the RET command) the 
+
+different ways you can return from that call. 
+
+Look here:
+
+
+
+* Referenced by a (U)nconditional or (C)onditional Jump at Address:
+
+|:00482358(C)
+
+|
+
+:00482361 33C0                    xor eax, eax --> BAD_FLAG!
+
+
+
+* Referenced by a (U)nconditional or (C)onditional Jump at Addresses:
+
+|:004822EA(U), :004822FF(U), :0048234D(U), :0048235F(U)
+
+|
+
+:00482363 5F                      pop edi
+
+:00482364 5E                      pop esi
+
+:00482365 5B                      pop ebx
+
+:00482366 5D                      pop ebp
+
+:00482367 C3                      ret
+
+
+
+Here it is: we know that eax=0 is the bad flag, so we can find in which places there is
+
+a bad or good choice... Another important thing is that 482363 address called FOUR times
+
+(all with UNCONDITIONAL jumps!) and that 482358 called one time with a conditional jump:
+
+does this mean there's only ONE way to make the wrong choice? Of course... NO!!! Look at
+
+other pieces of code like this:
+
+
+
+:004822E8 33C0                    xor eax, eax --> EAX=0 BAD FLAG!
+
+:004822EA EB77                    jmp 00482363 --> END_PROC
+
+
+
+Here the bad flag is created before the jump to the end sequence... and you can 
+
+understand that xor eax,eax isn't anything else than a CREATE_BAD_FLAG only from that 
+
+jump! There are many xors in a program... and not all of them do the same thing of 
+
+course: this is the way you can understand which ones seem interesting for you! 
+
+Now... another suggestion: COMMENT the disassembled file! If you do it, in a few minutes
+
+it will be like reading an Aesop's fable: you'll understand every little thing 
+
+immediately! 
+
+First of all, let's call that 482363 address END_PROC, so you can see in the code when
+
+you exit the call... and you are also able to call the xor eax, eax CREATE_BAD_FLAG or
+
+with a similar name. Use your fantasy, call that "YOU_DAMNED_BASTARD" or whatever you 
+
+like, the important is that you understand it :) Also, follow the addresses of the 
+
+parameters passed to the call, in this case the PW and the NAME: since you've passed 
+
+the name AND THEN the pw, you'll have the first one in ebp+08, and the second one in 
+
+ebp+0C, as you can see from the code:
+
+
+
+:004822D6 8B750C                  mov esi, dword ptr [ebp+0C]  --> PW
+
+:004822D9 8B5D08                  mov ebx, dword ptr [ebp+08]  --> NAME
+
+:004822DC 53                      push ebx
+
+:004822DD E87E1D0200              call 004A4060  
+
+:004822E2 59                      pop ecx
+
+:004822E3 83F805                  cmp eax, 00000005 
+
+:004822E6 7304                    jnb 004822EC
+
+:004822E8 33C0                    xor eax, eax 			   --> EAX=0 BAD FLAG!
+
+:004822EA EB77                    jmp 00482363			   --> END_PROC
+
+
+
+Now you can follow it quite easily: put pw address in esi, put name address in ebx, do
+
+something with the name (you see there's that PUSH EBX, don't you?), then check that the
+
+returned value is at least 5. If eax is less than 5 return an error flag. You want me to
+
+comment it? So you're lazier than me! :)
+
+
+
+:004822D6 8B750C                  mov esi, dword ptr [ebp+0C]  --> PW
+
+:004822D9 8B5D08                  mov ebx, dword ptr [ebp+08]  --> NAME
+
+:004822DC 53                      push ebx
+
+:004822DD E87E1D0200              call 004A4060                --> CHECK LENGTH
+
+:004822E2 59                      pop ecx
+
+:004822E3 83F805                  cmp eax, 00000005            --> Name must be at least 5 
+
+                                                                   chars long
+
+:004822E6 7304                    jnb 004822EC
+
+:004822E8 33C0                    xor eax, eax                 --> EAX=0 BAD FLAG!
+
+:004822EA EB77                    jmp 00482363                 --> END_PROC
+
+
+
+Ta daaa... (I correct myself: TA-CHAAAAN! ;)) I bet you haven't guessed it! :) As you
+
+can see, it's just a matter of comments and all becomes easily readable! Learn this
+
+technique and your cracking will become more effective, also you will rest your eyes on
+
+white paper (or whatever color you like) instead of a 14'' monitor at a 1280x1024 
+
+resolution 8-|
+
+Now let's see what else this call does with our beloved parameters...
+
+
+
+* Referenced by a (U)nconditional or (C)onditional Jump at Address:
+
+|:004822E6(C) (the password is >=5 char)
+
+|
+
+:004822EC 56                      push esi		--> again PW
+
+:004822ED 53                      push ebx 		--> again Name
+
+:004822EE E8FDFEFFFF              call 004821F0 	--> do something with them
+
+:004822F3 83C408                  add esp, 00000008
+
+:004822F6 85C0                    test eax, eax
+
+:004822F8 7407                    je 00482301 		--> IF eax=0 THEN do some other things...
+
+:004822FA B801000000              mov eax, 00000001 	--> GOOD_FLAG!
+
+:004822FF EB62                    jmp 00482363 		--> END_PROC
+
+
+
+Hey!!! We have reached a VERY interesting point! You see that test eax, eax and the jump
+
+after that? Well, we DON'T WANT to make it jump, so we will have our GOOD_FLAG and we 
+
+will register immediately! So from a "long" procedure like this (well if you call this 
+
+long you haven't seen some M$ calls :-|) you can cut away more than half of it and start
+
+to consider just that "call 4821f0".
+
+Ok let's cut it! ...zic-zac-zic-zac...
+
+(you don't know but I have all the commented procedure in my notepad and I'm really 
+
+cutting it :)
+
+And now... let's give a look to that 4821f0 call:
+
+
+
+**************
+
+ CALL 4821f0:
+
+**************
+
+
+
+First of all, remember that we want eax DIFFERENT FROM 0. So, every time we find something
+
+like xor eax,eax and then a jump to the end of the call we know the procedure is setting a
+
+BAD flag. So, first of all go and give a look to the end of the call: is there a xor in
+
+that piece of code? Is there a conditional jump near the end? And so on...
+
+Here it is:
+
+
+
+* Referenced by a (U)nconditional or (C)onditional Jump at Address:
+
+|:004822BB(C)
+
+|
+
+:004822C1 B801000000              mov eax, 00000001 --> GOOD_FLAG!
+
+
+
+* Referenced by a (U)nconditional or (C)onditional Jump at Addresses:
+
+|:0048220F(U), :0048222C(U), :0048227F(U), :004822BF(U)
+
+|
+
+:004822C6 5F                      pop edi
+
+:004822C7 5E                      pop esi
+
+:004822C8 5B                      pop ebx
+
+:004822C9 8BE5                    mov esp, ebp
+
+:004822CB 5D                      pop ebp
+
+:004822CC C3                      ret
+
+
+
+LOOK AND _UNDERSTAND_!!! It's really plain text! I correct myself, it's easier than plain
+
+text! It's like an illustrated book for children! :)
+
+We have FOUR UNCONDITIONAL jumps to the end of the procedure, please take a look at them:
+
+
+
+***JUMP 1:***
+
+
+
+:0048220D 33C0                    xor eax, eax --> eax=0 <BAD_FLAG!
+
+:0048220F E9B2000000              jmp 004822C6 --> END_PROC
+
+
+
+***JUMP 2:***
+
+
+
+:0048222A 33C0                    xor eax, eax --> eax=0 <BAD_FLAG!
+
+:0048222C E995000000              jmp 004822C6 --> END_PROC
+
+
+
+***JUMP 3:***
+
+
+
+:0048227D 33C0                    xor eax, eax --> eax=0 <BAD_FLAG!
+
+:0048227F EB45                    jmp 004822C6 --> END_PROC
+
+
+
+***JUMP 4:***
+
+
+
+:004822BD 33C0                    xor eax, eax --> eax=0 <BAD_FLAG!
+
+:004822BF EB05                    jmp 004822C6 --> END_PROC
+
+
+
+They are _absolutely_identical_!!! So now you know that whenever there is a jump to
+
+END_PROC, it's because something went wrong (in fact, every time there is an xor before
+
+the jump). Otherwise, if you come to that instruction from the right address (4822C1),
+
+it's because the jump at 4822BB took you there. But let's go straight on with the call
+
+and let's see what happens:
+
+
+
+:004821F0 some junk here...
+
+:004821F9 8B750C                  mov esi, dword ptr [ebp+0C] --> PW
+
+:004821FC 6A2D                    push 0000002D
+
+
+
+You know what 2D is? NO? NOOO??? :)
+
+Well I pardon you only because you're newbies, but now you have to learn it by heart
+
+and if I find you forgot it I'll show no mercy! >:)
+
+2D is the hex value of the '-' char, which is often used as a separator inside the
+
+passwords. Sometimes the '-' char is not used just as a separator, but is part of the
+
+pw itself: if it's not found or if it's in the wrong position, the password is wrong.
+
+In this case, you don't have to put the '-' in a particular place, but you do have
+
+to put it somewhere inside the pw: in fact, it is used as a separator to check two
+
+different parts of the pw in two different ways. Look here:
+
+
+
+:004821FE 56                      push esi 		--> PW
+
+:004821FF E8081E0200              call 004A400C 	--> Finds the "-" and returns its position
+
+:00482204 83C408                  add esp, 00000008
+
+:00482207 8BD8                    mov ebx, eax
+
+:00482209 85DB                    test ebx, ebx
+
+:0048220B 7507                    jne 00482214
+
+:0048220D 33C0                    xor eax, eax 		--> eax=0 <BAD_FLAG! (no "-")
+
+:0048220F E9B2000000              jmp 004822C6 		--> END_PROC
+
+
+
+This is the piece of code which checks for the presence of the 2D value inside the password.
+
+If there isn't any '-' (or if the char is the first char of the password) the program exits
+
+the call with 0 value in eax, which is, as you know, a BAD flag. Now here's what happens if
+
+2D value is present:
+
+
+
+* Referenced by a (U)nconditional or (C)onditional Jump at Address:
+
+|:0048220B(C) (the password has a "-" inside it)
+
+|
+
+:00482214 C60300                  mov byte ptr [ebx], 00 --> zeroes the "-"
+
+:00482217 56                      push esi 		--> PW
+
+:00482218 E89F710200              call 004A93BC 	--> Creates first checksum: IMPORTANT!!!
+
+:0048221D 59                      pop ecx 		--> PW
+
+:0048221E 8945FC                  mov dword ptr [ebp-04], eax --> SAVES FIRST CHECKSUM!
+
+
+
+The first line of code zeroes the '-' symbol. This often happens during serial checks, because
+
+most of the times 2D values are not to be included in the algorithm which builds the password
+
+from the name or (as in this case) builds a checksum from the password and compares it with 
+
+another checksum built from the name. That CALL 004A93BC is nothing else than a "_atol" 
+
+function, which returns a number from a string which represents a number: for instance, the 
+
+string "12345" returns the value 12345, which is a NUMBER and not a sequence of chars. After 
+
+the checksum is created in eax, its value is saved at the location pointed by [ebp-04].
+
+
+
+:00482221 C6032D                  mov byte ptr [ebx], 2D --> puts the "-" again
+
+:00482224 43                      inc ebx
+
+:00482225 803B00                  cmp byte ptr [ebx], 00 --> must have something after the "-"
+
+:00482228 7507                    jne 00482231
+
+:0048222A 33C0                    xor eax, eax 		   --> eax=0 <BAD_FLAG!
+
+:0048222C E995000000              jmp 004822C6 		   --> END_PROC
+
+
+
+Now there's another check: the 2D character must be INSIDE the password, not at its end.
+
+From this we can understand that '-' is just a separator that splits the password in two
+
+pieces, which generate two different checksums (and we can suppose that the password will
+
+be used to make two values too).
+
+
+
+* Referenced by a (U)nconditional or (C)onditional Jump at Address:
+
+|:00482228(C) (the "-" is NOT the last character!)
+
+|
+
+:00482231 53                      push ebx 		--> second section of the password
+
+:00482232 E885710200              call 004A93BC 	--> Creates second checksum: IMPORTANT!!!
+
+:00482237 59                      pop ecx
+
+:00482238 8945F8                  mov dword ptr [ebp-08], eax --> SAVES SECOND CHECKSUM
+
+
+
+Here, with the same method as in the piece of code above, the second checksum is created
+
+and then it is saved in the address pointed by [ebp-08]. Now the beautiful part of the
+
+algorithm starts... first it checks for the length of the name, and lets you go on only
+
+if your name is at least 3 chars long:
+
+
+
+:0048223B 8B4508                  mov eax, dword ptr [ebp+08] 
+
+:0048223E 50                      push eax 			  --> Name
+
+:0048223F E81C1E0200              call 004A4060 		  --> Strlen
+
+:00482244 59                      pop ecx
+
+:00482245 8945F4                  mov dword ptr [ebp-0C], eax --> Saves name's length
+
+:00482248 33C0                    xor eax, eax
+
+:0048224A 33DB                    xor ebx, ebx
+
+:0048224C BA03000000              mov edx, 00000003
+
+:00482251 8B4D08                  mov ecx, dword ptr [ebp+08] --> name's address
+
+:00482254 83C103                  add ecx, 00000003
+
+:00482257 3B55F4                  cmp edx, dword ptr [ebp-0C] --> Cmp (3, namelength)
+
+:0048225A 7D1C                    jge 00482278
+
+
+
+Now here is the funny piece of code: remember, you don't have to clone the assembly
+
+routine, you have to UNDERSTAND what's goin' on and then try to replicate it... maybe
+
+in an easier way!
+
+
+
+:0048225C 0FB631                  movzx esi, byte ptr [ecx] --> put in esi the 4th letter 
+
+                                                                of the name
+
+:0048225F 0FAF348544BB4B00        imul esi, dword ptr [4*eax + 004BBB44] --> CHECK THE TABLE!
+
+							        ;esi=esi*table value
+
+:00482267 03DE                    add ebx, esi			--> ebx=ebx+esi
+
+:00482269 40                      inc eax 			--> eax=0, 1, 2, 3...
+
+:0048226A 83F826                  cmp eax, 00000026
+
+:0048226D 7E02                    jle 00482271
+
+:0048226F 33C0                    xor eax, eax 			--> translated: "if eax>26 then 
+
+                                                                    eax=0"
+
+* Referenced by a (U)nconditional or (C)onditional Jump at Address:
+
+|:0048226D(C)
+
+|
+
+:00482271 42                      inc edx 			--> edx=4, 5, 6...
+
+:00482272 41                      inc ecx 			--> ecx=name's address+4, 5, 6...
+
+:00482273 3B55F4                  cmp edx, dword ptr [ebp-0C] 	--> cmp edx, namelength
+
+:00482276 7CE4                    jl 0048225C 			--> continue while edx<NAMELENGTH
+
+
+
+At the end of this procedure ebx contains a "magic value" that will be later compared with
+
+the first checksum. How does this algorithm work? Well, this is a loop that depends on the
+
+length of the string, as you can see at address 482276: the algo starts from position 4 of
+
+the name string and then does something with every character of the name. What does it do?
+
+Let's see... first, it puts the fourth (and then the fifth, and then the sixth...) letter
+
+of the name in esi, then it multiplies esi by a value that is taken from a table, whose
+
+address starts at 4bbb44. As you can see, the values are taken from address 4bbb44 with a
+
+"step" of 4 bytes each time (4*eax, and eax is increased by 1 every time), and they are
+
+double words in the format "000000xx". So, here is the table with just the last byte for
+
+every value:
+
+
+
+Start: 4bb44  | +00  +04  +08  +0C  +10  +14  +18  +1c	
+
+         +20  |  0b   06   11   0c   0c   0e   05   0c
+
+              |	
+
+         +40  |  10   0a   0b   06   0e   0e   04   0b
+
+              |
+
+         +60  |  06   0e   0e   04   0b   09   0c   0b
+
+              |
+
+         +80  |  0a   08 * 0a   0a   10   08   04   06
+
+              |
+
+         +A0  |  0a   0c   10   08   0a   04   10   00
+
+
+
+As you can see at address 48226A, the maximum value of eax can be 26, then it is zeroed
+
+again: so, the only values you should need are the ones before the asterisk. I wanted to 
+
+put the other values too, because I thought it was strange that values SO similar to the
+
+ones we're interested in are not used... maybe in another version the same table will be
+
+used with a different maximum value for eax, and this will be enough to change some keys
+
+for particularly long names... who knows!
+
+After esi is multiplied with the value taken from the table, it is added to ebx, which
+
+is originally 0 and at the end of the loop contains the final "magic value". So, as you
+
+can see, the algorithm is not so hard to understand: for each letter from the fourth to
+
+the last, multiply its value by another value taken from the table, add all the values
+
+obtained and then compare the result with the first checksum, as you can see below. 
+
+
+
+:00482278 3B5DFC                  cmp ebx, dword ptr [ebp-04] +---------------------------------------- --> cmp ebx, first_checksum
+
+
+
+NOTE: ebx, which is built from the NAME, must be equal to the first checksum, which is
+
+built from the PASSWORD. This is the relation between the two strings you inserted.
+
+
+
+The second checksum is compared with another value, which is created with this algorithm:
+
+
+
+:00482295 0FB631                  movzx esi, byte ptr [ecx] 	--> move 4th letter in esi
+
+:00482298 0FB679FF                movzx edi, byte ptr [ecx-01] 	--> move 3rd letter in edi
+
+:0048229C 0FAFF7                  imul esi, edi 			--> esi=esi*edi
+
+:0048229F 0FAF348544BB4B00        imul esi, dword ptr [4*eax + 004BBB44] --> esi=esi*table value
+
+:004822A7 03DE                    add ebx, esi 				--> ebx=ebx+esi
+
+...
+
+:004822B8 3B5DF8                  cmp ebx, dword ptr [ebp-08] --> cmp ebx, second_checksum
+
+:004822BB 7404                    je 004822C1 --> JMP_GOOD_FLAG!
+
+
+
+Et voila'! This is the last part of the protection! The value is created in a different way:
+
+this time we load two letters (the 4th and the 3rd, then the 5th and the 4th, and so on), we
+
+multiply them together and then with the table value, finally we save the value obtained in
+
+ebx. At the end this is compared with the second checksum, and if this is ok too we jump to
+
+GOOD_FLAG and, then, the end of the procedure.
+
+Phew... the job is done: now you can code a keygen for mIRC in whatever language you like!
+
+I think the algo is quite simple (that's why I used to give this "exercise" to some pupils)
+
+but here's a little piece of my c code:
+
+
+
+---------------------------MIRC v5.* KEYGEN by .+MaLaTTiA.---------------------begins
+
+#include <STDIO.h>
+
+#include <STRING.h>
+
+
+
+long vals[40]={0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,
+
+               0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,
+
+               0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,
+
+               0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,
+
+               0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff};
+
+
+
+
+
+long value;
+
+unsigned char string[40];
+
+int i,j;
+
+
+
+void main (){
+
+    printf ("\n...//\\Oo/\\\\ MIRC v5.* KeyGen - by .+MaLaTTiA. //\\Oo/\\\\...\
+
+n\n");
+
+    printf ("\n User name: ");
+
+    gets (string);
+
+    if (strlen (string)<5) {
+
+        printf ("\nName must be at least 5 chars long!");
+
+        exit ();
+
+    }
+
+    for (i=4;i<=strlen(string);i++){
+
+        j=(i-4)%26;
+
+        value=value+string[i-1]*vals[j];
+
+    }
+
+
+
+... and so on :)
+
+---------------------------MIRC v5.* KEYGEN by .+MaLaTTiA.-----------------------ends
+
+
+
+I think this is really enough, so please DON'T MAIL ME asking the other piece of the
+
+program: if you are not able to code "it.class" tppabs="http://fravia.org/it.class" yourselves you don't deserve my attention >:)
+
+
+
+Well, I think I told you almost everything... at the end of this tute you should be able
+
+not just to make mIRC keygen, but also to recognize and understand a key algo from some 
+
+of its characteristics: for instance the "2d" value, the loop, the strlen funcion and
+
+so on... also, you should have learned some useful techniques such as "code commenting"
+
+(which is especially useful together with the dead listing technique) and some kind of
+
+"algorithm abstraction" that should help you to make keygens in whatever language you
+
+like, once you've understood how the coding algorithm works: this last technique is not
+
+very easy to apply, but you'll learn to master it after just a few keygens... and
+
+consider yourselves lucky, you didn't even have to reverse any function! ;)
+
+For any comments please mail me at malattia(at)usa(dot)net...
+
+byez,
+
+
+
+	.+MaLaTTiA.
+
+</PRE>
+
+<CENTER>
+
+<HR size=3><A href="mailto:malattia@usa.net">
+
+<IMG SRC="tellme.gif" tppabs="http://www.anticrack.de/fravia/tellme.gif" width="140" height="21"></A>
+
+<BR><BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links</A> 
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm"> anonymity</A> 
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC</A> 
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays</A> 
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database</A>
+
+ <BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="coumes.htm" tppabs="http://www.anticrack.de/fravia/coumes.htm">counter measures</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="botstart.htm" tppabs="http://www.anticrack.de/fravia/botstart.htm">bots wars</A> 
+
+ 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia</A>
+
+<BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering legal?</A>
+
+</CENTER></CENTER>
+
+<HR SIZE=2>
+
+
+
+</BODY>
+
+</HTML>
+
+
+

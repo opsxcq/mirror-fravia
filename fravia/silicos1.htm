@@ -1,0 +1,453 @@
+<html> <HTML>
+
+<HEAD>
+
+  <TITLE>silicos1</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+<P><CENTER><FONT SIZE="+4">Phone Book Pro 97 v2.31.0 build 482<BR>
+
+</FONT><FONT SIZE="+2">Vindicating the &quot;blacklisted&quot; Phrozen crew</FONT>
+
+<BR>
+
+</CENTER>
+
+
+
+<H4><CENTER><I>by Silicon Surfer</I><BR>
+
+(08 September 1997)</CENTER></H4>
+
+
+
+<CENTER><HR><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"> Courtesy of Fravia's page of reverse engineering<BR>
+
+<HR> <I>Well, here is what Silicon surfer wrote to me:</I><PRE></CENTER>
+
+I chose this on to document for simply becuase there were so many 
+
+references to Phrozen Crew and their members inside to crash their 
+
+systems if they were to use those names.  I found it fitting 
+
+retribution to make the Registered To section read Phrozen Crew 
+
+instead of Unregistered.                                  </PRE>
+
+<HR size="7"><PRE>
+
+ 
+
+===================================================================== 
+
+ 
+
+Target:   Phone Book Pro 97 v2.31.0 build 482 
+
+URL:      <A href="tppmsgs/msgs2.htm#208" tppabs="http://www.anticrack.de/fravia/tppmsgs/msgs2.htm#208">http://www.idyle.com/pbpro97/download/pbpro97.zip</A>
+
+Reason:   Found a request dated 09/04/97 asking for it in abc. 
+
+ 
+
+Tools:    Hex Workshop v2.53   (see +HCU's <A href="project1.htm" tppabs="http://www.anticrack.de/fravia/project1.htm">project 1</A>)
+
+          W32Dasm v8.9         (see +HCU's <A href="project0.htm" tppabs="http://www.anticrack.de/fravia/project0.htm">project 0</A>)
+
+        
+
+OK, first thing I like to do is get a String Data Reference list and  
+
+read through it.  I found some 'interesting' references. 
+
+ 
+
+&quot; PLEASE REGISTER. Read &quot;Register.txt&quot;&quot;      ; Nag 
+
+&quot;42F6171D60EF25F30105090B066BA8&quot;             ; Possible Code? 
+
+&quot;43EF2E2A67E144D42BE83FCA45&quot;                 ; &quot; &quot; 
+
+&quot;6C87868FB19963B270AF69B954DE&quot;               ; &quot; &quot; 
+
+&quot;72878A97155AC14CD84CC055&quot;                   ; &quot; &quot; 
+
+&quot;Application has a CRC error!&quot;              &gt;; Hmm... CRC checking eh? 
+
+&quot;Application ID block not found!&quot;            ; &quot; &quot; 
+
+&quot;Can not have more than &quot;                   &gt;; Sounds like some kinda limit 
+
+&quot;CREW&quot;                                       ; Oh my, references to PC97! 
+
+&quot;MAD MAX!&quot;                                   ; &quot; &quot; 
+
+&quot;MADMAX!&quot;                                    ; &quot; &quot; 
+
+&quot;PHROZEN&quot;                                    ; &quot; &quot; 
+
+&quot;Please register your phone book &quot;           ; Nag 
+
+&quot;Registration code:&quot;                         ; Self Explanatory 
+
+&quot;RegistrationCode&quot;                           ; &quot; &quot; 
+
+&quot;SALTINE&quot;                                    ; More PC97 
+
+&quot;Sex&quot;                                        ; Just like the word! 
+
+&quot;The Application CRC is not calculated &quot;     ; Bad CRC Results 
+
+&quot;This is an unregistered version, &quot;         &gt;; Direct from the main Nag  
+
+&quot;Unregistered Version&quot;                       ; Nag 
+
+&quot;Unregistered&quot;                              &gt;; &quot; &quot; 
+
+&quot;USER NAME&quot;                                  ; Self Explanatory 
+
+&quot;Username&quot;                                   ; &quot; &quot; 
+
+ 
+
+Lest test the proggie, see what needs to be done. 
+
+ 
+
+First thing I notice: 
+
+ 
+
+1) This damn thing is slow on entry!  CRC checking will do that.   
+
+Maybe we should speed this up a    little bit, but that will be later.   
+
+ 
+
+2) Our first line in String References shows on the opening Nag Screen. 
+
+ 
+
+3) Register.txt says:  
+
+ 
+
+The registered version will remove the limit of 20 entries  
+
+as well as the nag screen which we all dislike!  So, if you  
+
+use it, register it!  
+
+ 
+
+   So there are only 20 entries allowed. 
+
+ 
+
+4) Changed system date to 2010 and the program still runs. 
+
+ 
+
+ 
+
+Assignment, either crack password &amp; CRC, or crack CRC &amp; Nag Screen &amp;  
+
+20 entries.   
+
+ 
+
+ 
+
+Lets start with the CRC checking... can't apply the crack if CRC fails!   
+
+Here is the code from the reference to &quot;Application has a CRC error!&quot;. 
+
+ 
+
+ 
+
+* Referenced by a CALL at Address: 
+
+|:00456884 
+
+| 
+
+:00456C14 53                      push ebx 
+
+:00456C15 56                      push esi 
+
+:00456C16 8BF0                    mov esi, eax 
+
+:00456C18 C70580674D0000800000    mov dword ptr [004D6780], 00008000 
+
+:00456C22 8BC6                    mov eax, esi 
+
+:00456C24 E85BFFFFFF              call 00456B84        <CALL Check Block :00456C29 8BD8 mov ebx, eax :00456C2B 83FBFF cmp ebx, FFFFFFFF :00456C2E 751E jne 00456C4E <-- Block Found :00456C30 C70580674D00DA7F0000 mov dword ptr [004D6780], 00007FDA :00456C3A 8BC6 mov eax, esi :00456C3C E843FFFFFF call 00456B84 <-- Call Check Block :00456C41 40 inc eax <-- Block Found :00456C42 750A jne 00456C4E <-- Block Found * Possible StringData Ref from Code "Obj.class" tppabs="http://fravia.org/Obj.class">&quot;Application ID block not found!&quot; 
+
+          | 
+
+:00456C44 B8946C4500              mov eax, 00456C94 
+
+:00456C49 E84AB9FEFF              call 00442598 
+
+ 
+
+* Jump from Addresses:00456C2E(C), :00456C42(C) 
+
+| 
+
+:00456C4E 83FBFE                  cmp ebx, FFFFFFFE    <CRC match? :00456C51 750A jne 00456C5D <-- Maybe, if so, they are wrong! * Possible StringData Ref from Code "Obj.class" tppabs="http://fravia.org/Obj.class">&quot;Application has a CRC error!&quot; 
+
+          | 
+
+:00456C53 B8BC6C4500              mov eax, 00456CBC 
+
+:00456C58 E83BB9FEFF              call 00442598 
+
+ 
+
+* Jump from Address:00456C51(C) 
+
+| 
+
+:00456C5D 83FBFD                  cmp ebx, FFFFFFFD    <ARE we done? :00456C60 7516 jne 00456C78 <-- If Equal, No we aren't! * StringData Ref from Code "Obj.class" tppabs="http://fravia.org/Obj.class">&quot;The Application CRC is not calculated 
+
+                               -&gt;&quot;yet.&quot; 
+
+          | 
+
+:00456C62 B8046D4500              mov eax, 00456D04 
+
+:00456C67 E82CB9FEFF              call 00442598 
+
+:00456C6C A1E84F4D00              mov eax, dword ptr [004D4FE8] 
+
+:00456C71 8B00                    mov eax, dword ptr [eax] 
+
+:00456C73 E8F4BEFDFF              call 00432B6C 
+
+ 
+
+* Jump from Address:00456C60(C) 
+
+| 
+
+:00456C78 4B                      dec ebx 
+
+:00456C79 740C                    je 00456C87 
+
+:00456C7B A1E84F4D00              mov eax, dword ptr [004D4FE8] 
+
+:00456C80 8B00                    mov eax, dword ptr [eax] 
+
+:00456C82 E8E5BEFDFF              call 00432B6C 
+
+ 
+
+* Jump from Address:00456C79(C) 
+
+| 
+
+:00456C87 5E             pop esi 
+
+:00456C88 5B             pop ebx 
+
+:00456C89 C3             ret         <OK, everything is fine! After all this bull, we have a simple RETurn to CALLer. What kind of REAL CRC checking is this? Well, it is so poor, if we change the '53', to 'C3', from the very first line in this routine, we pass CRC checking. One down! Now the Nag Screen. We search for the text found on the main nag screen, here is the routine. :004BB9B8 8BD3 mov edx, ebx :004BB9BA E8FDA4FDFF call 00495EBC :004BB9BF 84C0 test al, al :004BB9C1 0F84C7000000 je 004BBA8E &lt;-- Go to Bad Guy!! :004BB9C7 33D2 xor edx, edx :004BB9C9 8B83C8050000 mov eax, dword ptr [ebx+05C8] &lt;-- copy yes :004BB9CF E824E6F6FF call 00429FF8 &lt;Registered flag to eax! :004BB9D4 80BE900C000000 cmp byte ptr [esi+00000C90], 00 :004BB9DB 0F8444010000 je 004BBB25 :004BB9E1 8B0DE84F4D00 mov ecx, dword ptr [004D4FE8] :004BB9E7 8B09 mov ecx, dword ptr [ecx] :004BB9E9 B201 mov dl, 01 :004BB9EB A1508F4700 mov eax, dword ptr [00478F50] :004BB9F0 E82B21F7FF call 0042DB20 :004BB9F5 8B15B84E4D00 mov edx, dword ptr [004D4EB8] :004BB9FB 8902 mov dword ptr [edx], eax * StringData Ref from Code "Obj.class" tppabs="http://fravia.org/Obj.class">&quot;This copy of Phone&quot; ;is registered 
+
+          | 
+
+:004BB9FD 6844BF4B00              push 004BBF44 
+
+:004BBA02 8D4DF4                  lea ecx, dword ptr [ebp-0C] 
+
+:004BBA05 A1D84E4D00              mov eax, dword ptr [004D4ED8] 
+
+:004BBA0A 8B00                    mov eax, dword ptr [eax] 
+
+:004BBA0C 8BD3                    mov edx, ebx 
+
+:004BBA0E E8659FFDFF              call 00495978 
+
+:004BBA13 FF75F4                  push [ebp-0C] 
+
+ 
+
+-- cut to save space -- 
+
+ 
+
+* Jump from Address:004BB9C1(C)       &lt;&lt;--- Check this call! 
+
+| 
+
+:004BBA8E 8B0DE84F4D00            mov ecx, dword ptr [004D4FE8] 
+
+:004BBA94 8B09                    mov ecx, dword ptr [ecx] 
+
+:004BBA96 B201                    mov dl, 01 
+
+:004BBA98 A1508F4700              mov eax, dword ptr [00478F50] 
+
+:004BBA9D E87E20F7FF              call 0042DB20 
+
+:004BBAA2 8B15B84E4D00            mov edx, dword ptr [004D4EB8] 
+
+:004BBAA8 8902                    mov dword ptr [edx], eax 
+
+:004BBAAA A1B84E4D00              mov eax, dword ptr [004D4EB8] 
+
+:004BBAAF 8B00                    mov eax, dword ptr [eax] 
+
+:004BBAB1 8B80DC010000            mov eax, dword ptr [eax+000001DC] 
+
+:004BBAB7 BA9F400000              mov edx, 0000409F 
+
+:004BBABC E88335F8FF              call 0043F044 
+
+:004BBAC1 A1B84E4D00              mov eax, dword ptr [004D4EB8] 
+
+:004BBAC6 8B00                    mov eax, dword ptr [eax] 
+
+:004BBAC8 8B80DC010000            mov eax, dword ptr [eax+000001DC] 
+
+:004BBACE 8B5024                  mov edx, dword ptr [eax+24] 
+
+:004BBAD1 D1EA                    shr edx, 1 
+
+:004BBAD3 8B0DB84E4D00            mov ecx, dword ptr [004D4EB8] 
+
+:004BBAD9 E86635F8FF              call 0043F044 
+
+:004BBADE A1B84E4D00              mov eax, dword ptr [004D4EB8] 
+
+:004BBAE3 8B00                    mov eax, dword ptr [eax] 
+
+:004BBAE5 8B80E0010000            mov eax, dword ptr [eax+000001E0] 
+
+ 
+
+* StringData Ref from Code Obj -&gt;&quot;This is an unregistered version,&quot; 
+
+                               -&gt;&quot;please consult &quot;REGISTER.TXT&quot; &quot; 
+
+                               -&gt;&quot;for more details.&quot; 
+
+          | 
+
+:004BBAEB BAA4BF4B00              mov edx, 004BBFA4 
+
+ 
+
+Simple routine, do check, if match goto Nag, else continue as if
+
+registered.   
+
+So we change: 
+
+ 
+
+:004BB9C1 0F84C7000000            je 004BBA8E 
+
+to 
+
+:004BB9C1 0F85C7000000            jne 004BBA8E 
+
+ 
+
+Nag screen gone, only one more!!!  But wait, after further review of the  
+
+program, it is COMPLETELY registered.  No more how to purchase, and about  
+
+screen shows registered to UNREGISTERED.  Great!  So we skip the 20 entries  
+
+and are home free.   
+
+ 
+
+However, it seems Damien Rame doesn't like PhrozenC, and since 'Phrozen 
+
+Crew' and  'Unregistered' have the same number of characters... (Evil 
+
+Grin)... let us make one last change. 
+
+ 
+
+Search for &quot;UNREGISTERED&quot; in the hex editor, and change it to Phrozen Crew.   
+
+ 
+
+Crack done!   
+
+  _________.__.____    .__                      
+
+ /   _____/|__|    |   |__| ____  ____   ____   
+
+ \_____  \ |  |    |   |  |/ ___\/  _ \ /    \  
+
+ /        \|  |    |___|  \  \__(  </_______  /|__|_______ \__|\___  &gt;____/|___|  / 
+
+    \/            \/       \/           \/  
+
+  _________              _____              
+
+ /   _____/__ __________/ ____\___________  
+
+ \_____  \|  |  \_  __ \   __\/ __ \_  __ \ 
+
+ /        \  |  /|  | \/|  | \  ___/|  | \/ 
+
+/_______  /____/ |__|   |__|  \___  &gt;__|    
+
+    \/                        \/           
+
+
+
+
+
+</pre><FONT color="green">
+
+(c) Silicon Surfer, 1997. All rights reversed.</FONT>
+
+		<HR size="2">
+
+<CENTER><I>You are deep inside fravia's page of reverse
+
+engineering, choose your way out:</I></CENTER>
+
+
+
+
+
+<P><CENTER>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="tppmsgs/msgs0.htm#84" tppabs="http://www.anticrack.de/fravia/tppmsgs/msgs0.htm#84">homepage </A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"> <A HREF="tppmsgs/msgs0.htm#73" tppabs="http://www.anticrack.de/fravia/tppmsgs/msgs0.htm#73">links
+
+</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0" NATURALSIZEFLAG="0"> <A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity
+
+</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="tppmsgs/msgs0.htm#82" tppabs="http://www.anticrack.de/fravia/tppmsgs/msgs0.htm#82">students' essays </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools
+
+</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails </A><BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database </A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia
+
+</A><BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">is reverse engineering legal? </A></FONT></CENTER></P>
+
+
+
+<P><CENTER><FONT SIZE="-1"><HR></FONT></CENTER>
+
+</BODY>
+
+</HTML>

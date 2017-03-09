@@ -1,0 +1,564 @@
+<HTML>
+
+<H2><CENTER>
+
+DEBUGGING WINPGP 5.0
+
+</CENTER><BR>
+
+</H2></H3><B><U>
+
+by swann</B></U>
+
+</H3>
+
+<BR><BR>
+
+<PRE>
+
+Those of you who have already worked on previous versions of WinPGP (cf. +ORC's lesson 8.1) 
+
+will notice that the protection scheme has changed significantly in this 32-bit / windows95 
+
+version.
+
+  
+
+In version 4.1, it was enough to simply reverse a jump to disable the protection routine. 
+
+In version 5.0, there is also a "grande finale" jump that will give you the "congrats" 
+
+message when it's reversed, but doing so will also cause the program to crash. 
+
+This means we actually have to figure out the protection itself. This protection is not 
+
+terribly difficult to crack, yet it is somewhat interesting because it uses the co-processor 
+
+for some of its algebraic manipulations of the input strings. This is still a bit uncommon 
+
+today but we can expect more of these x87 instructions in future protection schemes, as with 
+
+the pentium processor becoming more and more wide-spread, the programmer can simply assume 
+
+that a co-processor is "inside".
+
+And the unregistered version sure is nagging, forcing you to exit and reload the program 
+
+after every four pgp operations.  So if you want to really test this program before deciding 
+
+whether you'll keep using it, some debugging is required.
+
+
+
+What we will be doing here is still not "higher cracking." This crack will only lead us a bit 
+
+deeper into the "fiddling with input strings," the basics of which +ORC has described so well. 
+
+I do hope that the reader of this "walk-thru" has spent a few thoughts on +ORC's lessons 8.2 
+
+and 9.1, i.e.: has a minimum degree of familiarity with Softice for Windows and assembler.  
+
+
+
+The first thing we notice when we get to the registration window is that it consists of four 
+
+different entry fields, one for the user name and three for the "Registration Key Info." 
+
+Smells like a lot of breakpoints on memory range. The only thing important when you make your 
+
+first entries in these boxes is using a string you can easily recognize when you see its hex 
+
+representation. And, of course, we want to be able to identify which entry field is being dealt 
+
+with, and therefore use a different string for each one. So, in this case, we don't take the 
+
+default string "9999" for both the first and the third section. Let's say we'll use "bcbcbcbc" 
+
+for the name, and "3333" for section1, "12121212" for section2, and "1111" for section3. 
+
+(The program itself, in winpgp_5.ini, calls these sections "Santamaria," "Nina," and "Pinta" 
+
+respectively, but I don't think we have to go that far :-)
+
+
+
+The starting procedure is standard, as explained several times by +ORC.  
+
+This time GETDLGITEMTEXTA does the trick. You BPX on it, then search the memory for all 
+
+four strings, and BPR on every one of them. Fortunately, initially there is only one 
+
+occurrence of each string somewhere in the 30:80000000s.
+
+
+
+By the way, for debugging Windows95 applications it is sometimes a good idea to modify the 
+
+watchwindows somewhat. (Y'all did install the watchd's in your winice.dat, as the boss 
+
+recommended, didn't you?)  Instead of es:di and ds:si, you might want to use es:edi and 
+
+ds:esi.  Softice for Windows95 V.3 brought several of new features, such as mouse support 
+
+and a new window for the stack of the co-processor. But the watchwindows suffered a bit, 
+
+they don't display the memory locations anymore by default, which had been a nice convenience 
+
+for keeping an eye on those string copy instructions, of which you'll see several in this 
+
+cracking session. 
+
+
+
+Now as usually we just relax as we follow the program copying our strings around, always 
+
+BPR'ing on the new locations, then letting the program run until we hit the next breakpoint.
+
+
+
+The next major event starts at cs:41c86e, a transformation of your input strings, starting 
+
+with section2. The result goes into EAX. (Do a "? EAX" once all your digits have been 
+
+processed, and you'll see something familiar: it's the value of your input string, only in 
+
+a hex notation that is not so easily recognizable).  
+
+The result then goes into [ebp-010c] and into [ecx+08c].  
+
+A similar procedure is applied to the other sections of the password and to the name. 
+
+In the case of our example, "3333" becomes "0D05", "12121212" becomes "B8F47C", and 
+
+"1111" is being transformed into "0457". The name "bcbcbcbc" gets stored as "0314" 
+
+(the sum of the hex values of the letters). Each of these 4 transformed strings is 
+
+being copied to several different memory locations, so we've gathered quite a few 
+
+breakpoints in the mean time.
+
+  
+
+So far this has all been routine stuff, more or less the same in most protections.  
+
+But now the interesting part begins. If you've been a good boy / girl so far and have 
+
+set all the breakpoints correctly, you'll pop out at cs:411312, yet another procedure!
+
+  of copying the transformed section1 to yet another memory location. And right after 
+
+that, at cs:41131f you encounter that bizarre instruction "FILD QWORD PTR [EBP-10]."   
+
+What the heck is that, you ask. Well, sure enough, it's the first co-processor 
+
+instruction in the protection scheme. They're bound to stay with us, so you might want 
+
+to give that 8087-section of your assembler book a second look sometime soon (They 
+
+often aren't very good either, so get one that works for you).
+
+
+
+
+
+DEAD END STREET
+
+
+
+But first, of course, we'll try to get around it.  
+
+It won't work in this case, but we should always try whether there isn't a way to 
+
+beat protection without bothering with its details.  And, hey, maybe YOU will find a way 
+
+out of that dead end that I didn't see.  Give it a shot. 
+
+
+
+Ok, so we're in sync now, right, at instruction cs:41131f? 
+
+Take a look at the following sequence of instructions in the code window. From here 
+
+down to cs: 41139d, that's the core part of the protection. If you're going to master 
+
+this, nothing's gonna stop you. And sure enough, it ends with a comparison followed 
+
+by a conditional jump at cs:41137e. They do somehow look different, don't they, those 
+
+crucial jumps. You just know from the indexical context that this one is not like every 
+
+other jump. This is the "finale grande" jump.  And so we can't just accept it 
+
+"positivisticly". 
+
+A cracker should seldom be a positivist. 
+
+To the cracker, the conditional jump is rather like the western concept of woman. 
+
+Always puzzling. Think about it, and note that I said "concept of...." 
+
+
+
+Just take a look at this section as a whole now, we'll get into the details later. 
+
+
+
+014F:0041130F  8B45F8            MOV     EAX,[EBP-08]
+
+014F:00411312  8B4014            MOV     EAX,[EAX+14];load sector1
+
+014F:00411315  8945F0            MOV     [EBP-10],EAX; hide sector1
+
+014F:00411318  C745F400000000    MOV     DWORD PTR [EBP-0C],00000000
+
+014F:0041131F  DF6DF0            FILD    QWORD PTR [EBP-10]; load sector1 in ST0
+
+014F:00411322  83EC08            SUB     ESP,08
+
+014F:00411325  DD1C24            FSTP    REAL8 PTR [ESP]; move sector1
+
+014F:00411328  8B45F8            MOV     EAX,[EBP-08]
+
+014F:0041132B  8B4018            MOV     EAX,[EAX+18]
+
+014F:0041132E  8945E8            MOV     [EBP-18],EAX
+
+014F:00411331  C745EC00000000    MOV     DWORD PTR [EBP-14],00000000
+
+014F:00411338  DF6DE8            FILD    QWORD PTR [EBP-18];load sector2 in ST0
+
+014F:0041133B  83EC08            SUB     ESP,08
+
+014F:0041133E  DD1C24            FSTP    REAL8 PTR [ESP];move sector2
+
+014F:00411341  E87AC30000        CALL    0041D6C0; make+get magic1
+
+014F:00411346  83C410            ADD     ESP,10
+
+014F:00411349  8B45F8            MOV     EAX,[EBP-08]
+
+014F:0041134C  8B401C            MOV     EAX,[EAX+1C] ;load sector3 
+
+014F:0041134F  8B4DF8            MOV     ECX,[EBP-08]
+
+014F:00411352  2B4120            SUB     EAX,[ECX+20]; [sum from name]
+
+014F:00411355  8B4DF8            MOV     ECX,[EBP-08]
+
+014F:00411358  8B4914            MOV     ECX,[ECX+14]; load sector1
+
+014F:0041135B  81E988130000 SUB  ECX,00001388 
+
+014F:00411361  2BC1              SUB     EAX,ECX; make magic2
+
+014F:00411363  8945E0            MOV     [EBP-20],EAX; hide magic2
+
+014F:00411366  C745E400000000    MOV     DWORD PTR [EBP-1C],00000000
+
+014F:0041136D  DF6DE0            FILD    QWORD PTR [EBP-20]; load magic2
+
+014F:00411370  DEE1              FSUBRP  ST(1),ST; sub magic2, magic1
+
+014F:00411372  E81DC30000        CALL    0041D694; get [magic2-magic1] into EAX
+
+014F:00411377  8945FC            MOV     [EBP-04],EAX; move result of call
+
+014F:0041137A  837DFC00          CMP     DWORD PTR [EBP-04],00 ;"grande finale" 
+
+014F:0041137E  0F840F000000      JZ      00411393;  magic jump
+
+014F:00411384  B840000000        MOV     EAX,00000040
+
+014F:00411389  E90C000000        JMP     0041139A
+
+014F:0041138E  E907000000        JMP     0041139A
+
+014F:00411393  33C0              XOR     EAX,EAX
+
+014F:00411395  E900000000        JMP     0041139A
+
+014F:0041139A  5F                POP     EDI
+
+014F:0041139B  5E                POP     ESI
+
+014F:0041139C  5B                POP     EBX
+
+014F:0041139D  C9                LEAVE
+
+
+
+So, maybe we could ignore all that co-processor nonsense and just make sure 
+
+we take the right branch at that jump? The point seems to be that if we come 
+
+out of the CALL at cs:411372 with EAX=00, then we'll leave protection with 
+
+EAX=00, otherwise we'll leave with EAX=40.  You guess what would be the 
+
+right value.  I agree, let's try it with 00. So we reverse that switch at 
+
+cs:41137e, make it "JNZ 00411393" (plus two couples of INCs and DECs: 
+
+INC AX; DEC AX; INC AX; DEC AX) . And it works!  It gives you the "congrats, 
+
+registration was successful" screen. Aren't you cool? And isn't it funny, 
+
+by the way, how they always "congratulate" you for registering successfully, 
+
+as if this were some major achievement unless you've cracked the thing? 
+
+It's as if the program were saying "all this time I've been waiting for 
+
+you to crack me."  
+
+
+
+Unfortunately, though, if you make this modification, the program will 
+
+crash during its normal execution.  That's what they do these days, they 
+
+integrate those jumps into the normal flow of the program, where it will 
+
+be necessary to take the other branch of that jump.  Play around with it, 
+
+though .  Move the value 00 directly to [ebp-04], or step into the call 
+
+at cs:411372 and try to manipulate the location [ebp-0c] that feeds EAX. 
+
+I couldn't find that shortcut but maybe you can.
+
+
+
+THE HIGHWAY TO THIS CRACK
+
+
+
+So we'll have to make it a clean crack. Takes a little longer, but the 
+
+reward for tackling this protection scheme head-on is that we'll get those 
+
+real legit registration numbers for whatever stupid user name we can think 
+
+of. 
+
+Post it to alt.cracks with your handle as user name, that's better than 
+
+posting "me too" messages. There are less annoying ways of saying one is 
+
+tupid.
+
+
+
+You're back at cs:41131f.  And you've switched the co-processor window 
+
+on (in Softice for Windows95 V.3 with "wf"). Then you're ready to rumble.  
+
+We have all the elements we need (our transformed input strings), and now 
+
+the task is to figure out the right relation among those elements. 
+
+
+
+The hard core of the protection consists of two parts. The first part is 
+
+located at cs:41d6df.  You get there by tracing into the call at cs:411341, 
+
+and from there into the call at cs:422436, which then at cs:4226E1 gives 
+
+you a lift to [EBX]. What you see then should look somewhat like this:
+
+
+
+014F:0041D6D6  833DEC63480001     CMP     DWORD PTR [004863EC],01
+
+014F:0041D6DD  7404               JZ      0041D6E3
+
+014F:0041D6DF  D9F8               FPREM;         <HERE
+
+014F:0041D6E1  EB05               JMP     0041D6E8
+
+014F:0041D6E3  E8E45A0000         CALL    004231CC
+
+014F:0041D6E8  9B                 WAIT
+
+014F:0041D6E9  DFE0               FSTSW   AX
+
+014F:0041D6EB  9B                 WAIT
+
+014F:0041D6EC  9E                 SAHF
+
+014F:0041D6ED  7AE7               JP      0041D6D6
+
+014F:0041D6EF  DDD9               FSTP    ST(1)
+
+ 
+
+By the time you're at cs:41d6df, ST0 holds your section2, and  
+
+ST1 holds your section1. Now what that instruction FPREM does is divide 
+
+ST0 by ST1 and keep the rest (NOT the result).  
+
+So in our case ST0 holds 12121212, ST1 holds 3333, and after FPREM, we 
+
+continue with 2424 in ST0.
+
+This result of the FPREM of section2 and section1 is PART ONE OF OUR 
+
+MAGIC EQUATION (magic1). 
+
+
+
+The second part we get as the result of a series of procedures that 
+
+starts at cs:41134C (back in the main protection part of the code 
+
+"segment)..class" tppabs="http://fravia.org/segment)..class"
+
+
+
+014F:00411346  83C410             ADD     ESP,10
+
+014F:00411349  8B45F8             MOV     EAX,[EBP-08]
+
+014F:0041134C  8B401C             MOV     EAX,[EAX+1C]; sequence3
+
+014F:0041134F  8B4DF8             MOV     ECX,[EBP-08]
+
+014F:00411352  2B4120             SUB     EAX,[ECX+20]; transformed name
+
+014F:00411355  8B4DF8             MOV     ECX,[EBP-08]
+
+014F:00411358  8B4914             MOV     ECX,[ECX+14]; sequence1 
+
+014F:0041135B  81E988130000       SUB     ECX,00001388
+
+014F:00411361  2BC1               SUB     EAX,ECX
+
+014F:00411363  8945E0             MOV     [EBP-20],EAX; hide away magic2
+
+
+
+So PART TWO OF OUR MAGIC EQUATION is the result of a 3-step-procedure:
+
+(a) SUB sequence3, transformed name      (cs:411352)
+
+(b) SUB sequence1, const1388             (cs:41135B) 
+
+(c) SUB [result of (a)], [result of (b)] (cs:411361)
+
+
+
+In our example, this is:
+
+(a) 0457  -  0314  = 0143
+
+(b) 0D05 - 1388   = FFFFF97D
+
+(c) 0143  - FFFFF97D = 07C6
+
+
+
+And 07C6  transformed into decimal is 1990. Which is exactly what 
+
+we get when this magic2 is being loaded into the co-processor through 
+
+FILD.
+
+ 
+
+014F:0041136D DF6DE0          FILD    QWORD PTR [EBP-20];  load magic2
+
+014F:00411370  DEE1           FSUBRP  ST(1),ST;   SUB magic2, magic1
+
+014F:00411372  E81DC30000     CALL    0041D694
+
+
+
+So we have both parts of the magic equation in the co-processor here. 
+
+The point of an equation, of course, is that both sides are equal.
+
+</pre>
+
+<B><H3><U> 
+
+And if they are, you've made it. 
+
+</B></H3></U><PRE>
+
+If magic1 and magic2 are equal, then after instruction cs:411370  
+
+we have  ST0 = 0.
+
+
+
+In our case, however, they are not equal. 
+
+1990 - 2424 =  -434.    This is what ST0 holds for us. 
+
+
+
+And obviously, this tells us what magic1 should have been: precisely 
+
+434 less than it was. What can we do about this? Well, we just have to 
+
+decrease the remainder of our FPREM by 434, and we can simply do this 
+
+by subtracting 434 from our section2. 
+
+
+
+12121212 - 434 = 12120778.  Now just enter this new section2, 
+
+ceteris paribus:
+
+
+
+name:         bcbcbcbc
+
+serial:       3333 12120778 1111
+
+
+
+You sure made it. Now of course you don't want to register as bcbcbcbc, 
+
+being an elite hacker and all.  Here's our hand-made little _registration 
+
+key generator_:  You set a BPX on cs:411372. When you hit the breakpoint, 
+
+it will be right after the subtraction of the two magics, and the remainder 
+
+in ST0 tells you by how much (and in which direction) you have to modify sector2.  
+
+(Note that there are certain limits to the variability, e.g. you have more 
+
+leeway if your sector1 is higher).  Wanna be j. alfred prufrock? Then sector2 
+
+should 12121212-1360 = 12119852.  You're getting the idea. 
+
+
+
+We're finished now. Just for the record you can trace into the call at 
+
+cs:411372 and see how the difference of magic1 and magic2 is being fed to 
+
+EAX, the value of which then determines the direction of the magic jump 
+
+we've looked at before (cs:41137e).
+
+
+
+(c) swann 1997 & FraVia's page of reverse engineering 1997
+
+
+
+</PRE>
+
+</HTML>
+
+
+
+
+

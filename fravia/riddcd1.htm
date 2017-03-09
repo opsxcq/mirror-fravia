@@ -1,0 +1,248 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>riddcd1</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+<CENTER><FONT size="+3">WarLords 3 Cd-Check</FONT><BR><BR>
+
+(&quot;A Very Simple Protection&quot;)<BR> <BR>
+
+<H4>by +-=Riddler=-+<BR>
+
+<BR>
+
+(24 September 1997)</H4>
+
+<HR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">Courtesy of fravia's page 
+
+of reverse engineering<BR><BR>
+
+<I>Well, another interesting essay about CD-rom protections reverse engineering</I></CENTER>
+
+<HR size="6"><FONT size="+2"><CENTER>
+
+WarLords 3 Cd-Check<BR>
+
+&quot;A Very Simple Protection&quot;<BR>
+
+               <BR>
+
+by +-=Riddler=-+</CENTER></FONT>
+
+<PRE>
+
+	This is my first cd-check protection and it was quite easy I have
+
+to say...I was reading Aesculapius's Cd-Check Essay on Virtua Fighter
+
+when I decided to try this. 
+
+
+
+	WarLords3 is a game published by Red Orb entertainment and I 
+
+obtained this copy from a warez site...I wanted to try it since I heard 
+
+it was a warcraft II type game. Anyway I decided to download it, I saw 
+
+it was released by a group called Paradigm.  So let's get down to busines.
+
+
+
+	Anyway so I unrar the program and install it and when I go to run 
+
+it... I find that I get a message that says &quot;CD not found Please insert 
+
+the Warlords III cd before starting the game&quot;. 
+
+Ok, So obviously this program was not cracked correctly or someone
+
+didn't include the crack with the program. So I had two options at this
+
+point. 
+
+Either we could look on the internet and beg for a crack or we could do 
+
+what we should be doing and crack this ourselves. Obviously we are going 
+
+to crack it ourselves.
+
+
+
+	Let's begin by loading up war3.exe into W32dasm and begin our 
+
+conquest to defeat the ties that bind us to obey software companies. 
+
+Once War3.exe is dissasembled we have several options. One being the fact 
+
+that we could search for the text... But the fact is that it shows up 
+
+several times and this is not the best method at all. 
+
+We are going to search for GetLogicalDrives but why not GetDriveType you
+
+ask... Well it is NOT going to be the culprit in this case due to the fact 
+
+that when you set a breakpoint on GetDriveType it doesn't break anytime 
+
+before the screen that says to enter the cd. 
+
+So It must be GetLogicalDrives and in fact if you set a breakpoint
+
+you will see it break. Now searching threw the dissembled text you 
+
+will notice that for example that GetLogicalDrives only shows up once. 
+
+I have a good feeling that this indeed will be very easy. 
+
+Now about a paragraph above the kernel32.dll call you will
+
+see that it was called by only one location that will indeed be the 
+
+only check for the cd at startup. Ok now if you trace the call back from 
+
+the GetLogicalDrives call you will find that the following code:
+
+
+
+* Referenced by a CALL at Addresses:00441CFB   , :00441D6C   
+
+|
+
+* Possible StringData Ref from Data Obj -&gt;&quot;E&quot;
+
+                                  |
+
+:00436E40 685CC24C00              push 004CC25C
+
+:00436E45 E856090000              call 004377A0
+
+:00436E4A 83C404                  add esp, 00000004
+
+:00436E4D A258C24C00              mov byte ptr [004CC258], al
+
+:00436E52 C3                      ret
+
+		
+
+Ok now we know that the call at &quot;00436E45&quot; will obviously be the checking
+
+code. If you notice at Code Data location &quot;00436E4D&quot; that whatever is in 
+
+al will be moved to memory location &quot;004CC258&quot;. Then after that return code 
+
+from al into the memory location we return program control to the calling 
+
+function. Ok in this case we are going to go to code data location &quot;00441CFB&quot;. 
+
+At that location we find the following code:
+
+
+
+* Referenced by a CALL at Address:004BE928   
+
+|
+
+:00441CD0 64A100000000            mov eax, dword ptr fs:[00000000]
+
+:00441CD6 55                      push ebp
+
+:00441CD7 8BEC                    mov ebp, esp
+
+:00441CD9 6AFF                    push FFFFFFFF
+
+:00441CDB 68E61D4400              push 00441DE6
+
+:00441CE0 50                      push eax
+
+:00441CE1 64892500000000          mov dword ptr fs:[00000000], esp
+
+:00441CE8 33C0                    xor eax, eax
+
+:00441CEA 83EC08                  sub esp, 00000008
+
+:00441CED B94E9E0000              mov ecx, 00009E4E
+
+:00441CF2 56                      push esi
+
+:00441CF3 57                      push edi
+
+:00441CF4 BFB8645000              mov edi, 005064B8
+
+:00441CF9 F3                      repz
+
+:00441CFA AB                      stosd
+
+:00441CFB E84051FFFF              call 00436E40 <CALL cd-checking function :00441D00 803D58C24C0000 cmp byte ptr [004CC258], 00 <-was the cd in drive??? :00441D07 0F8582000000 jne 00441D8F <-If it was, continue :00441D0D 8D4DF0 lea ecx, dword ptr [ebp-10] <-Nag them about cd! Ok so now by studying this code "that.class" tppabs="http://fravia.org/that.class" is commented will can very easily see that if the cd was in the drive "al" will load "004CC258" with "1" if it wasn't it will load "004CC258" with "0". Ok so as I was taught there is more than one way to crack or solve a protection scheme in any program. We could easily change the "jne 00441D8F" with jmp 00441D8F" therefore it will always jump to the good code or we could just as easily hardwire the value that is put into "004CC258" at "call 00436E40" by putting "1" into that location and removing the "al". For this solution I changed the "jne 0041D8F" to "jmp 0041D8F" due to the fact that if you notice the call to "00436E40" that code segment is called by another part of the code...It could in fact cause problems there...So we are going to patch it that way. I hope that everyone has enjoyed this essay, I hope to have more in the future. Please feel free to e-mail me at: Riddler@oceansintl.com Take Care, +-="Riddler=-+" </pre>
+
+<font color="green">(c) Riddler 1997. All rights reversed</font>
+
+<hr ALIGN="CENTER" WIDTH="100%" SIZE="3">
+
+<center><i>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</i></center>
+
+<br><center>
+
+
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><a HREF="project4.htm" tppabs="http://www.anticrack.de/fravia/project4.htm">Back to Project 4</a> (&quot;CD-Rom protections&quot;)
+
+<br>
+
+
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><a HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#84'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#84">homepage</a>
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><a HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#73'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#73">links</a> 
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><a HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity</a> 
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><a HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC</a>
+
+
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><a HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#82'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#82">students' essays</a>
+
+
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><a HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database</a><br>
+
+
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><a HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools</a>
+
+
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><a HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails</a>
+
+
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><a HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut CGI-scripts</a>
+
+
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><a HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms</a>
+
+
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><a HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia</a><br>
+
+
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><a HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering legal?</a></center>
+
+<center><hr ALIGN="CENTER" WIDTH="100%" SIZE="2"></center>
+
+</body>
+
+</html>
+

@@ -1,0 +1,1567 @@
+<html><HEAD>
+
+<TITLE>vicever2</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+<CENTER><FONT size="+3">Micro$oft bashing: FrontPage 97 beta</FONT><BR>
+
+<FONT size="+2">
+
+(&quot;The death of a Cinderella protection&quot;)</FONT>
+
+
+
+<BR>
+
+<H4><I>by ViceVersa+</I>
+
+<BR>(10 August 1997)</H4>
+
+<HR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">
+
+Courtesy of Fravia's page of reverse engineering<BR><HR size="2">
+
+	<I>
+
+Well, it's a pleasure to open this new project of the +HCU with a nice 
+
+essay from ViceVersa+, please refer to +ORC's 4.2 for the &quot;common&quot; 
+
+Micro$oft's protections (and for the 1998's strainer) and work on every 
+
+single protection of Micro$oft you can put your hands on! As +ORC would 
+
+say... work well!</I></CENTER><HR>
+
+
+
+<PRE>
+
+<FONT size="+2"><B><CENTER>
+
+Eliminating the &quot;cinderella&quot; protection
+
+of Micro$osft FrontPage 97 beta</B>
+
+
+
+by ViceVersa+, August 1997</CENTER></FONT>
+
+
+
+     Use your brain not your fingers! 
+
+
+
+    <B> Introduction</B></PRE>
+
+
+
+     According to the well known &quot;kill all the competitors&quot; marketing policy, Micro$oft often gives away for free full
+
+     working betas of many of its products. The idea behind this strategy is that the users will start using them, will get
+
+     used to them and then, once the betas have expired, will buy the commercial releases. How can we call this? To
+
+     me it looks like &quot;software pushing&quot;! So, if you want to enjoy (enjoy?!?) this betas for a time longer than that guys
+
+     at Micro$oft planned for you, just keep reading... 
+
+	  <BR><BR>
+
+     Purchase me!
+
+		 <BR><BR>
+
+     I found FrontPage 97 beta on one of that CDs that often come with computer magazines so I think you won't
+
+     have any difficulties in getting it too. Since the application was expected to expire on February 1997, I assume
+
+     that at this time this version has already expired so, once you have started FrontPage, it will pop-up and show you
+
+     a message box (if it doesn't, advance your clock!) saying &quot;Your copy of Microsoft FrontPage 97 beta has
+
+     expired. Please visit your local re seller to purchase [this is the &quot;magic&quot; word!] a copy of Microsoft FrontPage 97
+
+     or ...&quot; etc. Ok, before we all go and buy it 8-), let's see how we can get a little more along with it... 
+
+	   <BR><BR>
+
+     Hands on
+
+		<BR><BR>
+
+     At this point you need to look for the two files FPEXPLOR.EXE and FPEDITOR.EXE. You will find them in the bin
+
+     directory under the FrontPage main folder. Two EXEs, same protection scheme: &quot;cinderella&quot; like. For this reason
+
+     in this essay we will concentrate on FPEXPLOR.EXE and leave FPEDITOR.EXE as an exercise. Ok, let's go! First
+
+     of all we will take a look at the &quot;dead&quot; listing (WDasm 8.9 will do). Load it in your favorite text editor and search
+
+     for the word &quot;expired&quot; (from the nasty dialog): you'll land straight into the following piece of code: 
+
+     <PRE>__________________________________________________________________________
+
+
+
+     * Reference To: MFC40.MFC40:NoName0221, Ord:01E6h
+
+                                       |
+
+     :00455CD8 E83D110200              Call 00476E1A
+
+     :00455CDD C645FC09                mov [ebp-04], 09
+
+     :00455CE1 8D4DEC                  lea ecx, dword ptr [ebp-14]
+
+
+
+     * Reference To: MFC40.MFC40:NoName0221, Ord:01E6h
+
+                                       |
+
+     :00455CE4 E831110200              Call 00476E1A
+
+
+
+     * Possible StringData Ref from Data Obj -&gt;&quot;Microsoft FrontPage 97&quot;
+
+                                       |
+
+     :00455CE9 68789B4900              push 00499B78
+
+     :00455CEE 8D45CC                  lea eax, dword ptr [ebp-34]
+
+     :00455CF1 C645FC0A                mov [ebp-04], 0A
+
+
+
+     * Possible Reference to String Resource ID=02102: &quot;Your copy of the %1 beta has 
+
+                                                        expired.&quot;
+
+                                       |
+
+     :00455CF5 6836080000              push 00000836
+
+     :00455CFA 50                      push eax
+
+
+
+     * Reference To: MFC40.MFC40:NoName0240, Ord:03F7h
+
+                                       |
+
+     :00455CFB E88C110200              Call 00476E8C
+
+
+
+     * Possible StringData Ref from Data Obj -&gt;&quot;http://www.microsoft.com/frontpage&quot;
+
+                                       |
+
+     :00455D00 68549B4900              push 00499B54
+
+     :00455D05 8D45EC                  lea eax, dword ptr [ebp-14]
+
+
+
+     * Possible StringData Ref from Data Obj -&gt;&quot;Microsoft FrontPage 97&quot;
+
+                                       |
+
+     :00455D08 68789B4900              push 00499B78
+
+
+
+     * Possible Reference to String Resource ID=02103: &quot;Please visit your local 
+
+                                           reseller to purchase a copy of %1 or&quot;
+
+                                       |
+
+     :00455D0D 6837080000              push 00000837
+
+     :00455D12 50                      push eax
+
+
+
+     * Reference To: MFC40.MFC40:NoName0452, Ord:03F8h
+
+                                       |
+
+     :00455D13 E86C160200              Call 00477384
+
+
+
+     * Possible StringData Ref from Data Obj -&gt;&quot; &quot;
+
+                                       |
+
+     :00455D18 68E4364900              push 004936E4
+
+     :00455D1D 8D4DCC                  lea ecx, dword ptr [ebp-34]
+
+
+
+     * Reference To: MFC40.MFC40:NoName0229, Ord:0344h
+
+                                       |
+
+     :00455D20 E825110200              Call 00476E4A
+
+     :00455D25 8D45EC                  lea eax, dword ptr [ebp-14]
+
+     :00455D28 8D4DCC                  lea ecx, dword ptr [ebp-34]
+
+     :00455D2B 50                      push eax
+
+
+
+     * Reference To: MFC40.MFC40:NoName0233, Ord:0342h
+
+                                       |
+
+     :00455D2C E831110200              Call 00476E62
+
+     :00455D31 85FF                    test edi, edi
+
+     :00455D33 7514                    jne 00455D49
+
+     :00455D35 6A01                    push 00000001
+
+     :00455D37 8B4DF0                  mov ecx, dword ptr [ebp-10]
+
+
+
+     * Possible StringData Ref from Data Obj -&gt;&quot;Symbols6&quot;
+
+                                       |
+
+     :00455D3A 689C9B4900              push 00499B9C
+
+
+
+     * Possible StringData Ref from Data Obj -&gt;&quot;Settings&quot;
+
+                                       |
+
+     :00455D3F 68909B4900              push 00499B90
+
+
+
+     * Reference To: MFC40.MFC40:NoName0156, Ord:1629h
+
+                                       |
+
+     :00455D44 E8771C0200              Call 004779C0
+
+
+
+     * Referenced by a (U)nconditional or (C)onditional Jump at Address:
+
+     |:00455D33(C)
+
+     |
+
+     :00455D49 6A00                    push 00000000
+
+     :00455D4B 8B45CC                  mov eax, dword ptr [ebp-34]
+
+     :00455D4E 6A00                    push 00000000
+
+     :00455D50 50                      push eax
+
+
+
+     * Reference To: MFC40.MFC40:NoName0239, Ord:0425h
+
+                                       |
+
+     :00455D51 E830110200              Call 00476E86 <FONT color="red"></FONT>
+
+     :00455D56 C645FC09                mov [ebp-04], 09
+
+     :00455D5A E817000000              call 00455D76
+
+     :00455D5F C645FC01                mov [ebp-04], 01
+
+     :00455D63 E816000000              call 00455D7E
+
+     :00455D68 C645FC00                mov [ebp-04], 00
+
+     :00455D6C E849000000              call 00455DBA
+
+     :00455D71 E9C5FAFFFF              jmp 0045583B
+
+
+
+     __________________________________________________________________________
+
+
+
+	  </PRE>
+
+     The red <FONT color="red"></FONT> shows a call to a MFC40.DLL function. What is it? We will come back to it after a little theory... 
+
+		<BR><BR> <B>
+
+     Understanding MFC
+
+		<BR><BR>	</B>
+
+     For a good comprehension of this section you need some knowledge of object oriented programming and
+
+     of C++ in particular. If you don't have such a knowledge you can jump directly to the next section (but
+
+     you should seriously think of learning something about these topics).
+
+		<BR><BR>
+
+     Nowadays there are many tools around that let you write a Windows application on the fly (like VB), but real
+
+     programmers always use C language. As you probably know, Windows has kept growing and so this means
+
+     dealing with hundreds and hundreds of API functions! Since this would be a challenging task even for the most
+
+     experienced programmers, often the developers prefer using what is called a &quot;framework&quot; (like MFC [Micro$oft
+
+     Foundation Classes] by Micro$oft or OWL [Object Windows Library] by Borland). It consists of many
+
+     structured C++ classes that encapsulate almost all the APIs. They also offer a &quot;ready to run&quot; application with just
+
+     few calls: what the programmer has to do is to &quot;fill-up&quot; the blanks and give his/her application a particular &quot;look
+
+     and feel&quot; or behavior.	<BR><BR>
+
+
+
+     Though from a developer point of view using frameworks makes things easier, from our point of view this means
+
+     we have one more shell around our beloved API calls. So, sometimes, we will have to break the shell and go into
+
+     the framework function just to see what they do and which original WIN32 API they call. Usually a framework
+
+     function has the same name of the corresponding API it encapsulates but takes less parameters. Often the missing
+
+     parameter is the first one of the corresponding API. Why? Remember that the framework is nothing but an
+
+     hierarchy of C++ classes. For example, you can have a class corresponding to a physical window or a class
+
+     corresponding to the current display context (DC). When the class is initialized it is &quot;associated&quot; with a physical
+
+     window or a DC, meaning that now the class &quot;is&quot; the window or &quot;is&quot; the DC. Being like this, the class itself takes
+
+     care of &quot;remembering&quot; the window handle or the display context handle and you don't need to pass these
+
+     parameters any more to the functions you call (that in fact are method of the class).
+
+	  <BR><BR>
+
+     Let's make an example with the call to the MessageBox function. Within the standard Win32 API the function has
+
+     the following syntax:<BR><FONT color="blue"> 
+
+	 int MessageBox( HWND hWnd, LPCTSTR lpText, LPCTSTR lpCaption,UINT uType );</FONT> 	<BR>
+
+	 While inside MFC it has the following syntax (it's a member of the CWnd class, a class that
+
+     encapsulate a generic window):<BR> 	<FONT color="blue">
+
+	 int MessageBox( LPCTSTR lpszText, LPCTSTR lpszCaption = NULL, UINT nType = MB_OK );<BR> </FONT>
+
+	 They look pretty similar. In fact, a call the MFC version of MessageBox is resolved
+
+     inside the framework into a call to WIN32 version of MessageBox. On the other hand they are different: the
+
+     MFC version lacks of the first parameter, a handle to a window. This is because being it a method of the CWnd
+
+     class it already &quot;knows&quot; the handle of the window the class is associated with. Look at the following scheme: 
+
+									   <BR><PRE>
+
+     __________________________________________________________________________
+
+	
+
+        Call to WIN32 MessageBox                Call to MFC MessageBox
+
+                   |                                       |
+
+                   |                                       |
+
+                   v                                       |
+
+        Display the messsage box              Get hWnd of the associated
+
+                                              window from the class data
+
+                                                           |
+
+                                                           |
+
+                                        Resolve into a call to WIN32 MessageBox
+
+                                                           |
+
+                                                           |
+
+                                                           v
+
+                                                Display the messsage box
+
+
+
+     __________________________________________________________________________
+
+	  </PRE>
+
+
+
+     As you can see, especially when dealing with Micro$oft Windows, asm is not &quot;all you have to know&quot; for an
+
+     effective cracking/reverse-engineering.
+
+	  <BR><BR><B>
+
+     Back to work</B><BR><BR>
+
+
+
+     After the excursus on MFC let's go back to work. We were dealing with that call to an &quot;un-named&quot; MFC40
+
+     function. How can we know what it does and what happens inside it? The easy way is to use the &quot;live&quot; approach
+
+     and trace the application with Sice (remember to load MFC40.DLL as an export before running it). Put a bpx on
+
+     MessageBoxExA and run FrontPage. Sice will pop up inside the MessageBoxExA call. Now step out from the
+
+     API routines until you get back to FPEXPLOR.EXE. You should land exactly on the call above. As you can see, it
+
+     was a call to a MessageBox like function in MFC. Another way to reach the same conclusion is to use a little zen.
+
+			<BR><BR>
+
+     Look at the code above: you see that many different strings are being loaded. Some of them contains what looks
+
+     like a parameter (%1). We know from the nasty dialog the program pops-up that the string &quot;Microsoft FrontPage
+
+     97&quot; is substituted to these parameters so to build the final string that is displayed. So most of the calls we see in
+
+     the code above have to be &quot;string formatting&quot; calls. Well, if there is a call to a message box function it has to come
+
+     after this calls because it needs an already formatted string. So far so good. What else? Well, having learnt
+
+     something about MFC (refer to the section Understanding MFC) we know that the message box displaying
+
+     function has to take 3 parameters. Ok, let's summarize what we know up to now: 
+
+	  <BR><BR><CENTER>
+
+          we have to look somewhere after all the calls to the string formatting functions
+
+					  <BR><BR>
+
+          we have to look for a function that takes 3 parameter 
+
+						</CENTER><BR><BR>
+
+     Is there something more we know? The answer is... yes, of course! Look carefully at the nasty dialog. What can
+
+     you notice? I give you hint: just looking at the dialog and considering what you already know it's possible to
+
+     determine the values of at least one more parameter of the call to the message box function (we already know
+
+     what the displayed text should be)... you have 5 minutes to think about it, then read on.
+
+			 	  <BR><BR><CENTER>
+
+                                   Use your brain not your fingers!
+
+								  <BR><BR></CENTER>
+
+     Found anything? I think you did but if you didn't don't worry, you'll do better the next time.
+
+					  <BR><BR>
+
+     Here is the answer: since the dialog shows just the OK button the last parameter, the one that controls the style of
+
+     the dialog, has to be MB_OK that is 0. Pretty easy. Ok, so we know that we have to look for a function that takes
+
+     three parameters and we know the value of two out of three parameters. Look at the code above. Got it? Well,
+
+     it's exactly the call signed with the red <THAT is the call the the MessageBox function, right? <bR><BR><B>
+
+     No, WRONG!
+
+		   <BR><BR></B>
+
+     Ok, don't trash this essay, let me explain! Cracking is like doing research: you proceed according to some
+
+     hypothesis you made. But, as soon as your findings do not confirm these assumptions you HAVE to change them.
+
+     It sounds like a defeat but sometimes you have to step back. This is the way we learn: by trials and errors
+
+     (Konrad Lorenz wrote beautiful pages about this topic).
+
+		     <BR><BR>
+
+     So, what's wrong with the function we have found? In fact nothing but is just a matter of calling things with their
+
+     own name. Look at the parameters description of CWnd::MessageBox (from MFC documentation): 
+
+<PRE>__________________________________________________________________________
+
+     Parameters
+
+     lpszText      Points to a CString object or null-terminated string 
+
+                   containing the message to be displayed.
+
+     lpszCaption   Points to a CString object or null-terminated string to be 
+
+                   used for the message-box caption. 
+
+                   If lpszCaption is NULL, the default caption &#147;Error&#148; is used.
+
+     nType         Specifies the contents and behavior of the message box.
+
+     __________________________________________________________________________
+
+
+
+  </PRE>
+
+     According to the calling stack sequence the function we have recognized should get its the parameters like this: 
+
+		<PRE>
+
+     lpszText    = &quot;Your version of ...&quot; etc.
+
+     lpszCaption = NULL
+
+     nType       = 0
+
+		 </PRE>
+
+     So, according to the documentation the dialog caption should have been &quot;Error&quot; since lpszCaption = NULL. In
+
+     fact the caption of the nasty dialog shows the application name so it can't be that function. What's wrong? Look
+
+     back at the nasty dialog, what is the caption? It shows the application name... here is the hint: the application
+
+     name! We have to look for a MFC function that displays a dialog box but with a different behavior than
+
+     CWnd::MessageBox.
+
+			  <BR><BR>
+
+     Probably the ones among you that know something about MFC programming have already recognized it. Look at
+
+     the following function definition (from MFC documentation): <PRE>
+
+	 _____________________________________________________________________
+
+
+
+     int AfxMessageBox( LPCTSTR lpszText, UINT nType = MB_OK, UINT nIDHelp = 0 );
+
+       
+
+     int AFXAPI AfxMessageBox( UINT nIDPrompt, UINT nType = MB_OK, UINT nIDHelp = (UINT) &#150;1 );
+
+
+
+     ...
+
+
+
+     The functions AfxFormatString1 and AfxFormatString2 can 
+
+     be useful in formatting text that appears in a message box.
+
+       
+
+     Parameters
+
+     lpszText   Points to a CString object or null-terminated string containing 
+
+                the message to be displayed in the message box.
+
+     nType      The style of the message box. Apply any of the message-box styles 
+
+                to the box.  
+
+     nIDHelp    The Help-context ID for the message; 0 indicates no Help context.
+
+     nIDPrompt  A unique ID used to reference a string in the string table.
+
+
+
+     Remarks
+
+     Displays a message box on the screen...
+
+     __________________________________________________________________________</PRE>
+
+
+
+
+
+     The function we are interested in is the first one of the two. This is a widely used function in MFC programming
+
+     because it displays an &quot;application&quot; message box. The message box has the name of the application as caption
+
+     and usually behaves as a modal dialog. This is exactly what our nasty dialog does. Now the two NULL
+
+     parameters make sense: OK button and no help available (as in fact is). But there is more. Look at the sentence I
+
+     have colored in red. What are these two text formatting functions? Let's take a look (from MFC documentation): 
+
+	  <PRE>
+
+     __________________________________________________________________________
+
+
+
+     void AfxFormatString1( CString&amp; rString, UINT nIDS, LPCTSTR lpsz1 ); 
+
+       
+
+     Parameters
+
+     rString   A reference to a CString object that will contain the resultant 
+
+               string after the substitution is performed.
+
+     nIDS      The resource ID of the template string on which the substitution 
+
+               will be performed.
+
+     lpsz1     A string that will replace the format characters &#147;%1&#148; in the 
+
+               template string.
+
+
+
+     Remarks
+
+     Loads the specified string resource and substitutes the characters &#147;%1&#148; for 
+
+     the string pointed to by lpsz1. The newly formed string is stored in rString.
+
+     For example, if the string in the string table is &#147;File %1 not found&#148;, and
+
+     lpsz1 is equal to &#147;C:\MYFILE.TXT&#148;, then rString will contain the string
+
+     &#147;File C:\MYFILE.TXT not found&#148;. This function is useful for formatting strings
+
+     sent to message boxes and other windows.
+
+     If the format characters &#147;%1&#148; appear in the string more than once, multiple
+
+     substitutions will be made.
+
+     __________________________________________________________________________</PRE>
+
+
+
+
+
+     Bingo! Doesn't it look familiar? That %1 in particular, acting as a parameter... where did we meet it before? It's
+
+     right there in the code!    <BR><BR>
+
+
+
+     Ok, we have all the pieces now. Let's put them together. So, the message box displaying function is in fact
+
+     AfxMessageBox (first version) and all the previous calls are should refer to AfxFormatString1 or
+
+     AfxFormatString2 (we could understand exactly which one of the two just looking at the passed parameters but
+
+     we don't care here). Very good! 
+
+		   <BR><BR><B>
+
+     A good question!
+
+		   <BR><BR></B>
+
+     You are probably wondering: so what? This long talk for such a little finding? And how can this help in the
+
+     &quot;cinderella&quot; protection cracking? Well, the answer is: it doesn't help directly. Or at least it helps just a little. But I
+
+     think that if you have read the part above carefully you now know a lot about MFC applications. And, believe
+
+     me, this information will be really useful in your future crackings, don't you think so? One thing is dealing with calls
+
+     of functions you know the name of (and on which you have plenty of documentation). Another thing is dealing
+
+     with completely anonymous functions. look back at what we did: we dealt with completely anonymous functions
+
+     and found a lot about them! Was it worth it? The answer is up to you. 
+
+			    <BR><BR><B>
+
+     Back to the main point
+
+						     <BR><BR></B>
+
+     Ok, now is time to go back to our main point: defeating the &quot;cinderella&quot; protection. What we usually do with this
+
+     kind of protection once we have found the point where the nasty dialog is displayed? We look at the code that
+
+     precedes that massage box displaying, searching for a time comparison. If we are lucky we will find a
+
+     GetLocalTime call whose return value (the current date and time)is compared to another one (the installation
+
+     date) read, for example, from the Registry or from an hidden file. The trick is too look for something &quot;date
+
+     related&quot;. Here is the only &quot;date related&quot; function we see in the code that precedes the previous one: 
+
+	 <PRE>
+
+     __________________________________________________________________________
+
+
+
+     * Reference To: MFC40.MFC40:NoName0401, Ord:09FDh
+
+                                       |
+
+     :00455B63 E8EA160200              Call 00477252
+
+     :00455B68 50                      push eax
+
+     :00455B69 8D4DD4                  lea ecx, dword ptr [ebp-2C]
+
+     :00455B6C 56                      push esi
+
+     :00455B6D 51                      push ecx
+
+     :00455B6E 6A02                    push 00000002
+
+
+
+     * Possible Reference to Dialog: DialogID_009F, CONTROL_ID:0400, &quot;&quot;
+
+                                       |
+
+     :00455B70 6800040000              push 00000400
+
+
+
+     * Reference To: KERNEL32.GetDateFormatA, Ord:00C8h
+
+                                       |
+
+     :00455B75 FF15B4D54900            Call dword ptr [0049D5B4]
+
+     :00455B7B 6AFF                    push FFFFFFFF
+
+     :00455B7D 8D4DCC                  lea ecx, dword ptr [ebp-34]
+
+
+
+     * Reference To: MFC40.MFC40:NoName0398, Ord:1343h
+
+                                       |
+
+     :00455B80 E8BB160200              Call 00477240
+
+     :00455B85 8D4DE4                  lea ecx, dword ptr [ebp-1C]
+
+
+
+     * Reference To: MFC40.MFC40:NoName0221, Ord:01E6h
+
+                                       |
+
+     :00455B88 E88D120200              Call 00476E1A
+
+     :00455B8D C645FC06                mov [ebp-04], 06
+
+     :00455B91 8B45CC                  mov eax, dword ptr [ebp-34]
+
+     :00455B94 8D4DE4                  lea ecx, dword ptr [ebp-1C]
+
+     :00455B97 50                      push eax
+
+     __________________________________________________________________________
+
+																				</PRE>
+
+
+
+     Looks like a good starting point. Let's look to its definition (from WIN32 API reference): 
+
+
+
+    <PRE> __________________________________________________________________________
+
+
+
+     The GetDateFormat function formats a date as a date string for a specified 
+
+     locale. The function formats either a specified date or the local system 
+
+     date.
+
+
+
+     int GetDateFormat(
+
+         LCID Locale,               // locale for which date is to be formatted 
+
+         DWORD dwFlags,             // flags specifying function options 
+
+         CONST SYSTEMTIME *lpDate,  // date to be formatted 
+
+         LPCTSTR lpFormat,          // date format string 
+
+         LPTSTR lpDateStr,          // buffer for storing formatted string 
+
+         int cchDate                // size of buffer 
+
+        );
+
+     __________________________________________________________________________</PRE>
+
+
+
+     There it is! If it takes a date (pointer to a SYSTEMTIME structure) as a parameter this means that somewhere
+
+     before this call the date is read. But where? The date is the 3rd parameter and must be a pointer (the address of a
+
+     memory location). Remember that the parameters are pushed on the stack in reverse order. Now from the call to
+
+     GetDateFormat count three pushes up. We find push ecx. Two rows before there is a lea ecx, dword ptr
+
+     [ebp-2C]. So the date is stored in [ebp-2C]. Good to know. Keep going back along the code an look for the
+
+     any occurrence of [ebp-2C]. You will find the following code snippet: 
+
+
+
+    <PRE> __________________________________________________________________________
+
+
+
+     * Reference To: MFC40.MFC40:NoName0154, Ord:0BFBh
+
+                                       |
+
+     :00455A9A E82D1F0200              Call 004779CC
+
+     :00455A9F 8BF8                    mov edi, eax
+
+     :00455AA1 83EC04                  sub esp, 00000004
+
+     :00455AA4 8D45E8                  lea eax, dword ptr [ebp-18]
+
+     :00455AA7 8965CC                  mov dword ptr [ebp-34], esp
+
+     :00455AAA 50                      push eax
+
+     :00455AAB 8B4DCC                  mov ecx, dword ptr [ebp-34]
+
+     :00455AAE E82D030000              call 00455DE0
+
+     :00455AB3 8D8D64FFFFFF            lea ecx, dword ptr [ebp+FFFFFF64]
+
+     :00455AB9 E832030000              call 00455DF0
+
+     :00455ABE 85C0                    test eax, eax
+
+     :00455AC0 0F850F020000            jne 00455CD5
+
+     :00455AC6 85FF                    test edi, edi
+
+     :00455AC8 0F8507020000            jne 00455CD5
+
+     :00455ACE 83EC04                  sub esp, 00000004
+
+     :00455AD1 8D45D0                  lea eax, dword ptr [ebp-30]
+
+     :00455AD4 8965CC                  mov dword ptr [ebp-34], esp
+
+     :00455AD7 50                      push eax
+
+     :00455AD8 8B4DCC                  mov ecx, dword ptr [ebp-34]
+
+     :00455ADB E800030000              call 00455DE0
+
+     :00455AE0 8D8D64FFFFFF            lea ecx, dword ptr [ebp+FFFFFF64]
+
+     :00455AE6 E805030000              call 00455DF0
+
+     :00455AEB 85C0                    test eax, eax
+
+     :00455AED 0F84D1000000            je 00455BC4
+
+     :00455AF3 668975D4                mov word ptr [ebp-2C], si
+
+     :00455AF7 668975D6                mov word ptr [ebp-2A], si
+
+     :00455AFB 668975D8                mov word ptr [ebp-28], si
+
+     :00455AFF 668975DA                mov word ptr [ebp-26], si
+
+     :00455B03 56                      push esi
+
+     :00455B04 668975DC                mov word ptr [ebp-24], si
+
+     :00455B08 8D4DE8                  lea ecx, dword ptr [ebp-18]
+
+     :00455B0B 668975DE                mov word ptr [ebp-22], si
+
+     :00455B0F 668975E0                mov word ptr [ebp-20], si
+
+     :00455B13 668975E2                mov word ptr [ebp-1E], si
+
+
+
+     * Reference To: MFC40.MFC40:NoName0155, Ord:0B59h
+
+                                       |
+
+     :00455B17 E8AA1E0200              Call 004779C6
+
+     :00455B1C 8B4014                  mov eax, dword ptr [eax+14]
+
+     :00455B1F 56                      push esi
+
+     :00455B20 66056C07                add ax, 076C
+
+     :00455B24 8D4DE8                  lea ecx, dword ptr [ebp-18]
+
+     :00455B27 668945D4                mov word ptr [ebp-2C], ax
+
+
+
+     * Reference To: MFC40.MFC40:NoName0155, Ord:0B59h
+
+                                       |
+
+     :00455B2B E8961E0200              Call 004779C6
+
+     :00455B30 8B4010                  mov eax, dword ptr [eax+10]
+
+     :00455B33 56                      push esi
+
+     :00455B34 6640                    inc ax
+
+     :00455B36 8D4DE8                  lea ecx, dword ptr [ebp-18]
+
+     :00455B39 668945D6                mov word ptr [ebp-2A], ax
+
+
+
+     ... there are some more lines in between ...
+
+
+
+     * Reference To: MFC40.MFC40:NoName0221, Ord:01E6h
+
+                                       |
+
+     :00455B88 E88D120200              Call 00476E1A
+
+     :00455B8D C645FC06                mov [ebp-04], 06
+
+     :00455B91 8B45CC                  mov eax, dword ptr [ebp-34]
+
+     :00455B94 8D4DE4                  lea ecx, dword ptr [ebp-1C]
+
+     :00455B97 50                      push eax
+
+
+
+     * Possible StringData Ref from Data Obj -&gt;&quot;Microsoft FrontPage 97&quot;
+
+                                       |
+
+     :00455B98 68789B4900              push 00499B78
+
+
+
+     * Possible Reference to String Resource ID=02104: &quot;This beta copy of %1 will expire on %2&quot;
+
+                                       |
+
+     :00455B9D 6838080000              push 00000838
+
+     :00455BA2 51                      push ecx
+
+
+
+     * Reference To: MFC40.MFC40:NoName0452, Ord:03F8h
+
+                                       |
+
+     :00455BA3 E8DC170200              Call 00477384
+
+     :00455BA8 56                      push esi
+
+     :00455BA9 8B4DE4                  mov ecx, dword ptr [ebp-1C]
+
+     :00455BAC 56                      push esi
+
+     :00455BAD 51                      push ecx
+
+ __________________________________________________________________________	 </PRE>
+
+
+
+     Look at the first occurrence from the bottom. The value in [eax+14] in moved into eax. Then the value 076C
+
+     (1900 decimal) it's added to it and everything is stored back to [ebp-2C]. So it's calculating the current year on
+
+     the basis of a function that returns it on as a difference from 1900. The only function I know that works like this is
+
+     localtime but this function needs as input a value returned from a call to the time function.
+
+		  <BR><BR>
+
+     Now look at the second occurrence of [ebp-2C]. All those mov word ptr [ebp-xx] look like a structure
+
+     initialization to me. If the SYSTEMTIME structure starts from ebp-2C (remember that local variables &quot;goes&quot; back in
+
+     memory when referenced to through ebp) then such a code would make sense only if si = 0. So this is not the
+
+     structure where the current time is stored when read but is just a working structure. In fact this code leads straight
+
+     to the one that shows a dialog saying &quot;This beta copy of Microsoft FrontPage 97 will expire on [exp. date]&quot;.
+
+     Look at the code above. Can you see it? Well, at this point we are lost. Where is our time?
+
+				    <BR><BR>
+
+     As we saw for the first occurrence of [ebp-2C] the expiration year is copied into [ebp-2C] (after being added
+
+     1900) from a location that is eax related ([eax+14]). So let's look for the eax related instructions before that
+
+     point. We find an interesting test eax, eax (in green) instruction followed by a conditional jump je
+
+     00455BC4. Let's see where this jump leads: 
+
+	 <PRE> __________________________________________________________________________
+
+
+
+     * Referenced by a (U)nconditional or (C)onditional Jump at Address:
+
+     |:00455AED(C)
+
+     |
+
+     :00455BC4 8D8D60FEFFFF            lea ecx, dword ptr [ebp+FFFFFE60]
+
+
+
+     * Reference To: fp20utl.fp20utl:NoName0013, Ord:0036h
+
+                                       |
+
+     :00455BCA FF1530E44900            Call dword ptr [0049E430]
+
+     :00455BD0 8B75F0                  mov esi, dword ptr [ebp-10]
+
+     :00455BD3 8B45EC                  mov eax, dword ptr [ebp-14]
+
+     :00455BD6 C645FC07                mov [ebp-04], 07
+
+     :00455BDA 81C630010000            add esi, 00000130
+
+     :00455BE0 8B4820                  mov ecx, dword ptr [eax+20]
+
+     :00455BE3 51                      push ecx
+
+     :00455BE4 8D8D60FEFFFF            lea ecx, dword ptr [ebp+FFFFFE60]
+
+
+
+     * Reference To: fp20utl.fp20utl:NoName0014, Ord:049Bh
+
+                                       |
+
+     :00455BEA FF1534E44900            Call dword ptr [0049E434]
+
+     :00455BF0 50                      push eax
+
+     :00455BF1 8BCE                    mov ecx, esi
+
+
+
+     * Reference To: MFC40.MFC40:NoName0220, Ord:02FAh
+
+                                       |
+
+     :00455BF3 E81C120200              Call 00476E14
+
+     :00455BF8 8B06                    mov eax, dword ptr [esi]
+
+     :00455BFA 8378F800                cmp dword ptr [eax-08], 00000000
+
+     :00455BFE 7534                    jne 00455C34
+
+     :00455C00 B801000000              mov eax, 00000001
+
+     :00455C05 8B4DF0                  mov ecx, dword ptr [ebp-10]
+
+     :00455C08 8845FC                  mov byte ptr [ebp-04], al
+
+     :00455C0B 898134010000            mov dword ptr [ecx+00000134], eax
+
+     :00455C11 E8B3000000              call 00455CC9
+
+     :00455C16 C645FC00                mov [ebp-04], 00
+
+     :00455C1A E89B010000              call 00455DBA
+
+     :00455C1F E917FCFFFF              jmp 0045583B
+
+
+
+     * Referenced by a CALL at Address:
+
+     |:00455BB6   
+
+     |
+
+     :00455C24 8D4DE4                  lea ecx, dword ptr [ebp-1C]
+
+
+
+     * Reference To: MFC40.MFC40:NoName0217, Ord:02C2h
+
+                                       |
+
+     :00455C27 E9D6110200              Jmp 00476E02
+
+
+
+     * Referenced by a CALL at Address:
+
+     |:00455BBF   
+
+     |
+
+     :00455C2C 8D4DCC                  lea ecx, dword ptr [ebp-34]
+
+
+
+     * Reference To: MFC40.MFC40:NoName0217, Ord:02C2h
+
+                                       |
+
+     :00455C2F E9CE110200              Jmp 00476E02
+
+_________________________________________________________________________</PRE>
+
+
+
+     As you can see, it leads to a section of code that does something and then jumps away from all the nasty dialog
+
+     display etc. So we probably want that jump to occur. But wait a moment. If that jump is executed there is no
+
+     nasty dialog at all but if it's not executed we should get a dialog saying that our copy of FrontPage will expire on
+
+     such and such date. Anyway what we get is a nasty dialog saying that our copy has already expired. This portion
+
+     of code has never being executed because of a previous jump that leads to the &quot;your copy has expired&quot; dialog.
+
+     This condition should be date related too according to a scheme like this: <PRE>
+
+
+
+         Get Current Date
+
+         Get Expiring Date (fixed)
+
+
+
+         IF Current Date &gt; Expiring Date? THEN
+
+            MessageBox( &quot;Your copy has expired!&quot; );
+
+         ELSE    
+
+            MessageBox( &quot;Your copy will expire on such and such day&quot; );	</PRE>
+
+
+
+     There should also be some kind of checking for bad lamers taking their clock back. Anyway, let's look for a
+
+     conditional jump &quot;date related&quot; that takes us to the &quot;Your copy has expired!&quot; dialog.
+
+	     <BR><BR>
+
+     Pretty easy job. It's test eax, eax. The conditional jump after it takes straight to the &quot;Your copy has expired&quot;
+
+     section. There is another testing after it regarding edi. Can be a test on the &quot;bad lamer&quot; condition? Notice also
+
+     that both the testing sections are preceded by a call to them same function with the same parameter passed to it.
+
+     Let's look at that code again:<PRE> 
+
+     __________________________________________________________________________
+
+
+
+     :00455AA1 83EC04                  sub esp, 00000004
+
+     :00455AA4 8D45E8                  lea eax, dword ptr [ebp-18]
+
+     :00455AA7 8965CC                  mov dword ptr [ebp-34], esp
+
+     :00455AAA 50                      push eax
+
+     :00455AAB 8B4DCC                  mov ecx, dword ptr [ebp-34]
+
+     :00455AAE E82D030000              call 00455DE0
+
+     :00455AB3 8D8D64FFFFFF            lea ecx, dword ptr [ebp+FFFFFF64]
+
+     :00455AB9 E832030000              call 00455DF0
+
+     :00455ABE 85C0                    test eax, eax
+
+     :00455AC0 0F850F020000            jne 00455CD5
+
+     :00455AC6 85FF                    test edi, edi
+
+     :00455AC8 0F8507020000            jne 00455CD5
+
+
+
+     ... and after few lines ...
+
+
+
+     :00455ACE 83EC04                  sub esp, 00000004
+
+     :00455AD1 8D45D0                  lea eax, dword ptr [ebp-30]
+
+     :00455AD4 8965CC                  mov dword ptr [ebp-34], esp
+
+     :00455AD7 50                      push eax
+
+     :00455AD8 8B4DCC                  mov ecx, dword ptr [ebp-34]
+
+     :00455ADB E800030000              call 00455DE0
+
+     :00455AE0 8D8D64FFFFFF            lea ecx, dword ptr [ebp+FFFFFF64]
+
+     :00455AE6 E805030000              call 00455DF0
+
+     :00455AEB 85C0                    test eax, eax
+
+     :00455AED 0F84D1000000            je 00455BC4
+
+
+
+     __________________________________________________________________________	</PRE>
+
+
+
+
+
+     Same calling sequence, same calling scheme but the pushed parameter eax is different in the two calls. At this
+
+     point we should probably take a look at the two called functions: <PRE>
+
+     __________________________________________________________________________
+
+
+
+     * Referenced by a CALL at Addresses:
+
+     |:00455AAE   , :00455ADB   
+
+     |
+
+     :00455DE0 8B442404                mov eax, dword ptr [esp+04]
+
+     :00455DE4 8B10                    mov edx, dword ptr [eax]
+
+     :00455DE6 8BC1                    mov eax, ecx
+
+     :00455DE8 8911                    mov dword ptr [ecx], edx
+
+     :00455DEA C20400                  ret 0004
+
+
+
+     and
+
+
+
+     * Referenced by a CALL at Addresses:
+
+     |:00455AB9   , :00455AE6   
+
+     |
+
+     :00455DF0 8B442404                mov eax, dword ptr [esp+04]
+
+     :00455DF4 3901                    cmp dword ptr [ecx], eax
+
+     :00455DF6 B801000000              mov eax, 00000001
+
+     :00455DFB 7D02                    jge 00455DFF
+
+     :00455DFD 33C0                    xor eax, eax
+
+
+
+     * Referenced by a (U)nconditional or (C)onditional Jump at Address:
+
+     |:00455DFB(C)
+
+     |
+
+     :00455DFF C20400                  ret 0004
+
+
+
+     __________________________________________________________________________	</PRE>
+
+
+
+
+
+     So the first one is a kind of swapping function. The second one is a kind of boolean comparison function. It
+
+     compares two quantities, one passed as a parameter on the stack and the other pointed by ecx and returns 1 if
+
+     the first one is less than the second one, otherwise it returns 0. edi, that is tested after eax in the caller function, is
+
+     not involved here so it must have been set somewhere before these calls (in fact there is mov edi,eax up there).
+
+		  <BR><BR>
+
+     Can these test eax, eax and the subsequent conditional calls the instructions that make the &quot;cinderella&quot;
+
+     protection to snap? If it's so, let's see how it works: the first conditional jump is executed because we see the
+
+     &quot;Your copy has expired&quot; dialog, thus eax or edi have to be zero upon the return from call 00455DF0. Can this
+
+     mean &quot;Your copy has expired&quot;? There only on way to know it at this point. We don't want the code to jump to
+
+     the &quot;Your copy has expired&quot; dialog so we can change the jumping condition and see what happens. 
+
+		     <BR><BR><B>
+
+     Patch it!
+
+		   </B>  <BR><BR>
+
+     First of all let's make a backup copy of the exe file (just in case). Then let's run our favorite hex editor and look
+
+     for:<PRE> 
+
+
+
+     E832030000 85C0 0F850F020000 85FF 0F8507020000
+
+                       --                --
+
+                        \                 \
+
+                change to 84 (je)     change to 84 (je)	 </PRE>
+
+
+
+     and change the two bytes as described. Just to be sure we have also changed the jne that comes after the test
+
+     edi, edi. Now let's run it and see what happens. 
+
+			  <BR><BR><B>
+
+     Once more
+
+	  </B>  <BR><BR>
+
+     We get another nasty dialog, but this time is the one that says &quot;This copy will expire...&quot; Obviously the &quot;cinderella&quot;
+
+     protection has snapped again because of the second test eax, eax. This is because the condition was false
+
+     (eax =/= 0) and thus the conditional jump je 00455BC4 to the &quot;good boy&quot; part of the code hasn't been
+
+     executed. So let's patch this too as usual: reversing the jumping condition. Look for: 
+
+	  <PRE>
+
+     E805030000 85C0 0F84D1000000
+
+                       --
+
+                        \
+
+                  change to 85 (jne)</PRE>
+
+
+
+     and change the byte as described. Now run the program and... 
+
+	     <BR><BR><B>
+
+     CONGRATULATIONS!
+
+		</B>  <BR><BR>
+
+     You cracked it! No more nasty dialogs, no more &quot;cinderella&quot; protection. Well, after all it was just a 3 byte
+
+     crack... Anyway, don't forget your homework! [I'll give you one hint: learn from your (very recent) experience...] 
+
+			  <BR><BR><B>
+
+     Conclusion
+
+		</B>  <BR><BR>
+
+     We are at the end of this (rather long essay) and we cracked the time protection using our brain and with a little
+
+     luck too. But there is one more question? Who cares - you are probably thinking - we cracked it and that's it!
+
+     Well, just for the sake of knowledge did you wonder where the call to the &quot;GetLocalTime&quot; like function is? Well,
+
+     it must be somewhere in code that precedes the test eax, eax but where? The answer is that it hides inside
+
+     this call:<PRE>
+
+     __________________________________________________________________________
+
+
+
+     :00455A54 8D8564FFFFFF            lea eax, dword ptr [ebp+FFFFFF64]
+
+     :00455A5A 50                      push eax
+
+
+
+     * Reference To: MFC40.MFC40:NoName0152, Ord:0CFEh
+
+                                       |
+
+     :00455A5B E8781F0200              Call 004779D8
+
+     :00455A60 6AFF                    push FFFFFFFF
+
+     :00455A62 56                      push esi
+
+     :00455A63 56                      push esi
+
+     :00455A64 8D4DD0                  lea ecx, dword ptr [ebp-30]
+
+     :00455A67 56                      push esi
+
+     :00455A68 6A01                    push 00000001
+
+     :00455A6A 6A01                    push 00000001
+
+     :00455A6C 68CD070000              push 000007CD
+
+
+
+     __________________________________________________________________________</PRE>
+
+
+
+     It's just few line before the test eax, eax and it involves the parameter [ebp+FFFFFF64], the same that you
+
+     can see in the calls to the &quot;comparison&quot; function (call 00455DF0). How do I know? Well, if you trace into this
+
+     call with Sice you will see that there is a call to the time function (it's part of the Micro$oft Visual C++ run time
+
+     library). This function, in turn, calls GetLocalTime. There it is! It's hidden inside a double shell. Now that you
+
+     know where the call to the &quot;get time&quot; function hides, you can try to properly decipher the code that follows it. Let
+
+     me know if you find something interesting!
+
+		  <BR><BR>
+
+     That's it! I really hope you enjoyed this essay as much as I did writing it (and cracking FrontPage 97 beta). Few
+
+     final words: I wish to thank +ORC for his great tutorial and essays, Fravia+ for his great WEB site (and his
+
+     lessons on searching the net) and all the +HCUkers who have contributed to +HCU and will keep doing it. Good cracking
+
+     to everybody!<PRE>
+
+
+
+                             My &quot;motto&quot; is : Use your brain not your fingers!
+
+
+
+          ViceVersa+
+
+          August, 8th 1997 
+
+ </PRE>
+
+ <FONT color="blue">
+
+<P><TT>(c) ViceVersa 1997. All rights reserved</TT></FONT>
+
+ 
+
+
+
+<HR ALIGN="CENTER" WIDTH="100%" SIZE="3">
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</I></CENTER>
+
+<BR><CENTER>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"> 
+
+<A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links </A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0">
+
+<A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity </A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays </A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails </A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mailFraVia </A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">is reverse engineering legal? </A></CENTER>
+
+<CENTER><HR ALIGN="CENTER" WIDTH="100%" SIZE="2"></CENTER>
+
+
+
+</BODY>
+
+</HTML>

@@ -1,0 +1,757 @@
+<html><HEAD>
+
+<TITLE>Aescul3</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+<CENTER><FONT size="+5">Hex Workshop 32 v. 2.53</FONT><BR><FONT size="+2">
+
+(&quot;A weak protection scheme is worst than no protection scheme at all&quot;)</FONT>
+
+<BR><A href="project7.htm" tppabs="http://www.anticrack.de/fravia/project7.htm">
+
+<IMG SRC="stupid.gif" tppabs="http://www.anticrack.de/fravia/stupid.gif" ALT="STUPID" ALIGN="BOTTOM" WIDTH="114" HEIGHT="43" BORDER="0" VSPACE="0" HSPACE="0"></A>
+
+</A>
+
+<BR>
+
+<H4><I>by Aesculapius</I>
+
+<BR>(05 July 1997, slightly edited by Fravia)</H4>
+
+<HR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">
+
+Courtesy of Fravia's page of reverse engineering<BR><HR size="2">
+
+
+
+</CENTER>
+
+<PRE>                          Hex Workshop 32 v. 2.53 Crack
+
+      (A weak protection scheme is worst than no protection scheme at all)
+
+                                 By Aesculapius
+
+
+
+    Getting advantages from weak protection schemes has always been one of
+
+my favorites activities. Turning your worst enemy into your best friend is
+
+one of the more stunning goals of a cracker. This application is not only
+
+a great shining diamond for our trade (being a very good hexeditor) but 
+
+also an excellent example in how a precise modification of the protection 
+
+scheme can turn it to your advantage.
+
+Hex Workshop v. 2.52 has already been cracked (BTW, +ORC explained the 
+
+'dead listing' approach cracking version 2.1 of this same program inside 
+
+his lesson <A href="howto93.htm" tppabs="http://www.anticrack.de/fravia/howto93.htm">9.3</A>) and probably the same modifications of the previous version 
+
+apply to this one, however, what i pretend to teach in this essay is how 
+
+to reach the heart, or should i say, pull out the guts of this protection 
+
+scheme with your own bare hands (nasty!!! ain't it). 
+
+May we begin?
+
+
+
+    Hex Workshop is protected with a mediocre serial number system. Lets
+
+disassemble the code with w32dsm85, now, hit your search button looking for
+
+&quot;Registration unsuccessful&quot; (the tittle of the wrong serial number window
+
+warning). Wdasm lands in this segment of code:
+
+
+
+Name: DialogID_0075, # of Controls=003, Caption:&quot;Registration Unsuccessful&quot;
+
+     001 - ControlID:FFFF, Control Class:&quot;&quot; Control Text:&quot;You have entered an
+
+invalid registration number.&quot;
+
+     002 - ControlID:FFFF, Control Class:&quot;&quot; Control Text:&quot;Please confirm you
+
+entered a valid registration number or contact BreakPoint S&quot;
+
+     003 - ControlID:0001, Control Class:&quot;&quot; Control Text:&quot;&amp;OK&quot;
+
+
+
+    Now search this precise dialog number. Now hit F3 button in
+
+wdasm (search again) looking for &quot;DialogID_0075&quot;. You'll land here:
+
+
+
+* Possible StringData Ref from Data Obj -&gt;&quot;JN11mARQ&quot;; This should win the
+
+                                                      programmers stupidity
+
+                                                      award. As this is one
+
+                                                      of the few known
+
+                                                      working serial numbers
+
+                                                      widely spread around
+
+                                                      the web, programmers
+
+                                                      choose to insert this 
+
+                                                      code HARDWIRED in their 
+
+                                                      new versions, to avoid its
+
+                                                      use by lamers, instead
+
+                                                      of changing the code
+
+                                                      generation sequence itself!!!
+
+                                 |
+
+:00409C41 6874D84700             push 0047D874
+
+:00409C46 8D45DC                 lea eax, dword ptr [ebp-24]
+
+:00409C49 50                     push eax
+
+:00409C4A E8210A0300             call 0043A670
+
+:00409C4F 83C408                 add esp, 00000008 ; Is the serial typed 8
+
+                                                     bytes long? If not then
+
+                                                     flag is 00 otherwise flag
+
+                                                     is 01
+
+:00409C52 85C0                   test eax, eax
+
+:00409C54 0F8414000000           je 00409C6E
+
+:00409C5A 8D45DC                 lea eax, dword ptr [ebp-24]
+
+:00409C5D 50                     push eax
+
+:00409C5E E8DDD50200             call 00437240 ; checking procedure. Result
+
+                                                 stored in EAX.
+
+:00409C63 83C404                 add esp, 00000004
+
+:00409C66 8945EC                 mov dword ptr [ebp-14], eax ; Something
+
+                                                             ; stored in flag
+
+                                                             ; byte.
+
+:00409C69 E907000000             jmp 00409C75
+
+
+
+* Referenced by a Jump at Address:00409C54(C)
+
+|
+
+:00409C6E C745EC00000000         mov [ebp-14], 00000000 ; Flag and three more
+
+                                                        ; bytes are turn into
+
+                                                        ; 00
+
+
+
+* Referenced by a Jump at Address:00409C69(U)
+
+|
+
+:00409C75 837DEC00               cmp dword ptr [ebp-14], 00000000 ; Compares
+
+                                                                    flag with
+
+                                                                    00=unreg
+
+                                                                    If flag is
+
+                                                                    01=reg.
+
+:00409C79 0F8479000000           je 00409CF8 ; This jumps beyond the invalid
+
+                                               serial number box.
+
+
+
+:00409C7F 8B8DFCFEFFFF           mov ecx, dword ptr [ebp+FEFC]
+
+:00409C85 83C15C                 add ecx, 0000005C
+
+:00409C88 E8F37FFFFF             call 00401C80
+
+:00409C8D 50                     push eax
+
+:00409C8E 8B85FCFEFFFF           mov eax, dword ptr [ebp+FEFC]
+
+:00409C94 8B4060                 mov eax, dword ptr [eax+60]
+
+:00409C97 83C002                 add eax, 00000002
+
+:00409C9A 50                     push eax
+
+:00409C9B E820F20200             call 00438EC0
+
+:00409CA0 83C408                 add esp, 00000008
+
+:00409CA3 8B85FCFEFFFF           mov eax, dword ptr [ebp+FEFC]
+
+:00409CA9 8B4060                 mov eax, dword ptr [eax+60]
+
+:00409CAC 66C7000100             mov word ptr [eax], 0001
+
+:00409CB1 6A00                   push 00000000
+
+:00409CB3 8B85FCFEFFFF           mov eax, dword ptr [ebp+FEFC]
+
+:00409CB9 8B4060                 mov eax, dword ptr [eax+60]
+
+:00409CBC 50                     push eax
+
+:00409CBD 8D8D74FFFFFF           lea ecx, dword ptr [ebp+FF74]
+
+:00409CC3 E824C70100             call 004263EC
+
+:00409CC8 C745FC00000000         mov [ebp-04], 00000000
+
+:00409CCF 8D8D74FFFFFF           lea ecx, dword ptr [ebp+FF74]
+
+:00409CD5 E8D4E00300             call 00447DAE
+
+
+
+* Possible Reference to String Resource ID=00001: &quot;Hex Workshop Version 2.53&quot;
+
+                                 |
+
+:00409CDA 6A01                   push 00000001
+
+:00409CDC 8B8DFCFEFFFF           mov ecx, dword ptr [ebp+FEFC]
+
+:00409CE2 E8E8E10300             call 00447ECF
+
+:00409CE7 C745FCFFFFFFFF         mov [ebp-04], FFFFFFFF
+
+:00409CEE E8CE000000             call 00409DC1
+
+:00409CF3 E9B8000000             jmp 00409DB0
+
+
+
+* Referenced by a Jump at Address:00409C79(C)
+
+|
+
+:00409CF8 E8A38AFFFF          call 004027A0
+
+:00409CFD 89850CFFFFFF        mov dword ptr [ebp+FF0C], eax
+
+:00409D03 8B850CFFFFFF        mov eax, dword ptr [ebp+FF0C]
+
+:00409D09 8B00                mov eax, dword ptr [eax]
+
+:00409D0B 898508FFFFFF        mov dword ptr [ebp+FF08], eax
+
+
+
+* Possible Reference to String Resource ID=00001: &quot;Hex Workshop Version 2.53&quot;
+
+                                 |
+
+:00409D11 6A01                push 00000001
+
+:00409D13 8B8508FFFFFF        mov eax, dword ptr [ebp+FF08]
+
+:00409D19 8B8D0CFFFFFF        mov ecx, dword ptr [ebp+FF0C]
+
+:00409D1F FF9094000000        call dword ptr [eax+00000094]
+
+:00409D25 68D0070000          push 000007D0
+
+
+
+* Reference To: KERNEL32.Sleep, Ord:0218h
+
+                                 |
+
+:00409D2A FF1588194900           Call dword ptr [00491988]
+
+:00409D30 E86B8AFFFF             call 004027A0
+
+:00409D35 898504FFFFFF           mov dword ptr [ebp+FF04], eax
+
+:00409D3B 8B8504FFFFFF           mov eax, dword ptr [ebp+FF04]
+
+:00409D41 8B00                   mov eax, dword ptr [eax]
+
+:00409D43 898500FFFFFF           mov dword ptr [ebp+FF00], eax
+
+:00409D49 6A00                   push 00000000
+
+:00409D4B 8B8500FFFFFF           mov eax, dword ptr [ebp+FF00]
+
+:00409D51 8B8D04FFFFFF           mov ecx, dword ptr [ebp+FF04]
+
+:00409D57 FF9094000000           call dword ptr [eax+00000094]
+
+:00409D5D 6A00                   push 00000000
+
+:00409D5F 6A00                   push 00000000
+
+
+
+* Possible Reference to String Resource ID=00001: &quot;Hex Workshop Version 2.53&quot;
+
+                                 |
+
+:00409D61 6A01                   push 00000001
+
+
+
+* Possible Reference to Dialog: DialogID_0075 ; This piece of code should not
+
+                                              ; be executed if the serial
+
+                                              ; number typed is right...
+
+                                 |
+
+:00409D63 6A75                   push 00000075
+
+:00409D65 8D8D10FFFFFF           lea ecx, dword ptr [ebp+FF10]
+
+:00409D6B E890F3FFFF             call 00409100
+
+
+
+* Possible Reference to String Resource ID=00001: &quot;Hex Workshop Version 2.53&quot;
+
+                                 |
+
+:00409D70 C745FC01000000         mov [ebp-04], 00000001
+
+:00409D77 8D8D10FFFFFF           lea ecx, dword ptr [ebp+FF10]
+
+:00409D7D E82CE00300             call 00447DAE
+
+
+
+* Possible Reference to Dialog: DialogID_0064, CONTROL_ID:0404, &quot;&quot;
+
+                                 |
+
+:00409D82 6804040000             push 00000404
+
+:00409D87 8B8DFCFEFFFF           mov ecx, dword ptr [ebp+FEFC]
+
+:00409D8D E8DC190400             call 0044B76E
+
+:00409D92 8945F0                 mov dword ptr [ebp-10], eax
+
+:00409D95 8B45F0                 mov eax, dword ptr [ebp-10]
+
+:00409D98 50                     push eax
+
+:00409D99 8B8DFCFEFFFF           mov ecx, dword ptr [ebp+FEFC]
+
+:00409D9F E8CC010000             call 00409F70
+
+:00409DA4 C745FCFFFFFFFF         mov [ebp-04], FFFFFFFF
+
+:00409DAB E805000000             call 00409DB5
+
+
+
+* Referenced by a Jump at Address:00409CF3(U)
+
+|
+
+:00409DB0 E922000000            jmp 00409DD7
+
+
+
+* Referenced by a CALL at Address:00409DAB
+
+|
+
+:00409DB5 8D8D10FFFFFF          lea ecx, dword ptr [ebp+FF10]
+
+:00409DBB E890F4FFFF            call 00409250
+
+:00409DC0 C3                    ret
+
+
+
+    As you can see, this code is self explaining, the invalid serial number
+
+is first compared with the widely spread (JN11mARQ); if it isn't this
+
+number, then the execution will check your serial number for
+
+validation at CALL in address :00409C5E. Lets search this CALL. Hit search
+
+button at Wdasm looking for &quot;:00409C5E&quot;. We land here:
+
+
+
+* Referenced by a CALL at Addresses:00409C5E   , :00426118                
+
+                                      ; Lady's and gentleman we're inside the
+
+                                      ; protection scheme itself... and we
+
+                                      ; found TWO calls... that means that
+
+                                      ; the valid serial is calculated two
+
+                                      ; times, how touching, probably, the
+
+                                      ; first one when application starts
+
+                                      ; and the other when the user tries
+
+                                      ; to register it.
+
+|
+
+:00437240 83EC14                 sub esp, 00000014
+
+:00437243 B9FFFFFFFF             mov ecx, FFFFFFFF
+
+:00437248 2BC0                   sub eax, eax
+
+:0043724A 56                     push esi
+
+:0043724B 8B74241C               mov esi, dword ptr [esp + 1C]
+
+:0043724F 57                     push edi
+
+:00437250 8BFE                   mov edi, esi
+
+:00437252 F2                     repnz
+
+:00437253 AE                     scasb
+
+:00437254 F7D1                   not ecx
+
+:00437256 49                     dec ecx
+
+:00437257 83F908                 cmp ecx, 00000008 ; Once again, its the
+
+                                                   ; code 8 bytes long? No,
+
+                                                   ; then EAX=0 Unreg.
+
+:0043725A 7408                   je 00437264
+
+:0043725C 33C0                   xor eax, eax
+
+:0043725E 5F                     pop edi
+
+:0043725F 5E                     pop esi
+
+:00437260 83C414                 add esp, 00000014
+
+:00437263 C3                     ret
+
+
+
+* Referenced by a Jump at Address:0043725A(C)
+
+|
+
+:00437264 6A0A                   push 0000000A
+
+:00437266 8D4602                 lea eax, dword ptr [esi+02]
+
+:00437269 6A00                   push 00000000
+
+:0043726B 50                     push eax
+
+:0043726C E8DF1F0000             call 00439250
+
+:00437271 8D4C2414               lea ecx, dword ptr [esp + 14]
+
+:00437275 83C40C                 add esp, 0000000C
+
+:00437278 8BFE                   mov edi, esi
+
+:0043727A 51                     push ecx
+
+:0043727B 50                     push eax
+
+:0043727C E83FFFFFFF             call 004371C0
+
+:00437281 83C408                 add esp, 00000008
+
+:00437284 B9FFFFFFFF             mov ecx, FFFFFFFF
+
+:00437289 2BC0                   sub eax, eax
+
+:0043728B F2                     repnz
+
+:0043728C AE                     scasb
+
+:0043728D F7D1                   not ecx
+
+:0043728F 2BF9                   sub edi, ecx
+
+:00437291 8BC1                   mov eax, ecx
+
+:00437293 C1E902                 shr ecx, 00000002
+
+:00437296 8BF7                   mov esi, edi
+
+:00437298 8D7C240C               lea edi, dword ptr [esp + 0C]
+
+:0043729C F3                     repz
+
+:0043729D A5                     movsd
+
+:0043729E 8BC8                   mov ecx, eax
+
+:004372A0 83E103                 and ecx, 00000003
+
+:004372A3 F3                     repz
+
+:004372A4 A4                     movsb
+
+:004372A5 8D742408               lea esi, dword ptr [esp + 08]
+
+:004372A9 8D4C240C               lea ecx, dword ptr [esp + 0C]
+
+:004372AD 51                     push ecx
+
+:004372AE E82D2D0000             call 00439FE0
+
+:004372B3 83C404                 add esp, 00000004
+
+
+
+* Possible Reference to Menu: MenuID_0002
+
+                                 |
+
+
+
+* Possible Reference to String Resource ID=00002: &quot;Hex Workshop&quot;
+
+                                 |
+
+:004372B6 B902000000             mov ecx, 00000002 ; Stores two bytes to
+
+                                                   ; compare.
+
+:004372BB 8BF8                   mov edi, eax
+
+:004372BD 2BC0                   sub eax, eax
+
+:004372BF F3                     repz        ; Finally, the program compares
+
+:004372C0 A6                     cmpsb       ; two calculated bytes with
+
+                                             ; the first two bytes of the
+
+                                               serial number you typed, if
+
+                                               equal, then EAX=01 at
+
+                                               :004372D1
+
+:004372C1 7405                   je 004372C8 ; Changing this to jne will do
+
+                                             ; the crack
+
+:004372C3 1BC0                   sbb eax, eax
+
+:004372C5 83D8FF                 sbb eax, FFFFFFFF
+
+
+
+* Referenced by a Jump at Address:004372C1(C)
+
+|
+
+:004372C8 85C0                   test eax, eax
+
+:004372CA B800000000             mov eax, 00000000 ; changing this to
+
+                                                   ; mov eax,1 will
+
+                                                   ; probably do the crack
+
+:004372CF 7505                   jne 004372D6
+
+
+
+* Possible Reference to String Resource ID=00001: &quot;Hex Workshop Version 2.53&quot;
+
+                                 |
+
+:004372D1 B801000000             mov eax, 00000001
+
+
+
+* Referenced by a Jump at Address:004372CF(C)
+
+|
+
+:004372D6 5F                     pop edi
+
+:004372D7 5E                     pop esi
+
+:004372D8 83C414                 add esp, 00000014
+
+:004372DB C3                     ret
+
+
+
+
+
+We've seen enough, the program will check only the first two bytes of the
+
+serial number to see if the number you typed match the one it calculated.
+
+It accomplish this task using REPZ CMPSB (F3A6), damn, poor people!
+
+Another &quot;stupidity flag&quot;! Just searching for the instruction 'F3A6' we would 
+
+have landed right in the hearth of the protection scheme. 
+
+There are many modifications that will defeat this scheme. 
+
+I prefer the following one:
+
+
+
+change:
+
+:004372C0 A6 cmpsb
+
+
+
+to
+
+:004372C0 A4 movsb
+
+
+
+The right bytes will be moved to the first two bytes of your serial number
+
+and, as the zero flag is already set, EAX will then be equal to 01.
+
+
+
+This crack will force the program to accept any serial number as valid and
+
+therefore it will create an hexworks.reg file key which will work 
+
+<FONT color="purple">in any</FONT> shareware version of the program. 
+
+By simply erasing the key file, you may create as many new keys as 
+
+necessary. 
+
+As you can see, the protection scheme itself works now for us as a 
+
+key generator, able to create as many valid keys as we request.
+
+
+
+        New learning Crackers can use before reverse engineering the target
+
+ this Valid Serial Number: SYAESCUL, in order to learn more about what 
+
+happens when the program is registered. Once you have verified it, just delete 
+
+the registered version and reinstall an &quot;original&quot; one in order to 
+
+follow this essay.
+
+                                              
+
+                                       Aesculapius - July 1997
+
+                                       Email: aesculapius@cyberjunkie.com
+
+                                       HomePage: aesculapius.home.ml.org
+
+
+
+</PRE>
+
+
+
+
+
+<BR>
+
+<HR ALIGN="CENTER" WIDTH="100%" SIZE="3">
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</I></CENTER>
+
+<BR><CENTER>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#84'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#84"> homepage</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"> 
+
+<A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#73'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#73"> links</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0">
+
+<A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm"> anonymity</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm"> +ORC</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#82'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#82"> students' essays</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm"> tools</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm"> cocktails</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm"> search_forms</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm"> mailFraVia</A></CENTER><BR>
+
+
+
+<CENTER>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm"> Is reverse engineering legal?</A></CENTER>
+
+<CENTER><HR ALIGN="CENTER" WIDTH="100%" SIZE="2"></CENTER>
+
+
+
+</BODY>
+
+</HTML>

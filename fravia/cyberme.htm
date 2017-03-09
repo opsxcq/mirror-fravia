@@ -1,0 +1,539 @@
+<html>   <HTML>
+
+<HEAD>
+
+<TITLE>cyberme.htm: Sanity 'Uninstaller' work</TITLE>
+
+
+
+<BODY bgcolor="C0C0C0" text="#001010" vlink="#405040 Alink=#00FF50">
+
+<CENTER>
+
+<HR><A href="project7.htm" tppabs="http://www.anticrack.de/fravia/project7.htm"><IMG SRC="stupid.gif" tppabs="http://www.anticrack.de/fravia/stupid.gif" ALT="Most stupid" 
+
+ALIGN=BOTTOM WIDTH=114 HEIGHT=43 BORDER=0 VSPACE=0 HSPACE=0></A><BR>
+
+<FONT color=gray>Most stupid protections</FONT>
+
+<HR>
+
+Well, hope Sanity will agree with the small modifications I made, both to 
+
+improve the readibility of this essay AND to take off the precise "identity" 
+
+of the target. Anyone capable of using a search engine and interested enough 
+
+to follow the reversing advices by Sanity will quickly be able to individuate 
+
+the target, yet all the zombies looking for the "quick stealing crack" will 
+
+have an hard time getting this particular prey.<BR>
+
+Sanity's approach is a classical one (combining filemonitor and dead listing) 
+
+and surely the fact that the programmers of this target used a routine 
+
+named "_VerifyTryAndBuy" helps a lot (duh :-)<BR>
+
+I would have welcomed a little more explanations about the reasons for the advice 
+
+that Sanity gives us at the beginning and at the end of his essay: "<FONT color=blue>Never but 
+
+never ever patch a program unless its *the only way* to crack it!</FONT>", actually 
+
+patches are used all the time, when studying and reversing code <U>and</U> 
+
+protection schemes. I would 
+
+personally <U>reverse</U> Sanity's advice :-) "<FONT color=blue>Never but 
+
+never ever write a keygen for a program unless its *the only way* to crack 
+
+it!</FONT>"
+
+<HR></CENTER>
+
+<PRE>
+
+==============================================================================
+
+         *  CRACKING AN UNINSTALLER (BY SANITY) *
+
+==============================================================================
+
+
+
+                  CONTENTS:
+
+                  ---------
+
+       1) Intro.
+
+       2) Crack Reqs.
+
+       3) Cracking our target.
+
+         3.1) Farewell Timetrial.
+
+         3.2) G'bye Nag-Screens.
+
+       4) Closing Words.
+
+
+
+
+
+=============================================================================
+
+     * PART 1: Intro. *
+
+=============================================================================
+
+                  
+
+Our Uninstaller target is a package of 9 different service applications 
+
+(Such as: Registry/Junk Files cleaning,Installation Monitor and more)
+
+that let you maintain your system in a better,easier,faster way.
+
+As mentioned in its package, this Uninstaller comes fully-functional 
+
+but with a 14 day time-trial and some annoying nag screens.
+
+
+
+Now,before we start I would to CLEAR something:
+
+NEVER BUT NEVER EVER PATCH A PROGRAM UNLESS ITS *THE ONLY WAY* TO CRACK IT!
+
+
+
+Ok,so let's start...
+
+
+
+
+
+=============================================================================
+
+     * PART 2: Crack Reqs. *
+
+
+
+=============================================================================
+
+
+
+For this cracking session you will need the following tools:
+
+------------------------------------------------------------
+
+
+
+.%. Our Uninstaller target
+
+.%. W32Dasm v8.9 (everywhere on the web, either as regged tool or as "reggable" demo)
+
+.%. Hacker's View v5.84 or any other *GOOD* hex-editor. [&lt;a href="www.zencrack.org">www.zencrack.org&lt;/a>]
+
+.%. a File Monitor (FileMon,WinExpose I/O,Monitor/RA..) [&lt;a href="www.zencrack.org">www.zencrack.org&lt;/a>]
+
+.%. a Brain. (Search for one on ALTAVISTA =)
+
+
+
+NOTE: there is no use of S-ICE in this tut but it could be useful in 
+
+      tracing the target.
+
+
+
+
+
+=============================================================================
+
+                   * PART 3: Cracking our target. *
+
+=============================================================================
+
+                  
+
+Ok,after we're all set let's launch the program,try running some of the 
+
+advanced features of Uninstaller and that lovely(? :) nag saying -
+
+"Uninstaller blah blah NOT REGISTERED blah blah XX DAYS LEFT" appears.
+
+at this point what I first check is if there a Register Box or anything but I 
+
+could'nt find any. So I terminated Uninstaller's session and launched
+
+FileMon and ran Uninstaller again... and the following line just popped
+
+in front of me:
+
+
+
+2710  Uni   FindNext    C:\WINDOWS\SYSTEM\*.*       SUCCESS   WPUIVIE.DRV
+
+
+
+Using our editor to view WPUIVIE.DRV inside \WINDOWS\SYSTEM shows that this
+
+file contains all the info: when we installed Uninstaller, last time used,
+
+etc..
+
+This means that dead-listing the program and finding a ref. to WPUIVIE.DRV
+
+would lead us straight into the "NAG+TIME-TRIAL" routine.
+
+
+
+                   3.1) Farewell Timetrial:
+
+                   -------------------------
+
+    You should remember that the nag only appears on advanced features,
+
+    this means you won't have to disassemble the main app. but only one
+
+    of the advanced features app. (coz the nag routine is probably being
+
+    called from a file which all the "advanced features" apps. will use!)
+
+    To be sure of what I was doing I disassembled all of the adv. features
+
+    apps. although i hav'nt found a ref. to WPUIVIE.DRV I've found that 
+
+    every single one of them uses a DLL named UNITNB.DLL (weird filename?
+
+    hmm.. does this stands for "UNINSTALLER TRY&BUY".. who knows? :)
+
+    I was sure it contains the protection after I've found this:
+
+
+
+    * Possible StringData Ref from Data Obj ->"UNITNB.DLL"
+
+           |
+
+    :00401030 6804F14000              push 0040F104  ;this pushes UNITNB on stack
+
+    :00401035 FFD5		      call ebp       ;this call links the UNITNB lib.
+
+    :00401037 85C0		      test eax, eax  ;check if successfully linked UNITNB.
+
+    :00401039 0F844C020000            je 0040128B    ;failed to link - get out the func.
+
+
+
+    * Possible StringData Ref from Data Obj ->"_VerifyTryAndBuy@4" ; huh? Nice name... 
+
+           |
+
+    :0040103F 68F0F04000              	push 0040F0F0;push on stack
+
+    :00401044 50  			push eax;^^
+
+
+
+    * Reference To: KERNEL32.GetProcAddress, Ord:0116h
+
+           |
+
+    :00401045 FF154C944100      Call dword ptr [0041944C]  ;call _VerifyTryAndBuy from UNITNB
+
+    :0040104B 85C0		test eax, eax              ;check for success
+
+    :0040104D 0F8438020000      je 0040128B                ;if we fail goto 40128b.
+
+
+
+    Ok,so all there's left is to disassemble UNITNB.DLL and nuke the timetrial
+
+     
+
+     * Possible StringData Ref from Data Obj ->"\"
+
+           |
+
+     :10001308 684CD00010              	push 1000D04C
+
+     :1000130D 51  			push ecx
+
+     :1000130E FFD6			call esi
+
+     :10001310 8D542410                	lea edx, dword ptr [esp+10]
+
+
+
+     * Possible StringData Ref from Data Obj ->"system\wpuivie.drv"
+
+           |
+
+     :10001314 6838D00010              	push 1000D038
+
+     :10001319 52  			push edx
+
+     :1000131A FFD6			call esi
+
+     :1000131C 8A442410                	mov al, byte ptr [esp+10]
+
+     :10001320 84C0		       	test al, al
+
+     :10001322 750E			jne 10001332
+
+     :10001324 83C8FF                  	or eax, FFFFFFFF
+
+     :10001327 5F  			pop edi
+
+     :10001328 5E  			pop esi
+
+     :10001329 5D  			pop ebp
+
+     :1000132A 5B  			pop ebx
+
+     :1000132B 81C48C010000            	add esp, 0000018C
+
+     :10001331 C3  			ret
+
+
+
+     jumping to 10001332 and tracing a bit down gives us a time trial routine.
+
+
+
+
+
+     * Reference To: KERNEL32.OpenFile, Ord:01AFh
+
+           |
+
+     :1000135E FF15C8310110     Call dword ptr [100131C8] ;open file
+
+     :10001364 33F6		mov esi, eax              ;eax contains the num of days left.
+
+     :10001366 83FEFF           cmp esi, FFFFFFFF         ;if esi==-1 then it expired!
+
+     :10001369 7417		je 10001382               ;give us the right msg.
+
+
+
+     hmm... mov esi,eax and then cmp esi,FFFFFFFF? Hey I can change mov esi,eax to
+
+     xor esi,esi and, once I have done it, esi will contain a permanent value of ZERO!
+
+
+
+     Ok,I patched the dll (at offset 766h) and ran Uninstaller and Voila the time-trial
+
+     counter remains STUCK on 0.. :)
+
+     after this all that remains is to nuke the nags...
+
+
+
+                   3.2) G'bye Nag-Screens:
+
+                   ------------------------
+
+     Notice that the nag-screens contain an Uninstaller logo this
+
+     means that I should look for DialogBoxParamA in UNITNB.DLL
+
+     searching for it gets the cursor inside an interesting function
+
+     called "_VerifyTryAndBuy" (Remember?) .
+
+
+
+     Exported fn(): _VerifyTryAndBuy@4 - Ord:0004h	; note the silly name
+
+     :10001873 6A05			push 00000005
+
+     :10001875 6800005940               push 40590000
+
+     :1000187A 56  			push esi
+
+     :1000187B 6800002E40               push 402E0000
+
+     :10001880 56  			push esi
+
+     :10001881 E88AF7FFFF               call 10001010
+
+     :10001886 85C0			test eax, eax
+
+     :10001888 7427			je 100018B1	; jump to "will expire"
+
+     :1000188A 7E48			jle 100018D4	; get out
+
+     :1000188C 83F803                   cmp eax, 00000003;
+
+     :1000188F 7F43			jg 100018D4	; get out
+
+     :10001891 8B442408                	mov eax, dword ptr [esp+08]
+
+     :10001895 8B0D08090110            	mov ecx, dword ptr [10010908]
+
+     :1000189B 56  			push esi
+
+     :1000189C 68401A0010              	push 10001A40
+
+     :100018A1 50  			push eax
+
+
+
+     * Possible Reference to Dialog: DialogID_0066 	; "has expired!"
+
+           |
+
+     :100018A2 6A66			push 00000066
+
+     :100018A4 51  			push ecx
+
+     
+
+     * Reference To: USER32.DialogBoxParamA, Ord:008Eh	; &lt;-put the nag on!.
+
+           |
+
+     :100018A5 FF15E0320110            	Call dword ptr [100132E0]
+
+     :100018AB 8BC6			mov eax, esi
+
+     :100018AD 5E  			pop esi
+
+     :100018AE C20400                  	ret 0004
+
+
+
+     after examining this function for about 5 min. I got to the conclusion
+
+     that the only reasonable thing to do is just to "ret 0004" at the
+
+     beginning of this function.
+
+
+
+     back to our editor,and patching at offset c70 will give us the
+
+     full nag-screens-free-no-time-trial version!.. 
+
+
+
+
+
+=============================================================================
+
+ * PART 4: Closing Words. *
+
+
+
+=============================================================================   
+
+
+
+     Well, I would like to apologize for bad english,grammar,etc..
+
+     I can be contacted on EFnet IRC on #cracking4newbies,or just
+
+     mail me - san337y(at)biosys(dot)net.
+
+
+
+     Before I go,I would like to repeat what I've said earlier in this
+
+     tut.
+
+
+
+"NEVER BUT NEVER EVER PATCH A PROGRAM UNLESS ITS *THE ONLY WAY* TO CRACK IT!"
+
+</PRE><CENTER><HR><I>You'r deep inside fravia's pages of reverse engineering, choose your way out</I>
+
+<HR size=2 width=33%>
+
+<A href="project7.htm" tppabs="http://www.anticrack.de/fravia/project7.htm"><IMG SRC="stupid.gif" tppabs="http://www.anticrack.de/fravia/stupid.gif" ALT="Most stupid" 
+
+ALIGN=BOTTOM WIDTH=114 HEIGHT=43 BORDER=0 VSPACE=0 HSPACE=0></A><BR>
+
+<FONT color=gray>Most stupid protections</FONT><P>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" 
+
+VSPACE="0"
+
+HSPACE="0" ALIGN="BOTTOM" width="13" height="13"><A HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage </A>
+
+<IMG 
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" width="13" height="13"><A 
+
+HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" 
+
+HEIGHT="13"
+
+BORDER="0" VSPACE="0" HSPACE="0" NATURALSIZEFLAG="0"><A 
+
+HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" 
+
+HSPACE="0" width="13" height="13"><A
+
+HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" 
+
+BORDER="0"
+
+VSPACE="0" HSPACE="0" width="13" height="13"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools </A><IMG 
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" width="13" height="13"><A 
+
+HREF="coumes.htm" tppabs="http://www.anticrack.de/fravia/coumes.htm">counter
+
+measures </A><BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" 
+
+HSPACE="0" width="13" height="13"><A
+
+HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" 
+
+ALIGN="BOTTOM"
+
+BORDER="0" VSPACE="0" HSPACE="0" width="13" height="13"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails </A><IMG SRC=
+
+"bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" width="13" height="13"><A 
+
+HREF=
+
+"searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" 
+
+BORDER=
+
+"0" VSPACE="0" HSPACE="0" width="13" height="13"><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut </A><IMG 
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" width="13" height="13"><A 
+
+HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia </A><BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" 
+
+HSPACE="0" width="13" height="13"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering legal? </A></CENTER></P>
+
+
+
+</BODY>
+
+</HTML>
+
+
+
+     

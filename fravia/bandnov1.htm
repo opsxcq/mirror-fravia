@@ -1,0 +1,332 @@
+<HTML>
+
+<HEAD>
+
+  <META NAME="GENERATOR" CONTENT="Novell Netware 3.12">
+
+  <TITLE>bandnov1</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+<P><CENTER><FONT SIZE="+4">Novell Netware 3.12<BR>
+
+</FONT><FONT SIZE="+2">Netware reverse engineering - basic</FONT>
+
+<BR>
+
+</CENTER>
+
+
+
+<H4><CENTER><I>by The Undertacker</I><BR>
+
+(03 September 1997, slightly edited by Fravia)</CENTER></H4>
+
+
+
+<CENTER><HR><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"> Courtesy of Fravia's page of reverse engineering<BR>
+
+<HR> <I>Well, this is a welcome new direction for our studies... anybody else 
+
+in order to start a new +HCU project: <FONT color="blue">Netware cracking</FONT>? 
+
+Here is an excerpt from The Undertacker's accompanying letter:</I></CENTER><PRE>
+
+I will start publishing Netware 3.12 cracks  first, because this is the version 
+
+most widely used by organizations. Then, later, we'll move on to NW4.10 &amp; NW4.11.
+
+<HR size="4"><CENTER><FONT size="+2">
+
+Novell Netware 3.12 -- [Session - 1]
+
+Exploring The Password Procetion Scheme
+
+By
+
+The Undertacker -=BANDA=-</CENTER></FONT>
+
+
+
+Before we start exploring Novell Netware here is a small introduction to  the
+
+Netware Operating System.
+
+
+
+Basically Netware supports Print &amp; File sharing facilities. It also uses  the
+
+NCP{IPX} to communicate with the clients. Netware comes with different 
+
+number of client services(25user,50user...Versions). 
+
+If you really want to learn more about this,  check their web site at 
+
+<A href="javascript:if(confirm('http://129.105.116.5/fravia/www.novell.co tppabs=  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://129.105.116.5/fravia/www.novell.co tppabs='" tppabs="http://129.105.116.5/fravia/www.novell.co tppabs=" http://cracking.byus.com/fravia/www.novell.co"m">www.novell.com</A> 
+
+Finally Netware has lots of  weak points (Security, Connection control, ....). 
+
+So our aim is to examine those weak points and reverse their code. 
+
+In this session we discuss how Netware security is organized &amp; how to
+
+defeat the Netware security protection schemes. 
+
+The following Algorithm will give you a idea of  how Netware passwords are 
+
+being encripted. 
+
+Thanks go to {<FONT color="red">LiLiPuT</FONT>} for the following information.
+
+<FONT color="purple">
+
+encryptd(int id[4], char password[])
+
+	char    buffer[32];
+
+
+
+	concatenate password[] to itself until its at least 32 bytes long
+
+	put the result in buffer[]
+
+	concatenate id[] to itself until its at least 32 bytes long
+
+	xor the result into buffer[]
+
+
+
+	return encrypd(buffer[])
+
+
+
+encrypb(char buf[32])
+
+	nibble  output[32];     // 4 bits msb or lsb
+
+
+
+	complicated (but easily crackable!) function to buf[]
+
+
+
+	for (i=0; i<32; i++) output[i]="S-box[buf[i]];" return output[] /* 16 byte return value */ </fonT>
+
+where the S-box[] crunches 8 bit values down to 4 bit values.
+
+
+
+So here's how to invert the password hash function, given the 16 byte
+
+hash output[] value:
+
+<FONT color="purple">
+
+	for (i=0; i<32; i++) pick any x such that S-box[x]="=" output[i] // crack simple buf[i]="x" apply the reverse of the complicated function to buf[] concatenate id[] to itself..., and xor the result into buf[] use the resulting 32 byte buf[] as the inverse password </fonT>
+
+
+
+I hope you all understand the above algorithm. If not FORGET about it 
+
+and start working directly in the cracking session. 
+
+To crack the password protection you need to use the server (console screen). 
+
+Netware O/Sr comes with the internal Debugger for Developers. 
+
+We can use this debugger for most of  our cracks. 
+
+Here is the way to get into the debugger.
+
+
+
+In the Console Screen,
+
+
+
+     Press :- Lt.Shift+Rt.Shift+Alt+Esc - to Enter the debugger.
+
+
+
+Now you are at the '#' prompt. 
+
+To get more information about the Debugger type (H,HB,HE,.H).
+
+<FONT size="+3"><FONT color="blue">
+
+-= CraCk SeSsion =-
+
+</FONT></FONT>
+
+Debugger supports CASE SENSITIVE Api names. 
+
+I will include in the next session the complete Netware Api names. 
+
+Ok Let's ROCK !!!!!
+
+
+
+In the Debugger Type,..
+
+
+
+#u VerifyPassword       ----&gt; This function checks the user input  
+
+                              password and the encrypted bindery 
+
+                              entry. If it matches it returns
+
+			        EAX=0 else EAX=bla bla bla....
+
+
+
+Press the &quot;Enter&quot; key to scroll unassembled listing. Scroll until you see 
+
+the &quot;RET&quot; instruction.
+
+
+
+00328F76  C3    RET     ----&gt; Address may change according to your server
+
+			      Configuration.
+
+
+
+Now Put a execution Break Point on above address.
+
+
+
+B = 00328F76
+
+
+
+Leave the Debugger by Pressing &quot;g&quot;. Now log into the server from a work 
+
+station using a wrong password. 
+
+BUFFF!!! you land in sidethe debugger. 
+
+Check the EAX value. 
+
+OH! it is not equal to 0. 
+
+That means it is a wrong password. 
+
+If  you would press &quot;g&quot; again you would see a 'Password Incorrect' message 
+
+inside your work  station. 
+
+But if we change the value of the EAX register to 0 &quot;EAX=0&quot; &amp; press &quot;g&quot; 
+
+you can nevertheless log into the server. 
+
+Ok Lets start the Crack.!!!!!
+
+
+
+c VerifyPassword = B8 0 0 0 0 C3   ---&gt;  This command changes the operand 
+
+                                         and the opcode
+
+
+
+u VerifyPassword
+
+
+
+Now you can see our changes....
+
+
+
+XXXXXXXX B800000000    MOV     EAX,0
+
+XXXXXXXX C3            RET
+
+
+
+Clear all break points &quot;bca&quot; &amp; press &quot;g&quot;. 
+
+Thats it you have done it. Novell Netware 3.1 reversed!
+
+It doesn't ask for the password here after. 
+
+I have kept this essay very simple because most of our readers are not 
+
+familiar with Netware, nor with the Netware debugger. 
+
+Once you'll have understood the basic, and we'll go along smoothly, 
+
+I will include more complicated stuff in my sessions. 
+
+More Sessions to come shortly. 
+
+ 
+
+My thanks to all the friends in the +HCU. 
+
+
+
+Happy NetworKing... Se Ya SOOn!!!!.
+
+
+
+	   (((((((   ReversE EngineerinG LiveS ForeveR    )))))))
+
+
+
+
+
+(C) 1997 The Undertacker -=BANDA=- All Rights Reserved.  // SRI LANKA //
+
+
+
+</PRE><FONT color="green">
+
+(c) The Undertacker, 1997. All rights reversed.</FONT>
+
+		<HR size="2">
+
+<CENTER><I>You are deep inside fravia's page of reverse
+
+engineering, choose your way out:</I></CENTER>
+
+
+
+
+
+<P><CENTER>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#79'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#79">homepage </A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"> <A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#53'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#53">links
+
+</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0" NATURALSIZEFLAG="0"> <A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity
+
+</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#78'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#78">students' essays </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools
+
+</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails </A><BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database </A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia
+
+</A><BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">is reverse engineering legal? </A></FONT></CENTER></P>
+
+
+
+<P><CENTER><FONT SIZE="-1"><HR></FONT></CENTER>
+
+</BODY>
+
+</HTML>
+
+
+
+
+

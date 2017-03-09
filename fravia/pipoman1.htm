@@ -1,0 +1,592 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>DOS&nbsp; Navigator v1.50</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+<CENTER><FONT size="+3">BEGINNERS: Prassi CD-REP trial stupid protection</FONT>
+
+<BR>(dead listing a very easy protection scheme)
+
+<H2>by <FONT color="#5500AA">PipoMan</FONT></H2>
+
+(12 December 1997, slightly edited by fravia+)</H4>
+
+<!--<a href="protecti.htm" tppabs="http://www.anticrack.de/fravia/protecti.htm"><IMG SRC="tough.gif" tppabs="http://www.anticrack.de/fravia/tough.gif" ALT="our protections" ALIGN=BOTTOM WIDTH=114 HEIGHT=43 BORDER=0 VSPACE=0 HSPACE=0></a><br><Font color= gray>Our protections</fonT>-->
+
+<HR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">Courtesy of fravia's page 
+
+of reverse engineering<HR>       
+
+<I>Well, a very simple essay on a very stupid protection, I know I should not even publish 
+
+anymore these articles (and pass them to +gthorne's new &quot;Beginner section&quot;), yet this 
+
+one has some elements that are pretty interesting... and this whole section is anyway 
+
+dedicated to 'stupid protections', so you cannot expect to find here 'state of the art' 
+
+reversing essays :-)<BR>Anyway I like this short article because I like 'stubborn' reversers, that 
+
+do not &quot;leave hold&quot; of a target until they understand HOW the different elements of the 
+
+alien code they are investigating fit together... so I'm publishing this, and I'm sending 
+
+it over to +gthorne as well :-)<BR>
+
+Enjoy!
+
+</I></CENTER><HR size="6">
+
+In the world of protections you can still find stupid 
+
+protections. Stupid protections are protection schemes you can remove as soon as you
+
+see the disassembly code. Here is another example of these. If you're a beginner
+
+in reverse engineering you can read this otherwise forget this article: it's only for 
+
+beginners!
+
+<P>
+
+<FONT SIZE="+1">Soft : Prassi CD-REP 1.0.028 (www.prassi.com)</FONT>
+
+<BR>
+
+<FONT SIZE="+1">Protection : Time Trial Protection (30 days)</FONT>
+
+<BR>
+
+<FONT SIZE="+1">Tool : Wdasm32, any version</FONT>
+
+<P><B><FONT SIZE="+1"><U>AWARD</U> : MOST STUPID PROTECTION</FONT></B> (for sure)
+
+
+
+<P><B><I><U><FONT SIZE="+1">What's the problem ?</FONT></U></I></B>
+
+
+
+
+
+<P>After you've installed CD-REP 1.0.028 you can use it 30 days.And 30
+
+
+
+days later (or 2 seconds later with the system time) you can see a message
+
+
+
+box like : <I>Sorry,this demo version has expired </I>or <I>Sorry, this
+
+
+
+demo has expired because the system time has been changed.</I>
+
+
+
+<BR>You're very disapointed because you need CD-REP to record your CDs,
+
+
+
+of course you have others softs but this one looks like CDRWIN or DAO and
+
+
+
+you love this king of soft (I don't understand why&nbsp; ... )
+
+
+
+<BR>So you decide to look at protection sheme :
+
+
+
+
+
+
+
+<P><B><I><U><FONT SIZE="+1">First Step</FONT></U></I></B>
+
+
+
+
+
+
+
+<P>Run your favorite disassembler (like w32dasm89) and look for the nasty
+
+
+
+string : <I>Sorry,this demo version has expired</I>
+
+
+
+<BR>After few seconds you find out:<PRE>
+
+* Referenced by a Jump at Address:9038(C) 
+
+| 
+
+:9835 8D542458       lea edx, dword ptr [esp+58] 
+
+:9839 52             push edx 
+
+* Reference to String Resource ID=00078: &quot;Sorry, this demo version has expired.&quot; 
+
+:983A 6A4E           push 4E 
+
+:983C EB0F           jmp 984D 
+
+
+
+* Referenced by a Jump at Address:902C(C) 
+
+| 
+
+:983E 8D542454       lea edx, dword ptr [esp+54] 
+
+:9842 6800020000     push 200                        
+
+:9847 52             push edx 
+
+* Reference to String Resource ID=00269: &quot;Sorry, this demo has expired because the system time has bee&quot; 
+
+:9848 680D010000     push 10D                       
+
+
+
+* Referenced by a Jump at Address:983C(U) 
+
+| 
+
+:984D A12C3E4600     mov eax, dword ptr [00463E2C]   
+
+:9852 50             push eax                        
+
+* Reference To: USER32.LoadStringA, Ord:0183h 
+
+:9853 FF1540F74700   Call dword ptr [0047F740]       ;Display the string </PRE>
+
+
+
+<P>You notice two offsets :
+
+<BR>&nbsp;&nbsp;&nbsp; 9835 : Referenced by a Conditional Jump at 9038
+
+, and 983E : Referenced by a Conditional Jump at 902C
+
+<BR>You found out where the strings are displayed, now let's find out why...
+
+<P><B><I><U><FONT SIZE="+1">Second Step</FONT></U></I></B>
+
+
+
+
+
+<P>We will now have a look at the code near 902C .....<PRE>
+
+:9013 E8684C0000      call DC80                 ;A function that return something in EAX 
+
+:9018 8BF0            mov esi, eax 
+
+:901A 81E6FFFF0000    and esi, 0000FFFF         ;In fact just LSB is important 
+
+:9020 8BC6            mov eax, esi 
+
+:9022 83E800          sub eax, 00000000         ;Strange 
+
+:9025 7459            je 9080                   ;Very Strange 
+
+:9027 2DFEFF0000      sub eax, 0000FFFE 
+
+:902C 0F840C080000    je 983E                   ;Display &quot;you've changed the system time..;&quot;
+
+:9032 48              dec eax 
+
+:9033 6800020000      push 00000200 
+
+:9038 0F84F7070000    je 9835                   ;Display &quot;the demo version has expired...&quot;
+
+:903E 8B0D2C3E4600    mov ecx, dword ptr [00463E2C] ;Ok the demo version remains available 
+
+:9044 8D842458020000  lea eax, dword ptr [esp+00000258] 
+
+:904B 50              push eax 
+
+:904C 6A41            push 41  ;&quot;This is a full functional demo version of the application&quot;  
+
+:904E 51              push ecx 
+
+:904F FF1540F74700    Call dword ptr [0047F740]      ;USER32.LoadStringA, Ord:0183h
+
+:9055 8D942454020000  lea edx, dword ptr [esp+00000254] </PRE>
+
+<P>That's right you find out what you need. You could just change JE 983E and
+
+JE 9835 into NOPs and go back to your sleepy laziness, tomorrow you would be able 
+
+to use CD-REP, and the day after as well, and so on... But we are NOT here in order 
+
+to use software for free, we are here in oredr to understand the CODE! So let's now 
+
+work on all this, and let's delve deeper inside our target... yeah, it's already cracked, 
+
+so what? We'll still find some nice little fishes, just follow me...
+
+
+
+<P><B><FONT SIZE="+1">In fact </FONT></B>there is something strange at offset
+
+9022. Why this test? Is there another solution or is it another protection?
+
+<BR>In fact if&nbsp; EAX=0 the program jumps into 9080. If&nbsp; you look
+
+at 9080 you will see that the message box (&quot;This is a full functional
+
+demo version of the application...&quot;)&nbsp; is not displayed and the program
+
+runs without checking the date !!
+
+<BR>So there is an easier solution : force EAX to be NULL ... How ? ...
+
+Change AND ESI,0000FFFF in AND ESI,00000000 at offset 901A.
+
+<BR><B><FONT SIZE="+1">However, </FONT></B>I'm too curious, and I wonder why this
+
+test was used and I decided to look at DC80 : the function that returns
+
+something in EAX.
+
+
+
+<P><B><I><U><FONT SIZE="+1">Third Step</FONT></U></I></B>
+
+
+
+<P>So what's going on ?<PRE>
+
+
+
+:DC75 81C458010000            add esp, 00000158 
+
+:DC7B C3                      ret                 ;Ok DC80 cannot be run except by 0913 
+
+:DC7C 90                      nop 
+
+:DC7D 90                      nop 
+
+:DC7E 90                      nop 
+
+:DC7F 90                      nop 
+
+
+
+* Referenced by a CALL at Address:9013            ;This is our only call
+
+| 
+
+:DC80 83EC7C                  sub esp, 7C 
+
+:DC83 66833DE4BA450000        cmp word ptr [5BAE4], 0  ;Very interesting !! 
+
+:DC8B 53                      push ebx 
+
+:DC8C 55                      push ebp 
+
+:DC8D 56                      push esi 
+
+:DC8E 57                      push edi 
+
+:DC8F 750B                    jne DC9C           ;if [5BAE4]!=0 jump for calculous ... 
+
+:DC91 6633C0                  xor ax, ax         ;else AX=0 
+
+:DC94 5F                      pop edi 
+
+:DC95 5E                      pop esi 
+
+:DC96 5D                      pop ebp 
+
+:DC97 5B                      pop ebx 
+
+:DC98 83C47C                  add esp, 7C 
+
+:DC9B C3                      ret                 ;That's all 
+
+  
+
+  * Referenced by a Jump at Address:DC8F(C) 
+
+| 
+
+:DC9C 6A00                    push 0 
+
+:DC9E E80DBF0000              call 00429BB0 
+
+  
+
+ Let's have a look at 5BAE4 .... 
+
+
+
+:0045BAB8 00 00 00 00 00 00 00 00  ........ 
+
+:0045BAC0 00 00 00 00 00 00 00 00  ........ 
+
+:0045BAC8 00 00 00 00 00 00 00 00  ........ 
+
+:0045BAD0 69 78 12 BE D5 E3 5D 3C  ix....]<0045BAD8 D3 67 D4 81 FA 81 DC 77 .g.....w :0045BAE0 00 00 83 00 <font color="red">1E</FONT> 00 02 00  ........ 
+
+:0045BAE8 08 00 00 00 00 00 00 00  ........ 
+
+:0045BAF0 00 00 00 00 00 00 00 00  ........ </PRE>
+
+<P>Oh ... 0x1E! So in fact 30 in decimal .... THIRTY! Ok like 30 days....
+
+that's right if it was 0000, the test in DC8F would be false and EAX
+
+would return a NULL value. So I have to change 1E in 00 and that' s all
+
+....
+
+<BR>But the flag inside memory location [0045BAE4] could be important for 
+
+the rest of the protection scheme! So
+
+let's go for a &quot;brutal&quot; search of the text string &quot;45BAE4&quot;...
+
+
+
+<P>The first occurence is :
+
+
+
+<P><FONT SIZE="-1">:8DC2 8BCA&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+
+
+mov ecx, edx</FONT>
+
+
+
+<BR><FONT SIZE="-1">:8DC4 83E103&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+
+
+and ecx, 00000003</FONT>
+
+
+
+<BR><FONT SIZE="-1">:8DC7 663905E4BA4500&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+
+
+<B>cmp word ptr [0045BAE4], ax&nbsp; ;<I> Is this test important ?</I></B></FONT>
+
+
+
+<BR><FONT SIZE="-1">:8DCE F3&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+
+
+repz</FONT>
+
+
+
+<BR><FONT SIZE="-1">:8DCF A4&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+
+
+movsb</FONT>
+
+
+
+<BR><FONT SIZE="-1">:8DD0 742B&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+
+
+<B>je 8DFD&nbsp; ; <I>No it displays (DEMO) in the main window</I></B></FONT>
+
+
+
+
+
+
+
+<P><B><FONT SIZE="-1">* Possible StringData Ref from Data Obj -&gt;&quot; (Demo)&quot;</FONT></B>
+
+
+
+<BR><FONT SIZE="-1">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+
+
+|</FONT>
+
+
+
+<BR><FONT SIZE="-1">:8DD2 BF18C64500&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+
+
+mov edi, 0045C618</FONT>
+
+
+
+<BR><FONT SIZE="-1">:8DD7 83C9FF&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+
+
+or ecx, FFFFFFFF</FONT>
+
+
+
+<BR><FONT SIZE="-1">:8DDA F2&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+
+
+repnz</FONT>
+
+
+
+<BR><FONT SIZE="-1">:8DDB AE&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+
+
+scasb</FONT>
+
+
+
+<BR><FONT SIZE="-1">:8DDC F7D1&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+
+
+not ecx</FONT>
+
+
+
+<P>Cool, I shoot the word demo in the main window ... I guess that [0045BAE4]
+
+means &quot;type of running application&quot;: demo (of n days) or not demo... that is the
+
+question?
+
+
+
+<P>The second occurence takes place in a part of program which deals with
+
+RegKey, so [45BAE4] is used to calculate a value written in the register
+
+base. If you reeinstall CD-REP after 30 days the program can't run because
+
+the date of first installation is frozen in the register base. So don't
+
+worry it's classical ...
+
+
+
+<P>No more occurences ... I think it's over.
+
+
+
+<P><B><I><U><FONT SIZE="+1">Conclusion</FONT></U></I></B>
+
+
+
+<P>After testing the program (with few copies in different modes for example)
+
+you valid your patch and you think it's too easy ... but it is so ... let's
+
+write an article on Most Stupid Protection.
+
+<BR>&nbsp;
+
+
+
+<P><I>I would add that CP-REP is a very good soft, better and safer than
+
+Easy-CD, and more convinient than DAO. It can be run on windows 95 and
+
+windows NT ( althrough Dr Watson disagree ). So have fun ... Bye, See you
+
+soon for another article of Pipoman (Anyone wondering what does &quot;Pipoman&quot; mean?... 
+
+I will tell you...)</I>
+
+</PRE>
+
+<FONT color="green">(c) <FONT color="#5500AA"> PipoMan </FONT> All rights reversed</FONT>
+
+<HR ALIGN="CENTER" WIDTH="100%" SIZE="3">
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</I></CENTER>
+
+<BR><CENTER>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="project7.htm" tppabs="http://www.anticrack.de/fravia/project7.htm">Back to stupid protections</A> 
+
+           <HR width="33%">
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="javascri.htm" tppabs="http://www.anticrack.de/fravia/javascri.htm">javascripts</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut CGI-scripts</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering legal?</A></CENTER>
+
+<CENTER><HR ALIGN="CENTER" WIDTH="100%" SIZE="2"></CENTER>
+
+</BODY>
+
+</HTML>
+
+
+
+
+

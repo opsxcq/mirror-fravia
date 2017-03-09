@@ -1,0 +1,594 @@
+<HTML>
+
+<HEAD>
+
+  <TITLE>dimit_12.htm TRAP Ver 1.13: Opcode generators and selfchanging code</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR=#C0C0C0 TEXT=#001010 VLINK=#405040>
+
+<CENTER><A href="projunpa.htm" tppabs="http://www.anticrack.de/fravia/projunpa.htm"><IMG SRC="packers.gif" tppabs="http://www.anticrack.de/fravia/packers.gif" ALT="packers" ALIGN=BOTTOM WIDTH=114 
+
+EIGHT=43 BORDER=0 VSPACE=0 HSPACE=0></A><BR><FONT color=gray>Back to Packers and Unpackers</FONT><BR>
+
+</CENTER>
+
+<CENTER><I>Man, I wish The Undertaker would USE the formamus.htm model... this would 
+
+spare me a little work editing is interesting 'packer-oriented' essays...<BR>Well 
+
+enjoy this one too... don't underestimate the teachings that The Undertaker is 
+
+giving you!
+
+</I></CENTER>
+
+<PRE>
+
+<HR><CENTER><FONT size=+1>
+
+TRAP Ver 1.13 by Christoph Gabler 11.09.97 - 07.01.98
+
+EXPLORING A STUPID PROTECTION SCHEME</FONT>
+
+Opcode generators and selfchanging code
+
+BY
+
+THE UNDERTAKER -=BANDA=-
+
+02 February 1998
+
+</CENTER>
+
+
+
+Introduction -
+
+
+
+In the Assembly '97 party I met a new friend called BLuTO. He has given 
+
+me this protector: <A href="javascript:if(confirm('http://129.105.116.5/fravia/trap.zip  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://129.105.116.5/fravia/trap.zip'" tppabs="http://129.105.116.5/fravia/trap.zip">trap.exe</A>. 
+
+Well the author of this program tried to convince users by
+
+saying "If you use this program your, target program is 100% safe from
+
+Reversers". But this is a sort of joke: this is one of the most stupid 
+
+protectors I ever discovered. 
+
+Also this author is asking money for the registerd version of this junk 
+
+protector. If you have money send it to tha HCU , It will help you on long 
+
+term more than buying this stupid program. Actually everybody has to thank 
+
+all students and +crackers, because they are doing a great job educating 
+
+people all over the world.
+
+
+
+It is true that this is WindowZ age. But if you are doing something, Do 
+
+it nicely nevertheless. Otherwise don't do it. 
+
+These kind of stupid programs will help micro$oft to dominate it's 
+
+"PLUG & PRAY" awful world. 
+
+
+
+Tools You Need -
+
+SoftICE 2.80
+
+Psedit
+
+Debug
+
+Brain (really useful, believe me, if you happen to have one use it!)
+
+
+
+Ok lets start our session. First use trap.exe to protect a target COM file
+
+that you have chosen. 
+
+Chose a COM file that is not big and keep it unpacked. Because this will 
+
+make things easy when debugging the "protected" program.
+
+
+
+Now fire up Softice and use the Loader utility to load your target COM file.
+
+
+
+LDR CO.COM (assuming that you have called it co.com, duh)
+
+
+
+Now process(p) until you see the following instructions
+
+
+
+XXXX:1125 8CD1          MOV     CX,SS      --> Save the SS to CX
+
+XXXX:1127 BA99CB        MOV     DX,CB99
+
+XXXX:112A 8ED2          MOV     SS,DX      --> ** (1)
+
+XXXX:112C 33D2          XOR     DX,DX
+
+XXXX:112E 8ED1          MOV     SS,CX      --> ** (2)
+
+XXXX:1130 8BCA          MOV     CX,DX
+
+XXXX:1132 33D2          XOR     DX,DX
+
+XXXX:1134 B90005        MOV     CX,0500
+
+XXXX:1137 EB02          JMP     113B
+
+
+
+
+
+(1) Quite strange code. Apparently the protector is trying to 
+
+change the Stack segment register with CB99. 
+
+As we learned early COM files can contain one segment
+
+address for all segment registers. 
+
+This is a common trick to crash generic unpackers, like DEBUG.EXE. 
+
+So change the code inside the program by using Psedit to 43h (inc bx) 
+
+and 4Bh (dec bx), which is equivalent to a 'classical' NOP,NOP (90h,90h).
+
+
+
+(2) Mmmmmm. Here the protector wants to restore the original SS. 
+
+Ok, since we did't change the SS previously we don't need to restore it 
+
+either, do we? Change the opcodes to 43h (inc bx) and 4Bh (dec bx), 
+
+which is equivalent to a 'classical' NOP,NOP (90h,90h).
+
+
+
+I can say one thing these kind of lame SS tricks can -may be- prevent 
+
+some lamers. But you can't for sure stop any good reverser with this 
+
+kind of crap. 
+
+Ok straight ahead till.....
+
+
+
+
+
+XXXX:113B 81F9E203      CMP     CX,03E2
+
+XXXX:113F 7458          JZ      1199         -- **
+
+XXXX:1141 83C1FE        ADD     CX,-02
+
+XXXX:1144 83C201        ADD     DX,+01
+
+XXXX:1147 EBEE          JMP     1137
+
+XXXX:1149 20DC          AND     AH,BL
+
+
+
+The above loop will countinue until CX=3E2. So put a breakpoint where 
+
+you want to go and let's have a look there
+
+
+
+BPX 1199
+
+G
+
+
+
+Process through the code until ..... 
+
+
+
+XXXX:1184 1E            PUSH    DS               --> Save DS
+
+XXXX:1185 33DB          XOR     BX,BX
+
+XXXX:1187 8EDB          MOV     DS,BX            --> Point DS to Vector Table
+
+XXXX:1189 F7160500      NOT     WORD PTR [0005]  --> ** (3)
+
+XXXX:118D EB01          JMP     1190             --> ** (4) (6)
+
+XXXX:118F 9AF7160500    CALL    0005:16F7        --> ** (5)
+
+XXXX:1194 1F            POP     DS               --> Restore the DS
+
+XXXX:1195 EB22          JMP     11B9
+
+
+
+(3) Now 0000:0005 is the location for INT 1 (Single Step) ISR routine, see, 
+
+he pointed the vector table! In this location is contained the 
+
+SEGMENT address for INT 1 ISR routine. 
+
+By NOT'ing the location the protector changes the SEGMENT address of INT 1. 
+
+This will cause most debuggers to hang. This will happen because most debuggers 
+
+use the INT 1 (Sigle Step) interrupt to trace through the target program. 
+
+Now change the Opcode to 4 NOPs using psedit, say 43 4B 42 4A (inc bx, dec bx, 
+
+inc dx, dec dx)
+
+
+
+(4) This JMP is pointed to location 1190. But there does NOT seem to be any 
+
+location 1190 in the code. 
+
+This is probably a selfchangeing JUMP. 
+
+Once you execute the JUMP, Code 1190 will look like This. 
+
+(Read my previous essay about <A href="banda7.htm" tppabs="http://www.anticrack.de/fravia/banda7.htm">PROTEXE V2.11</A> to learn more about 
+
+self changing code):
+
+
+
+
+
+XXXX:1190 F7160500      NOT     WORD PTR [0005]
+
+
+
+(5) Again XXXX:1190 contains a NOT instruction. This instruction is to 
+
+restore the previous SEGMENT address of INT 1. It is the 'noting' 
+
+technique, which goes like This...
+
+
+
+When you start:
+
+        NOT - 101 ----> 11111010   (1's Complement)
+
+And then again:   
+
+        NOT - 11111010 ----> 101   (Original Value)
+
+
+
+
+
+Ok we did not change our INT 1 SEGMENT address at all. Therefore we 
+
+don't need to change it back either, do we? 
+
+We will NOT need to change the opcode of this instruction. If we 
+
+do the following step (jumping over).
+
+
+
+(6) Change the JUMP instruction to JUMP to location 1194. Code location 
+
+1194 contains the POP DS instruction. Change code to .... 
+
+
+
+XXXX:118D EB05          JMP     1194
+
+
+
+(P) Now please process through the code until ......
+
+
+
+XXXX:11FE 81F9E303      CMP     CX,03E3
+
+XXXX:1202 75FE          JNZ     1202       --> JMP to a same location.
+
+XXXX:1204 E81C00        CALL    1223       --> **
+
+XXXX:1207 E421          IN      AL,21
+
+XXXX:1209 0C02          OR      AL,02      --> Mask the KeyB IRQ
+
+XXXX:120B E621          OUT     21,AL      --> ** (7)
+
+XXXX:120D EB53          JMP     1262
+
+
+
+
+
+Above CALL will prepare the next instruction set to be executed. It 
+
+is more like an OPCODE GENARATOR. This is a very good trick, actually. 
+
+But its implementation inside this program lacks.
+
+
+
+(T) Trace through the call and try to understand what is happening, this 
+
+is the fun part of this essay.
+
+
+
+Again you will see some lame tricks like Keyboard masking. 
+
+
+
+(7) Change the opcode to 90h,90h (NOP,NOP)... a program protected this 
+
+way deserves simple silly nopping and nothing else...
+
+
+
+(P) Process through the code until...
+
+
+
+XXXX:1262 1E            PUSH    DS               ---> Save DS
+
+XXXX:1263 33C0          XOR     AX,AX
+
+XXXX:1265 8ED8          MOV     DS,AX            ---> Point Vector Table 
+
+XXXX:1267 F7160400      NOT     WORD PTR [0004]  ---> Change OFFSET of the ISR
+
+XXXX:126B EB01          JMP     126E             ---> Changeing JUMP
+
+XXXX:126D 9AF7160400    CALL    0004:16F7        ---> Restore ISR OFFSET
+
+XXXX:1272 1F            POP     DS               ---> Restore DS
+
+XXXX:1273 EB42          JMP     12B7
+
+XXXX:1275 EB30          JMP     12A7
+
+
+
+Well again you see the same trick used to change the OFFSET address of 
+
+the INT 1 ISR routine. Repeat the steps used to save the SEGMENT address 
+
+of the INT 1 ISR routine.
+
+
+
+(P) Process through the code .....
+
+
+
+XXXX:12B7 9C            PUSHF                    ---> Save Flag Reg.
+
+XXXX:12B8 58            POP     AX               ---> Get Flag Reg. into AX
+
+XXXX:12B9 50            PUSH    AX
+
+XXXX:12BA 25FF0F        AND     AX,0FFF          ---> Playing With Flags
+
+XXXX:12BD 50            PUSH    AX               ---> Push Flag Reg. 
+
+XXXX:12BE 9D            POPF                     ---> Restore New Flags.
+
+
+
+Above part of the code is the check the TF is on. You already know how 
+
+to handle the TF flag.  If you don't know, then you better read my 
+
+previous essay about <A href="banda7.htm" tppabs="http://www.anticrack.de/fravia/banda7.htm">PROTEXE V2.11</A>.
+
+
+
+Ohhhhhh... look here!
+
+
+
+(P) Process through the code until .....
+
+
+
+XXXX:12D7 9D            POPF                     ---> Get Flags.
+
+XXXX:12D8 B80016        MOV     AX,1600
+
+XXXX:12DB CD2F          INT     2F               ---> Install Status Of Win.
+
+XXXX:12DD 0AC0          OR      AL,AL            ---> ZF=1 then goto 12F9
+
+XXXX:12DF 7518          JNZ     12F9             ---> ** (8) 
+
+
+
+Lets carefully check the above code. After the JNZ instruction you will 
+
+see nothing less (and nothing more) than <FONT color=blue>Protected mode instructions</FONT> in your 
+
+SoftIce window. 
+
+So, the Protector tried to implement some protected mode debugging techniques 
+
+to prevent the reversing of his app. 
+
+But unfortunatly failed. 
+
+Actually using protected mode debugging facilites you can do lots
+
+of things. I will discuss some of them in my future essay called 
+
+"Tips and Tricks For Protected Mode Debugging". Actually this essay 
+
+is halfway completed and you will be able to read it very soon. 
+
+Now lets go back to business...
+
+
+
+(8) To avoid all these protected mode debugging techniques. Simply 
+
+change the JNZ to an unconditional JMP like this. 
+
+
+
+XXXX:12DF E9F500        JMP     13D7 (don't care for the code you are 
+
+				      overwriting with the third byte, 
+
+				      you're jumping anyway, don't you...)
+
+
+
+
+
+Ok lets (P) Process the landing code until.....
+
+
+
+XXXX:13D8 8CD1          MOV     CX,SS
+
+XXXX:13DA 8CD8          MOV     AX,DS
+
+XXXX:13DC BA99CB        MOV     DX,CB99
+
+XXXX:13DF 8ED2          MOV     SS,DX            ---> Change the SS
+
+XXXX:13E1 33D2          XOR     DX,DX
+
+XXXX:13E3 8ED8          MOV     DS,AX
+
+XXXX:13E5 8ED1          MOV     SS,CX            ---> Restore the SS
+
+XXXX:13E7 8BCA          MOV     CX,DX
+
+XXXX:13E9 8ED8          MOV     DS,AX
+
+
+
+Again you will see the SS register changing routines. Now you have 
+
+learned how to handle these stupid methods. 
+
+Ok Lets rock...
+
+
+
+Now check the program down 7,8 lines & (P) process till...
+
+
+
+XXXX:13F0 3BC3          CMP     AX,BX
+
+XXXX:13F2 7508          JNZ     13FC             ---> ** (9)
+
+XXXX:13F4 E421          IN      AL,21
+
+XXXX:13F6 24FD          AND     AL,FD            ---> Unmask KeyB IRQ.
+
+XXXX:13F8 E621          OUT     21,AL
+
+XXXX:13FA EB09          JMP     1405
+
+
+
+(9) This JNZ is checking the Segment registers for the same value. Once 
+
+we are Debugged the program. This causes a change for the values in 
+
+AX and in BX. 
+
+Simply change the JNZ to 90h,90h (NOP,NOP).
+
+
+
+Now (P) Process through the code until you will reach RET(C3h). This RET
+
+Instruction will take you to the <FONT color=blue>unprotected</FONT> code of your program. 
+
+Mmmmmmm. You have done it nicely...
+
+
+
+Now you can use DEBUG.EXE to unprotect (It has never been protected!) 
+
+your target COM file. 
+
+If you don't know how to use DEBUG.EXE to unprotect ANY protected 
+
+file, then please read my own essay <A href="banda_56.htm" tppabs="http://www.anticrack.de/fravia/banda_56.htm">Unpack/unprotect com files 
+
+using debug.exe</A>
+
+
+
+
+
+FINAL NOTE - If anyone has a new protector. Send it to me as an attachment. 
+
+Don't pay a single cent for idiotical protectors. Protection 
+
+developers should try to use some new methods rather than use always the 
+
+same old dos tricks.
+
+
+
+Readers can write to me at <A href="mailto:undertakerd@hotmail.com">undertakerd@hotmail.com</A>
+
+
+
+
+
+           !!!!!!!!!!!! Greetings to all +HCU Guys !!!!!!!!!!!!!
+
+
+
+                           + REST IN PEACE +
+
+
+
+                 The Undertaker -=BANDA=-   //SRI LANKA//
+
+<HR>
+
+
+
+<CENTER><A href="projunpa.htm" tppabs="http://www.anticrack.de/fravia/projunpa.htm"><IMG SRC="packers.gif" tppabs="http://www.anticrack.de/fravia/packers.gif" ALT="packers" ALIGN=BOTTOM WIDTH=114 
+
+EIGHT=43 BORDER=0 VSPACE=0 HSPACE=0></A><BR><FONT color=gray>Back to Packers and Unpackers</FONT><BR>
+
+</CENTER>
+
+
+
+</BODY>
+
+</HTML>
+
+
+

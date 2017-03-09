@@ -1,0 +1,1210 @@
+<html><HEAD>
+
+<TITLE>pagemill</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+<CENTER><FONT size="+5">Adobe's Pagemill Version 2</FONT><BR><FONT size="+2">
+
+(&quot;Breakpoints on memory access, the 13C680 (15 days) count, registry jongling, 
+
+stack adjusting&quot;)</FONT>
+
+
+
+<BR>
+
+<H4><I>by Kox</I>
+
+<BR>(25 July 1997, slightly edited by Fravia)</H4>
+
+<HR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">
+
+Courtesy of Fravia's page of reverse engineering<BR><HR size="2">
+
+
+
+
+
+	<I>
+
+Well, a pretty interesting essay: Breakpoints on memory access, 
+
+the 13C680 (15 days) count trick, registry jongling, 
+
+stack adjusting, RegOpenKey and RegCreateKey and the laziness of today commercial programmers in 
+
+a very straightforward crack which carries some sound elements of reverse engineering...</I>	</CENTER>
+
+<HR size="2">
+
+<PRE>
+
+PageMill 2 (Late June version) by Kox
+
+www.adobe.com or ftp://ftp.adobe.com/pub/adobe/pagemill/win/2.x/pmwtry5.exe
+
+
+
+
+
+Tools you will need:
+
+
+
+1.W32DASM 8.5 (Thank's Frog's Print)
+
+2.Winice 3 (aka Godot) 	www.numega.com
+
+3.Registry Monitor v3   www.ntinternals.com
+
+4.UltraEdit32 (or your favourite text editor)
+
+
+
+First of all ,i would like you to excuse me for any mistakes. As a matter of 
+
+fact i am only a newbie.. (I started learning x86 assmbly 40 days ago).
+
+
+
+And i would like to thank +ORC for such a wonderfull attempt to create 
+
+more freedom in this world, and Fravia for hosting many interesting essays... 
+
+
+
+Pagemill (in my point of view) is one of the best HTML tools on 
+
+the market. The best thing about it is that it ain't sold by micro$oft.
+
+
+
+I heard about it some time ago, and i decided to give it a go.
+
+
+
+I downloaded the program (About 5.5 megs... Installed it... and 
+
+run it.
+
+It runs without any nag screens... yet after exiting a dialog pops 
+
+up, informing me that i have only 14 days left for &quot;try out&quot;...
+
+
+
+Well, let's check that...
+
+
+
+- advance the system clock 3 months.
+
+- run pagemill
+
+
+
+A nasty dialog pops up, informing me that my &quot;try out&quot; period has 
+
+expired.
+
+
+
+Well, let's get the clock back to normal
+
+
+
+- run pagemill again...
+
+- the same dialog pops up again...
+
+
+
+So this wanna be protection raised an &quot;expiry&quot; flag somewhere in my system
+
+
+
+No problem
+
+
+
+Windoze has raised some stop flag for programmers these days... In order 
+
+to carry the infamous crappy windoze 95 logo, you have to go by the rules 
+
+(and whose rules? micro$oft's ofcourse). 
+
+That means you can no longer write to the MBR, nor access hardware directly.
+
+
+
+So pagemill <U>HAS</U> to have its expiry flag in either one of two locations.
+
+
+
+1. Some file in the ever expanding file list on your hard drive
+
+2. The ever fat piece of slime they call the registry
+
+
+
+Well, in order to check the 1st possiblity I used filemon... (An excellent 
+
+file monitor utility, you can find it at www.ntinternal.com, alternatively 
+
+you can use &quot;WineXpose I/O&quot;).
+
+
+
+But i found nothing ... all the files accessed before the &quot;expired&quot; dialog, 
+
+are non-fishy files.
+
+
+
+SO, let's switch over to possiblity no 2 (The registry approach)
+
+
+
+run Registry Monitor v3 
+
+(this little baby allows you to monitor registry calls, and version 3 
+
+has filtering capabilities [i.e monitor target task only] ..highly 
+
+recommended)
+
+
+
+Well before the nag screen our target accessed 5-6 registry keys. 
+
+The most noticeable one was:
+
+&quot;HKEY_CLASSES_ROOT\CCLSID\{9CFA8CF0-CD93-11d0-8ADE-080009B30D57}&quot;
+
+
+
+Ok ..let's delete this key....
+
+1) Delete the key 
+
+ &quot;HKEY_CLASSES_ROOT\CCLSID\{9CFA8CF0-CD93-11d0-8ADE-080009B30D57}&quot;
+
+2) get our clock back to normal
+
+3) run the prog again...
+
+
+
+It runs fine...(We are still in the &quot;try out&quot; period)
+
+
+
+Ok.. we now know how pagemill expires itself.
+
+
+
+Ok .. search for &quot;CLSID\{9CFA8CF0-CD93-11d0-8ADE-080009B30D57}&quot; in pagemill.exe
+
+Maybe it's our lucky day and it isn't encrypted.
+
+
+
+And Voila.. it's there.(Those lazy programmers at Adobe did not even bother about 
+
+encrypting the key's name)
+
+
+
+Time for some &quot;dead listing&quot; using w32dsm (Thanks Frog's Print, for this 
+
+marvellous tool)
+
+
+
+We start disassembling pagemill.exe
+
+(This takes about 25 mins on my P100, and creates a 30 megs &quot;alf&quot; file too....
+
+(time enough for the famous Martini-WODKA, unfortunately i ran out of WODKA,
+
+so i'll just go and give my dog a ride :-)
+
+
+
+Back to our cracking session.
+
+
+
+Load your dead listing into UltraEdit32 (or your favourite text editor, or 
+
+word processor)
+
+
+
+search for &quot;CLSID&quot; 
+
+
+
+and you'll find the following:
+
+
+
+* StringData Ref from Data Obj -&gt;&quot;CLSID\{9CFA8CF0-CD93-11d0-8ADE-080009B30D57}&quot;
+
+                                  |
+
+:0049411E 68403F5C00              push 005C3F40
+
+:00494123 6800000080              push 80000000
+
+
+
+* Reference To: ADVAPI32.RegOpenKeyA, Ord:012Dh
+
+                                  |
+
+:00494128 FF1580445D00            Call dword ptr [005D4480]
+
+:0049412E 85C0                    test eax, eax     
+
+:00494130 7505                    jne 00494137		; if the key exists
+
+:00494132 BE01000000              mov esi, 00000001	; raise a flag
+
+
+
+
+
+So let's browse a little inside our source code...
+
+50-60 lines above that we find something very interesting...
+
+
+
+* Reference To: MSVCRT.time, Ord:02CBh
+
+                                  |
+
+:004940F2 FF15F4525D00     Call dword ptr [005D52F4] ; get system time
+
+:004940F8 83C404           add esp, 00000004	;get stack back to normal
+
+:004940FB A1AC555C00       mov eax, [005C55AC]	; installation date
+
+:00494100 0580C61300       add eax, 0013C680	; add 15 days
+
+:00494105 3945A4           cmp dword ptr [ebp-5C], eax ; compare with currect date
+
+:00494108 7F0B             jg 00494115			;if more than 15 days &gt; trial expired	
+
+:0049410A 8B45A4           mov eax, dword ptr [ebp-5C];smart user set clock before 
+
+                                                        the installation date
+
+:00494113 7E05             jle 0049411A ;jump if good user 
+
+
+
+* Referenced by a Jump at Address:00494108(C)
+
+|
+
+:00494115 BE01000000       mov esi, 00000001	;jump here if trial expired
+
+
+
+Well, commercial programmers are getting lazier everyday (thanks to expensive 
+
+suits and cars :-)
+
+They are using the famous &quot;0013C680&quot; number...
+
+This number means &quot;15 days&quot; of the trial period, represented in seconds 
+
+(60 secs X 60 mins X 24 hours X 15 days) = 1.296.000 Decimal and 0x13C680
+
+
+
+We have the installation date at 005C55AC ..  
+
+copy it to eax	
+
+then we add 15 days to it...
+
+Compare the value with current date (in seconds too) at [ebp-5C]
+
+If the value is more than the current date &gt;&gt;&gt; buzz off: trial finished
+
+
+
+And also the prog is checking for smart users who set the clock to pre-install 
+
+dates. And if so &gt;&gt; buzz off you wanna be smart user, we want your money
+
+
+
+OK let's check to see where is 005C55AC is getting the install date from...
+
+seach for &quot;[005C55AC],&quot;
+
+
+
+nothing ....
+
+
+
+Ok never mind, since i am lazy (every body says so these days, to cover up for
+
+shortage of knowledge), lets patch this snippet of code...
+
+
+
+:00494100 0580C61300              add eax, 0013C680
+
+:00494105 3945A4                  cmp dword ptr [ebp-5C], eax 
+
+:00494108 7F0B                    jg 00494115	;change to: push eax;pop eax 	
+
+:0049410A 8B45A4                  mov eax, dword ptr [ebp-5C]
+
+:0049410D 3905AC555C00            cmp dword ptr [005C55AC], eax ;
+
+:00494113 7E05                    jle 0049411A	; change to: jmp 0049411A
+
+
+
+Ok, lets check our work...
+
+
+
+1) Advance the clock
+
+2) run page mill
+
+3) IT WORKS!
+
+
+
+4) try out the program... let's open a file...
+
+5) DAMN....The nasty dialog appeared again...
+
+
+
+There must be another check at the file open routine!
+
+
+
+OK ... 
+
+delete the expiry registry key again.
+
+
+
+Browse the code again...
+
+search for &quot;0013C680&quot; ... and voila .. 4 occurances...
+
+
+
+and they are using almost the same technique with the same variables
+
+
+
+install date at:[005C55AC]
+
+add 0013C680 
+
+compare with current date.
+
+
+
+Ok 
+
+
+
+i first wanted to know what did those reside for..
+
+
+
+So i set back the clock to normal date.
+
+
+
+Then fired softice's symbol loader... loaded pagemill into it.
+
+
+
+then i traced a couple of times, 
+
+then set a break point on memory access for 005C55AC, the memory 
+
+location where the install date dwells.
+
+
+
+:bpmd 005C55AC rw
+
+:crtl d
+
+
+
+and soft ice pops up at the above code...
+
+exit softice 
+
+use the program as usual
+
+
+
+Open a file with pagemill
+
+
+
+soft ice pops again at :4958f9
+
+
+
+Ok so :4958f9 is used for file open
+
+
+
+exit soft ice.
+
+
+
+save a file at pagemill
+
+
+
+soft ice pops again at :51ec7f
+
+
+
+so: 51ec7f is for file save
+
+
+
+exit softice
+
+
+
+run most of the function and softice will never pop..
+
+
+
+So what is the 4th occurance in our dead listing for.
+
+
+
+let's quit pagemill
+
+
+
+Aha... soft ice pop up at: 495128
+
+
+
+no we can breath tight.
+
+We know every single date check routine in our target, and we gained 
+
+quite a lot of good reverse enngineering information about our target:
+
+
+
+FILE OPEN -&gt; 4958F9
+
+FILE SAVE -&gt; 51EC7F
+
+QUIT -&gt; 495128
+
+
+
+One very noticable thing is that none of the break point that occured 
+
+were to write a value to 495128, as if the value was hardcoded inside 
+
+the file...
+
+If fact it is, at installtion time: the current time (in seconds) is 
+
+written at that location (hehehehe... at Adobe they are patching their 
+
+own code these days :-)
+
+
+
+So lets do our home work &quot;the lazy way&quot; and patch all 4 relevant 
+
+snippets of code...
+
+
+
+But watch out! At the exit routine you have to disable both the 
+
+jmp instructions (tracing through the code at that location will 
+
+show you why)
+
+
+
+Now run pagemill once more,
+
+and it works! 
+
+We try load, save, most of the functions... and the nasty expiration
+
+dialog will never pop...
+
+
+
+so we exit pagemill, back to windows... 
+
+and the &quot;remaining days&quot; dialog pops up, telling us we have -139 days 
+
+left for our try out.
+
+
+
+So it works, target cracked...
+
+
+
+But that &quot;remainig days&quot; reminder looks bad.
+
+We need to get rid of it..
+
+ok...
+
+
+
+1) fire symbol loader again...
+
+2) load pagemill
+
+3) trace(F10) a couple of times, then 
+
+
+
+:bpmd 005C55AC rw
+
+the above line sets a break point whenever an instruction tried to read (r) or
+
+write(w) to that location.
+
+
+
+:Crtl d
+
+
+
+Softice in the background, as usual
+
+then we exit page mill and
+
+soft ice pops up at 495128, the &quot;quit&quot; routine.
+
+
+
+:00495123 A1AC555C00      mov eax, [005C55AC]
+
+:00495128 0580C61300      add eax, 0013C680
+
+:0049512D 3B45D4          cmp eax, dword ptr [ebp-2C]
+
+:00495130 50              push eax
+
+:00495131 58              pop eax
+
+:00495132 8B4DD4          mov ecx, dword ptr [ebp-2C]
+
+:00495135 390DAC555C00    cmp dword ptr [005C55AC], ecx
+
+:0049513B 50              push eax			
+
+:0049513C 58              pop eax 	
+
+:0049513D 2BC1            sub eax, ecx
+
+:0049513F B980510100      mov ecx, 00015180
+
+
+
+
+
+Lets trace (F10) a little, till our nag dialog apears..
+
+and we land here
+
+
+
+:00495322 E81DFC0A00       Call 00544F44
+
+:00495327 668B0D302D5700   mov cx, word ptr [00572D30]
+
+:0049532E 6A01             push 00000001
+
+:00495330 51               push ecx
+
+:00495331 8D55DC           lea edx, dword ptr [ebp-24]
+
+:00495334 6A01             push 00000001
+
+:00495336 8D4DB0           lea ecx, dword ptr [ebp-50]
+
+:00495339 52               push edx
+
+:0049533A E81AAF0500       call 004F0259		; remaining days dialog call
+
+:0049533F C645FC04         mov [ebp-04], 04
+
+:00495343 E81A000000       call 00495362
+
+:00495348 C645FC03         mov [ebp-04], 03
+
+
+
+Lets patch this ...but wait... we can't use push and pop or nop
+
+cause this way we would ruin our stack!
+
+so lets see
+
+we have 4 &quot;doublewords pushes&quot;, that means that our stack pointer is 
+
+decreased by 16 bytes, so we need to make 4 pops, or add 10(hex) to 
+
+the stack
+
+
+
+so we change the above code to look like
+
+
+
+:00495334 6A01             push 00000001
+
+:00495336 8D4DB0           lea ecx, dword ptr [ebp-50]
+
+:00495339 52               push edx
+
+:0049533A 83C410           add esp,10  ; get back stack as if function was called
+
+:0049533D 50               push eax    ; just filling
+
+:0049533E 58               pop eax     ;  some space
+
+:0049533F C645FC04         mov [ebp-04], 04
+
+:00495343 E81A000000       call 00495362
+
+
+
+I think our patch is now finished, but i wanted to make this crack as complete as 
+
+possible.
+
+
+
+What if the program has already expired inside some poor lamer's machine??
+
+He/she/it wont be able to delete the CLSID registry key... and our patch would 
+
+be useless for this guy...
+
+
+
+So back to our dead listing.
+
+Searching again for the string &quot;CLSID&quot; we find 4 occurences, that look like this:
+
+
+
+* StringData Ref from Data Obj -&gt;&quot;CLSID\{9CFA8CF0-CD93-11d0-8ADE-080009B30D57}&quot;
+
+                                  |
+
+:0049411E 68403F5C00       push 005C3F40
+
+:00494123 6800000080       push 80000000
+
+
+
+* Reference To: ADVAPI32.RegOpenKeyA, Ord:012Dh
+
+                                  |
+
+:00494128 FF1580445D00     Call dword ptr [005D4480]
+
+:0049412E 85C0             test eax, eax		;test if key is found
+
+:00494130 7505             jne 00494137		    ;not found: go try pagemill
+
+:00494132 BE01000000       mov esi, 00000001    ;found: flag &quot;expiry&quot; routine
+
+
+
+Damn, i will not patch 4 more locations... so let's ZEN a little bit...
+
+if the RegOpenKey fails then the...  
+
+YES! That's it! We want the call to fail... and it will fail, of course, if we 
+
+change the ascii value <U>of the key</U> inside our target!
+
+
+
+So if we edit pagemill.exe and search for the string &quot;CLSID&quot; we'll find it 
+
+several times, but we need to change only the one that reads
+
+
+
+&quot;CLSID\{9CFA8CF0-CD93-11d0-8ADE-080009B30D57}&quot;
+
+
+
+to something like
+
+
+
+&quot;<U>KOX</U>ID\{9CFA8CF0-CD93-11d0-8ADE-080009B30D57}&quot;
+
+
+
+(I only changed the CLSID string, 'cause the other value may be randomly 
+
+generated in other machines, whereby &quot;CLSID&quot; is a standard branch of the 
+
+registry)
+
+
+
+It's the only occurrence we need to change because this occurrence is used 
+
+only by the RegOpenkeyA function... the others are used by the RegCreateKey 
+
+function (You have to have some API manual to know that and -by the way- 
+
+i don't have one :).
+
+</PRE><HR width="55%"><CENTER>
+
+But I, fravia, have. You may want to check:<BR><A href="#anchor_regopenkey">RegOpenKey</A> and<BR>
+
+<A href="#anchor_RegCreateKey">RegCreateKey</A>.<HR width="55%"></CENTER>
+
+<PRE>
+
+The most inportant lesson for Adobe to learn is that they should'nt have been 
+
+agressive.
+
+If pagemill didn't create that key... And if that would'nt have been very clear, 
+
+like a black spot on ice, it would have taken me much more efforts to crack 
+
+this...
+
+
+
+Well, i guess that's it... CU l8r
+
+
+
+Signed.            Kox
+
+
+
+
+
+Quick patch data
+
+
+
+Filesize: 2,126,848 bytes
+
+
+
+Comparing files PageMill.bak and pagemill.exe
+
+00093508: 7F 50
+
+00093509: 0B 58
+
+00093513: 7E EB
+
+00094530: 7C 50
+
+00094531: 1A 58
+
+0009453B: 7F 50
+
+0009453C: 0F 58
+
+0009473A: E8 83
+
+0009473B: 1A C4
+
+0009473C: AF 10
+
+0009473D: 05 50
+
+0009473E: 00 58
+
+00094D01: 7C 50
+
+00094D02: 0B 58
+
+00094D0C: 7E EB
+
+0011E087: 7F 50
+
+0011E088: 0A 58
+
+0011E091: 7D EB
+
+001C1D40: 43 4B
+
+001C1D41: 4C 6F
+
+001C1D42: 53 78
+
+
+
+
+
+(c) Kox 1997, All rights reserved </PRE>
+
+<HR><A name="anchor_regopenkey"></A><B>Both following examples have been taken from 
+
+Windoze's API reference inside the COMPLETE version of Borland C/C++ 4.52,
+
+wich comes bundled with BRW (!) for less than 4 UK pounds on this month  
+
+PCplus superCD, N.38 (Issue 130, August 1997, but as usual it appeared in July). 
+
+See my 
+
+<A href="blackbo.htm" tppabs="http://www.anticrack.de/fravia/blackbo.htm">blackboard</A></B>
+
+										<PRE>
+
+<FONT Size="+4">RegOpenKey</FONT> <BR>
+
+#include shellapi.h
+
+
+
+LONG RegOpenKey(hkey, lpszSubKey, lphkResult)
+
+
+
+HKEY hkey;	             /* handle of an open key */
+
+LPCSTR lpszSubKey;	     /* address of string for subkey to open */
+
+HKEY FAR* lphkResult;	 /* address of handle of open key */
+
+
+
+
+
+The RegOpenKey function opens the specified key. 
+
+
+
+Parameter	Description
+
+
+
+hkey	Identifies an open key (which can be HKEY_CLASSES_ROOT). 
+
+The key opened by the RegOpenKey function is a subkey of the key 
+
+identified by this parameter. This value should not be NULL. 
+
+lpszSubKey	Points to a null-terminated string specifying the name 
+
+of the subkey to open. 
+
+lphkResult	Points to the handle of the key that is opened. 
+
+
+
+Returns
+
+
+
+The return value is ERROR_SUCCESS if the function is successful.
+
+Otherwise, it is an error value.
+
+
+
+Comments
+
+
+
+Unlike the RegCreateKey function, the RegOpenKey function does 
+
+not create the specified key if the key does not exist in the 
+
+database. 
+
+
+
+Example
+
+
+
+The following example uses the RegOpenKey function to retrieve 
+
+the handle of the StdFileEditing subkey, calls the RegQueryValue 
+
+function to retrieve the name of an object handler, and then calls 
+
+the RegDeleteKey function to delete the key if its value is 
+
+nwappobj.dll: 
+
+
+
+char szBuff[80];
+
+LONG cb;
+
+HKEY hkStdFileEditing;
+
+
+
+if (RegOpenKey(HKEY_CLASSES_ROOT,
+
+        &quot;NewAppDocument\\protocol\\StdFileEditing&quot;,
+
+        &amp;hkStdFileEditing) == ERROR_SUCCESS) {
+
+
+
+    cb = sizeof(szBuff);
+
+    if (RegQueryValue(hkStdFileEditing,
+
+            &quot;handler&quot;,
+
+            szBuff,
+
+            &amp;cb) == ERROR_SUCCESS
+
+            &amp;&amp; lstrcmpi(&quot;nwappobj.dll&quot;, szBuff) == 0)
+
+        RegDeleteKey(hkStdFileEditing, &quot;handler&quot;);
+
+
+
+    RegCloseKey(hkStdFileEditing);
+
+}
+
+
+
+<HR>
+
+		  <FONT size="+4">
+
+<A name="anchor_RegCreateKey">RegCreateKey</A> 
+
+</FONT><BR>
+
+#include shellapi.h
+
+
+
+LONG RegCreateKey(hkey, lpszSubKey, lphkResult)
+
+
+
+HKEY hkey;	/* handle of an open key	*/
+
+LPCSTR lpszSubKey;	/* address of string for subkey to open	*/
+
+HKEY FAR* lphkResult;	/* address of handle of open key	*/
+
+
+
+
+
+The RegCreateKey function creates the specified key. If the key already 
+
+exists in the registration database, RegCreateKey opens it. 
+
+
+
+Parameter	Description
+
+
+
+hkey	Identifies an open key (which can be HKEY_CLASSES_ROOT). The key 
+
+opened or created by the RegCreateKey function is a subkey of the key 
+
+identified by the hkey parameter. This value should not be NULL. 
+
+lpszSubKey	Points to a null-terminated string specifying the subkey to 
+
+open or create. 
+
+lphkResult	Points to the handle of the key that is opened or created. 
+
+
+
+Returns
+
+
+
+The return value is ERROR_SUCCESS if the function is successful. Otherwise, 
+
+it is an error value. 
+
+
+
+Comments
+
+
+
+An application can create keys that are subordinate to the top level of the 
+
+database by specifying HKEY_CLASSES_ROOT for the hKey parameter. An application 
+
+can use the RegCreateKey function to create several keys at once. For example, 
+
+an application could create a subkey four levels deep and the three preceding 
+
+subkeys by specifying a string of the following form for the lpszSubKey 
+
+parameter: 
+
+
+
+subkey1\subkey2\subkey3\subkey4 
+
+
+
+Example
+
+
+
+The following example uses the RegCreateKey function to create the handle 
+
+of a protocol, uses the RegSetValue function to set up the subkeys of the 
+
+protocol, and then calls RegCloseKey to save the information in the database: 
+
+
+
+HKEY hkProtocol;
+
+
+
+if (RegCreateKey(HKEY_CLASSES_ROOT,             /* root            */
+
+    &quot;NewAppDocument\\protocol\\StdFileEditing&quot;, /* protocol string */
+
+    &amp;hkProtocol) != ERROR_SUCCESS)          /* protocol key handle */
+
+        return FALSE;
+
+
+
+RegSetValue(hkProtocol,          /* handle of protocol key         */
+
+    &quot;server&quot;,                    /* name of subkey                 */
+
+    REG_SZ,                      /* required                       */
+
+    &quot;newapp.exe&quot;,                /* command to activate server     */
+
+    10);                         /* text string size               */
+
+
+
+RegSetValue(hkProtocol,          /* handle of protocol key         */
+
+    &quot;verb\\0&quot;,                   /* name of subkey                 */
+
+    REG_SZ,                      /* required                       */
+
+    &quot;Edit&quot;,                      /* server should edit object      */
+
+    4);                          /* text string size               */
+
+
+
+RegCloseKey(hkProtocol);     /* closes protocol key and subkeys    */
+
+
+
+See Also
+
+
+
+RegCloseKey, RegOpenKey, RegSetValue </PRE>
+
+
+
+<HR ALIGN="CENTER" WIDTH="100%" SIZE="3">
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</I></CENTER>
+
+<BR><CENTER>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#84'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#84">homepage </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"> 
+
+<A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#73'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#73">links </A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0">
+
+<A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity </A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#82'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#82">students' essays </A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails </A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mailFraVia </A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">is reverse engineering legal? </A></CENTER>
+
+<CENTER><HR ALIGN="CENTER" WIDTH="100%" SIZE="2"></CENTER>
+
+
+
+</BODY>
+
+</HTML>
+
+
+

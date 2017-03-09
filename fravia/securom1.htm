@@ -1,0 +1,1768 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>securom1.htm: Reversing the Securom "protection"</TITLE>
+
+</HEAD></H1>
+
+<BODY bgcolor=#C0C0C0 text=#001010 vlink=#405040>
+
+<CENTER>
+
+<A href="advanced.htm" tppabs="http://www.anticrack.de/fravia/advanced.htm"><IMG src="xtranio.gif" tppabs="http://www.anticrack.de/fravia/xtranio.gif" ALT="advanced" ALIGN=BOTTOM WIDTH=114 
+
+HEIGHT=43 BORDER=0 VSPACE=0 HSPACE=0></A><BR>
+
+<FONT color=gray>Advanced Cracking</FONT>
+
+<BR><BR>
+
+<A href="project4.htm" tppabs="http://www.anticrack.de/fravia/project4.htm"><IMG src="project4.gif" tppabs="http://www.anticrack.de/fravia/project4.gif" ALT="project4" ALIGN=BOTTOM WIDTH=114 
+
+HEIGHT=43 BORDER=0 VSPACE=0 HSPACE=0></A><BR>
+
+<FONT color=gray>Project 4 (Cd-ROM faking)</FONT>
+
+<HR size=2>
+
+
+
+<H1>Reversing the Securom "protection"</H1>
+
+<BR>
+
+<H3>With a little "<A href="#adde">Addendum</A>" by +Xoanon</H3><BR>
+
+<H3>With a new "<A href="#addp">GrimFandango Addendum</A>" by Pedro</H3>
+
+
+
+
+
+<BR>25 
+
+November 1998
+
+<BR>
+
+
+
+                 <P align="center">courtesy of fravia+'s page of reverse
+
+                 engineering</P></CENTER><HR>
+
+<PRE>
+
+Dear Fravia+,
+
+
+
+I'm pleased to submit you a tutorial to contribute to project 4 about
+
+cracking Securom protection, that is now used to protect many games.
+
+This protection is based on an interesting new technique: data encoded in the
+
+original cd that can be read by any reader but can not be reproduced
+
+into a copy, and that is used to decrypt parts of the protection code. My
+
+crack is based on replacing crypted data with decrypted data got from the
+
+protection itself with a dump, then to remove the cd check.
+
+After the tutorial, there is also the source of two C programs I wrote
+
+to help the crack process.
+
+Everything follows as pasted text.
+
+
+
+Regards
+
+
+
+Pedro
+
+
+
+*************************************************************
+
+
+
+Securom crack tutorial by Pedro
+
+
+
+First, a simple explanation about Securom.
+
+
+
+Securom is a cd-rom protection that can't be copied when you duplicate
+
+a cd. It's used by a lot of games, for the purpose of this tutorial I tried
+
+Conflict Freespace (english version), Grim Fandango (italian version) and Might
+
+and Magic VI (italian version).
+
+This is the first tutorial I write, so forgive me if I'm not clear or
+
+if my english is bad. I decided to write this tutorial because the generic
+
+Securom crack by Laxity doesn't work on the games I tried. I also found
+
+that part of Securom code is encrypted, and is decrypted by a key read from
+
+the cd.
+
+My aim is to let the protection decrypt itself, then put decrypted code
+
+into the executable and remove Securom cdrom check.
+
+
+
+Software you need:
+
+- Softice
+
+- Adump v1.0 by UCF: this is a Softice dumper, I found it at
+
+  <A href="javascript:if(confirm('http://www.suddendischarge.com/Decompressors.html  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.suddendischarge.com/Decompressors.html'" tppabs="http://www.suddendischarge.com/Decompressors.html" target=_blank>http://www.suddendischarge.com/Decompressors.html</A>
+
+- Supcomp and Supwrite: I wrote these tools and they are included as C
+
+  source code
+
+- Procdump32 v1.1 by UCF: this is a universal PE unpacker and is nedeed
+
+  to unpack the main executable of Grim Fandango. You need it only if the
+
+  game you are trying to crack is compressed by Petite.
+
+  I found it at <A href="javascript:if(confirm('http://www.crackstore.com/tools.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.crackstore.com/tools.htm'" tppabs="http://www.crackstore.com/tools.htm" target=_blank>http://www.crackstore.com/tools.htm</A>
+
+- A Hex Editor
+
+
+
+Supcomp and Supwrite can be compiled with any DOS C compiler. I
+
+personally use the great DJGPP 32 bit compiler that is free
+
+(<A href="javascript:if(confirm('http://www.delorie.com/  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.delorie.com/'" tppabs="http://www.delorie.com/" target=_blank>http://www.delorie.com</A>).
+
+There is no documentation for Supcomp and Supwrite: just run them with
+
+no parameters and you'll find what they do.
+
+
+
+First, let's look at the main executable. Conflict Freespace and Might
+
+and Magic VI are not packed, while Grim Fandango is packed with Petite.
+
+So the first thing we have to do is to unpack Grim Fandango's
+
+executable.
+
+Luckily it's quite easy if we use Procdump32, that has support for
+
+unpacking Petite compressed programs.
+
+
+
+Ok, let's start with the real cracking ;-)
+
+
+
+When we start these games, we see that they load something from disk and
+
+they simply exit (because we put a copy, not the original into the
+
+reader :-)
+
+Well, we can try to breakpoint the usual call SendDriverMessage, but
+
+nothing happens. Hmm, it seems Securom doesn't use the Windows API to access
+
+the cdrom.
+
+I spare you the effort of finding how the program accesses the cdrom: it
+
+uses INT 31 with AH=03 (DPMI 0.9+ - SIMULATE REAL MODE INTERRUPT) to
+
+call MSCDEX interrupt.
+
+Ok, let's step a bit after the breakpoint, we get into CMS32_95.DLL
+
+that is part of the protection, then we get to the main executable.
+
+Now if we search for some of the code bytes we see, we can't find them
+
+in the main executable file! Parts of the code are crypted, and they are
+
+decrypted when the program is run.
+
+How can the program modify itself during execution? By calling
+
+WriteProcessMemory. So we put a breakpoint on this call. We see that all
+
+these games call it at least three times, even if we didn't put the
+
+cdrom into the reader. So this decryption doesn't depend on the data on the
+
+original cdrom. This is just the code that makes the last decryption.
+
+In fact if we put the original cdrom into the reader, the API is called
+
+once more, and the decrypted code is correct, while if we put a copy into the
+
+reader, either WriteProcessMemory is not called the fourth time (bad
+
+copy, so the protection realizes it's false) or it is called but the
+
+decrypted code is garbage and the program realizes it's wrong and exits. 
+
+So the fourth decryption DOES depend on the data read from the original cdrom.
+
+If we look at the API reference we see that when the breakpoint is
+
+activated on WriteProcessMemory we have:
+
+ESP+08: destination address
+
+ESP+0c: source address
+
+ESP+10: length of area to copy
+
+So, we might dump the code bytes after the decryption and substitute
+
+them into the main executable file.
+
+First we make a copy of the main executable called mm6_2.exe (for this
+
+purpose I use Might and Magic VI, but the others work the same way). It's
+
+important to use short file names, otherwise supcomp and supwrite
+
+won't work. The rule is: we execute the original mm6.exe to get
+
+decrypted code and we patch mm6_2.exe (don't run mm6_2.exe before it's completely
+
+patched or it will hang).
+
+Let's run Adump. With command "R" I see that the starting memory area
+
+for dumping is 0x83651000.
+
+Now let's run mm6.exe with breakpoint on WriteProcessMemory.
+
+Ok, I see that 0x5000 bytes are to be written, the source address is at
+
+0xe80078 while the destination address is at 0x4ae000. So I copy the two
+
+areas (source and destination) into two different areas of dump memory:
+
+m 4ae000 l 5000 83651000 (original code)
+
+m e80078 l 5000 83661000 (decrypted code)
+
+I let the process end, I go to the dumper and I write the two areas of
+
+memory to two files.
+
+w c:\orig1.dat 5000 83651000
+
+w c:\modif1.dat 5000 83661000
+
+Now I open orig1.dat with a hex editor and I take the first 16 bytes. I
+
+search for those bytes into mm6_2.exe. I find them at offset 0xad400. Let's
+
+see if all 0x5000 bytes are identical.
+
+I open a DOS window and I run:
+
+supcomp c:\orig1.dat mm6_2.exe 0 0xad400 0x5000
+
+Ok, no differences, so we can patch them.
+
+supwrite c:\modif1.dat mm6_2.exe 0 0xad400 0x5000
+
+But now if we run mm6_2.exe it hangs because it tries to decrypt already
+
+decrypted data and gets garbage. So let's run mm6.exe again, and when
+
+we reach the breakpoint we write "u @esp" and we go up some lines:
+
+
+
+017F:008CC2FE  8D8D64FEFFFF        LEA     ECX,[EBP-019C]
+
+017F:008CC304  51                  PUSH    ECX
+
+017F:008CC305  8B95C4FEFFFF        MOV     EDX,[EBP-013C]
+
+017F:008CC30B  52                  PUSH    EDX              ;length
+
+017F:008CC30C  8B85E4FEFFFF        MOV     EAX,[EBP-011C]
+
+017F:008CC312  50                  PUSH    EAX              ;source
+
+017F:008CC313  8B8DBCFEFFFF        MOV     ECX,[EBP-0144] 
+
+017F:008CC319  2B8DB4FEFFFF        SUB     ECX,[EBP-014C]
+
+017F:008CC31F  51                  PUSH    ECX              ;destination
+
+017F:008CC320  8B15B87D9F00        MOV     EDX,[009F7DB8]
+
+017F:008CC326  52                  PUSH    EDX              ;handle
+
+017F:008CC327  FF15B8839F00        CALL    [KERNEL32!WriteProcessMemory]
+
+
+
+We must set length to 0 so we change:
+
+
+
+mov edx,[ebp-13c]
+
+push edx
+
+
+
+to:
+
+
+
+xor edx,edx
+
+nop
+
+nop
+
+nop
+
+nop
+
+push edx
+
+
+
+That is, we search for bytes (in mm6_2.exe):
+
+8B 95 C4 FE FF FF 52 8B 85 E4 FE FF FF 50 8B 8D BC FE FF FF 2B 8D B4 FE FF
+
+FF 51 8B 15 B8 7D 9F 00 52 FF 15 B8 83 9F 00
+
+and we change the first 6 bytes to:
+
+33 D2 90 90 90 90
+
+(it's best to search for many bytes, because there are similar parts of
+
+code, and we have to make sure we have found the exact place).
+
+
+
+You have to work the same way for the two other breakpoints (change
+
+crypted code with decrypted code and set to zero the length for
+
+WriteProcessMemory).
+
+Someone might wonder why I didn't write a program to do all this
+
+automatically.
+
+Well, the problem is, the code is similar but not the same for the games
+
+I tried (for example Grim Fandango uses ECX as the register to push
+
+the length parameter).
+
+
+
+Now we really need the original cdrom (you bought it, haven't you? :-)
+
+to get correctly decrypted code.
+
+We must still repeat the above procedure to decrypt and set length to
+
+zero when it reaches the fourth WriteProcessMemory (this time edx is kindly
+
+XORed for us, so we just need to "NOP" the following instruction that loads
+
+edx).
+
+We must also crack the part of code where it checks for the original
+
+cdrom and exits without executing our patched code (this is in the part of
+
+code we decrypted before, so if we hadn't decrypted it, we couldn't find it
+
+easily in the executable file). In fact if we try to execute the program
+
+after fourth decryption but before the last crack, it won't work, even
+
+with the original cdrom in the recorder!
+
+
+
+The last part of the crack is a bit trickier because you can't step into
+
+the program's code (F8 or F10 won't work). Moreover, if the program
+
+detects that you are trying to step into it, next time won't even load
+
+until you restart Windows, so you shouldn't put breakpoints except the
+
+ones I'll tell you.
+
+I'll spare you the time I spent to understand what the program does.
+
+First you can put a breakpoint on GetDriveTypeA that is used to find
+
+the cdrom. With F11 you get back to the program's code. If you scroll
+
+the code window some pages down, you'll find a series of POPs and a RET
+
+followed by a few INT 03. Put a breakpoint on the RET.
+
+Run the original mm6.exe with the original cd. Hmm, it doesn't reach
+
+the RET.
+
+Remove the cd from the reader and run it again. Ahh, now it reaches the
+
+RET with EAX=2. Put the original cdrom again into the reader but run
+
+mm6_2.exe (you must have decrypted and patched it ALL four times). It
+
+reaches the RET with EAX=7. If you put a copy into the reader you also
+
+get EAX=7.
+
+So it's easy to understand that EAX contains an error code when
+
+something goes wrong, and the RET is never reached when all goes right.
+
+Now you must run the modified mm6_2.exe after putting the original cd
+
+into the recorder and setting a breakpoint on GetDriveTypeA and on
+
+the RET. Press F11 to get to the code when it reaches GetDriveTypeA.
+
+Remember, you should get error code 7 so scroll down till you find:
+
+
+
+test edx,edx	;error?
+
+jnz ........	;if it jumps =&gt; no error
+
+call [.....]	;start of error routine
+
+push 07
+
+call .......
+
+mov eax,7	;error code
+
+jmp ........	;jumps to the POPs and RET
+
+
+
+So the first jnz must be changed to jmp. We search for the following
+
+bytes:
+
+75 17 FF 15 B0 83 9F 00 6A 07
+
+into mm6_2.exe and we change 75 to EB.
+
+
+
+Run it. Another error, with return code 8. In the code we find:
+
+
+
+test edx,edx	;error?
+
+jnz ........	;if it jumps =&gt; no error
+
+call [.....]	;start of error routine
+
+push 08
+
+call .......
+
+mov eax,8	;error code
+
+jmp ........	;jumps to the POPs and RET
+
+
+
+Search for:
+
+75 17 FF 15 B0 83 9F 00 6A 08
+
+and change 75 to EB.
+
+
+
+This time if you run it, you get error code 0. You find this code near
+
+the RET:
+
+
+
+jnz ........	;jumps if error
+
+push 2c		;all checks passed!
+
+call .......
+
+jmp ........	;run, baby, run :-)
+
+
+
+So you must simply change jnz -&gt; nop nop.
+
+The sequence to search for is
+
+75 09 6A 2C
+
+and you change 75 09 with 90 90
+
+
+
+At last the modified executable runs again with the original. But what
+
+about a copy, I hear you ask? Hooray, it works too because you removed
+
+error codes 7, 8 and 0 that also a copy produces! Of course the copy
+
+must have the right volume name, otherwise you'll get "Wrong disc"
+
+message box.
+
+
+
+Well, I don't know if this is the simplest way to crack Securom: I wrote
+
+all this especially for didactic purposes. It should work on any Securom
+
+protected game. So bye, bye Securom, we won't miss you :-)
+
+
+
+For comments write to:
+
+Pedro &lt;<A href="javascript:if(confirm('http://129.105.116.5/fravia/py/nfCmp.py-Pyt=Tnf&1st=1&to=pedro_i@iname.com&YY=4654  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://129.105.116.5/fravia/py/nfCmp.py-Pyt=Tnf&1st=1&to=pedro_i@iname.com&YY=4654'" tppabs="http://129.105.116.5/fravia/py/nfCmp.py-Pyt=Tnf&1st=1&to=pedro_i@iname.com&YY=4654">pedro_i@iname.com</A>&gt;
+
+
+
+****************** Source code for supcomp ****************************
+
+
+
+#include &lt;stdio.h&gt;
+
+#include &lt;conio.h&gt;
+
+#include &lt;stdlib.h&gt;
+
+#include &lt;mem.h&gt;
+
+#define AREA 32768
+
+
+
+FILE *f,*g;
+
+unsigned char *b1,*b2;
+
+char notfound[]="Can't open: %s\n";
+
+char seekerror[]="Seek error: %s\n";
+
+char readerror[]="Read error or end of file: %s\nAborting\n";
+
+long l,cont,ofsrc,ofdest;
+
+
+
+void uscita(void)
+
+{
+
+if (b1) free(b1);
+
+if (b2) free(b2);
+
+if (f) fclose(f);
+
+if (g) fclose(g);
+
+}
+
+
+
+void main(int argc, char *argv[])
+
+{
+
+        if (atexit(uscita))
+
+           {
+
+           printf("Atexit error\n");
+
+           exit(EXIT_FAILURE);
+
+           }
+
+	if (argc!=6)
+
+           {
+
+printf("Supcomp v1.0 by Pedro '98\n\n"
+
+"Usage: supcomp &lt;src&gt; &lt;dest&gt; &lt;offset src&gt; &lt;offset dest&gt; &lt;length&gt;\n"
+
+"Numbers may be in hex if prefixed by 0x\n\n"
+
+"The program compares &lt;length&gt; bytes of &lt;src&gt; with the corresponding\n"
+
+"bytes in &lt;dest&gt; starting from the specified offsets\n"
+
+"Only differences are written to the output\n");
+
+exit(EXIT_FAILURE);
+
+           }
+
+	if ((b1=(char *)malloc(AREA))==NULL) exit(EXIT_FAILURE);
+
+	if ((b2=(char *)malloc(AREA))==NULL) exit(EXIT_FAILURE);
+
+	if ((f=fopen(argv[1],"rb"))==NULL)
+
+		{
+
+		printf(notfound,argv[1]);
+
+		exit(EXIT_FAILURE);
+
+		}
+
+	if ((g=fopen(argv[2],"rb"))==NULL)
+
+		{
+
+		printf(notfound,argv[2]);
+
+		exit(EXIT_FAILURE);
+
+		}
+
+        ofsrc=strtol(argv[3],NULL,0);
+
+        ofdest=strtol(argv[4],NULL,0);
+
+	if (fseek(f,ofsrc,SEEK_SET))
+
+		{
+
+		printf(seekerror,argv[1]);
+
+		exit(EXIT_FAILURE);
+
+		}
+
+	if (fseek(g,ofdest,SEEK_SET))
+
+		{
+
+		printf(seekerror,argv[2]);
+
+		exit(EXIT_FAILURE);
+
+		}
+
+        if ((l=strtol(argv[5],NULL,0))==0)
+
+		{
+
+		printf("Wrong length\n");
+
+		exit(EXIT_FAILURE);
+
+		}
+
+	while (l)
+
+		{
+
+		long letti,i;
+
+
+
+		if (l&gt;=AREA) letti=AREA;
+
+		else letti=l;
+
+		if (fread(b1,1,letti,f)!=letti)
+
+			{
+
+			printf(readerror,argv[1]);
+
+			exit(EXIT_FAILURE);
+
+			}
+
+		if (fread(b2,1,letti,g)!=letti)
+
+			{
+
+			printf(readerror,argv[2]);
+
+			exit(EXIT_FAILURE);
+
+			}
+
+                for (i=0;i&lt;letti;i++)
+
+                    {
+
+                    if (b1[i]!=b2[i])
+
+                       {
+
+                       printf("%.8lx %.2x - %.8lx %.2x\n",cont+ofsrc+i,
+
+                          (unsigned int)b1[i],cont+ofdest+i,(unsigned int)b2[i]);
+
+                       }
+
+                    }
+
+		l-=letti;
+
+                cont+=letti;
+
+		}
+
+	exit(EXIT_SUCCESS);
+
+}
+
+
+
+****************** Source code for supwrite ****************************
+
+
+
+#include &lt;stdio.h&gt;
+
+#include &lt;conio.h&gt;
+
+#include &lt;stdlib.h&gt;
+
+#include &lt;mem.h&gt;
+
+#define AREA 32768
+
+
+
+FILE *f,*g;
+
+unsigned char *b1;
+
+char notfound[]="Can't open: %s\n";
+
+char seekerror[]="Seek error: %s\n";
+
+char readerror[]="Read error or end of file: %s\nAborting\n";
+
+char writeerror[]="Write error: %s\n";
+
+long l,ofsrc,ofdest;
+
+
+
+void uscita(void)
+
+{
+
+if (b1) free(b1);
+
+if (f) fclose(f);
+
+if (g) fclose(g);
+
+}
+
+
+
+void main(int argc, char *argv[])
+
+{
+
+        if (atexit(uscita))
+
+           {
+
+           printf("Atexit error\n");
+
+           exit(EXIT_FAILURE);
+
+           }
+
+	if (argc!=6)
+
+           {
+
+printf("Supwrite v1.0 by Pedro '98\n\n"
+
+"Usage: supwrite &lt;src&gt; &lt;dest&gt; &lt;offset src&gt; &lt;offset dest&gt; &lt;length&gt;\n"
+
+"Numbers may be in hex if prefixed by 0x\n\n"
+
+"The program writes &lt;length&gt; bytes of &lt;src&gt; to the corresponding\n"
+
+"bytes in &lt;dest&gt; starting from the specified offsets\n");
+
+exit(EXIT_FAILURE);
+
+           }
+
+	if ((b1=(char *)malloc(AREA))==NULL) exit(EXIT_FAILURE);
+
+	if ((f=fopen(argv[1],"rb"))==NULL)
+
+		{
+
+		printf(notfound,argv[1]);
+
+		exit(EXIT_FAILURE);
+
+		}
+
+	if ((g=fopen(argv[2],"rb+"))==NULL)
+
+		{
+
+		printf(notfound,argv[2]);
+
+		exit(EXIT_FAILURE);
+
+		}
+
+        ofsrc=strtol(argv[3],NULL,0);
+
+        ofdest=strtol(argv[4],NULL,0);
+
+	if (fseek(f,ofsrc,SEEK_SET))
+
+		{
+
+		printf(seekerror,argv[1]);
+
+		exit(EXIT_FAILURE);
+
+		}
+
+	if (fseek(g,ofdest,SEEK_SET))
+
+		{
+
+		printf(seekerror,argv[2]);
+
+		exit(EXIT_FAILURE);
+
+		}
+
+        if ((l=strtol(argv[5],NULL,0))==0)
+
+		{
+
+		printf("Wrong length\n");
+
+		exit(EXIT_FAILURE);
+
+		}
+
+	while (l)
+
+		{
+
+		long letti;
+
+
+
+		if (l&gt;=AREA) letti=AREA;
+
+		else letti=l;
+
+		if (fread(b1,1,letti,f)!=letti)
+
+			{
+
+			printf(readerror,argv[1]);
+
+			exit(EXIT_FAILURE);
+
+			}
+
+		if (fwrite(b1,1,letti,g)!=letti)
+
+			{
+
+			printf(writeerror,argv[2]);
+
+			exit(EXIT_FAILURE);
+
+			}
+
+		l-=letti;
+
+		}
+
+	exit(EXIT_SUCCESS);
+
+}
+
+</PRE><A name="adde"></A>
+
+<HR>
+
+<CENTER><H2>+Xoanon's addendum</H2></CENTER>
+
+<PRE>
+
+------------------------------------------------------------------------------
+
+                                   Securom
+
+                           Addendum to Pedro's crack
+
+                             by xOANINO [UCF/CLASS]
+
+------------------------------------------------------------------------------
+
+
+
+Gr¸ss dich, fravia+! Guess who's writing ? Marigold ? naaaaah....
+
+Stone ? no no no ! Owl ? Nooooooooooo! Pippo Baudo ? Neither !!!!!
+
+
+
+Its just your little xOANINO :)
+
+I just read the essay by Pedro on SecuROM, very good essay .... But as
+
+all italian things... its not a complete work. As our amazing politicians, he made
+
+easy things more hard than they really are as I'll show you in this little
+
+"addendum" (i can't write a full essay, as always i've girls awaiting 
+
+me... you know :))
+
+
+
+Anyway, very good work Pedro ... Even if your work is not 100%
+
+complete, it works... and its good to see that also Italy has 
+
+(indeed!) something worth to show in the cracking scene!
+
+
+
+Well.... Here's the problem: As you all can read above in Pedro's essay, he
+
+correctly decrypts all the stuff in the .text and .idata section and
+
+patches the .exe. Ok, this is how SecuROM must be cracked.
+
+
+
+So...w hat's wrong in Pedro's essay? Well, try to use his method with
+
+(for ex.) a game which you want to rip and use without the CD. It won't work.
+
+Why ? Well, coz the EXE Pedro produces is not 100% rebuilded. It still
+
+depends on the SecuROM dlls, and if it dont find a CD in the drive with the
+
+correct name and stuff, the program will not run.
+
+
+
+And so here it comes your mega-busy, with girls, study, coding xOANINO to
+
+the rescue to produce a full 100% working rebuilded executable :)
+
+
+
+Just follow these 6 steps:
+
+
+
+1) Follow Pedro essay until the BPX GetdrivetypeA / BPX on the RET some
+
+   pages down.
+
+
+
+2) As you can notice, some lines above the ret (where Pedro patches the
+
+   last JNZ) there's a JMP EAX. Now... what is this JMP? It's the jump to the
+
+   correct program entrypoint, which code is already decrypted following
+
+   the Pedro essay.
+
+
+
+3) Write down the value of EAX, and simply write this value at the
+
+   entrypoint field of the PE header (PE+28h . should be at offset 
+
+   A8h in every PE file).
+
+   Consider you must subtract from EAX the imagebase value :
+
+   Example : EAX = 418DB4h (Omnia99 entrypoint)
+
+             Imagebase = 400000h
+
+             value to write = 418DB4-400000 = 018DB4h (reversed, of course)
+
+4) Now you can also kill the nomore needed sections... like .CMS_D
+
+section and .PETITE section !! (use procdump for this, or do it by hand)
+
+
+
+5) Wow, you can also delete the CMSxx.DLL !
+
+
+
+6) ri-Wow, the EXE runs with no more problems !!!!
+
+
+
+That's all ... its just an "addendum" :) Pedro made a very good work
+
+anyway!
+
+
+
+xOANINO
+
+[UCF/CLASS]
+
+
+
+Hiho to Devil,Miramax,Stone,Owl,RFlagg,CindyG,Randooooooooooome etc...etc....
+
+</FONT>
+
+
+
+</PRE><A name="addp"></A>
+
+<HR>
+
+<CENTER><H2>Pedro's "GrimFandango" addendum</H2></CENTER>
+
+<PRE>
+
+
+
+Dear Fravia+,
+
+
+
+some days ago I found a small change in SecuROM protection that has been
+
+made by Sony in a recent game, so I decided to write you again about
+
+this.
+
+My essay is still valid, but, as we'll see, there is a bit more work to
+
+do in order to crack the new SecuROM.
+
+First of all, I'd like to thank +Xoanon for writing his "addendum". I
+
+had really made things harder than they were. With his simple idea, we no
+
+longer need to set WriteProcessMemory length to zero, nor we have to crack
+
+error codes before the RET, because we simply skip all SecuROM code and we go
+
+directly to the real entry point. I've still got a lot to learn... :-)
+
+
+
+But there is something more to say about SecuROM.
+
+
+
+Well, in my essay I was a bit imprecise. If you remember I cracked Might and
+
+Magic VI as an example, and of course that worked (I read Fravia+'s FAQ and
+
+I don't want to write him saying "My lame crack doesn't work" after he has
+
+published my job :-).
+
+I also said that Conflict Freespace and Grim Fandango were the same.
+
+It's here, that I've been imprecise. In fact I only had a non-working copy of
+
+those two games, but I saw there was the same multi-step decryption, so
+
+I assumed the entire protection was the same.
+
+Some days later I got the original of Grim Fandango and I was disappointed
+
+when I saw that Sony left the multi-step decryption, but added something more
+
+to the protection.
+
+So I want to behave better than my hated italian politicians and I don't want
+
+to let this crack be another unfinished italian thing :-)
+
+
+
+First of all, you have to make the usual copy of the decompressed original
+
+executable called grim2.exe.
+
+Then you must patch the four parts of code as I described in my first essay.
+
+You can skip the part where I put zero length for WriteProcessMemory or I
+
+crack the error codes, because we'll no longer need that part of
+
+SecuROM code.
+
+Also, you should put a breakpoint on "jmp eax" as +Xoanon pointed out, to
+
+get the real entry point, and change it into PE header.
+
+But if you run it, it doesn't work. Why? Follow me and you'll discover it.
+
+
+
+Now let's breakpoint again on WriteProcessMemory and execute the original
+
+GrimFandango.exe (with the original copy in the reader).
+
+We see there is the same four parts decryption, but after that,
+
+WriteProcessMemory is called many more times during game execution, and
+
+only 4 bytes are patched every time.
+
+When we are inside the breakpoint if we write "u (@esp+8)-2" to see
+
+where the data is going to be written, we always see the same call:
+
+
+
+call [008d6218] (of course it changes from game to game)
+
+
+
+by the way, this is the point the SecuROM procedure at [008d6218] was
+
+just called from, and it's this procedure that is calling now
+
+WriteProcessMemory.
+
+If we press F11 we can see what happens. That call has been changed to:
+
+
+
+call [KERNEL32!GetVersion]
+
+
+
+(this is just an example, every call is changed to its original value, i.e. 
+
+the value that was in the unprotected game before Sony messed with it :-)
+
+
+
+We have now understood it. Every time the unprotected game had to call a
+
+system routine, or even one of its own routines, Sony saved the address
+
+of the call into a table, and made the call point to a SecuROM routine.
+
+When this routine is executed, it can understand where it was called
+
+from by looking at the return value in the stack, then it patches the code
+
+so next time the call will be made directly. At last it must give
+
+control to the routine that was to be called, and it achieves this by a "jmp
+
+eax" (in our example eax will contain the address of GetVersion).
+
+Unfortunately this goes on during the whole execution of the program.
+
+But we don't like to keep such a boring neighbour as a SecuROM part of
+
+code, we want to kill it completely.
+
+
+
+First of all we must see what the real address of this SecuROM routine is: 
+
+
+
+in location [8d6218] we find address 8cb050.
+
+
+
+Now let's take Wdasm and disassemble grim2.exe (so the code at 8cb050 is
+
+already decrypted). Well you don't really need to disassemble it to make
+
+the crack, because I'll explain all steps to make later on, but it's
+
+useful to learn, because that's the real reason you are studying reversing 
+
+and reading this for, not for just copying some silly games, are you? :-)
+
+
+
+You can just view the code with Softice when you are inside the procedure.
+
+Let's go to 8cb050. Here we see many references like these:
+
+
+
+:008CB069 8B0DBCDF8E00            mov ecx, dword ptr [008EDFBC]
+
+......
+
+:008CB072 890DBCDF8E00            mov dword ptr [008EDFBC], ecx
+
+......
+
+:008CB0AA 8A8240FC8E00            mov al, byte ptr [edx+008EFC40]
+
+......
+
+
+
+So there must be the table for decoding all the calls. Note that we
+
+don't care about how this table is made. We just need to rebuild the
+
+executable the same way we did with the four patches.
+
+The routine ends like this:
+
+
+
+:008CB385 FF1518E78E00            call dword ptr [008EE718]
+
+				  ;call to WriteProcessMemory
+
+
+
+:008CB38B 61                      popad
+
+:008CB38C 8B45F8                  mov eax, dword ptr [ebp-08]
+
+:008CB38F 8BF0                    mov esi, eax
+
+:008CB391 8B06                    mov eax, dword ptr [esi]
+
+:008CB393 5F                      pop edi
+
+:008CB394 5E                      pop esi
+
+:008CB395 5B                      pop ebx
+
+:008CB396 8BE5                    mov esp, ebp
+
+:008CB398 5D                      pop ebp
+
+
+
+:008CB399 FFE0                    jmp eax	;here it makes the original
+
+						;game's call
+
+
+
+:008CB39B 5F                      pop edi
+
+:008CB39C 5E                      pop esi
+
+:008CB39D 5B                      pop ebx
+
+:008CB39E 8BE5                    mov esp, ebp
+
+:008CB3A0 5D                      pop ebp
+
+:008CB3A1 C3                      ret
+
+
+
+Hmm, now an interesting idea comes to my mind.
+
+First of all the routine doesn't use ebx, so we can use it to get control
+
+after calling the routine. Then we could "simulate" the program calls by
+
+using the following small assembly program that can be
+
+Softice-assembled in an unused area of Adump (poor Adump, we are 
+
+overloading it :-) :
+
+
+
+:00000100 B9FA0F4F00              mov ecx, 004F0FFA
+
+				;this is (length - 6 bytes) of .text section
+
+				;of course you'll have to change it with
+
+				;different games
+
+
+
+:00000105 BA00104000              mov edx, 00401000
+
+				;this is starting address of .text section
+
+				
+
+:0000010A 803AFF                  cmp byte ptr [edx], FF
+
+				;FF 15 18 62 8D 00 is the sequence that
+
+				;corresponds to call [008d6218], and
+
+				;you'll have to change it according to
+
+				;the game you're cracking.
+
+				;We are searching for that sequence into
+
+				;the code
+
+
+
+:0000010D 7530                    jne 0000013F
+
+				;not found, continue searching
+
+
+
+:0000010F 807A0115                cmp byte ptr [edx+01], 15
+
+:00000113 752A                    jne 0000013F
+
+:00000115 807A0218                cmp byte ptr [edx+02], 18
+
+:00000119 7524                    jne 0000013F
+
+:0000011B 807A0362                cmp byte ptr [edx+03], 62
+
+:0000011F 751E                    jne 0000013F
+
+:00000121 807A048D                cmp byte ptr [edx+04], 8D
+
+:00000125 7518                    jne 0000013F
+
+:00000127 807A0500                cmp byte ptr [edx+05], 00
+
+:0000012B 7512                    jne 0000013F
+
+
+
+:0000012D 8D4206                  lea eax, dword ptr [edx+06]
+
+				;found! Now we "simulate" the call: we put
+
+				;the return address into the stack like the
+
+				;call was made by the program
+
+				
+
+:00000130 60                      pushad
+
+				;...but first we'd better save our precious
+
+				;registers
+
+
+
+:00000131 50                      push eax
+
+				;ahhh, now the correct return address is in
+
+				;stack
+
+
+
+:00000132 BB3D010000              mov ebx, 0000013D
+
+				;we load ebx with the address of the follwing
+
+				;"pop eax" instruction, so the we'll regain
+
+				;control after the patching. Change this value
+
+				;according to your offset in Adump
+
+
+
+:00000137 FF2518628D00            jmp dword ptr [008D6218]
+
+				;and now, ladies and gentlemen, let's foul
+
+				;SecuROM (as always, change 008d6218 according
+
+				;to the game you're cracking)
+
+
+
+:0000013D 58                      pop eax
+
+:0000013E 61                      popad
+
+
+
+:0000013F 42                      inc edx
+
+
+
+:00000140 E2C8                    loop 0000010A
+
+				;the search will go on...
+
+
+
+:00000142 CC                      int 03
+
+				;finished, back to Softice
+
+
+
+Let's run GrimFandango.exe with +Xoanon's breakpoint on "jmp eax". Now
+
+we are about to enter the program (remember we are always running
+
+GrimFandango.exe because grim2.exe doesn't work).
+
+With "u 8cb050" we see our mostly hated routine :-). Scrolling some
+
+pages down we see the "jmp eax" I was telling you about before. 
+
+This must be changed to "jmp ebx", to let our tiny (tiny but effective :-) 
+
+assembly program regain control.
+
+Then we write current eip down, we set "i3here on" and we set eip to the
+
+beginning of our assembly code. F5, then we wait a little bit (if I or
+
+you have made no mistakes, otherwise you might wait forever for Windows to
+
+resurrect :-)
+
+Wow, it's finished. So what happened? Well, all "call [008d6218]" should
+
+have been replaced with their correct original counterpart. To tell the
+
+truth it's possible (but very unlikely) that a spurious sequence FF 15 18 62
+
+8D 00 that didn't represent the above mentioned call has been incorrectly
+
+changed.
+
+It's unlikely, though, because 6 bytes are a very specific pattern. So let's 
+
+just try it first, if everything crashes -or worse- we'll just tediously 
+
+investigate all the replace locations.
+
+
+
+We must now dump from 401000 to the end of the .text section that can
+
+be seen with "map32" (start=401000, length=4f1000 =&gt; end=8f2000).
+
+The problem now is that some pages are not loaded into memory, so when
+
+we write "m" command we get an error.
+
+
+
+What follows is an idea to dump even if some pages are not loaded into
+
+memory: suppose Adump's dumping area starts at "pippo" (with incredible 
+
+italian imagination :-).
+
+We should assemble this small program with Softice near the end of
+
+Adump's area, say pippo+4ff000 (ah, remember of course to increase Adump's
+
+area, if you need it, like in this case, that should be at least 0x500000 
+
+bytes):
+
+
+
+pushad
+
+pushf
+
+cld
+
+rep
+
+movsb
+
+popf
+
+popad
+
+
+
+Ok, when we need to dump we write down current eip, then we change eip
+
+to pippo+4ff000, we step over pushad and pushf, then we manually load ecx
+
+with the dump length (in this case 4f1000), esi with starting offset
+
+(401000), and edi with destination offset (pippo) and we step over the 
+
+remaining instructions.
+
+
+
+When we've finished dumping we can restore the eip we wrote down
+
+before, and GrimFandango will continue peacefully not even knowing we 
+
+have turned it inside out! :-)
+
+Ah, just a note of warning: before dumping or calling my assembly
+
+routine, remove ALL breakpoints, otherwise you'll have unwanted "int 3"'s 
+
+in the dump (like I did :-).
+
+
+
+The last part is very easy: see where the dumped area starts in the
+
+executable and replace it with supwrite (well, my knowledge of PE executables 
+
+is limited, but I think it's ok to replace it all. Otherwise you may 
+
+write a small C program to replace only the FF 15 18 62 8D 00 sequences 
+
+with the correct ones from the dump).
+
+If the complete replacing is correct, you don't even need the first four
+
+steps: with this single dump and the correct entry point you get it all.
+
+
+
+What a nice thing: our non-working GrimFandango is alive again! Not bad
+
+for a skeleton :-)).
+
+
+
+As always my address is added below for comments but I won't answer stupid
+
+questions nor too generic questions (like "Can you tell me more about 
+
+SecuROM ?" :-)
+
+
+
+Pedro: <A href="mailto:pedro_i@iname.com">pedro_i@iname.com</A>.
+
+
+
+</FONT></PRE>
+
+<BR><CENTER>
+
+<HR size=5>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0
+
+VSPACE=0 HSPACE=0><A
+
+HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0
+
+VSPACE=0 HSPACE=0>
+
+<A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links </A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0>
+
+<A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity </A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN=BOTTOM
+
+BORDER=0 VSPACE=0 HSPACE=0 width="13" height="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC </A>
+
+
+
+<IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays </A>
+
+
+
+<IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database </A>
+
+
+
+<IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="botstart.htm" tppabs="http://www.anticrack.de/fravia/botstart.htm">bots wars</A>
+
+
+
+<BR>
+
+<IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut </A>
+
+
+
+<IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 BORDER=0
+
+VSPACE=0 HSPACE=0><A
+
+HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13
+
+BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13
+
+BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="javascri.htm" tppabs="http://www.anticrack.de/fravia/javascri.htm">javascript wars </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0
+
+VSPACE=0 HSPACE=0><A
+
+HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0
+
+VSPACE=0 HSPACE=0><A
+
+HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia </A><BR>
+
+
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0
+
+VSPACE=0 HSPACE=0><A
+
+HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering illegal?
+
+</A></CENTER>
+
+<HR size=4></FONT></CENTER></CENTER>
+
+</BODY>
+
+</HTML>
+
+
+
+
+
+
+
+
+

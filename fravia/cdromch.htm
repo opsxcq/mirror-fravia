@@ -1,0 +1,183 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>cdromch.htm: grasshopper's <I>A CDRom check with a twist>/i></TITLE>
+
+
+
+<BODY bgcolor="C0C0C0" text="#001010" vlink="#405040 Alink=#00FF50">
+
+
+
+
+
+<PRE>
+
+                 Beginner level essay follows.
+
+
+
+                 -----
+
+                 A CDRom check with a twist
+
+                 (by grasshopper)
+
+
+
+                 One of the most annoying things is to find out
+
+                 that a software that you've purchased with your
+
+                 hard-earned money refuses to work until you stick
+
+                 its CDRom into the drive.  Such was the case
+
+                 with a (several hundred dollar) program I recently
+
+                 purchased.  At least with dongles you don't have to
+
+                 reach out for the CD, remove the current one in the
+
+                 drive, select drive, click, remove cd, insert the
+
+                 previous CD you were working and continue with your
+
+                 work.  If the lame-o program crashes, it's back to
+
+                 the 2 minute drill.  Eject, insert, click, click,
+
+                 eject, insert.
+
+
+
+                 I've been out of the (cracking) scene ever since
+
+                 I retired my Apple ][, a looong time ago.  Having
+
+                 been emboldened by fravia's pages, the past few
+
+                 weeks, I decided to give it a whirl a get rid of
+
+                 this annoyance.
+
+
+
+                 The protection check was a "standard" CDRom check.
+
+                 So, the "standard" sice, BPX on GetDriveAttributeA,
+
+                 GetVolumeInformationA, GetFileAttributes, CreateFileA.
+
+                 Step, step, step.  After spending a few nights (I'm
+
+                 out of shape) tracing through the protection routines,
+
+                 I patch the tail end of the protection check changing
+
+                 a jne to a relative jmp.  Hardly anything worth writing
+
+                 about until . . .
+
+
+
+                 Fire up the program, it seems to work sometimes, but most
+
+                 of the time not.  Wierd.  What is that you say? "zen."
+
+
+
+                 After poking around sice a little bit more, I try
+
+                 a different approach.  I run the executable through
+
+                 a disassembler and check the dead listing.  As I page
+
+                 through the listing, a wierd thing catches my eye.  It
+
+                 seems that when I hit pagedown, my editor is redisplaying
+
+                 the same portion over and over.  Right at the spot where
+
+                 the protection code is.  I trace calls into the routine
+
+                 and find this little gem:
+
+
+
+                   jmp dword ptr [4*eax+00419198]  ; jump to one of n random checks
+
+                   call 004841C0                   ; where eax holds a random value
+
+                   jmp 00418F17                    ; from 1 to n
+
+                   call 00484CF0
+
+                   jmp 00418F17
+
+                   call 00485820
+
+                   <SNIP>
+
+                   jmp 00418F17
+
+                   call 00489010
+
+
+
+                 I check the reference to 00419198 and sure enough,
+
+                 it's a jump table to the calls below.  The program
+
+                 was randomizing the call to the protection check.
+
+                 So tracing through one and applying a patch to "fix"
+
+                 the return value would only work if it happened to
+
+                 randomly pick the location that's been patched.  A
+
+                 simple jmp around to the correct place fixed the
+
+                 program so it's no longer annoying to start-up.
+
+
+
+                 What threw me off was the fact that I was starting the
+
+                 trace on the GetDriveTypeA call and stepping through
+
+                 the code, setting bp's at later system calls.  Changing
+
+                 eax before the end of the protection worked for that
+
+                 one instance of the protection check but not for the
+
+                 others, so when I patched that piece, it only worked
+
+                 if it hit that correct random location.
+
+
+
+                 How could it have been improved?
+
+
+
+                 1. Bias the randomization so that it goes to the same
+
+                    location everyday.  The 30-second crack would then
+
+                    work as many times as needed for testing during that
+
+                    day but fail on other days.
+
+                 2. Spread out the checks to different parts of the code.
+
+                    It's obvious that the check was a cut and paste job
+
+                    to the same file.</PRE>
+
+</BODY>
+
+</HTML>

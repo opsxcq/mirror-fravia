@@ -1,0 +1,778 @@
+<html><TITLE>popjA2</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+<CENTER><FONT size="+3">Reverse Engineering VBX Custom Controls</FONT><BR><BR>
+
+(&quot;function VBRuntime&quot;)<BR> <BR>
+
+<H4>by +PopJack<BR>
+
+<BR>
+
+(26 September 1997)</H4>
+
+<HR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">Courtesy of fravia's page 
+
+of reverse engineering<BR><BR>
+
+<I>Well, it was about time... visual basic reversing seems to be VERY 
+
+neglected lately... a pity, because this language can (slowly) be used 
+
+to prepare some interesting &quot;quick crack tools&quot;, as the +HCU will demontrate 
+
+next year with two projects connected to this one: <FONT color="blue">Visual Basic tools for 
+
+reverse engineering</FONT> and <FONT color="blue">Visual basic tools for 
+
+protecting your anonymity</FONT>... as you see there is a lot of work 
+
+ahead also for our friends &quot;visualbasers&quot;!.<BR>
+
+This interesting essay by +PopJack opens the &quot;hunt&quot; for vb controls. We 
+
+are still awaiting the promised tutorial on OCX reverse engineering by 
+
+Cat (Ola, amigo, estas muerto?), let's hope that +PopJack will send his 
+
+essay asap</I></CENTER><HR size="6"><PRE><FONT size="+2"><CENTER>Reverse Engineering VBX Custom Controls
+
+by +PopJack
+
+(8 September 1997)</FONT>
+
+<HR></CENTER>
+
+Tools needed:
+
+
+
+SoftICE for Windows (only sometimes)
+
+W32Dasm  (only sometimes)
+
+A hex editor (I use Hexpert )
+
+Visual Basic (I'm using here version 3)
+
+
+
+Although cracking Visual Basic programs can be very boring owing to 
+
+the calls to VBRunxxx.dll,  VBX controls are written in C or C++ and 
+
+normally the protections found in these controls are very simple. 
+
+VBX Custom controls are used in Visual Basic, and are now being replaced 
+
+by OCX controls (more on this on the next essay). Some of the protections 
+
+are listed below:
+
+1) Nag screens that appear when the VBX is loaded in memory.
+
+2) Not allowing you to use the VBX in the VB environment or in run mode 
+
+(i.e. the exe file).
+
+3) Missing a *.LIC file
+
+
+
+Let's have a look at each of them.
+
+Example 1)
+
+ The nag screens are easily spoted using W32dasm. I will show you 
+
+in this example how to remove the nag screen and even make the VBX to 
+
+show the registered About box.
+
+
+
+Target: HSlide.vbx 
+
+Get it at: <A href="javascript:if(confirm('http://129.105.116.5/fravia/www.mabry.com  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://129.105.116.5/fravia/www.mabry.com'" tppabs="http://129.105.116.5/fravia/www.mabry.com">www.mabry.com</A>
+
+
+
+When you use the custom control it displays a nag screen for 
+
+some seconds.
+
+Since the nag screen appears during a limited amount of time 
+
+let's try a classical breakpoint: bpx settimer.
+
+This is where we land
+
+
+
+:0001.2032 56                     push si
+
+:0001.2033 6A01                   push 0001
+
+:0001.2035 68E803                 push 03E8
+
+:0001.2038 6A00                   push 0000
+
+:0001.203A 6A00                   push 0000
+
+:0001.203C 9AFFFF0000             call USER.SETTIMER       ;HERE!
+
+:0001.2041 C706F6070000           mov word ptr [07F6], 0   ;initialize counter
+
+:0001.2047 EB1F                   jmp 2068
+
+:0001.2049 90                     nop
+
+
+
+* Referenced by a Jump at Address:0001.1FCF(C)
+
+|
+
+:0001.204A FF06F607               inc word ptr [07F6]
+
+:0001.204E 833EF6070F             cmp word ptr [07F6], F    ;have we been here
+
+                                                            for 15 times?
+
+
+
+* Referenced by a Jump at Address:0001.1FDE(U)
+
+|
+
+:0001.2053 7C13                   jl 2068       ;no, go away and hold nag on
+
+:0001.2055 8B760E                 mov si, [bp+0E]	
+
+:0001.2058 56                     push si
+
+:0001.2059 6A01                   push 0001
+
+:0001.205B 9AFFFF0000             call USER.KILLTIMER
+
+:0001.2060 56                     push si
+
+:0001.2061 6A00                   push 0000
+
+:0001.2063 9AF21C0000             call USER.ENDDIALOG	;ok, turn off nag screen
+
+
+
+* Referenced by a  Jump at Addresses:0001.1FD6(U), :0001.2053(C)
+
+|
+
+:0001.2068 33C0                   xor ax, ax
+
+:0001.206A 1F                     pop ds
+
+:0001.206B 5E                     pop si
+
+:0001.206C C9                     leave
+
+:0001.206D CA0A00                 retf 000A
+
+
+
+The thing to do to take care of the delay is very simple isn't it?
+
+Lets do it
+
+:0001.2041 C706F6070E00           mov word ptr [07F6], 000E
+
+:0001.2047 90                     nop
+
+:0001.2048 90                     nop
+
+:0001.2049 90                     nop
+
+
+
+Remember that our teacher +ORC told us not to use sucessive nops, but in 
+
+this case there is no problem.
+
+
+
+Now the Aboutbox, which is really more interesting from the point of vue 
+
+of reverse engineering.
+
+First some general info on  VBX  initialization: proc LIBMAIN is called 
+
+only NCE upon VBX first load, and each instance of the custom control 
+
+must call VBINITCC to initialize itself. 
+
+So the VBINITCC is normally a good place to start tracing.
+
+
+
+Let's have a look at the dissambled file. Cortesy of W32dasm.
+
+
+
++++++++++++++++++++ ENTRY TABLE FUNCTIONS ++++++++++++++++++
+
+Number of Entry Table Functions = 0010 (decimal)
+
+
+
+
+
+ Addr:0001.2BD2 Ord:0000d Type:00h Name: HSLIDE1 
+
+ Addr:0001.2BD2  Type:00h Name: Visual Basic Horizontal Slider Custom Control 
+
+ Addr:0001.1382 Ord:0001d Type:FFh Name: CTLPROC {Exported}
+
+ Addr:0001.20D6 Ord:0002d Type:FFh Name: LIBMAIN {Exported}
+
+ Addr:0001.1FB2 Ord:0003d Type:FFh Name: COPYRIGHTPROC {Exported}
+
+ Addr:0001.1D06 Ord:0004d Type:FFh Name: ABOUTPOPUPWNDPROC {Exported}
+
+ Addr:0001.2070 Ord:0005d Type:FFh Name: VBINITCC {Exported}
+
+ Addr:0001.3022 Ord:0006d Type:FFh Name: ___EXPORTEDSTUB {Exported}
+
+ Addr:0001.1CD2 Ord:0007d Type:FFh Name: ABOUTDLGPROC {Exported}
+
+ Addr:0001.20C4 Ord:0008d Type:FFh Name: VBTERMCC {Exported}
+
+
+
+
+
+Name: DialogID_00CF, # of Controls=009, Caption:&quot;About Slider Controls&quot;
+
+     001 - ControlID:0001, Control Class:&quot;&quot; Control Text:&quot;OK&quot; 
+
+     002 - ControlID:FFFF, Control Class:&quot;&quot; Control Text:&quot;&quot; 
+
+     003 - ControlID:001C, Control Class:&quot;&quot; Control Text:&quot;P&#130;Slider Controls - HSLIDE.VBX&quot;
+
+     ......... cutted to save space 
+
+     009 - ControlID:FFFF, Control Class:&quot;&quot; Control Text:&quot;&quot; 
+
+Name: DialogID_00D1, # of Controls=014, Caption:&quot;About Slider Controls (Sample)&quot;
+
+     001 - ControlID:0001, Control Class:&quot;&quot; Control Text:&quot;OK&quot; 
+
+     002 - ControlID:FFFF, Control Class:&quot;&quot; Control Text:&quot;&quot; 
+
+     003 - ControlID:0018, Control Class:&quot;&quot; Control Text:&quot;P&#130;Slider Controls - HSLIDE.VBX&quot; 
+
+     ......... cutted to save space
+
+     006 - ControlID:FFFF, Control Class:&quot;&quot; Control Text:&quot;This is an unregistered 
+
+                                                          version of this control.  
+
+                                                          It is not crippled in any way&quot; 
+
+
+
+Ok...So we have two dialogs. A good and a bad one.
+
+Searching for About (DialogID_00D1) we find it inside the Copyrightproc:
+
+
+
+* Referenced by a Jump at Address:0001.1D1A(C)
+
+|
+
+:0001.1D3E FF360008      push word ptr [0800]
+
+:0001.1D42 6A00          push 0000
+
+
+
+* Possible Reference to Dialog: DialogID_00D1         
+
+                                  |
+
+:0001.1D44 68D100        push 00D1 ; About Slider Controls (unregistered)
+
+:0001.1D47 68541D        push SEG ADDR of Segment 0001
+
+:0001.1D4A 68D21C        push 1CD2 ;AboutdlgProc (see the ENTRY TABLE FUNCTIONS)
+
+:0001.1D4D 6A00          push 0000
+
+:0001.1D4F 6A00          push 0000
+
+:0001.1D51 9AF235BE1D    call 0001.35F2
+
+:0001.1D56 EBDD          jmp 1D35
+
+
+
+Stop! Time to think!
+
+If you did looked at the ENTRY TABLE FUNCTIONS things become clear. The 
+
+AboutdlgProc will call the dialog indicated in the previous pushes.
+
+So to have a registered about box we replace
+
+:0001.1D44 68D100          push 00D1  ;About Slider Controls (unregistered)
+
+by
+
+:0001.1D44 68CF00          push 00CF  ;About Slider Controls (registered)
+
+
+
+That's all! We are now an happy  registered owner of hslide.vbx
+
+
+
+Example 2)
+
+In Visual Basic there are a set of functions to access the windows API - 
+
+the so called VB API.
+
+The custom controls can determine the state of the VB application by 
+
+calling a function - VBRuntime.
+
+This function resides both in VB.exe itself and in the VB runtime dll - 
+
+VBRunxxx.
+
+I did some work to identify where in the code does this function returns 
+
+its value.
+
+Here follows what I found:
+
+i)    In the VB environment you find it at SS:8D4C. 
+
+      In design time it returns 0, in runmode (still in the 
+
+      environment) it returns 2.
+
+ii)   In the exe file the runtime state value returned from the 
+
+      VBRunXXX.dll is in SS:6FE6 and has a value of 1.
+
+
+
+Target: CT_radio.vbx (part of the Component Toolbox)
+
+Get it at : <A href="javascript:if(confirm('http://129.105.116.5/fravia/www.dbi.com  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://129.105.116.5/fravia/www.dbi.com'" tppabs="http://129.105.116.5/fravia/www.dbi.com">www.dbi.com</A>   (used to be Gamesman Inc)
+
+ 
+
+So how do we cut the mustard?
+
+I use bpx localinit just to get inside the custom control. Then I set a 
+
+bpm ss:8D4C or bpm ss:6FE6.
+
+
+
+This is where we land:
+
+Exported fn(): VBINITCC - Ord:0006h
+
+:0001.0EA9 B8FFFF                 mov ax, SEG ADDR of Segment 0002
+
+:0001.0EAC 45                     inc bp
+
+:0001.0EAD 55                     push bp
+
+:0001.0EAE 8BEC                   mov bp, sp
+
+:0001.0EB0 1E                     push ds
+
+:0001.0EB1 8ED8                   mov ds, ax
+
+:0001.0EB3 83EC1A                 sub sp, 001A
+
+:0001.0EB6 56                     push si
+
+:0001.0EB7 57                     push di
+
+:0001.0EB8 8B7608                 mov si, [bp+08]  ;holds VB Version
+
+:0001.0EBB 8B7E06                 mov di, [bp+06]  ;HERE!,holds run mode 
+
+                                                                              
+
+from VBRun300.dll
+
+:0001.0EBE 0BFF                or di, di
+
+:0001.0EC0 741E                jz 0EE0
+
+:0001.0EC2 6A00                push 0000     ;you don't have a license
+
+:0001.0EC4 1E                  push ds       ;to use this control outside
+
+:0001.0EC5 68DE02              push 02DE     ;the VB environment
+
+:0001.0EC8 1E                  push ds
+
+:0001.0EC9 680F03              push 030F
+
+:0001.0ECC 6A10                push 0010
+
+:0001.0ECE 9AFFFF0000          call USER.MESSAGEBOX
+
+:0001.0ED3 33C0                xor ax, ax
+
+:0001.0ED5 5F                  pop di
+
+:0001.0ED6 5E                  pop si
+
+:0001.0ED7 8D66FE              lea sp, [bp-02]
+
+:0001.0EDA 1F                  pop ds
+
+:0001.0EDB 5D                  pop bp
+
+:0001.0EDC 4D                  dec bp
+
+:0001.0EDD CA0400              retf 0004
+
+
+
+So we jump always to the good location by replacing
+
+:0001.0EC0 741E                   jz 0EE0
+
+by 
+
+:0001.0EC0 EB1E                   jmp 0EE0
+
+There are also more than 20 controls that use this same scheme.
+
+
+
+Example 3)
+
+Normally custom controls come with a license file that enables you to 
+
+use it in the VB environment, and you should not distribute it along with 
+
+the final exe file.
+
+Let's see one such case: a custom control for managing serial 
+
+communications.
+
+
+
+Target : PDQCOMM2.VBX  from Crescent Software
+
+Get it at: <A href="javascript:if(confirm('http://129.105.116.5/fravia/www.qbss.com  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://129.105.116.5/fravia/www.qbss.com'" tppabs="http://129.105.116.5/fravia/www.qbss.com">www.qbss.com</A> (although the control is really made by - 
+
+www.progress.com)
+
+
+
+Usually LIC files are acessed using Openfile so it is a nice entry 
+
+point for us. 
+
+The control must verify if it is being used or not inside the VB 
+
+environment. 
+
+Only in the first case should it look for the LIC file.
+
+The file validation is so simple that I made a valid license file using 
+
+Softice 1.5 in 2 minutes!
+
+Let's have a look at the code around the openfile call.
+
+
+
+:0001.03C2 C80A0100               enter 010A, 00
+
+:0001.03C6 57                     push di
+
+:0001.03C7 56                     push si
+
+:0001.03C8 BEFFFF                 mov si, FFFF
+
+:0001.03CB 33C0                   xor ax, ax
+
+:0001.03CD 8946F8                 mov [bp-08], ax
+
+:0001.03D0 8946F6                 mov [bp-0A], ax
+
+:0001.03D3 9AD06D7800             call 0001.6DD0
+
+:0001.03D8 50                     push ax
+
+:0001.03D9 8D867EFF               lea ax, [bp-0082]
+
+:0001.03DD 16                     push ss
+
+:0001.03DE 50                     push ax
+
+:0001.03DF 6A78                   push 0078
+
+:0001.03E1 9A29030000      call KERNEL.GETMODULEFILENAME  ;looking for VB.exe
+
+:0001.03E6 8BF8            mov di, ax    ; if it isn't loaded then ax=0
+
+:0001.03E8 0BF8            or di, ax
+
+:0001.03EA 7503            jne 03EF      ; jump to verify license file
+
+:0001.03EC E9E900          jmp 04D8
+
+
+
+....... cutted to save space
+
+
+
+* Possible StringData Ref from Data Seg 003 -&gt;&quot;COM4WIN2.LIC&quot;
+
+                                  |
+
+:0001.043B 684A00                 push 004A
+
+:0001.043E 8D86F6FE               lea ax, [bp-010A]
+
+:0001.0442 16                     push ss
+
+:0001.0443 50                     push ax
+
+:0001.0444 6A00                   push 0000
+
+:0001.0446 9AFFFF0000             call KERNEL.OPENFILE
+
+:0001.044B 8BF0                   mov si, ax
+
+:0001.044D 83FEFF                 cmp si, FFFF  ;LIC file found?
+
+:0001.0450 7503                   jne 0455      ;yes go ahead
+
+:0001.0452 E98300                 jmp 04D8
+
+
+
+:0001.0455 C746F60000             mov word ptr [bp-0A], 0000
+
+:0001.045A 50                     push ax
+
+:0001.045B 8D46F6                 lea ax, [bp-0A]
+
+:0001.045E 16                     push ss
+
+:0001.045F 50                     push ax
+
+:0001.0460 6A01                   push 0001           ; read 1 byte from begining
+
+:0001.0462 9A82040000             call KERNEL._LREAD
+
+:0001.0467 48                     dec ax              ; 1 byte read?
+
+:0001.0468 7568                   jne 04D2
+
+:0001.046A 8B7EF8                 mov di, [bp-08]
+
+:0001.046D 8976FA                 mov [bp-06], si
+
+:0001.0470 837EF61A               cmp word ptr [bp-0A], 001A  ; is byte = 1A ?
+
+:0001.0474 7413                   je 0489                     ; good!
+
+:0001.0476 037EF6                 add di, [bp-0A]
+
+:0001.0479 56                     push si
+
+:0001.047A 8D46F6                 lea ax, [bp-0A]
+
+:0001.047D 16                     push ss
+
+:0001.047E 50                     push ax
+
+:0001.047F 6A01                   push 0001
+
+:0001.0481 9A95040000             call KERNEL._LREAD
+
+:0001.0486 48                     dec ax
+
+:0001.0487 74E7                   je 0470
+
+:0001.0489 83C705                 add di, 0005
+
+:0001.048C 56                     push si
+
+:0001.048D 8D46F6                 lea ax, [bp-0A]
+
+:0001.0490 16                     push ss
+
+:0001.0491 50                     push ax
+
+:0001.0492 6A02                   push 0002
+
+:0001.0494 9AAC040000             call KERNEL._LREAD   ; read 2 more bytes
+
+:0001.0499 3D0200                 cmp ax, 0002         ; 2 bytes read?
+
+:0001.049C 753A                   jne 04D8
+
+:0001.049E 397EF6                 cmp [bp-0A], di      ;is 2nd byte= 05?
+
+:0001.04A1 7535                   jne 04D8             ;ah ah! Bad guy!
+
+:0001.04A3 56                     push si
+
+:0001.04A4 8D46F6                 lea ax, [bp-0A]
+
+:0001.04A7 16                     push ss
+
+:0001.04A8 50                     push ax
+
+:0001.04A9 6A02                   push 0002
+
+:0001.04AB 9AFFFF0000             call KERNEL._LREAD   ;still another 2 bytes
+
+:0001.04B0 3D0200                 cmp ax, 0002                    
+
+:0001.04B3 7405                   je 04BA              ;I read 2 bytes, move on
+
+:0001.04B5 C746F60001             mov word ptr [bp-0A], 0100
+
+:0001.04BA 56                     push si
+
+:0001.04BB 9AEB040000             call KERNEL._LCLOSE  ;as the name says
+
+:0001.04C0 8B4604                 mov ax, [bp+04]      ;I placed a chosen value 
+
+                                                        in the LIC file
+
+:0001.04C3 3946F6                 cmp [bp-0A], ax      ;to avoid  the jump 
+
+:0001.04C6 7210                   jb 04D8
+
+:0001.04C8 B80100                 mov ax, 0001         ;LIC file is valid!
+
+...ret
+
+
+
+:0001.04D8 6A00                   push 0000
+
+..... cutted to saved space
+
+:0001.04EF 33C0                   xor ax, ax           ;get the bad flag zero
+
+...ret
+
+
+
+
+
+Of course we can crack the control instead of making a valid 
+
+license file.
+
+The problem is that some applications will install new versions 
+
+of the same control on your system... and then you will have to 
+
+crack again and again. 
+
+
+
+That's all for now. Hope you had fun.
+
+Once again thank you fravia+ for making available  so much knowledge
+
+for us.
+
+
+
+See you 
+
++PopJack</PRE>                              
+
+<FONT color="green">(c) +PopJack 1997. All rights reversed</FONT>
+
+   <HR size="6">
+
+
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</I></CENTER>
+
+<BR><CENTER>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="project8.htm" tppabs="http://www.anticrack.de/fravia/project8.htm">Back to Project 8</A> (&quot;Visual Basic galore&quot;)
+
+<HR width="33%">
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#84'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#84">homepage</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#73'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#73">links</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#82'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#82">students' essays</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut CGI-scripts</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering legal?</A></CENTER>
+
+<CENTER><HR ALIGN="CENTER" WIDTH="100%" SIZE="2"></CENTER>
+
+</BODY>
+
+</HTML>
+

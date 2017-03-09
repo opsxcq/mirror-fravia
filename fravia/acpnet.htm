@@ -1,0 +1,248 @@
+<html><HEAD>
+
+<TITLE>acpnet</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+<CENTER><H2>PATCHING NETSCAPE<BR>
+
+(Cookies begone!)</H2><H4><I>by ACP</I>
+
+<BR>(04 July 1997, slightly edited by Fravia)</H4>
+
+<HR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">Courtesy of Fravia's page of reverse engineering
+
+<BR><BR><I>
+
+Well, here it goes... another VERY interesting reverse engineering project! Are you not fed up 
+
+with having continuously to eliminate annoying cookies-requests from stupid commercial 
+
+ads and useless counters that pop unterminately up on every slow-loading, image-heavy 
+
+site of the Web? YES, we hate them! Therefore the first &quot;amelioration&quot; of Netscape,
+
+proposed by ACP, is rightly dedicated to the extirpation of the cookies-evil weed, 
+
+apply it immediately to your copy of Netscape and Enjoy!
+
+</I></CENTER>
+
+<HR size="3">
+
+<PRE>
+
+
+
+                 Welcome to my new project, PATCHING NETSCAPE!
+
+                               (Cookies begone!)
+
+                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+                             by ACP, 04 July 1997
+
+
+
+
+
+          Why you ask?, COZ I WANT NETSCAPE TO WORK EXACTLY AS I WISH!
+
+
+
+
+
+ * I automatically assume you have knowlegde of Assembly, and some experience
+
+   in debugging Win32 Apps using WinICE.
+
+   IF NOT, STOP RIGHT THERE AND GO STUDY BASIC REVERSE ENGINEERING FIRST!
+
+  
+
+ * Please ignore my lame english ;-]
+
+
+
+ * In this doc i will refer to (Netscape v3.0 GOLD), *ONLY*
+
+   but, if you read everything, and understand, you'll be able to patch
+
+   any version of Netscape YOURSELF!
+
+
+
+ * before patching, and in order for this patch to correctly work
+
+   you *MUST* enable the 'WARN BEFORE ACCEPTING A COOKIE' option.
+
+   in Options --&gt; Network-Prefs --&gt; Protocols
+
+
+
+ ---------------------------------------------------------------------------
+
+
+
+ A. We want Netscape NOT TO ACCEPT COOKIES, NEVER... let's start:
+
+    - make sure you have WinICE ready and loaded
+
+    - make sure you have USER32.DLL loaded in WinICE's exports
+
+    - fire-up Netscape
+
+    - CTRL+D into WinICE,
+
+    - set a breakpoint on MessageBoxA 
+
+    - exit WinICE's window.
+
+
+
+
+
+ B. Load the included HTML page, (<A href="netpatch.htm" tppabs="http://www.anticrack.de/fravia/netpatch.htm">netscape-patch.html</A>) into Netscape.
+
+    WinICE should popup and you'll land smack inside the MessageBoxA Proc.
+
+    'P RET' *once!* and then press the 'CANCEL' button.
+
+    now, you're back in WinICE's window, keep 'P RET'ing back to Netscape until 
+
+    you reach the following code:
+
+    Add ESP,8     <WE land HERE after the last 'P RET' ! Test EAX,EAX JZ xxxxxxxx Now, you know that you're out of the "ConfirmCoockie()" function. C. All you have to do now, is applying some ZEN: scroll WinICE's code "window.class" tppabs="http://fravia.org/window.class" up, something like 3 lines of code... untill you'll reach the following code: 1. Call xxxxxxxx <-- this is some internal call, doesn't interest us! 2. Mov EAX,[EBP+xx] 3. Add ESP,8 <-- DO **NOT** skip this code line! 4. Push EAX <-- put a "JMP DO_NOT_SAVE_COOKIE" here. 5. Mov EAX,[ESP+xx] 6. Push EAX 7. Mov EAX,[EBP+xx] 8. Call [EBP+xx] <-- our "ConfirmCoockie()" call. 9. Add ESP,8 10. Test EAX,EAX 11. JZ DO_NOT_SAVE_COOKIE <-- jump out of the save coockie routine! .. ... Following code inside Netscape saves the coockies to disk and loads the cookies info into memory. After the ConfirmCookie() call, the error code returns in EAX. EAX="0" means that the user has pressed CANCEL! EAX="1" means that the user has pressed OKAY! *ONLY* after we did undestand this (which is simple), we can move to phase D. D. What do we do NEXT? Okay, now we need to SKIP the "ConfirmCookie()" call and SKIP the code that loads the cookies info into memory and saves the info to disk. We have therefore to patch NETSCAPE.EXE. Now, since we want Netscape to autokill all bloody cookies, we'll patch the code in memory (through winice) and test everything first, in order to see if we did everything OKAY, or if we have done some blunder. Only afterwards, once we have well checked everything, we're gonna patch physically the "real" EXE with an hexeditor. E. We're gonna patch Netscape in memory in order to "JMP" over the evil Call. Check now the code BEFORE the "ConfirmCookie()" call, please: HAve a look at line #3, which is (Add ESP,8) <-- VERY VERY IMPORTANT! at line #4 we'll insert (patch over) a jump out of the big routine. Why do we patch at line #4 (and not at line #3) you ask? Because if you patch at line #3 the StackPointer will not be incremented! You will therefore fuck up the following offset 'RET'(and your target is gonna jump crazy at the end of the routine, which is pretty bad... if you don't know how the 'RET' instruction works exactly, i suggest you learn it right now from <a href="javascript:if(confirm('http://www.anticrack.de/fravia/fra_ret.htm  \n\nThis file was not retrieved by Teleport Pro, because the server reports that this file cannot be found.  \n\nDo you want to open it from the server?'))window.location='http://www.anticrack.de/fravia/fra_ret.htm'" tppabs="http://www.anticrack.de/fravia/fra_ret.htm">Fravia</A>:
+
+   
+
+ F. Now we take a look at line #11 which is the jump out of the routine
+
+    in case the user pressed CANCEL.
+
+    we are going to jump from line #4 to the end of the routine.
+
+    at line #4, assemble with WinICE, 'JMP addr of --&gt; DO_NOT_SAVE_COOKIE'
+
+    and that's IT!
+
+    Cookies will from now on be auto-killed, and the messagebox that annoyed 
+
+    the user will not be shown anymore. Yet this was a &quot;temporary&quot; patch, in 
+
+    fact we worked with Winice on our Netscape copy IN MEMORY, not on the 
+
+    real program on our harddisk, duh?
+
+
+
+    I assume that you know how to write down the changes we have made to the 
+
+    code above, in order to PERMANENTLY patch it, using an HexEditor (such 
+
+    as HIEW).
+
+
+
+    In case you can't handle it, here is the file offset and the original and
+
+    &quot;new&quot; byte info:
+
+    Make sure that your NETSCAPE.EXE file is EXACTLY -&gt; 3164672 bytes long, this 
+
+    patch would not work on other versions! 
+
+
+
+     Comparing files netscape.exe and netscape.new
+
+
+
+       Offset     Old    New
+
+       00095788:  50     E9
+
+       00095789:  8B     74
+
+       0009578A:  44     20
+
+       0009578B:  24     00
+
+       0009578C:  3C     00
+
+
+
+    After this patch, your Netscape (3.0 GOLD) will auto kill cookies.
+
+    If you have another version, just adapt the instructions I gave you 
+
+    with this essay.
+
+
+
+  Email me <A HREF="mailto:acp@fear-me.com">acp@fear-me.com</A> any comments about this document.
+
+
+
+  C'ya later, ACP.
+
+
+
+</PRE>
+
+
+
+
+
+<BR>
+
+<HR ALIGN="CENTER" WIDTH="100%" SIZE="3">
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</I></CENTER>
+
+<BR><CENTER>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#84'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#84"> homepage</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"> 
+
+<A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#73'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#73"> links</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0">
+
+<A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm"> anonymity</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm"> +ORC</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#82'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#82"> students' essays</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm"> tools</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm"> cocktails</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm"> search_forms</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm"> mailFraVia</A></CENTER><BR>
+
+
+
+<CENTER>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm"> Is reverse engineering legal?</A></CENTER>
+
+<CENTER><HR ALIGN="CENTER" WIDTH="100%" SIZE="2"></CENTER>
+
+
+
+</BODY>
+
+</HTML>
+

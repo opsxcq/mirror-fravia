@@ -1,0 +1,248 @@
+<HTML>
+
+<HEAD>cybercu1.htm Fastraq Post Server; a "best before" protection scheme</HEAD>
+
+<BODY BGCOLOR=#C0C0C0 TEXT=#001010 VLINK=#405040>
+
+
+
+<CENTER>
+
+<A href="snippets.htm" tppabs="http://www.anticrack.de/fravia/snippets.htm"><IMG SRC="snippets.gif" tppabs="http://www.anticrack.de/fravia/snippets.gif" ALT="snippets" 
+
+ALIGN=BOTTOM WIDTH=114 HEIGHT=43 BORDER=0 VSPACE=0 HSPACE=0></A><BR>
+
+<FONT color=gray>Back to the Snippets</FONT><HR></CENTER>
+
+<PRE>
+
+<CENTER><FONT size=+2>Fastraq Post Server; a "best before" protection scheme
+
+by Cybercurve</FONT></CENTER><BR>
+
+Here's a small essay written by a newbie and for newbies.
+
+
+
+Protection type : 'best before'
+
+There are some things (e.g. crossreferences) that make it look
+
+like it's protected against cracking, but if that is so, it's a very
+
+stupid way to protect a program: This program is cracked by only changing
+
+4 bytes.
+
+
+
+I cracked this and I've written an essay on how i did it. I'm a newbie, 
+
+so I can't be sure it works, but i've tried to start it up with the computer 
+
+clock set to many different dates, and used it a few times after i cracked it 
+
+and it does seem to work. (of course with a invalid reg-code)
+
+
+
+----- here starts the essay (a big word for this small piece of text) -------
+
+
+
+Cracking FastRaq Postserver.
+
+
+
+Target: 
+
+Fastraq Post Server (version 0.7.5.20, post.exe = 2.336.768 bytes)
+
+	Download from: http://www.fastraq.demon.co.uk/post	
+
+Tools used:	
+
+Wdasm 8.9 (free demo version will do)
+
+	Download from: http://www.expage.com/page/w32dasm
+
+Ultraedit (free demo version will do, any decent hexeditor will do)
+
+	Download from: http://www.download.com.
+
+
+
+NOTE: all numbers are hexadecimal
+
+
+
+I'm in quit a busy period now, so cracking this program took
+
+a few weeks, but I only worked a few hours on it, and believe
+
+you can do it faster, but i started to try to crack this using
+
+softice, which took a lot of time but got me nowhere (that's
+
+propably my fault, certainly not softice's).
+
+
+
+This is a very nice program to learn cracking on because they
+
+give away free temporary-registration codes that expire in one
+
+month. So there's no real need to crack this program, but that's
+
+not the point. The point is that they tried to do some protection
+
+(at least that's what i think it is), but as you will see, any newbie
+
+cracker (like me) should be able to crack this without any problem,
+
+and within two hours.
+
+
+
+Let's start the work:
+
+
+
+I tried to set breakpoints using Softice, but that got me nowhere.
+
+If you installed the program and entered a temporay-registration code,
+
+exit fastraq, start regedit.exe, search for the reg-code. You
+
+should land in : HKEY_LOCAL_MACHINE\SOFTWARE\Fastraq\Post Server\0.93
+
+Change the serial so it is invalid.
+
+copy post.exe to post.wdm.
+
+open post.wdm in wDasm.
+
+
+
+Start Fastraq, it shows a messagebox "Register the Post Server"
+
+containing "Please enter your registration number."
+
+Goto Wdasm click on 'Refs'/'String data references' and scroll to
+
+"Please enter your registration" Double click. Double click again.
+
+There's only one location in the program where it appears (535EE1 
+
+which is offset 1352E1 in post.exe). Question is, how does the program
+
+get there? answer, look a few lines above, it comes there by a 
+
+CONDITIONAL(could it be easier ?)-jump from 535FBF. go to there.
+
+it says :
+
+:00535FBF 0F8709FFFFFF ja 00535ECE
+
+and it is offset 1353BF in post.wdm
+
+Open post.exe in a hexeditor. goto 1353BF and change 0F87 into EB04.
+
+(+Orc says that you shouldn't NOP some code out, and I advice you 
+
+to use this simple 'jump ahead' solution to avoid nop's) and save.
+
+
+
+Start Post.exe. It says "The evaluation period for this.." 
+
+goto wDasm, do a string-reference search on that. you should
+
+find the following two locations : 535427 and 53545C. on both locations
+
+look a few lines above you should see something like:
+
+	fcomp qword ptr [0057CDB0] <DO some difficult things
+
+	fstsw ax
+
+	sahf 
+
+	jbe 0053543B <-- conditional-jump away
+
+
+
+So, that's how we escape the message. Open post.exe in hexeditor,
+
+goto offset 13481A change 761F (jbe) into EB1F (always jump).
+
+goto offset 13484F change 7615 (jbe) into EB15 (always jump).
+
+
+
+Start Post.exe again. click on help/about. it something like:
+
+Product expiry : -84 days.
+
+How nice, cogito ergo sum fatigatus. (as Descartes said)
+
+
+
+That seems to be it. In many essays the Authors give the impression 
+
+to be perfect, and never mentions the mistakes that they have almost 
+
+surely made, well i did make some:
+
+
+
+-I first concentrated on getting the help/about to always show a normal 
+
+number so that it would never expire, i landed in the code "which.class" tppabs="http://fravia.org/which.class" 
+
+calculates the number of days left, and found that there's some 
+
+protection that does a lot of call-ing / ret-ing at the end of the 
+
+function to make it difficult to change the result of the function,
+
+which is stored in (surprise) AX. It could be bypassed i think, but 
+
+haven't tried this since it is not necessary. 
+
+I removed some messages like ('registration number is invalid) but didn't 
+
+get any further.
+
+I didn't have a wodka-martini, and i had to do some other work so when i 
+
+started to look at the program again i thought 'well, why should i care 
+
+about the about-box? I only need to get the program start up. Then i did 
+
+the work described above in less than half an hour, which is a reasonable
+
+time for a newbie.
+
+
+
+Well, otium esse melior est non facere, so that's it for now.
+
+
+
+Cybercurve cybercurve(at)cryogen(point)com</pre>
+
+<CENTER>
+
+<A href="snippets.htm" tppabs="http://www.anticrack.de/fravia/snippets.htm"><IMG SRC="snippets.gif" tppabs="http://www.anticrack.de/fravia/snippets.gif" ALT="snippets" 
+
+ALIGN=BOTTOM WIDTH=114 HEIGHT=43 BORDER=0 VSPACE=0 HSPACE=0></A><BR>
+
+<FONT color=gray>Back to the Snippets</FONT></CENTER>
+
+</BODY>
+
+</HTML>
+
+
+

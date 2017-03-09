@@ -1,0 +1,898 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>stone1.htm: In memory patching: three approaches</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR=#C0C0C0 TEXT=#001010 VLINK=#405040>
+
+<CENTER><FONT size=+3>In memory patching: three approaches</FONT>
+
+<BR>(how to introduce breakpoints in an automated debugger 
+
+and other marvels)
+
+<H2>by <FONT color=#5500AA>Stone</FONT></H2>
+
+(20 March 1997)</H4>
+
+<TABLE><TR><TD><CENTER>
+
+<A href="advanced.htm" tppabs="http://www.anticrack.de/fravia/advanced.htm"><IMG SRC="xtranio.gif" tppabs="http://www.anticrack.de/fravia/xtranio.gif" 
+
+ALT="advanced" ALIGN=BOTTOM WIDTH=114 HEIGHT=43 BORDER=0 
+
+VSPACE=0 HSPACE=0></A></CENTER></TD><TD><CENTER>
+
+<A href="papers.htm" tppabs="http://www.anticrack.de/fravia/papers.htm"><IMG SRC="papers.gif" tppabs="http://www.anticrack.de/fravia/papers.gif" 
+
+ALT="papers" ALIGN=BOTTOM WIDTH=114 HEIGHT=43 BORDER=0 
+
+VSPACE=0 HSPACE=0></A></CENTER></TD>
+
+</TR><TR><TD><CENTER><FONT color= gray>Advanced Cracking</FONT></CENTER></TD><TD><CENTER>
+
+<FONT color= gray>Papers</FONT></CENTER></TD>
+
+</TR></TABLE>
+
+<HR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALIGN=BOTTOM BORDER=0 VSPACE=0 HSPACE=0 width="13" height="13">Courtesy of fravia's page 
+
+of reverse engineering</CENTER><HR>       
+
+
+
+<CENTER>A very good essay by Stone, a great cracker and one of the few fine 
+
+reversers around that produces his own VERY GOOD TOOLS.<BR>This essay has a very 
+
+high theoretical value and should IMO be read by ALL reversers: you'll find inside 
+
+it matters like "how it's possible to introduce breakpoints in an automated 
+
+debugger", "making the target load a DLL for me"...  
+
+and other marvels. Stone intends to update this work <I>in fieri</I>, therefore 
+
+your contributions 
+
+on all these matters are welcomed. Enjoy! (Beginners shouldn't touch this stuff 
+
+IMO)
+
+</CENTER><HR size=3>
+
+<PRE>
+
+<FONT size=+2><CENTER>In memory patching<BR>
+
+Three approaches</FONT><FONT size=+1>
+
+by Stone</FONT>
+
+20 March 1998
+
+</CENTER>
+
+
+
+After reading MadMax's essay on kernel patching I decided that perhaps
+
+it was time for an essay on "in memory patching". Contrary to the general
+
++HCU philosophy my approach will be purely theoretical - the sourcecode I
+
+provide will serve as an example for you to build on. 
+
+
+
+Is something preventing a patch? Is your target encrypted, packed,
+
+CRC'ed or you need the program to run sometimes with the patch applied 
+
+sometimes without (A game-trainer for instance).Wouldn't you just love 
+
+if you could patch the program in memory after it loaded, unpacked, did 
+
+the CRC checks etc.? 
+
+You can. In the dos days we had TSR's to do this job. In the
+
+windows world it's a bit more difficult as the programming interface (Win32 
+
+API) is dynamic in contrast to dos's static interupt system. However new 
+
+methods which in many ways are similar to TSR's are now avaible.
+
+
+
+Kernel patching as MadMax pointed out is generally a bad idea. We need a
+
+more gentle approach. Which critereas would we like our solution to conform
+
+to?
+
+The critereas I'll use are:
+
+1) The approach should perform ok in terms of compatability. That is
+
+work on both NT and 95 and hopefully on future versions as well.
+
+
+
+2) The operating system should not suffer any long term effects of the
+
+crack. That is after termination of the target the OS should be left 
+
+unchanged.
+
+
+
+3) Only ring 3 measures should be used. (Some of the API-functions I'll
+
+use from ring 3 will actually switch to ring 0, but atleast there will be 
+
+no foreign code introduced at ring 0)
+
+
+
+
+
+Common ground
+
+Our immediate problem is that in a preemptive operating system like
+
+windows each process runs in it's own addressing space. Each time that the
+
+operating system switches to another process the virtual mapping is changed 
+
+to fit that of the current process. 
+
+The whole idea with memory patching is providing means of patching the target 
+
+in it's addressing space at a certain time (after unpacking, CRC'ing or 
+
+whatever is done). However since a criterium of the memory patch is that we 
+
+can't patch the operating system nor the program itself we need to find a way 
+
+of gaining access to the target addressing space from another process.
+
+
+
+The next problem we got is one of timing. Obviously the target needs to
+
+be patched after the CRC check has been performed or after it is unpacked
+
+in memory. And possibly it needs to be unpatched again to pass later
+
+checks. In other words we need a reliable trigger mechanism. It is in this 
+
+respect that the three methods I'll present here differ.
+
+
+
+
+
+The loader approach
+
+The critical assumption I'll make here is that the USER of the program
+
+can tell us how to time the patch thru another program. 
+
+This basically means we assume that the user can:
+
+1) Identify when patching is appropriate.
+
+2) Switch to another program to activate.
+
+
+
+About the first assumption it can be said - if it's a trainer this will
+
+never be a problem. Obviously the user will know when he want's to have
+
+infinate lives. Often a messagebox or some other visable sign shows itself 
+
+when a patch is needed. E.g. A messagebox saying "Insert correct CD in 
+
+drive and press OK" 
+
+It'd be easy to write a doc saying that when this occurs the
+
+dear user should press OK in another window first, and then in the
+
+target's obnoxious messagebox. However this is a serious shortcomming. 
+
+Who said the program will actually let the user make a retry? Most 30-day 
+
+trials tell the user the program has expired and the just exit or get into 
+
+trial mode or whatever.
+
+Perhaps many different locations has to be patch at many different time
+
+making user-controlled patching a cumbersome solution.
+
+
+
+On assumption 2 can it be said that many games don't like switching
+
+tasks and it's not likely that users will enjoy having to switch out of 
+
+their game to get a new handful of bullets or whatever.
+
+
+
+Let's get a bit more technical. Windows is so nice to provide us with an
+
+interface to write in other processes addressing space. The API needed
+
+is: <FONT color=blue>kernel32!WriteProcessMemory</FONT>
+
+Taking a closer look at this you'll find that what it actually does
+
+utilize Windows's int 2eh interface to switch to ring 0 meaning that it
+
+has ring 0 priveledges and thus is able to override the page protection. 
+
+However the interface has build in a security feature so you cannot override
+
+ring 0 data/code. (The int 2eh interface is for NT - I figure Windows 95 
+
+does something similar but I havn't checked it. Anyways the result is the
+
+same)
+
+
+
+For WriteProcessMemory to work we need to identify by handle which
+
+process we want patched. IMHO the best to find such a handle is to create 
+
+the target process yourself - that is do a good old fashioned EXEC from 
+
+within your patch/trainer code. 
+
+
+
+The API is Kernel32!CreateProcessA
+
+Ofcause there are different means of finding process handles.
+
+
+
+To synthetize a in-memory-patcher of this kind:
+
+CreateProcessA (Target)
+
+Wait for the user to say apply patch - e.g. amessageboxWriteProcessMemory
+
+
+
+Sourcecodes at:
+
+<A href="javascript:if(confirm('http://www.one.se/~stone/general/trainnt.zip  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.one.se/~stone/general/trainnt.zip'" tppabs="http://www.one.se/~stone/general/trainnt.zip">http://www.one.se/~stone/general/trainnt.zip</A> (or something)
+
+----------------------------------------------------------------------
+
+
+
+The API-Hook/Debug Approach
+
+
+
+Obviously the assumptions made for the Loader Approach can be too 
+
+restrictive. For instance 30-day trials often exit prior to offering the
+
+user any obvious point of introducing a patch. So does a dongle. Players
+
+might not like to switch task out of their beloved game to get another
+
+10 bullets or whatever. What we really need is the target to trigger the
+
+patch and this section is a way of doing this.
+
+
+
+The whole idea here is to hook an API-call, and make it perform to our
+
+desire. That can be return fake values under certain circumstances
+
+it could be to patch the main program or it's dll's in memory. In short
+
+what we wish to do is to let the api-call the program performs be
+
+surrounded by our code so that we can make it perform in every way we wish. 
+
+Certain side benefits will come along as well. The code I present will
+
+show how it's possible to introduce breakpoints in an automated debugger
+
+which is indeed something very useful for the creation of for instance
+
+unpackers.
+
+
+
+Again let's get down to it. A PE-file "imports" the functions it wishes
+
+to make use of. Because MS-developers decieded on a dynamic structure for
+
+API's it's obviously neasesary for each program to declare what functions it
+
+uses.
+
+This is done in a so called import table. Let's now take a deeper look
+
+into what takes place between the importtable in the PE-file and the
+
+execution of an API call by the target.
+
+
+
+
+
+3 basic types of information is stored in the importtable. The first is
+
+DLL names, the second is function names and the third is a Thunk-RVA.
+
+The information is stored in a structure that looks something like this:
+
+
+
+	DLL1-Name
+
+		Function1-from-dll1- name or ordinal
+
+			Thunk-RVA of Function 1 of DLL 1
+
+		Function2-from-1dll-name or ordinal
+
+			Thunk-RVA of Function 2 of DLL 1
+
+		....
+
+
+
+	DLL2-Name
+
+		Function1-from-dll2- name or ordinal
+
+			Thunk-RVA of Function 1 of DLL 2
+
+		Function2-from-1dl2-name or ordinal
+
+			Thunk-RVA of Function 2 of DLL 2
+
+		....
+
+	...
+
+
+
+What windows does while loading the PE-file is traverse thru this table 
+
+following this "pseudo code":
+
+
+
+  While more DLL's do
+
+     { Load DLL into process addressing space 
+
+         While More Functions imported from current DLL do 
+
+            { Find address of Function and write this to the Thunk-VA
+
+for
+
+              this Function 
+
+             } 
+
+      }
+
+	END Load Imports
+
+
+
+The function may be listed by name or something called ordinal. In every
+
+DLL each function that it exports for use by other programs is listed in an 
+
+export directory (which is where windows find the address of the
+
+imported function) in this list each DLL is assigned a number and usually 
+
+a name too.
+
+The number is called ordinal. Importing can be done either by
+
+referencing this ordinal value or by using the name.
+
+             
+
+What the program then does when it's in need of the API-function it is
+
+this: CALL Dword ptr [Thunk VA of needed function]
+
+
+
+Lets for a second imagine that we could stop execution of the target
+
+process right before it started and then inject our own code in to it's
+
+addressing space. Then we could simply replace the value at any Thunk-VA 
+
+with a pointer to our own code and our code would be executed every time 
+
+the program decieded to use this API. 
+
+
+
+We could even save the old pointer and use this to chain
+
+the original intended API-code. Weeeeeee.. "Isn't this just great?" as
+
+Oprah Winfrey would say. "No, it is not", as I would reply.
+
+  
+
+We are left with a new problem. Or rather two. The first is stopping 
+
+Execution of the target process before the program runs the first 
+
+instruction so that we can be sure that our new pointers are in order.
+
+Second we're left the great problem of having code in the target's addressing
+
+space.
+
+
+
+Solving a problem at the time we start by examining how we can stop our 
+
+target process. Many people always state that windows is overbloated and
+
+perhaps they are right - but in this case I'd say that it's damn
+
+convinient that MS-engeneers made a full-featured debug interface while 
+
+designing API calls so that we could with the greatest of ease program a 
+
+debugger without having to do the low-level work ourselves. 
+
+
+
+Infact they made it so that not one line of ring 0 code has to be 
+
+written to make an application debugger.
+
+"Isn't this just great?" as Oprah would phrase it? "Yes it is, maam" as
+
+I would reply. Because it get's even better. Windows engineers must've 
+
+actually been thinking the day they made windows. What good is a 
+
+full-featured debug interface if the poor programmer has to make a
+
+PE-loader before he can even start debugging. Hey after all they already 
+
+made a loader and they decieded to be helpful. CreateProcessA can open a
+
+process in Debug mode. 
+
+This means that inside of most windows's procedures hides status
+
+breakpoints that'll turn over the control to our debugger thru that
+
+interface. One of these status breakpoints triggers just before windows
+
+is about to turn over control to the just loaded PE-file. Convinient!
+
+
+
+Obviously if a process is in debug mode execution is suspended everytime
+
+a debug event occurs. A debug event is any non-handled exception.
+
+Pagefaults, breakpoints, division overflows, etc. 
+
+
+
+And there are 6 different types of status breakpoints inside windows 
+
+that'll be triggering like Rambo in Iraq.
+
+So basically we need to send a message from our debugger process that
+
+it's ok to continiue every time we have encountered such an event. Ofcause if
+
+it's the event we've been looking for we need to do whatever it is we wish to
+
+do before giving the green light to run on. This is the reason behind the
+
+loop of kernel32!WaitForDebugEvent and kernel32!ContiniueDebugEvent
+
+in my code.
+
+
+
+So now we know how to stop the program before it actually started. If
+
+you read the previous section you'll know how to exchange pointers. This
+
+leaves us with a grave problem. Injecting our code into the target's 
+
+addressing space.
+
+Now this can be done in many ways indeed. We'll just be looking the one
+
+I chose.
+
+
+
+What I'll try to obtain is making the program load a DLL for me. This
+
+ofcause isn't something th program is willing to do without force. Fortunately
+
+for the moment I'm President Clinton and the security counsil has agreed to
+
+bomb the target until it conforms to my ideas. The scene is set at the status
+
+breakpoint just before the target is about to start execution. It is
+
+fully loaded and ready to go. However we're sitting comfortably with it
+
+suspended far far away in our own addressing space. The first thing we got to
+
+agree on is how it is we actually want's the target to do. Load OUR dll, find
+
+the process address of OUR function, replace the one found at the THunk-VA
+
+of the original. We now constuct code that will do just that in deltaoffset
+
+so that it can be inserted anywhere. Prior to actually running the program
+
+we found a page within the target that allowed execution. Most pages in the
+
+target allows execution but we just need one. We now read the page out
+
+the Process space of the target into our own and stores it safely. This is
+
+done thru another subfunction of INT 2eh which ofcause also overrides
+
+pageprotection etc. The API is: kernel32!ReadProcessMemory
+
+See Natzguls essay for a more thourough breakdown of this function. Now
+
+we write our own code that loads a DLL, finds the address of our function
+
+and replaces the Thunk-VA entry of the function with ours. 
+
+
+
+Now were ready to go? No. We're left with the problem that execution
+
+should be left otherwise unchanged so that we've written a page somewhere is
+
+bad news.  So in addition to the code we appended we add an INT 3 which will
+
+when executed cause a debug event and once more suspend the target allowing
+
+us to restore the page. Unfortunately EIP of the target does not
+
+neassesarely point to our page, further we use all the registers and those 
+
+needs to be restored too. 
+
+
+
+So where do we turn? Windows internal knowledge. Upon creation
+
+that is prior to running any actual program code any one process has one
+
+and one thread only. Further windows allows debuggers to fetch the Context
+
+of a thread. That is all relevant information about the threads current
+
+status. Such a context was originally intended for preemptive multitasking so
+
+that when ever the OS suspended execution of the thread to do another the
+
+context was saved, the address space swapped and another threads context was
+
+restored it's process's address space swapped in place and it was allowed to
+
+continue.
+
+One should be aware that while a thread indeed has full context it's
+
+partly shared with that of the other threads in the process. E.g. the FPU is
+
+shared between threads in a process. Since we only got one thread in our
+
+process the terms of thread and process is incidental.
+
+We ofcause now read the context of our target's single thread, saves it
+
+then changes the EIP in it an resets it to point to our page of code in the 
+
+target processspace. Ofcause our code will now execute till the int 3 we
+
+inserted is reached, then it's suspended and control is back with us. We
+
+now reset the context of the thread and restore the page we abused for
+
+our code. Then we simply let it run.
+
+
+
+There is one last unfortunate thing about letting it run. If a process
+
+was created in Debug mode it stays in debug mode till it's terminated. That
+
+means that we need to stay in a loop of WaitForDebugEvent/COntiniueDebugEvent
+
+until that time where the process is actually terminated or the program will 
+
+suspend itself and wait for our instructions. This wasn't too smart MS!
+
+
+
+Practical notes on the debug approach
+
+A last side note should be mentioned here. While I was doing this code I
+
+encountered a bug in windows NT workstation 4.0 build 1381. It might
+
+exist on other versions too. Code inside windows looks like this:
+
+mov eax, [offset of Context Storeing space in debugger code]
+
+		; this is obvioulsy a parameter
+
+mov ebx, [Temporaly variable containing ring level of debugger]
+
+test eax,ebx
+
+jnz insuficient_security
+
+everything Ok.
+
+Obviously this is wrong. To overcome this bug make sure that the offset
+
+where you store your context and'ed with 3 is 0.
+
+
+
+Further finding the ChunkVA of an imported function can easily be done
+
+by dumping the PE-file with Matt Pietreks PE-dump or similar. He gives the
+
+first chunk for each DLL, if your function isn't the first you add 4 bytes
+
+each time you need to move a line down to find our function.
+
+
+
+The sourcecodes for this can be found at:
+
+<A href="javascript:if(confirm('http://www.one.se/~stone/general/stnapih.arj  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.one.se/~stone/general/stnapih.arj'" tppabs="http://www.one.se/~stone/general/stnapih.arj">http://www.one.se/~stone/general/stnapih.arj</A>
+
+
+
+---------------------------------------------------------------------
+
+
+
+The MessageHook Approach
+
+
+
+Forthcoming
+
+
+
+
+
+source is forthcoming 
+
+
+
+---------------
+
+
+
+Literature
+
+
+
+MadMax! (1998) - <A HREF="madmasu.htm" tppabs="http://www.anticrack.de/fravia/madmasu.htm">madmasu.htm</A>: Cracking useing kernel32??, by MadMax Feb 1998.
+
+	       @ http://fravia.org
+
+Natzgul (1998) - <A href="natz_mp2.htm" tppabs="http://www.anticrack.de/fravia/natz_mp2.htm">natz_mp2.htm</A>: How to access the memory of a process, a Tutorial, 
+
+               by Natzgul Feb 1998, @ http://fravia.org
+
+
+
+Pietrek, Matt - Windows 95 System Programming Secrets, IDG books 1995.
+
+
+
+
+
+Various sourcecodes by Me :).. all can be found on my page
+
+<A href="javascript:if(confirm('http://www.one.se/~stone/  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.one.se/~stone/'" tppabs="http://www.one.se/~stone/">http://www.one.se/~stone</A>
+
+
+
+Thanks must go to:
+
+Patriarch / PWA, friend roomate and local expert.
+
+Random / Xforce, God of the PE-format
+
+Net Walker / Brazil
+
+United Cracking Force, my personal benefactor.
+
+All of which I had many enlightning discussions with.
+
+
+
+
+
+email: stone(at)one(point)se
+
+<A href="javascript:if(confirm('http://www.one.se/  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.one.se/'" tppabs="http://www.one.se/">http://www.one.se</A>
+
+Stone/UCF'98
+
+2nd&mi!
+
+-----
+
+doc end
+
+
+
+kind regards
+
+
+
+Stone / United Cracking Force '98
+
+
+
+</PRE>
+
+
+
+<FONT color=green>(c) 1998 <FONT color=#5500AA>Stone</FONT> All rights reversed</FONT>
+
+<HR ALIGN=CENTER WIDTH=100% SIZE=3>
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</I></CENTER>
+
+<BR><CENTER>
+
+
+
+<A href="advanced.htm" tppabs="http://www.anticrack.de/fravia/advanced.htm"><IMG SRC="xtranio.gif" tppabs="http://www.anticrack.de/fravia/xtranio.gif" 
+
+ALT="advanced cracking" ALIGN=BOTTOM WIDTH=114 HEIGHT=43 BORDER=0 
+
+VSPACE=0 HSPACE=0></A>
+
+<BR><FONT color= gray>Back to Advanced cracking</FONT>
+
+<BR><BR>
+
+
+
+<A href="papers.htm" tppabs="http://www.anticrack.de/fravia/papers.htm"><IMG SRC="papers.gif" tppabs="http://www.anticrack.de/fravia/papers.gif" 
+
+ALT="HCU papers" ALIGN=BOTTOM WIDTH=114 HEIGHT=43 BORDER=0 
+
+VSPACE=0 HSPACE=0></A>
+
+<BR><FONT color= gray>Back to the Papers section</FONT>
+
+<BR><BR>
+
+
+
+
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 
+
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 
+
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 
+
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN=BOTTOM
+
+BORDER=0 VSPACE=0 HSPACE=0 width="13" height="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 
+
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 
+
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 
+
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 
+
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 
+
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A HREF="javascri.htm" tppabs="http://www.anticrack.de/fravia/javascri.htm">javascripts wars</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 
+
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A HREF="javascript:if(confirm('http://www.fravia.org/ideale.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.fravia.org/ideale.htm'" tppabs="http://www.fravia.org/ideale.htm">antismut CGI-scripts</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 
+
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 
+
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia+</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 
+
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering legal?</A></CENTER>
+
+<CENTER><HR ALIGN=CENTER WIDTH=100% SIZE=2></CENTER>
+
+</BODY>
+
+</HTML> 
+
+
+
+
+

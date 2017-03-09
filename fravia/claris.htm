@@ -1,0 +1,516 @@
+<html><!--This file created 17:53  04/07/97 by Claris Home Page version 2.0-->
+
+<HEAD>
+
+<TITLE>claris</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+<CENTER><FONT size="+5">Claris Homepage 2.0</FONT><BR>
+
+<FONT size="+2">
+
+(&quot;Very stupid time trial limits, the 15180 trick&quot;)</FONT>
+
+<BR>
+
+<A href="project7.htm" tppabs="http://www.anticrack.de/fravia/project7.htm">
+
+<IMG SRC="stupid.gif" tppabs="http://www.anticrack.de/fravia/stupid.gif" ALT="STUPID" ALIGN="BOTTOM" WIDTH="114" HEIGHT="43" BORDER="0" VSPACE="0" HSPACE="0"></A>
+
+</A><BR>
+
+<H4>
+
+<I>by TheChineese</I>
+
+<BR>(05 July 1997, slightly edited by Fravia)</H4>
+
+<HR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">
+
+Courtesy of Fravia's page of reverse engineering<BR><HR size="2">
+
+
+
+</CENTER>
+
+<CENTER><B><FONT SIZE="+2">HOW TO CRACK Claris Homepage 2.0
+
+(30 days demo)</FONT><BR>
+
+<FONT size="+2">
+
+by TheChineese</FONT><FONT SIZE="+1"> 
+
+(July 97)</FONT></B></CENTER></PRE>
+
+
+
+<PRE>
+
+Its a very easy time protection scheme crack, I will just quickly explain 
+
+both the two usual standard approaches, &quot;Dead listing&quot; and &quot;Live Winice&quot; 
+
+one... i.e. the disassembler and the debugger approach. 
+
+
+
+As +ORC wrote, we have to study and observe our target's behaviour before 
+
+cracking it.
+
+After a few runs (changing the OS date etc...) we notice that Homepage 
+
+tells us <B><I>with a messagebox !</I></B>)that it will expire in a period 
+
+comprised between 5 and 14 days) and we notice that Homepage doesnt say 
+
+anything at all if the number of days left is greater than <B><I>14 days</I></B>!.(it's 
+
+a kind of &quot;green light&quot; :-) 
+
+
+
+Tools: 
+
+- W32dasm 
+
+- Softice 3.0/3.0.1 
+
+- Hex editor( hworks , psedit) 
+
+- <A HREF="tppmsgs/msgs1.htm#176" tppabs="http://www.anticrack.de/fravia/tppmsgs/msgs1.htm#176">Claris Homepage 2.0</A> 
+
+<HR>  
+
+I) Dead listing method 
+
+<HR> 
+
+First of all we know pretty well that 0E=14... therefore, we could simply search 
+
+for all &quot;<B><I>, 0000000E</I></B>&quot; occurrences inside the w32dasm disassembled 
+
+file... (but although this would work, being this protection scheme 
+
+extremely stupid, this would not be a very &quot;zen&quot; method) 
+
+  
+
+But we also remember that stupid protection schemes often use the value <B><I>00015180</I></B>!
+
+(wich is, in hex, the number of seconds in a whole 24hours Day) in order to 
+
+retrieve the number of day left<BR>
+
+So lets seach for &quot;<B><I>, 00015180</I></B>&quot;
+
+ 
+
+Result : only 2 occurences... Most rewarding (and most stupid from the 
+
+protectionists' point of view :-) 
+
+We immediately notice that 3 or 4 lines after our findings there is a &quot;
+
+<B><I>cmp esi, 0000000E</I></B>&quot; instruction 
+
+BINGO !!!
+
+ 
+
+all the work is already done 
+
+we just have to print, read and modify accordingly the relative code 
+
+snippet (changing some jnz,jmp,...)    
+
+ 
+
+<HR> 
+
+II) Live method (softice) 
+
+<HR>
+
+Lets change the date of the OS (putting it to 2 or 3 days BEFORE the limit date) 
+
+then CTRL+D (in sice) 
+
+BPX MessageBoxA 
+
+CTRL+D (out sice) 
+
+and launch homepage 
+
+break into softice (at messageboxa) 
+
+a few F12 and we will see the piece of code below 
+
+just have to read the piece of code and use an hexeditor
+
+<HR>
+
+By TheChineese
+
+Email:<A HREF="mailto:chineese@mygale.org">chineese@mygale.org</A> 
+
+<HR>
+
+<CENTER><B><FONT SIZE="+4">THE CODE</FONT></B></CENTER><HR> 
+
+
+
+* Referenced by a CALL at Addresses: 0049C903   , :0049C968    
+
+| 
+
+:0049C764 55                      push ebp 
+
+:0049C765 8BEC                    mov ebp, esp 
+
+:0049C767 81C4E0FEFFFF            add esp, FFFFFEE0 
+
+:0049C76D 53                      push ebx 
+
+:0049C76E 56                      push esi 
+
+:0049C76F 8B5D08                  mov ebx, dword ptr [ebp+08] 
+
+:0049C772 803DC063520000          cmp byte ptr [005263C0], 00 
+
+:0049C779 7507                    jne 0049C782     &lt;-- we have to change it into 
+
+:0049C77B 33C0                    xor eax, eax         a jmp anyway (7507 -&gt; EB07)
+
+:0049C77D E943010000              jmp 0049C8C5     &lt;-- eat 0 and jump, bad guy
+
+ 
+
+* Referenced by a Jump at Address: 0049C779(C) 
+
+|  
+
+:0049C782 6A00                    push 00000000 
+
+:0049C784 8D55F8                  lea edx, dword ptr [ebp-08] 
+
+:0049C787 52                      push edx 
+
+:0049C788 E82E190600              call 004FE0BB 
+
+:0049C78D 83C408                  add esp, 00000008 
+
+:0049C790 6839FD5200              push 0052FD39 
+
+:0049C795 8D4DF8                  lea ecx, dword ptr [ebp-08] 
+
+:0049C798 51                      push ecx 
+
+:0049C799 E8831F0600              call 004FE721 
+
+:0049C79E 83C408                  add esp, 00000008 
+
+:0049C7A1 84C0                    test al, al 
+
+:0049C7A3 0F9EC0                  setle al 
+
+:0049C7A6 83E001                  and eax, 00000001 
+
+:0049C7A9 84C0                    test al, al 
+
+:0049C7AB 751D                    jne 0049C7CA	 &lt;-- we have to nop it (751D -&gt; 9090)  
+
+:0049C7AD 683FFD5200              push 0052FD3F 
+
+:0049C7B2 8D55F8                  lea edx, dword ptr [ebp-08] 
+
+:0049C7B5 52                      push edx 
+
+:0049C7B6 E8661F0600              call 004FE721 
+
+:0049C7BB 83C408                  add esp, 00000008 
+
+:0049C7BE 84C0                    test al, al 
+
+:0049C7C0 0F9DC1                  setnl cl 
+
+:0049C7C3 83E101                  and ecx, 00000001 
+
+:0049C7C6 84C9                    test cl, cl 
+
+:0049C7C8 742A                    je 0049C7F4    &lt;-- we have to change it into 
+
+                                                  jmp 49c7f4 (742A -&gt; EB2A)
+
+ 
+
+* Referenced by a Jump at Address|:0049C7AB(C) 
+
+| 
+
+:0049C7CA 84DB                    test bl, bl 
+
+:0049C7CC 741F                    je 0049C7ED 
+
+:0049C7CE 6A00                    push 00000000 
+
+:0049C7D0 6A00                    push 00000000 
+
+:0049C7D2 68F2030000              push 000003F2 
+
+:0049C7D7 E875F10600              call 0050B951 
+
+:0049C7DC 83C408                  add esp, 00000008 
+
+:0049C7DF 50                      push eax 
+
+:0049C7E0 68E8030000              push 000003E8 
+
+:0049C7E5 E866D2FFFF              call 00499A50 
+
+:0049C7EA 83C40C                  add esp, 0000000C
+
+ 
+
+* Referenced by a Jump at Address:0049C7CC(C) 
+
+| 
+
+:0049C7ED B001                    mov al, 01 
+
+:0049C7EF E9D1000000              jmp 0049C8C5
+
+ 
+
+* Referenced by a Jump at Address:0049C7C8(C) 
+
+| 
+
+:0049C7F4 8D55F8                  lea edx, dword ptr [ebp-08] 
+
+:0049C7F7 52                      push edx 
+
+:0049C7F8 683FFD5200              push 0052FD3F 
+
+:0049C7FD 8D4DF0                  lea ecx, dword ptr [ebp-10] 
+
+:0049C800 51                      push ecx 
+
+:0049C801 E809210600              call 004FE90F 
+
+:0049C806 83C40C                  add esp, 0000000C 
+
+:0049C809 8D45F0                  lea eax, dword ptr [ebp-10] 
+
+:0049C80C 50                      push eax 
+
+:0049C80D E84D220600              call 004FEA5F 
+
+:0049C812 59                      pop ecx 
+
+:0049C813 8BC8                    mov ecx, eax 
+
+:0049C815 8D817F510100            lea eax, dword ptr [ecx+517F] 
+
+:0049C81B B980510100              mov ecx, 00015180  &lt;-- 15180(in hexa)=number of second in 24hour=1day 
+
+:0049C820 99                      cdq 
+
+:0049C821 F7F9                    idiv ecx  &lt;-- div by ecx=1day in second gives the number of day 
+
+:0049C823 8BF0                    mov esi, eax  &lt;-- esi= number of free day 
+
+:0049C825 83FE0E                  cmp esi, 0000000E  &lt;-- compare esi to 0e=14 
+
+:0049C828 0F8F95000000            jg 0049C8C3  &lt;-- if esi &gt; 0E then jmp no prevent message and continue 
+
+:0049C82E 84DB                    test bl, bl   (we have to change it in jmp 49c8c3) (0F8F95000000 -&gt; E99600000090) 
+
+:0049C830 0F848D000000            je 0049C8C3 
+
+:0049C836 8D85E0FEFFFF            lea eax, dword ptr [ebp+FEE0] 
+
+:0049C83C 50                      push eax 
+
+:0049C83D E82D2F0700              call 0050F76F 
+
+:0049C842 59                      pop ecx 
+
+:0049C843 83FE01                  cmp esi, 00000001 
+
+:0049C846 7523                    jne 0049C86B 
+
+:0049C848 6A02                    push 00000002 
+
+:0049C84A 68F2030000              push 000003F2 
+
+:0049C84F E8FDF00600              call 0050B951 
+
+:0049C854 83C408                  add esp, 00000008 
+
+:0049C857 6AFF                    push FFFFFFFF 
+
+:0049C859 50                      push eax 
+
+:0049C85A 8D95E0FEFFFF            lea edx, dword ptr [ebp+FEE0] 
+
+:0049C860 52                      push edx 
+
+:0049C861 E829250700              call 0050ED8F 
+
+:0049C866 83C40C                  add esp, 0000000C 
+
+:0049C869 EB32                    jmp 0049C89D 
+
+ 
+
+* Referenced by a Jump at Address: 0049C846(C) 
+
+|  
+
+:0049C86B 56                      push esi 
+
+:0049C86C 8D4DE8                  lea ecx, dword ptr [ebp-18] 
+
+:0049C86F 51                      push ecx 
+
+:0049C870 E8271D0700              call 0050E59C 
+
+:0049C875 83C408                  add esp, 00000008 
+
+:0049C878 6A01                    push 00000001 
+
+:0049C87A 68F2030000              push 000003F2 
+
+:0049C87F E8CDF00600              call 0050B951 
+
+:0049C884 83C408                  add esp, 00000008 
+
+:0049C887 6A01                    push 00000001 
+
+:0049C889 8D55E8                  lea edx, dword ptr [ebp-18] 
+
+:0049C88C 52                      push edx 
+
+:0049C88D 50                      push eax 
+
+:0049C88E 8D85E0FEFFFF            lea eax, dword ptr [ebp+FEE0] 
+
+:0049C894 50                      push eax 
+
+:0049C895 E8BA210700              call 0050EA54 
+
+:0049C89A 83C410                  add esp, 00000010
+
+ 
+
+* Referenced by a Jump at Address:0049C869(U)  
+
+|  
+
+:0049C89D 6A00                    push 00000000 
+
+:0049C89F FFB5E0FEFFFF            push dword ptr [ebp+FFFFFEE0] 
+
+:0049C8A5 68E8030000              push 000003E8 
+
+:0049C8AA E8A1D1FFFF              call 00499A50 
+
+:0049C8AF 83C40C                  add esp, 0000000C 
+
+:0049C8B2 6A00                    push 00000000 
+
+:0049C8B4 8D8DE0FEFFFF            lea ecx, dword ptr [ebp+FEE0] 
+
+:0049C8BA 51                      push ecx 
+
+:0049C8BB E857240700              call 0050ED17 
+
+:0049C8C0 83C408                  add esp, 00000008 
+
+ 
+
+* Referenced by a Jump at Addresses:0049C828(C), :0049C830(C) 
+
+| 
+
+:0049C8C3 33C0                    xor eax, eax				&lt;-- no prevent message and go on
+
+
+
+* Referenced by a Jump at Addresses:0049C77D(U), :0049C7EF(U) 
+
+| 
+
+:0049C8C5 5E                      pop esi 
+
+:0049C8C6 5B                      pop ebx 
+
+:0049C8C7 8BE5                    mov esp, ebp 
+
+:0049C8C9 5D                      pop ebp 
+
+:0049C8CA C3                      ret 
+
+
+
+</PRE>
+
+
+
+<BR>
+
+<HR ALIGN="CENTER" WIDTH="100%" SIZE="3">
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</I></CENTER>
+
+<BR><CENTER>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#84'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#84"> homepage</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"> 
+
+<A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#73'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#73"> links</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0">
+
+<A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm"> anonymity</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm"> +ORC</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#82'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#82"> students' essays</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm"> tools</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm"> cocktails</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm"> search_forms</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm"> mailFraVia</A></CENTER><BR>
+
+
+
+<CENTER>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm"> Is reverse engineering legal?</A></CENTER>
+
+<CENTER><HR ALIGN="CENTER" WIDTH="100%" SIZE="2"></CENTER>
+
+
+
+</BODY>
+
+</HTML>
+
+
+

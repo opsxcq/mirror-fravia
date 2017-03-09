@@ -1,0 +1,660 @@
+<HTML>
+<HEAD>
+<META Name="Voluntary Content Rating" content="great!">
+
+
+<TITLE>jazzcom.htm +HCU 1999 ~ The 1999 STRAINER's solutions</TITLE>
+</HEAD>
+<BODY BGCOLOR=#C0C0C0 TEXT=#001010 VLINK=#405040><CENTER>
+</CENTER><PRE>
+#------------------------------------------------------------------------------#
+#                             - Challenge #1 -                                 #
+#                                 by JaZZ                                      #
+#------------------------------------------------------------------------------#
+
+Contents:
+1) Localisation of the protection
+2) Analysis
+3) The keymaker
+
+#------------------------------------------------------------------------------#
+
+1) Localisation.
+
+To work efficiently on this target, I've used Softice 2.80 for dos, and IDA 3.7,
+which seems to be the only disassembler beeing (by far) able to produce a
+meaningful listing that you can use in conjunction  with  softice. Well, there
+are no anti-debuging tricks as soon as you start softice ! I suppose these
+one were supposed to be the use of overlays but IDA treats them quite right as
+well.
+We know that the babe needs a file to reg right so we just BPINT 21 ah=3D to
+break whenever a file is opened. The second time Sice pops, ds:dx points to a
+"terminat.key" string. Ok, this is the name. We then just create a bogus
+terminat.key file, then BPINT 21 ah=3F to break on the reading. And we land
+smack into it. In Ida it's referenced as ovr018.
+
+2) Analysis of the  scheme.
+
+I've provided a COMMENTED (with some vars renamed, please have a look...)listing
+of the interesting part of overlay 18, to clarify my explanations, but i suppose
+the reader has figured out how all this works :-) First the key file is divided
+into 0B buffers of each 162h bytes long. The file must then be at least
+162*B=F36 bytes long. There are several levels of
+protection in this scheme. Let's examine the first.
+
+a) A loop is reading all the buffers of the keyfile, and performs a global
+checksum (through a dedicated function) on bytes [0,15D] of each one. The 2 last
+words in each buffer (15E to 161) are either a checksum (local to this buffer or
+global to the whole file) , or are not checked at all. It can be noted that the
+checksum function actually uses a 1024 bytes area to perform its job (that's why
+i've been forced to hardcode it in the keymaker). When the reading has been
+achieved the resultant checksum is matched against the bytes 15E->161 of the
+last 0B buffer. If the 2 words don't match, you are kicked off. During this
+first loop, the author also tries to detect cracked terminat.key files. To
+achieve this, he only checks constant patterns that always occur at the same
+place in cracked files:
+
+1)First buffer: cracked file if chars at positions B,1B,14 are respectively
+equal to 'F','/',and '.'
+
+2)Second buffer: cracked file if first five characters are equal.
+
+3)0B buffer: cracked file if bytes 12C to 130 are equal OR if [15A,15D]= "_d+Ú"
+(ie DC 64 D9 E9)
+
+If the program detects a cracked key, either it fills the general checksum with
+bogus, or it displays a message saying you're using an anauthorized key file.
+Anyway, it won't reg. To prevent the program from matching succesfully, i just
+fill all the terminat.key with random at the beginning (the random generator is
+the one used by terminat itself, seeded with the clock), and then put the
+interesting data over it. It'll ensure that even for the SAME user input, a lot
+of bytes will be different in the final keyfile. This will work as long as the
+author doesn't check some "required" bytes !
+			   -----------------------
+b) the second part of the protection is dealing with the fourth buffer,
+involving bytes from 5B to 161. Besides, the user input is encrypted in here.
+The program will xor the whole area with FF at first. After it does the same
+four times again, with a different xoring value each time. This value is
+calculated by some kind of "random generator", seeded with defined DWORDS (not
+really random then...). At the end of this process, the area is fully decrypted.
+A new checksum then occurs onto this area, involving the same algo described in
+a) : checksumming [5B,161] and comparing to the word in 15E. One more occasion
+to be eventually rejected. If not the work is not done still: now you've got to
+face the TERRIBLE integrity check call: though you may have gone through all the
+previous doors, this call can enter a unfinite loop, or even worse crash the
+PC while beeping continuously (apart from this, why this integrity check is
+going backwards on the file ? a mystery). I summarize here quite a lot of work:
+what is important are the parameters pushed before the call. Three of them are
+interesting.
+
+0D67		    mov	    cx,	ss:[di+FEDE] ; this is computed with
+0D6C		    mov	    si,	ss:[di+FEE0] ; the checksum of #5 buffer
+0D71		    mov	    di,	ss:[di+FEE2]
+0D76		    call    sub_1708_1707 ;-------> this time it MUST give ZERO
+0D7B		    jnz	    set_a_fucking_mess
+A detail I didn't notice at first was the calculation that was performed with 
+the two last bytes of 5th buffer. Finally the result of this calculus is in 
+FEDE FEE0 FEE2. If the call above doesn't return z on (it compares aldxbx with 
+clsidi), this nasty prog messes every parameters that'll be pushed, leading to  
+the unfinite loop. Ok, this is, I think, the real difficult part of the scheme: 
+find the last two words of 5th buffer. The first idea that came to me was to 
+put the SAME checksum in the 5th than the one calculated for 4th. buffer. When 
+tracing with sice you see that both follow the same transformation algo, except 
+for this:
+
+[FEDE,FEE2] holds the algo result for #5 buf.
+[FED8,FEDC]  ""    ""  ""    """  for #4 buf.
+
+0D48		    mov	    ax,	ss:[di+FED8]
+0D4D		    mov	    bx,	ss:[di+FEDA]
+0D52		    mov	    dx,	ss:[di+FEDC]
+0D57		    mov	    cx,	84h ; 'ä'
+0D5A		    xor	    si,	si
+0D5C		    mov	    di,	2000h
+0D5F		    call    sub_1708_16EB
+
+and then it's compared (see above). when returning, bx is lowered by 28h & 
+that's all. Putting then the same checksum for the two fails because of this 
+difference. So we'll have to find a checksum for 5th that through calculation 
+gives [FEDA]-28h. Now this seems quite a laborious task, but is not really, if 
+you remark that lowering [15E] by 1 lowers the [FFE0] by 4. It's fully linear. 
+To lower the final result by 40 (=28h), we'll only have to take the [15E] word 
+of the 4th buffer, lower it by Oa, and put the result in [15E] in 5th buf.
+
+3) the keymaker. 
+One more thing we'll have to find is how the user's personal info is stored in 
+the key file. To achieve this, i simply cracked terminate.exe to allow every 
+bogus file (with the sufficient nbr of bytes) to be a valid one. I won't discuss 
+that much as there's only 3 or 4 bytes to change, and we don't want to patch 
+it! Pressing ALT O in the program displays all the user info. All the info is 
+stored in 4th buffer, at these positions (with sice you go on the decrypting 
+process until you find the bogus displayed by ALT O):
+[7A]=name length
+[7B-AB]=name
+[AD]=adress length
+[AE-DE]=adress
+[E0]=city length
+[E1-E11]=city
+[113]=country length
+[114-144]=country
+
+To realize the keymaker, we just follow the process the author uses in backwards 
+direction (the listing is fully commented) 
+- get user input with dos function. 
+- initialize the area in memory with random. 
+- copy the user data at the right 
+place. 
+- put a correct checksum in 4th buf and then deduct the one for 5th as explained 
+above. 
+- xoring the 4th buf succesively with 4 distinct values 
+- performing the global checksum on all the buffers and putting the result in 
+the right place of the last one. 
+#------------------------------------------------------------------------------#
+<HR>
+#------------------------------------------------------------------------------#
+#                             - Challenge #2 -                                 #
+#                                 by JaZZ                                      #
+#------------------------------------------------------------------------------#
+
+I choose to code the patcher in C. The compiler i've used is Borland C++ 4.52. 
+(Thanks fravia for the info of "quasi free" release from pc plus). The exe 
+length is about 30K, which is not tiny, maybe this is the reason why almost 
+patchers are DOS based ;-), although less functionnal. I choose to add two 
+features to mine,that is:
+1- The ability to patch at multiple locations. Well the experience proofs it's
+useful.
+2- The possibility to make a backup of the original file. The exe will be
+renamed as ".bak".
+
+I think the listing is self-explanatory enough, the only things required are:
+
+long length= 593920;       /* size of the file to be patched in bytes */
+char *prgnam="bbrk32.exe"; /* name of the file to be patched */
+int how_many=3;            /* number of patches to be applied */
+int sizes[]={1,1,3};       /* size of each one in bytes */
+long offset[]= { 0x403B6,0x45226,0x6A07D }; /* offset of each patch */
+unsigned char patch[]={0x33,0xEB,0x6A,0x01,0x5a}; /* the bytes of the
+							  patches, one
+							  after the other */
+The program will put 33    at offet403B6
+	             EB    at      45226
+	             6A,01,5A  at  6A07D
+	             
+Before patching, i only check the size which in most of the cases is enough to
+differentiate between versions of the target. Backing up the file (if selected)
+is a quite easy using the CopyFile function.
+I provided an example for patching brainsbreaker v2.1. If you want to compile,
+don't forget to set the target to win32 and libraries to static.
+
+#------------------------------------------------------------------------------#
+<HR>
+#------------------------------------------------------------------------------#
+#                             - Challenge #3 -                                 #
+#                                 by JaZZ                                      #
+#------------------------------------------------------------------------------#
+
+The program has several levels of protection:
+1- integrity check.
+2- no trivial access to registration menu.
+3- no trivial comparison between serials.
+4- "vital" strings are encrypted.
+5- "Hidden" protection features.
+
+This is, apart from the game itself which is imo very well designed (good
+windoze progs are not so frequent !), quite a good protection, for a high level
+language program. Hope that having included it in the strainer won't do any harm
+to that guy as he's capable. Back to the topic. The 5th category is quite
+unfair: for example you can't load a puzzle that's been created in another PC
+with the program unregistered on it. May be there are several tricks of that
+kind, i discovered this only one when showing the game a colleague at work, as
+he tried to send me a puzzle by the network. As I said, cracking it is all the
+more interesting as there ain't ANY "wide open doors" where you can get through.
+Disassembling it with wdasm is ok, but the strings references lead to nothing
+vital: the "Demo" references only the background of the image. You can disable
+it, it won't reg the program. Furthermore this nasty author made a great "pied
+de nez" to all crackers as he managed (i may be wrong, but i've never seen that
+before ;-) to associate his name & copyright to every 00000001 that appears in
+the listing. Well done Mr Trujillos, 1 to 0, we'll see your damned name at least
+a thousand times, but we're not dead though. Of course you can remove them with
+your editor, but dont try to use wdasm after as it'll be fooled. Anyway it's
+only a detail. Our tools will be Softice and Wdasm, as usual.
+
+			     -------------------
+
+1) At first let's access the registration process. It can be a box, or a file
+that you are emailed with for example. Checking the file accesses with filemon
+doesn't show anything suspicious, it must be a box triggered by a special
+keystroke. Let's call it zen or anything else (non academic approach...), I
+tried every function key combined with alt,ctrl etc...and CTRL F8 triggered it.
+Pack, name, id, key, nothing less than 4 fields to fill. At this point i
+recalled that the challenge was to explain the scheme, NOT to make a keygen so i
+didn't delve into "serial" manipulation and tracking at this moment, supposing
+this guy clever enough to have used a heavy encryption process. So where to
+start then? A very uncommon idea: let's type in some bogus stuff. We get a very
+common messagebox "Seems that the data etc....". Ok. With Sice you discover the
+main "registration box" routine (i dump just the end):
+
+:0046B455 E89BB6FEFF              call 00456AF5 ---> check what you entered
+:0046B45A 8BF8                    mov edi, eax
+:0046B45C 85FF                    test edi, edi
+:0046B45E 0F8585000000            jne 0046B4E9  ----> if eax!=0 you get out of
+the loop
+:0046B464 837DFC00                cmp dword ptr [ebp-04], 00000000
+:0046B468 752D                    jne 0046B497   ---> it was bogus, go to
+messagebox
+:0046B46A C745FC01000000          mov [ebp-04], 00000001
+:0046B471 6A02                    push 00000002
+:0046B473 8D45C4                  lea eax, dword ptr [ebp-3C]
+:0046B476 50                      push eax
+:0046B477 E88F9CFAFF              call 0041510B
+:0046B47C 6A02                    push 00000002
+:0046B47E 8D55DC                  lea edx, dword ptr [ebp-24]
+:0046B481 52                      push edx
+:0046B482 E8849CFAFF              call 0041510B
+:0046B487 6A02                    push 00000002
+:0046B489 8D4DF0                  lea ecx, dword ptr [ebp-10]
+:0046B48C 51                      push ecx
+:0046B48D E8799CFAFF              call 0041510B
+:0046B492 E968FDFFFF              jmp 0046B1FF  ---> give it a try again!
+
+; error: messagebox
+:0046B497 83C4FC                  add esp, FFFFFFFC
+:0046B49A 66C704242E02            mov word ptr [esp], 022E -> index for
+"Seems that the data..."
+:0046B4A0 E803E8FCFF              call 00439CA8
+:0046B4A5 50                      push eax
+:0046B4A6 FF35D4974800            push dword ptr [004897D4]
+:0046B4AC 6810200000              push 00002010
+:0046B4B1 53                      push ebx
+:0046B4B2 E8676CFBFF              call 0042211E  -> call messageboxa
+:0046B4B7 837DF800                cmp dword ptr [ebp-08], 00000000
+:0046B4BB 7507                    jne 0046B4C4
+:0046B4BD BF7C150000              mov edi, 0000157C
+:0046B4C2 EB05                    jmp 0046B4C9
+
+			     -------------------
+
+2) Up to this point you can either enter the 456AF5 routine, i didn't do it at
+first as i was believing a lot of calls were involved. Infortunately it wasn't
+true, and sure it would have been easier to look closer at this snippet, BUT
+things always look easy once you've understand. That's why I tried another
+direction. I just wanted to follow this idea to proof that with just a little
+weakness the prog could be cracked. Look at the process that leads to the
+messagebox. We notice that the adress of the string is calculated, with some
+kind of "index". here it is 22E that through 439CA8 leads to the correct adress
+in memory. In return of this call, eax holds the adress of the string that'll
+be pushed for messagebox. for 22E the adress calculated is: 4A11F3. Then just
+look around this area with sice: it's simply the whole array of every
+interesting string used by bbrk, in addition they're fully decrypted. First
+error from the author, he should have dispatched them, or better, decrypted
+only if necessary. Sniffin' around only TWO strings appealed to me:
+		 "Thank you!" "Registration code detected"
+Lets choose the first. Its adress is 4A1301. My aim is to search the index
+that'll give this adress through the call 439CA8. A good old bruteforce attack:
+assemble this little routine "live" with sice:
+
+	xor eax,eax
+adr:	inc eax
+	push eax
+	add esp,-4
+	mov word ptr[esp],ax
+	call 439CA8
+	cmp eax,4A1301
+	pop eax
+	jnz adr
+ok:	; just bpx here!
+It'll break instantly with 0231 in eax (unique solution). So back to the dead
+listing. Let's search for the ", 0231" pattern in it: Only one match at 45CA36,
+a very stimulating result! The corresponding routine obviously starts in 45C9AD.
+Very disapointing that wdasm doesn't reference it though. Must be indirectly
+called (call [ebx+nn] or similar). It is neither hardcoded (with a push) so it's
+in a table and this will charge us with some extra work. With Sice again and
+bbrk loaded, let's search the above table with s 30:0 l ffffffff AD C9 45 00.
+Once again just one hit: 4852D4. Then same process again, search ", 004852D4"
+with the editor. Two hits this time:
+this is the first one:
+* Referenced by a CALL at Address:
+|:00456E04 -----> ****** THIS IS IMPORTANT ******
+|
+:0045C755 55                      push ebp
+:0045C756 8BEC                    mov ebp, esp
+:0045C758 83C488                  add esp, FFFFFF88
+:0045C75B 53                      push ebx
+:0045C75C 56                      push esi
+:0045C75D 57                      push edi
+:0045C75E 8B5D08                  mov ebx, dword ptr [ebp+08]
+:0045C761 6A00                    push 00000000
+:0045C763 53                      push ebx
+:0045C764 E8DC2BFBFF              call 0040F345
+:0045C769 C703D4524800            mov dword ptr [ebx], 004852D4  --> HERE !
+etc.....
+No matter what the second hit could be, Have you seen that it's referenced by a
+call in 456E04 ? This is deep into the 456AF5 "password checking" routine. So
+now it's time to have a look at it, and it'll be easier as we are SURE that to
+register, the processor must reach 456E04.
+
+Let's go then. At first sight all the: jmp 00457055 are EVIL, as they get (too
+quickly...) out of it with eax=0 (remember eax mustn't be 0 when returning).
+tracing with sice while entering bogus, you'll be kicked but not at the
+beginning though. Summary of the strategic jumps:
+
+:00456BA9 751B                    jne 00456BC6  ---> jump (ok)
+:00456BF8 7526                    jne 00456C20  ---> jump (ok)
+:00456C4F 7531                    jne 00456C82  ---> jump (ok)
+:00456D31 E8363D0100              call 0046AA6C
+:00456D36 85C0                    test eax, eax
+:00456D38 741B                    je 00456D55   ---> jump (bad for us...)
+after this jmp, eax will be set to 0 and this will kick us out in 456DC9. So
+this 46AA6C routine is undoubtly the faulty one. Here's what it does:
+
+:0046AA6C 55                      push ebp
+:0046AA6D 8BEC                    mov ebp, esp
+:0046AA6F 8B4508                  mov eax, dword ptr [ebp+08]
+:0046AA72 8B00                    mov eax, dword ptr [eax]
+:0046AA74 3B0590994800            cmp eax, dword ptr [00489990]
+:0046AA7A 0F94C2                  sete dl
+:0046AA7D 83E201                  and edx, 00000001
+:0046AA80 8BC2                    mov eax, edx
+:0046AA82 5D                      pop ebp
+:0046AA83 C20400                  ret 0004
+In short it returns 1 (the good_boy value) if [adress_pushed]=[489990].
+
+Looking closer near this interesting call, we see that in fact there are two:
+
+:00456D23 8D55C0                  lea edx, dword ptr [ebp-40]
+:00456D26 52                      push edx
+:00456D27 53                      push ebx
+:00456D28 8B0B                    mov ecx, dword ptr [ebx]
+:00456D2A FF5108                  call [ecx+08]
+:00456D2D 8D45C0                  lea eax, dword ptr [ebp-40]
+:00456D30 50                      push eax
+:00456D31 E8363D0100              call 0046AA6C  ----> FIRST NICE_BUYER TEST
+:00456D36 85C0                    test eax, eax
+:00456D38 741B                    je 00456D55    ----> get out!
+:00456D3A 8D55BC                  lea edx, dword ptr [ebp-44]
+:00456D3D 52                      push edx
+:00456D3E 6A00                    push 00000000
+:00456D40 6A00                    push 00000000
+:00456D42 53                      push ebx
+:00456D43 8B0B                    mov ecx, dword ptr [ebx]
+:00456D45 FF5110                  call [ecx+10]
+:00456D48 8D45BC                  lea eax, dword ptr [ebp-44]
+:00456D4B 50                      push eax
+:00456D4C E81B3D0100              call 0046AA6C  ----> SECOND ONE.
+:00456D51 85C0                    test eax, eax
+:00456D53 7504                    jne 00456D59   ----> nice buyer!
+
+So we just want eax to be non zero when returning 46AA6C. We'll change then:
+:0046AA7D 83E201                  and edx, 00000001
+to:
+	  6A 01 		  push 01
+	  5A			  pop edx
+At first with a "live" patch, while bpx-ing on 46AA6C. A nice box pops up with
+our "Thank you!" string in it (no field should be empty though) and it seems
+regged... Try a puzzle, the "demo" background has disapeared, no more reminder
+box anymore. Ok, now we try to hard patch, and we're stuck with a CRC check :
+"content seems to be altered...." This shouldn't be too hard, with the
+messagebox you'll easily find the dedicated
+routine:
+:00442CC2 E870DBFFFF              call 00440837  ---> checksum routine
+:00442CC7 3D22334455              cmp eax, 55443322 ---> good boy value
+:00442CCC 7472                    je 00442D40   ----> exe not altered
+				  ;messagebox("sucker!")
+				
+Having a look at 440837, we quickly find that the good boy test is here: (yes we
+could have set the je to jmp in 442CCC, but who knows, may be it's called
+elsewhere, even if wdasm doesn't reference it)
+
+:00440DAE E8B504FCFF              call 00401268
+:00440DB3 83C40C                  add esp, 0000000C
+:00440DB6 85C0                    test eax, eax
+:00440DB8 752E                    jne 00440DE8   ---> this is the faulty one!                             
+:00440DBA A1803B4800              mov eax, dword ptr [00483B80]
+:00440DBF 8B10                    mov edx, dword ptr [eax]
+:00440DC1 8B0D243B4800            mov ecx, dword ptr [00483B24]
+:00440DC7 8911                    mov dword ptr [ecx], edx
+:00440DC9 B822334455              mov eax, 55443322  ----> nice value...
+
+Just change a single byte:
+:00440DB6 85C0                    test eax, eax	
+to:
+	  33C0			  xor eax,eax
+
+When you try to register, the program will write an entry in the bbrk.ini file,
+where sections are defined according to the pack field. You can see then that
+the guy is always checking if you're a nice buyer or not. Just bpx 46AA6C...
+The release is now 2.3 (09/98), and the protection in this one is less simple.
+He doesn't check a simple flag anymore. This decided me to look deeper at the
+encryption scheme. But by now this is almost the deadline, only 2 days left, i
+couldn't manage to break it totally. Please have a look at braincrypt.txt for a
+little discussion of the encryption system.
+
+				------------------
+
+3) Finally let's enable the possibility to play every puzzle, even those created
+with an "unregged" computer. (when creating a puzzle, a header holding your
+"registration info" will be included in the file, program has just to check it
+when loading). With a little research we find the"loading" call:
+:00445CA4 E8B9E1FFFF              call 00443E62	
+the routine begins at 445ABC. tracing through it with sice, comparing between a
+good and a bad puzzle, you'll see that the evil jump is:
+
+:00445C1E E8ED390200              call 00469610
+:00445C23 3B45E8                  cmp eax, dword ptr [ebp-18]
+:00445C26 743B                    je 00445C63 ---> regged user.
+:00445C28 68EE030000              push 000003EE
+:00445C2D 6A00                    push 00000000
+:00445C2F 6A00                    push 00000000
+:00445C31 8D4DFC                  lea ecx, dword ptr [ebp-04]
+:00445C34 51                      push ecx
+:00445C35 E86243FDFF              call 00419F9C
+:00445C3A 8D45FC                  lea eax, dword ptr [ebp-04]
+:00445C3D 50                      push eax
+:00445C3E 56                      push esi
+:00445C3F E8DD40FDFF              call 00419D21
+:00445C44 8BC6                    mov eax, esi
+:00445C46 50                      push eax
+:00445C47 6A02                    push 00000002
+:00445C49 8D55EC                  lea edx, dword ptr [ebp-14]
+:00445C4C 52                      push edx
+:00445C4D E8B9F4FCFF              call 0041510B
+:00445C52 6A02                    push 00000002
+:00445C54 8D4DFC                  lea ecx, dword ptr [ebp-04]
+:00445C57 51                      push ecx
+:00445C58 E83441FDFF              call 00419D91
+:00445C5D 58                      pop eax
+:00445C5E E98A000000              jmp 00445CED ---> exit
+
+so we'll change one byte:
+:00445C26 743B                    je 00445C63
+to 	  EB3B			  jmp  445C63
+
+Frow now on, every puzzle will be loaded.
+
+The patcher has been designed to be tested on bbrk.(nb: whenever patched you 
+must go through the CTRL F8 process and enter bogus (no empty fields).
+
+#------------------------------------------------------------------------------#
+<HR>
+(please read challenge3.txt before)
+Just for reminding, the sensible area is:
+
+:00456D23 8D55C0                  lea edx, dword ptr [ebp-40]
+:00456D26 52                      push edx
+:00456D27 53                      push ebx
+:00456D28 8B0B                    mov ecx, dword ptr [ebx]
+:00456D2A FF5108                  call [ecx+08] --->        adr:459AC1
+:00456D2D 8D45C0                  lea eax, dword ptr [ebp-40]
+:00456D30 50                      push eax
+:00456D31 E8363D0100              call 0046AA6C  ----> FIRST NICE_BUYER TEST
+:00456D36 85C0                    test eax, eax
+:00456D38 741B                    je 00456D55    ----> get out!
+:00456D3A 8D55BC                  lea edx, dword ptr [ebp-44]
+:00456D3D 52                      push edx
+:00456D3E 6A00                    push 00000000
+:00456D40 6A00                    push 00000000
+:00456D42 53                      push ebx
+:00456D43 8B0B                    mov ecx, dword ptr [ebx]
+:00456D45 FF5110                  call [ecx+10]        -----> 459C3A
+:00456D48 8D45BC                  lea eax, dword ptr [ebp-44]
+:00456D4B 50                      push eax
+:00456D4C E81B3D0100              call 0046AA6C  ----> SECOND ONE.
+:00456D51 85C0                    test eax, eax
+:00456D53 7504                    jne 00456D59   ----> nice buyer!
+
+I think huge asm dumps are just boring, so i'll try to sumarize what i've
+understand from the encryption:
+The important calls are 459AC1 and  459C3A. They finally set the flag that will 
+be compared with 489990. If it's ok the value is 15A4. if not it'll be its 
+opposite: FFFFEA5C.
+Seems that you've got two "chances" to trigger the ok box. The algos differ in 
+that in each case the working area width vary. It can be 9 or D, and the 
+"congruence" can be 1 or 3. For the moment i've just looked at the first case.
+
+A) First call:
+crashThe call 459AC1 checks the key. Here's how: the characters (uppercased) 
+must be alphanumeric, values 1 and 0 are excluded, 1 is set to L (have you 
+noticed that everything es when you put "1" in the key field ?). A rather 
+"cryptic" routine (46ABE9) does the following:
+ 1- give the position of each char in the string 
+"ABCDEFHIKLMNOPQRSTUVWXYZ23456789". Only the 5 less significant bits of this 
+position will be used. The program constructs a new key with these five bits by 
+putting them aside. If the previous was L bytes long, the new one will be 
+int(L*5/8)+1 bytes. I'll give an example: supposing your key is "23456",
+2-->1A (the position in the string) --> 11010
+3-->1B --> 11011
+4-->1C --> 11100
+5-->1D --> 11101
+6-->1E --> 11110
+
+2- Juxtaposing all this stuff beginning from the right gives the new pattern:
+1 1110 1110 1111 0011 0111 1010
+1   E    E    F    3    7    A
+In memory there will be: 7A F3 EE 01 + some constant bytes. the 9 bytes 
+beginning with the new key are xored alltogether (459B50), and the result must give 
+0 (:459B76 call 401268 is the comparing routine). That triggers the first "nice 
+buyer flag". This appears quite easy to bruteforce; i hadn't seen the rest....
+
+B) Second call:
+The routine in 459C3A first uses the pack, name, id fields to construct some kind 
+of 6 bytes long checksum: all bytes at the same position in each string are 
+xored together and the result is put in this 6 bytes area beginning at adr.(the 
+position from adr is evaluated modulo 6).Example for the following values : (adr 
+is initialized to 00 00 00 00 00 00)
+pack: 212
+name: abc def
+id  : 12345678
+
+[adr]= [adr] xor 2 xor a xor 1
+[adr+1]=[adr+1] xor 1 xor b xor 2
+  ..... etc, then for the 7th: 
+[adr]=[adr] xor f xor 7 (no more chars in pack)
+
+Finally you've got this 6 bytes large area which will be matched against 
+another, triggering the second ok flag. And that's where i'm stuck, because the 
+second one is not always the same even if you don't touch anything in the 4 
+fields. I came to the conclusion that one of the two calls: 46A4E0 or 46A77F 
+obviously affects this area (its adress is pushed but not used) if some 
+condition is met. Actually these 2 calls are doing something on the transformed 
+key, but these routines are such a mess (recursivity involved...) 
+Unfortunately that's all for now :-(
+<HR>
+#------------------------------------------------------------------------------#
+#                             - Challenge #4 -                                 #
+#                                 by JaZZ                                      #
+#------------------------------------------------------------------------------#
+
+All being well considered, the ultimate one may have been the tougher...
+Reproducing as close as possible the damned graphical effect is indeed a real
+challenge. I chose to code the program in C for conveniency. But before coding,
+a deep analysis of the process is needed. Setting a break on Ellipse or Bitblt
+after a puzzle has been achieved will get you in the heart of the routine, which
+starts at 42EAFB. The effect consists of 16 successives images, each of which is
+displayed by a Bitblt function at adress 429D5A. This adress is therefore a
+priveleged location to study the sparkling. A random location is chosen on the
+puzzle. Then there are two phases:
+- ascending (images 1 to 8) where the geometric pattern grows.
+- descending (im. 9 to 16) where it disappears (the 16th image beeing the
+original image of the screen), using the same images in reverse order. In
+addition there's a random amount of small sparks near the main figure. They last
+6 images max, and can only be a pixel or a small cross. (only 2 colors for them)
+
+The main figure is made up of
+- a cross
+- one to three ellipses (depending on the progress of the process), each one
+having its own colour.
+There are 7 sets of colors. The program chooses one at the beginning (To
+retrieve them, just break on CreateSolidBrush).
+
+The author's method.
+--------------------
+He uses several bitmaps (20x20).
+A first one is used to save the original screen:B0
+He creates two bitmaps for the figures (B1,B2), and a working one, Bw, where he
+elaborates the final image that will be transfered to the screen at 429D5A. Then
+the process for building one image is the following, rather complicated (i chose
+a more simple way to achieve a similar result, you'll judge).
+1) B0->Bw : working bmp is loaded with the "untouched" image (raster-op:SRCCPY)
+2) fill B1 with white and draw the pattern in black on it.
+3) fill B2 with black and draw the pattern with appropriate colors in it
+4) B1->Bw (raster-op:SRCAND) the effect is to "black" the pattern in the       			
+original bitmap.
+5) B2->Bw (raster-op:SRCINVERT) the effect is to insert the colored pattern in
+its "blacked" location in Bw.
+6) Bw->Screen.
+
+And so on along the 16 steps.
+
+My method.
+----------
+I use only 2 bitmaps. With the first i save the original screen. In the second,
+the working one, i draw directly.
+1) copy original image in it (SRCCPY)
+2) draw pattern according to the drawing process.(SRCCPY)
+
+Drawing the correct figure...
+To do this, i traced every call to Ellipse and wrote down the coordinates. then
+i've hardcoded them in an array in C. Quite a laborious task indeed. For the
+LineTo and MoveToEx, I've used a more clever method: I just use the min and max
+of the coordinates and compute the relevant increments according to the number
+of steps.
+The possible sets of color are hardcoded too, one is chosen randomly at the
+beginning of the process.
+
+For the little sparks, the task is a little more comlicated, for they have a
+more random behavior:
+-random position "near" the ellipse.
+-random date of appearance.
+-random amount of these objects.
+To formalize this, i defined a structure for this object:
+-location
+-step of appearance
+-age of the object, to control its appearance: pixel or cross.
+
+At first, i decide how many sparks there will be. For every of them,i initialize
+the above structure with appropriate data. Especially, to find a good location i
+use a special random generator which exclude certain intervals, as the sparks
+must be "close" to the ellipse, ie. the center area and the edges shouldn't be
+used.
+
+Modifying sparkle.ini
+---------------------
+
+Feel free to modify this initialisation file, which defines the behavior of the
+program. Here are the entries:
+
+fullscreen=1/0 ;  The output will/will not take the entire screen.
+blackscreen=1/0;  The background color will be black/unchanged.
+howmuch=20     ;  The graphical effect will occur 20 times.
+waste=23       ;  A temporisation in milliseconds.
+width=300      ;  If fullscreen=0, these two parameters define the width &
+height=200     ;  height of the rectangle (randomly located) where all
+               ;  the figures will be drawn.
+
+the "waste" param is quite sensible. It can affect dramatically the realism of 
+the effect. This value gave a good result on my pc, for another machine i dont 
+know...               
+#------------------------------------------------------------------------------#              
+</PRE>
+</BODY>
+</HTML>

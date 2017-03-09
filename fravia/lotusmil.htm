@@ -1,0 +1,407 @@
+<HTML>
+<HEAD>
+<META Name="Voluntary Content Rating" content="it's fravia's: great!">
+<TITLE>lotusmil.htm: An historical protection scheme: Lotus SmartSuite-Millennium Edition</TITLE>
+</HEAD>
+<BODY BGCOLOR=#C0C0C0 TEXT=#001010 ALINK=#405040 VLINK=#8850AA>
+<CENTER><B><FONT size=+3>An historical protection scheme: Lotus SmartSuite-Millennium Edition</FONT></B>
+
+<BR><FONT size=+2>by +NetHack<BR>
+courtesy of <A href="index.htm" tppabs="http://www.anticrack.de/fravia/index.htm">fravia's pages of reverse engineering</A><BR>
+(published at fravia's in September 1999, slightly edited by fravia+)</FONT><HR width=44%><I>I have received this 
+small essay by +NetHack in -sage und schreibe- <U>December 1998</U> yet I have published it only now (September 1999) in order 
+to avoid damaging Lotus' downhill battle again Micro$oft.<BR>I believe enough 
+time went by: Lotus 'Millennium' suite has been recently offered on magazines' covers 
+all over the world for next to free. It's a pity that this notwithstanding 
+so few people use a software that, as 
++NetHack writes, "<FONT color=blue>It's great... and beats
+MickySoft Office hands down</FONT>".<BR>Moreover I checked for ready made cracks and the web 
+is so swamped with "lamers'cracks" and "lamers' patches" for all kind of 
+Lotus' suites that one wonders if anybody has ever bought this product.<BR>To the Lotus 
+people I can only say that their future could be bright (yet non "directly" commercial in the 
+way they are used to...)
+if the Millennium suite will be ported and given away <U>for free</U> to the Linux growing 
+world, like Staroffice.<BR>I hope that this essay, even if published with a great delay, 
+will be useful to teach beginners an "historical" (and very easy to defeat) protection scheme.<BR>
+Good essay for those of you that want to learn how to reverse a reverser's approach...</I></CENTER><HR>
+
+<CENTER><FONT size=+3>
+How to reverse Lotus SmartSuite-Millennium Edition
+</FONT><BR>
+("Date check plus nag screens")
+<BR>
+by +NetHack
+<BR>
+(2 December 1998 ~ Based on another article by +Rcg, but updated for the
+new version)
+</CENTER><BR>
+As I was perusing the net, I stopped by Lotus.com and signed up for
+the trial edition CD of Smart Suite.  It's great software, and beats
+MickySoft Office hands down.  Anyway, I like to take my time to evaluate demo
+stuff, so I proceeded to search for a crack for it.  I found five ready made 
+cracks, but then also 
+ran across an
+essay on fravia.org for Smartsuite 97. That was far more inetersting that 
+simply "bruteforcing" the software, so I read it and tried to work on my own 
+target. But the code
+wasn't matching up
+as well, and it seemed like overkill to port everything instead of simply 
+reversing the
+protection at hand.  So,
+what follows is a "condensed version" for Smartsuite 97
+and the
+Millinium edition.
+<HR>
+
+How to reverse Lotus SmartSuite-Millennium Edition
+<BR><BR>
+NOTE:  This is not a SOFTICE tutorial, we only use
+HIEW (THE hex editor), there's no need to shoot with cannons at such a 
+simple scheme.
+<BR><BR>
+The protection is a classical 30 day trial scheme.  When you
+load any Smartsuite
+app, it presents the usual annoying dialog box waiting
+for you to
+click the Trial button.  I assumed, incorrectly, that
+this was a
+simple nut to crack.<BR>It turned out to be a little
+more challenging. 
+Thanks to +Rcg and his excellent essay on SS97, I got
+pointed back in
+the right direction :)
+<BR><BR>
+During the install, SS97 places a tiny DLL in the
+windows directory
+called LTSMKT02.DLL.  It doesn't serve much of a
+purpose other than
+storage for the INSTALL DATE and LAST DATE USED.  Keep
+this in mind,
+as this is what we're going after.  Funny thing is,
+this DLL is never
+CALLED by anything, just read and written into.
+<BR><BR>
+Two other files of importance, LTSUITE.EXE, located in
+\LOTUS\COMPNENT, and LTSMKT01.DLL, located in each of
+the application
+directories.  Yes, that's right kiddies.  There's one
+DLL for each
+app, and they are NOT the same.  So, you'll have to
+patch them all.
+<BR><BR>
+Tools you'll need for this job (and any reversing job!):
+<BR><BR>
+Hiew 5.56 (hex editor/disassember!)
+<BR><BR>
+NOTE:  You could use SoftIce to figure out the
+protection and then reverse it, but this is an "abbreviated" article, so if you 
+want to delve deeper, you will be able to do it by yourself!)
+<BR><BR>
+Once you have SmartSuite installed you're ready to
+reverse this code!
+<BR><BR>
+The first protection we're going to break is the date
+checking inside
+LTSMKT01.DLL.
+<BR><BR>
+Load Hiew and the LTSMKT01.DLL file from the
+LOTUS\ORGANIZER
+directory.  You'll need to switch to hex mode (F4 and
+F2), then hit
+ENTER to switch to ASM mode. We find the following snippet of code tracking for 
+the date check routine, of course. Alternatively just change the system time 
+on your machine and see what happens when you ran the target. Either way you'll 
+easily reverse until the following snippet. I'll spare you the work and put you 
+directly in the middle of the action... Do a search for
+E83EFAFFFF and you should land
+at the following location (1):
+<PRE>
+.0000161D: A1B8840110               	mov   eax,[0100184B8]
+.00001622: 83C01E                       add   eax,01E
+.00001625: 50                           push   eax
+.00001626: 6854920000                   push  000009254
+.0000162B: E83EFAFFFF               (1)	call .00000106E   ---------- 
+.00001630: 3D42380000                   cmp   eax,000003842
+.00001635: 0F850F000000                	jne  .00000164A   ---------- 
+.0000163B: C7856CF8FFFF01000000         movd,[ebp][0FFFFF86C],000000001
+.00001645: E954000000                   jmp  .00000169E   ---------- 
+.0000164A: 6804010000                   push  000000104
+</PRE>
+(the important part is that you see the cmp eax, 000003842
+<BR><BR>
+The CALL just above the line (1) is the date check
+routine.  The CMP
+(compare) looks for the flag set (3842).  If this flag
+is NOT set, we
+get a dialog box warning about the fact that "the system
+time has changed,
+please change it back".   We will do two things here. 
+Disable the date
+check routine, and make it so that the 3842 flag is always
+set.  Make sure
+you are on the line (1) and hit F3 to edit the code. 
+<BR>Once you are in
+Edit mode, you can type in the hex directly:
+<PRE>
+3D42380000
+</PRE>
+Or, hit enter and type in the ASM:
+<PRE>
+MOV EAX, 00003842
+</PRE>
+Hit F9 to update the changes.  You have removed the
+date check call
+AND set the correct flag, all in one step! Bravo!
+<BR><BR>
+That's it for that file!  Next  we will make
+two more changes at 
+LTSUITE.EXE.  It is located in the LOTUS\COMPNENT
+directory.  It is
+the one that fires up the dialog box and runs the
+desired application
+(such as Word Pro or Organizer) when you click the
+Launch Trial Copy
+button.  When the trial expires, the Launch button is
+greyed out and
+not clickable.  For this reason, we have to fake the
+program into
+thinking that we have clicked the launch button
+regardless of what we
+do or not do (programs should obey humans, not the 
+other way round).
+<BR><BR>
+As usual I'll spare you some work (that you may easily 
+reconstruct all by yourself). Load LTSUITE.EXE into HIEW and do a search for
+E8E3EFFFFF
+<BR><BR>
+We will be at line (2) below:
+<PRE>
+.000021AF: 6A00                 push   000
+.000021B1: FF15FCA14000        	call  GetModuleHandleA ;KERNEL32.dll
+.000021B7: 50                   push   eax
+.000021B8: E8E3EFFFFF           call  .0000011A0  ----------  (2)
+.000021BD: 50                   push   eax
+.000021BE: E8DD190000           call  .000003BA0  ----------
+.000021C3: EB27                 jmps  .0000021EC   ----------
+.000021C5: 8B45EC               mov   eax,[ebp][-0014]
+</PRE>
+The Call just above the PUSH shows the dialog box and
+waits for the
+button to be clicked.
+<BR><BR>
+Windows programs have a number assigned to each button
+and menu item,
+as well as other elements on a dialog box.  When you
+click the button,
+this number gets stuffed into a memory address. Inside
+the call, our
+button value is stored into EAX and used in the next
+call.
+<BR><BR>
+The PUSH EAX stuffs our button value onto the stack
+for later use... remember: the stack is a temporary storage area since
+the EAX
+registry gets hosed all the time (as do all other
+registers)
+<BR><BR>
+If you clicked the Launch Trial Copy button, our
+"secret value" will be
+00000010, if you clicked Cancel, this value would have been
+00000230.
+<BR><BR>
+This should tell you that CANCEL=230 and OK=10, duh.
+<BR><BR>
+Now all we have to do is get the program to recognize
+this all the
+time without us clicking the button!
+<BR><BR>
+The approach I took was to wipe out the call just
+above our PUSH EAX
+instruction, and replace it with a MOV EAX, 00000010. 
+This tells the
+program - instead of loading the dialog box - to always
+assume that the Ok
+(Trial) button had been pushed.  
+<BR><BR>
+If you are on the line E8E3EFFFFF in Hiew, hit F3.
+<BR><BR>
+Now, just replace the E8E3EFFFFF with B810000000 
+<BR><BR>
+Or, again, if you prefer to type in ASM instructions,
+hit enter and type
+in MOV EAX, 00000010. Either way...
+<BR><BR>
+...Hit F9 and save your changes.<BR>
+Now, we'll work on removing the nag screen. 
+<BR><BR>
+Search for 85F674098BCE and you should pop up into the
+following code. Try to figure out yourself WHY we are 
+looking for that hex-string, eheh...
+<BR><BR>
+(We
+want to muck
+with these lines)
+<PRE>
+.0000125F: 8BF0                 mov   esi,eax
+.00001261: 85F6                	test  esi,esi
+.00001263: 7409                 je   .00000126E   ----------(3)
+.00001265: 8BCE                 mov   ecx,esi
+.00001267: E894FDFFFF           call  .000001000  ----------
+</PRE>
+Notice Line (3) where it says JE (jump if equal).  We
+are going to
+replace this jump with one that goes right past the
+DialogBoxParamA (ways below us) wich -surprise- 
+shows the dialog box we actually don't want to see.<BR>
+ So, edit this
+line and make it :
+<PRE>
+JMPS 000006AA
+</PRE>
+That's it!  We've simulated the Click on the Trial
+button and we've
+disabled the nag screen.  We've also disabled the date
+checking
+routine for good measure.
+<BR><BR>
+Notes:  I didn't make this a "Cracking with Softice"
+tutorial because I
+get bored when I read them.  So I decided to skip the softice fishing and get
+straight to
+editing with Hiew.  Much better if YOU do your homework using the 
+data I gave you above. Reverse my reversing approach :-)<BR>You should use and get familiar
+with Softice anyway, and this is a good example... provided 
+you understand a little assembly language.<BR>Other
+useful stuff is to
+understand how windows programs work (Dialogboxparama
+and
+MessageBoxA), as well as common functions like
+GetLocalTime,
+GetDlgItemTextA, etc "playing" with the parameters. Just 
+dissect a target and start playing on the functions and 
+see what happen (or either read a good API-compendium :-).<BR>This kind 
+of experimentation will lead you to solve 80
+percent of your own targets' problems.
+<BR><BR>
+Have fun kiddies!
+<BR><BR>
++NetHack
+<BR><BR><HR>
+
+<BR><CENTER><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+ALT="red" ALIGN=BOTTOM WIDTH=88% HEIGHT=6 BORDER=0
+VSPACE=0 HSPACE=0><BR><BR><I>You'r deep inside fravia's pages of reverse engineering, choose your way out!</I><BR>
+<!-- Begin Javascript relocator <font color=gray><b>~</b></fonT> Javascript code by fravia+ -->
+<FORM name="FraviasForm">
+<SCRIPT LANGUAGE="javascript">
+<!--
+
+function FravPage(list) {
+	      location.href = list.options[list.selectedIndex].value
+}
+
+// -->
+</SCRIPT>
+<DIV align="center">
+<CENTER>
+<P center="&lt;center&gt;&lt;/center&gt;">&nbsp;<SELECT name="fraviale" size="1">
+
+<OPTION>Choose another page!</OPTION>
+<OPTION value="index.htm">Main page</OPTION>
+<OPTION value="academy.htm">Software reversing Lab</OPTION>
+<OPTION value="realicra.htm">Reality cracking Lab</OPTION>
+<OPTION value="noanon.htm">Anonymity Lab</OPTION>
+<OPTION value="ideale.htm">Site busting Lab</OPTION>
+<OPTION value="howtosea.htm">How to search Lab</OPTION>
+<OPTION value="sealight.htm">--Search engines (light)</OPTION>
+<OPTION value="searengi.htm">--Search engines (heavy)</OPTION>
+<OPTION value="links.htm">Links</OPTION>
+<OPTION value="tools.htm">Tools</OPTION>
+<OPTION value="javascri.htm">Javascript reversing</OPTION>
+<OPTION value="screamin.htm">Screaming truth</OPTION>
+<OPTION value="entran.htm">Main entrance</OPTION>
+<OPTION value="new_what.htm">What's new on fravia's</OPTION>
+<OPTION value="info.htm">Mail fravia+</OPTION>
+<OPTION value="http://greythorne.home.ml.org">+Greythorne's</OPTION>
+<OPTION value="http://www.InsideTheWeb.com/mbs.cgi/mb186724">Tools of our trade msgboard</OPTION>
+<OPTION value="http://www.InsideTheWeb.com/mbs.cgi/mb155985">Main msgboard</OPTION>
+</SELECT>
+
+<INPUT type="button" value="Let's go!" onclick="FravPage(this.form.elements[0])">
+<BR>
+</DIV>
+
+</FORM>
+<!-- end Javascript relocator -->
+<BR><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+ALT="red" ALIGN=BOTTOM WIDTH=88% HEIGHT=6 BORDER=0
+VSPACE=0 HSPACE=0><BR><BR>
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0
+VSPACE=0 HSPACE=0><A
+HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0
+VSPACE=0 HSPACE=0>
+<A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links </A>
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0>
+<A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity </A>
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC </A>
+
+<IMG
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays </A>
+
+<IMG
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database </A>
+
+<IMG
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+HREF="botstart.htm" tppabs="http://www.anticrack.de/fravia/botstart.htm">bots wars</A>
+
+<BR>
+<IMG
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut </A>
+
+<IMG
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+HEIGHT=13 BORDER=0
+VSPACE=0 HSPACE=0><A
+HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools </A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+HEIGHT=13
+BORDER=0 VSPACE=0 HSPACE=0><A
+HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails </A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+HEIGHT=13
+BORDER=0 VSPACE=0 HSPACE=0><A
+HREF="javascri.htm" tppabs="http://www.anticrack.de/fravia/javascri.htm">javascript wars </A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0
+VSPACE=0 HSPACE=0><A
+HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms </A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0
+VSPACE=0 HSPACE=0><A
+HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia </A><BR>
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0
+VSPACE=0 HSPACE=0><A
+HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering illegal?
+</A></CENTER>
+
+</BODY>
+</HTML>

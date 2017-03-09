@@ -1,0 +1,510 @@
+<html>
+
+<head>
+
+   <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+
+   <meta name="Author" content="Eric Gur">
+
+   <meta name="GENERATOR" content="Mozilla/4.51 [en] (Win98; I) [Netscape]">
+
+   <title>decrypting z files</title>
+
+</head>
+
+<body BGCOLOR="#C0C0C0" TEXT="#001010" ALINK="#405040" VLINK="#8850AA">
+
+<center>
+
+<h1>Decrypting encrypted archives</h1><img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="88%" HEIGHT="5" BORDER="0" VSPACE="0" HSPACE="0"><br>by Eric<br>Courtesy of fravia's pages of reverse engineering<br>
+
+June 1999<br><hr><i>Nice simple c code by Eric to have your own 
+
+console application (win32 console) that loads a DLL (mwsetup.dll in this case), 
+
+attaches a pointer to
+
+the DLL's function and calls it with your own parameters. Enjoy!</i><hr>
+
+<font size="+2">Decrypting Matlab's Encrypted *.Z files</font></center><br><br>
+
+Decrypting encoded files can be done in 2 ways:
+
+<br>1)&nbsp;&nbsp;&nbsp; Figure out the algorithm.
+
+<br>2)&nbsp;&nbsp;&nbsp; Use the function supplied by the packer itself.
+
+<p>The first method can be very hard and sometimes impossible, so let's
+
+stick to the easiest one...
+
+<br>This example will decrypt matlab 5.2 *.Z files using it own DLLs.
+
+<center>
+
+<p><font size="+1">1st step: Obtaining the DLLs</font>.</center>
+
+
+
+<p>Browse to /windos/temp dir and delete everything.
+
+<br>Run matlab's setup, and switch to explorer.
+
+<br>Browse to /windos/temp dir and see the new files there (sometimes they'll be under
+
+a subdir).
+
+<br>Copy all the files to somewhere safe, as setup will delete them after
+
+aborting it.
+
+<br>Exit setup.
+
+<br>Note:
+
+<br>Sometimes the wanted DLLs will have different names, viewing the file
+
+will usually reveal their real name.<br><br>
+
+<center><font size="+1">2nd step: Write a simple program that calls the decrypt
+
+function</font>.</center>
+
+
+
+<p>A useful tool knowing what functions a DLL can export is borland's
+
+tdump utility (ships with almost all borland compilers).
+
+<br>type:
+
+<br><font color="blue">tdump filename.dll &gt; filename.txt</font>
+
+<br>and view the results.
+
+<br>What's we're looking for is the EXPORT section - all the functions
+
+that can be imported by external applications.
+
+<br>In mwsetup.dll it looks like:
+
+<p><font size="-1">Exports from mwsetup.dll</font>
+
+<br><font size="-1">&nbsp; 30 exported name(s), 30 export addresse(s).&nbsp;
+
+Ordinal base is 1.</font>
+
+<br><font size="-1">&nbsp;&nbsp;&nbsp; Ordinal RVA&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+Name</font>
+
+<br><font size="-1">&nbsp;&nbsp;&nbsp; ------- --------&nbsp; ----</font>
+
+<br><font size="-1">&nbsp;&nbsp;&nbsp; 0000&nbsp;&nbsp;&nbsp; 000010a5&nbsp;
+
+AdaMenuPatch</font>
+
+<br><font size="-1">&nbsp;&nbsp;&nbsp; 0001&nbsp;&nbsp;&nbsp; 000010aa&nbsp;
+
+CheckExpDate</font>
+
+<br><font size="-1">&nbsp;&nbsp;&nbsp; 0002&nbsp;&nbsp;&nbsp; 00001064&nbsp;
+
+CreateComponentList</font>
+
+<br><font size="-1">&nbsp;&nbsp;&nbsp; 0003&nbsp;&nbsp;&nbsp; 00001037&nbsp;
+
+CreateStatusWin</font>
+
+<br><font size="-1">&nbsp;&nbsp;&nbsp; 0004&nbsp;&nbsp;&nbsp; 00001041&nbsp;
+
+<font color="red">DecryptArchive</font> :-)</font>
+
+<br><font size="-1">&nbsp;&nbsp;&nbsp; 0005&nbsp;&nbsp;&nbsp; 000010d2&nbsp;
+
+GetChangeInfo</font>
+
+<br><font size="-1">&nbsp;&nbsp;&nbsp; 0006&nbsp;&nbsp;&nbsp; 00001014&nbsp;
+
+GetClusterSize</font>
+
+<br><font size="-1">&nbsp;&nbsp;&nbsp; 0007&nbsp;&nbsp;&nbsp; 00001046&nbsp;
+
+GetExpirationDate</font>
+
+<br><font size="-1">&nbsp;&nbsp;&nbsp; 0008&nbsp;&nbsp;&nbsp; 00001127&nbsp;
+
+GetHelpInfo</font>
+
+<br><font size="-1">&nbsp;&nbsp;&nbsp; 0009&nbsp;&nbsp;&nbsp; 000010e1&nbsp;
+
+GetLicenseNo</font>
+
+<br><font size="-1">&nbsp;&nbsp;&nbsp; 0010&nbsp;&nbsp;&nbsp; 00001023&nbsp;
+
+GetProductIndex</font>
+
+<br><font size="-1">&nbsp;&nbsp;&nbsp; 0011&nbsp;&nbsp;&nbsp; 0000107d&nbsp;
+
+GetProductInfo</font>
+
+<br><font size="-1">&nbsp;&nbsp;&nbsp; 0012&nbsp;&nbsp;&nbsp; 000010c8&nbsp;
+
+GetVolSerno</font>
+
+<br><font size="-1">&nbsp;&nbsp;&nbsp; 0013&nbsp;&nbsp;&nbsp; 000010d7&nbsp;
+
+InstallFlexService</font>
+
+<br><font size="-1">&nbsp;&nbsp;&nbsp; 0014&nbsp;&nbsp;&nbsp; 00001032&nbsp;
+
+InstallSSIService</font>
+
+<br><font size="-1">&nbsp;&nbsp;&nbsp; 0015&nbsp;&nbsp;&nbsp; 0000101e&nbsp;
+
+IntMakeIt</font>
+
+<br><font size="-1">&nbsp;&nbsp;&nbsp; 0016&nbsp;&nbsp;&nbsp; 00001113&nbsp;
+
+IsClasskit</font>
+
+<br><font size="-1">&nbsp;&nbsp;&nbsp; 0017&nbsp;&nbsp;&nbsp; 0000100f&nbsp;
+
+IsDemo</font>
+
+<br><font size="-1">&nbsp;&nbsp;&nbsp; 0018&nbsp;&nbsp;&nbsp; 000010a0&nbsp;
+
+IsDongle</font>
+
+<br><font size="-1">&nbsp;&nbsp;&nbsp; 0019&nbsp;&nbsp;&nbsp; 0000108c&nbsp;
+
+MakeClassKitBanner</font>
+
+<br><font size="-1">&nbsp;&nbsp;&nbsp; 0020&nbsp;&nbsp;&nbsp; 000010f5&nbsp;
+
+MakeIt</font>
+
+<br><font size="-1">&nbsp;&nbsp;&nbsp; 0021&nbsp;&nbsp;&nbsp; 00001109&nbsp;
+
+ModExe</font>
+
+<br><font size="-1">&nbsp;&nbsp;&nbsp; 0022&nbsp;&nbsp;&nbsp; 00001082&nbsp;
+
+ModV4Exe</font>
+
+<br><font size="-1">&nbsp;&nbsp;&nbsp; 0023&nbsp;&nbsp;&nbsp; 000010be&nbsp;
+
+RemoveControlFromDialog</font>
+
+<br><font size="-1">&nbsp;&nbsp;&nbsp; 0024&nbsp;&nbsp;&nbsp; 00001055&nbsp;
+
+ReplaceFileText</font>
+
+<br><font size="-1">&nbsp;&nbsp;&nbsp; 0025&nbsp;&nbsp;&nbsp; 00001104&nbsp;
+
+ReplaceStringText</font>
+
+<br><font size="-1">&nbsp;&nbsp;&nbsp; 0026&nbsp;&nbsp;&nbsp; 000010af&nbsp;
+
+RunningAsAdministrator</font>
+
+<br><font size="-1">&nbsp;&nbsp;&nbsp; 0027&nbsp;&nbsp;&nbsp; 00001005&nbsp;
+
+SetComponentList</font>
+
+<br><font size="-1">&nbsp;&nbsp;&nbsp; 0028&nbsp;&nbsp;&nbsp; 000010dc&nbsp;
+
+SetLicenseNo</font>
+
+<br><font size="-1">&nbsp;&nbsp;&nbsp; 0029&nbsp;&nbsp;&nbsp; 0000105a&nbsp;
+
+SetStatusWinText</font>
+
+<p>The 5th function is called <b>DecryptArchive </b>, we'll want to use
+
+this function to decrypt the files for us.
+
+<br>Next, write a simple console application (win32 console) that loads
+
+the DLL (mwsetup.dll in this case), attaches a pointer to the DLL's function
+
+and calls it with your parameters.
+
+<br>It looks something like this :<font size="-1"></font>
+
+<p><font size="-1">//decrypt.cpp</font>
+
+<br><font size="-1">#include&lt;stdio.h&gt;</font>
+
+<br><font size="-1">#include&lt;windows.h&gt;</font><font size="-1"></font>
+
+<p><font size="-1">int main (int argc, char **argv)</font>
+
+<br><font size="-1">{</font>
+
+<br><font size="-1">&nbsp;if (argc != 3) {</font>
+
+<br><font size="-1">&nbsp; printf(&quot;Syntax: Decrypt &lt;infile&gt; &lt;outfile&gt;&quot;);</font>
+
+<br><font size="-1">&nbsp; return 1;</font>
+
+<br><font size="-1">&nbsp;}</font>
+
+<br><font size="-1">&nbsp; //declare function pointer</font>
+
+<br><font size="-1">&nbsp;int (__cdecl *DecryptZ)(char*, char*);</font>
+
+<br><font size="-1">&nbsp; //load DLL</font>
+
+<br><font size="-1">&nbsp;HINSTANCE libh=LoadLibrary(&quot;mwsetup.dll&quot;);</font>
+
+<br><font size="-1">&nbsp;if (libh==NULL)</font>
+
+<br><font size="-1">&nbsp;{</font>
+
+<br><font size="-1">&nbsp; printf(&quot;dll not found !&quot;);</font>
+
+<br><font size="-1">&nbsp; return 1;</font>
+
+<br><font size="-1">&nbsp;}</font>
+
+<br><font size="-1">&nbsp;//assign decrypt function address to pointer</font>
+
+<br><font size="-1">&nbsp;DecryptZ=(int(__cdecl *)(char*, char*)) GetProcAddress(libh,&quot;DecryptArchive&quot;);</font>
+
+<br><font size="-1">&nbsp;if (DecryptZ==NULL) {</font>
+
+<br><font size="-1">&nbsp; printf(&quot;Error attaching decrypt function!&quot;);</font>
+
+<br><font size="-1">&nbsp; return 1;</font>
+
+<br><font size="-1">&nbsp;}</font>
+
+<br><font size="-1">&nbsp;printf(&quot;Decrypting %s\n&quot;,argv[1]);</font>
+
+<br><font size="-1">&nbsp;DecryptZ(argv[1],argv[2]); //decrypt the file</font>
+
+<br><font size="-1">&nbsp;//unload DLL</font>
+
+<br><font size="-1">&nbsp;FreeLibrary(libh);</font>
+
+<br><font size="-1">&nbsp;return 0;</font>
+
+<br><font size="-1">}</font>
+
+<p>The code is so simple, it will take seconds to translate it to pascal
+
+or whatever you use.
+
+<br>Put the needed dlls (mwsetup.dll and lmgr325c.dll)&nbsp; in the same
+
+dir as decrypt.exe.
+
+<br>The microsoft api functions can be complicated, so i'll explain them
+
+in detail:
+
+<br>The following section is for programmers who are not trained in C/C++.
+
+<p><font size="-1">int (__cdecl *DecryptZ)(char*, char*);</font><font size="-1"></font>
+
+<p>Here I declared a function pointer of a function that looks like:
+
+<br>&nbsp;&nbsp;&nbsp; int DecryptZ (char *infile, char *outfile);
+
+<br>It gets 2 strings for input and returns an integer.
+
+<br>the __cdecl tells the compiler that the function uses standard C function
+
+call (right parameter gets pushed into the stack first).
+
+<br>If __cdecl fails you can try the rest (__fastcall, __stdcall ...).
+
+<p><font size="-1">HINSTANCE libh=LoadLibrary(&quot;mwsetup.dll&quot;);</font>
+
+<p>Here I declared a handle for the DLL ( a handle is usually an integer).
+
+<br>LoadLibrary is called with the DLL name and returns a handle.
+
+<p><font size="-1">DecryptZ=(int(__cdecl *)(char*, char*)) GetProcAddress(libh,&quot;DecryptArchive&quot;);</font>
+
+<br><font size="-1">&nbsp;</font>
+
+<br>All i do here is get the function address from the DLL using GetProcAddress
+
+function.
+
+<br>It gets a handle for the DLL, and the function name.
+
+<br>It returns the address of that function.
+
+<br>A type casting is used so the function types will fit <font size="-1">(int(__cdecl
+
+*)(char*, char*)).</font><font size="-1"></font>
+
+<p>After all that DecryptZ is actually a function and is called normally.
+
+<p>For comments and questions&nbsp; <a href="mailto:ericgur@iname.com">write
+
+me</a>.
+
+<p>Eric
+
+<br><hr width="48%" Align="LEFT">P.S. Please post here any amelioration / suggestion, thanks.
+
+<hr>
+
+<br><center><img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="88%" HEIGHT="6" BORDER="0" VSPACE="0" HSPACE="0"><br><br>
+
+<!-- Begin Javascript relocator <font color=red>~</fonT> Javascript code by fravia+ -->
+
+<form name="FraviasForm">
+
+<script LANGUAGE="javascript">
+
+<!--
+
+
+
+function FravPage(list) {
+
+	      location.href = list.options[list.selectedIndex].value
+
+}
+
+
+
+// -->
+
+</script>
+
+<div align="center">
+
+<center>
+
+<p center="&lt;center&gt;&lt;/center&gt;">&nbsp;<select name="fraviale" size="1">
+
+
+
+<option>Choose another page!</option>
+
+<option value="index.htm">Main page</option>
+
+<option value="academy.htm">Software reversing Lab</option>
+
+<option value="realicra.htm">Reality cracking Lab</option>
+
+<option value="noanon.htm">Anonymity Lab</option>
+
+<option value="ideale.htm">Site busting Lab</option>
+
+<option value="howtosea.htm">How to search Lab</option>
+
+<option value="sealight.htm">--Search engines (light)</option>
+
+<option value="searengi.htm">--Search engines (heavy)</option>
+
+<option value="links.htm">Links</option>
+
+<option value="tools.htm">Tools</option>
+
+<option value="javascri.htm">Javascript reversing</option>
+
+<option value="screamin.htm">Screaming truth</option>
+
+<option value="entran.htm">Main entrance</option>
+
+<option value="new_what.htm">What's new on fravia's</option>
+
+<option value="info.htm">Mail fravia+</option>
+
+<option value="http://greythorne.home.ml.org">+Greythorne's</option>
+
+<option value="http://www.InsideTheWeb.com/mbs.cgi/mb186724">Tools of our trade msgboard</option>
+
+<option value="http://www.InsideTheWeb.com/mbs.cgi/mb155985">Main msgboard</option>
+
+</select>
+
+
+
+<input type="button" value="Let's go!" onclick="FravPage(this.form.elements[0])">
+
+<br>
+
+</div>
+
+
+
+</form>
+
+<!-- end Javascript relocator -->
+
+<br><img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="88%" HEIGHT="6" BORDER="0" VSPACE="0" HSPACE="0"><br><br>
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><a HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage </a><img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0">
+
+<a HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links </a>
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0">
+
+<a HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity </a>
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><a HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC </a>
+
+
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><a HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays </a>
+
+
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><a HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database </a>
+
+
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><a HREF="botstart.htm" tppabs="http://www.anticrack.de/fravia/botstart.htm">bots wars</a>
+
+
+
+<br>
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><a HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut </a>
+
+
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><a HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools </a>
+
+
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><a HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails </a>
+
+
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><a HREF="javascri.htm" tppabs="http://www.anticrack.de/fravia/javascri.htm">javascript wars </a>
+
+
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><a HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms </a>
+
+
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><a HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia </a><br>
+
+
+
+
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><a HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering illegal?
+
+</a></center>
+
+<hr size="4"></font></center></center>
+
+
+
+
+
+</body>
+
+</html>
+

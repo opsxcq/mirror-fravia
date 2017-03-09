@@ -1,0 +1,1780 @@
+<HTML>
+
+<HEAD>
+
+<HTML>
+
+<HEAD>
+
+<TITLE>revework.htm: The flexlm challenge and cooperative reversers' work</TITLE>
+
+</HEAD>
+
+
+
+<BODY BGCOLOR=#C0C0C0 TEXT=#001010 VLINK=#405040>
+
+<!-- Capuchon Begin --><CENTER>
+
+<FONT size=+4>The flexlm challenge and cooperative reversers' work</FONT><BR>
+
+<A href="flexlm.htm" tppabs="http://www.anticrack.de/fravia/flexlm.htm"><IMG
+
+SRC="flexlm.gif" tppabs="http://www.anticrack.de/fravia/flexlm.gif"
+
+ALT="flexlm" ALIGN=CENTER WIDTH=114 HEIGHT=43
+
+BORDER=0 VSPACE=0
+
+HSPACE=0></A><BR><FONT color=gray>flexlm</FONT>
+
+<BR>
+
+Courtesy of fravia's pages of reverse engineering<BR>
+
+september 1999<BR>
+
+<HR width=77%>
+
+<I>Many an interested reader has written to me and asked for a 
+
+description of the "way" we work. Wannabie
+
+crackers, studiosi
+
+of the reversing world, lone wizards and even potential
+
+"employers" seem
+
+to believe that there is <U>a</U> precise
+
+answer to this question.<BR>
+
+Alas, It is not so: each cracker, each reverser has a different working style.
+
+Team group work is
+
+seldom applied, but when it is it gives great fruits.
+
+Unfortunately reversers are
+
+for their nature rather "individualistic" oriented, and the
+
+percentage of people that
+
+"asks and wants"  is out of any sound proportion with the
+
+percentage of those
+
+answering and giving...
+
+a result, most probably, of the awful and "greed-oriented" society
+
+we are compelled to live in.<BR>However, due to the simply staggering 
+
+amount of mail I have received in this matter, and as my only hope to dam the 
+
+flood of inquiry, I have decided to
+
+publish here an example of a
+
+"team work" (sort of) that has been taking place last week on my
+
+meassageboard between
+
+some reversers that are -rightly- seen as the mightiest
+
+FlexLM-reversing
+
+experts on this planet. Those of you that will read what follows
+
+will be able to understand
+
+what it means, in sheer terms of reversing-power, when good
+
+reversers work together.
+
+</I><HR width=44%>This is quite a long document, very important for all those 
+
+interested into reversing group work, not only for FlexLM reversing purposes. I 
+
+personally find this kind of work (that, remember, is done absolutely for free and 
+
+for knowledge's sake) fascinating. A beautiful reading.
+
+<FONT size=+3>
+
+<HR>Reversers involved<BR> </FONT>
+
+Dan ~ 
+
+VoxQuietis ~ 
+
+Pilgrim ~ 
+
+Nolan Blender ~
+
+ Q</CENTER>
+
+<HR>
+
+<CENTER><FONT size=+4>Reversers at work: the FlexLM
+
+thread</FONT><BR>September 1999<BR></CENTER>
+
+<HR width=44% align=left><FONT size=+2>Dan to group</FONT> (this is the email that started the whole thread)<BR>
+
+<BR>FYI flexlm v6.1 and lc_new_job()<BR><BR>I have done some more
+
+research and on a target that<BR>used flex 6.1.  If you have a
+
+target that uses this<BR>version, and calls lc_new_job instead of
+
+lc_init,<BR>then you will not get the correct encryption
+
+seeds<BR>by using the current methods of retreiving the
+
+seeds.<BR><BR>If you search the lmgr library in v6.1 you will see
+
+that<BR>l_svk is not called anymore in lc_init or
+
+lc_checkout.<BR>Instead, l_sg is called.  As I stated in another
+
+message, l_sg<BR>behaves differently when called in lc_init and
+
+lc_checkout.<BR>This happens when the target calls lc_new_job
+
+instead of<BR>lc_init.  If you read the docs, lc_new_job provides
+
+enhanced<BR>security over lc_init.  This is a description of some
+
+of <BR>what that security is.<BR><BR>There is a flag that is got
+
+to from the "job" structure.  ("job"<BR>is flexlm's version of
+
+global variables - the structure is passed<BR>to and fondled by a
+
+lot of functions).  This<BR>flag tells l_sg to either behave like
+
+l_svk (the old seed routine)<BR>or to call a new function.  The
+
+flag also indicates a valid address<BR>is in a vector that l_sg
+
+will call.  Here is a high level flow<BR>of the
+
+process:<BR><BR>call lc_new_job {<BR>   call ? (l_2bufg maybe)
+
+(sets up decryption vector)<BR>   call lc_init (l_sg flag not set
+
+yet) {<BR>     call l_sg {<BR>       call l_key<BR>       return
+
+old style seeds<BR>     }<BR>   }<BR>   set l_sg flag in job
+
+struct<BR>}<BR>...<BR>call lc_checkout {<BR>  ...<BR>  call l_sg
+
+{<BR>    flag set so call decryption vector (l_8indexes in
+
+lm_new.obj) {<BR>      generate random string by calling
+
+time()<BR>      store string in job structure<BR>      decrypt
+
+keys and xor with some of the random bytes<BR>    }<BR>  }<BR>
+
+...<BR>  use seeds and random bytes to authenticate the license
+
+entry<BR>  compare authenticator to one in license entry<BR>
+
+...<BR>}<BR><BR><BR>Note lc_new_job is wrapped around lc_init and
+
+always sets this l_sg flag.<BR>Another thing to note is the
+
+alternate seed generator is not in the library<BR>but in a
+
+separate object file lm_new.obj.  If you read the documents
+
+about<BR>lc_new_job, they make a point that you have to link
+
+lm_new.obj if you call<BR>lc_new_job.  This threw me off because I
+
+guess my target linker located the functions<BR>in lm_new.obj far
+
+from the core of flexlm.<BR><BR>An implication of not including
+
+lm_new.obj is that maybe globetrotter will change<BR>this module
+
+even for the same version of flex.  Another reason I suspect
+
+this<BR>is that there is a constant in lm_new.obj that my target
+
+and the flex distribution<BR>differed by.  Maybe this is related
+
+to the "patch level".  Also, I didn't find<BR>lc_new_job in the
+
+.dll which would mean its only supported by static link.<BR><BR>If
+
+you run across a target using this, I would sugest breaking on
+
+calls to l_sg.<BR>The first call it will not go to the lm_new
+
+vector.  Subsequent calls to l_sg will go to<BR>lm_new vector.
+
+When l_sg returns from the vector it will have decoded the
+
+seeds<BR>and xored them with a random 32-bit value.  That value is
+
+stored in the job structure.<BR>For my target, the random bytes
+
+were at offsets 0xb (msb) 0x8 0x13 and 0x9 (lsb) of the<BR>job
+
+structure.  Combine these 4 bytes into a 32-bit value to xor with
+
+the hidden<BR>seeds that are in the vendorcode structure.  You
+
+still need to call l_svk to get<BR>vendorkey5 or get it from the
+
+first call to l_sg.<BR><BR>dan<BR><BR><BR><BR>
+
+<BR>
+
+<HR width=44% align=left><FONT size=+2>VoxQuietis to
+
+group</FONT><BR>
+
+<BR>Hi Dan, <BR><BR>I am currently struggling through a v6.1
+
+protected target, which incorporates the <BR>lc_new_job routine.
+
+As I learned from your post I need to observe the output of
+
+<BR>seed generation routine both during lc_init (i.e. when lc_init
+
+is started by <BR>lc_new_job) and after that (i.e. when
+
+lc_checkout is processing the checksum seeds). <BR>My problem is
+
+that I both can't locate lm_new.obj file and I have some problems
+
+in <BR>finding the point where the additional seed scrambling
+
+information stored / <BR>applied to the encryption seeds.
+
+<BR><BR>Thus it would be great, if You could give me the <BR>code
+
+snippet, where you observed the <BR>modified seed regeneration.
+
+<BR><BR>With respect to the missing lm_new.obj I am somewhat
+
+confused, since I have <BR>the understanding, that it would be
+
+required for the build of a v6.1 demo application. <BR>The
+
+obj-file would allow to generate a test application with known
+
+seed code, <BR>which would greatly ease the reverse engineering of
+
+the seed code hiding process. <BR><BR>Bye then (and thank you in
+
+advance)<BR>VoxQuietis
+
+<BR>
+
+<HR width=44% align=left><FONT size=+2>Dan to group</FONT><BR>
+
+<BR>VoxQuietis,<BR><BR>Finding l_sg in the target:<BR>Easy to find
+
+in lc_init.  Search for the default seed<BR>check i.e 87654321 and
+
+12345678.  The call just before this<BR>should be
+
+l_sg.<BR><BR>Finding the vendorcode5 in target (pc
+
+version):<BR>Trace through l_sg when called.  The first
+
+time<BR>will be via lc_init.  First it checks that the
+
+job<BR>parameter is nonzero.  Then you will see that it checks
+
+a<BR>pointer in the job parameter, I think offset +53.<BR>So
+
+something like mov eax, [esi+53].  Then if that<BR>pointer is
+
+nonzero, it will dereference the pointer<BR>to check a bit in
+
+offset +141.  So maybe a <BR>test [eax+00000141], 80.  The code
+
+will fail at one<BR>of these points the first time called and
+
+will<BR>fall through to the rest of l_sg.  The final result<BR>of
+
+this is that it will overwrite the vc.data with<BR>the
+
+vc.data^vendorcode5.  This is where you can
+
+recover<BR>vendorcode5.  This is the general flow - maybe
+
+modified<BR>in your target.<BR><BR>Finding the lm_new routine in
+
+target:<BR>Several ways to do this -<BR>Break on calls to l_sg.
+
+The first time should be from<BR>lc_init.  After that it should be
+
+from lc_checkout.<BR>You could also set breaks on lc_init and
+
+lc_checkout to<BR>verify the flow of the program.  Trace l_sg from
+
+the<BR>call in lc_checkout.  It should pass the above test<BR>of
+
+bit at +141, 80.  If it doesn't pass that test, then<BR>your
+
+target did not call lc_new job.  If it does pass,<BR>it will call
+
+the lm_new routine.<BR>Another way to find this routine (dead
+
+code) is to locate<BR>time() in your target.  Then look for a
+
+routine that calls this<BR>a bunch of times in short sucession.
+
+Look for a divide<BR>instruction (IDQ?)  Can't remember the
+
+nemonic.  This should<BR>follow  the calls to time().  I would
+
+recommend<BR>the tracing approach.<BR><BR>Description of the
+
+lm_new routine:<BR>1. Random number generation -> job
+
+structure<BR>Checks if job parameter is valid.  If not,
+
+calls<BR>memset and sets up a fake random structure with<BR>I
+
+think 0xcc.  However job parameter should be<BR>valid.  Therefore
+
+it will call time() (return in<BR>eax version).  It calls this
+
+interleaved with<BR>xors and shifts of constants.<BR>2. Generate
+
+"checksum" over vendor name.<BR>Uses divide instruction (IDQ?).
+
+Don't be confused<BR>its just doing two mods.  One is a mod 4.
+
+The other<BR>is a mod (strlen(vendorname)).  The strlen was
+
+called<BR>somewhere in this routine.  Tracing this routine
+
+will<BR>make it apparent what its doing.<BR>3. Combine above stuff
+
+with vc.data and vc.key[1,2]<BR>Handles vc.data[0] first, then
+
+vc.data[1].  Uses the<BR>same bytes of random data for both but in
+
+an "inobvious"<BR>manner.  Will store seeds^random back in
+
+vc.data.<BR>4. subtract 5 from some of the random data.<BR>Not
+
+sure why.<BR><BR>Regarding missing lm_new.obj:<BR>This is strange
+
+because my distribution had lm_new.obj.<BR>I believe you though
+
+because on another platform I couln't<BR>find lm_new object
+
+either.  I think you will find lm_new<BR>code with the above
+
+approach, though.<BR><BR>Tell the message bord how it
+
+goes...<BR><BR>dan<BR>
+
+<HR width=44% align=left><FONT size=+2>Pilgrim to group</FONT><BR>
+
+<BR>Yo dan, Vox!<BR><BR>Excellent work.<BR>Are you going to post
+
+all this to fravia as a tutorial when it's finished?<BR>I'm busy
+
+looking at FlexLm 6.1 too.<BR>Seems globetrotter are learning from
+
+fravias pages ;-)<BR><BR>Vox, with reference to lm_new<BR>Looking
+
+at the FlexLm 6.1 SDK, for Windoze, <BR>in C:\Program
+
+Files\flexlm\v6.1\i86_n3<BR>have a look at the makefile, we see
+
+lm_new.obj is made then deleted as part of the
+
+make:<BR><BR>lm_new.obj : ..\machind\lsvendor.c lmrand2.obj
+
+..\machind\lm_code.h<BR>        lmrand1 -i
+
+..\machind\lsvendor.c<BR>        $(CC) $(CFLAGS) $(INCS) /c
+
+lmcode.c<BR>        $(LD) $(LFLAGS) /out:lmrand2.exe lmcode.obj
+
+lmrand2.obj \<BR>                $(LIBS) $(CLIBS)<BR>        del
+
+lm_new.c  <BR>        lmrand2  -o lm_new.c<BR>        $(CC)
+
+$(CFLAGS) $(INCS) /c lm_new.c <BR><BR>If I read this correctly
+
+it:<BR><BR>compiles lmcode.c to give lmcode.obj<BR>links
+
+lmrand2.obj and the new lmcode.obj to give lmrand2.exe<BR>deletes
+
+any old lm_new.c<BR>runs lmrand2 to generate new random values in
+
+lm_new.c<BR>then compiles lm_new.c to give
+
+lm_new.obj<BR><BR>Looking at lm_new.c we see all the time() calls
+
+referred to by dan.<BR><BR>With regards finding the routines in
+
+the target, I used the FLIRT facility in IDA.<BR>Make your own sig
+
+file from the static library, lmgras.lib ( this has a reference to
+
+l_sg )<BR>Dissasemble your target, run the signature and you've
+
+got all the functions labelled for you.<BR><BR>Keep up the good
+
+work,<BR><BR>pilgrim
+
+<BR>
+
+<HR width=44% align=left><FONT size=+2>Dan to group</FONT><BR>
+
+<BR>pilgrim,<BR><BR>I could write a tutorial - I just didn't know
+
+if it would<BR>be redundant because I don't know what has been
+
+submitted<BR>to fravia's site.  I'll write one anyway and sumbit
+
+it.<BR><BR>I was going to look more at lmrand1,2.  I remember
+
+building<BR>and seeing some funny stuff going on.  I just didn't
+
+investigate<BR>it.  That makes more sense than my original theory
+
+of globtrotter<BR>giving out different copies of lm_new.obj.  I
+
+think one possible<BR>way to break this is to exploit lm_new.c.  I
+
+know that if you<BR>zero out the random string that the function
+
+will give you the<BR>right seeds if you have the right "magic" for
+
+the checksum.  I<BR>think the only thing a cracker would need
+
+would<BR>be the constant from the target, put it into a modified
+
+lm_new.c,<BR>along with vendorcode and then generate their
+
+seeds.<BR>I also think that vendorcode5 is not needed in this
+
+case. <BR>I haven't tested it, but I think vc5 could be set to 0
+
+and you<BR>would get the right authenticator.  I'm not
+
+sure.<BR><BR>With regards to IDA.  I have never used it.  This
+
+FLIRT feature<BR>would have helped a lot.  I will have to
+
+investigate.  I used a<BR>more primitive approach which was
+
+probably unnecessary but I learned<BR>a lot in the
+
+process.<BR><BR>dan<BR>
+
+<BR>
+
+<HR width=44% align=left><FONT size=+2>Nolan Blender to
+
+group</FONT><BR>
+
+<BR>I have to admit that I'm a little bit confused about what is
+
+going on here.<BR>When I look at the basic lmclient which is
+
+supplied with the 6.1 sdk, I<BR>don't see any of my encryption
+
+seeds or vendor keys in the executable, so <BR>so far so good.  It
+
+appears as though lp_checkout calls lc_new_job, which in turn
+
+calls the<BR>routine in lm_new.  lc_init is later called, however
+
+at that time the <BR>corrected data (xored seeds +first 4 vendor
+
+codes) are available for examination.<BR><BR>It seems that if you
+
+can locate the real lc_init call which is located
+
+in<BR>lc_new_job, then you should be able to locate<BR>the
+
+required data.<BR> The futzing about that is done<BR>in lm_new
+
+appears to be done in order to <BR>prevent wholesale scanning of
+
+the executables<BR>in order to extract keys.  <BR><BR>
+
+<BR>
+
+<HR width=44% align=left><FONT size=+2>Dan to group</FONT><BR>
+
+<BR>nb,<BR><BR>I do not know the details of building a client and
+
+have not<BR>persued that path.  I have not studied the
+
+globetrotter supplied client.<BR>I know that that would be good to
+
+do.<BR><BR>It is strange for me have this much information about a
+
+target's protection.<BR>APIs, libraries etc.<BR>My target is not
+
+necessarily flexlm, but the program that is using<BR>flexlm.
+
+There is a subtle difference.<BR><BR>I have studied my target.  I
+
+know where lc_new_job is called<BR>in my target.  It is not called
+
+within a checkout routine.<BR>Here is the high level flow of
+
+flexlm related calls:<BR><BR>lc_new_job(???) <CALLED here
+
+ONLY<BR>lc_set_attr(job,0x38,"license
+
+path")<BR>lc_checkout(feature a...)<BR>lc_checkout(feature
+
+b...)<BR>lc_checkout(feature c...)<BR><BR>After reading your
+
+reply, I looked at the lm_new routine some more.<BR>If you pass as
+
+the first parameter 0, this routine will return the<BR>uncovered
+
+seeds without xoring them with random data.  However if<BR>the
+
+first parameter is job, the routine will return with the<BR>seeds
+
+xored with random data.  The random data will be stored<BR>in the
+
+job at offsets +0xb +0x8 +0x13 and +0x9.  Before this<BR>call,
+
+those offsets are zero.<BR><BR>Your client must be passing zero as
+
+the first parameter to this routine -<BR>if not then something is
+
+wrong.<BR><BR>If your client is lmcheckout.c all I see in there is
+
+CHECKOUT which<BR>is a macro that calls lp_checkout.  This is not
+
+the same as my client.<BR>A disassembly of lp_checkout would be
+
+interesting...or check of first<BR>parameter to lm_new<BR><BR>When
+
+it is called in my target, job is the first parameter.  Therefore
+
+it xors<BR>with random data.  However in both cases, it probably
+
+later xors with<BR>those offsets in job because in your case they
+
+are zero and in my case<BR>they are the values needed to uncover
+
+the seeds.<BR><BR>I have not researched all the calls in the api.
+
+But looking at it I don't<BR>see lp_checkout.  I see lc_checkout.
+
+I would assume people developing would<BR>not use lp_checkout.  I
+
+don't think my target did.<BR><BR><BR>dan<BR>
+
+<BR>
+
+<HR width=44% align=left><FONT size=+2>Q to group</FONT><BR>
+
+<BR>It's really much easier than all that.  lc_init still gets
+
+called even if lc_new_job is present.  And, the call to lc_init
+
+will have the real vendorcodes.  At that point, just use l_svk as
+
+always.  All lc_new_job does is keep the vendorcodes from showing
+
+up as global data.
+
+<BR>
+
+<HR width=44% align=left><FONT size=+2>VoxQuietis to
+
+group</FONT><BR>
+
+<BR>Dear Q, <BR><BR>You are definetely right with respect to the
+
+<BR>vendor codes. But there remains a little <BR>problem (if I
+
+understood correctly what's <BR>going on) and that's the
+
+encryption seeds. <BR>These are not needed for lc_init, and the
+
+<BR>Globetrotter guys decided to garble them in <BR>order to annoy
+
+us. <BR>To me it seems that there are two ways off <BR>retrieving
+
+the seeds: First one could investigate <BR>the garbling mechanism.
+
+Dan did that, as he <BR>described the double word that is used to
+
+Xor <BR>the seeds. Yet the general problem seems to <BR>be
+
+unsolved (maybe Dan did it?): How to modify <BR>the Flexlm
+
+routines so that they spit out the <BR>real encryption seeds.
+
+<BR>A second approach might be to examine the check <BR>of the
+
+security string. Remember that Acme told <BR>us, that Flexlm
+
+(once) did compare the actual <BR>string from the license file
+
+with the expected <BR>one. Hence it should be possible to find out
+
+<BR>the differences between the new lc_checkout and <BR>the old
+
+one. I briefly scanned that, but it <BR>looks like being a pain
+
+due to lengthy spaghetti <BR>code. But I think it is a possible
+
+approach. <BR><BR>Best regards<BR>VoxQuietis<BR>
+
+<BR>
+
+<HR width=44% align=left><FONT size=+2>Dan to group</FONT><BR>
+
+<BR>Q, Vox,<BR><BR>After reading these replys, I am starting to
+
+understand<BR>something.  I guess people are building their own
+
+clients<BR>from the flexlm sdk and reverse engineering
+
+them.<BR><BR>I admit I don't understand the build process of a
+
+client.<BR>I have not looked at this so I don't really know
+
+how<BR>the seeds are stored in the executable image.  I did<BR>not
+
+persue that path.<BR><BR>My target was a real application -<BR>not
+
+something fabricated by globetrotter.  From<BR>what nb says, the
+
+default client does some of the<BR>new security by hiding the
+
+seeds differently.  But<BR>the default client does not appear to
+
+do the random<BR>part.  This random part basically assures the
+
+seeds<BR>are never "in the clear" while the program is
+
+executing.<BR><BR>As far as "modifying" the Flexlm routines.  As I
+
+said<BR>before one way to have the lm_new routine give you
+
+the<BR>clear seeds is to zero out its first parameter.  If
+
+its<BR>first parameter is already zero, then you don't have<BR>a
+
+client that uses the "random" security.  If it is nonzero<BR>it
+
+should point to a "job" structure.  Zero out the pointer<BR>on the
+
+stack, or where ever it is ($o0 on sparc) and the<BR>routine will
+
+give you the seeds.<BR><BR>If you still don't understand what I'm
+
+talking about then<BR>thats fine too.  Maybe you won't run across
+
+a client that<BR>does this.  If you never have a problem
+
+retrieving the seeds<BR>without using my advice then just ignore
+
+what I said.<BR>I did run across the problem and so I'm reporting
+
+it.<BR><BR>As far as scanning the authenticator generation,  I
+
+went<BR>down that path when I was cracking this.  I think
+
+for<BR>MY client it was in good_lic_key().  It went something like
+
+this:<BR><BR>good_lic_key {   &lt;- can't remember exact
+
+name<BR>...<BR>l_sg()           &lt;- here is where seeds are
+
+uncovered AND randomized <BR>extract_date()<BR>l_ckout_crypt()
+
+&lt;-
+
+can't remember exact name<BR>if (l_ckout_crypt failed) jump to
+
+error -8<BR>...<BR>}<BR><BR>This l_sg call will call the lm_new
+
+routine.<BR>The "l_ckout_crypt" was where the seeds from l_sg were
+
+used to generate<BR>and compare the authenticator.  good_lic_key
+
+was called from somewhere<BR>in the path of lc_checkout.  Names
+
+might not be right due to me forgetting.<BR><BR>As I said before
+
+this is MY targets behavior.  I would not be surprised<BR>if
+
+flexlm behaved differently for YOUR client.<BR><BR>dan<BR>
+
+<BR>
+
+<HR width=44% align=left><FONT size=+2>VoxQuietis to
+
+group</FONT><BR>
+
+<BR>Dear Dan, <BR><BR>first of all my compliments to Your great
+
+work on Flexlm v6.1. I followed the discussion <BR>between You and
+
+Nolan from the beginning, having a certain feeling, that You were
+
+working <BR>in a direction, that would help me in my actual
+
+license generation problem. I'm now <BR>working on that for a
+
+couple of weeks, and first I thought, there were some troubles
+
+with <BR>some attributes I didn't set correctly while using
+
+lc_crypt / lmcrypt. <BR>But then I suddenly realized, that I have
+
+been misleaded by the randomization trick <BR>of Globetrotter,
+
+that You first described. <BR>Once I read the Flexlm v6.0
+
+documentation very carefully, yet I didn't do that with the
+
+<BR>v6.1. Indeed I downloaded the v6.1 SDK just a couple of days
+
+ago, being convinced that <BR>v6.0 would be sufficient to generate
+
+working licenses (I think that still, but I am no <BR>longer fully
+
+convinced on that).<BR>According Your remarks I found the random
+
+bytes in the job memory. I do agree to your findings, <BR>i.e.
+
+bytes 0xb:0x8:0x13:0x9 form a word, which leads to constand values
+
+when Xored on to the <BR>randomized seeds. <BR>Yet I am still
+
+failing in generating a working license for my target. <BR>Having
+
+no other possibility to understand what's going on I might be
+
+forced to build an <BR>app using the Flexlm SDK, in order to
+
+understand the relation between the randomized seeds and <BR>real
+
+seeds. <BR><BR>I would also like to stress, that my target
+
+delivers one set of seeds for the first <BR>lc_init call and a
+
+different set after the derandomizing. No need to say that
+
+apparently <BR>both seeds aren't the correct ones. (When
+
+<BR>setting the first parameter to zero I get the <BR>seeds of the
+
+first lc_init call, the one <BR>I figured out weeks ago)<BR><BR>I
+
+will continue to examine my target. It might be possible to build
+
+a demo app with the keys <BR>and seeds I know. And finally it
+
+might be necessary to code a brute force attack, <BR>which is
+
+feasible, since there are 32 unknown bits, only. I will post
+
+(possible) results on <BR>this messageboard. <BR><BR>Bye then and
+
+best regards<BR>VoxQuietis<BR><BR><BR>
+
+
+
+
+
+<BR>The function resulting from lmrand implements two working
+
+modes: <BR>one with randomization of the seeds and one without.
+
+Within the <BR>disassembly this looks like the following
+
+<BR><BR>;head of function<BR>:004D9FB3 55                   
+
+push ebp<BR>...<BR>compute and store lenght of vendor
+
+string<BR>...<BR>:004D9FCF 8B4508                  mov eax, dword
+
+ptr [ebp+08] ; lm_job memory space<BR>...<BR>:004D9FE6 85C0                 
+
+test eax, eax<BR>:004D9FE8 0F8485010000            je 004DA173   
+
+; jump to clear seed code regeneration<BR><BR>; start of spaghetti
+
+like randomization<BR>:004D9FEE 8D5E04                  lea ebx,
+
+dword ptr [esi+04]<BR>:004D9FF1 57                      push
+
+edi<BR>:004D9FF2 E8D93AFDFF              call
+
+004ADAD0<BR>:004D9FF7 83C404                  add esp,
+
+00000004<BR>...<BR>:004DA171 EB10                    jmp
+
+004DA183<BR><BR>;head of clear seed regeneration <BR>:004DA173
+
+6A0C                    push 0000000C<BR>:004DA175 8D45EC               
+
+lea eax, dword ptr [ebp-14]<BR>:004DA178 6A00                 
+
+push 00000000<BR>:004DA17A 50                      push
+
+eax<BR>:004DA17B E8D04CFDFF              call
+
+004AEE50<BR>:004DA180 83C40C                  add esp,
+
+0000000C<BR><BR>;head of checksum over vendor code - randomized
+
+function jumps in here<BR>;this checksum is required for the seed
+
+recovery -> compare to lc_init!<BR>* Referenced by a
+
+(U)nconditional or (C)onditional Jump at
+
+Address:<BR>|:004DA171(U)<BR>|<BR>:004DA183 33FF                 
+
+xor edi, edi<BR><BR>* Referenced by a (U)nconditional or
+
+(C)onditional Jump at Address:<BR>|:004DA1B1(C)<BR>|<BR>:004DA185
+
+8BC7                    mov eax, edi<BR>:004DA187 99                   
+
+cdq<BR>:004DA188 F77DF8                  idiv [ebp-08] ; modulo
+
+operations (described by Dan)<BR>...<BR>now follows the
+
+regneration of the seeds (with or without
+
+randomization)<BR><BR><BR>Interesting question is the role of the
+
+magic numbers corresponding <BR>the seed recovery.
+
+I changed magic number a8f38730 to 5e2f5b24, which
+
+resulted in the correct seed generation even within lc_init (just
+
+before <BR>the comparison with 87654321 and 12345678). Maybe You
+
+guys could check, <BR>whether this trick works for your targets,
+
+too? (Think this would speed <BR>up the fishing of the codes for
+
+unkown targets)<BR><BR>Bye then <BR>VoxQuietis<BR>
+
+<BR>
+
+
+
+<HR width=44% align=left><FONT size=+2>Dan to
+
+group</FONT><BR>
+
+<BR>group,<BR><BR>I have a possible explanation of why there is a
+
+descrepancy<BR>in behavior of lc_new_job.  It has to do with the
+
+behavior<BR>of lmrand2.<BR><BR>Try this:<BR>use the v6 blenderd
+
+lm_code.h.<BR>delete lm_new.obj<BR>make lm_new.obj<BR>now look at
+
+lm_new.c.  Ok you might have done this already.<BR>Now edit
+
+lm_code.h.<BR>Change vkeys to "invalid" value.  I changed vk1 lsb
+
+from 4 to 5.<BR>Now delete lm_new.obj and make lm_new.obj.  Now
+
+edit lm_new.c.<BR><BR>What does this show?  lmrand2 is looking at
+
+the keys for more than<BR>just to obfuscate them.  In this case,
+
+it probably failed a checksum<BR>so generated this code.  However,
+
+I also compared the output of lmrand2<BR>with the blenderd keys to
+
+output of lmrand using my targets keys and<BR>there are some
+
+differences not due to "randomization".<BR><BR>It looks like the
+
+blenderd keys are "randomizing" the data but I haven't<BR>compiled
+
+lm_new.c from this output.<BR><BR>Maybe I'm wrong - just a
+
+suggestion...<BR><BR>dan<BR><BR>
+
+<BR>
+
+
+
+<HR width=44% align=left><FONT size=+2>Dan to
+
+group</FONT><BR>
+
+<BR>VoxQuietis,<BR><BR>It is helpful to examine lm_new.c as to
+
+make<BR>sense of these two "working modes" you
+
+describe.<BR><BR>When you "make lm_new.obj" with your target's
+
+lm_code.h,<BR>you get a lm_new.c that is similar to - but
+
+not<BR>exactly like what your target used.<BR><BR>This lm_new.c is
+
+compiled into what your disassembly <BR>showed.  You will indeed
+
+see the two "%" mod signs<BR>in the c code.<BR><BR>The two working
+
+modes are actually called in different<BR>places from what I
+
+understand.  One function is called in<BR>lc_new_job to form the
+
+initial vendor code structure and vname.<BR>The other function is
+
+the one I described under l_sg.<BR><BR>You can actually modify
+
+lm_new.c to test out these functions.<BR>You will see the first
+
+function "unpackages" the vc and vname.<BR>If you then call the
+
+next function with a first param<BR>of 0, you will see vc.data
+
+becomes your original seeds.<BR><BR>However, this does not show
+
+the exact magic that the target<BR>is using, which is necessary as
+
+these functions are a <BR>"matched pair".<BR><BR>Also, part of the
+
+confusion is that there are two l_n36_buf (forgot<BR>exact name)
+
+pointers.<BR><BR>dan<BR>
+
+<BR>
+
+
+
+<HR width=44% align=left><FONT size=+2>Nolan Blender to
+
+group</FONT><BR>
+
+<BR>I've done some experimentation and here's some code that
+
+may<BR>be helpful in analysing how lm_new works.<BR><BR>First, as
+
+a baseline, here is the information for blenderd, so
+
+that<BR>everyone knows what the secret values should
+
+be.<BR><BR><BR>#define ENCRYPTION_SEED1 0xae37b151<BR>#define
+
+ENCRYPTION_SEED2 0x6fde7999<BR>#define VENDOR_KEY1
+
+0xc450f9f4<BR>#define VENDOR_KEY2 0x4d12be88<BR>#define
+
+VENDOR_KEY3 0xf52bcf4d<BR>#define VENDOR_KEY4
+
+0x3309994c<BR>#define VENDOR_KEY5 0xaefa9027<BR>#define
+
+VENDOR_NAME "blenderd"<BR><BR><BR><BR>Link this program against
+
+lm_new.c and it will be clear what <BR>is
+
+happening.<BR><BR>#include<STDIO.h><BR><BR>/* Supposedly these
+
+would be secret values */<BR><BR>#define BLENDER_VENDOR_KEY5
+
+0xaefa9027<BR><BR>#define ENCRYPTION_SEED1 0xae37b151<BR>#define
+
+ENCRYPTION_SEED2 0x6fde7999<BR><BR>/* function that we get from
+
+lm_new.c */<BR>extern int (*l_n36_buf)();<BR><BR>/* function
+
+pointer that will be set later. */<BR>void
+
+(*l_n36_buff)();<BR><BR>void main(int argc, char *argv)<BR>{<BR>	
+
+int retcode;<BR>	int i;<BR>	int magic_xor_value;<BR><BR>	/*<BR>	 *
+
+union for testing what we get back<BR>	 */<BR><BR>	union <BR>	
+
+{<BR>		char charbuf[1024];<BR>		int intbuf[256];<BR>	}
+
+myunion;<BR>	char myvendorname[1024];<BR><BR>	/*<BR>	 * structure
+
+to demonstrate use if valid job passed in.<BR>	 */<BR>	struct
+
+s_tmp<BR>	{<BR>		int i;<BR>		char *cp;<BR>		unsigned char
+
+a[12];<BR>	} myjob;<BR><BR><BR>	/*<BR>	 * Clear buffer so we know
+
+that changes are due to lm_new<BR>	 */<BR><BR>	for (i = 0; i &lt;
+
+256; i++)<BR>	{<BR>		myunion.intbuf[i] = 0;<BR>	}<BR><BR>	/*<BR>	
+
+* for this exercise, myjob really doesn't matter.<BR>	 */<BR>	
+
+myjob.i = 66;<BR><BR>	/*<BR>	 * PART 1:<BR>	 * Null call
+
+initializes values inside lm_new<BR>	 */<BR><BR>	printf ("Part 1:
+
+Null pass to decode routine\n");<BR>	retcode = (*l_n36_buf)(0,
+
+myunion.charbuf);<BR>	if (retcode != 0)<BR>	{<BR>		printf
+
+("Problem with first call to lm_new initializer.\n");<BR>		printf
+
+("retcode = %d\n", retcode);<BR>		return;<BR>	}<BR><BR>	/*<BR>	 *
+
+This one retrieves the secret keys<BR>	 */<BR>	retcode =
+
+(*l_n36_buf)(myvendorname, myunion.charbuf);<BR>	if (retcode !=
+
+1)<BR>	{<BR>		printf ("Problem with second call to
+
+lm_new.\n");<BR>		printf ("retcode = %d\n", retcode);<BR>		
+
+return;<BR>	}<BR><BR>	printf ("myvendorname: %s\n",
+
+myvendorname);<BR>	for (i = 0; i &lt; 10; i++)<BR>	{<BR>		printf
+
+("before intbuf[%d] = %08x\n", i, myunion.intbuf[i]);<BR>	
+
+}<BR><BR>	/*<BR>	 * Test with 0 job for extracting key only<BR>	
+
+*/<BR><BR>	(*l_n36_buff)(0, myvendorname,
+
+myunion.charbuf);<BR><BR>	printf ("\n");<BR>	for (i = 0; i <10;
+
+i++)<BR>	{<BR>		printf ("after intbuf[%d] = %08x\n", i,
+
+myunion.intbuf[i]);<BR>	}<BR><BR>	/* Check encryption seed 1
+
+*/<BR>	if (myunion.intbuf[1] == BLENDER_VENDOR_KEY5 ^
+
+ENCRYPTION_SEED1)<BR>	{<BR>		printf ("Encryption seed1 OK:
+
+%08x\n", myunion.intbuf[1]);<BR>	}<BR>	else<BR>	{<BR>		printf
+
+("Incorrect Encryption seed1 is: %08x should be: %08x\n",<BR>			
+
+myunion.intbuf[1]^BLENDER_VENDOR_KEY5, ENCRYPTION_SEED1);<BR>	
+
+}<BR><BR>	/* Check encryption seed 2 */<BR>	if (myunion.intbuf[2]
+
+== BLENDER_VENDOR_KEY5 ^ ENCRYPTION_SEED2)<BR>	{<BR>		printf
+
+("Encryption seed2 OK: %08x\n", myunion.intbuf[2]);<BR>	}<BR>	
+
+else<BR>	{<BR>		printf ("Incorrect Encryption seed2 is: %08x
+
+should be: %08x\n",<BR>			myunion.intbuf[2]^BLENDER_VENDOR_KEY5,
+
+ENCRYPTION_SEED2);<BR>	}<BR><BR>	/*<BR>	 * PART 2:<BR>	 *
+
+Simulation of what might happen in real<BR>	 * program for key
+
+recovery.<BR>	 */<BR><BR>	retcode = (*l_n36_buf)(0,
+
+myunion.charbuf);<BR>	if (retcode != 0)<BR>	{<BR>		printf
+
+("Problem with first call to lm_new initializer.\n");<BR>		printf
+
+("retcode = %d\n", retcode);<BR>		return;<BR>	}<BR><BR>	/*<BR>	 *
+
+This one retrieves the secret keys<BR>	 */<BR>	retcode =
+
+(*l_n36_buf)(myvendorname, myunion.charbuf);<BR>	if (retcode !=
+
+1)<BR>	{<BR>		printf ("Problem with second call to
+
+lm_new.\n");<BR>		printf ("retcode = %d\n", retcode);<BR>		
+
+return;<BR>	}<BR><BR>	/*<BR>	 * Now call with an actual job, so
+
+highly secret data<BR>	 * is stored with the job.<BR>	 */<BR>	
+
+(*l_n36_buff)(&myjob, myvendorname, myunion.charbuf);<BR><BR>	
+
+printf ("\n");<BR>	for (i = 0; i &lt; 10; i++)<BR>	{<BR>		printf
+
+("(with job) after intbuf[%d] = %08x\n", i,
+
+myunion.intbuf[i]);<BR>	}<BR><BR>	/*<BR>	 * extract the xoring
+
+value for the job now.<BR>	 */<BR>	<BR>	magic_xor_value =
+
+((long)(myjob.a[5]) &lt;&lt; 0)<BR>		| ((long)(myjob.a[0])
+
+&lt;&lt; 8)<BR>		|
+
+((long)(myjob.a[1]) &lt;&lt; 16)<BR>		| ((long)(myjob.a[4])
+
+&lt;&lt; 24);<BR>	
+
+printf ("Magic xor value: %08x\n", magic_xor_value);<BR><BR>	
+
+/*<BR>	 * now fix the values in the array.<BR>	 */<BR>	
+
+myunion.intbuf[0] = myunion.intbuf[0] ^ magic_xor_value;<BR>	
+
+myunion.intbuf[1] = myunion.intbuf[1] ^ magic_xor_value;<BR><BR>	
+
+/* Check encryption seed 1 */<BR>	if (myunion.intbuf[1] ==
+
+BLENDER_VENDOR_KEY5 ^ ENCRYPTION_SEED1)<BR>	{<BR>		printf
+
+("Encryption seed1 OK: %08x\n", myunion.intbuf[1]);<BR>	}<BR>	
+
+else<BR>	{<BR>		printf ("Incorrect Encryption seed1 is: %08x
+
+should be: %08x\n",<BR>			myunion.intbuf[1]^BLENDER_VENDOR_KEY5,
+
+ENCRYPTION_SEED1);<BR>	}<BR><BR>	/* Check encryption seed 2 */<BR>	
+
+if (myunion.intbuf[2] == BLENDER_VENDOR_KEY5 ^
+
+ENCRYPTION_SEED2)<BR>	{<BR>		printf ("Encryption seed2 OK:
+
+%08x\n", myunion.intbuf[2]);<BR>	}<BR>	else<BR>	{<BR>		printf
+
+("Incorrect Encryption seed2 is: %08x should be: %08x\n",<BR>			
+
+myunion.intbuf[2]^BLENDER_VENDOR_KEY5, ENCRYPTION_SEED2);<BR>	
+
+}<BR><BR>	return;<BR>}<BR><BR>I've only tested this on a unix
+
+machine, if it doesn't work on a Windows machine, <BR>tell me.
+
+<BR><BR>I also looked at the routines in lm_new, and you can strip
+
+a lot of useless<BR>junk out of that file.  After all the goo was
+
+removed, this is all that<BR>remained.   I linked against this
+
+code, and everything seemed to work as<BR>before.   Perhaps this
+
+was to discourage object debuggers from figuring out<BR>what was
+
+going on.<BR><BR><BR><BR>#include "lmclient.h"<BR>#include
+
+<STRING.h><BR>#include <TIME.h><BR><BR>/*<BR> * Only variables
+
+that seem to do anything.<BR> */<BR><BR>static char l_var_173 =
+
+0;<BR>static int l_208func = 136;<BR>static char l_buf_155 =
+
+110;<BR>static int l_192index = 19;<BR>static int l_buff_203 =
+
+80;<BR>static char l_func_153 = 101;<BR>static int l_registers_177
+
+= 136;<BR>static int l_232var = 153;<BR>static int l_216registers
+
+= 18;<BR>static unsigned char l_96buff = 36;<BR>static char
+
+l_166var = 100;<BR>static char l_counter_249 = 48;<BR>static int
+
+l_234reg = 9;<BR>static char l_146ctr = 98;<BR>static int l_220var
+
+= 77;<BR>static int l_236ctr = 51;<BR>static char l_buff_257 =
+
+0;<BR>static char l_ctr_163 = 114;<BR>static int l_196bufg =
+
+30;<BR>static int l_index_201 = 244;<BR>static char l_172ctr =
+
+0;<BR>static int l_186indexes = 160;<BR>static int l_buf_179 =
+
+219;<BR>static int l_224buff = 207;<BR>static char l_254buf =
+
+48;<BR>static int l_198indexes = 97;<BR>static char l_ctr_159 =
+
+100;<BR>static char l_buff_169 = 0;<BR>static int l_ctr_189 =
+
+64;<BR>static int l_idx_245 = 1;<BR>static int l_var_241 =
+
+6;<BR>static int l_202index = 249;<BR>static int l_bufg_227 =
+
+245;<BR>static int l_idx_221 = 77;<BR>static char l_func_161 =
+
+101;<BR>static int l_reg_183 = 247;<BR>static int l_248buf =
+
+103;<BR>static int l_func_205 = 196;<BR>static char l_buf_149 =
+
+108;<BR>static char l_counter_253 = 46;<BR>static int
+
+l_counter_225 = 43;<BR>static int l_counter_237 = 4;<BR>static
+
+char l_buf_251 = 54;<BR>static int l_228counter = 76;<BR>static
+
+int l_212index = 190;<BR><BR>static<BR>void<BR>l_ctr_11(job,
+
+vendor_id, key)<BR>LM_HANDLE *job;<BR>char
+
+*vendor_id;<BR>VENDORCODE *key;<BR>{<BR>  unsigned long *keys;<BR>
+
+unsigned long signature;<BR>#define SIGSIZE 4<BR>  char
+
+sig[SIGSIZE];<BR>  unsigned long x = 0x87822e5a;<BR>  int i =
+
+SIGSIZE-1;<BR>  int len = strlen(vendor_id);<BR>  long ret =
+
+0;<BR>  struct s_tmp { int i; char *cp; unsigned char a[12]; } *t,
+
+t2;<BR><BR>	sig[0] = sig[1] = sig[2] = sig[3] = 0;<BR><BR>	if
+
+(job) t = (struct s_tmp *)job;<BR>	else t = &t2;<BR>	if (job)<BR>	
+
+{<BR>		t-&gt;a[0] = (time(0) & 0xff) ^ 0x2e;<BR>		t-&gt;a[4] =
+
+(time(0)
+
+& 0xff) ^ 0x68;<BR>		t-&gt;a[5] = (time(0) & 0xff) ^ 0x0;<BR>		
+
+t-&gt;a[1] = (time(0) & 0xff) ^ 0x97;<BR>	}<BR>	else<BR>	{<BR>		
+
+memset(t2.a, 0, sizeof(t2.a));<BR>	}<BR><BR>	for (i = 0; i &lt;
+
+10; i++)<BR>	{<BR>		if (sig[i%SIGSIZE] != vendor_id[i%len])<BR>			
+
+sig[i%SIGSIZE] ^= vendor_id[i%len];<BR>	}<BR>	key-&gt;data[0] ^=
+
+<BR>		
+
+(((((long)sig[0] &lt;&lt; 3)| <BR>		    ((long)sig[1] &lt;&lt; 1)
+
+|<BR>		  
+
+((long)sig[2] &lt;&lt; 0) |<BR>		    ((long)sig[3] &lt;&lt;
+
+2))<BR>		^
+
+((long)(t-&gt;a[5]) &lt;&lt; 0)<BR>		^ ((long)(t-&gt;a[0])
+
+&lt;&lt; 8)<BR>		^ x<BR>		
+
+^ ((long)(t-&gt;a[1]) &lt;&lt; 16)<BR>		^ ((long)(t-&gt;a[4])
+
+&lt;&lt; 24)<BR>		^
+
+key->keys[1]<BR>		^ key->keys[0]) & 0xffffffff) ;<BR>	key->data[1]
+
+^=<BR>		(((((long)sig[0] &lt;&lt; 3)| <BR>		    ((long)sig[1]
+
+&lt;&lt; 1)
+
+|<BR>		    ((long)sig[2] &lt;&lt; 0) |<BR>		    ((long)sig[3]
+
+&lt;&lt; 2))<BR>		
+
+^ ((long)(t-&gt;a[5]) &lt;&lt; 0)<BR>		^ ((long)(t-&gt;a[0])
+
+&lt;&lt; 8)<BR>		^
+
+x<BR>		^ ((long)(t-&gt;a[1]) &lt;&lt; 16)<BR>		^
+
+((long)(t-&gt;a[4]) &lt;&lt;
+
+24)<BR>		^ key->keys[1]<BR>		^ key->keys[0]) & 0xffffffff);<BR>	
+
+t-&gt;cp -= 0;<BR>}<BR>static<BR>int<BR>l_4ctr(buf, v)<BR>char
+
+*buf;<BR>VENDORCODE *v;<BR>{<BR> static int l_8var;<BR> extern
+
+void (*l_n36_buff)();<BR>	if (!buf)<BR>	{<BR>		l_8var = 0;<BR>		
+
+return 0;<BR>	}<BR>	if (l_8var >= 1) return 0;<BR>	if
+
+(!l_n36_buff) l_n36_buff = l_ctr_11;<BR><BR>	memset(v, 0,
+
+sizeof(VENDORCODE));<BR>	v-&gt;keys[1] += (l_220var &lt;&lt;
+
+24);<BR>	
+
+v-&gt;data[1] += (l_ctr_189 &lt;&lt; 0);<BR>	v-&gt;behavior_ver[3]
+
+=
+
+l_254buf;<BR>	v-&gt;data[0] += (l_reg_183 &lt;&lt; 16);<BR>	
+
+v-&gt;keys[2] +=
+
+(l_bufg_227 &lt;&lt; 24);<BR>	v-&gt;behavior_ver[2] =
+
+l_counter_253;<BR>	
+
+buf[1] = l_buf_149;<BR>	v-&gt;type = (short)(l_counter_237 &
+
+0xffff)
+
+;<BR>	v-&gt;keys[0] += (l_index_201 &lt;&lt; 0);<BR>	v-&gt;data[0]
+
++=
+
+(l_registers_177 &lt;&lt; 0);<BR>	v-&gt;behavior_ver[4] =
+
+l_buff_257;<BR>	
+
+v-&gt;keys[3] += (l_228counter &lt;&lt; 0);<BR>	v-&gt;keys[2] +=
+
+(l_counter_225 &lt;&lt; 16);<BR>	v-&gt;keys[0] += (l_func_205
+
+&lt;&lt; 24);<BR>	
+
+buf[4] = l_ctr_159;<BR>	v-&gt;data[0] += (l_186indexes &lt;&lt;
+
+24);<BR>	
+
+v-&gt;keys[2] += (l_224buff &lt;&lt; 8);<BR>	v-&gt;flexlm_version
+
+=
+
+(short)(l_var_241 & 0xffff) ;<BR>	v-&gt;keys[1] += (l_212index
+
+&lt;&lt;
+
+8);<BR>	v-&gt;data[1] += (l_192index &lt;&lt; 8);<BR>	
+
+v-&gt;flexlm_patch[0] =
+
+l_248buf;<BR>	v-&gt;keys[3] += (l_232var &lt;&lt; 8);<BR>	
+
+v-&gt;data[0] +=
+
+(l_buf_179 &lt;&lt; 8);<BR>	buf[7] = l_166var;<BR>	v-&gt;keys[0]
+
++=
+
+(l_202index &lt;&lt; 8);<BR>	buf[3] = l_buf_155;<BR>	buf[8] =
+
+l_buff_169;<BR>	v-&gt;keys[1] += (l_216registers &lt;&lt; 16);<BR>	
+
+v-&gt;keys[1] += (l_208func &lt;&lt; 0);<BR>	v-&gt;data[1] +=
+
+(l_196bufg &lt;&lt;
+
+16);<BR>	buf[9] = l_172ctr;<BR>	v-&gt;keys[0] += (l_buff_203
+
+&lt;&lt;
+
+16);<BR>	v-&gt;data[1] += (l_198indexes &lt;&lt; 24);<BR>	
+
+v-&gt;keys[3] +=
+
+(l_236ctr &lt;&lt; 24);<BR>	buf[5] = l_func_161;<BR>	v-&gt;keys[2]
+
++=
+
+(l_idx_221 &lt;&lt; 0);<BR>	v-&gt;behavior_ver[1] = l_buf_251;<BR>	
+
+v-&gt;behavior_ver[0] = l_counter_249;<BR>	buf[2] =
+
+l_func_153;<BR>	
+
+v-&gt;keys[3] += (l_234reg &lt;&lt; 16);<BR>	buf[0] =
+
+l_146ctr;<BR>	buf[10]
+
+= l_var_173;<BR>	v-&gt;flexlm_revision = (short)(l_idx_245 &
+
+0xffff)
+
+;<BR>	buf[6] = l_ctr_163;<BR>	++l_8var;<BR>	return 1;<BR>}<BR>int
+
+(*l_n36_buf)() = l_4ctr;<BR>
+
+<BR>
+
+
+
+<HR width=44% align=left><FONT size=+2>Dan to group</FONT><BR>
+
+
+
+<BR>nb,<BR><BR>This program worked but also illustrated some of
+
+the descrepancies<BR>that I am talking about.  One is that I did
+
+not need vendorkey5<BR>at all to recover my seeds.  And the target
+
+did not use vendorkey5<BR>either.  Another is the calling
+
+order/parameters of the two routines<BR>in lm_new.  From what I
+
+saw, the function performed to recover the<BR>seeds did not use
+
+enough info to even have a derivative of vk5.<BR>I am not
+
+certain.<BR><BR>Your routine seems to call the "decode routine"
+
+first with a null.<BR>My target does not.  It calls the decode
+
+routine like this:<BR>lc_new_job {<BR>char name[50];<BR>VENDORCODE
+
+vx;<BR>memset(&vx, 0, sizeof(VENDORCODE));<BR>ret=
+
+l_counters_1(name, &vx);        &lt;- first call to decode
+
+routine<BR>ret= l_counters_1(0,0);              &lt;- second call to
+
+decode routine<BR>call lc_init<BR>set alt encryption
+
+flag<BR>return<BR>}<BR><BR>Then to recover the seeds a call like
+
+this could be made<BR>(setting job to 0 gives clear seeds - not
+
+seeds ^ vk5)<BR><BR>LM_HANDLE job;<BR>memset(&job, 0,
+
+sizeof(LM_HANDLE));<BR>if (random call) l_8reg(&job, name, &vx); 
+
+<GIVES clear seeds xor random<BR>else l_8reg((int) 0, name,
+
+&vx);           &lt;- gives clear seeds<BR><BR><BR>There are exactly
+
+3 calls to lm_new related routines - the two in lc_new_job<BR>to
+
+the decode routine.  And the one under l_sg to the decrypt
+
+routine.<BR>There is no need at any point to use vk5.<BR><BR>If I
+
+am interpreting your code correctly - you are emulating how<BR>the
+
+calls are done in your client.  It seems depending on how
+
+you<BR>use the api that it uses lm_new.c differently.  I am not
+
+sure.<BR><BR>dan<BR><BR><BR>
+
+<BR>
+
+<HR width=44% align=left><FONT size=+2>Nolan Blender to
+
+group</FONT><BR>
+
+
+
+<BR>The program I posted doesn't really use <BR>vendorcode5 either
+
+- it's just there to demonstrate<BR>correctness of the decoded
+
+keys.  The calling<BR>sequence which you describe earlier is what
+
+I<BR>see as well - my call is at l_sg+005c where<BR>it calls the
+
+decryption   The second part of <BR>the code is where some
+
+emulation of what happens<BR>in the normal initialization routine
+
+is done.<BR><BR>The code isn't an emulation of what happens
+
+in<BR>the flexlm clients - just an example of how the<BR>code
+
+could be used.  <BR><BR>The part about the invalid checksum
+
+generating<BR>different lm_new.c files is interesting - I
+
+checked<BR>the program with keys which had valid checksums<BR>but
+
+were invalid for other reasons, and I got<BR>the same result you
+
+did with the munged keys.<BR><BR>Your point about vendorkey5 not
+
+being required is<BR>a good one though - I had included it to
+
+show<BR>the correctness of the keys and to close the<BR>loop on
+
+how the hiding works.<BR><BR>I didn't mention this earlier, but
+
+testprog.c<BR>isn't meant to emulate what happens in the<BR>flexlm
+
+based client, but rather how the routines<BR>work, and how the
+
+correct keys can be derived if<BR>a call with a non-null job
+
+pointer was done.<BR><BR>I am going to have to do some more
+
+tracing of what<BR>goes on inside the program.  The xoring
+
+with<BR>vendorcode5 could occur before the call in l_sg<BR>to the
+
+decoding routine.<BR><BR>Thank you for your assistance - the info
+
+you<BR>have provided has been of great assistance in<BR>figuring
+
+out how lm_new works.<BR><BR>I have done a detailed trace of the
+
+calling <BR>sequences, and what you describe appears correct.<BR>I
+
+am going out of town for a bit, but I will<BR>post stack traces
+
+and argument values when I
+
+get<BR>back.<BR><BR>later,<BR><BR>-NB.<BR>
+
+<BR>
+
+
+
+<HR>
+
+<BR><CENTER><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=88% HEIGHT=6 BORDER=0
+
+VSPACE=0 HSPACE=0><BR><BR><I>You'r deep inside fravia's pages of
+
+reverse engineering, choose your way out!</I><BR>
+
+<!-- Begin Javascript relocator <font color=gray><b>~</b></fonT>
+
+Javascript code by fravia+ -->
+
+<FORM name="FraviasForm">
+
+<SCRIPT LANGUAGE="javascript">
+
+<!--
+
+
+
+function FravPage(list) {
+
+	      location.href = list.options[list.selectedIndex].value
+
+}
+
+
+
+// -->
+
+</SCRIPT>
+
+<DIV align="center">
+
+<CENTER>
+
+<P center="&lt;center&gt;&lt;/center&gt;">&nbsp;<SELECT
+
+name="fraviale" size="1">
+
+
+
+<OPTION>Choose another page!</OPTION>
+
+<OPTION value="index.htm">Main page</OPTION>
+
+<OPTION value="academy.htm">Software reversing Lab</OPTION>
+
+<OPTION value="realicra.htm">Reality cracking Lab</OPTION>
+
+<OPTION value="noanon.htm">Anonymity Lab</OPTION>
+
+<OPTION value="ideale.htm">Site busting Lab</OPTION>
+
+<OPTION value="howtosea.htm">How to search Lab</OPTION>
+
+<OPTION value="sealight.htm">--Search engines (light)</OPTION>
+
+<OPTION value="searengi.htm">--Search engines (heavy)</OPTION>
+
+<OPTION value="links.htm">Links</OPTION>
+
+<OPTION value="tools.htm">Tools</OPTION>
+
+<OPTION value="javascri.htm">Javascript reversing</OPTION>
+
+<OPTION value="screamin.htm">Screaming truth</OPTION>
+
+<OPTION value="entran.htm">Main entrance</OPTION>
+
+<OPTION value="new_what.htm">What's new on fravia's</OPTION>
+
+<OPTION value="info.htm">Mail fravia+</OPTION>
+
+<OPTION
+
+value="http://greythorne.home.ml.org">+Greythorne's</OPTION>
+
+<OPTION value="http://www.InsideTheWeb.com/mbs.cgi/mb186724">Tools
+
+of our trade msgboard</OPTION>
+
+<OPTION value="http://www.InsideTheWeb.com/mbs.cgi/mb155985">Main
+
+msgboard</OPTION>
+
+</SELECT>
+
+
+
+<INPUT type="button" value="Let's go!"
+
+onclick="FravPage(this.form.elements[0])">
+
+<BR>
+
+</DIV>
+
+
+
+</FORM>
+
+<!-- end Javascript relocator -->
+
+<BR><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=88% HEIGHT=6 BORDER=0
+
+VSPACE=0 HSPACE=0><BR><BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0
+
+VSPACE=0 HSPACE=0><A
+
+HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0
+
+VSPACE=0 HSPACE=0>
+
+<A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links </A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0>
+
+<A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity </A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC </A>
+
+
+
+<IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays </A>
+
+
+
+<IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database </A>
+
+
+
+<IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="botstart.htm" tppabs="http://www.anticrack.de/fravia/botstart.htm">bots wars</A>
+
+
+
+<BR>
+
+<IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut </A>
+
+
+
+<IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 BORDER=0
+
+VSPACE=0 HSPACE=0><A
+
+HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13
+
+BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13
+
+BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="javascri.htm" tppabs="http://www.anticrack.de/fravia/javascri.htm">javascript wars </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0
+
+VSPACE=0 HSPACE=0><A
+
+HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0
+
+VSPACE=0 HSPACE=0><A
+
+HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia </A><BR>
+
+
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0
+
+VSPACE=0 HSPACE=0><A
+
+HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering illegal?
+
+</A></CENTER>
+
+
+
+</BODY>
+
+</HTML>
+

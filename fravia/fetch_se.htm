@@ -1,0 +1,263 @@
+<HTML>
+
+<BODY>
+
+<SCRIPT LANGUAGE="javascript">
+
+<!--  //
+
+
+
+var engines = new Array() ;
+
+engines.position = 0 ;
+
+
+
+function engine(name, baseURL, hasDetails, submitMethod, queryName){
+
+  this.name=name ;
+
+  this.baseURL=baseURL ;
+
+  this.hasDetails=hasDetails ;
+
+  this.submitMethod = submitMethod ;
+
+  this.queryName = queryName ;
+
+  return this ;
+
+}
+
+
+
+function addEngine(name, baseURL, hasDetails, submitMethod, queryName){
+
+  engines.position++ ;
+
+  engines[engines.position] = new engine(name, baseURL, hasDetails, submitMethod, queryName) ;
+
+}
+
+
+
+function buildArrayOfEngines(){
+
+  addEngine("AltaVista","http://www.altavista.digital.com/cgi-bin/query", "true", "GET", "q") ; 
+
+  addEngine("HotBoot", "http://www.hotbot.com/","true", "GET", "MT") ;
+
+  addEngine("LyKos","http://www.lycos.com/cgi-bin/pursuit", "false", "GET", "query") ;
+
+  addEngine("Yahoo","http://search.yahoo.com/bin/search","false", "GET", "p") ;
+
+  addEngine("NorthernLight","http://www.nlsearch.com/nlquery.fcg","false", "GET", "qr") ;
+
+  addEngine("InfoSeek","http://guide-p.infoseek.com/Titles", "true", "GET", "qt") ;
+
+  addEngine("WebCrawler","http://www.webcrawler.com/cgi-bin/WebQuery", "true", "GET", "searchText") ;
+
+  addEngine("GOTO","http://www.goto.com/search-results", "false", "GET", "Keywords") ;
+
+  addEngine("Dogpile","http://www.dogpile.com/cgi-bin/nph-search","true", "GET", "q") ;
+
+  addEngine("FTP Search","http://ftpsearch.ntnu.no/cgi-bin/search","true", "GET", "query") ;
+
+  addEngine("Ask SINA", "http://askhp.ask.uni-karlsruhe.de/cgi-bin/sina2/sina", "true", "POST", "Objekt") ;
+
+}
+
+
+
+function fetch(engineIndex, queryString, destinationIndex){
+
+  var fd = top.details.document.frmDetails ;
+
+
+
+  //specifies the target frame or window and launch
+
+  if (parseInt(destinationIndex) == 0) fd.target = 'results' ;
+
+  else if (parseInt(destinationIndex) == 1) fd.target = '_top' ;
+
+  else if (parseInt(destinationIndex) == 2) fd.target = '_blank' ;
+
+
+
+  fd.elements[0].value = top.search.document.frmSearch.searchstring.value ;
+
+  fd.submit() ;
+
+}
+
+
+
+function show(){
+
+  document.write('<FORM NAME="frmSearch" onSubmit="fetch(searchengine.selectedIndex,searchstring.value,resultWindow.selectedIndex);return false;">') ;
+
+  document.write('<B>Search </B><INPUT TYPE=text NAME="searchstring" SIZE="30">') ;
+
+  document.write('<INPUT TYPE=button NAME="submitsearch" VALUE="Fetch !" onClick="fetch(searchengine.selectedIndex,searchstring.value,resultWindow.selectedIndex);">') ;
+
+  document.write('<B> with</B> <SELECT NAME="searchengine" onChange="showDetails(this.selectedIndex);">') ;
+
+  document.write('<OPTION SELECTED>' + engines[1].name) ;
+
+  for (count = 2; count <= engines.position; count++) { document.write('<OPTION>' + engines[count].name); }
+
+  document.write('</SELECT>') ;
+
+  document.write('<B> Destination </B><SELECT NAME="resultWindow"><OPTION VALUE="frame" SELECTED>Underlying frame<OPTION VALUE="fullwindow">Full window<OPTION VALUE="newwindow">New Window</SELECT>') ;
+
+  document.write('</FORM>') ;
+
+  document.close() ;
+
+}
+
+
+
+function showDetails(engineIndex){
+
+frameDoc = top.details.document ;
+
+frameDoc.open() ;
+
+currentEngine = engines[engineIndex + 1] ;
+
+
+
+//builds the form object needed
+
+frameDoc.write('<TABLE><TR><TD><FORM NAME="frmDetails" METHOD="' + currentEngine.submitMethod + '" ACTION="http://fravia.org/'%20+%20currentEngine.baseURL%20+%20'" tppabs="http://fravia.org/'%20+%20currentEngine.baseURL%20+%20'">') ;
+
+frameDoc.write('<INPUT TYPE="hidden" NAME="' + currentEngine.queryName + '">') ;
+
+
+
+if (currentEngine.hasDetails == 'true'){
+
+  //Altavista
+
+  if (engineIndex == 0)  { 
+
+    frameDoc.write('<INPUT TYPE="hidden" NAME="pg" VALUE="q">') ;
+
+    frameDoc.write('Search <SELECT NAME=what><OPTION VALUE=web SELECTED>the Web<OPTION VALUE=news>Usenet</SELECT>') ;
+
+    frameDoc.write(' and display <SELECT NAME=fmt><OPTION VALUE="" SELECTED>in Standard Form<OPTION VALUE=c>in Compact Form<OPTION VALUE=d>in Detailed Form</SELECT>') ;
+
+  }
+
+
+
+  //HotBoot
+
+  if (engineIndex == 1) {
+
+    frameDoc.write('Search for <SELECT NAME="SM"><OPTION VALUE="MC">all the words<OPTION VALUE="SC">any of the words<OPTION VALUE="phrase">exact phrase<OPTION VALUE="title">the page title<OPTION VALUE="name">the person<OPTION VALUE="url">links to this URL<OPTION VALUE="B">Boolean phrase</SELECT>') ;
+
+    frameDoc.write(' return <SELECT NAME="DC"><OPTION VALUE="10">10<OPTION VALUE="25">25<OPTION VALUE="50">50<OPTION VALUE="100">100</SELECT>') ;
+
+    frameDoc.write(' results in <SELECT NAME="DE"><OPTION VALUE="2">full descriptions<OPTION VALUE="1">brief descriptions<OPTION VALUE="0">URLs only</SELECT>') ;
+
+  }
+
+
+
+  //Infoseek
+
+  if (engineIndex == 5) {
+
+    frameDoc.write('<INPUT TYPE="hidden" NAME="sv" VALUE="GF"><INPUT TYPE="hidden" NAME="lk" VALUE="fast">') ;
+
+    frameDoc.write('search <SELECT NAME="col"><OPTION VALUE="WW" SELECTED>the World Wide Web<OPTION VALUE="NX">News<OPTION VALUE="NN">Usenet Newsgroups<OPTION VALUE="EM">E-mail Addresses<OPTION VALUE="HV">Companies</SELECT>') ;
+
+  }
+
+
+
+  //webcrawler
+
+  if (engineIndex == 6) {
+
+    frameDoc.write('Show <SELECT NAME="mode"><OPTION value="compact" SELECTED>titles<OPTION value="summaries">summaries</SELECT>') ;
+
+    frameDoc.write('Max Hits <SELECT NAME="maxHits"><OPTION VALUE="10">10<OPTION SELECTED VALUE="25">25<OPTION VALUE="100">100</SELECT>') ;
+
+  }
+
+
+
+  //Dogpile
+
+  if (engineIndex == 8) {
+
+    frameDoc.write('Search <SELECT NAME="fs"><OPTION SELECTED VALUE="web">The Web<OPTION VALUE="use">Usenet<OPTION VALUE="ftp">FTP<OPTION VALUE="nws">Newswires</SELECT>') ;
+
+    frameDoc.write(' and <SELECT NAME="ss"><OPTION VALUE="web">The Web<OPTION VALUE="use">Usenet<OPTION VALUE="ftp">FTP<OPTION VALUE="nws">Newswires<OPTION SELECTED VALUE="stop">STOP</SELECT>') ;
+
+    frameDoc.write(' Wait for <SELECT NAME="to"><OPTION VALUE="ten">10<OPTION VALUE="twenty">20<OPTION VALUE="thirty">30<OPTION SELECTED VALUE="forty">40<OPTION VALUE="fifty">50<OPTION VALUE="sixty">60</SELECT>Seconds') ;
+
+  }
+
+
+
+  //FTPSearch
+
+  if (engineIndex == 9) {
+
+    frameDoc.write('Search type<SELECT NAME="type"><OPTION SELECTED>Case insensitive substring search<OPTION>Case sensitive substring search<OPTION>Case insensitive glob search<OPTION>Case sensitive glob search<OPTION>Regular expression search<OPTION>Exact search<OPTION>Navigate<OPTION>Case insensitive substring match<OPTION>Case sensitive substring match<OPTION>Case insensitive glob match<OPTION>Case sensitive glob match<OPTION>Regular expression match</SELECT>') ;
+
+    frameDoc.write('Max Hits<SELECT NAME="hits"><OPTION VALUE=100>100<OPTION VALUE=500>500<OPTION VALUE=1000 SELECTED>1000<OPTION VALUE=5000>5000</SELECT>') ;
+
+    frameDoc.write('Sort by <SELECT NAME="sort"><OPTION VALUE=none> nothing (unsorted)<OPTION VALUE=host> Host, path<OPTION VALUE=hostdist> Host (distance)<OPTION VALUE=size> Size, date<OPTION SELECTED VALUE=date> Date, host</SELECT>') ;
+
+  }
+
+
+
+  //ASK SINA
+
+  if (engineIndex == 10) {
+
+    frameDoc.write('<INPUT TYPE="hidden" NAME="SearchmodeObjekt" VALUE="Wortanfang">') ;
+
+    frameDoc.write('Max hits <SELECT NAME="MaxHits"><OPTION VALUE="100" SELECTED>100<OPTION VALUE="500">500<OPTION VALUE="1000">1000</SELECT>') ;
+
+  }
+
+}
+
+else { frameDoc.write('<I>No details for this engine</I>') ; }
+
+frameDoc.write('</FORM></TD><TD VALIGN="top"><A HREF="stalker.htm" tppabs="http://fravia.org/stalker.htm" TARGET="_top">Stalker</A></TD></TR></TABLE>') ;
+
+frameDoc.close() ;
+
+}
+
+
+
+
+
+buildArrayOfEngines() ;
+
+show() ;
+
+showDetails(0) ;
+
+
+
+//-->
+
+</SCRIPT>
+
+
+
+</BODY>
+
+</HTML>

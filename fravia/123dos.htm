@@ -1,0 +1,711 @@
+<HTML>
+
+<HEAD>
+
+<META Name="Voluntary Content Rating" content="great!">
+
+
+
+
+
+<TITLE>123dos.htm: Software protection history</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR=#C0C0C0 TEXT=#001010 VLINK=#405040><P><CENTER>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0>Courtesy of Fravia's page 
+
+of reverse engineering
+
+<HR> <CENTER>
+
+	<A href="student.htm#student_loo_na" tppabs="http://www.anticrack.de/fravia/student.htm#student_loo_na"><IMG SRC="notassi3.gif" tppabs="http://www.anticrack.de/fravia/notassi3.gif" ALT="student"
+
+	    ALIGN=CENTER WIDTH=114 HEIGHT=43 BORDER=0 VSPACE=0 HSPACE=0></A> <BR>
+
+	<FONT color=gray>Not Assigned</FONT>
+
+      </CENTER>
+
+<HR>
+
+</CENTER>
+
+<PRE>
+
+
+
+Reinitializing Lotus 1-2-3 DOS versions 2.01, 2.3, and 3.1
+
+
+
+by: Tomboy
+
+date: 31 March 1998
+
+
+
+Introduction
+
+
+
+As much pleasure as one gets from completing a successful crack
+
+(especially if it was difficult), I find it even more exciting to
+
+"entice" a program into doing the hard work for me.  This paper
+
+demonstrates how several programs can be reinitialized with new owner
+
+information with a minimum of effort.  In each case, it was possible to
+
+automate the process using a DOS batch file.
+
+
+
+Situation
+
+
+
+I like and use Lotus 1-2-3 for a number of reasons.  The reason most
+
+relevant to this discussion is the presence of copy protection in early
+
+versions (up to 2.01) which was followed in later versions (2.2 and up)
+
+by having to initialize the original system disk with your name and
+
+company information prior to using the program.  Over the years I have
+
+obtained (primarily at local computer shows) every version of Lotus
+
+1-2-3 from 1A through 2.3 as well as an odd copy of 3.1.  Regrettably,
+
+some of these copies were used and had been previously initialized with
+
+the old owner's personal information.  This was unsatisfactory to me and
+
+I wanted to change the information to my own name.  Of course, the
+
+manuals for these programs state that once initialized, the name and
+
+company information cannot be changed.  Challenge accepted!
+
+
+
+Discussion
+
+
+
+Target 1: Lotus 1-2-3 version 2.01
+
+Need: valuepk1.zip (or unused value pack diskette from original software
+
+package, very rare!)
+
+Available from: Lotus ftp site.
+
+
+
+This version of 1-2-3 was shipped as a copy protected product.  With the
+
+demise of disk based copy protection in the late 1980's, Lotus started
+
+including a copy protection removal program in the package.  It was
+
+placed on the value pack diskette along with some extra screen and
+
+printer drivers.  Running this program would remove the copy protection
+
+by creating a new loader program, 123.EXE, and deleting some of the
+
+files associated with the Softguard protection scheme (the original
+
+loader 123.COM, SGS0300.SUP, AND CML0300.FCL).  In the process of
+
+removing the copy protection and creating the new loader, it was
+
+necessary to provide a user name and optionally company information. 
+
+This information was written inside the new loader in an encrypted
+
+form.  Each time the loader is executed, the initialization information
+
+is displayed for several seconds and then the spreadsheet finally comes
+
+up.  Interestingly, the value pack diskette can only be initialized
+
+once.  Several important files are erased (and thoroughly destroyed by
+
+overwriting with garbage before deleting) during the creation of the new
+
+loader.  While the value pack diskette and be used to remove the copy
+
+protection from multiple copies of the Lotus 1-2-3 system diskette, the
+
+initialized information remains the same.  The following value pack
+
+files are associated with the initialization process:
+
+
+
+File		Size		Fate after initialization
+
+-------------------------------------------------
+
+INIT.EXE	6994		Unchanged
+
+INIT.RI		4022		Unchanged
+
+INPUT.EXE	19376		Overwritten, then Deleted
+
+NAME.EXE	21590		Overwritten, then Deleted
+
+REMOVE.EXE	73408		Modified
+
+
+
+I wasted a lot of time analyzing the 123.EXE loader and its encryption
+
+scheme in the hope of understanding the algorithm and then changing the
+
+information.  It was during an examination of the remaining files on an
+
+initialized value pack diskette that I had a breakthrough.  One file,
+
+REMOVE.EXE, was found to contain the image of the initialized 123.EXE
+
+loader.  In fact, it contains two images, one for 1-2-3 version 2.0 and
+
+the other for version 2.01.  It appears that the loader is initialized
+
+inside REMOVE.EXE and is then extracted during the copy protection
+
+removal process.  Based on this information, I obtained an unused value
+
+pack diskette and as expected found that the original REMOVE.EXE
+
+contained an UNINITIALIZED copy of the loader.
+
+
+
+** Can't find an unused value pack diskette?  Fortunately, Lotus has an
+
+archive, valuepk1.zip, on their ftp site containing the needed files. 
+
+Just unzip it to a floppy and you are ready to go. **
+
+
+
+OK, by now you are probably getting the same idea I had.  Lets
+
+initialize an unused value pack disk (a copy! not the original) and then
+
+manually extract the new 123.EXE loader.  The copy protection removal is
+
+done in two distinct steps: 1) provide initialization information, and
+
+2) update system diskette.  The first step initializes the 123.EXE
+
+images in REMOVE.EXE.  The second step is optional and can be aborted;
+
+just don't put your 1-2-3 system diskette in the drive when prompted. 
+
+In any case, only the first step is needed for our purposes.  Using
+
+debug, the 123.EXE image can be located in REMOVE.EXE and extracted
+
+(version 2.0 loader starts at offset 5856h and is 29A8h bytes long,
+
+version 2.01 loader starts at offset 820Eh and is 2C31h bytes long).  I
+
+have created a batch file, 123v201.bat, to do the extraction
+
+automatically.  The source is given below, ?BTW can DOS batch files
+
+actually be considered source code? ;-).
+
+</PRE><XMP>
+
+@echo off
+
+cls
+
+echo                         *** LOTUS 1-2-3 version 2.01 ***
+
+echo                         *** Reinitialization Program ***
+
+echo 
+
+echo     This program creates an initialized (personalized) copy of 123.EXE
+
+echo     version 2.01.  It does this by taking advantage of the programs that
+
+echo     LOTUS issued to remove the disk based copy protection from this version
+
+echo     of LOTUS 1-2-3.  LOTUS stores the initialization information inside
+
+echo     123.EXE in an encrypted form.  While it would be possible to reverse
+
+echo     engineer LOTUS's encryption alogorithm and create a program that would
+
+echo     directly update the executable with new information, this is a lot of
+
+echo     unnecessary work.  It turns out that an initialized copy of 123.EXE is
+
+echo     created inside of REMOVE.EXE during the copy protection removal process.
+
+echo     All that has to be done is run REMOVE.EXE, input the initialization
+
+echo     data and using this program extract the initialized copy of 123.EXE.
+
+echo     To prevent REMOVE.EXE from being reused, several helper files are
+
+echo     intentional destroyed after the initialization procedure is completed.
+
+echo     This program protects these files by keeping master copies of them
+
+echo     in a ZIP archive and restores them at the end of the process.
+
+echo 
+
+echo     Note: You must have PKUNZIP 2.04g and DEBUG installed and in your
+
+echo     path for this program to work properly.
+
+echo 
+
+echo                               Press CTRL+C to abort.
+
+pause
+
+init
+
+ren remove.exe remove.zap
+
+echo> reinit.scr rbx
+
+echo>> reinit.scr 0
+
+echo>> reinit.scr rcx
+
+echo>> reinit.scr 2c31
+
+echo>> reinit.scr n 123.zap
+
+echo>> reinit.scr w 820e
+
+echo>> reinit.scr q
+
+debug remove.zap <REINIT.scr
+
+del remove.zap
+
+if exist 123.exe del 123.exe
+
+ren 123.zap 123.exe
+
+pkunzip valuepk1 -o
+
+echo                           *** Initialization completed ***
+
+echo 
+
+echo             Please find initialized copy of 123.EXE on your diskette
+
+</xmp><PRE>
+
+Challenge met!, now I can reinitialize the 123.EXE loader any time I
+
+want.
+
+
+
+
+
+The intermediate years....
+
+
+
+Lotus "almost" dropped disk based copy protection in version 2.2 of
+
+Lotus 1-2-3.  The program required the user to initial the 123.EXE
+
+loader with owner information before the program would run.  However,
+
+this initialization could only be performed on the original system
+
+disk.  It turns out that the system disk contains a specially formatted
+
+track which must be present for the initialization process to proceed
+
+(this track is completely trashed by the install program after the disk
+
+is initialized making it impossible to reverse the process).  Of course,
+
+you couldn't initialize a copy unless it were made with a really good
+
+bit copier or a deluxe option board.  This version was simply cracked by
+
+nop-ing the call that displays the initialization information.  Nothing
+
+really interesting here so I will not discuss it any further.
+
+
+
+
+
+Target 2: Lotus 1-2-3 version 2.3
+
+Need: Lotus 1-2-3 version 2.3 system disk
+
+Available from: ?
+
+
+
+Again, Lotus required the user to initialize the 123.EXE loader before
+
+it would run.  However, they did not put any special tracks on the
+
+system disk this time so you could initialize a copy instead of using
+
+the original (but Lotus sort of forgot to mention this in their
+
+manual).  In this particular case, Lotus added some code to kill program
+
+execution if the display initialization information routine was tampered
+
+with.  Examining an initialized loader and using a little ZEN, I found
+
+the data area that the install program uses to determine if the loader
+
+has been initialized.  It is a six byte string that starts at offset
+
+1A24h and contains the following information: " CONAN".  The
+
+initialization information itself and the program serial number are
+
+stored as encrypted strings at offsets 1A2Bh to 1A88h.  The bytes at
+
+1A2Bh-1A2Ch and 1A87h-1A88h are a checksum for the name and serial
+
+information.  Changing any bytes in the initialization or checksum
+
+fields gives a program error and a quick return to DOS.
+
+
+
+Just for grins the encryption scheme used for the initialization and
+
+serial number strings was analyzed and found to be:
+
+
+
+encrypted byte = FFh - starting byte
+
+
+
+Unfortunately, the algorithm for calculating the checksum bytes was not
+
+as straight forward and could not be determined.  Otherwise, we could
+
+make a program to reinitialize the loader directly.
+
+
+
+Changing any one of the six bytes in the " CONAN" string caused the
+
+install program to prompt for new owner information and write it to the
+
+loader.  This is GREAT!, but oh no!!! the %^&*$ install program wrote
+
+the new information at offset 1B24h instead of 1A2Bh (overwriting some
+
+program code in the process).  I do not know why the install program
+
+does this, but it sure was aggravating.  Despite this minor setback, the
+
+new encrypted initialization information was found to be correct.  It
+
+can be easily moved from 1B24h to its proper location at 1A2Bh using
+
+debug.  Fixing the overwritten code at 1B24h and saving the result gives
+
+a new reinitialized loader that works perfectly.  The batch file below
+
+does it all automatically for you.
+
+</PRE><XMP>
+
+@echo off
+
+c:
+
+md\temp
+
+cd\temp
+
+cls
+
+if exist 123.zap goto stage2
+
+echo                         *** Important Please Read ***
+
+echo                *** Work only on a COPY of the INSTALL disk! ***
+
+echo 
+
+echo     This program reinitializes the 123 release 2.3 INSTALL disk with new
+
+echo     Name and Company information.  The LOTUS documentation statesthat
+
+echo     once the INSTALL disk is initialized during the first installation,
+
+echo     this information cannot be changed.  In fact, the INSTALL.EXE program
+
+echo     can be tricked into reinitializing the disk, but regretably it places
+
+echo     the new encrypted initialization information in the wrong place.  This
+
+echo     program automates the reinitialition process by copying, changing, and
+
+echo     fixing the files involved.
+
+echo 
+
+echo     There are two stages: 1) 123R23.BAT makes a small change to the 123.EXE
+
+echo     file to get the INSTALL.EXE program to reinitialize the disk.  The user
+
+echo     then runs the INSTALL program which prompts for new User and Company
+
+echo     information.  After confirming the information and allowing it to be
+
+echo     written to disk, abort the rest of the install. 2) Rerun 123R23.BAT to
+
+echo     fixup the newly reinitialized 123.EXE file.
+
+echo 
+
+echo     To reinitialize a !COPY! of the INSTALL disk, place it in Drive A now.
+
+echo                   *** To ABORT 123R23.BAT press CTRL+C ***
+
+pause
+
+cls
+
+echo                           *** Starting Stage 1 ***
+
+echo 
+
+echo                                  + WORKING +
+
+echo 
+
+copy a:\123.exe 123.zap
+
+echo> reinit.scr e 1b24
+
+echo>> reinit.scr 00
+
+echo>> reinit.scr/
+
+echo>> reinit.scr w
+
+echo>> reinit.scr q
+
+debug 123.zap <REINIT.scr
+
+copy 123.zap a:\123.exe
+
+echo                           *** Stage 1 completed ***
+
+echo 
+
+echo             Now run Install program to reinitialize the INSTALL disk
+
+echo 
+
+echo        Note: Abort the install after the new Name and Company information
+
+echo              has been written to disk (i.e. do not complete the install)!
+
+goto end
+
+:stage2
+
+echo                           *** Starting Stage 2 ***
+
+echo 
+
+copy a:123.exe 123.chg
+
+echo> reinit.scr n reinit.dat
+
+echo>> reinit.scr rcx
+
+echo>> reinit.scr 5e
+
+echo>> reinit.scr w 2811
+
+echo>> reinit.scr q
+
+debug 123.chg <REINIT.scr
+
+copy /b 123.zap+reinit.dat 123.dat
+
+echo> reinit.scr e 1b24
+
+echo>> reinit.scr 20
+
+echo>> reinit.scr/
+
+echo>> reinit.scr m 48c0 l5e 1b2b
+
+echo>> reinit.scr rcx
+
+echo>> reinit.scr 47c0
+
+echo>> reinit.scr w
+
+echo>> reinit.scr q
+
+debug 123.dat <REINIT.scr
+
+copy 123.dat a:123.exe
+
+del 123.zap
+
+del reinit.scr
+
+del 123.chg
+
+del reinit.dat
+
+del 123.dat
+
+echo                           *** Stage 2 Completed ***
+
+:end
+
+</xmP><PRE>
+
+Challenge #2 completed.
+
+
+
+
+
+Target 3: Lotus 1-2-3 version 3.1
+
+Need: Lotus 1-2-3 version 3.1 system disk
+
+Available from: You will need to find your own copy of this one.
+
+
+
+Lotus decided to change things a little and put the initialization
+
+information in INSTEXT.RI instead of the 123.EXE loader.  Using some
+
+more ZEN, the bytes that indicate whether or not the program has been
+
+initialized were found at offsets 9952h-9955h.  Simply hex edit these
+
+bytes to 00h and save.  The install program will now prompt you for new
+
+user information and update INSTEXT.RI.  This time everything is put in
+
+the right place.  Now that was easy!  This was trivial that a batch file
+
+is unnecessary.
+
+
+
+Challenge #3 completed.
+
+
+
+
+
+Conclusions
+
+
+
+Often the first impulse when tackling a new program is to jump into the
+
+code and start tracing away.  As the above examples show, this may not
+
+always be necessary.  Getting a program to do the hard work for you can
+
+save a lot of time and brain power for those really difficult projects
+
+on your "to do" list.  Think it through before you start wacking at the
+
+code and you may find a more enlightened path.
+
+</PRE><CENTER>
+
+  <HR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 
+
+VSPACE=0 HSPACE=0><A HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 
+
+VSPACE=0 HSPACE=0><A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 
+
+VSPACE=0 HSPACE=0><A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 
+
+VSPACE=0 HSPACE=0><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 
+
+VSPACE=0 HSPACE=0><A HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 
+
+VSPACE=0 HSPACE=0><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database</A><BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 
+
+VSPACE=0 HSPACE=0><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools</A>
+
+<A href="javascript:if(confirm('http://www.dejanews.com/  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.dejanews.com/'" tppabs="http://www.dejanews.com/" onMouseOver="window.status='(A stalking utility :-)'; return true"><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0
+
+VSPACE=0 HSPACE=0></A><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm" onMouseOver="window.status='An amazing useful link'; return true">cocktails</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 
+
+VSPACE=0 HSPACE=0><A HREF="javascript:if(confirm('http://www.fravia.org/ideale.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.fravia.org/ideale.htm'" tppabs="http://www.fravia.org/ideale.htm">antismut CGI-scripts</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 
+
+VSPACE=0 HSPACE=0><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 
+
+VSPACE=0 HSPACE=0><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia</A><BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 
+
+VSPACE=0 HSPACE=0><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering legal?</A>
+
+</CENTER>
+
+<HR>
+
+</BODY>
+
+</HTML>

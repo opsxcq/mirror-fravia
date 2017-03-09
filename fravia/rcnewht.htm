@@ -1,0 +1,904 @@
+<HTML>
+
+ <HEAD>
+
+  <TITLE>rcnewht.htm: Cracking an encrypted dll scheme: Virtual Turntables 1.5</TITLE>
+
+ </HEAD>
+
+
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+
+
+<TABLE CELLPADDING="5" BORDER="0">
+
+<TR>
+
+  <TD VALIGN="MIDDLE" BGCOLOR="898030">
+
+   <FONT SIZE="2" COLOR="FFFFFF">
+
+    <CENTER><A href="index.html" tppabs="http://www.anticrack.de/fravia/index.html"><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" 
+
+BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"></A></CENTER>
+
+   </FONT>
+
+  </TD>
+
+  <TD BGCOLOR="C0C0C0"><A href="progcor.htm" tppabs="http://www.anticrack.de/fravia/progcor.htm"><IMG 
+
+SRC="progcor.gif" tppabs="http://www.anticrack.de/fravia/progcor.gif" ALT="Programmer corner" ALIGN="RIGHT" WIDTH="114" 
+
+HEIGHT="43" BORDER="0" VSPACE="0" HSPACE="0"></A><CENTER>
+
+   <FONT SIZE="+2">
+
+Cracking an encrypted dll scheme: Virtual Turntables 1.5
+
+   </FONT><BR>by <FONT size="+3">Johnny+X</FONT><BR> 
+
+ <FONT COLOR="890000">
+
+    31 July 1998
+
+   </FONT>
+
+  </CENTER>
+
+  </TD>
+
+ </TR>
+
+<TR>
+
+  <TD BGCOLOR="898030">   <FONT SIZE="2" COLOR="898030">here</TD>
+
+  <TD BGCOLOR="898030"><CENTER>Courtesy of Fravia's page of 
+
+reverse engineering</CENTER> 
+
+  </CENTER>
+
+  </TD>
+
+ </TR>
+
+<TR>
+
+  <TD VALIGN="MIDDLE" BGCOLOR="898030">
+
+   <FONT SIZE="2" COLOR="FFFFFF">
+
+    <CENTER>fravia's comments</CENTER>
+
+   </FONT>
+
+  </TD>
+
+  <TD BGCOLOR="C0C0C0">
+
+   <FONT SIZE="+1"><I>
+
+   Yeah! After so many years we finally begin to see programmers doing something correctly! 
+
+This kind of 'concealed double schemes' are 
+
+a good idea (that we have proposed so many times!):<BR>"Shareware programmers should deal with these problems implementing random checks (say 
+
+once every four or five days or once every ten runs of their program) that trigger - not immediately! - a COMPLETELY UNRELATED "real" 
+
+protection scheme if 
+
+the code has been patched or simply enough and VERY effective, if softice and 
+
+wdasm are on the same harddisk as the target :-)<BR>Best choice 
+
+is - as usual - an auto-crippling scheme  <U>and</U> 
+
+an automated email once on line (this scares the hell out of a newbie :-)<BR>No strings 
+
+in this part of the protection: everything should 
+
+be build dynamically ONLY IF THE SCHEME HAS BEEN TRIGGERED. Crackers that have found 
+
+strings in the 'smoke' protection part will judge the shareware author a moron and 
+
+won't usually (unless they zen the code) seek dynamically created strings elsewhere.".<BR>
+
+Of course Virtual Turntables' programmer as Johnny+X writes,
+
+"<FONT color=purple>has been very sneaky in that all the non-limiting stuff (nags, REGISTER! menus etc.) is in the
+
+main executable, where anyone can bypass them if they feel like it... but the real guts of the protection (the time limit) is hidden
+
+away inside the encrypted InitSound.dat... Is this to lull us into a false sense of security, to throw us off the track?</FONT>"<BR>
+
+This is a very good and interesting essay for intermediate crackers and protectors alike. 
+
+</I>
+
+   </FONT>
+
+  </TD>
+
+ </TR>
+
+ <TR>
+
+  <TD VALIGN="MIDDLE" BGCOLOR="890000">
+
+   <FONT SIZE="2" COLOR="FFFFFF">
+
+    <CENTER>Title</CENTER>
+
+   </FONT>
+
+  </TD>
+
+  <TD BGCOLOR="C0C0C0">
+
+   <FONT SIZE="+2">
+
+     Cracking Carrot Innovations' Virtual Turntables 1.5
+
+   </FONT><BR>
+
+   <FONT COLOR="0B7FC1">
+
+    Written by Johnny+X on July 25rd, 1998.
+
+   </FONT>
+
+  </TD>
+
+ </TR>
+
+
+
+ <TR>
+
+  <TD VALIGN="MIDDLE" BGCOLOR="2C142B">
+
+   <FONT SIZE="2">
+
+    <CENTER><FONT COLOR="FFFFFF">Rating</FONT></CENTER>
+
+   </FONT>
+
+  </TD>
+
+  <TD BGCOLOR="C0C0C0">
+
+   <FONT FACE="Courier New">
+
+    ( )<B>Beginner</B> (x)<B>Intermediate</B> ( )<B>Advanced</B> ( 
+
+)<B>Expert</B>
+
+   </FONT><BR><I>
+
+   An understanding of how to create a dead listing of a program is 
+
+required,
+
+   as well as a basic understanding of procedure calling.</I>
+
+  </TD>
+
+ </TR>
+
+
+
+ <TR>
+
+  <TD VALIGN="MIDDLE" BGCOLOR="FF7F21">
+
+   <FONT SIZE="2">
+
+    <CENTER>Introduction</CENTER>
+
+   </FONT>
+
+  </TD>
+
+  <TD BGCOLOR="C0C0C0">
+
+   Well, this is my first essay, and my first successful attempt at 
+
+cracking something a little more complicated than a "good 
+
+consumer/naughty cracker" routine. Although it might seem simple to 
+
+begin with, there's more to it than meets the eye ;) Some may call this 
+
+essay unfocused; I prefer to refer to it as 'comprehensive' ;)
+
+  </TD>
+
+ </TR>
+
+
+
+ <TR>
+
+  <TD VALIGN="MIDDLE" BGCOLOR="B04A53">
+
+   <FONT SIZE="2">
+
+    <CENTER>Tools Required</CENTER>
+
+   </FONT>
+
+  </TD>
+
+  <TD BGCOLOR="C0C0C0">
+
+   <B>Windows Disassembler v8.x<BR>
+
+   Hex editor (I use HIEW)<BR>
+
+   FileMon<BR>
+
+   Cocktail of your choice, to be sipped as desired.</B> I recommend 
+
+Diesel (half a pint of cider, some blackcurrent juice, then half a pint 
+
+of beer, then add cranberry-flavoured vodka to taste, if so desired); a 
+
+brute force drink for brute force cracking ;)
+
+</B>
+
+  </TD>
+
+ </TR>
+
+
+
+ <TR>
+
+  <TD VALIGN="MIDDLE" BGCOLOR="B600B6">
+
+   <FONT SIZE="2">
+
+    <CENTER>Program History</CENTER>
+
+   </FONT>
+
+  </TD>
+
+  <TD BGCOLOR="C0C0C0">
+
+   I don't have any earlier versions, so I can't compare it to its 
+
+previous incarnations.
+
+  </TD>
+
+</TR>
+
+
+
+ <TR>
+
+  <TD VALIGN="MIDDLE" BGCOLOR="C0C0C0">
+
+   <FONT SIZE="+3" COLOR="000000">
+
+    <CENTER>T<BR>H<BR>E<BR> <BR>E<BR>S<BR>S<BR>A<BR>Y</CENTER>
+
+   </FONT>
+
+  </TD>
+
+  <TD VALIGN="TOP" BGCOLOR="C0C0C0">
+
+   Ok, first things first; fire up VTT and let's see what we're up 
+
+against. Ok, there's a nag screen *click* and a splash screen (although 
+
+technically I suppose it's a nag, since you have to click to go on) 
+
+*click* and an ugly REGISTER! menu too... *20 minutes later* ...and a 
+
+time limit as well. *sigh* It seems the author doesn't want us to enjoy 
+
+the unregistered version... ;) Oh well, let's get on with it then. Click 
+
+REGISTER! and you can see that there are 3 things to enter; your name, 
+
+your registration code, and your registration key. Let's try fiddling it 
+
+so it accepts anything. Type anything into the boxes and click ok. 
+
+Surprise surpise, our serial isn't correct ;) Note the message 
+
+("Incorrect registration code..."), then load vtt.exe into w32dasm. Once 
+
+it's disassembled, search through the strings for "Incorrect 
+
+registration code..." Jump to it in the program, and you'll see the 
+
+following:
+
+
+
+<PRE>
+
+<FONT color="0000ff">* Reference To: Devices.?CheckRegistered@@YAHXZ, 
+
+Ord:0026h
+
+                                  |</FONT>
+
+:00408E6C E8BB960000              call 0041252C
+
+:00408E71 83F801                  cmp eax, 00000001
+
+:00408E74 6A00                    push 00000000
+
+:00408E76 6A00                    push 00000000
+
+:00408E78 7407                    je 00408E81
+
+
+
+<FONT color="007700">* StringData Ref from Data Obj ->"Incorrect registration code... "
+
+                                        ->" Did you type it in EXACTLY as "
+
+                                        ->"it appears?"
+
+                                  |</FONT>
+
+:00408E7A 6844C84100              push 0041C844
+
+:00408E7F EB05                    jmp 00408E86
+
+
+
+* Referenced by a Jump at Address:00408E78(C)
+
+|
+
+
+
+<FONT color="007700">* Possible StringData Ref from Data Obj ->"Registration complete!  Thank "
+
+                                        ->"you for purchasing VTT.  Please "
+
+                                        ->"restart VTT in order to activate "
+
+                                        ->"the new version"
+
+                                  |</FONT>
+
+:00408E81 6890C84100              push 0041C890
+
+
+
+</PRE>
+
+
+
+There's a tasty-looking reference up there (can you spot it? ;), but 
+
+we'll leave that for now; as you can see, all we need to do to make it 
+
+accept anything we throw at it is to change it from je 408E81 to jmp 
+
+408E81 (EB07, as you should know ;) So, make the change (at offset 
+
+8278h) and try registering VTT again. Success! All we have to do is 
+
+restart it and we'll have a fully-registered version, yes? Ah, no. If 
+
+only things could be that easy. There's obviously a check elsewhere; 
+
+maybe it's hidden in that CheckRegistered we saw above? That's in 
+
+devices.dll, so load that in and take a look. Um, problem: 
+
+CheckRegistered seems to refer to some outside code, but where is it? 
+
+Searching through the other dll's reveals nothing; maybe there's a dll 
+
+hidden in windows\system? Time to fire up FileMon and have a look.
+
+<BR><BR>
+
+Nope, no new dll's. But something interesting does happen; the file 
+
+InitSound.dat and a temporary file are alternately read from and written 
+
+to. Look at InitSound.dat in a hex editor; it's jumbled crap. Now look 
+
+at the temporary file; it's program code! A dll in fact. Obviously, 
+
+InitSound.dat contains the serial validation routine, and is encrypted 
+
+to keep it away from prying eyes (i.e. us :), then decrypted at 
+
+run-time. Of course, this also means that we can't modify it without 
+
+somehow re-encrypting it. Doesn't it? ;)
+
+<BR><BR>
+
+Of course not! After all, we're resourceful crackers :) What we need to 
+
+do is to replace InitSound.dat with a decrypted version (which we can 
+
+then crack), then bypassing the decryption code so that InitSound.dat is 
+
+written straight to the temp file without decryption. So, copy the temp 
+
+file to your VTT dir, then quit VTT. Rename InitSound.dat to 
+
+InitSound.bak, then rename the temp file to Initsound.dat. Also, notice 
+
+the file lengths of the original InitSound.dat and the unencrypted 
+
+version; the original is a byte longer. This may (and indeed, it does) 
+
+cause problems, so put an extra byte on the end of it (00 will do).
+
+<BR><BR>
+
+Now to find the decryption code. There's probably a logical way of doing 
+
+this; for me, it was mostly a process of trial & error. Reload vtt.exe 
+
+into W32dsm and press ctrl+l; this will allow us to trace through the 
+
+program, rather like SoftIce does. Click 'Load' (since we don't want to 
+
+supply any command line parameters) and you should be presented with the 
+
+debugging windows. On the left we can look at the various registers, set 
+
+breakpoints, etc. while on the right we can see the executed code, as 
+
+well as the program execution controls. Now we need to set a breakpoint 
+
+in the appropriate place. Scroll through the 'Active DLLs' box in the 
+
+left-hand window so you see devices.dll. Now double-click it, then click 
+
+Yes. The dead listing of devices.dll is loaded into the main W32dsm 
+
+window. We want a breakpoint where the manipulation of the temporary 
+
+file begins, so search through the string references for 'tmp' (or look 
+
+through the imported functions for KERNEL32.GetTempFileNameA), then 
+
+press F2 to set a breakpoint (a yellow square should appear where the 
+
+breakpoint is set). Now press F9 to begin program execution.
+
+<BR><BR>
+
+After a few seconds the program should stop running, and we'll be at the 
+
+breakpoint. Now single-step through using F8 (step over -- the 
+
+equivalent of F10 in SoftIce). You can speed things up by identifying 
+
+loops and setting a breakpoint just after them, then pressing F9 to 
+
+quickly skip through the loop (for example, there's a loop which 
+
+terminates at 10005C13, so when you get there move down a little and set 
+
+a breakpoint at 10005C15, then press F9. Remember that code you've 
+
+already executed has its address highlighted red). Make a note of all 
+
+calls to internal routines; we'll be investigating these later. Continue 
+
+until you get to 10005CB8, where the temp file is closed (and therefore 
+
+finished with. You can check this by looking by dir'ing the windows\temp 
+
+directory; the file should have a file length of 13824 bytes -- if it 
+
+was still being written to its length would appear to be 0). We now know 
+
+that the encryption lies in the calls we have noted. These are call 
+
+10001000 and call 100019d0. Let's look at 10001000 first. Terminate the 
+
+process (or you can press F9 to continue running it, and verify that it 
+
+doesn't work). Look through the code for any calls. There's one at 
+
+10001036; call 10001050. Follow that, and look through the code that 
+
+follows. This routine screamed "decrypter!" at me. I can't explain why; 
+
+maybe I'm beginning to 'feel' the code? Anyway, let's remove it. 
+
+Overwrite E815000000 (call 10001050) at 10001036 (offset 436h) with 
+
+EB00EB0090 (two 'blank' jumps -- i.e. jumps to the next line along, and 
+
+a NOP) and run VTT again. Allow yourself a little smile when you see 
+
+that beloved nag appear :) The decryption routine has now been bypassed 
+
+completely. You can check this yourself by typing:
+
+<PRE>fc /b initso~1.dat c:\windows\temp\tmpXXXX.tmp</PRE>
+
+at a DOS prompt (where tmpXXXX.tmp is the name of the newly-created temp 
+
+file). Apart from the fact that one is longer than the other (remember 
+
+we had to add an extra byte?), they're perfectly identical. Now all we 
+
+have to do is crack InitSound.dat and we're done!
+
+<BR><BR>
+
+Ok, load InitSound.dat into W32dsm. Remember CheckRegistered from 
+
+before? Look in the exported functions and you'll see it, so 
+
+double-click and we're there.
+
+
+
+<BR><BR>
+
+This time, set a breakpoint just before the jump we blanked out. Run 
+
+through with F9 'til it hits the breakpoint, then single-step until you 
+
+hit the end of the routine. Ouch! Obviously the call has to be made. But 
+
+how necessary is it? Put the call back at 10001036, then move to the 
+
+beginning of the routine at 10001050. Scroll down, past all the code, to 
+
+the end of it; notice how it ends with ret 8? Let's replicate that. 
+
+Overwrite the 515355 (push ecx, push ebx, push ebp) at the beginning of 
+
+the routine (offset 450h) with C20800 (ret 8), and repeat the 
+
+breakpoint/run process.
+
+<BR><BR>
+
+Success! This time there are no problems at the end. Now press F9 -- it 
+
+crashes, so we're not finished yet. Look at the next call (call 
+
+100019D0). No decryption here, but there's another call (call 10001590). 
+
+Follow that, and you'll find yourself staring at another routine that 
+
+screams "decrypter!", so we'll negate it in the same way we negated the 
+
+previous one; overwrite the 8B5144 (mov edx, dword ptr [ecx+44]) at 
+
+10001590 (offset 990h) with C20800 (ret 8) and try running again. Allow 
+
+yourself a little smile as you see the familiar nag pop up. The 
+
+decryption has been totally bypassed, leaving us with an identical copy 
+
+of Initsound.dat in the temporary file. To check, type:
+
+<PRE>fc /b InitSound.dat \windows\temp\tmpXXXX.tmp</PRE>
+
+at a DOS prompt (where tmpXXXX.tmp is the name of the newly-created temp 
+
+file). Now all we have to do is crack InitSound.dat and we're done! :)
+
+<BR><BR>
+
+Remember CheckRegistered? Let's take a look at it. Load InitSound.dat 
+
+into W32dsm and take a look:
+
+<PRE><FONT color="#000090">Exported fn(): DllCheckRegistered - 
+
+Ord:0001h</FONT>
+
+:10001A80 E81B020000              call 10001CA0
+
+:10001A85 8B0D80530010            mov ecx, dword ptr [10005380]
+
+:10001A8B 33C0                    xor eax, eax
+
+:10001A8D 85C9                    test ecx, ecx
+
+:10001A8F 0F95C0                  setne al
+
+:10001A92 C3                      ret</PRE>
+
+
+
+Call 10001CA0 is the serial checking routine. The next line moves the 
+
+contents of dword ptr [10005380] to ecx. Further down ecx is checked and 
+
+al set accordingly (1 if registered, otherwise 0).
+
+<BR><BR>
+
+Follow call 10001CA0. You are now at the beginning of the serial 
+
+checking routine. Since we know dword ptr [10005380] is 1 if the serial 
+
+is valid, we can look for that. Search for [10005380] until you arrive 
+
+at 10001E52:
+
+<PRE>:10001E52 C7058053001001000000    mov dword ptr [10005380], 1</PRE>
+
+For some reason (my knowledge of assembly is somewhat lacking, could 
+
+someone perhaps explain it? :) you can't just move this to the beginning 
+
+and put a ret after it, but you <I>can</I> put a jump to it at the 
+
+beginning and put a ret after it. So, you'd change the 6AFF6851240 (push 
+
+FFFFFFFF and part of push 10002451) at 10001CA0 (offset 10A0h) to 
+
+E9AD010000 (jmp 10001E52), then put a ret after the mov dword ptr 
+
+[10005380], 1 at 10001E52 (i.e. change the 8D at offset 125C to C3). And 
+
+there you have a cracked VTT!
+
+<HR><PRE>
+
+Johny-X said that he could not patch the beginning of  
+
+DllCheckRegistered. 
+
+
+
+We are dealing with a DLL and DLL's get relocated by  windows 
+
+during loadtime. This means simply that operands which are adresses 
+
+will get added the image base of the DLL (start of the DLL in 
+
+memory). So, when you patch and overwrite an instruction with an 
+
+address as operand, the new code you put in the file will look 
+
+totally different once loaded in memory by windows. 
+
+
+
+If you check that function you will see it has 2 instructions at 
+
+the beginning which have an address as operand:
+
+       :10001A80 E81B020000              call 10001CA0
+
+       :10001A85 8B0D80530010            mov ecx, dword ptr [10005380]
+
+Again, if you patch these lines with other code, it will change 
+
+once loaded to mem. 
+
+
+
+However the above is not true for 32 bit windows exe files. They get 
+
+almost always loaded to the same place in mem and hence relocation 
+
+isnt necessary (new compilers dont even put reloc info in exe's by 
+
+default.) So one should be carefull with patching over instructions 
+
+with address (when dealing with dos or DLL files). If there is 
+
+no other way, one could remove appropiate antries from the 
+
+relocation table.
+
+
+
+Razzi</PRE>
+
+<HR>
+
+  </TD>
+
+ </TR>
+
+
+
+ <TR>
+
+  <TD VALIGN="MIDDLE" BGCOLOR="00B645">
+
+   <FONT SIZE="2">
+
+    <CENTER>Ob duh</CENTER>
+
+   </FONT>
+
+  </TD>
+
+  <TD BGCOLOR="C0C0C0">
+
+   <I>I wont even bother explaining you 
+
+   that you should BUY this program if you intend to use it for a longer 
+
+   period than the allowed one. Should you want 
+
+   to STEAL this software instead, you don't need to crack its 
+
+protection 
+
+   scheme at all: you'll 
+
+   find it on most Warez sites, complete and already regged, 
+
+farewell.</I>
+
+
+
+  </TD>
+
+ </TR>
+
+
+
+ <TR>
+
+  <TD VALIGN="MIDDLE" BGCOLOR="2AB6B6">
+
+   <FONT SIZE="2">
+
+    <CENTER>Final Notes</CENTER>
+
+   </FONT>
+
+  </TD>
+
+  <TD BGCOLOR="C0C0C0">
+
+   Send feedback to <A 
+
+href="mailto:Johnny_X_@hotmail.com">Johnny_X_@hotmail.com</A>, 
+
+especially if you know why you can't just put the mov at the beginning 
+
+of the serial check! :) Also, the programmer has been very sneaky in 
+
+that all the non-limiting stuff (nags, REGISTER! menus etc.) is in the 
+
+main executable, where anyone can bypass them if they feel like it... 
+
+but the real guts of the protection (the time limit) is hidden away 
+
+inside the encrypted InitSound.dat... Is this to lull us into a false 
+
+sense of security, to throw us off the track? Remember, don't by 
+
+distracted by the periphery of a protection system... head straight for 
+
+the meat! :)<BR>
+
+<B>J+X</B>
+
+  </TD>
+
+ </TR>
+
+<TR>
+
+  <TD VALIGN="MIDDLE" BGCOLOR="898030">
+
+   <FONT SIZE="2" COLOR="FFFFFF">
+
+    <CENTER>way out</CENTER>
+
+   </FONT>
+
+  </TD>
+
+  <TD BGCOLOR="C0C0C0">
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</I></CENTER>
+
+<BR><CENTER>
+
+<!--<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="project4.htm" tppabs="http://www.anticrack.de/fravia/project4.htm">Back to Project 4</A>            
+
+<hr width=33%>-->
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" 
+
+BORDER="0" VSPACE="0" HSPACE="0"><A HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" 
+
+BORDER="0" VSPACE="0" HSPACE="0"><A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" 
+
+BORDER="0" VSPACE="0" HSPACE="0"><A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" 
+
+WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" 
+
+BORDER="0" VSPACE="0" HSPACE="0"><A HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' 
+
+essays</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" 
+
+BORDER="0" VSPACE="0" HSPACE="0"><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy 
+
+database</A>
+
+<BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" 
+
+BORDER="0" VSPACE="0" HSPACE="0"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" 
+
+BORDER="0" VSPACE="0" HSPACE="0"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" 
+
+BORDER="0" VSPACE="0" HSPACE="0"><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut 
+
+CGI-scripts</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" 
+
+BORDER="0" VSPACE="0" HSPACE="0"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" 
+
+BORDER="0" VSPACE="0" HSPACE="0"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia+</A>
+
+<BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" 
+
+BORDER="0" VSPACE="0" HSPACE="0"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse 
+
+engineering legal?</A>
+
+</CENTER>
+
+  </TD>
+
+ </TR>
+
+</TABLE>
+
+
+
+</BODY>
+
+</HTML>
+

@@ -1,0 +1,828 @@
+<HTML>
+
+<HEAD>
+
+  <META NAME="GENERATOR" CONTENT="Windows Commander 3.02">
+
+  <TITLE>incubus</TITLE>
+
+</HEAD>
+
+<BODY bgcolor="CCCCCC" text="#001010" vlink="#405040 Alink=#00FF50">
+
+
+
+<P><CENTER><FONT SIZE="+4">Windows Commander 3.02<BR>
+
+</FONT><FONT SIZE="+2">An &quot;antivirale&quot; protection scheme defeated</FONT>
+
+</CENTER>
+
+
+
+<H4><CENTER><I>by  iNCuBuS++</I><BR>
+
+<BR>
+
+(06 August 1997, slightly edited by Fravia)</CENTER></H4>
+
+
+
+<CENTER><HR><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"> Courtesy of Fravia's page of reverse engineering<BR>
+
+<HR> <I>Well,  we did not have much at the +HCU about virale checksum protection scheme,
+
+a new welcome addition by a new welcome +cracker!</I></CENTER><HR size="3"> 
+
+
+
+ 							<B><CENTER>   <FONT size="+2">
+
+                                Cracking Windows Commander 3.02 (32 bit) by iNCuBuS++
+
+ 							   </FONT><BR><BR><FONT size="+1">An &quot;antivirale&quot; protection scheme defeated</FONT></CENTER></B>
+
+ 							 <BR><HR size="2" width="22%">
+
+ 
+
+                This program uses <U><FONT color="red">key-file protection</FONT></U> - that means that, when you
+
+register it,
+
+        you receive a 1024 bytes long key file called &quot;wincmd.key&quot; from the
+
+author which contains 
+
+        info about registered user, eg. you. The file is encrypted and it took
+
+me weeks to trace
+
+        through the decryption routines in order to break the code, but it got
+
+me bored to death.
+
+        Ok, so it was the wrong approach! What happens if the key file isn't
+
+there? Well, prg opens
+
+        the nagscreen saying that it is unregistered copy and that you need to
+
+press one of the 3
+
+        buttons (always different, of course) on the bottom of the window to
+
+proceed. So, we will
+
+        have to eliminate the nagscreen in the usual way. 	   <BR><BR>
+
+ 
+
+                Now, the protection scheme itself isn't particularly interesting
+
+(though it will
+
+        be explained) , but <U><FONT color="blue">the fact that this target has a virus-protection
+
+mechanism that reacts
+
+        in the case EXE file gets changed</FONT></U> is indeed interesting for us. It prevents us from disabling the
+
+nagscreen because it
+
+        will issue a virus warning and terminate the program if it detects
+
+any modification to WinCmd32.EXE.	   <BR>
+
+                Since there are no suspicious files in the progdir that could possibly
+
+carry some
+
+        form of signature for EXE file and there are no entries in the system
+
+registry relative to
+
+        WinCmd, the logical assumption is that some form of checksum (CRC) is
+
+hidden somewhere in
+
+        the EXE file which is later compared with CRC value calculated by the
+
+program. If they do
+
+        not match... well, you get the idea... <BR>
+
+ 
+
+        But, let's stay on the protection scheme for now. <BR>
+
+        
+
+        We do a	 <BR>
+
+ 					<FONT color="blue"><CENTER>
+
+                bpx KERNEL32!CreateFileA</CENTER></FONT>
+
+ 
+
+        and start WindowsCommander.It will break into the ICE several times
+
+before we get to the
+
+        right call. We'll check which file is being opened by doing	<BR>
+
+ 					<FONT color="blue"><CENTER>
+
+                dd ss:esp+4
+
+ 						</CENTER></FONT>
+
+        and looking at the parameters on stack. The first DWORD is a ptr to the
+
+filename string, so
+
+        we can easily find out which call opens our key file.We are looking for
+
+something like
+
+        					<FONT color="blue"><CENTER>
+
+                C:\UTIL\WINTOOLS\WINCMD\wincmd.key
+
+        									   </CENTER></FONT>
+
+        We could just look at EAX register to find out the string's address (as
+
+it is loaded in EAX
+
+        and then pushed onto stack), but it might depend on the compiler and so
+
+it is not reliable
+
+        in all cases.	 <BR><BR>
+
+ 
+
+        OK, so we have found the right call. We exit the function with F11 and
+
+start tracing through
+
+        the code.Immediately after the function call we find this:
+
+ 		<PRE>
+
+                14F:0043993A   MOV    [EBP-1C],EAX            ;EAX holds the error number
+
+                14F:0043993D   CMP    DWORD PTR [EBP-1C],-01  ;Key file opened ?
+
+                14F:00439941   JNZ    00439959                ;Yes, jump now!
+
+                14F:00439943   CALL   004034FC                ;..and we proceed here
+
+ 		</PRE>
+
+        After a while we'll get to the following piece of code:
+
+        	  <PRE>
+
+                14F:489B08    MOV   WORD PTR [EBP-1E],00      ;There's no key file
+
+                14F:489B0E    CMP   WORD PTR [EBP-1E],0080    ;IS there a key file?
+
+                14F:489B14    SETZ  BYTE PTR [004B47F1]       ;Set the flag if there IS!
+
+ 				   </PRE>
+
+        So the flag remains unset and we know it's address, so we do a
+
+ 								<FONT color="blue"><CENTER>
+
+                bpmb 4B47F1 rw ,						 </CENTER></FONT>
+
+
+
+ 
+
+        disable breakpoint on CreateFileA and continue execution of the
+
+program. SoftICE will pop up
+
+        at<PRE>
+
+ 
+
+                14F:0048A1BC        MOV        AL,[004B47F1]
+
+                14F:0048A1C1        RET
+
+ 			   </PRE>
+
+        and it will continue at
+
+                	 <PRE>
+
+                14F:004896D9        TEST   AL,AL       ;Does the key file exist ?
+
+                14F:004896DB        JZ     0048971D    ;NO, we will jump now!
+
+ 						  </PRE>
+
+        We trace just a few instructions more and we find
+
+ 				  <PRE>
+
+                14F:0048A1B4        MOV        AL,[004B47F0]
+
+                14F:0048A1B9        RET
+
+ 					   </PRE>
+
+        What could that be? Well, your instinct should say: &quot;Hey! It's a flag
+
+that tells whether
+
+        the nagscreen should be opened!&quot;
+
+        We exit the subroutine and get to the following:
+
+ 							 <PRE>
+
+                14F:00489722        TEST  AL,AL      ;SHOULD the nagscreen be opened?
+
+                14F:00489724        JZ    0048974C   ;YES! So, jump!
+
+ 								  </PRE>
+
+        And here we are! We just have to prevent program from jumping at 48974C
+
+! We will do it by
+
+        changing JZ into some &quot;neutral&quot; instruction like
+
+                								<FONT color="blue"><CENTER>
+
+                OR        EAX,EAX  </CENTER></FONT>
+
+ 
+
+        and we're done. We could've used NOPs as well, but we'll stick to
+
++ORC's teachings.		   <BR><BR>
+
+        
+
+        Now the nagscreen is removed, but there still remains the annoying
+
+message while the program
+
+        is loading saying		<FONT color="blue"><CENTER>
+
+ 
+
+                This copy is registered to:
+
+                        NOT REGISTERED	 </CENTER></FONT>
+
+ 
+
+        The same thing appears in the window caption. This is ideal opportunity
+
+to sign our work.
+
+        We will replace the string &quot;NOT REGISTERED&quot; with our handle. OK, we
+
+take some hex editor and
+
+        start searching for the string. We try every letter combination
+
+possible, but find nothing. 
+
+        Well, that means the string is encrypted. So, we have to pinpoint the
+
+decryption code in 
+
+        order to break the encryption method and to find the string in its
+
+encrypted form.<BR><BR> 
+
+                At the point where we eliminated the protection, we can find several
+
+instances of
+
+        string &quot;NOT REGISTERED&quot;. We do a BPR on each instance, disable
+
+breakpoints in order to allow
+
+        the program to continue executing and then, when it is up and running,
+
+quit it.Now we
+
+        re-enable BPRs and start WinCmd again. It will break into the ICE at
+
+14F:0040650D (your
+
+        addresses may differ) where something is being copied into the first of
+
+BPRed locations 
+
+        (at 157:00504907). The source is at 14F:0043D522. We continue executing
+
+the program and 
+
+        the next time it will break at 14F:00426A97, in the middle of the
+
+decryption routine which
+
+        looks like this: <PRE>
+
+ 
+
+                14F:00426A84     CMP     CL,0A       ;Skip <CR>
+
+                14F:00426A87     JZ      00426A96    ;characters !
+
+                14F:00426A89     MOV     CL,[EDX]    ;Get char.
+
+                14F:00426A8B     SUB     CL,20       ;THIS IS 
+
+                14F:00426A8E     XOR     CL,77       ;THE DECRYPTION
+
+                14F:00426A91     ADD     CL,20       ;CODE !!!
+
+                14F:00426A94     MOV     [EDX],CL    ;Replace the decrypted char
+
+                14F:00426A96     INC     EDX         ;Next char
+
+                14F:00426A97     MOV     CL,[EDX]    ;Get char
+
+                14F:00426A99     TEST    CL,CL       ;Is it the end of the string?
+
+                14F:00426A9B     JNZ     00426A84    ;If NOT, return to the
+
+                14F:00426A9D     RET                 ;the top of the loop !
+
+ 			  </PRE>
+
+        Now we know the en/decryption method, original string's location and
+
+it's encrypted form
+
+        (which we'll later use to find it when we edit the EXE...).
+
+ 		 <BR><BR>
+
+        Notice the symmetrical construction of the decryption routine. It SUBs
+
+20h, XORs 77h and
+
+        ADDs 20h. If we wanted to ENCRYPT the string we would have to use the
+
+SAME sequence of ops.
+
+        That means that the same routine can be used to encrypt the string as
+
+well as to decrypt it.
+
+        How you're going to crypt your string is up to you, but the simplest
+
+method is to replace
+
+        the original encrypted string with your unencrypted string and then let
+
+the program encrypt 
+
+        it using the above en/decryption routine.
+
+ 						  <BR><BR>
+
+        There are few other annoying strings, but they reside in the resource
+
+section of the EXE file
+
+        and they are not encrypted, so modifying them shouldn't present a
+
+problem.
+
+ 						<BR><BR>
+
+        Now is the time to crack the app. We get some hex editor (HEdit is my
+
+favourite), open the
+
+        wincmd32.exe file and <PRE>
+
+SEARCH FOR:        74 26 A1 74 C5 4A 00 (it's at offset 88B24)
+
+REPLACE WITH:      0B C0 A1 74 C5 ...</PRE>
+
+        and the nag screen is eliminated! Now we are going to change our
+
+handle. In this example we
+
+        will use mine (&quot;   iNCuBuS++  &quot;):<PRE>
+
+SEARCH FOR:        79 78 63 97 65 72 70 7E 64 63 72 65 72 73 (the original string)
+
+REPLACE WITH:      97 97 97 5E 79 74 42 75 42 64 9C 9C 97 97 (my handle) </PRE>
+
+        We find this sequence at file offset 3C914.	<BR><BR>
+
+ 
+
+        That should do it. But, now we come to the virus protection mechanism.
+
+We start cracked											<BR>
+
+        WinCmd... it says &quot;This copy is registered to: <YOUR HANDLE>&quot;, there is
+
+no nagscreen, but
+
+        before you could do anything, the virus warning appears saying that the
+
+EXE file has been
+
+        modified and the program terminates! 					<BR><BR>
+
+        
+
+        Now, we could disable the entire virus protection (I did it with WinCmd
+
+3.01), but that just
+
+        wouldn't be too good 'cause it would be unable to react in case of a
+
+real virus. It's better to
+
+        &quot;persuade&quot; the program that our new CRC is the right one. That way, the
+
+virus protection will
+
+        still be able to react in case some virus attaches itself to the EXE
+
+file. 
+
+ 		  <BR><BR>
+
+        Again, we do a
+
+        				<FONT color="blue"><CENTER>
+
+                bpx CreateFileA					 </CENTER></FONT>
+
+ 
+
+        and start WinCmd. After a few breaks we will get to the point where
+
+WinCmd32.exe file is
+
+        being opened. We will start tracing from here. If the file was
+
+successfully opened, program
+
+        will enter the loop in which it reads the file to the buffer in parts
+
+8000h bytes long and 
+
+        calculates the checksum splitting up each part in 5 chunks 15B0h bytes
+
+long. File buffer
+
+        begins at 157:00520434 (your addresses may differ !!!). The checksum
+
+calculation routine
+
+        looks like this:										 <PRE>
+
+ 
+
+                ; ESI = 000015B0 - chunk length
+
+                ; EDI = 00520434 - ptr. to file buffer
+
+ 
+
+                14F:004446F0        MOV    CL,[EDI]      ;Get a byte from buffer.
+
+                14F:004446F2        ADD    EAX,ECX                       
+
+                14F:004446F4        ADD    EDX,EAX                       
+
+                14F:004446F6        INC    EDI           ;Move to the next byte in the buffer.
+
+                14F:004446F7        DEC    ESI           ;Decrease chunk length counter.
+
+                14F:004446F8        JNZ    004446F0      ;Get back to the top of the loop
+
+                                                         ;if it's not the end of the chunk.
+
+                14F:004446FA        MOV    [EBP-04],EAX  ; SS:0072F9F0
+
+                14F:004446FD        MOV    [EBP-08],EDX  ; SS:0072F9EC
+
+                14F:00444700        POP    ESI                        
+
+                14F:00444701        POP    EDI                       
+
+                14F:00444702        MOV    EAX,[EDI]     ;Get the chunk length counter.
+
+                14f:00444704        ADD    [EBP-0C],EAX  ;Move buffer ptr to the next chunk.
+
+                14F:00444707        MOV    EAX,[EBP-04]  ; SS:0072F9F0
+
+                14F:0044470A        MOV    ECX,[EBP-08]  ; SS:0072F9EC
+
+                14F:0044470F        CDQ
+
+                14F:00444710        IDIV   ECX                      
+
+                14F:00444712        MOV    [EBP-04],EDX               
+
+                14F:00444715        MOV    EAX,[EBP-08]               
+
+                14F:00444718        MOV    ECX,0000FFF1              
+
+                14F:0044471D        CDQ
+
+                14F:0044471E        IDIV   ECX                        
+
+                14F:00444720        MOV    [EBP-08],EDX           
+
+                14F:00444723        TEST   EAX,EAX                     
+
+                14F:00444725        JG     004446C8               
+
+                14F:00444727        MOV    EAX,[EBP-08]              
+
+                14F:0044472A        SHL    EAX,10                      
+
+                14F:0044472D        OR     EAX,[EBP-04]             
+
+                14F:00444730        MOV    [ESI],EAX    ; DS:0072FB40 - CALCULATED CHECKSUM
+
+                                                        ; RESIDES AT THIS DWORD !!!
+
+                                    </PRE>                            
+
+        This is a part of the routine that calculates the checksum of one file
+
+part. It is being
+
+        called from within a loop for each part of the file. After the last
+
+part has been processed,
+
+        the checksum is left at DS:0072FB40. We will naturally place a bpmd at
+
+that address, so that
+
+        we could track what is happening to the checksum. Eventually, we'll get
+
+to the following:  <PRE>
+
+        14F:0045F7B6  MOV  EAX,[EBP+08]                  ;
+
+here =&gt; 14F:0045F7B9  XOR  DWORD PTR [EAX-04],F5A3E289   ;The CRC is being XOR-ed and  
+
+                                                         ;it's value-to-be-compared
+
+                                                         ;is now complete.</PRE>
+
+ 
+
+        After this we'll get to the point where this value is being compared
+
+with some other value
+
+        (probably the EXPECTED CRC): <PRE>
+
+        14F:0045F68B        MOV        EAX,[EBP+08]
+
+        14F:0045F68E        MOV        EAX,[EAX+08]
+
+here =&gt; 14F:0045F691        MOV        EAX,[EAX-04]     ;Get the calculated CRC'S
+
+                                                        ;value-to-be-compared
+
+        14F:0045F694        MOV        EDX,[EBP+08]
+
+        14F:0045F697        MOV        EDX,[EDX+08]
+
+        14F:0045F69A        CMP        EAX,[EDX-08]     ;Compare it with expected value
+
+        14F:0045F69D        SETZ       AL               ;Set the flag if they DO !
+
+ 													 </PRE>
+
+        We could change the code here to accept any value , but that would
+
+disable virus protection
+
+        and we don't want that. Instead, we will take a closer look at the
+
+address where the expected
+
+        CRC is (it's at 0072FB3C). Whatever happened at that address, happened
+
+earlier, so we will
+
+        have to restart tracing (from the checksum calculation loop for
+
+instance, or immediately
+
+        after it), but, this time with a bmpd set at it. We'll get to:<PRE>
+
+ 
+
+         14F:0045F961        MOV  EAX,[EBP-20]  ;Get the expected CRC's 
+
+		                                        ;original address.
+
+         14F:0045F964        MOV  EAX,[EAX]     ;Get the expected CRC.
+
+         14F:0045F966        XOR  EAX,2A67BE65  ;XOR it and the CRC's
+
+                                                ;value-to-be-compared
+
+here =&gt;  14F:0045F96B        MOV  [EBP-08],EAX  ;is done. So store it 
+
+                                                ;(at 72FB3C)! </PRE>
+
+                
+
+        From the above code we can get the expected checksum's address (it's
+
+45F671) and its value
+
+        (it's 9DEBC2EA). We will replace this value with our own.  <BR><BR>
+
+ 
+
+        Take a look at following expression:
+
+                        		<FONT color="blue"><CENTER>
+
+                        D = A XOR B						 </CENTER></FONT>
+
+ 
+
+        In our case it's
+
+ 										<FONT color="blue"><CENTER>
+
+                        EXPECTED_CRC's_VALUE_TO_BE_COMPARED = EXPECTED_CRC XOR 2A67BE65
+
+ 							   </CENTER></FONT>
+
+        and
+
+ 										<FONT color="blue"><CENTER>
+
+                        CALCULATED_CRC's_VALUE_TO_BE_COMPARED = CALCULATED_CRC XOR F5A3E289
+
+ 										 </CENTER></FONT>
+
+        and in order not to invoke the virus protection mechanism the following
+
+must be true:
+
+ 					<FONT color="blue"><CENTER>
+
+EXPECTED_CRC's_VALUE_TO_BE_COMPARED = CALCULATED_CRC's_VALUE_TO_BE_COMPARED
+
+ 											 </CENTER></FONT>
+
+ 
+
+ 
+
+        Now, take a look at THIS:
+
+ 								<FONT color="blue"><CENTER>
+
+                        A = D XOR B ,
+
+ 								 </CENTER></FONT>
+
+        that is
+
+        						<FONT color="blue"><CENTER>
+
+                        EXPECTED_CRC = EXPECTED_CRC's_VALUE_TO_BE_COMPARED XOR 2A67BE65
+
+ 														 </CENTER></FONT>
+
+ 
+
+        In our case, the expected value DOES NOT equal the calculated one, due
+
+to EXE file's changes,
+
+        so we have to MAKE IT equal.
+
+        We will take the CALCULATED_CRC's_VALUE_TO_BE_COMPARED at the point of
+
+comparation and apply
+
+        it in the above expression as it was
+
+EXPECTED_CRC's_VALUE_TO_BE_COMPARED. That way we'll get
+
+        the new EXPECTED CRC with which we'll replace the original one. The
+
+next time the program runs,
+
+        it will get our NEW expected CRC, XOR it and compare the result with
+
+calculated CRC'S
+
+        value-to-be-compared. Now they DO match (since we took that
+
+EXPECTED_CRC's_VALUE_TO_BE_COMPARED
+
+        equals CALCULATED_CRC's_VALUE_TO_BE_COMPARED when we calculated the new
+
+expected CRC) and the
+
+        program finally works (with ICE beneath).Only thing that remains is to
+
+edit EXE file once
+
+        again and make the permanent CRC change.So we will search for the
+
+original EXPECTED CRC, and
+
+        replace it with our new value:
+
+ 									<FONT color="blue"><CENTER>
+
+SEARCH FOR:        EA C2 EB 9D        (it's found at file offset 5EA71)	<BR>
+
+REPLACE WITH:        05 C4 70 4C        (..for example. Your new CRC will probably
+
+differ)	   </CENTER></FONT>
+
+        
+
+        And that's it! You've made it! It wasn't hard after all. The current
+
+version of Windows
+
+        Commander i 3.03 and can be found in a form of patch at WinCmd's home
+
+page:
+
+				<FONT color="blue"><CENTER>
+
+<A href="tppmsgs/msgs2.htm#251" tppabs="http://www.anticrack.de/fravia/tppmsgs/msgs2.htm#251">http://www.ghisler.com</A>
+
+ 										 </CENTER></FONT>
+
+        This patch won't work on the cracked EXE file, so you'll have to patch
+
+it first and then
+
+        crack it. Or you can (which is even better) try to crack the patcher to
+
+accept your new or
+
+        any CRC ! <BR>
+
+	</PRE><FONT color="green">
+
+(c) iNCuBuS++, 1997. All rights reserved.</FONT>
+
+ </PRE>
+
+		<HR size="2">
+
+<CENTER><I>You are deep inside fravia's page of reverse
+
+engineering, choose your way out:</CENTER>
+
+
+
+
+
+<P><CENTER><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#84'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#84">homepage </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"> <A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#73'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#73">links
+
+</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0" NATURALSIZEFLAG="0"> <A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity
+
+</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#82'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#82">students' essays </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools
+
+</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails </A><BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mailFraVia
+
+</A><BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">is reverse engineering legal? </A></FONT></CENTER></P>
+
+
+
+<P><CENTER><FONT SIZE="-1"><HR></FONT></CENTER>
+
+</BODY>
+
+</HTML>
+

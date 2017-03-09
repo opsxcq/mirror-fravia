@@ -1,0 +1,1148 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>fraruler</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+           <A name="anchortop"></A>
+
+<P><CENTER><FONT SIZE="+3">An interesting tool: Screen Ruler<BR>
+
+</FONT><FONT SIZE="+2">The &quot;pixel shortcut&quot; method</FONT>
+
+<BR>
+
+</CENTER>
+
+
+
+<FONT size="+1"><CENTER><I>by fravia+ (MSRE)</I><BR>
+
+<IMG SRC="hcu1.gif" tppabs="http://www.anticrack.de/fravia/hcu1.gif" ALT="+cracker!" ALIGN="BOTTOM" WIDTH="114" HEIGHT="43" BORDER="0" VSPACE="0" HSPACE="0"></A>
+
+<BR><BR>(11 September 1997)<BR>
+
+                           <HR size="2" width="25%">
+
+With a welcome addition/solution by Frog's Print at the bottom!<BR>
+
+<A href="#anchorfrog">adding functionalities, solving the trainer</A><BR>
+
+(15 September 1997)<BR>
+
+<HR size="2" width="25%">
+
+<I>You may want to read ANOTHER essay about sruler</I><BR>
+
+<A HREF="frarul1.htm" tppabs="http://www.anticrack.de/fravia/frarul1.htm">The 
+
+&quot;call relocation table' and its importance :-)</A>
+
+<BR>(25 September 1997)
+
+<HR size="2" width="25%">
+
+
+
+
+
+</FONT> 
+
+</CENTER>
+
+
+
+<CENTER><HR><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"> Courtesy of Fravia's page of reverse 
+
+engineering (of course :-)<BR>
+
+</CENTER><HR size="6">
+
+<CENTER>
+
+<FONT size="+3">An interesting tool: Screen Ruler</FONT><BR>
+
+by Fravia, MSRE, September 1997<BR></CENTER>
+
+<BR>
+
+Screen Ruler (sruler), by Jesse Carneiro, is a very interesting 
+
+reverse engineering (and cracking) tool, as I hope to demonstrate with 
+
+this essay.
+
+I am using here sruler.exe, version 1.0, 51.712 bytes, that you will be able 
+
+to download 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A href="javascript:if(confirm('http://129.105.116.5/fravia/ruler.zip  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://129.105.116.5/fravia/ruler.zip'" tppabs="http://129.105.116.5/fravia/ruler.zip">here</A>.<BR><BR>
+
+
+
+I will in this essay:<BR>
+
+1)	Use sruler in order to reverse engineer sruler.exe itself,  
+
+showing you a new method to get at the code that interests 
+
+us (&quot;the pixel shortcut&quot; method)<BR>
+
+2)	Denag sruler.exe and examine its three nag functions (delay, quiver 
+
+nag, &quot;oldie nag&quot;)<BR>
+
+3)	Add &quot;our&quot; functionality to sruler.exe transforming a decimal 
+
+notation (for us useless) in an hexadecimal notation (for us very 
+
+important).<BR><BR>
+
+
+
+<B>Da Target</B><BR>
+
+	First of all let's have a look at &quot;manners and bearing&quot; of our target. 
+
+When you launch sruler, you get on your screen a yellow &quot;ruler&quot; with decimal 
+
+measures in pixels. It is easy to drag the ruler around the screen, and a 
+
+little box allows us to change its &quot;orientation&quot;, from horizontal to vertical. 
+
+Among other useful options, there is an &quot;always on top&quot; option. 
+
+Launch it right now and keep it on your screen, while you continue reading 
+
+this essay off-line. <BR>
+
+	The possibility of keeping it on our screen makes it an ideal tool 
+
+for serious reverse engineering, as you'll see. The main &quot;real&quot; purpose of 
+
+this tool for reverse engineers is to show us the exact width and height, 
+
+in pixels, of a given window (or nag screen), thus allowing us to quickly 
+
+individuate which parts of the code are dealing with a given &quot;feature&quot; of 
+
+your target.<BR><BR>
+
+
+
+	Well, I'll show you right now what I mean: let's use sruler on sruler 
+
+itself. Launch ANOTHER copy of sruler, on this choose the &quot;about screen ruler&quot; 
+
+message, you'll get an elegant grey window with a black ribbon and a reference 
+
+to John 3.16.<BR> 
+
+	Ok, now measure, using your first copy of sruler, the dimensions of 
+
+this &quot;about&quot; message. You'll see how easy it is: WIDTH = 290 pixels and 
+
+HEIGHT = 378 pixels. (and 256, 112 is the position of the top left corner of 
+
+the &quot;about screen ruler&quot; message, if you are interested in that too).<BR>
+
+	Now you don't even need to know about WHAT your target is doing...  
+
+How did he get that message on the screen? Who cares? 
+
+that could be a messagebox, or a window, or whatever you can get on screen 
+
+through 
+
+the thousand API functions... one thing is CERTAIN: whatever it is, it is 
+
+exactly 290x378 pixels, therefore the programmer MUST have specified these 
+
+data somewhere in its code... <BR>
+
+	Now get the dead listing of our target into your texteditor 
+
+(disassembling sruler through wdasm, for instance) and fetch the data below 
+
+using one of the two &quot;height and width&quot; values above (the less &quot;common&quot; one). 
+
+Search and here is where you will land right away searching for &quot;0017C&quot; 
+
+(0x17C = Dec378, the height of the &quot;About&quot; message):
+
+<PRE>
+
+:3C6C 6A00                    push 0
+
+:3C6E 687C010000              push 17C      ;=Dec378
+
+:3C73 6822010000              push 122	    ;=Dec290
+
+:3C78 6A32                    push 32       ;=Dec50
+
+:3C7A 6A32                    push 32       ;=Dec50
+
+:3C7C FF7508                  push [ebp+08]
+
+:3C7F FF159CE34000            Call dword ptr [0040E39C] ;USER32.MoveWindow, Ord:0190h
+
+... and you'll notice that short afterwards you'll have
+
+:3CD6 6888AB4000              push 0040AB88 ;-&gt;&quot;CAboutBox.cpp&quot;
+
+</PRE>
+
+
+
+As you can see, this &quot;pixel shortcut&quot; approach can represent a very easy way to get 
+
+at the code snippets you are interested in, even when you WILL NOT have, 
+
+inside your future dead listings, the 
+
+courtesy of nice meaningful names like AboutBox (say that a &quot;nasty&quot; Author has 
+
+called the window you are interested in something like, say, 
+
+&quot;VF@A67_E1R&quot; :-)<BR><BR>
+
+
+
+Now that I have proved that sruler is useful, since it is nagged, 
+
+let's have a look at its protection scheme. I am obviously doing this 
+
+only because I hope that a guy capable of programming such a excellent 
+
+utility could possibly be a conscientious coder and a worthy protector. 
+
+Alas, I was quickly disappointed: unfortunately the nag screen protection: 
+
+&quot;Please register screen ruler. Used ... times&quot; Is of the simplest kind:
+
+<PRE>
+
+:2FA7 BE02A44000           mov esi, 0040A402  ;-&gt;&quot;Please register Screen Ruler.&quot;
+
+:2FAC B900010000           mov ecx, 00000100
+
+:2FB1 F3                   repz
+
+:2FB2 A4                   movsb
+
+:2FB3 8B45F0               mov eax, dword ptr [ebp-10]
+
+:2FB6 83B8CC0100001E       cmp dword ptr [eax+1CC], 1E  ;if used more than 30 times
+
+:2FBD 763A                 jbe 00402FF9
+
+:2FD4 6802A54000           push 0040A502  ;-&gt;&quot; Used %i times.&quot;
+
+</PRE>
+
+Even a modest &quot;code fumbler&quot; would be able to substitute 
+
+83B8CC0100<FONT color="red">001E</FONT> with 
+
+83B8CC0100<FONT color="red">FFFF</FONT> and get immediately rid of the 
+
+&quot;Used %i times&quot; part. Moreover, since there is an obligatory &quot;waiting time&quot; 
+
+of 3 seconds, any dilettante cracker would search and easily find the 
+
+(unique) SetTimer call that triggers this protection (and any +HCUker would 
+
+calculate that 3 seconds= 3000 milliseconds and find 0xBB8 inside the 
+
+dead listing even if there were 1000 SetTimer calls :-)
+
+<PRE>
+
+:25FB E8EA100000     call 36EA       ;call pamper_tickcount
+
+:2600 83C404         add esp, 4
+
+:2603 89C1           mov ecx, eax
+
+:2605 83F901         cmp ecx, 1
+
+:2608 752B           jne 2635        ;You could eventually change this to a jmp
+
+:260A 6A00           push O
+
+:260C 68B80B0000     push BB8        ;3000 milliseconds!
+
+:2611 6880000000     push 80
+
+:2616 8B45F0         mov eax, dword ptr [ebp-10]
+
+:2619 FF7008         push [eax+08]
+
+:261C FF15E0E34000   Call dword ptr [E3E0] ;USER32.SetTimer, Ord:01FEh
+
+</PRE>
+
+The crack is strightforward, the protection is stupid. Well, let's see if there 
+
+is nevertheless something to learn... 
+
+The call to 36EA above, at 25FB, calls a routine at 4500, where the 
+
+&quot;GetTickCount&quot; location 
+
+[0040AC70] is manipulated, with the purpose of allowing only A PART of the 
+
+occurrences of this target to run without nag. In fact, if the (pampered) 
+
+return value from call 36EA is one (true) you get your &quot;3 seconds&quot; nag, 
+
+if, instead, it is NOT equal to one, you don't get it. If you go and have 
+
+a look at the relevant part of that code, you'll see a fairly interesting 
+
+(for crackers) line:<PRE>:0040451B 25FF7F0000    and eax, 00007FFF</PRE> 
+
+This is an interesting value because Ox7FFF (32767) is a very &quot;particular&quot; number 
+
+indeed: its binary representation is 0111111111111111, and it is often 
+
+used for logical operations of this &quot;flag setting&quot; kind.<BR><BR>
+
+Note that there is also another &quot;time related&quot; nag message... if the 
+
+system time has been set after 1998, 
+
+<PRE>:00402FF9 68CE070000   push 7CE ;=1998</PRE> you'll get the message: 
+
+&quot;This is an old version of Screen Ruler. Get an updated version&quot;, but since 
+
+this nag dwells too inside the same protection scheme with the &quot;normal&quot; nag, 
+
+that we have already defeated above, we don't need to worry about it.
+
+<BR><BR>
+
+OK, here you go with a little interesting tool... but we are not finished! 
+
+Unfortunately sruler calculates our pixel in decimal notation... yet for our 
+
+endeavour it would be more useful to get them directly in hexadecimal notation, 
+
+what do we need?<BR><BR>
+
+
+
+<B>Da changes to da target</B><BR>
+
+Well, oh sweet, oh mighty, oh powerful magic of the c code! Just have a look 
+
+at this part of the assembly <U>data</U>:<PRE>
+
+:0040A398 65 5F 56 5F 42 69 74 6D  e_V_Bitm
+
+:0040A3A0 61 70 00 25 69 00 20 50  ap.%i. P
+
+:0040A3A8 69 78 65 6C 00 20 50 69  ixel. Pi
+
+:0040A3B0 78 65 6C 73 00 25 69 00  xels.%i.
+
+:0040A3B8 50 69 78 00 25 69 00 25  Pix.%i.%</PRE>
+
+What do you see there? You see %i, that is DECIMAL notation... repeated two 
+
+time, for &quot;pixel&quot; and for &quot;pixels&quot;... and what do we need to have our good 
+
+hexadecimal notation, instead of this decimal crap that compels us to calculate 
+
+each time the decimal-&gt;hexadecimal transposition? Actually we do NOT need much... 
+
+not much at all, my good friends, here you go:<PRE>
+
+:0040A3A0 61 70 00 25 <FONT color="red">78</FONT> 00 20 50  ap.%x. P
+
+:0040A3A8 69 78 65 6C 00 20 50 69  ixel. Pi
+
+:0040A3B0 78 65 6C 73 00 25 <FONT color="red">78</FONT> 00  xels.%x.</PRE>
+
+Yes, exactly, sooo simple! It is 0x78 = &quot;x&quot; instead of 0x69=&quot;i&quot; (x for 
+
+hexadecimal, of course)... it's so easy I could scream! Try it!<BR>
+
+And now you have your screen ruler in hexadecimal pixels which, btw, is now 
+
+ALSO an hexadecimal-decimal calculator, since we have left the little &quot;tags&quot; 
+
+below still in decimal notation. So you slide the arrow along the decimal tags 
+
+and read the hexadecimal result inside sruler... how nice!<BR>
+
+	BTW, strictly speaking it is NOT necessary to change to x the first 
+
+%i, since that first occurrence of &quot;%i&quot; represents the &quot;singular&quot; 
+
+(grammatical) notation, that you'll see only when you are at pixel 1 or at 
+
+pixel -1.<BR><BR><CENTER>
+
+<IMG SRC="trainin7.gif" tppabs="http://www.anticrack.de/fravia/trainin7.gif" ALT="trainin7" ALIGN="BOTTOM" WIDTH="114" HEIGHT="43" BORDER="0" VSPACE="0" HSPACE="0"></A>
+
+</CENTER>Moreover, there is still a little patch to do, since now the 
+
+&quot;negative&quot; pixels, when you go &quot;outside&quot; the ruler (left or above) with your 
+
+mouse, will not be very nice to see (-1=FFFFFFFF, -35= FFFFFFDD etcetera)... 
+
+I leave to the intelligence of the best readers the task of preparing the 
+
+necessary patch... best 
+
+solutions will be as usual primed with a nice strategic gamez from the 
+
++Hcu's gamez collection :-)<BR><BR>
+
+
+
+That's it, people, hope you enjoyed this little &quot;screen ruler&quot; tour! Hope you'll 
+
+enjoy your ruler as a &quot;pixel shortcutter&quot; AND as a decimal/hexadecimal converter!<BR><BR>
+
+
+
+<FONT color="green">
+
+(c) fravia+ (MSRE), 1997. All rights reversed.</FONT>
+
+		
+
+<A name="anchorfrog"></A>         
+
+<HR size="6">
+
+<FONT size="+2">A welcome addition/solution by Frog's Print!</FONT><BR>
+
+<I>And here follows the (quick) solution by Master <FONT color="blue">Frog's print</FONT> to the &quot;little patch&quot; I spoke above... well, 
+
+it was NOT so little, after all, and Frog has won (and got:-) a nice strategic gamez!.
+
+I like Frog's solution... even if I have personally modified it a little, since I prefer 
+
+to keep my lowercase hexadecimal 
+
+notation (uppercase is pretty preposterous). There are various ways, for instance  
+
+passing to </I><CENTER>
+
+:00402813&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; FF159CE24000&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  Call dword ptr [0040E29C] &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ;GDI32.TextOutA
+
+</CENTER><FONT color="purple"><PRE>
+
+BOOL TextOut(hdc, nXStart, nYStart, lpszString, cbString)
+
+
+
+HDC hdc;                /* handle of device context            */
+
+int nXStart;            /* x-coordinate of starting position   */ ;-)
+
+int nYStart;            /* y-coordinate of starting position   */ ;-)
+
+LPCSTR lpszString;	/* address of string                   */
+
+int cbString;           /* number of bytes in string           */</PRE></FONT><I>
+
+ different start coordinates... Well, you'll see for yourself... just 
+
+read and enjoy! Thanks to Frog's Print, this is now <FONT color="red"> 
+
+real</FONT> reverse engineering... Yessir!! Much more fun (in our opinion) than 
+
+simple (boring) protection cracking!</I>
+
+<HR size="2">          <CENTER>
+
+   <FONT size="+3">Screen Ruler reverse engineering, adding on</FONT>
+
+                                      <BR>
+
+by Frog's Print<BR>(15 September 1997, slightly edited by fravia+)                     
+
+                             </CENTER>
+
+<PRE><FONT FACE="Courier New,Courier">
+
+Following Fravia+'s essay about <A href="#anchortop">Screen Ruler v1.0</A>, I decided to improve the display
+
+of the negative hex notation. I'm getting more and more fed up about cracking stupid
+
+protection schemes of stupid programs I will never use. I always really enjoyed 
+
+to modify and personalize the tools I often use. Reverse engineering the programs
+
+(even freewares), Window$ DLLs or anything that pleases you in order to adapt them
+
+to your need and to make them working the way you want is the most interesting
+
+part of cracking (see Fravia+'s <A href="filemon1.htm" tppabs="http://www.anticrack.de/fravia/filemon1.htm">Filemon</A> or Razzia's <A href="razzcripp.htm" tppabs="http://www.anticrack.de/fravia/razzcripp.htm">Notepad</A> excellent essays).
+
+On the other hand, this kind of Reverse Engineering is actually probably the only way left
+
+for people like me (and probably you too!) who really love ASM, in order to continue
+
+using this beautiful language (who would else ever need an Asm programmer when the
+
+new 'languages' allow any idiot to write overbloated Window$ &quot;programs&quot; without having to
+
+know what '<FONT color="blue">Mov eax, 0</FONT>' means?).</FONT></PRE>
+
+
+
+<PRE><FONT FACE="Courier New,Courier">
+
+As explained by Fravia+, when changing the display from Decimal to Hexadecimal you'll
+
+get an ugly display like 'FFFFFFFF' for '-1', and if you set the ruler to the Vertical
+
+orientation, you'll get a lot of garbage on your ruler because there is not enough room
+
+for such a notation.
+
+I will change the display as per follow:
+
+- The negative Hex value will be turned into a positive one. For instance, 0xFFFFFFEA (-22)
+
+&nbsp;will be change to 0x16 (22).
+
+- A '+' or '-' sign will be added.&nbsp;
+
+So, 0xFFFFFFEA will be shown as '16 -' and 0xF0 as 'F0 +', 0x01 as '1 +'...</FONT></PRE>
+
+
+
+<PRE>Since the original program displays the words 'Pixel' or 'Pixels', we will put there 
+
+our '-' and '+' signs instead.
+
+Regarding the Hex display, Fravia+ already showed you the 'trick', changing the '%i' to
+
+'%x'. For those who don't know why, it is just an argument passed to the WsprintfA
+
+function:</PRE><FONT color="blue">
+
+
+
+<PRE>&nbsp;int WsprintF(LPTSTR <I>lpBuffer</I>, LPCTSTR <I>lpszFormatString</I>, [argument]...)</PRE>
+
+                                </FONT>
+
+<PRE>'%i' is used for a Decimal value (note that it could be '%d' as well), and '%x' or '%X'
+
+for an Hex value. '%x' will display lowercases ('adbcef') and '%X' uppercases ('ABCDEF').
+
+I will use the uppercase option because the lowercase one leaves a black pixel
+
+on the ruler that the TextOutA function does not overwrite. This problem is due to the
+
+'f' lower char (you'll see what I mean if you try the lowercase option, then move the 
+
+cursor to, let's say' 'ff' and then move it back to '10'). 
+
+A 'F' uppercase char will avoid this problem.
+
+So let's fix that right now:</PRE>
+
+
+
+<PRE>We had:
+
+00007990:&nbsp; 74 6D 61 70-00 53 69 7A-65 5F 56 5F-42 69 74 6D&nbsp; tmap.Size_V_Bitm
+
+000079A0:&nbsp; 61 70 00 25-69 00 20 50-69 78 65 6C-00 20 50 69&nbsp; ap.%i..Pixel..Pi
+
+000079B0:&nbsp; 78 65 6C 73-00 25 69 00-50 69 78 00-25 69 00 25&nbsp; xels.%i.Pix.%i.%
+
+000079C0:&nbsp; 69 00 53 63-72 65 65 6E-20 52 75 6C-65 72 00 00&nbsp; i.Screen.Ruler..
+
+
+
+We change it to:
+
+00007990:&nbsp; 74 6D 61 70-00 53 69 7A-65 5F 56 5F-42 69 74 6D&nbsp; tmap Size_V_Bitm
+
+000079A0:&nbsp; 61 70 00 25-<FONT COLOR="#CC0000">58</FONT> 00<FONT COLOR="#000000"> 20</FONT> <FONT COLOR="#CC0000">2D-00 00 00 00</FONT>-00 20 <FONT COLOR="#CC0000">2B 00</FONT>&nbsp; ap.%<FONT COLOR="#CC0000">X</FONT>.<FONT COLOR="#000000">.</FONT><FONT ! COLOR="#CC0000">-....</FONT>..<FONT COLOR="#CC0000">+.
+
+</FONT>000079B0:&nbsp; <FONT COLOR="#CC0000">00 00 00 00</FONT>-00 25 <FONT COLOR="#CC0000">58</FONT> 00-50 69 78 00-25 69 00 25&nbsp; <FONT COLOR="#CC0000">....</FONT>.%<FONT COLOR="#CC0000">X</FONT>.Pix.%i.%
+
+000079C0:&nbsp; 69 00 53 63-72 65 65 6E-20 52 75 6C-65 72 00 00&nbsp; i.Screen.Ruler..</PRE>
+
+
+
+<PRE>I left the two '%i' preceding 'Screen Ruler' because they are used for the ruler's
+
+graduation, so that our tools gives us both Hex/Dec values.</PRE>
+
+
+
+<PRE>Now, we are ready to start.&nbsp;
+
+We only need a good Hex/ASM editor, like HView. (All codes and offsets shown in this
+
+essay come from HView v5.5)</PRE>
+
+
+
+<PRE>First, let's see how SRuler checks the cursor location and displays it. As there are
+
+2 positions (vertical and horizontal) for the ruler, it uses 2 different ways
+
+to do so:</PRE>
+
+
+
+<PRE>00001B82: 83783400&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; cmp&nbsp;&nbsp;&nbsp; d,[eax][00034],000 ; Is ruler Vertical?
+
+00001B86: 745B&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; je&nbsp;&nbsp;&nbsp;&nbsp; 000001BE3&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ; If yes, jump</PRE>
+
+
+
+<PRE>** Horizontal Ruler **</PRE>
+
+
+
+<PRE>00001B88: 0FBF4508&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; movsx&nbsp; eax,w,[ebp][00008] ; Get cursor position in Eax
+
+00001B8C: 50&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; push&nbsp;&nbsp; eax&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ; Push it
+
+00001B8D: 68A3A34000&nbsp;&nbsp;&nbsp; push&nbsp;&nbsp; 00040A3A3&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ; Get output in Decimal format (%i)
+
+00001B92: 8D45A8&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; lea&nbsp;&nbsp;&nbsp; eax,[ebp][-0058]&nbsp;&nbsp; ; Get offset for output
+
+00001B95: 50&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; push&nbsp;&nbsp; eax&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ; Push it
+
+00001B96: FF15E8E34000&nbsp; wsprintfA ;USER32.dll&nbsp;&nbsp;&nbsp;&nbsp; ; Store in Ebp-58 cursor position
+
+00001B9C: 83C40C&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; add&nbsp;&nbsp;&nbsp; esp,00C
+
+00001B9F: 66837D0801&nbsp;&nbsp;&nbsp; cmp&nbsp;&nbsp;&nbsp; w,[ebp][00008],001 ; Is it 1?
+
+00001BA4: 7407&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; je&nbsp;&nbsp;&nbsp;&nbsp; 000001BAD&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ; Jump if yes
+
+00001BA6: 66837D08FF&nbsp;&nbsp;&nbsp; cmp&nbsp;&nbsp;&nbsp; w,[ebp][00008],0FF ; Is it -1?
+
+00001BAB: 7507&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; jne&nbsp;&nbsp;&nbsp; 000001BB4&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ; Jump if no
+
+00001BAD: 68A6A34000&nbsp;&nbsp;&nbsp; push&nbsp;&nbsp; 00040A3A6&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ; &quot;Pixel&quot;
+
+00001BB2: EB05&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; jmps&nbsp;&nbsp; 000001BB9&nbsp;&nbsp;&nbsp;
+
+00001BB4: 68ADA34000&nbsp;&nbsp;&nbsp; push&nbsp;&nbsp; 00040A3AD&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ; &quot;Pixels&quot;
+
+00001BB9: 8D45A8&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; lea&nbsp;&nbsp;&nbsp; eax,[ebp][-0058]&nbsp;&nbsp; ; Get offset for output
+
+00001BBC: 50&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; push&nbsp;&nbsp; eax&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ; Push it
+
+00001BBD: E8391C0000&nbsp;&nbsp;&nbsp; call&nbsp;&nbsp; 0000037FB&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ; Store &quot;Pixel(s)&quot; in Ebp-58 too
+
+00001BC2: 83C408&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; add&nbsp;&nbsp;&nbsp; esp,008
+
+00001BC5: 8D45A8&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; lea&nbsp;&nbsp;&nbsp; eax,[ebp][-0058]&nbsp;&nbsp; ; Get offset of Datas to display
+
+00001BC8: 50&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; push&nbsp;&nbsp; eax
+
+00001BC9: E8591C0000&nbsp;&nbsp;&nbsp; call&nbsp;&nbsp; 000003827&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ; Concat cursor pos. + &quot;Pixel(s)&quot;
+
+00001BCE: 83C404&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; add&nbsp;&nbsp;&nbsp; esp,004
+
+...
+
+00001BE1: EB67&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; jmps&nbsp;&nbsp; 000001C4A&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ; Jump to Display_Cursor_Position</PRE>
+
+
+
+<PRE>** Vertical Ruler **</PRE>
+
+
+
+<PRE>00001BE3: 0FBF450C&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; movsx&nbsp; eax,w,[ebp][0000C] ; Get cursor position in Eax
+
+00001BE7: 0501000000&nbsp;&nbsp;&nbsp; add&nbsp;&nbsp;&nbsp; eax,000000001&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ; Add 1 to get actual position
+
+00001BEC: 50&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; push&nbsp;&nbsp; eax&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ; Push it
+
+00001BED: 68B5A34000&nbsp;&nbsp;&nbsp; push&nbsp;&nbsp; 00040A3B5&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ; Get output in Decimal format (%i)
+
+00001BF2: 8D45A8&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; lea&nbsp;&nbsp;&nbsp; eax,[ebp][-0058]&nbsp;&nbsp; ; Get offset for output
+
+00001BF5: 50&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; push&nbsp;&nbsp; eax&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ; Push it
+
+00001BF6: FF15E8E34000&nbsp; wsprintfA ;USER32.dll&nbsp;&nbsp;&nbsp;&nbsp; ; Store in Ebp-58 cursor position
+
+...
+
+00001C13: FF159CE24000&nbsp; TextOutA ;GDI32.dll&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ; Display it
+
+00001C19: 68B8A34000&nbsp;&nbsp;&nbsp; push&nbsp;&nbsp; 00040A3B8&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ; Get &quot;Pix&quot;
+
+00001C1E: 8D45A8&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; lea&nbsp;&nbsp;&nbsp; eax,[ebp][-0058]&nbsp;&nbsp; ; Get offset for output
+
+00001C21: 50&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; push&nbsp;&nbsp; eax&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ; Push it
+
+00001C22: E8151C0000&nbsp;&nbsp;&nbsp; call&nbsp;&nbsp; 00000383C&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ; Store &quot;Pix&quot; in Ebp-58
+
+...
+
+00001C4E: FF159CE24000&nbsp; TextOutA ;GDI32.dll&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ; Display_Cursor_Position if Horizontal
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;!
+
+;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ; or 'Pix' if Vertical.
+
+00001C54: FF75A4&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; push&nbsp;&nbsp; d,[ebp][-005C]
+
+...</PRE>
+
+
+
+<PRE>Pretty obvious as you can see.
+
+Now, we need to find some places where we can put our own code. We will need&nbsp;
+
+a little more than 100 byte for that.
+
+As Fravia+ cracked the Nagscreens checking, we should find there the room we need:</PRE>
+
+
+
+<PRE>&nbsp;000019FB: E8EA100000&nbsp;&nbsp;&nbsp;&nbsp; call&nbsp;&nbsp; 000002AEA&nbsp;
+
+&nbsp;00001A00: 83C404&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; add&nbsp;&nbsp;&nbsp; esp,004
+
+&nbsp;00001A03: 89C1&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; mov&nbsp;&nbsp;&nbsp; ecx,eax
+
+&nbsp;00001A05: 83F901&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; cmp&nbsp;&nbsp;&nbsp; ecx,001
+
+&nbsp;00001A08: 752B&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; jne&nbsp;&nbsp;&nbsp; 000001A35&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ; HERE! Make it always Jump
+
+&nbsp;00001A0A: 6A00&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; push&nbsp;&nbsp; 000
+
+&nbsp;00001A0C: 68B80B0000&nbsp;&nbsp;&nbsp;&nbsp; push&nbsp;&nbsp; 000000BB8
+
+&nbsp;00001A11: 6880000000&nbsp;&nbsp;&nbsp;&nbsp; push&nbsp;&nbsp; 000000080
+
+&nbsp;00001A16: 8B45F0&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; mov&nbsp;&nbsp;&nbsp; eax,[ebp][-0010]
+
+&nbsp;00001A19: FF7008&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; push&nbsp;&nbsp; d,[eax][00008]
+
+&nbsp;00001A1C: FF15E0E34000&nbsp;&nbsp; SetTimer ;USER32.dll
+
+&nbsp;00001A22: 56&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; push&nbsp;&nbsp; esi
+
+&nbsp;00001A23: 8B4DF0&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; mov&nbsp;&nbsp;&nbsp; ecx,[ebp][-0010]
+
+&nbsp;00001A26: 8B19&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; mov&nbsp;&nbsp;&nbsp; ebx,[ecx]
+
+&nbsp;00001A28: FF5350&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; call&nbsp;&nbsp; d,[ebx][00050]&nbsp;&nbsp; ; Interesting!
+
+&nbsp;00001A2B: 83C404&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; add&nbsp;&nbsp;&nbsp; esp,004
+
+&nbsp;00001A2E: E99C000000&nbsp;&nbsp;&nbsp;&nbsp; jmp&nbsp;&nbsp;&nbsp; 000001ACF&nbsp;&nbsp;
+
+&nbsp;00001A33: EB25&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; jmps&nbsp;&nbsp; 000001A5A&nbsp;&nbsp;
+
+&nbsp;00001A35: 6A05&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; push&nbsp;&nbsp; 005</PRE>
+
+
+
+<PRE>We see that, when changing the Jne 1A35 to a Jmp 1A35, the program will never reach
+
+offsets located between :1A08 and :1A35. At offset :1A28 there is a 'call d,[ebx][0050]'
+
+that therefore will never be used. This call calls a routine starting at offset 00002392 
+
+and ending at offset :24AA so, 24AA - 2392 = 0x118 that's 280 bytes that we can use in 
+
+order to write our own routines. 
+
+We will place some code, calls and jumps in other places inside SRuler.exe as well.</PRE>
+
+
+
+<PRE>As the display of the cursor position as well as the words &quot;Pixel(s)&quot; and &quot;Pix&quot; is
+
+different in the horizontal and the vertical orientation, we will start with the
+
+horizontal one.</PRE>
+
+
+
+<PRE>1/ Horizontal Ruler</PRE>
+
+
+
+<PRE>First of all, we need to know if the cursor's position is a positive or negative value.
+
+For this, we will add 0x00 to the cursor's position and then check the Sign Flag (SF) as
+
+per follow:</PRE>
+
+
+
+<PRE>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; PushF&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ; save flags
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Add Cursor_location, 0
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Jns Positive&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ; Jump If Not Sign
+
+Negative:&nbsp; Neg Cursor_Location&nbsp;&nbsp;&nbsp; ; Turn it into Positive
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Push '-'&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ; and add '-' sign
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Jmp Go_Ahead
+
+Positive:&nbsp; Push '+'&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ; Add '+' sign
+
+Go_head :&nbsp; PopF&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ; restore flags
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Display_Cursor_Location</PRE>
+
+
+
+<PRE>We will know if the value is positive or negative but we need to find a place&nbsp;
+
+to store it because we will not be able to check the Sign Flag and then to Push the '+'
+
+or the '-' signs inside the same routine. We found at offset 00001B88 the following code:</PRE>
+
+
+
+<PRE>&nbsp;00001B88: 0FBF4508&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; movsx&nbsp; eax,w,[ebp][00008]&nbsp;&nbsp; ; Get cursor position in Eax</PRE>
+
+
+
+<PRE>Ebp+08 is only checked there so we will use it for our purpose:
+
+&nbsp;Mov word ptr[ebp+08], 0 if Positive
+
+&nbsp;Mov word ptr[ebp+08], 1 if Negative</PRE>
+
+
+
+<PRE>Now we are ready to write our first routine. As said above, we will write our code
+
+starting at offset 00002392 (I put a &quot;<B><FONT COLOR="#FF0000">&gt;</FONT></B><FONT COLOR="#000000">&quot; in front of all changed code and a &quot;<B>+</B>&quot; sign
+
+in front of any offsets moved a couple of bytes ahead due to the new code insertion):</FONT></PRE>
+
+
+
+<PRE><B><FONT COLOR="#FF0000">&gt;</FONT></B> 00002392: 669C&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; pushf
+
+<B><FONT COLOR="#FF0000">&gt;</FONT></B> 00002394: 83C000&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; add&nbsp;&nbsp;&nbsp; eax,000
+
+<B><FONT COLOR="#FF0000">&gt;</FONT></B> 00002397: 790A&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; jns&nbsp;&nbsp;&nbsp; 0000023A3&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ; jmp if positive
+
+<B><FONT COLOR="#FF0000">&gt;</FONT></B> 00002399: F7D8&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; neg&nbsp;&nbsp;&nbsp; eax&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ; otherwise Neg !
+
+it
+
+<B><FONT COLOR="#FF0000">&gt;</FONT></B> 0000239B: 66C745080100&nbsp;&nbsp; mov&nbsp;&nbsp;&nbsp; w,[ebp][00008],00001 ; Set flag to 1
+
+<B><FONT COLOR="#FF0000">&gt;</FONT></B> 000023A1: EB06&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; jmps&nbsp;&nbsp; 0000023A9&nbsp;&nbsp;&nbsp;
+
+<B><FONT COLOR="#FF0000">&gt;</FONT></B> 000023A3: 66C745080000&nbsp;&nbsp; mov&nbsp;&nbsp;&nbsp; w,[ebp][00008],00000 ; Set flag to 0 if Positive
+
+<B><FONT COLOR="#FF0000">&gt;</FONT></B> 000023A9: 669D&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; popf
+
+<B><FONT COLOR="#FF0000">&gt;</FONT></B> 000023AB: C3&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; retn&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&amp;nbs!
+
+p;&nbsp; ; back to the Caller</PRE>
+
+
+
+<PRE>This routine will be called from within the listing of SRuler.exe I described above.
+
+We must insert the Call and Flag check between offsets 1B88 and 1BB9.
+
+
+
+We change it to:</PRE>
+
+
+
+<PRE>&nbsp; 00001B88: 0FBF4508&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; movsx&nbsp; eax,w,[ebp][00008] ; Get cursor position in Eax
+
+<B><FONT COLOR="#FF0000">&gt;</FONT></B> 00001B8C: E801080000&nbsp;&nbsp;&nbsp; call&nbsp;&nbsp; 000002392&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ; Call our new routine
+
++ 00001B91: 50&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; push&nbsp;&nbsp; eax&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ; Push Cursor position
+
++ 00001B92: 68A3A34000&nbsp;&nbsp;&nbsp; push&nbsp;&nbsp; 00040A3A3&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ; Get output in <U>Hex</U> format (%X)
+
++ 00001B97: 8D45A8&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; lea&nbsp;&nbsp;&nbsp; eax,[ebp][-0058]
+
++ 00001B9A: 50&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; push&nbsp;&nbsp; eax
+
++ 00001B9B: FF15E8E34000&nbsp; wsprintfA ;USER32.dll&nbsp;&nbsp;&nbsp;&nbsp; ; Store in Ebp-58 cursor position
+
++ 00001BA1: 83C40C&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; add&nbsp;&nbsp;&nbsp; esp,00C
+
+<B><FONT COLOR="#FF0000">&gt;</FONT></B> 00001BA4: 66837D0800&nbsp;&nbsp;&nbsp; cmp&nbsp;&nbsp;&nbsp; w,[ebp][00008],000 ; OUR flag : Is it Positive?
+
+<B><FONT COLOR="#FF0000">&gt;</FONT></B> 00001BA9: 7407&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; je&nbsp;&nbsp;&nbsp;&nbsp; 000001BB2&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ; Yes jmp, otherwise...
+
++ 00001BAB: 68A6A34000&nbsp;&nbsp;&nbsp; push&nbsp;&nbsp; 00040A3A6&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ; Push '-'
+
++ 00001BB0: EB07&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; jmps&nbsp;&nbsp; 000001BB9&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ; Go_Ahead
+
++ 00001BB2: 68ADA34000&nbsp;&nbsp;&nbsp; push&nbsp;&nbsp; 00040A3AD&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ; Push '+'
+
+<B><FONT COLOR="#FF0000">&gt;</FONT></B> 00001BB7: 40&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; inc&nbsp;&nbsp;&nbsp; eax&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ; Unused ...
+
+<B><FONT COLOR="#FF0000">&gt;</FONT></B> 00001BB8: 48&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; dec&nbsp;&nbsp;&nbsp; eax&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ; ...but useful.
+
+&nbsp; 00001BB9: 8D45A8&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; lea&nbsp;&nbsp;&nbsp; eax,[ebp][-0058]&nbsp;&nbsp; ; back to original code</PRE>
+
+
+
+<PRE>That's all for the Horizontal ruler.</PRE>
+
+
+
+<PRE>2/ Vertical Ruler</PRE>
+
+
+
+<PRE>We cannot use exactly the same routine because when the ruler is vertical, it will just
+
+display the word 'Pix' instead of 'Pixel' or 'Pixels' and the cursor position is not
+
+concated with 'Pix' this time as both words are printed on different lines.
+
+However we will use the same Push '+' and Push '-' but we will not need our flag Ebp+08.
+
+As words are not concated, the program displays first the cursor location and, later, 'Pix'.
+
+So, we will write two routines:</PRE>
+
+
+
+<PRE>- <U>Getting the Positive or Negative value of the cursor position</U>:</PRE>
+
+
+
+<PRE>As the first routine we wrote starts at offset :2392 and ends at offset :23AB we will write
+
+our second one starting at offset :23AC. So, we can already write the Call to it:</PRE>
+
+
+
+<PRE>We had:
+
+&nbsp; 00001BE3: 0FBF450C&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; movsx&nbsp; eax,w,[ebp][0000C] ; Get cursor position in Eax
+
+&nbsp; 00001BE7: 0501000000&nbsp;&nbsp;&nbsp; add&nbsp;&nbsp;&nbsp; eax,000000001&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ; Add 1 to get actual position
+
+&nbsp; 00001BEC: 50&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; push&nbsp;&nbsp; eax&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ; Push it
+
+&nbsp; 00001BED: 68B5A34000&nbsp;&nbsp;&nbsp; push&nbsp;&nbsp; 00040A3B5&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ; Get output in Decimal format (%i)
+
+&nbsp; 00001BF2: 8D45A8&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; lea&nbsp;&nbsp;&nbsp; eax,[ebp][-0058]&nbsp;&nbsp; ; Get offset for output
+
+&nbsp; 00001BF5: 50&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; push&nbsp;&nbsp; eax&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ; Push it
+
+&nbsp; 00001BF6: FF15E8E34000&nbsp; wsprintfA ;USER32.dll&nbsp;&nbsp;&nbsp;&nbsp; ; Store in Ebp-58 cursor position</PRE>
+
+
+
+<PRE>We change it to:
+
+&nbsp; 00001BE3: 0FBF450C&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; movsx&nbsp; eax,w,[ebp][0000C]&nbsp;
+
+<B><FONT COLOR="#FF0000">&gt;</FONT></B> 00001BE7: E8C0070000&nbsp;&nbsp;&nbsp; call&nbsp;&nbsp; 0000023AC&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ; Call our second routine
+
+&nbsp; 00001BEC: 50&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; push&nbsp;&nbsp; eax&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+&nbsp; 00001BED: 68B5A34000&nbsp;&nbsp;&nbsp; push&nbsp;&nbsp; 00040A3B5&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ; Get output in <U>HEX</U> format (%X)
+
+&nbsp; 00001BF2: 8D45A8&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; lea&nbsp;&nbsp;&nbsp; eax,[ebp][-0058]&nbsp;&nbsp;&nbsp;
+
+&nbsp; 00001BF5: 50&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; push&nbsp;&nbsp; eax&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+&nbsp; 00001BF6: FF15E8E34000&nbsp; wsprintfA ;USER32.dll</PRE>
+
+
+
+<PRE>In order to add our Call, we deleted the 'add eax,01' so we will need to add it inside
+
+our 2nd routine:</PRE>
+
+
+
+<PRE>+ 000023AC: 0501000000&nbsp;&nbsp;&nbsp;&nbsp; add&nbsp;&nbsp;&nbsp; eax,000000001
+
+<B><FONT COLOR="#FF0000">&gt;</FONT></B> 000023B1: 669C&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; pushf&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ; Push flags
+
+<B><FONT COLOR="#FF0000">&gt;</FONT></B> 000023B3: 83C000&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; add&nbsp;&nbsp;&nbsp; eax,000&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ; add 0 to cursor's location
+
+<B><FONT COLOR="#FF0000">&gt;</FONT></B> 000023B6: 7902&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; jns&nbsp;&nbsp;&nbsp; 0000023BA&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ; jmp if positive
+
+<B><FONT COLOR="#FF0000">&gt;</FONT></B> 000023B8: F7D8&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; neg&nbsp;&nbsp;&nbsp; eax&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ; otherwise neg it
+
+<B><FONT COLOR="#FF0000">&gt;</FONT></B> 000023BA: 669D&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; popf&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ; restore flags
+
+<B><FONT COLOR="#FF0000">&gt;</FONT></B> 000023BC: C3&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; retn&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ; back to!
+
+ caller</PRE>
+
+
+
+<PRE>&nbsp;- <U>Adding a '+' or '-' sign</U>:</PRE>
+
+
+
+<PRE>Our second routine ends at offset :23BC. So we will write our 3rd one at offset :23BD
+
+and we can already put a jump to it:</PRE>
+
+
+
+<PRE>We had:
+
+&nbsp; 00001C13: FF159CE24000&nbsp; TextOutA ;GDI32.dll&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ; Display Cursor position
+
+&nbsp; 00001C19: 68B8A34000&nbsp;&nbsp;&nbsp; push&nbsp;&nbsp; 00040A3B8&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ; Get &quot;Pix&quot;
+
+&nbsp; 00001C1E: 8D45A8&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; lea&nbsp;&nbsp;&nbsp; eax,[ebp][-0058]&nbsp;&nbsp; ; Get offset for output
+
+&nbsp; 00001C21: 50&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; push&nbsp;&nbsp; eax&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ; Push it
+
+&nbsp; 00001C22: E8151C0000&nbsp;&nbsp;&nbsp; call&nbsp;&nbsp; 00000383C&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ; Store &quot;Pix&quot; in Ebp-58 to display it</PRE>
+
+
+
+<PRE>We change it to:
+
+&nbsp; 00001C13: FF159CE24000&nbsp; TextOutA ;GDI32.dll&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+<B><FONT COLOR="#FF0000">&gt;</FONT></B> 00001C19: E99F070000&nbsp;&nbsp;&nbsp; jmp&nbsp;&nbsp;&nbsp; 0000023BD&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ; Jmp to our 3rd routine
+
+&nbsp; 00001C1E: 8D45A8&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; lea&nbsp;&nbsp;&nbsp; eax,[ebp][-0058]&nbsp;&nbsp;&nbsp;
+
+&nbsp; 00001C21: 50&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; push&nbsp;&nbsp; eax&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+&nbsp; 00001C22: E8151C0000&nbsp;&nbsp;&nbsp; call&nbsp;&nbsp; 00000383C&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ; Will store '+' or '-' in Ebp-58</PRE>
+
+
+
+<PRE>We got rid of the Push 'Pix' and it gave us exactly the room we needed to add our jmp.
+
+
+
+To write our routine, we need to know the cursor location. Fortunately, it is stored
+
+in Ebp+0C. Since right after our Jump, Ebp-58 (which contains the offset where the cursor
+
+location is stored) will be moved into Eax, we can temporarily use this register to
+
+store the cursor position with a Movsx instruction.</PRE>
+
+
+
+<PRE>So, the 3rd routine:</PRE>
+
+
+
+<PRE><B><FONT COLOR="#FF0000">&gt;</FONT></B> 000023BD: 0FBF450C&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; movsx&nbsp; eax,w,[ebp][0000C] ; Get the cursor location in Eax
+
+<B><FONT COLOR="#FF0000">&gt;</FONT></B> 000023C1: 0501000000&nbsp;&nbsp;&nbsp; add&nbsp;&nbsp;&nbsp; eax,000000001&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ; Add 1 to get the new location
+
+<B><FONT COLOR="#FF0000">&gt;</FONT></B> 000023C6: 669C&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; pushf&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ; Save flags
+
+<B><FONT COLOR="#FF0000">&gt;</FONT></B> 000023C8: 83C000&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; add&nbsp;&nbsp;&nbsp; eax,000&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ; Add 0
+
+<B><FONT COLOR="#FF0000">&gt;</FONT></B> 000023CB: 790B&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; jns&nbsp;&nbsp;&nbsp; 0000023D8&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ; Jns to Positive otherwise
+
+<B><FONT COLOR="#FF0000">&gt;</FONT></B> 000023CD: F7D8&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; neg&nbsp;&nbsp;&nbsp; eax&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ; Neg it
+
+<B><FONT COLOR="#FF0000">&gt;</FONT></B> 000023CF: 669D&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; popf&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ; Restore flags
+
+<B><FONT COLOR="#FF0000">&gt;</FONT></B> 000023D1: 68A6A34000&nbsp;&nbsp;&nbsp; push&nbsp;&nbsp; 00040A3A6&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ; Push '-'
+
+<B><FONT COLOR="#FF0000">&gt;</FONT></B> 000023D6: EB07&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; jmps&nbsp;&nbsp; 0000023DF&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ; Go_Ahead
+
+<B><FONT COLOR="#FF0000">&gt;</FONT></B> 000023D8: 669D&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; popf&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ; Restore flags
+
+<B><FONT COLOR="#FF0000">&gt;</FONT></B> 000023DA: 68ADA34000&nbsp;&nbsp;&nbsp; push&nbsp;&nbsp; 00040A3AD&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ; Push '+'      
+
+<B><FONT COLOR="#FF0000">&gt;</FONT></B> 000023DF: E93AF8FFFF&nbsp;&nbsp;&nbsp; jmp&nbsp;&nbsp;&nbsp; 000001C1E&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ; Jump back
+
+<B><FONT COLOR="#FF0000">&gt;</FONT></B> 000023E4: 90&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; nop&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+<B><FONT COLOR="#FF0000">&gt;</FONT></B> 000023E5: 90&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; nop</PRE>
+
+
+
+<PRE>You'll notice that we had to restore the Flags BEFORE pushing '+' AND '-' to avoid&nbsp;
+
+a system crash.</PRE>
+
+
+
+<PRE>Now the patch is done and you can use this nice little tool for your +cracking purposes!
+
+
+
+Frog's Print</PRE>
+
+
+
+<FONT color="green">
+
+(c) Frog's Print, 1997. All rights reversed.</FONT><HR size="6">
+
+<CENTER><I>You are deep inside fravia's page of reverse
+
+engineering, choose your way out:</I></CENTER>
+
+
+
+
+
+<P><CENTER>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"> <A HREF="project6.htm" tppabs="http://www.anticrack.de/fravia/project6.htm">Back to project 6</A> 
+
+ <IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="frarul1.htm" tppabs="http://www.anticrack.de/fravia/frarul1.htm">The 
+
+&quot;call relocation table' and its importance :-)</A>
+
+<HR width="33%">
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage </A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"> <A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links
+
+</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0" NATURALSIZEFLAG="0"> <A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity
+
+</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools
+
+</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails </A><BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database </A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia
+
+</A><BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">is reverse engineering legal? </A></FONT></CENTER></P>
+
+
+
+<P><CENTER><FONT SIZE="-1"><HR></FONT></CENTER>
+
+</BODY>
+
+</HTML>
+

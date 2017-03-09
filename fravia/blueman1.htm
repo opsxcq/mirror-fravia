@@ -1,0 +1,258 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>DOS&nbsp; Navigator v1.50</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+<CENTER><FONT size="+3">Object Oriented Protecting: the case of the tl32v20.dll</FONT>
+
+<BR>(Timelock vagaries inside DisKeeper Trial 3.0 for NT Workstation)
+
+<H2>by <FONT color="#5500AA">BlueMan</FONT></H2>
+
+(12 December 1997, slightly edited by fravia+)</H4>
+
+<A href="timelock.htm" tppabs="http://www.anticrack.de/fravia/timelock.htm"><IMG SRC="timelock.gif" tppabs="http://www.anticrack.de/fravia/timelock.gif" ALT="timelock" ALIGN="BOTTOM" WIDTH="114" HEIGHT="43" BORDER="0" VSPACE="0" HSPACE="0"></A>
+
+<BR><FONT color="gray">Timelock</FONT>
+
+<HR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">Courtesy of fravia's page 
+
+of reverse engineering<HR>       
+
+<I>Well, its 'Time-lock' once more :-)<BR>You'll read here about 
+
+a natural, I would say 'darwinian' matter of fact, my friends... if we 
+
+practicize our &quot;Objected oriented cracking&quot;, and modify the *.dll(s) in 
+
+order to defeat protections, the next step was obvious: Protection schemes 
+
+that use bogus *.dll(s)... Oh my! We better begin gathering 'sound' copies 
+
+of the main *.dll(s) just in case!<BR>A dll-battle! Who would have thought 
+
+of this development only a coupel of years ago? One year, on the web, is 
+
+a whole AERA!<BR>Enjoy!</I></CENTER><HR size="6">
+
+<PRE>
+
+
+
+
+
+ Object Oriented Protecting: the case of the tl32v20.dll 
+
+      (Timelock vagaries inside DisKeeper Trial 3.0 for NT Workstation)
+
+   ====================================================
+
+
+
+Target: us_dkwstr_i.zip (length: 1,854,701 bytes , Build 176t)
+
+        A defragment tools for Windows NT 4.0 Workstation
+
+
+
+Tools:
+
+      1.) SoftIce for NT
+
+      2.) W32Dasm  (Windows disassembler)  <NOT necessary 3.) tl32v20.dll (91,648 bytes) Preface: The protection of this app. is strange, it will 'smuggle' us a crippled tl32v20.dll, so that we cannot get the familiar purchasing dialog. If we try to unlock the TimeLock protection by entering the unclock code, it will check and terminate abnormally. After unpacking the zip file and after the installation, run the target. What do you see ? You see a time-left dialog, it was our familiar protection method, a protection scheme through a TimeLock program. Look at the directory of installation! You will find there a 'shortened' tl32v20.dll : 85,528 bytes! But where is the "purchase" button ? Oh ! The tl32v20.dll is a "crippled" dll... the length of our "familiar" one is 91,648 bytes. So the first step is to replace the tl32v20.dll with the one whose length is 91,648 bytes. a.) Finding the unlock code Note: Before you proceed, save the the original "dknt.tsf" first, which stores the the TimeLock protection information. You will later understand why we had to do this. Now run the DisKeeper again, you will (now) see the purchase button. Just click the purchase button and you will see another "Purchase Window" asking you the unlock code. Just input any number to the unlock code field (Don't forget to deliver username and company name). Now switch to your SoftIce and type <font color="purple">
+
+ :bpx getwindowtexta if (bpcount == 3)
+
+</FONT>
+
+You will see the following Softice's message:
+
+
+
+ Break due to BPX USER32!GetWindowTextA  IF (BPCount==3) 
+
+(ET=16.54 seconds)
+
+
+
+Just type F12 to return to the caller (tl32v20.dll) and look:
+
+
+
+
+
+ :10003EC8  6A31                PUSH    31
+
+ :10003ECA  68A0440110          PUSH    100144A0
+
+ :10003ECF  50                  PUSH    EAX
+
+ :10003ED0  FF15DC630110        CALL    [USER32!GetWindowTextA]
+
+ :10003ED6  8D45D8              LEA     EAX,[EBP-28]
+
+ :10003ED9  50                  PUSH    EAX
+
+ :10003EDA  E885E9FFFF          CALL    10002864
+
+ :10003EDF  83C404              ADD     ESP,04
+
+ :10003EE2  8D45EC              LEA     EAX,[EBP-14]
+
+ :10003EE5  8D4DD8              LEA     ECX,[EBP-28]    &lt;-- After executing &quot;call 10002864&quot;
+
+          						 the correct unlock code is at [ebp-28]
+
+ :10003EE8  50                  PUSH    EAX
+
+
+
+type following command from softice to get a dump of the correct unlock code<FONT color="purple">
+
+  :d [ebp-28]</FONT>
+
+
+
+b.) Let's crack another part of the protection inside our target
+
+----------------------------------------------------------------
+
+  Now run the program again, it terminates abnormally, it seem that
+
+the program has another protection scheme. So we copy the original
+
+&quot;dknt.tsf&quot; back. (Don't forget to save the cracked &quot;dknt.tsf&quot; to
+
+another file.)
+
+
+
+  After replacing dknt.tsf with the original one, we need to get the
+
+  exporting function of tl32v20.dll from softIce symbol loader. 
+
+After loding the exporting information of tl32v20.dll, press Ctrl-D to 
+
+switch to softice, type
+
+<FONT color="purple">
+
+ :exp   <DISPLAY the export symbol </font>
+
+Press the down arrow key until you see the following inside 
+
+SoftIce's command window,
+
+
+
+ tl32v20
+
+ :10003E05 verifyTimeLock32
+
+ :1000386A getUserName32
+
+ :1000397F getUserState
+
+ :10003843 getRegNum32
+
+ :100038D0 getUserNumExecutions
+
+ :10003B9D showMainDialog
+
+ :10003C92 showMainDialogEx
+
+ :10003DE6 trialEnvironmentOpen
+
+ :10003DB6 trialEnvironmentClose
+
+ :1000390A getUserNumMinutesUsed
+
+ :100039B1 invokeTimeLock32
+
+ :1000389E _getUserNumDaysLeft@4
+
+
+
+Switch to Softice, type
+
+ :bpx ShowMainDialog      <SHOWMAINDIALOG will display the familiar "Time-Left" Window Now run the application again, you will see the familiar time-left window, just press OK and SoftIce pops-up. :004025E5 850B TEST [EBX],ECX :004025E7 0400 ADD AL,00 :004025E9 008D44241450 ADD [EBP+50142444],CL :004025EF FF1524274600 CALL [tl32v20!showMainDialog] :004025F5 3D14550000 CMP EAX,00005514 <--- SoftIce pop-up here look at the value of eax, it was 1524d (hex) :004025FA 7F38 JG 00402634 <-- see below :004025FC 742A JZ 00402628 :004025FE 83F8FB CMP EAX,-05 :00402601 0F8400040000 JZ 00402A07 :00402607 83F8FC CMP EAX,-04 :0040260A 0F84F7030000 JZ 00402A07 :00402610 83F8FE CMP EAX,-02 :00402613 0F85EE030000 JNZ 00402A07 :00402619 33C0 XOR EAX,EAX from the disassembler output, we know( ? ) that the value of EAX should be 1524d :00402634 3DF4850000 cmp eax, 000085F4 :00402639 7419 je 00402654 :0040263B 3D4D520100 cmp eax, 0001524D <- the value of eax should equal to "1524d" :00402640 0F85C1030000 jne 00402A07 * Reference To: tl32v20.trialEnvironmentOpen, Ord:0009h | :00402646 FF1520274600 Call dword ptr [00462720] * Reference To: tl32v20.trialEnvironmentClose, Ord:000Ah | :0040264C FF152C274600 Call dword ptr [0046272C] :00402652 EB22 jmp 00402676 From above description, we know the "normal" value of eax returned from tl32v20.dll should be "1524d (hex)". Now replace "dknt.tsf" with the cracked one, run the program again, softice pop-up. :004025E5 850B TEST [EBX],ECX :004025E7 0400 ADD AL,00 :004025E9 008D44241450 ADD [EBP+50142444],CL :004025EF FF1524274600 CALL [tl32v20!showMainDialog] :004025F5 3D14550000 CMP EAX,00005514 <--- SoftIce pop-up here look at the value of eax, it was different from 1524d (hex) :004025FA 7F38 JG 00402634 So the code "at.class" tppabs="http://fravia.org/at.class" :004025F5 3D14550000 CMP EAX,00005514 :004025FA 7F38 JG 00402634 should be patched to :004025F5 B84D520100 MOV EAX,00001524d ^^^^^^^^ :004025FA EB38 Jmp 00402634 ^^ After patching the program with above code, run the program again. Now the program will not terminate abnormally. But the program will still not defragment your HD! Actually there is another protection scheme! Let's try to figure out wath is going on! Mmmmm ..... Look at the installed directory of DisKeeper, you will see the "defrag" subdirectory, there are following files, diskeep.ctl dkfat.exe dkntfs.exe tl32v20.dll I think it maybe use the same protection method inside dkfat.exe, dkntfs.exe. So let's try to found the pattern "3d145500007f" (the hex code of cmp eax,00005514, jg ) inside dkfat.exe, dkntfs.exe. Bingo ! We found one place, and change it to "B84D520100EB"(the hex code of mov eax,00001524d, jmp). And we try run the application again. It work now !!! BlueMan 12/1997</prE>
+
+<FONT color="green">(c) <FONT color="#5500AA"> BlueMan </FONT> All rights reversed</FONT>
+
+<HR ALIGN="CENTER" WIDTH="100%" SIZE="3">
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</I></CENTER>
+
+<BR><CENTER>
+
+<A href="timelock.htm" tppabs="http://www.anticrack.de/fravia/timelock.htm"><IMG SRC="timelock.gif" tppabs="http://www.anticrack.de/fravia/timelock.gif" ALT="timelock" ALIGN="BOTTOM" WIDTH="114" HEIGHT="43" BORDER="0" VSPACE="0" HSPACE="0"></A>
+
+<BR><FONT color="gray"> Back to the Timelock project</FONT>
+
+<HR width="33%">
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="javascri.htm" tppabs="http://www.anticrack.de/fravia/javascri.htm">javascripts</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut CGI-scripts</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering legal?</A></CENTER>
+
+<CENTER><HR ALIGN="CENTER" WIDTH="100%" SIZE="2"></CENTER>
+
+</BODY>
+
+</HTML>
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,1213 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>hotline.htm: Fravia's pages of reverse engineering</TITLE>
+
+<META NAME="fravia" HTTP-EQUIV="Description" CONTENT="The only real site on the Web for software reverse engineering, studies and tutorials about software protection, reality reversing, software protection development, web-anonymity techniques and countermeasures, user defence. Must visit to learn how to defend yourself on the Web">
+
+<META NAME="fravia" HTTP-EQUIV="Keywords" CONTENT="Reverse engineering, Cracking, Software protections, Reverse engineering Manuals, Cracking Tools, Cracking Cocktails, Software locking and unlocking, Software Reverse Engineering, Software Protection improvement, Cracking Tutorials, Debugging, Disassembling, How To Crack, Learn To Crack, protection schemes, SOFTWARE REVERSE ENGINEERING, Tutorials, Web pages nuking, Steganography, Cryptography, Barcodes, Anonymity, search engines, how to search, counter measures, agent trapping, web stalking, web combing, SOFTWARE PROTECTIONS, web klebing, protection removal">
+
+<META NAME="copyright" content="Copyright 1995, 1996, 1997, 1998, 1999 by fravia+, European Union">
+
+	
+
+</HEAD>
+
+
+
+<BODY bgcolor="#C0C0C0" text="#001010" vlink="#405040" alink="#00FF50"> 
+
+<HR>
+
+<I>I will just publish, from now on, the essays I like <U>exactly as I get them</U>.
+
+<BR>
+
+Authors are invited to<UL>
+
+<LI>1) download the source code;
+
+<LI>2) correct it;
+
+<LI>3) <B>very important</B> CHECK on an Opera browser that it looks ok;
+
+<LI>4) resend it to me corrected
+
+</UL>
+
+And I'll update it.
+
+<HR width=33%>
+
+Note that if the essay should infringe on anyone copyrights, and if I receive a legitimate request 
+
+to nuke it, it will immediately disappear from my site, so you always better write software reversing 
+
+essays that are not "specific" target related... so, pointing out deficiences is OK, showing lamers 
+
+how to register (or how to make a coward keygen for the idiots) is definitely NOT "fraviatiquette".<BR>
+
+Indeed from now on I want to HELP, not to damage programmers.
+
+<HR width=33%>
+
+This said I publish this because I reckon that you'll be able to enjoy a very nice (especially in the 
+
+second part) reversing approach. And I believe that protectors should study this with the 
+
+outmost attention...
+
+</I>
+
+<HR size=1>
+
+<PRE>cracking the hotline sw client v1.2 and server v1.0 b8
+
+	by douby^dread
+
+
+
+
+
+
+
+one of the problems with hotline is that it doesn't
+
+have any api input calls to 
+
+hook on ... when entering name &amp; serial hooking on
+
+calls like getdlgitemtexta,
+
+getwindowtexta or even hmemcpy won't work ... so how
+
+are wo going to locate
+
+the protection scheme if we can't hook on api input
+
+calls ??? 
+
+
+
+
+
+
+
+the createwindowexa method
+
+
+
+the solution to this problem is using the
+
+createwindowexa method ... by hooking 
+
+the createwindowexa api function soft-ice will pop up
+
+every time a window is
+
+created ... so if the protection scheme window is
+
+created si will hopefully pop 
+
+up somewhere in/before the protection scheme code ...
+
+the entire protection 
+
+scheme method is probably located in a single call ...
+
+so if si pops up the only 
+
+thing we'll have to do to locate the protection scheme
+
+call is press the f12
+
+button until we're back in hotline  ... press the
+
+cancel button ... et voila 
+
+back in softice ... right after the protection scheme
+
+call ... no ain't that 
+
+great :-) ... this method works for both the hotline
+
+server and client ... 
+
+
+
+using this method with the hotline client will get you
+
+here:
+
+
+
+:00403B14 8B4DCC                  mov ecx, dword ptr
+
+[ebp-34]
+
+:00403B17 E824320000              call 00406D40	
+
+;protection scheme
+
+:00403B1C E98F000000              jmp 00403BB0
+
+
+
+ok so let's disable the bpx on createwindowexa and put
+
+one on :00403b17 ... 
+
+open the about box .. click on the unlock button and.
+
+.. back in softice!! ...
+
+ok let's trace into this function ... press f10 until
+
+we're back in hotline ...
+
+ok let's put some text in the name box and ... back in
+
+soft-ice ... start 
+
+pressing f10 again till you're back in hl enter the
+
+rest of your name ... now
+
+start typing some kind of false serial ... wow .. back
+
+in si again ... press
+
+f10 till you're back in hl ... enter the rest of your
+
+false serial ... and press
+
+unlock ... back in si again ... ok this is the code
+
+where the REAL protecion starts
+
+
+
+we could put some breakpoints on our name and serial
+
+but since the program may copy
+
+our name/serial a lot of times to different memory
+
+locations it may be a boring
+
+exercise ... so let's just step over functions
+
+compares and see what happens ... 
+
+
+
+using this method you'll soon get to a cmp with
+
+0eh=14d ... let's see what it does
+
+
+
+:00406E05 80BD90FBFFFF0E          cmp byte ptr
+
+[ebp+FFFFFB90], 0E ;if serial length 
+
+				 	;&lt; 0e get the hell out of here else continue
+
+:00406E0C 0F853E030000            jne 00407150
+
+:00406E12 8D95E4FBFFFF            lea edx, dword ptr
+
+[ebp+FFFFFBE4]
+
+:00406E18 8995E0FBFFFF            mov dword ptr
+
+[ebp+FFFFFBE0], edx
+
+:00406E1E 8B95E0FBFFFF            mov edx, dword ptr
+
+[ebp+FFFFFBE0]
+
+:00406E24 FF85E0FBFFFF            inc dword ptr
+
+[ebp+FFFFFBE0]
+
+:00406E2A C60241                  mov byte ptr [edx],
+
+41
+
+:00406E2D 8B95E0FBFFFF            mov edx, dword ptr
+
+[ebp+FFFFFBE0]
+
+:00406E33 FF85E0FBFFFF            inc dword ptr
+
+[ebp+FFFFFBE0]
+
+:00406E39 C60248                  mov byte ptr [edx],
+
+48
+
+:00406E3C 0FB605B8E34700          movzx eax, byte ptr
+
+[0047E3B8]
+
+
+
+in the code following the serial length check the
+
+program sets some values for 
+
+creating some kind of compare value using these values
+
+and the entered name ... we
+
+will get back to these values later ....
+
+
+
+now just step &amp; trace until you get here...
+
+
+
+
+
+:00406ECF BA00000000              mov edx, 00000000
+
+:00406ED4 8995D8FBFFFF            mov dword ptr
+
+[ebp+FFFFFBD8], edx	
+
+:00406EDA 8B95D8FBFFFF            mov edx, dword ptr
+
+[ebp+FFFFFBD8]	
+
+:00406EE0 6BD21A                  imul edx, 0000001A		
+
+
+
+:00406EE3 8995D8FBFFFF            mov dword ptr
+
+[ebp+FFFFFBD8], edx	
+
+:00406EE9 8B95E0FBFFFF            mov edx, dword ptr
+
+[ebp+FFFFFBE0]	
+
+:00406EEF 0FB65206                movzx edx, byte ptr
+
+[edx+06]	     ;get letter #7 from serial
+
+:00406EF3 83C2BF                  add edx, FFFFFFBF		 
+
+   ;subs 41h from letter	
+
+:00406EF6 0195D8FBFFFF            add dword ptr
+
+[ebp+FFFFFBD8], edx  ;add result to mem location
+
+:00406EFC 8B95D8FBFFFF            mov edx, dword ptr
+
+[ebp+FFFFFBD8]  ;move result in edx	
+
+:00406F02 6BD21A                  imul edx, 0000001A		
+
+    ;imul with 1ah	
+
+:00406F05 8995D8FBFFFF            mov dword ptr
+
+[ebp+FFFFFBD8], edx  ;store result
+
+:00406F0B 8B95E0FBFFFF            mov edx, dword ptr
+
+[ebp+FFFFFBE0]
+
+:00406F11 0FB65205                movzx edx, byte ptr
+
+[edx+05]	     ;get letter #6 from serial	
+
+:00406F15 83C2BF                  add edx, FFFFFFBF		 
+
+   ;subs 41h from letter	
+
+:00406F18 0195D8FBFFFF            add dword ptr
+
+[ebp+FFFFFBD8], edx  ;add result to mem location
+
+:00406F1E 8B95D8FBFFFF            mov edx, dword ptr
+
+[ebp+FFFFFBD8]  ;move result in edx 
+
+:00406F24 6BD21A                  imul edx, 0000001A  
+
+              ;imul with 1ah
+
+:00406F27 8995D8FBFFFF            mov dword ptr
+
+[ebp+FFFFFBD8], edx  ;store result
+
+:00406F2D 8B95E0FBFFFF            mov edx, dword ptr
+
+[ebp+FFFFFBE0]
+
+:00406F33 0FB65204                movzx edx, byte ptr
+
+[edx+04] 	     ;etc.... 	
+
+:00406F37 83C2BF                  add edx, FFFFFFBF
+
+:00406F3A 0195D8FBFFFF            add dword ptr
+
+[ebp+FFFFFBD8], edx
+
+:00406F40 8B95D8FBFFFF            mov edx, dword ptr
+
+[ebp+FFFFFBD8]
+
+:00406F46 6BD21A                  imul edx, 0000001A
+
+:00406F49 8995D8FBFFFF            mov dword ptr
+
+[ebp+FFFFFBD8], edx
+
+:00406F4F 8B95E0FBFFFF            mov edx, dword ptr
+
+[ebp+FFFFFBE0]
+
+:00406F55 0FB65203                movzx edx, byte ptr
+
+[edx+03]
+
+:00406F59 83C2BF                  add edx, FFFFFFBF
+
+:00406F5C 0195D8FBFFFF            add dword ptr
+
+[ebp+FFFFFBD8], edx
+
+:00406F62 8B95D8FBFFFF            mov edx, dword ptr
+
+[ebp+FFFFFBD8]
+
+:00406F68 6BD21A                  imul edx, 0000001A
+
+:00406F6B 8995D8FBFFFF            mov dword ptr
+
+[ebp+FFFFFBD8], edx
+
+:00406F71 8B95E0FBFFFF            mov edx, dword ptr
+
+[ebp+FFFFFBE0]
+
+:00406F77 0FB65202                movzx edx, byte ptr
+
+[edx+02]
+
+:00406F7B 83C2BF                  add edx, FFFFFFBF
+
+:00406F7E 0195D8FBFFFF            add dword ptr
+
+[ebp+FFFFFBD8], edx
+
+:00406F84 8B95D8FBFFFF            mov edx, dword ptr
+
+[ebp+FFFFFBD8]
+
+:00406F8A 6BD21A                  imul edx, 0000001A
+
+:00406F8D 8995D8FBFFFF            mov dword ptr
+
+[ebp+FFFFFBD8], edx
+
+:00406F93 8B95E0FBFFFF            mov edx, dword ptr
+
+[ebp+FFFFFBE0]
+
+:00406F99 0FB65201                movzx edx, byte ptr
+
+[edx+01]
+
+:00406F9D 83C2BF                  add edx, FFFFFFBF
+
+:00406FA0 0195D8FBFFFF            add dword ptr
+
+[ebp+FFFFFBD8], edx
+
+:00406FA6 8B95D8FBFFFF            mov edx, dword ptr
+
+[ebp+FFFFFBD8]
+
+:00406FAC 6BD21A                  imul edx, 0000001A
+
+:00406FAF 8995D8FBFFFF            mov dword ptr
+
+[ebp+FFFFFBD8], edx
+
+:00406FB5 8B95E0FBFFFF            mov edx, dword ptr
+
+[ebp+FFFFFBE0]
+
+:00406FBB 0FB612                  movzx edx, byte ptr
+
+[edx]
+
+:00406FBE 83C2BF                  add edx, FFFFFFBF
+
+:00406FC1 0195D8FBFFFF            add dword ptr
+
+[ebp+FFFFFBD8], edx
+
+:00406FC7 6AFE                    push FFFFFFFE
+
+:00406FC9 8B85DCFBFFFF            mov eax, dword ptr
+
+[ebp+FFFFFBDC]
+
+:00406FCF 50                      push eax
+
+:00406FD0 8D85E4FBFFFF            lea eax, dword ptr
+
+[ebp+FFFFFBE4]
+
+:00406FD6 50                      push eax
+
+:00406FD7 E8D42D0300              call 00439DB0
+
+:00406FDC 83C40C                  add esp, 0000000C
+
+:00406FDF 3985D8FBFFFF            cmp dword ptr
+
+[ebp+FFFFFBD8], eax ;cmp serial value w/ name value
+
+:00406FE5 0F8565010000            jne 00407150
+
+
+
+if you study the code you will see the first 7
+
+characters of the serial
+
+are used to create a value ... this value is compared
+
+with a value created using
+
+the previousely set values .. say our serial looks
+
+something like this:
+
+
+
+ABCDEFGHIJKLMN
+
+
+
+in the code before the call at 00406fd7 the following
+
+mathimatical operations are 
+
+being used on the serial ... (#A represents the
+
+uni-code of A(=41h))
+
+
+
+((((((((#G-41H)*1AH + (#F-41H))*1AH + (#E-41H))*1AH +
+
+(#D-41H))*1AH + 
+
+(#C-41H))*1AH + (#B-41H))*1AH + (#A-41H)) = X
+
+
+
+if X = value created using our name -&gt; the first part
+
+of our serial is valid
+
+else wrong serial
+
+
+
+so if we copy the code used for making the name value
+
+and if we are able to "substract"
+
+the right serial out of this name value we've got the
+
+first part of the serial!
+
+
+
+hmmm let's take another look at the formula above ...
+
+if X - (#A-41H) = Y then Y mod 1ah
+
+must be 0 ... becoz of the - 41H and the * 1AH a valid
+
+serial will probably only contain 
+
+uppercase chars that means #A must be a value between
+
+0 and 19H
+
+
+
+using this knowledge we could create an algorythm
+
+using backtracking that will "substract"
+
+the right serial out of the given name value ... it
+
+looks something like this:
+
+
+
+
+
+    String getSerial(long a, String s){
+
+	    if(a==0 &amp;&amp; s.length()==7) return s;
+
+	    else if(s.length()&gt;6||((s.length()&lt;5)&amp;&amp;(a&lt;26)))
+
+return null;
+
+	    else {
+
+	        for (int i=0;i&lt;26;i++){
+
+	            if((a-i)%26==0){ 
+
+	                s=getSerial((a-i)/26,s+(char)(i+65));
+
+	                if(s!=null) return s;
+
+	            }
+
+	        }
+
+	    }
+
+	    return null;
+
+	}
+
+
+
+param: a = name value, s = serial
+
+
+
+we can use this function to substract the first part
+
+of the serial out of the name value
+
+but what about the second part ??? 
+
+
+
+well let's take a look at the rest of the code:
+
+
+
+:00407003 8D9590FBFFFF            lea edx, dword ptr
+
+[ebp+FFFFFB90]
+
+:00407009 83C208                  add edx, 00000008
+
+:0040700C 8995E0FBFFFF            mov dword ptr
+
+[ebp+FFFFFBE0], edx
+
+:00407012 BA00000000              mov edx, 00000000
+
+:00407017 8995D8FBFFFF            mov dword ptr
+
+[ebp+FFFFFBD8], edx
+
+:0040701D 8B95D8FBFFFF            mov edx, dword ptr
+
+[ebp+FFFFFBD8]
+
+:00407023 6BD21A                  imul edx, 0000001A
+
+:00407026 8995D8FBFFFF            mov dword ptr
+
+[ebp+FFFFFBD8], edx
+
+:0040702C 8B95E0FBFFFF            mov edx, dword ptr
+
+[ebp+FFFFFBE0]
+
+:00407032 0FB65206                movzx edx, byte ptr
+
+[edx+06]
+
+:00407036 83C2BF                  add edx, FFFFFFBF
+
+:00407039 0195D8FBFFFF            add dword ptr
+
+[ebp+FFFFFBD8], edx
+
+:0040703F 8B95D8FBFFFF            mov edx, dword ptr
+
+[ebp+FFFFFBD8]
+
+:00407045 6BD21A                  imul edx, 0000001A
+
+:00407048 8995D8FBFFFF            mov dword ptr
+
+[ebp+FFFFFBD8], edx
+
+:0040704E 8B95E0FBFFFF            mov edx, dword ptr
+
+[ebp+FFFFFBE0]
+
+:00407054 0FB65205                movzx edx, byte ptr
+
+[edx+05]
+
+:00407058 83C2BF                  add edx, FFFFFFBF
+
+:0040705B 0195D8FBFFFF            add dword ptr
+
+[ebp+FFFFFBD8], edx
+
+:00407061 8B95D8FBFFFF            mov edx, dword ptr
+
+[ebp+FFFFFBD8]
+
+:00407067 6BD21A                  imul edx, 0000001A
+
+:0040706A 8995D8FBFFFF            mov dword ptr
+
+[ebp+FFFFFBD8], edx
+
+:00407070 8B95E0FBFFFF            mov edx, dword ptr
+
+[ebp+FFFFFBE0]
+
+:00407076 0FB65204                movzx edx, byte ptr
+
+[edx+04]
+
+:0040707A 83C2BF                  add edx, FFFFFFBF
+
+:0040707D 0195D8FBFFFF            add dword ptr
+
+[ebp+FFFFFBD8], edx
+
+:00407083 8B95D8FBFFFF            mov edx, dword ptr
+
+[ebp+FFFFFBD8]
+
+:00407089 6BD21A                  imul edx, 0000001A
+
+:0040708C 8995D8FBFFFF            mov dword ptr
+
+[ebp+FFFFFBD8], edx
+
+:00407092 8B95E0FBFFFF            mov edx, dword ptr
+
+[ebp+FFFFFBE0]
+
+:00407098 0FB65203                movzx edx, byte ptr
+
+[edx+03]
+
+:0040709C 83C2BF                  add edx, FFFFFFBF
+
+:0040709F 0195D8FBFFFF            add dword ptr
+
+[ebp+FFFFFBD8], edx
+
+:004070A5 8B95D8FBFFFF            mov edx, dword ptr
+
+[ebp+FFFFFBD8]
+
+:004070AB 6BD21A                  imul edx, 0000001A
+
+:004070AE 8995D8FBFFFF            mov dword ptr
+
+[ebp+FFFFFBD8], edx
+
+:004070B4 8B95E0FBFFFF            mov edx, dword ptr
+
+[ebp+FFFFFBE0]
+
+:004070BA 0FB65202                movzx edx, byte ptr
+
+[edx+02]
+
+:004070BE 83C2BF                  add edx, FFFFFFBF
+
+:004070C1 0195D8FBFFFF            add dword ptr
+
+[ebp+FFFFFBD8], edx
+
+:004070C7 8B95D8FBFFFF            mov edx, dword ptr
+
+[ebp+FFFFFBD8]
+
+:004070CD 6BD21A                  imul edx, 0000001A
+
+:004070D0 8995D8FBFFFF            mov dword ptr
+
+[ebp+FFFFFBD8], edx
+
+:004070D6 8B95E0FBFFFF            mov edx, dword ptr
+
+[ebp+FFFFFBE0]
+
+:004070DC 0FB65201                movzx edx, byte ptr
+
+[edx+01]
+
+:004070E0 83C2BF                  add edx, FFFFFFBF
+
+:004070E3 0195D8FBFFFF            add dword ptr
+
+[ebp+FFFFFBD8], edx
+
+:004070E9 8B95D8FBFFFF            mov edx, dword ptr
+
+[ebp+FFFFFBD8]
+
+:004070EF 6BD21A                  imul edx, 0000001A
+
+:004070F2 8995D8FBFFFF            mov dword ptr
+
+[ebp+FFFFFBD8], edx
+
+:004070F8 8B95E0FBFFFF            mov edx, dword ptr
+
+[ebp+FFFFFBE0]
+
+:004070FE 0FB612                  movzx edx, byte ptr
+
+[edx]
+
+:00407101 83C2BF                  add edx, FFFFFFBF
+
+:00407104 0195D8FBFFFF            add dword ptr
+
+[ebp+FFFFFBD8], edx
+
+:0040710A 6A02                    push 00000002
+
+:0040710C 8B85DCFBFFFF            mov eax, dword ptr
+
+[ebp+FFFFFBDC]
+
+:00407112 50                      push eax
+
+:00407113 8D85E4FBFFFF            lea eax, dword ptr
+
+[ebp+FFFFFBE4]
+
+:00407119 50                      push eax
+
+:0040711A E8F12C0300              call 00439E10
+
+:0040711F 83C40C                  add esp, 0000000C
+
+:00407122 3985D8FBFFFF            cmp dword ptr
+
+[ebp+FFFFFBD8], eax ;cmp serial value w/ name value
+
+:00407128 7526                    jne 00407150
+
+
+
+HEY!!! it's almost the same ... but instead of the
+
+first 7 chars the last 7 chars 
+
+of the serial are used ... so we can use the same
+
+algorythm to substract the last
+
+part of the serial out of the SECOND name value ...
+
+
+
+okay so now we know what algorhytm to use to substract
+
+the right serial out off the name 
+
+codes ... but how can we create these name codes ?
+
+
+
+well that's pretty easy study the call that creates
+
+these name values and just copy the
+
+code ... you will see this call uses a table to create
+
+the name serials .. so you'll
+
+have to copy the table too ... the call also uses the
+
+values set at the beginning of the 
+
+protection scheme to create the name value ... as you
+
+will see the only difference between
+
+the hotline server and client are these values set at
+
+beginning of the protection scheme ..
+
+
+
+now you've got all the information you need to crack
+
+these babies ... good luck ...
+
+
+
+well that's all folks ... i'm sorry i didn't explain
+
+the creating of the name values ...
+
+but hey see it as an exercise ... and try to find out
+
+for yourself ... 
+
+
+
+for questions/suggestions/remarks/etc. email me at
+
+douby_(at)hotmail(dot)com or visit
+
+the #dread channel on efnet ... 
+
+
+
+greetz go out to everyone of faith2000, rvl &amp; ecolove
+
+
+
+---------------------------------------cut
+
+here------------------------------------------------------
+
+
+
+Cracking the Hypersnap-DX v3.30.00 CRC check and it's
+
+anti-debugging trick. 	by douby^dread
+
+
+
+
+
+
+
+WARNING!
+
+
+
+1) The essence of this essay isn't about the serial
+
+protection scheme of Hypersnap but about it's
+
+anti-debugging trick and about it's CRC check.
+
+
+
+2) When you install Hypersnap-DX make sure softice
+
+isn't resident, otherwise Hypersnap won't 
+
+install.
+
+
+
+
+
+
+
+Tools of the Trade.
+
+
+
+- Softice
+
+- Smartcheck
+
+- Your favorite hex editor
+
+
+
+
+
+
+
+Poppin the hood.
+
+
+
+When you try firing up HSDX.EXE while softice is
+
+resident you'll notice it won't start. How come?
+
+To answer that question we have to know what the
+
+program does before it quits. So how are we going
+
+to find that out? Well we'll have to use a program
+
+flow analyser and what's the best program 
+
+flow analyser we know? Smartcheck! Ok fire up
+
+smartcheck and open HSDX.EXE (make sure supress system
+
+
+
+API and OLE calls is off), press the play button and
+
+after Smartcheck is finished click on the show 
+
+all events button. We want to know which API calls
+
+we're called right before the exitprocess call.
+
+So scroll to the end of the list and take a good look
+
+around. Hmm OuputDebugStringA and CreateFileA 
+
+with lpFileName pointing to \\.\SICE ?? Very
+
+suspicious don't you think ? Let's see what the API
+
+says about the return value of OuputDebugStringA. Hmm
+
+the API says it doesn't return shit so it has
+
+to be the CreateFileA call that does the trick. Let's
+
+put a bpx on OutputDebugStringA (since using
+
+CreateFileA will cause softice to pop up a lot of
+
+times). Ok now start Hypersnap and... bang! Back
+
+in Softice. Press F12 to get out of the call, and this
+
+is what you'll see:
+
+
+
+* Reference To: KERNEL32.OutputDebugStringA, Ord:01F5h
+
+                                  |
+
+:6302120F FF1540500263            Call dword ptr
+
+[63025040] 
+
+:63021215 55                      push ebp
+
+:63021216 6880000000              push 00000080
+
+:6302121B 6A03                    push 00000003
+
+:6302121D 55                      push ebp
+
+:6302121E 6A03                    push 00000003
+
+:63021220 68000000C0              push C0000000
+
+:63021225 68F0670263              push 630267F0
+
+:6302122A FFD3                    call ebx			;
+
+CreateFileA
+
+:6302122C 83F8FF                  cmp eax, FFFFFFFF		;
+
+Is SI resident?
+
+:6302122F 7406                    jz 63021237			; if
+
+so exit else continue
+
+:63021231 55                      push ebp
+
+:63021232 E8D6060000              call 6302190D			 
+
+
+
+Hmmz the only thing we have to do is change the jz at
+
+6302122F to a jmp by changing 7406 into EB06.
+
+Fire up your favorite hex editor, make the change,
+
+fire up HSDX.EXE and... DONE! It works!
+
+
+
+There's also a check for NTICE a bit further down the
+
+code and it works exactely the same, so it
+
+shouldn't be a problem to disable that one too. So
+
+what's up next? 
+
+
+
+
+
+
+
+Removing the CRC check.
+
+
+
+If you try to make a change in HSDX.EXE and try
+
+running it afterwards you'll get a message box saying
+
+something like:"Can't load Hshelper.DLL". How come?
+
+Well probably Hypersnap uses some kind of CRC 
+
+protection to keep the program from being changed. So
+
+how are we going to remove it? Simple we want
+
+to know the difference between what the program does
+
+when it encounters an incorrect CRC and what it
+
+does when it encounters a correct CRC. So how are we
+
+going to do that? Smartcheck! We can use it to
+
+compare the differences between the flow of Hypersnap
+
+when HSDX.EXE is changed and when HSDX.EXE isn't
+
+changed.
+
+
+
+Ok first open the unchanged HSDX.EXE in smartcheck,
+
+run the program and save the results. Next change a
+
+string in HSDX.EXE using your hex editor. Open it in
+
+smartcheck and run the program, open the saved 
+
+results of HSDX.EXE running unchanged. Tile the result
+
+windows and compare the differences (could it
+
+get any easier ? :-) You'll soon see the first
+
+difference between both flows, it occurs when the 
+
+ReadFile loop is finished. In the unchanged version it
+
+calls the API call CloseHandle, in the changed
+
+version it doesn't call it. So what are we going to
+
+do? We're going to put a bpx on OuputDebugStringA
+
+(the ReadFile loop comes right after the
+
+OutputDebugStringA) get out of the loop and look for
+
+jumps
+
+that will take us out of the call. Using this method
+
+you'll soon get here:
+
+
+
+:63021329 8815E5670263            mov byte ptr
+
+[630267E5], dl
+
+:6302132F 8B1544600263            mov edx, dword ptr
+
+[63026044]	;load the CRC in edx
+
+:63021335 33D5                    xor edx, ebp			;edx
+
+xor ebp = esi
+
+:63021337 33D6                    xor edx, esi			
+
+:63021339 740F                    je 6302134A			;if
+
+edx = esi CRC is correct
+
+:6302133B 5F                      pop edi
+
+:6302133C 5E                      pop esi
+
+:6302133D 5D                      pop ebp
+
+:6302133E 33C0                    xor eax, eax
+
+:63021340 5B                      pop ebx
+
+:63021341 81C404040000            add esp, 00000404
+
+:63021347 C20C00                  ret 000C
+
+
+
+
+
+
+
+* Referenced by a (U)nconditional or (C)onditional
+
+Jump at Address:
+
+|:63021339(C)
+
+|
+
+:6302134A 8A4006                  mov al, byte ptr
+
+[eax+06]
+
+
+
+Hmm it's pretty simple to solve that problem, you
+
+could for example change the je in a jmp by changing
+
+740F into EB0F. There are many more ways of solving
+
+this problem ofcourse but hey we don't care
+
+about that do we?
+
+
+
+For suggestions,corrections or just to say hello mail
+
+me at:
+
+
+
+douby(at)newmail(dot)com
+
+
+
+Or visit us at #dread on EFNET.
+
+
+
+Have fun.</PRE>

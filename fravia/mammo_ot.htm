@@ -1,0 +1,351 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>mammo_ot.htm Status report: the API monitor project (+HCU: Our tools)</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+
+
+<PRE>
+
+<FONT size="+2"><CENTER>
+
+Status report: the API monitor project<BR>
+
+API Vision (avdemo15.exe) promises<BR></FONT>
+
+by Mammon_</CENTER><BR>
+
+<CENTER><A href="hcu98_3.htm" tppabs="http://www.anticrack.de/fravia/hcu98_3.htm"><IMG SRC="hcu1.gif" tppabs="http://www.anticrack.de/fravia/hcu1.gif" ALT="+cracker" ALIGN="BOTTOM" WIDTH="114" HEIGHT="43" BORDER="0" VSPACE="0" HSPACE="0"></A>
+
+<BR>
+
+<FONT color="gray">21 January 1998</FONT>
+
+</CENTER><BR>
+
+<HR>fravia+
+
+
+
+So far I have been working on two aspects of this project: 
+
+existing API monitors, and VXD writing.
+
+
+
+Existing API Monitors
+
+---------------------
+
+
+
+In addition to APIMON.EXE. which is more of a debugger and is only 
+
+reliable (if even) in NT, I have found the following three API monitor 
+
+apps:
+
+
+
+
+
+*API Vision
+
+<A href="javascript:if(confirm('ftp://ftp.rahul.net/pub/apivis/avdemo15.exe  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='ftp://ftp.rahul.net/pub/apivis/avdemo15.exe'" tppabs="ftp://ftp.rahul.net/pub/apivis/avdemo15.exe">ftp://ftp.rahul.net/pub/apivis/avdemo15.exe</A>
+
+This is the best, and the one I highly recommend. The above url links to 
+
+a 15-day demo that I have not taken the time to crack, but will 
+
+definitely do now that I have evaulated the program (it should be a 
+
+standard time check, no need for an essay). The program is excellent, 
+
+although the available api calls are of course limited. The UI is 
+
+fantastic, and even has a &quot;hook next task&quot; feature. Output shows API 
+
+function name, parameters, and returns.
+
+The monitor is implemented with a static-load VXD that is initialized in 
+
+system.ini--vxd name is vicept.386. There are also numerous &quot;grabber&quot; 
+
+DLLs that handle the function parameters calls for each API module.
+
+
+
+Note that the use of a VXD is not required for this type of utility; the 
+
+next two apps use dlls for their monitoring. However, if we are to 
+
+intercept API calls and change their parameters, I think a VXD would be 
+
+recommended.
+
+
+
+
+
+*EXESpy
+
+<A href="javascript:if(confirm('http://www.spywindows.com/ZIPS/EXESPY98.ZIP  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.spywindows.com/ZIPS/EXESPY98.ZIP'" tppabs="http://www.spywindows.com/ZIPS/EXESPY98.ZIP">http://www.spywindows.com/ZIPS/EXESPY98.ZIP</A>
+
+This is the worst of the lot, an ugly VB-style UI. Uses funhk.dll to 
+
+capture API calls and prints them to a window and log file. By the guys 
+
+who did ComSpy.
+
+
+
+
+
+*Trace Plus Win32
+
+<A href="javascript:if(confirm('ftp://ftp.sstinc.com/pub/tplus32.zip  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='ftp://ftp.sstinc.com/pub/tplus32.zip'" tppabs="ftp://ftp.sstinc.com/pub/tplus32.zip">ftp://ftp.sstinc.com/pub/tplus32.zip</A>
+
+Not a bad program, but I like API Vision better. This one relies on DLLs 
+
+as well and is quite well done, but has useless windows like a &quot;system 
+
+log&quot; and seems to slow the process down. Regarding the monitoring 
+
+technology, the following is from the readme:
+
+
+
+&quot;32 bit versions of TracePlus use the standard Microsoft 
+
+defined debugging interface for Win32 applications. The 
+
+Microsoft interface does not permit detaching from a process 
+
+after debugging has started. Therefore, if TracePlus is 
+
+terminated, it will also terminate all processes being traced.&quot;
+
+
+
+
+
+
+
+
+
+In addition, I have found a copy of API Spy for Win16 (does not run in 
+
+95) and have come across references to a Win32 version...written in VB, 
+
+so once again VXD programming is not a must. There is also a program in 
+
+development--I think at spywindows--called API Insight.
+
+
+
+
+
+Writing a VxD
+
+-------------
+
+
+
+After a bit of study and comparing DDK examples against the literature, 
+
+it appears that writing a VxD really is not that difficult 
+
+(comparatively speaking, of course). Basically you create an ASM program 
+
+to handle the Virtual Device Declaration and the VXD Locked Code/Data 
+
+segments (which contain the control procedure, a message handler for 
+
+VxDs)--you can code the rest in C quite easily (it's all structures and 
+
+macros). If you add a pseudo-api by using DeviceIoControl calls--which 
+
+contain as a parameter the name of the vxd function to be called--in the 
+
+application that communicates with the VxD, you will have a Ring-3 
+
+application that calls functions in the Ring-0 VxD; the whole 
+
+implementation is basically a combination of CreateFile (to open the 
+
+VxD) and DeviceIoControl calls. (The VxD contains a function named 
+
+OnDeviceIoControl or somesuch which is called by the control process [in 
+
+the .asm file, remember] in response the DeviceIoControl messages...the 
+
+OnDeviceIoControl function is a second message handler--a switch 
+
+statement in C--that then calls the internal vxd functions, like so:
+
+</PRE><XMP>
+
+;application.c
+
+hVXD = CreateFile(&quot;\\\\.\\name.vxd&quot;,0,0,0,CREATE_NEW, 
+
+FILE_FLAG_DELETE_ON_CLOSE, 0);
+
+DeviceIoControl(hVXD, FUNCTION_NAME, descriptor, sizeof(descriptor));
+
+
+
+;vxd.asm
+
+VxD_LOCKED_CODE_SEG
+
+BeginProc ControlProc
+
+	Control_Dispatch W32DEVICEIOCONTROL, _OnDeviceIoCtrl, cCall, <ESI>
+
+	clc
+
+	ret
+
+EndProc ControlProc
+
+VxD_LOCKED_CODE_ENDS
+
+
+
+;vxd.c
+
+DWORD _OnDeviceIoCtrl(PDIOCPARAMETERS param){
+
+	switch (param-&gt;dwIoControlCode)  ;this struc member is the function 
+
+name
+
+	{
+
+		case API_Hook_Task:
+
+			_APIHookTask(....);
+
+			return 0;
+
+		case API_Patch_Call:
+
+			_APIPatch();
+
+			return 0;
+
+		default:
+
+			return 1;
+
+	}
+
+}</XMP><PRE>
+
+The hard part, then, is not creating a VxD with an API--and using this 
+
+method you do not have to register with M$oft for a VxD API ID# ;) The 
+
+hard part will be intercepting these damn API calls instead of just 
+
+watching them.
+
+
+
+Oh yeah, notice that this is a dynamically-loaded VxD (the CreateFile() 
+
+call)...I'm sure none of us want extra junk floating around in memory. 
+
+BTW, there is a registry key at
+
+\HKLM\System\CurrentControlSet\Services\VxD
+
+that contains VxDs to be loaded at startup _in_addition_to system.ini 
+
+and the RunServices key.
+
+
+
+That's all for now, I'll update you later in the week when I start 
+
+taking apart Api Vision. What my &quot;specifications&quot; are for this prog is 
+
+to intercept calls made to any exported function in a Dll (even non-API 
+
+ones), which will require a different approach than these monitors have 
+
+been using...they seem to be using static DBases of API functions.
+
+
+
+later,
+
+
+
+_m</PRE><HR><CENTER>
+
+<I>To be continued, of course... anybody else springs on?</I>
+
+<HR>
+
+<A href="ourtools.htm" tppabs="http://www.anticrack.de/fravia/ourtools.htm"><IMG SRC="ourtools.gif" tppabs="http://www.anticrack.de/fravia/ourtools.gif" ALT="OURTOOLS" ALIGN="BOTTOM" WIDTH="114" HEIGHT="43" BORDER="0" VSPACE="0" HSPACE="0"></A><BR>
+
+<FONT color="gray">Back to our own tools</FONT>
+
+<BR><BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"> 
+
+<A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links </A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0">
+
+<A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity </A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database </A><BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia </A><BR>
+
+
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering illegal? </A></CENTER>
+
+<HR size="4">
+
+
+
+</BODY>
+
+</HTML>

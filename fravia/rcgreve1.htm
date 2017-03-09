@@ -1,0 +1,2110 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>rcgreve1</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+<CENTER><FONT size="+3">Reverse engineering Windows 95 itself<BR></FONT><FONT size="+2">
+
+(Understanding our trade)</FONT>
+
+
+
+<H4>by +Rcg<BR>
+
+<BR>
+
+(17 August 1997, slightly edited by fravia)</H4>
+
+<HR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">Courtesy of fravia's page 
+
+of reverse engineering<BR><BR><I>Well, this is an important addition 
+
+to our +HCU didactic material... This you should read, and head, and 
+
+pray with me that +RCG sends us more!</I></CENTER><HR>
+
+<PRE>
+
+FIRST PART
+
+
+
+1. Introduction
+
+2. First Step
+
+3. Memory Addressing
+
+4. Control Transfers
+
+5. Interruptions/Exceptions
+
+6. Hardware Multitasking
+
+
+
+SECOND PART
+
+
+
+7. V86 Mode 
+
+8. In/Out ports
+
+9. Debugging
+
+
+
+
+
+THIRD PART
+
+
+
+10. Reversing Engineer of W95 itself<HR> 
+
+        			INTRODUCTION
+
+
+
+	I have been thinking for a long time how to write
+
+this document, because I would want it very easy to
+
+follow, and of course, so that you may take profit of it.
+
+
+
+	This doc deals with i386 and above architecture, and
+
+is the first step to understand how all the OS based on this
+
+kind of processors work (and specially W95).
+
+	There are a lot of places where you can find info about
+
+this, but my personal experience is that this information is
+
+not very useful, because the writer has most of the time another 
+
+point of view, quite different from our. For example we don't want 
+
+to enter, nor exit, from PM because we don't want to write a 
+
+program (quite the countrary, we want to &quot;reconstruct&quot; programs, 
+
+and Windoze will do it for us if needs be (this doesn't mean we 
+
+do not want to learn it, it means that our accents are different.
+
+
+
+	We will use WinIce to learn, just like I did on my
+
+Amiga with Action Replay: I learned assembler on my Amiga
+
+modifying my favourite games, working with running programs
+
+and modify them. Try everything you imagine, and when you
+
+have all understood make your own program using all the new 
+
+things you have learnt.
+
+
+
+	My initial idea was to write about VxD, but due to
+
+the scarce information (and the absolute MS dependence) I
+
+think the best solution is to analize how W95 works and create
+
+your own utilities working with full privileges. 
+
+	To make this, we must understand first of all how our
+
+processor works and then take profit of it (for cracking or
+
+for protecting purposes, it amounts to the same :-)<HR>
+
+
+
+				FIRST STEP	
+
+
+
+
+
+	And now a little theory, don't worry, only a little.
+
+
+
+	These 'new' processors support via hardware  
+
+multitasking, that is a 'grossomodo' way to run more than one
+
+program at the same time with a single processor... different 
+
+tasks must run sequentially each for a short time, so to our eyes, 
+
+these tasks will <U>seem</U> to run simultaneously.
+
+	Other new features are the new memory management, 
+
+the hardware debugging, and some other features that we will 
+
+analyze later. 
+
+
+
+	One of the problems associated to this is that task one 
+
+can modify (maliciously or unvolontarly) the code or the data of 
+
+task two.
+
+	To solve this problem, the CPU has some protection mechanisms.
+
+
+
+	Basically the protections mechanims deals with the 
+
+privilege levels. When you enter at Protected Mode, you
+
+must create a table (GDT), where you will assign to every 
+
+selector (part of memory) differents characteristics.
+
+
+
+	A selector is for example this: CS=28 (like W95)
+
+then in the GDT (Global Descriptor Table) you will say for
+
+example that the Selector 28 is the memory between 00000000
+
+and 00003000, where we will put Code working at privilege 
+
+level 2 (with some other characteristics). Think of that
+
+like if it were a Real Mode Segment, but with the limit of 4Gb 
+
+(not only 64Kb) and with some attributes, like if it is data
+
+or code, or if it can be modified or not ...
+
+	So, we must define some selectors and their attributes,
+
+minimum for the Data, Code, Stack and some others.
+
+	
+
+	Let's see that in real life:
+
+
+
+Fire Winice and then write:
+
+
+
+	GDT
+
+
+
+	you will see more or less these lines:
+
+
+
+
+
+GDTbase=C011E37C   Limit=01F7
+
+
+
+ Sel     Type         Base         Limit    DPL Attributes
+
+0008    Code16      0000DF40     0000FFFF    0    P   RE
+
+0010    ......      ........     ........    .    .   ..
+
+0018    TSS32       C000AEBC     0000AEBC    0    P   B
+
+0020    ......      ........     ........    .    .   ..
+
+0028    Code32      00000000     FFFFFFFF    0    P   RE
+
+0030    Data32      00000000     FFFFFFFF    0    P   RW
+
+..
+
+..
+
+..
+
+00C0    LDT         80095000     00002FFF    0    P
+
+..
+
+..
+
+..
+
+
+
+
+
+and more...
+
+
+
+
+
+	Let's first intruduce some important new registers
+
+and structures.
+
+
+
+	Registers:
+
+
+
+	There are 4 new ( called control) registers, named
+
+CR0, CR1, CR2 and CR3.
+
+
+
+	CR0: Machine Control Register (bits important for us)
+
+
+
+	bit #15: Pagind enabled (memory control)
+
+	bit #0: Protected Mode Enabling (1=enabled)
+
+	
+
+	CR1: Not used (at least in the i486)
+
+	
+
+	CR2: Page Fault Linear Address Register
+
+
+
+	Holds the 32-bit linear address that caused the page
+
+fault.
+
+
+
+	CR3: Page Directory Base Address Register (more later)
+
+
+
+	bits #31-12: Page Directory Base Register
+
+
+
+
+
+	New flags register called EFLAGS (Extended Flags)
+
+
+
+	bit #17: Virtual V86 mode (1=V86 mode)
+
+	bit #16: Resume Flag
+
+	bit #14: Nested Task
+
+	bit #12-13: Input/Output Privilege level
+
+	
+
+	
+
+
+
+	Debug Registers (DR0-DR7)
+
+
+
+	System Address Registers (GDTR, IDTR, LDTR, TR).
+
+
+
+	
+
+	Structures:
+
+
+
+	GDT structure is an array of 8 byte, there are some
+
+types of Segment Descriptor we can define:
+
+
+
+
+
+		Data Segment
+
+
+
+	bits #0-15: Segment Limit
+
+	bits #15-31: Segment Base 15..0
+
+	bits #32-39: Segment Base 16..23
+
+	bit #40: Accessed
+
+	bit #41: Writable
+
+	bit #42: Expand-Down
+
+	bit #43: 0
+
+	bit #44: 1
+
+	bit #45-46: DPL (Descriptor privilege level)
+
+	bit #47: Present
+
+	bit #48-51: Segment Limit 16..19
+
+	bit #52: Available for programmer use
+
+	bit #53: 0
+
+	bit #54: Big
+
+	bit #55: Granularity
+
+	bit #56-63: Segment Base 24..31
+
+ 
+
+
+
+		Executable Segment
+
+
+
+	bits #0-15: Segment Limit
+
+	bits #15-31: Segment Base 15..0
+
+	bits #32-39: Segment Base 16..23
+
+	bit #40: Accessed
+
+	bit #41: Readable
+
+	bit #42: Conforming
+
+	bit #43: 1
+
+	bit #44: 1
+
+	bit #45-46: DPL (Descriptor privilege level)
+
+	bit #47: Present
+
+	bit #48-51: Segment Limit 16..19
+
+	bit #52: Available for programmer use
+
+	bit #53: 0
+
+	bit #54: Default operation size
+
+	bit #55: Granularity
+
+	bit #56-63: Segment Base 24..31
+
+	
+
+
+
+		Task Gate Descriptor
+
+
+
+	bits #0-15: Reserved
+
+	bits #15-31: TSS Segment Descriptor
+
+	bits #32-39: Reserved
+
+	bit #40: 1
+
+	bit #41: 0
+
+	bit #42: 1
+
+	bit #43: 0
+
+	bit #44: 0
+
+	bit #45-46: DPL (Descriptor privilege level)
+
+	bit #47-63: Reserved
+
+
+
+
+
+		Call Gate Descriptor
+
+
+
+	bits #0-15: Offset in Segment 15..0
+
+	bits #15-31: Segment Selector
+
+	bits #32-36: Count
+
+	bit #37-41: 0
+
+	bit #42: 1
+
+	bit #43: X (0=286 Call Gate  1=486 Call Gate)
+
+	bit #44: 0
+
+	bit #45-46: DPL (Descriptor privilege level)
+
+	bit #47: Present
+
+	bit #48-63: Offset in Segment 31..16
+
+
+
+
+
+		Interrupt/Trap Gate Descriptor
+
+
+
+	bits #0-15: Offset in Segment 15..0
+
+	bits #15-31: Segment Selector
+
+	bits #32-36: Reserved
+
+	bit #37-38: 0
+
+	bit #39: T (0=286 Int. Gate  1=486 Int. Gate)
+
+	bit #40-42: 1
+
+	bit #43: X (0=286 1=486)
+
+	bit #44: 0
+
+	bit #45-46: DPL (Descriptor privilege level)
+
+	bit #47: Present
+
+	bit #48-63: Offset in Segment 31..16
+
+	
+
+
+
+
+
+		LDT Descriptor (Local Descrip. Table)
+
+
+
+	
+
+	bits #0-15: Segment Limit
+
+	bits #15-31: Segment Base 15..0
+
+	bits #32-39: Segment Base 16..23
+
+	bit #40: 0
+
+	bit #41: 1
+
+	bit #42: 0
+
+	bit #43: 0
+
+	bit #44: 0
+
+	bit #45-46: DPL (Descriptor privilege level)
+
+	bit #47: Present
+
+	bit #48-51: Segment Limit 16..19
+
+	bit #52: Available for programmer use
+
+	bit #53: 0
+
+	bit #54: 0
+
+	bit #55: Granularity
+
+	bit #56-63: Segment Base 24..31
+
+	
+
+	
+
+		TSS Descriptor	
+
+
+
+
+
+	bits #0-15: Segment Limit
+
+	bits #15-31: Segment Base 15..0
+
+	bits #32-39: Segment Base 16..23
+
+	bit #40: 1
+
+	bit #41: Busy
+
+	bit #42: 0
+
+	bit #43: X (0= 286 TSS  1=486 TSS)
+
+	bit #44: 0
+
+	bit #45-46: DPL (Descriptor privilege level)
+
+	bit #47: Present
+
+	bit #48-51: Segment Limit 16..19
+
+	bit #52: Available for programmer use
+
+	bit #53: 0
+
+	bit #54: 0
+
+	bit #55: Granularity
+
+	bit #56-63: Segment Base 24..31
+
+	
+
+	
+
+	Now try at your own to get the same values that 
+
+WinIce gives us. How?
+
+
+
+	Write GDT, and if it says GDTbase=C0113E7C, then
+
+E C0113E7C, ah!!! by the way the first entry (selector 0)
+
+must be all zeroes.
+
+
+
+	All Ok?.....Let's continue.......
+
+
+
+
+
+	GDTbase is the memory location of the GDT table, and
+
+can be obtained using:
+
+
+
+		lea 	esi,_64bitbuffer
+
+		sgdt	fword [esi]		;Store GDT at [esi]
+
+
+
+	This can be done only if your descriptor code segment
+
+is running at privilege level 0.
+
+
+
+		Segment Selector Format:
+
+
+
+	bit #0-1:RPL (Requested Privilege Level)
+
+	bit #2: Table Indicator
+
+	bit #3-15:Index
+
+
+
+	CS=28h ==&gt; 101000b (Kernel)
+
+
+
+		Index = 101 =&gt; 5 (Entry number 5)
+
+		Table Indicator = 0 (Global Table)
+
+		Privilege Level = 0			
+
+
+
+	CS=137h ==&gt; 100110111b (Aplication Programms)
+
+
+
+		Index = 26h = 38
+
+		Table Indicator = 1 (Local Table)
+
+		Privilege Level = 3 (Opps!!!)
+
+	
+
+
+
+	You can see how W95 assigns to our programs, the
+
+lowest privilege level (3), this is in order that our
+
+programs don't affect seriously the OS, because we
+
+have some restrictions.
+
+
+
+	Restrictions the i486 has:
+
+
+
+	* Some instructions are disabled, i.e. sgdt., 
+
+and can be executed only at level 0.
+
+
+
+	* Data or Code from a higher priv. level
+
+cannot be read nor modified.  
+
+
+
+	* Code from a lower level can't jump directly
+
+to a higher level.
+
+	
+
+	* Every Segment Descriptor has a limit, so if
+
+an aplication tries to write outside of the limits,
+
+then the processor generate an exception (which will 
+
+be intercepted by the OS, which in turn will perform 
+
+some operations to solve the problem).
+
+
+
+	* The Stack Selector must have exactly the
+
+same Privilege Level than the CS Selector.
+
+
+
+	* There is one exception to these rules, you
+
+could see that the Executable Descriptor can be
+
+marked as a Conforming, this means that you can
+
+load this Selector in the DATA segment register
+
+without any restriction. 
+
+
+
+	At this time you can be asking yourself how
+
+an aplication (level 3) can execute the OS funtions
+
+(level 0) if you can't jump to them.
+
+
+
+	But, before answering this question, let's analyze
+
+first the memory addressing.<HR>
+
+
+
+				MEMORY ADDRESSING
+
+
+
+
+
+	There are three concepts you must undertand first of all:
+
+
+
+		1. Logical Address
+
+		2. Linear Address
+
+		3. Physical Address
+
+
+
+
+
+	Physical memory is the 'real' address, the number that the
+
+processor puts in the bus to access a data in memory, so the
+
+interrupt table is always at the beginning of the memory at 0, so 
+
+if the CPU wants access to this memory location, it must put 0 on 
+
+the address BUS to read the value stored in it.	Another example,
+
+the video memory is at A0000, so the CPU puts that value on the
+
+BUS.
+
+
+
+	Obviously, the best way to access memory is putting directly
+
+this value into a register and get the value stored in it, this is
+
+the way Motorola processors work, yet Intel's do not work this way.
+
+	x86 processors combine a segment register with an offsset to
+
+obtain the physical address, this is the solution they took in 16
+
+bits processors times... now that the registers are 32bit long
+
+this way is obsolete, but Intel decided to prserve continuity with 
+
+the past manteining compatibility with the old DOS programms, 
+
+so in Protected Mode the segment:offset method is used too, but 
+
+in a different way.
+
+
+
+
+
+	Logical address is the combination between segment:offset,
+
+for example if you have a GDT like this:
+
+
+
+
+
+ Sel     Type         Base         Limit    DPL Attributes
+
+0008    Data32      00000000     FFFFFFFF    0    P   RW
+
+0010    Data32      000A0000     0000FFFF    0    P   RW
+
+..
+
+..
+
+
+
+	if you want to read the video memory, you can do it in two ways:
+
+
+
+		mov ax,08h	
+
+		mov es,ax	;Selector 8
+
+		mov ax,es:[A0000]
+
+
+
+	or:
+
+		mov ax,10h
+
+		mov es,ax	;Selector 10h
+
+		mov ax,es:[0]
+
+ 
+
+	In both examples, es:[????????] is the logical address,
+
+and after translating it through the Descriptor Table, we get
+
+the Linear address:
+
+
+
+	In the first example:
+
+
+
+	Linear Address = Base of Selector 8 + offset =&gt;
+
+							 0+A0000 = A0000
+
+
+
+	In the second:
+
+
+
+	Linear Address = Base of Selector 10h + offset =&gt;
+
+							 A0000+0 = A0000
+
+ 
+
+	After that, x86 have two ways to translate a linear 
+
+address into a physical address, checking bit 31 of CR0
+
+register, the CPU knows if it is in Segment or in Paging
+
+mode (W95 works in Paging mode).
+
+	If the mode is Segmentation, the the Phys. Add. is the
+
+Linear Add., but if we are in Paging mode, the CPU will made
+
+another translation.
+
+
+
+
+
+	PAGING TRANSLATION
+
+
+
+	This mode is a way to manage memory though an index, just
+
+supose you have a very big library, and when you want read a
+
+book, you go to your book index and look where it is stored, and
+
+then go to your library and pick up it. Now, you lost one book, 
+
+and buy another different, then simply you store the new book in
+
+the hollow location of the other one and write down in the index 
+
+the new book location, this is a good way to exploit the library 
+
+space without wastes.
+
+
+
+	Well, the i486 books (pages) are 4Kb long, so if
+
+theoretically we can address up to 4Gb, we need a 4Gb/4Kb=1Mb of
+
+indexes if each is 4 bytes long, our index will be 4Mb long, that
+
+is too much for us, we can't waste as much as this.
+
+
+
+	So, the solution is create a new index only when really 
+
+necessary, so we can have a main index and a secondary index,
+
+so long as the secondary index is not full we don't create a new 
+
+main index (let's better understand it with an example).
+
+
+
+	Linear Address in paging mode has the following meaning:
+
+
+
+		Bit31-22: Directory Entry (Main index)
+
+		Bit21-12: Page Entry (Secondary Index)
+
+		Bit11-00: Offset
+
+
+
+
+
+	The Page Entry format is:
+
+
+
+		Bit31-12: Page Address
+
+		Bit11-09: Available for the OS
+
+		Bit08-07: Must be 00	
+
+		Bit6: Dirty (Page has been modified)
+
+		Bit5: Accessed
+
+		Bit04-03: Must be 00
+
+		Bit2: User (0) /Supervisor (1)
+
+		Bit1: Read/Write (1) or Read (0) 
+
+		Bit0: Present
+
+
+
+
+
+	The physical address of the Page Directory is stored
+
+in the CR3 register.
+
+
+
+	Suppose that our CR3 register reads 5DE000h.
+
+
+
+	So if our linear address is: 
+
+		403499 ====&gt; 10000000011010011001b
+
+
+
+		Directory Entry = 1h
+
+		Page Entry = 3h
+
+		Offset = 499h
+
+
+
+Phys. Add.	Data stored in memory (remember that are inverted)	 
+
+5DE000   		67,C2,00,C0 (0)
+
+5DE004		67,C2,55,C9 (1)
+
+5DE008   		   .. 
+
+..		   	   ..
+
+..		   	   ..
+
+5DEFFC	   	   ..   (4095)
+
+
+
+	Directory Entry 1 is: C955C267 ('uninverted')
+
+
+
+	Physical Page Address is: C955C000  (4Kb aligned)
+
+	Attributes are: 267h = 001 00 11 00 111 
+
+				    
+
+	OS flag=001
+
+	Dirty=1
+
+	Accessed=1
+
+	User=1
+
+	Read/Write=1
+
+	Present=1
+
+
+
+	W95 define the OS flag as:
+
+
+
+		000=VM
+
+		001=System
+
+		010=Reserved
+
+		011=Private
+
+		100=Reserved
+
+		101=Relock
+
+		110=Instance
+
+		111=Hooked
+
+	
+
+Phys. Add.	Data stored in memory (remember that are inverted)	 
+
+C955C000   		67,C2,30,C2 (0)
+
+C955C004		67,C2,25,C4 (1)
+
+C955C008   		   .. 
+
+C955C010	   	67,C2,34,C3 (3)  
+
+..                   ..
+
+..                   ..
+
+..		   	   ..
+
+C955CFFC	   	   ..   (4095)
+
+
+
+
+
+	Page Entry 3 is: C425C267 ('uninverted')
+
+
+
+	Physical Page Address is: C425C000  (4Kb aligned)
+
+	Attributes are: 267h = 001 00 11 00 111 
+
+
+
+	And finally if we add the offset to the Phys. Add. we
+
+obtain the desired value:
+
+
+
+	Phys. Add. = C425C000+499h=C425C499
+
+
+
+	Remember that a page is only 4Kb long.
+
+
+
+
+
+	And now, think a little and answer these questions?
+
+
+
+	Why all the W95 programs are executed with:
+
+
+
+		CS= 137h
+
+		EIP= 401000-7FFFFF range ?
+
+
+
+	Does this fact mean that all the programs are in the
+
+	same physical memory location (very illogical)?
+
+
+
+	Answer:
+
+
+
+	137h=100110111b ==&gt;
+
+
+
+			Selector Index=26h
+
+			Table Indicator=1 (Local Table)
+
+			DPL=3 (Lowest privilege level)
+
+
+
+	Windows uses Paging mode, so the linear address of
+
+137:401000 mean:
+
+
+
+		Directory Entry = 1h
+
+		Page Entry = 1h
+
+		Offset = 000h
+
+
+
+	When paging is enabled, a task can only have one page
+
+directory table but several second level page tables.
+
+	So to perform a task swap, W95 only needs to modify
+
+the page directory second entry (1h) to point to the new
+
+task physical address, but to our eyes all tasks are running
+
+at the same linear address.	
+
+
+
+
+
+	Note that a program has a consecutive linear address,
+
+but not necessary consecutive physical address, for example:
+
+
+
+		cs:401FFA 	cmp 	eax,1505h
+
+		cs:402002	jne	402957
+
+
+
+	the first instruction can be at C734FFA phys. address and the
+
+second can be at C335002 phys. address, it depends on the second 
+
+table (remember the lost book).
+
+
+
+	Finally, if the program accesses a page that is marked
+
+as not present, a fault exception is generated, then the OS
+
+will make the necesary actions (like load it from the exchange
+
+file).
+
+
+
+	A practical example: 
+
+
+
+	I have used Zmud but you can use other programs or
+
+even windows 95 itself.
+
+
+
+	bpx GetLocalTime
+
+	fire zmud
+
+
+
+	after a few F11 you will be at:
+
+
+
+	137:40749E  E8E3DCFFFF		CALL KERNEL32!GetLocalTime
+
+	137:407499  668B4C240E		MOV CX,[ESP+0E] <HERE 137:40749E 668b54240A MOV DX,[ESP+0A] .. .. Remember: 137h selector base is 0h so the lin. add. is 40799. DIR. PAGE="1" PAGE ENTRY="7"> 7*4=1Ch
+
+	OFFSET=499	
+
+
+
+	
+
+	Now type:
+
+
+
+	CPU
+
+
+
+	and you will obtain:
+
+
+
+	EAX= .....
+
+	ESI= .....
+
+	DS = .....
+
+
+
+	CR0=8000001B  PE MP .....
+
+	CR2=..
+
+	CR3=005DE000
+
+	..
+
+	..
+
+
+
+	for us is only important that we are in Paging Mode, bit31
+
+of CR0 register and the CR3 register, the physical address of the
+
+Directory Page Base.
+
+
+
+	Now type:
+
+
+
+	phys 5DE000 (obtain the linear address of a phys. add.)
+
+
+
+	you will obtain: (I think that is always the same linear
+
+				address, but I'm not too sure)
+
+
+
+	C197A000	
+
+	FFBFE000 (Ignore this)
+
+
+
+	now type:
+
+
+
+	e C197A000 
+
+
+
+	you can also obtain this using the peek command.
+
+
+
+	Type:
+
+
+
+	peek d 5DE000 (for the first entry 0h)
+
+	peek d 5DE004 (for the second entry 1h)
+
+
+
+	the answer for the second entry is: (in my case)
+
+
+
+	0xC1C267 ===&gt; So the Secondary table phys. add. is:
+
+		
+
+	C12000+1Ch=C1201Ch
+
+
+
+	typing again:
+
+
+
+	peek d C1201C
+
+
+
+	we get:
+
+
+
+	0xC1F267 ===&gt; The real phys. add. is:
+
+
+
+	C1F000+offset (499h) = C1F499h
+
+
+
+	typing finally:
+
+
+
+	peek d C1F499:
+
+
+
+	0x244C8B66
+
+
+
+	that corresponds to the opcodes of our actual eip.
+
+
+
+	
+
+	Last question, if W95 operates in Paging Mode, How
+
+Sice obtain the value stored in memory if we give it a
+
+phys. address, remember that the CPU transforms the value
+
+to a phys. address, reading CR3 register we obtain a phys.
+
+address, but how we can transform it to a linear add. if
+
+we don't know where is the directory table?
+
+
+
+	I thpought about this for a while, then I tried the following:
+
+
+
+	Fire Sice when it executes a ring0 code, then put
+
+these instructions and execute them:
+
+
+
+		mov	eax,CR0
+
+		mov	esi,CR3
+
+		and   eax,7fffffff	;Segment Mode
+
+		mov	CR0,eax
+
+		mov	ebx,[esi]	;Now it is the phys. add.
+
+					;because we are in seg. mode
+
+		or 	ax,80000000
+
+		mov	CR0,eax		;Paging Mode
+
+
+
+	the result was a miserable crash, why?
+
+	
+
+	Because in the inst. next to the mode change EIP
+
+points to a unexpected memory location so the inst.
+
+executed wasn't the mov ebx,[esi].
+
+
+
+	I think that Sice has part of it code in the Conventional
+
+memory, so if you change from Paging to Segment Mode, the memory
+
+location is the same, so it don't crash.....do you agree with
+
+me? Do you know the correct answer? Do you have other ideas?<HR>
+
+
+
+				CONTROL TRANSFERS
+
+	
+
+	There are three kinds of control transfers:
+
+
+
+	1. From one privilege level to another in the same task.
+
+	2. From one task to another (not necesary at the
+
+       same privilege level, Windows95 does not use it).
+
+	3. From PM to V86 mode (or viceversa).
+
+
+
+
+
+	Remember that each privilege level in one task
+
+must have its own stack segment with the same privilege
+
+level.
+
+
+
+
+
+	TRANSFERS BETWEEN DIFFERENT LEVELS IN THE SAME TASK
+
+
+
+	A task has four levels, every one of them is independent
+
+from the others. Each level must define its own Stack and Code
+
+segments. Any transfer that changes the CPL (current privilege
+
+level) must change the the privilege level of the stack at
+
+the same time.
+
+
+
+	HIGHER TO LOWER LEVEL
+
+
+
+	Every time the OS gives control to an application, this transfer 
+
+does not check the privilege levels. Note that CS and SS must 
+
+be loaded at the same time! To be able to make this, we store 
+
+in the stack the SS,ESP,CS and EIP and then with the RETF and IRET
+
+we give control to the lower level code (remember that these
+
+instructions load the registers at the same time).
+
+
+
+	LOWER TO HIGHER LEVEL
+
+
+
+	An application needs to execute OS Code, this transfer
+
+is dangerous for the integrity of the OS, so it must be
+
+controlled, How? Using the GATE Descriptors, these descriptors
+
+points directely to a function of the OS (see the GATE
+
+descriptor format) that 'regains' the control.
+
+	The GATE can be a Interrupt Gate, a Task Gate, or
+
+a Call Gate. W95 uses the Interrupt GATE, so any time that
+
+an application wants to return control to the OS (or
+
+execute part of its code) it will execute a GATE Interrupt
+
+(W95 uses Int. 30).
+
+
+
+
+
+(Extracted from Soft-Ice manual)
+
+
+
+-------------------------------------------------------
+
+Understanding Transitions From Ring-3 to Ring-0
+
+
+
+Many times when tracing into code, under Windows 95,
+
+you arrive at either an INT 0x30 or an ARPL. Both are
+
+methods for making a transition from Ring-3 to Ring-0.
+
+When you wish to follow the ring transition, you can
+
+save yourself the time and effort of stepping through a
+
+large amount of VMM code by using the G(o) command to
+
+execute up to the address shown in the disassembly.
+
+Windows 95 uses the following methods to transition
+
+Ring-3 code to Ring-0 code:
+
+
+
+&127; For V86 code, Windows 95 uses the ARPL instruction,
+
+which causes an invalid opcode fault. The invalid opcode
+
+handler then passes control to the appropriate VxD.
+
+The ARPL instruction is usually in ROM. Windows 95 uses
+
+only one ARPL and it varies the V86 segment:offset to 
+
+indicate different VxD addresses. For example, if the
+
+ARPL is at FFFF:0, Windows 95 uses the addresses FFFF:0,
+
+FFFE:10, FFFD:20, FFFC:30 and so on.
+
+The following example shows sample output for
+
+disassembling an ARPL:
+
+FDD2:220D ARPL DI,BP ; #0028:C0078CC9 IFSMgr(01)+0511
+
+
+
+
+
+&127; For PM code, Windows 95 uses interrupt 0x30h. Segment
+
+0x3B contains nothing but interrupt 0x30 instructions,
+
+each of which transfers control to a VxD.
+
+
+
+The following example shows sample output for
+
+disassembling segment:offset 3B:31A:
+
+
+
+003B:031A INT30 ; #0028:C008D4F4 VPICD(01)+0A98
+
+003B:031C INT30 ; #0028:C007F120 IOS(01)+0648
+
+003B:031E INT30 ; #0028:C02C37FC VMOUSE(03))00F0
+
+003B:0320 INT30 ; #0028:C02C37FC VMOUSE(03))00F0
+
+003B:0322 INT30 ; #0028:C023B022 BIOSXLAT(05)=0022
+
+003B:0324 INT30 ; #0028:C230F98 BIOSXLAT(04)=0008
+
+003B:0326 INT30 ; #0028:C023127C BIOSXLAT(04)=02EC
+
+
+
+------------------------------------------------------	
+
+	
+
+
+
+	W95 gets the Return address after the Int. and
+
+using it with a table gets the VxD entry function.
+
+
+
+	
+
+	Exception to this is the Code Segment marked
+
+as CONFORMING, so if you make a JUMP/CALL to this
+
+king of Segment, the CPU reacts giving this Segment 
+
+the same privilege level of the Caller (and executes 
+
+the Code without problems).
+
+
+
+			INTERRUPTIONS/EXCEPTIONS
+
+
+
+	In PM interrupts and exceptions are used as a
+
+control-transfer methods.
+
+	Exceptions are generated by the CPU during the
+
+execution of an instruction.
+
+	There are maskable/unmaskable  interrupts. 
+
+Unmaskable can be enabled/disabled using the EFLAGS
+
+register (IF=0 means that the int. will not occur).
+
+	Maskable int. are Ints. from 0-20h.
+
+	Unmaskable from 21h-0FFh.
+
+
+
+	As the same maner as the GDT, there are an 
+
+Interrupt Descritor Table (IDT) where the CPU will
+
+get the Code it must execute and if can be done (it
+
+depens on the DPL assigned).
+
+
+
+	Using SoftIce write IDT and:
+
+
+
+Int   Type   Sel:Offset Attributes Symbol/Owner
+
+IDTbase=C000ABBC Limit=02FF
+
+0000 IntG32 0028:C0001200 DPL=0 P VMM(01)+0200
+
+0001 IntG32 0028:C0001210 DPL=3 P VMM(01)+0210
+
+0002 IntG32 0028:C00EEDFC DPL=0 P VTBS(01)+1D04
+
+0003 IntG32 0028:C0001220 DPL=3 P VMM(01)+0220
+
+0004 IntG32 0028:C0001230 DPL=3 P VMM(01)+0230
+
+0005 IntG32 0028:C0001240 DPL=3 P VMM(01)+0240
+
+0006 IntG32 0028:C0001250 DPL=0 P VMM(01)+0250
+
+0007 IntG32 0028:C0001260 DPL=0 P VMM(01)+0260
+
+0008 TaskG  0068:00000000 DPL=0 P
+
+0009 IntG32 0028:C000126C DPL=0 P VMM(01)+026C
+
+000A IntG32 0028:C000128C DPL=0 P VMM(01)+028C
+
+..
+
+..
+
+..
+
+0030 IntG32 0028:C001B04  DPL=3 P Alloc_PM_Call_Back+4E
+
+..
+
+..
+
+
+
+
+
+	Now see how the Int. 30 can be called by
+
+applications at level 3 (if you modify and put
+
+DPL=0 Windows 95 will crash due to Protecting Problems,
+
+try it!!!!).
+
+
+
+	How?
+
+
+
+	IDTbase=C000ABBC, so E C000ABBC+(30*8)
+
+
+
+	Now change the EE with 8E, again IDT and you
+
+will see Int. 30 DPL=0.
+
+
+
+	x
+
+
+
+	and ...... W95 crash inmediately.
+
+	
+
+
+
+	Because Int./Exc. can occur at any time and the
+
+DPL is unpredictable, it is necessary to avoid this 
+
+situation... there are two possible solutions: putting the 
+
+handler at level 0 or in a CONFORMING Code Segment.
+
+	After entering to the handler, the stack contain
+
+the next registers:
+
+
+
+	No Priv. Level Change  		Priv. Level Change
+
+
+
+		old eflags				old ss
+
+		old cs				    old esp
+
+		old eip				    old eflags
+
+		error code				old cs
+
+							    old eip
+
+							    error code
+
+
+
+	because when there is a level change, the CPU changes 
+
+the stack selector according to the level (this information
+
+is stored in the TSS segment of the current task, (look at 
+
+the next chapter).
+
+
+
+
+
+	Vector Number	Description		  Error Code
+
+
+
+		0		Divide Error		    No
+
+		1		Debug Exception		    No
+
+		2		NMI Interrupt		    No
+
+		3		Instruction Breakpoint  No
+
+		4		INTO-detected overflow	No
+
+		5		BOUND range excedeed	No
+
+		6		Invalid Opcode		    No
+
+		7		Copro. not available	No
+
+		8		Double Fault		    Yes
+
+		9		Copro. Segment Overrun	No
+
+		10		Invalid TSS			    Yes
+
+		11		Segment not present   	No
+
+		12		Stack Fault			    Yes
+
+		13		General Protection	    Yes
+
+		14		Page Fault			    Yes
+
+		15		Reserved			    --
+
+		16		Copro Error			    No
+
+		17-31	Reserved			    --	
+
+		31-255	Maskable Interrupt	    --
+
+
+
+
+
+		Error Code format:
+
+
+
+	bit #0: External (1 means an external event causes the exception).
+
+	bit #1: I (Exception relates to the IDT)
+
+	bit #2: Table Indicator (0=GDT 1=LDT)
+
+	bit #3-15: Selector that caused the exception.
+
+	bit #16-31: Reserved
+
+
+
+
+
+		Page Fault Error Code format:
+
+
+
+	bit #0: (1 means that the page-level protection
+
+		   violation. 0 means page not present)
+
+	bit #1: (1 Write operation fault. 0 Read )
+
+	bit #2: (1 Supervisor fault. 0 User fault)
+
+	bit #3-31: Undefined.<HR>
+
+
+
+
+
+			HARDWARE MULTITASKING	
+
+
+
+
+
+	Multitasking is suported via Hardware directly
+
+(although W95 does not use it, due to speed problems),
+
+but how?
+
+
+
+	Well in our GDT we can define TSS Descriptors,
+
+where the processor will store some important parameters
+
+before the task switch (registers, and some others like
+
+LDT, CR3...).
+
+
+
+
+
+	The Task State Segment (TSS) format is:
+
+
+
+	byte #00-01: Back Link to previous TSS
+
+	byte #02-03: Reserved
+
+	byte #04-07: ESP0
+
+	byte #08-09: SS0
+
+	byte #10-11: Reserved 
+
+	byte #12-15: ESP1
+
+	byte #16-17: SS1
+
+	byte #18-19: Reserved 
+
+	byte #20-23: ESP2
+
+	byte #24-25: SS2
+
+	byte #26-27: Reserved
+
+	byte #28-31: CR3
+
+	byte #32-35: EIP
+
+	byte #36-39: EFLAGS
+
+	byte #40-43: EAX
+
+	byte #44-47: ECX
+
+	byte #48-51: EDX
+
+	byte #52-55: EBX
+
+	byte #56-59: ESP
+
+	byte #50-63: EBP
+
+	byte #64-67: ESI
+
+	byte #68-71: EDI
+
+	byte #72-73: ES
+
+	byte #74-75: Reserved
+
+	byte #76-77: CS
+
+	byte #78-79: Reserved
+
+	byte #80-81: SS
+
+	byte #82-83: Reserved
+
+	byte #84-85: DS
+
+	byte #86-87: Reserved
+
+	byte #88-89: FS
+
+	byte #90-91: Reserved
+
+	byte #92-93: GS
+
+	byte #94-95: Reserved
+
+	byte #96-97: LDT
+
+	byte #98-99: Reserved
+
+	byte #100-101: Reserved
+
+	byte #101-102: I/O Map Base  
+
+	
+
+
+
+	So if you want to switch between tasks, you must
+
+first load the Task Register (TR) with the current
+
+task segment selector (TSS) and the jmp or call to
+
+the other task segment descriptor.
+
+
+
+	mov	ax,task0_TSS_selector
+
+	ltr	ax
+
+	call/jump 	far task1_TSS_selector
+
+
+
+
+
+	You can create for every task you have a different
+
+Task Selector.
+
+
+
+
+
+	Corrections, addings and comments are welcomed.
+
+
+
++Rcg 1997
+
+
+
+   </PRE>
+
+ <FONT color="green">(c) +Rcg 1997. All rights reserved</FONT>
+
+<HR ALIGN="CENTER" WIDTH="100%" SIZE="3">
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</I></CENTER>
+
+<BR><CENTER>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">
+
+<A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#84'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#84">homepage </A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"> 
+
+<A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#73'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#73">links </A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0">
+
+<A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity </A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#82'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#82">students' essays </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database </A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut CGI-scripts </A>
+
+
+
+
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia </A><BR>
+
+
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering illegal? </A></CENTER>
+
+<CENTER><HR ALIGN="CENTER" WIDTH="100%" SIZE="2"></CENTER>
+
+</BODY>
+
+</HTML>
+
+
+

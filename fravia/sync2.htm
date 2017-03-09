@@ -1,0 +1,829 @@
+<html><HEAD>
+
+<TITLE>sync2</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+<CENTER><H2>HOW TO REVERSE ENGINEER ZMUD 4.62<BR>
+
+(Expiring Registration Codes - A New Breed)</H2><H4><I>by +Sync</I><BR>
+
+<IMG SRC="hcu1.gif" tppabs="http://www.anticrack.de/fravia/hcu1.gif" ALT="HCU" ALIGN="BOTTOM" WIDTH="114" HEIGHT="43" BORDER="0" VSPACE="0" HSPACE="0">
+
+
+
+
+
+<BR>(09 July 1997)</H4>
+
+<HR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">Courtesy of Fravia's page of reverse engineering
+
+<BR><BR><I>Well, this reverse enginnering essay is brilliant as it is but its sort of &quot;unfinished&quot;.<BR>
+
++Sync (who is a VERY GOOD 
+
+reverse engineer and a classmate of mine in the +HCU) asks for help. You'll find at the bottom 
+
+of this essay a first <A href="#anchor_epic">answer</A> by Epic Lord (<FONT color="red">25 July 1997</FONT>).
+
+</FONT><PRE>
+
+<HR size="2">		   </CENTER>
+
+			HOW TO CRACK ZMUD 4.62
+
+				By +Sync
+
+		Expiring Registration Codes - A New Breed
+
+Software: <A href="tppmsgs/msgs2.htm#246" tppabs="http://www.anticrack.de/fravia/tppmsgs/msgs2.htm#246">http://www.zuggsoft.com/zmud</A>
+
+
+
+This was requested by someone so I decided to take a look at it.  They had
+
+said that the file could not be patched because it checked the file integrity
+
+somehow, however I patched it with no problems.  I would like to say here 
+
+that while patching this program was not very difficult, I tried to figure
+
+out how the code is generated and it was extremely difficult.  if someone
+
+could explain this one to me, I'd be thankful. Start out like usual, read
+
+the documentation thouroughly and then run the program.  You immediately
+
+are dumped into a dialog which tells you it is an evaluation version, and
+
+gives you the opportunity to enter a registration number.  Enter a bogus
+
+name and number, I used +Sync and 12121212 (thanks +Orc).  A small dialog
+
+pops up telling you &quot;Invalid registration code or name&quot;.  Well, we all know 
+
+what to do now, right?  Stop and think about what your next move is before
+
+reading on.  You guessed it open up ZMUD.EXE with W32DASM (thanks Frogprint,
+
+however I must say that the protections for 8.5 and 8.7 have been pretty darn
+
+good).  What do we do with this 20+ meg monstrosity?  We look for the text 
+
+that was in the dialog.  You will find it at the code below. Notice the 
+
+telltale signs of a registration flag right before the dialog is put up.
+
+
+
+:00491F46 A17CE34F00              mov eax, [004FE37C]
+
+:00491F4B E868A30300              call 004CC2B8			;Call to some protection scheme
+
+:00491F50 803D8CE34F0000          cmp byte ptr [004FE38C], 00	;Is flag 0 ?
+
+:00491F57 740F                    je 00491F68			;Yes, Beggar Off
+
+:00491F59 8B45FC                  mov eax, dword ptr [ebp-04]
+
+:00491F5C C7802801000001000000    mov dword ptr [ebx+00000128], 00000001
+
+:00491F66 EB0A                    jmp 00491F72			;No, go on Good Guy
+
+
+
+* Referenced by a Jump at Address:00491F57(C)
+
+|
+
+
+
+* Possible StringData Ref from Code Obj -&gt;&quot;Invalid registration code or name&quot;
+
+                                  |
+
+:00491F68 B8AC1F4900              mov eax, 00491FAC		;Display &quot;Bad&quot; Dialog Box
+
+:00491F6D E852B6FAFF              call 0043D5C4
+
+
+
+Obviously the memory location at [4fe38c] is the registration flag.  When it
+
+is 0 you are unregistered, 1 and you are registered.
+
+	Next is the fun part.  Load up Soft-Ice and do a BPMB 4FE38C W to 
+
+break every time the program tries to alter this mem location. Ctrl-D back
+
+to the program.  Soft-Ice will return on the line of code below.
+
+
+
+:004CD599 C6058CE34F0000          mov byte ptr [004FE38C], 00	;Move 'evil' into flag
+
+
+
+Let the program go on and Soft-Ice will next land you here
+
+
+
+:004CC2EE C6058CE34F0001          mov byte ptr [004FE38C], 01	;Move 'good' into flag
+
+
+
+Now that's kind of odd, it put a zero in, then immediately put a one in. Hmm, 
+
+well let's move on.  Ctrl-D again and you will land here.
+
+
+
+:004CC458 8A45C7                  mov al, byte ptr [ebp-39]	;Load al
+
+:004CC45B A28CE34F00              mov [004FE38C], al		;Put it in Flag
+
+
+
+Now, we notice that in this case (because we are not regged) al is loaded with
+
+a zero.  Why?  We don't even care for right now.  All we are doing is patching
+
+for the moment, so lets change
+
+
+
+8a45c7		mov al, byte ptr [ebp-39]
+
+to
+
+B001		mov al,01		;Load with 'good'
+
+90		nop			;Pad it to 3 bytes
+
+
+
+So now everytime this piece of code is executed, it will put a 1 back in our
+
+flag, which is what we want.  But what if the flag is altered at other locations?
+
+lets go on, Ctrl-D again and look at you next target.
+
+
+
+:004CC4A3 8A45E7                  mov al, byte ptr [ebp-19]
+
+:004CC4A6 A28CE34F00              mov [004FE38C], al
+
+
+
+Look familiar?  It's just like the piece we just cracked, so patch it in a 
+
+similar manner
+
+
+
+8a45e7		mov al, byte ptr [ebp-19]
+
+to
+
+B001		mov al, 01
+
+90		nop
+
+
+
+There are several more places you need to patch.  A complete list (including)
+
+the two we just did is below.
+
+
+
+LOCATION			PATCH TO MAKE
+
+----------------------------------------------
+
+CS:4CD599			JUST CHANGE 00 TO 01
+
+CS:4CC2EE			NONE REQUIRED
+
+CS:4CC45B			MOV AL,01 - NOP
+
+CS:4CC4A6			MOV AL,01 - NOP
+
+CS:4CC5A5			MOV AL,01 - NOP
+
+
+
+Now your program will run, registered.  You can even type in whatever name/#
+
+combination you want over and over.  As nice as this seems, let's remember
+
+what +Orc has taught us.  Never trust the programmer.  It sure seems like
+
+ZMUD is running fine, and it may well be.  But set your clock ahead 30 days
+
+and see what happens then.  Aha, it doesn't work like we thought after all.
+
+Let's remember that patching a program, much less a patching it several
+
+different places, is not the ZEN way.  The best way to crack this, or any
+
+other program, is not to patch it at all.  Let's get a valid Name/Number pair.
+
+
+
+I must admit that I have not been able to complete this crack.  If anyone can
+
+show me what I have missed please let me know.
+
+
+
+Let's look back at the original piece of code we ripped from WDASM.
+
+
+
+
+
+:00491F46 A17CE34F00              mov eax, [004FE37C]
+
+:00491F4B E868A30300              call 004CC2B8			;Call to some protection scheme
+
+:00491F50 803D8CE34F0000          cmp byte ptr [004FE38C], 00	;Is flag 0 ?
+
+:00491F57 740F                    je 00491F68			;Yes, Beggar Off
+
+:00491F59 8B45FC                  mov eax, dword ptr [ebp-04]
+
+:00491F5C C7802801000001000000    mov dword ptr [ebx+00000128], 00000001
+
+:00491F66 EB0A                    jmp 00491F72			;No, go on Good Guy
+
+
+
+So, let's look at the call right before the check.  Load up your 20 meg WDASM
+
+listing and look for the subroutine starting at 4CC2B8.  I'll show the lines I
+
+have tagged as important, with comments below.
+
+
+
+:004CC310 E81F0D0000              call 004CD034		;Load name and # from LICENSE.INI
+
+			;Puts Code at DS:4FE390 and Name at DS:4FE490
+
+:004CC315 33C0                    xor eax, eax
+
+:004CC317 A090E44F00              mov al, [004FE490]	;Size of Name in al		
+
+:004CC31C 85C0                    test eax, eax		;Is it 0 length?
+
+:004CC31E 7E6E                    jle 004CC38E		;Yes, beggar off
+
+:004CC320 8945BC                  mov dword ptr [ebp-44], eax	;No, continue
+
+:004CC323 C745DC01000000          mov [ebp-24], 00000001
+
+
+
+Then lots of crap, that I'll skip for now and you'll find:
+
+
+
+:004CC3ED 803D90E34F000C          cmp byte ptr [004FE390], 0C	;Is size of Code 12?
+
+:004CC3F4 0F85E8000000            jne 004CC4E2			;No, beggar off
+
+
+
+So this tells us that our code must be 12 digits.  Now we are getting somewhere
+
+Skip down a bit and we get to this code, I'll skip how I figured out the 
+
+comments I've added, it's just simple tracing.
+
+
+
+:004CC41D B902000000              mov ecx, 00000002	;Counter (# of bytes)
+
+:004CC422 B890E34F00              mov eax, 004FE390	;Point to Code
+
+:004CC427 E85C63F3FF              call 00402788		;Copy 2 bytes of Code to DS:7CF4D0
+
+:004CC42C 8D85B0FDFFFF            lea eax, dword ptr [ebp+FDB0] ;Point to DS:7CF4D0
+
+:004CC432 E8F538F8FF              call 0044FD2C
+
+
+
+At this point I printed out a copy of the subroutine at 44fD2C and anyalized
+
+it's behavior.  All it did was take the two bytes copied from the code and
+
+performed the following operation.
+
+result = 1st*A +2nd
+
+I also noticed that this code was executed several times.  What happens is this
+
+, the code is analyzed in pairs, with each pair having a &quot;result&quot;.  Farther down
+
+in our code we come accross this:
+
+
+
+:004CC49A E85566F3FF              call 00402AF4		;????
+
+:004CC49F 85C0                    test eax, eax		;Test ax
+
+:004CC4A1 7508                    jne 004CC4AB		
+
+:004CC4A3 8A45E7                  mov al, byte ptr [ebp-19]	
+
+:004CC4A6 A28CE34F00              mov [004FE38C], al		;Put 0 into our main flag
+
+
+
+So obviously we want the call 00402af4 to return a 1, not a 0 so that we will
+
+skip putting 0 into our REGFLAG, [4FE38C].  Well, we trace into the call and 
+
+we find that what it does is compare the result for the current Pair to the
+
+first character of the Name.  For example, I typed in Sync as my Name.  The
+
+first character is &quot;S&quot; or 53h.  so I need &quot;pairs&quot; that give &quot;results&quot; of 53.
+
+I used &quot;83&quot; as my pairs, the calculation is shown below.
+
+8 * A + 3 =53h
+
+So I used '838383838383' as my regcode, and it fails again.  So keep going.
+
+
+
+:004CC4C8 8B45C8                  mov eax, dword ptr [ebp-38]	;Sum of first 5 &quot;results&quot;
+
+:004CC4CB B964000000              mov ecx, 00000064
+
+:004CC4D0 99                      cdq
+
+:004CC4D1 F7F9                    idiv ecx		;Divide Sum by 64
+
+:004CC4D3 3B55FC                  cmp edx, dword ptr [ebp-04]  ;Remainder = 6th &quot;result&quot;
+
+:004CC4D6 742B                    je 004CC503		       ;Yes, jump ahead	
+
+:004CC4D8 8A45C7                  mov al, byte ptr [ebp-39]	;No, 
+
+:004CC4DB A28CE34F00              mov [004FE38C], al		;Put 0 in REGFLAG
+
+:004CC4E0 EB21                    jmp 004CC503
+
+
+
+So I need my 6th result, from the 11th and 12th digits of my Code to be the 
+
+remainder of the the sum of the first five results divided by 64.  Easy enough.
+
+results each = 53h so 53h + 53h + 53h + 53h +53h = 19F
+
+19f/64 =4 with remainder of F
+
+so I'll pick 1 as my first digit (arbitrarily)
+
+1*A+_ =F    The _ must be 5 since A+5=F.   Easy, my 11th and 12th digits are
+
+(for now) &quot;15&quot;, to give a total code of '838383838315'.
+
+If you trace through now, with an eye on our REGFLAG at [4FE38C], You'll notice
+
+that we now skip over all the code which changes it from 1 to 0, until the
+
+code below.
+
+
+
+:004CC58A E88DADF3FF              call 0040731C		;THIS CALL
+
+:004CC58F DD5DD0                  fstp qword ptr [ebp-30]
+
+:004CC592 9B                      wait
+
+:004CC593 33C0                    xor eax, eax
+
+:004CC595 5A                      pop edx
+
+:004CC596 59                      pop ecx
+
+:004CC597 59                      pop ecx
+
+:004CC598 648910                  mov dword ptr fs:[eax], edx
+
+:004CC59B EB27                    jmp 004CC5C4
+
+:004CC59D E9E66CF3FF              jmp 00403288
+
+:004CC5A2 8A45C7                  mov al, byte ptr [ebp-39]	
+
+:004CC5A5 A28CE34F00              mov [004FE38C], al		;Put 0 in REGFLAG
+
+
+
+I have not been able to skip the code at 4cc5a2 yet, but here's what I have.
+
+If you follow the call 0040731C, you enter a subroutine which in turn calls another 
+
+at CS:40732f .  Here is the code out of that routine, as I understand it. DI
+
+register is loaded with what is, I believe, the hex value of the first
+
+character of the name, again 53h for &quot;S&quot;.
+
+
+
+:0040728F 6683FF01                cmp di, 0001		;Is it less than 1?
+
+:00407293 7278                    jb 0040730D		;Yes, beggar off
+
+:00407295 6683FF0C                cmp di, 000C		;Greater than C ?
+
+:00407299 7772                    ja 0040730D		;Beggar off
+
+
+
+This second check is crucial.  If you reverse this jump it runs fine and is
+
+registered.  However, I cannot see how the first character of a Name could
+
+possibly be between 1 and C hexadecimal.  They are unprintable chars.  If 
+
+anyone can figure this out, please share.  Anyway below is my working crack, 
+
+as I said earlier not quite complete.
+
+
+
+-------------------------------------------------------------------------
+
+Change the code above to:
+
+:00407295 6683FFFE                cmp di, 00FE       ;All chars are <FE Change : :004CC602 7608 jbe 004CC60C :004CC604 8A45C7 mov al, byte ptr [ebp-39] :004CC607 A28CE34F00 mov [004FE38C], al To: :004CC602 EB08 jmp 004CC60C :004CC604 8A45C7 mov al, byte ptr [ebp-39] :004CC607 A28CE34F00 mov [004FE38C], al And also follow the following rules. hex value of first character of Name="FN" 1st*A + 2nd="FN" 3rd*A + 4th="FN" 5th*A + 6th="FN" 7th*A + 8th="FN" 9th*A + 10th="FN" 11th*A+12th="remainder" of FN*5/64 Final testing note: If you set your clock ahead 30 days you will find... a dialog box wich tells you your registration number has EXPIRED! So the number is also somehow date-coded to expire after a certain date. This is indeed a new kind of protection for me. You can patch again to get rid of this nag as below change : :004CCA56 7649 jbe 004CCAA1 to : :004CCA56 EB49 jmp 004CCAA1 While alot of the reverse engineering is finished already, there is much to be done still. I believe only one or two checks are left which prevents us from succeeding. I am out of ideas, if anyone can help, please do so. I hate to say it, but I am beaten. If any of my fellow classmates could point me in the right direction I would appreciate it. (c) +Sync 1997 </pre>
+
+<HR size="3"><CENTER>
+
+<A name="anchor_epic"></A>
+
+   <I>Here is the first answer I got, from Epic Lord (25 July 1997).</I><BR>
+
+  <HR size="2" width="33%">
+
+  <PRE></CENTER><FONT color="purple">Dear Fravia,
+
+
+
+Please find below an analysis for zMud. Maybe it can help +Sync :-) 
+
+The problem is converting dates to Reals (8 bytes) and making 
+
+operations on them.
+
+
+
+BTW, expiry of the registration code is NOT related to the reg code itself.
+
+It is directly related to the current date :-)
+
+
+
+Date coding is standard date to 8 byte real. As: 35643 = 1-Aug-97,
+
+35632 = 21-Jul-97. I used M$-excel to translate the dates :-)
+
+
+
+The document is not written for direct publishing purposes, but informative
+
+instead. You may or may not use my handle :-)
+
+
+
+Best wishes to you and +Sync,
+
+
+
+Epic Lord</FONT>
+
+
+
+***********************************
+
+
+
+Here is the first patch for Registration control
+
+
+
+* Referenced by a  Jump at Address:004CC51F(C)
+
+|
+
+:004CC524 C1F804                  sar eax, 00000004
+
+:004CC527 8945D8                  mov dword ptr [ebp-28], eax
+
+:004CC52A 66B90100                mov cx, 0001
+
+:004CC52E 668B55D8                mov dx, word ptr [ebp-28]
+
+:004CC532 668B45C8                mov ax, word ptr [ebp-38]
+
+:004CC536 E8E1ADF3FF              call 0040731C
+
+:004CC53B 8B45E0                  mov eax, dword ptr [ebp-20]
+
+:004CC53E DD9850030000            fstp qword ptr [eax+00000350]
+
+:004CC544 9B                      wait
+
+
+
+:004CC545 803D8CE34F0000          cmp byte ptr [004FE38C], 00 -&gt; HERE *****
+
+                                  cmp byte ptr [004FE38C], FF -&gt; :-)
+
+
+
+:004CC54C 0F8493000000            je 004CC5E5
+
+:004CC552 33C0                    xor eax, eax
+
+:004CC554 55                      push ebp
+
+:004CC555 689DC54C00              push 004CC59D
+
+:004CC55A 64FF30                  push dword ptr fs:[eax]
+
+:004CC55D 648920                  mov dword ptr fs:[eax], esp
+
+:004CC560 837DF060                cmp dword ptr [ebp-10], 00000060
+
+:004CC564 7C0D                    jl 004CC573
+
+:004CC566 8B45F0                  mov eax, dword ptr [ebp-10]
+
+:004CC569 056C070000              add eax, 0000076C
+
+:004CC56E 8945DC                  mov dword ptr [ebp-24], eax
+
+:004CC571 EB0B                    jmp 004CC57E
+
+
+
+
+
+***********************************
+
+
+
+Here is the second patch for Registration control, however, 
+
+reg expiry goes on
+
+
+
+* Referenced by a  Jump at Address:004CC59B(U)
+
+|
+
+:004CC5C4 66B90100                mov cx, 0001
+
+:004CC5C8 66BA0100                mov dx, 0001
+
+:004CC5CC 66B8CC07                mov ax, 07CC
+
+:004CC5D0 E847ADF3FF              call 0040731C
+
+:004CC5D5 DC5DD0                  fcomp qword ptr [ebp-30]
+
+:004CC5D8 DFE0                    fstsw ax
+
+:004CC5DA 9E                      sahf
+
+:004CC5DB 7608                    jbe 004CC5E5
+
+:004CC5DD 8A45E7                  mov al, byte ptr [ebp-19] --&gt; HERE *****
+
+                                  mov al,01
+
+                                  nop (thanks +Sync)
+
+
+
+:004CC5E0 A28CE34F00              mov [004FE38C], al
+
+
+
+
+
+
+
+After the two patches above, register as anybody wit any reg. id. to
+
+eliminate the &quot;unregistered&quot; name :-)
+
+
+
+***********************************
+
+
+
+Here is the triggering part for the Date to Real Conversion routine.
+
+
+
+* Referenced by a CALL at Addresses:004074A8, :0045E5CB, :004CC536, 
+
+                                   :004CC58A, :004CC5B6, :004CC5D0  
+
+|
+
+:0040731C 53                      push ebx
+
+:0040731D 56                      push esi
+
+:0040731E 57                      push edi
+
+:0040731F 83C4F8                  add esp, FFFFFFF8
+
+:00407322 8BF9                    mov edi, ecx
+
+:00407324 8BF2                    mov esi, edx
+
+:00407326 8BD8                    mov ebx, eax
+
+:00407328 54                      push esp
+
+:00407329 8BCF                    mov ecx, edi
+
+:0040732B 8BD6                    mov edx, esi
+
+:0040732D 8BC3                    mov eax, ebx
+
+:0040732F E828FFFFFF              call 0040725C  --&gt; HERE *****
+
+:00407334 84C0                    test al, al
+
+:00407336 750A                    jne 00407342
+
+
+
+* Reference to String Resource ID=65414: &quot;Invalid argument to date encode&quot;
+
+                                  |
+
+:00407338 B886FF0000              mov eax, 0000FF86
+
+:0040733D E876EDFFFF              call 004060B8
+
+
+
+***********************************
+
+
+
+You'll find a date conversion routine in address 0040725C. 
+
+If everything is OK, AL returns non zero, as follows.
+
+
+
+- ------ cut
+
+|:004072DA(C)
+
+|
+
+:004072DF C1FA02                  sar edx, 00000002
+
+:004072E2 03F2                    add esi, edx
+
+:004072E4 2BF0                    sub esi, eax
+
+
+
+- ----- cut
+
+:00407303 8B4508                  mov eax, dword ptr [ebp+08]
+
+:00407306 DD18                    fstp qword ptr [eax]
+
+:00407308 9B                      wait
+
+:00407309 C645FD01                mov [ebp-03], 01
+
+
+
+***********************************
+
+
+
+And here is the init part of first dates
+
+
+
+:004CC514 83C002                  add eax, 00000002
+
+:004CC517 8945C8                  mov dword ptr [ebp-38], eax
+
+:004CC51A 8B45DC                  mov eax, dword ptr [ebp-24]
+
+:004CC51D 85C0                    test eax, eax
+
+:004CC51F 7903                    jns 004CC524
+
+:004CC521 83C00F                  add eax, 0000000F
+
+
+
+* Referenced by a  Jump at Address:004CC51F(C)
+
+|
+
+:004CC524 C1F804                  sar eax, 00000004
+
+:004CC527 8945D8                  mov dword ptr [ebp-28], eax
+
+:004CC52A 66B90100                mov cx, 0001 ---------------&gt; DAY *******
+
+:004CC52E 668B55D8                mov dx, word ptr [ebp-28] --&gt; MONTH *****
+
+:004CC532 668B45C8                mov ax, word ptr [ebp-38] --&gt; YEAR ******
+
+:004CC536 E8E1ADF3FF              call 0040731C
+
+:004CC53B 8B45E0                  mov eax, dword ptr [ebp-20]
+
+:004CC53E DD9850030000            fstp qword ptr [eax+00000350]
+
+
+
+************************************
+
+
+
+(c) Epic Lord, 25 July 1997</PRE>
+
+<HR ALIGN="CENTER" WIDTH="100%" SIZE="3">
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</I></CENTER>
+
+<BR><CENTER>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#84'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#84"> homepage</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"> 
+
+<A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#73'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#73"> links</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0">
+
+<A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm"> anonymity</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm"> +ORC</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#82'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#82"> students' essays</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm"> tools</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm"> cocktails</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm"> Antismut CGI-scripts</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm"> search_forms</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm"> mailFraVia</A></CENTER><BR>
+
+
+
+<CENTER>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm"> Is reverse engineering legal?</A></CENTER>
+
+<CENTER><HR ALIGN="CENTER" WIDTH="100%" SIZE="2"></CENTER>
+
+
+
+</BODY>
+
+</HTML>

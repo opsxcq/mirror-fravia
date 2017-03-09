@@ -1,0 +1,1502 @@
+<HTML>
+
+<HEAD><TITLE>linux2.htm</TITLE></HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+<CENTER><FONT size="+3">Linux cracking: the live approach (acrobat reader)</FONT>
+
+<BR>(Linux advanced reverse engineering: imported functions)<BR><BR><H4>by SiuL+Hacky<BR><A href="solution.htm" tppabs="http://www.anticrack.de/fravia/solution.htm">
+
+<IMG SRC="hcu1.gif" tppabs="http://www.anticrack.de/fravia/hcu1.gif" ALT="+cracker!" ALIGN="BOTTOM" WIDTH="114" HEIGHT="43" BORDER="0" VSPACE="0" HSPACE="0"></A><BR>
+
+<BR>
+
+(12 November 1997)</H4>
+
+<HR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">Courtesy of fravia's page 
+
+of reverse engineering<BR>
+
+<BR><I>Well, another VERY remarkable essay, that I am proud to present.
+
+SiuL+Hacky tackles here once more UNCOVERED ground, and teaches all of you 
+
+more elements of Linux reverse engineering... you may want to check his good 
+
+<A href="siulin1.htm" tppabs="http://www.anticrack.de/fravia/siulin1.htm">first</A> essay about Linux reverse engineering... a bad omen
+
+of these commercial times... even Linux is getting more and more soiled by commercial
+
+overbloated applications :-(<BR></I></CENTER><HR size="6"><PRE>
+
+
+
+LINUX CRACKING: THE LIVE APPROACH. ACROBAT READER.
+
+
+
+I.Introduction
+
+---------------
+
+
+
+In my first linux essay you could get an introduction on how to port our
+
+windoze techniques to the linuz world. It was mainly dedicated to dead
+
+approach, because it is really powerful for some kind of programs. But
+
+sadly, as you'll see, huge and overbloated programs are getting into Linux
+
+and if you want to reverse engineer your target you need some debugging 
+
+(unless you are a 'senior' mental cracker).
+
+
+
+With this essay I'll try to introduce you the linux graphic environment,
+
+XWindows (no kind of porno environment eh !). It may look like Windoze but
+
+internally is very different in some aspects. The main difference is that it
+
+uses the ubiquitous client-server scheme. Anyway, I don't have the time nor
+
+the knowledge (+ hcu 1999 ?) to teach you thoroughly how it works, but
+
+I'll show the starting point for cracking X applications. In linux you can
+
+use several X servers, the most popular is XFree86 server but I hope that 
+
+any of them will do it.
+
+
+
++ORC's proposal for cracking acrobat-pdf tools is a good opportunity for
+
+practising these methods. I told you, as I told him, that I think is not
+
+worthy losing time writing a text-to-pdf converter, because it does exist
+
+and there are still several uncracked (and important) protection schemes. 
+
+So, here I'm gonna crack Acrobat Reader (yes, it is available for linux, 
+
+though the same windoze restrictions apply) with two main goals :
+
+
+
+- I want to see always Menu and Toolbars.
+
+- I don't want copy text restrictions and so on.
+
+
+
+I got it from a Spanish magazine, but I suppose it is freely available at 
+
+Adobe's site. You realise this is not reverse engineering pdf-format but 
+
+Acrobat Reader. (I would like to see other people reverse engineer the 
+
+pdf-format).
+
+
+
+
+
+II. ToolX of the Trade.
+
+------------------------
+
+
+
+Obviously here you'll find some X-specific tools. Most of the tools I told
+
+you in my first essay apply for X-RE. Especially useful is gonna be DASM,
+
+because, though we are gonna use the live approach, the assembler listing is
+
+again invaluable. I repeat you that this will give the clues, but for a
+
+better use of them, READ the manual pages of them.
+
+
+
+
+
+* xwininfo    -----------------------------------------------------------------
+
+
+
+ This utility gives you information about a specific window. By default it asks 
+
+to click on the target window you want to gather information. Be careful, and 
+
+don't think here about &quot;window&quot; in the Windoze way. When I click with the mouse 
+
+on a window, I'm clicking on the &quot;physical&quot; window, on the super-parent window 
+
+(called root window) if you want to put it that way. Each window (buttons for 
+
+instance are child windows) has an identifier. These are some useful switches:
+
+
+
+- tree: Display all windows (root, parent and children) in a recursive way. It 
+
+displays the identifier (known as Drawables) , the size, position and show on. 
+
+Here is an example taken for Acrobat Reader:
+
+
+
+xwininfo: Window id: 0x2800128 &quot;Acrobat Reader&quot;
+
+ Root window id: 0x26 (the root window) (has no name)
+
+   Parent window id: 0x8001ad (has no name)
+
+        1 child:
+
+             0x2800129 (has no name): ()  272x367+0+0  +527+121
+
+             
+
+             ... some other windows ...
+
+             
+
+ 0x2800148 (has no name): ()  24x24+3+3  +530+183; &lt;&lt; toolbar button
+
+ 0x2800147 (has no name): ()  24x24+27+3  +554+183;&lt;&lt; toolbar button
+
+ 0x2800146 (has no name): ()  24x24+51+3  +578+183;&lt;&lt; toolbar button
+
+ 0x2800145 (has no name): ()  6x24+75+3 +602+183
+
+ 0x2800144 (has no name): ()  24x24+81+3  +608+183;&lt;&lt; toolbar button
+
+ 0x2800143 (has no name): ()  24x24+105+3  +632+183;&lt;&lt;toolbar button
+
+ 0x2800142 (has no name): ()  24x24+129+3 +656+183; &lt;&lt; and more ...
+
+ 0x2800141 (has no name): ()  6x24+153+3  +680+183
+
+ 0x2800140 (has no name): ()  24x24+159+3  +686+183
+
+ 0x280013f (has no name): ()  24x24+183+3 +710+183
+
+ 0x280013e (has no name): ()  24x24+207+3  +734+183
+
+ 0x280013d (has no name): ()  24x24+231+3  +758+183
+
+ 0x280013c (has no name): ()  6x24+255+3 +782+183
+
+ 0x280013b (has no name): ()  24x24+3+30  +530+210
+
+ 0x280013a (has no name): ()  24x24+27+30  +554+210
+
+ 0x2800139 (has no name): ()  6x24+51+30 +578+210
+
+ 0x2800138 (has no name): ()  24x24+57+30  +584+210
+
+ 0x2800137 (has no name): ()  24x24+81+30  +608+210
+
+ 0x2800136 (has no name): ()  24x24+105+30 +632+210
+
+ 0x2800135 (has no name): ()  6x24+129+30  +656+210
+
+ 0x2800134 (has no name): ()  24x24+135+30  +662+210
+
+ 0x2800133 (has no name): ()  6x24+159+30+68 6+210            
+
+ 
+
+            ... some other windows ...
+
+            
+
+
+
+Of course, the first hex number is the window identifier, that will be
+
+especially useful for other, or even this, tool.
+
+
+
+-id : with this option you don't need to click on a specific window but you
+
+can gather information for any window in particular.
+
+
+
+-all: display all the information available.
+
+
+
+
+
+* xev  ----------------------------------------------------------------------
+
+
+
+This utility reports all the events involved with some window. Switches:
+
+
+
+-id: If you don't give it an identifier, xev will display a test window,
+
+where you can test mouse, keyboard and other kinds of event.
+
+
+
+In some cases you may use this program for matching identifiers. For example
+
+if run xev -id 0x2800148
+
+But you don't know what window (child window) has this identifier! Just
+
+move your mouse over the windows and you'll get messages just when 
+
+you'll be over the window you are looking for (BTW MotionNotify events).
+
+
+
+
+
+* xxgdb  --------------------------------------------------------------------
+
+
+
+It is just the Xwindows front end for gdb. The only addition is a ButtonBar
+
+with some useful commands. We'll see some useful commands while debugging
+
+acrobat reader. I hope, in a future essay, to show some more friendly tools,
+
+but as for now this is the most widespread and stable tool I know of.
+
+
+
+
+
+* XWindows API Reference  ----------------------------------------------------
+
+
+
+Working with Windoze programs, it turned important to know some &quot;regular&quot;
+
+API calls like MessageBox, GetDlgItemText and so on. Well, the same apply, 
+
+or will apply, for XWindows. You may get the call definitions in the .h files
+
+located usually in the directory /usr/X11R6/include/X11. I found particularly
+
+interesting a document available at xfree86 site (ftp.xfree86.org), or, even better, 
+
+look for a mirror in a ftpsearch:
+
+
+
+xlib.PS.Z   (971 Kb)
+
+
+
+This is a 400 pages PostScript document where you'll find a lot of information.
+
+It's hard to find books about Xwindows programming, so if you know some
+
+tutorial or some document useful for our purposes,  send them to the +HCU to 
+
+be included in the next revision of this essay.
+
+
+
+
+
+* Text-to-pdf converters -----------------------------------------------------
+
+
+
+This does exist (there's a good document about it at <A href="pdffing.htm" tppabs="http://www.anticrack.de/fravia/pdffing.htm">fravia's pdf</A> project
+
+page), and you'll need it for testing Acrobat Reader. It is necessary to 
+
+get a fully unprotected document and test it against protected ones. 
+
+I converted text to pdf passing through a PostScript intermediate stage.
+
+
+
+mpage: this program converts text to PostScript easily.
+
+
+
+GhostScript: this is not only a PostScript viewer, but it has a built-in
+
+PostScript to pdf converter. If you don't want to go into GhostScript
+
+internals (a hell for me), use pstoedit, for example, to manage this task.
+
+
+
+
+
+III. Reverse Engineering Acrobat Reader.
+
+-----------------------------------------
+
+
+
+Let's suppose Acrobat is the base directory where it is installed. You'll
+
+find easily that it is invoked with &quot;acrobat&quot;, a file in Acrobat/bin
+
+directory with just 8467 bytes. Impossible for this huge monster (you'll
+
+see). It is just a Shell Script that calls the huge monster
+
+Acrobat/Reader/intellinux/acroread, 2.511.477 bytes full of nops (believe
+
+me, I had a look). Ok, dasm it and the monster will be a ghastly hideous 
+
+creature of 38.625.635 bytes and almost 1 million lines. 
+
+I do recommend you not to edit it, and use the &quot;less&quot; viewer (with the 
+
+searching capabilities you need).
+
+
+
+Have a look at the symbol table (with the name of the functions, inside and
+
+outside the program. Very nice gift from the Adobe's guys), and what should 
+
+be a reverser bliss will be a cracker curse: MORE THAN 16000 functions (many 
+
+of them repeated) with names as amazing as :
+
+
+
+DefaultAnnotHandlerNotifyAnnotAddedToSelection
+
+_XmAllowAcceleratedInsensitiveUnmanagedMenuItems
+
+_XmVirtKeys_siemensWx200FallbackBindingString
+
+_XmVirtKeys_dblclkFallbackBindingString
+
+
+
+and bla, bla, bla.
+
+
+
+I started writing down some name that could be interesting, then I started
+
+skimming through and finally I scrolled them away. I am going to show you the
+
+functions I saw suspicious. At the end of the essay you'll realise it could
+
+have been very easy with a little Zen cracking, but I was not completely 
+
+lucky (and for once I didn't want to be lucky) and I used the methodical 
+
+approach that always saves you when your Zen is broken. Look at the 
+
+following names:
+
+
+
+UnixMenubarInitialize
+
+UnixMenuRemoved
+
+UnixPageViewCancelToolButtons
+
+UnixToolbarHide
+
+AVCrypt
+
+DecryptPerms0
+
+DecryptPerms1
+
+UnixDlgSecurityGetValues
+
+UnixCryptGetPasswd
+
+
+
+I had a look at the code of these functions, and thne I tested them with 
+
+the debugger, setting breakpoints and watching returned values. I got 
+
+nothing, so I just searched once more, this time for the string &quot;Hide&quot;. 
+
+I wrote down these functions:
+
+
+
+AVToolBarHide
+
+AVMenuBarHide
+
+UnixMenubarWidgetHide
+
+
+
+Looking the code of the last one I was lucky, help yourself:
+
+
+
+Referenced from jump/call at 08062c64 ; 
+
+
+
+08048500 &lt;UnixMenubarWidgetHide&gt;    pushl  %ebp
+
+08048501 &lt;UnixMenubarWidgetHide+1&gt;  movl   %esp,%ebp
+
+08048503 &lt;UnixMenubarWidgetHide+3&gt;  subl   $0x10,%esp
+
+08048506 &lt;UnixMenubarWidgetHide+6&gt;  pushl  %ebx
+
+08048507 &lt;UnixMenubarWidgetHide+7&gt;  movl   0x10(%ebp),%ebx
+
+0804850a &lt;UnixMenubarWidgetHide+a&gt;  movb   %bl,0xffffffff(%ebp)
+
+0804850d &lt;UnixMenubarWidgetHide+d&gt;  movl   0x8(%ebp),%eax
+
+08048510 &lt;UnixMenubarWidgetHide+10&gt; pushl  %eax
+
+
+
+Reference to function : AVMenubarGetServerData
+
+
+
+08048511 &lt;UnixMenubarWidgetHide+11&gt; call   08089090  &lt;&lt; I always thought that         
+
+                                                     &lt;&lt; this function could be 
+
+                                                     &lt;&lt; important... I was wrong
+
+....  code and code ....
+
+
+
+08048590 &lt;UnixMenubarWidgetHide+90&gt; movl   0xfffffff8(%ebp),%eax
+
+08048593 &lt;UnixMenubarWidgetHide+93&gt; cmpb   $0x0,0x4(%eax)        &lt;&lt; compare something
+
+08048597 &lt;UnixMenubarWidgetHide+97&gt; jne    080485bc              &lt;&lt; if not zero return and do nothing
+
+08048599 &lt;UnixMenubarWidgetHide+99&gt; cmpb   $0x0,0xffffffff(%ebp) &lt;&lt; if local var = 0 some SHOWING
+
+0804859d &lt;UnixMenubarWidgetHide+9d&gt; je     080485b0              &lt;&lt; else some HIDING
+
+0804859f &lt;UnixMenubarWidgetHide+9f&gt; movl   0xc(%ebp),%eax
+
+080485a2 &lt;UnixMenubarWidgetHide+a2&gt; pushl  %eax
+
+
+
+Reference to function : UnixMenubarWidgetHideInternal
+
+
+
+080485a3 &lt;UnixMenubarWidgetHide+a3&gt; call   08048480
+
+080485a8 &lt;UnixMenubarWidgetHide+a8&gt; addl   $0x4,%esp
+
+080485ab &lt;UnixMenubarWidgetHide+ab&gt; jmp    080485bc
+
+080485ad &lt;UnixMenubarWidgetHide+ad&gt; nop    
+
+080485ae &lt;UnixMenubarWidgetHide+ae&gt; nop    
+
+080485af &lt;UnixMenubarWidgetHide+af&gt; nop    
+
+
+
+Referenced from jump/call at 0804859d ; 
+
+
+
+080485b0 &lt;UnixMenubarWidgetHide+b0&gt; movl   0xc(%ebp),%eax
+
+080485b3 &lt;UnixMenubarWidgetHide+b3&gt; pushl  %eax
+
+
+
+Reference to function : UnixMenubarWidgetShowInternal
+
+
+
+080485b4 &lt;UnixMenubarWidgetHide+b4&gt; call   080484d0
+
+080485b9 &lt;UnixMenubarWidgetHide+b9&gt; addl   $0x4,%esp
+
+
+
+Referenced from jump/call at 08048597 ; 080485ab ; 
+
+
+
+080485bc &lt;UnixMenubarWidgetHide+bc&gt; movl   0xffffffec(%ebp),%ebx
+
+080485bf &lt;UnixMenubarWidgetHide+bf&gt; movl   %ebp,%esp
+
+080485c1 &lt;UnixMenubarWidgetHide+c1&gt; popl   %ebp
+
+080485c2 &lt;UnixMenubarWidgetHide+c2&gt; ret
+
+
+
+What happen with that important variable ? If you look at instruction
+
+804850, it is copied from one of the parameters of the function. With some
+
+basic parameter theory (if not, read fravia's+ good <A href="filemon1.htm" tppabs="http://www.anticrack.de/fravia/filemon1.htm">filemon series</A>) 
+
+you know that :
+
+
+
+1st parameter is located at [bp+0x8]
+
+2nd parameter is located at [bp+0xc]
+
+3rd parameter is located at [bp+0x10]
+
+
+
+(of course, if we consider one parameter = one word length). Ok, let's have
+
+a look at the caller (this function is called from 08062c64). Pay attention
+
+to the parameters please:
+
+
+
+
+
+(... some lines not important ...)
+
+Reference to function : AVDocGetKioskBool
+
+
+
+08062c24 &lt;UnixDocViewUpdateVisibility+44&gt; call   0807d290     &lt;&lt;&lt;&lt; the function returns 1 or 0 into  eax
+
+08062c29 &lt;UnixDocViewUpdateVisibility+49&gt; addl   $0x8,%esp
+
+08062c2c &lt;UnixDocViewUpdateVisibility+4c&gt; movl   %eax,%edx
+
+08062c2e &lt;UnixDocViewUpdateVisibility+4e&gt; movsbl %dl,%eax     &lt;&lt; the returned value is in eax again
+
+08062c31 &lt;UnixDocViewUpdateVisibility+51&gt; jmp    08062c42     &lt;&lt; look at these nops,
+
+08062c33 &lt;UnixDocViewUpdateVisibility+53&gt; nop                 &lt;&lt;<THERE are hundreds in the program 08062c34 &lt;UnixDocViewUpdateVisibility+54> nop                 &lt;&lt; kind of mega-pentium alignment or room for patching?
+
+08062c33 &lt;UnixDocViewUpdateVisibility+53&gt; nop    
+
+08062c34 &lt;UnixDocViewUpdateVisibility+54&gt; nop    
+
+08062c35 &lt;UnixDocViewUpdateVisibility+55&gt; nop    
+
+08062c36 &lt;UnixDocViewUpdateVisibility+56&gt; nop    
+
+08062c37 &lt;UnixDocViewUpdateVisibility+57&gt; nop    
+
+08062c38 &lt;UnixDocViewUpdateVisibility+58&gt; nop    
+
+08062c39 &lt;UnixDocViewUpdateVisibility+59&gt; nop    
+
+08062c3a &lt;UnixDocViewUpdateVisibility+5a&gt; nop    
+
+08062c3b &lt;UnixDocViewUpdateVisibility+5b&gt; nop
+
+08062c3c &lt;UnixDocViewUpdateVisibility+5c&gt; nop    
+
+08062c3d &lt;UnixDocViewUpdateVisibility+5d&gt; nop    
+
+08062c3e &lt;UnixDocViewUpdateVisibility+5e&gt; nop    
+
+08062c3f &lt;UnixDocViewUpdateVisibility+5f&gt; nop    
+
+
+
+Referenced from jump/call at 08062c0b ; 
+
+
+
+08062c40 &lt;UnixDocViewUpdateVisibility+60&gt; xorl   %eax,%eax
+
+
+
+Referenced from jump/call at 08062c31 ;          &lt;&lt; we are JUMPING TO HERE !!!!!!!!!!
+
+                                                 &lt;&lt; more nooping, if +orc would see this :-(
+
+08062c42 &lt;UnixDocViewUpdateVisibility+62&gt; jmp    08062c55
+
+... (10 more nops)...    
+
+08062c4f &lt;UnixDocViewUpdateVisibility+6f&gt; nop    
+
+
+
+Referenced from jump/call at 08062c05 ; 
+
+08062c50 &lt;UnixDocViewUpdateVisibility+70&gt; movl   $0x1,%eax
+
+
+
+Referenced from jump/call at 08062c42 ;        &lt;&lt; we are JUMPING HERE!!!
+
+08062c55 &lt;UnixDocViewUpdateVisibility+75&gt; pushl  %eax    &lt;&lt;saved 3rd parameter
+
+                                                            &lt;&lt; remember eax= returned value
+
+08062c56 &lt;UnixDocViewUpdateVisibility+76&gt; movl   0x8(%ebp),%eax
+
+08062c59 &lt;UnixDocViewUpdateVisibility+79&gt; movl   0x10(%eax),%edx
+
+08062c5c &lt;UnixDocViewUpdateVisibility+7c&gt; pushl  %edx    &lt;&lt;saved 2nd parameter
+
+08062c5d &lt;UnixDocViewUpdateVisibility+7d&gt; movl   0x8(%ebp),%eax
+
+08062c60 &lt;UnixDocViewUpdateVisibility+80&gt; movl   0xc(%eax),%edx
+
+08062c63 &lt;UnixDocViewUpdateVisibility+83&gt; pushl  %edx     &lt;&lt;saved 1st parameter
+
+Reference to function : UnixMenubarWidgetHide
+
+08062c64 &lt;UnixDocViewUpdateVisibility+84&gt; call   08048500
+
+
+
+It is pretty clear, if the function AVDocGetKioskBool returns 0 we are GOOD
+
+GUYS. Let's make this function return always 0. You could patch it the old
+
+way, but now we are going to learn some xxgdb capabilities:
+
+
+
+1) Fire acrobat reader of course. Look its Process Identifier (PID)
+
+2) Fire xxgdb
+
+3) Execute command &quot;file (your path)/Acrobat/Reader/intellinux/bin/acroread,
+
+   that will load the symbols. Don't worry if xxgdb complains about
+
+   something.
+
+4) Now we are gonna &quot;join&quot; the debugger to a running process. For this
+
+   reason, execute the command &quot;attach PID&quot;, where PID IS A NUMBER, the
+
+   process identifier of acroread (use ps for checking)
+
+5) You'll land probably in the middle of a system call, it is OK.
+
+6) Run &quot;cont&quot; command to continue execution.
+
+7) When you want to break, press Control-C.
+
+
+
+This is the important code of AVDocGetKioskBool:
+
+
+
+0807d3d2 <AVDOCGETKIOSKBOOL+142> movl   %edx,%eax
+
+0807d3d4 <AVDOCGETKIOSKBOOL+144> jmp    0807d3e0 <AVDOCGETKIOSKBOOL+150>
+
+
+
+(... another dozen of nops ...)
+
+
+
+Referenced from jump/call at 0807d2bb ; 0807d3d4 ; 
+
+
+
+0807d3e0 <AVDOCGETKIOSKBOOL+150> leal   0xfffffff0(%ebp),%esp
+
+0807d3e3 <AVDOCGETKIOSKBOOL+153> popl   %ebx
+
+0807d3e4 <AVDOCGETKIOSKBOOL+154> popl   %esi
+
+0807d3e5 <AVDOCGETKIOSKBOOL+155> movl   %ebp,%esp
+
+0807d3e7 <AVDOCGETKIOSKBOOL+157> popl   %ebp
+
+0807d3e8 <AVDOCGETKIOSKBOOL+158> ret  
+
+
+
+The instruction at 807d3e0 is always reached from 807d3d4, the other
+
+reference is just a &quot;fast return&quot; when gets an error. This will do the
+
+crack while working with the debugger. You'll see that this is a really
+
+powerful debugger, with features supported by softice not a long time 
+
+ago.
+
+(xxgdb) is the prompt:
+
+
+
+(xxgdb) br *0x0807d3d2 if $edx==1
+
+Breakpoint 1 at 0x0807d3d2
+
+(xxgdb) commands
+
+&gt;silent
+
+&gt;set $edx=0
+
+&gt;cont
+
+&gt;end
+
+(xxgdb)
+
+
+
+Really powerful eh ? If you want to know the breakpoint status run 
+
+&quot;info br&quot;. 
+
+Well if you now execute &quot;cont&quot;, you'll always have menu, toolbars and 
+
+so on visible, even if ghiribizo or whoever doesn't want :-). 
+
+I think that the above code is pretty easy to understand.
+
+
+
+And now what's up with the second part ? Specifically: 'copying text'. 
+
+As I told you, I was not so lucky. Firstly I tried to play the same 
+
+game, try and error, feel a little, look at suspicious functions... and  
+
+I got lost in the mare magnum of silly functions. I navigated over tons 
+
+of functions, and I was close to solve it, and you'll see that names are 
+
+indeed again pretty obvious, but until you grasp this target as a whole 
+
+you don't really realise what is going on. 
+
+I was confused always by X buffering, coz graphic events are not 
+
+implemented immediately, and 5 or 6 buttons from the toolbar 
+
+were painted all together at once.
+
+
+
+After one day of useless testing I decided to act methodically, and after 
+
+starting from one obvious point, reach the code I was seeking. I just wanted 
+
+to locate where the button was disabled and then, from there, trace back: 
+
+Reverse Engineering as we have all learned it. 
+
+I studied some Xwindows API, and I got information about events. 
+
+For fixing the problem of  graphic buffered events I read the main page 
+
+of X server:
+
+
+
+&quot;All  applications written with the X Toolkit Intrinsics automatically 
+
+accept the following options:
+
+  [...]
+
+ -synchronous
+
+       This  option indicates that requests to the X server should
+
+       be sent synchronously, instead of asynchronously.  
+
+       Since Xlib normally buffers requests to the
+
+       server, errors do not  necessarily  get  reported immediately 
+
+       after they occur.  This option turns off the buffering so that
+
+       the application can be debugged.  It should never be used
+
+       with a working program.&quot;
+
+       
+
+So from now on run: acrobat -synchronous
+
+       
+
+Perfect, now I had to find the X call. I didn't find the function I was
+
+looking for, so I decided to start from one solid function and then 
+
+test the calling tree until the target function was found. 
+
+This seemed to be a very solid function:
+
+
+
+AVAppSelectLegalTool
+
+
+
+How do I get this name ? Well, as I told you I looked for names about
+
+ToolBar, one of the most suspicious is UnixToolBarUpdateButtonStates, 
+
+which is called from AVAppSelectLegalTool.
+
+
+
+One tip that will be useful in X debugging: I found a bug (I don't know if it 
+
+is a gdb problem or X server problem or window manager prob) when you break the 
+
+program and is busy with certain graphic interface task, focus cannot be 
+
+successfully returned to xxgdb, and all X applications freezes. In that case you 
+
+just need to open a new virtual console and kill xxgdb process (and then 
+
+restart it). If you want to prevent this situation, you must break the program 
+
+in some previous &quot;safe&quot; instruction (probably inside another function) with no 
+
+focus-back problem. Then xxgdb will get the focus and when you restart execution 
+
+(&quot;cont&quot; command) focus will not be back to acrobat (it will be in background) 
+
+and you can safely break inside that &quot;dangerous code&quot;. I am telling you this 
+
+right now because the beginning of this function will be ok as a safe breakpoint 
+
+in our goal of finding out <U>who</U> shades and disables the text button.
+
+
+
+Now here's an schematic of AVAppSelectLegalTool:
+
+
+
+0x806ccc0 AVAppSelectLegalTool
+
+ 
+
+  AVAppGetActiveDoc         (1 parameter)
+
+  AvAppGetActiveTool 
+
+  ToolIsEnabled             (7 parameters)
+
+  AVAppGetDefaultTool
+
+  AVAppSetActiveTool        (7 parameters)
+
+  AVAppGetToolBar
+
+  AVToolBarUpdateButtonStates
+
+  
+
+0x806cd19 end
+
+
+
+Very cool names but nothing else. After some hours the only fact is that
+
+buttons were updated (BTW for the first time if no protection, and if
+
+protected, they were just &quot;rewritten&quot;; in that case, &quot;clean&quot; the window
+
+covering it, or changing the desktop) in AVToolBarUpdateButtonStates. For
+
+this searching task temporary breakpoints are really useful to use, you 
+
+know, use and throw away breakpoints. 
+
+For example writing this will do it:
+
+
+
+(xxgdb)br *AVAppSelectLegalTool 
+
+(xxgdb)cont
+
+  ... do something like load some pdf evil file. It will break
+
+  
+
+(xxgdb)tbr *AvAppGetActiveTool
+
+(xxgdb)cont
+
+
+
+  ... a temp. breakpoint is set. Now you can see what happen while
+
+  ... AVAppGetActiveDoc is being executed. It breaks at AvAppGetActiveTool
+
+  
+
+(xxgdb)tbr *ToolIsEnabled
+
+(xxgdb)cont
+
+
+
+... and so on. You dig it ?
+
+
+
+Ok, let's go down to AVToolBarUpdateButtonStates. Here is the good stuff:
+
+
+
+  080bbf7 AVToolBarUpdateButtonStates
+
+  080bbfa0 <AVTOOLBARUPDATEBUTTONSTATES+30> call   *%ebx
+
+  080bbfb3 <AVTOOLBARUPDATEBUTTONSTATES+43> call   08038ed8 <INIT+2168>
+
+  
+
+or if you want
+
+
+
+  080bbf7 AVToolBarUpdateButtonStates
+
+  080bbfa0 call UnixEnumChildWidget
+
+  080bbfb3 call ASListEnum
+
+  
+
+Be sure that the first function makes what we are looking for. If you watch
+
+the listing of that function it just makes an indirect call to a VERY
+
+important function named SetStateEnumProc. Here is the code commented:
+
+
+
+0805ecf0  pushl  %ebp
+
+0805ecf1  movl   %esp,%ebp
+
+0805ecf3  subl   $0x8,%esp
+
+0805ecf6  pushl  %ebx
+
+0805ecf7  movl   0x8(%ebp),%eax
+
+0805ecfa  movl   0x4(%eax),%edx
+
+0805ecfd  movb   0x14(%edx),%al
+
+0805ed00  andb   $0x8,%al
+
+0805ed02  testb  %al,%al
+
+0805ed04  jne    0805ed10 
+
+0805ed06  jmp    0805ed70 
+
+0805ed08  nop    
+
+...    
+
+0805ed0f  nop    
+
+
+
+Referenced from jump/call at 0805ed04 ; 
+
+
+
+0805ed10  movl   0x8(%ebp),%eax
+
+0805ed13  movl   %eax,0xfffffff8(%ebp)
+
+0805ed16  movl   $0x0,0xfffffffc(%ebp)
+
+
+
+Referenced from jump/call at 0805ed63 ;    &lt;<FONT color="red">LOOPING HERE</FONT>
+
+
+
+0805ed1d  movl   0xfffffff8(%ebp),%eax: 
+
+0805ed20  movl   0xfffffffc(%ebp),%edx;   &lt;&lt;<LOAD POINTER INTO EDX 0805ed23 cmpl %edx,0x78(%eax); &lt;&lt; LAST INDEX ? 0805ed26 ja 0805ed30; &lt;&lt; NO, CONTINUE 0805ed28 jmp 0805ed70; &lt;&lt; YES, EXIT PLEASE 0805ed2a nop ... 0805ed2c nop Referenced from jump/call at 0805ed26 ; &lt; <font color="red">WE CONTINUE HERE !!</A>
+
+0805ed30  movl   0x10(%ebp),%eax; &lt;&lt; LOAD SOMETHING
+
+0805ed33  pushl  %eax;                    &lt;&lt; SAVE IT
+
+0805ed34  movl   0xfffffff8(%ebp),%eax; &lt;&lt; LOAD SOMETHING
+
+0805ed37  movl   0xfffffffc(%ebp),%edx;     &lt;&lt; LOAD INDEX
+
+0805ed3a  movl   %edx,%ecx;       &lt;&lt; MOVING INDEX TO ECX
+
+0805ed3c  leal   0x0(,%ecx,4),%edx; &lt;&lt; CREATE POINTER IN EDX
+
+0805ed43  movl   0x74(%eax),%eax; &lt;&lt; LOAD SECOND INDEX
+
+0805ed46  movl   (%eax,%edx,1),%edx;&lt;&lt; DOUBLE INDEXING HERE
+
+0805ed49  pushl  %edx;          &lt;<FONT color="red">SAVE VALUE</FONT>
+
+0805ed4a  movl   0xc(%ebp),%ebx; &lt;&lt; LOAD FUNCTION ADDRESS
+
+0805ed4d  call   *%ebx;          &lt;&lt;CALL SetStateEnumProc
+
+0805ed4f  addl   $0x8,%esp,          &lt;&lt; RETURNS IN EAX 
+
+0805ed52  movb   %al,%al
+
+0805ed54  testb  %al,%al
+
+0805ed56  jne    0805ed60;  &lt;&lt; JUMPING BELOW IF RETURNED != 0
+
+0805ed58  jmp    0805ed70;  &lt;&lt; ELSE JUMP TO END FUNCTION
+
+0805ed5a  nop    
+
+...    
+
+0805ed5c  nop    
+
+
+
+Referenced from jump/call at 0805ed56 ; 
+
+
+
+0805ed60  incl   0xfffffffc(%ebp); &lt;&lt; INCREMENT POINTER
+
+0805ed63  jmp    0805ed1d;    &lt;&lt; LOOP AWAY
+
+
+
+
+
+One call to SetStateEnumProc for each button. For the first time, we got 
+
+some 'action' (we still don't know which) for a particular button. I don't 
+
+like essays that carry a too heavy listing, so here is the schematic of the 
+
+function and I shall give you afterwards the needed details:
+
+
+
+0805aec0 SetStateEnumProc
+
+  call XtVaGetValues
+
+  call AVToolButtonIsSeparator
+
+  call AVToolButtonIsEnabled
+
+  call XtSetSensitive
+
+  call XtIsSubclass    
+
+  call AVToolButtonIsMarked
+
+  call XacroToolButtonSetMarked
+
+end
+
+
+
+XtSetSensitive IS OUR FUNCTION. It enables or disables buttons. If we look
+
+for in the API:
+
+
+
+extern void XtSetSensitive(
+
+    Widget              /* widget */,
+
+    _XtBoolean          /* sensitive */
+
+);
+
+        
+
+Hence we are interested in the second parameter, that is pushed in the first
+
+place. Some assembler details of the function:
+
+
+
+Reference to function : AVToolButtonIsEnabled
+
+
+
+0805aef4  call   080bb3a0; &lt;&lt; returns 1 or 0 into eax
+
+0805aef9  addl   $0x4,%esp
+
+0805aefc  movl   %eax,%eax
+
+0805aefe  movzwl %ax,%edx; &lt;&lt; returned value in edx now
+
+0805af01  pushl  %edx;  &lt;&lt; here is our parameter ****
+
+0805af02  movl   0x8(%ebp),%eax
+
+0805af05  pushl  %eax
+
+
+
+Reference to function : XtSetSensitive
+
+
+
+0805af06&lt;SetStateEnumProc+46&gt; call   08037dc8 &lt;_init+1058&gt;
+
+
+
+Now you understand what I told you about zen and luck. If I would listen to
+
+that function ... (actually I had played with it before, but acrobat was in
+
+its asynchronous behaviour and I was confused, you know life is tough). So
+
+this function is  the judge that sort good and evil buttons. This is the
+
+*hot* part of the function :
+
+
+
+AVToolButtonIsEnabled       (... bad instructions for your health ...)
+
+
+
+080bb43a  call   *%ebx      &lt;&lt; this indirect call is calling StdComputeEnabledSelChange
+
+                            &lt;&lt; the returned value is saved in eax as usual
+
+             
+
+080bb43c  addl   $0x4,%esp
+
+080bb43f  movl   %eax,%eax;             &lt;&lt; I don't understand it
+
+080bb441  movw   %ax,0xfffffffe(%ebp);  &lt;&lt; save the boolean value
+
+080bb445  addl   $0xfffffff8,0x820b904
+
+080bb44c  jmp    080bb45d;               &lt;&lt; jumping
+
+080bb44e  nop    
+
+080bb44f  nop    
+
+
+
+Referenced from jump/call at 080bb42b ; 
+
+
+
+080bb450  addl   $0xfffffff8,0x820b904
+
+080bb457  movw   $0x0,0xfffffffe(%ebp)
+
+
+
+Referenced from jump/call at 080bb44c ;   &lt;<FONT color="red">we are jumping here !!!</FONT>
+
+080bb45d  pushl  $0x0
+
+
+
+Reference to function : AVAppSetBusy
+
+
+
+080bb45f  call   080700f0 &lt;AVAppSetBusy&gt;;  &lt;&lt;bla bla bla
+
+080bb464  addl   $0x4,%esp
+
+
+
+Referenced from jump/call at 080bb3dd ; 080bb3f2 ; 
+
+
+
+080bb467  movw   0xfffffffe(%ebp),%ax;  &lt;&lt; move to eax the boolean value
+
+080bb46b  movzwl %ax,%edx;             &lt;&lt; more stupid instructions
+
+080bb46e  movl   %edx,%eax
+
+080bb470  jmp    080bb480;            &lt;&lt; jump to end
+
+  
+
+Don't worry this is not endless, we are close to the crack, but we must go to
+
+this &quot;academic&quot; function StdComputeEnabledSelChange. BTW, you may see that
+
+this function has one parameter. For any button but &quot;text-button&quot; the
+
+parameter saved is 0, and for the evil button the parameter is 0x10. Now
+
+you'll see how everything makes sense:
+
+
+
+080baef0 StdComputeEnabledSelChange
+
+
+
+(... bla bla bla ...)
+
+080baf22  movl   0x8(%ebp),%eax;    &lt;&lt; take the parameter
+
+080baf25  pushl  %eax;              &lt;&lt; forward the parameter
+
+080baf26  movl   0xfffffffc(%ebp),%eax; 
+
+080baf29  pushl  %eax;              &lt;&lt; save another parameter
+
+
+
+Reference to function : AVDocCheckPermission
+
+
+
+080baf2a  call   0807c8f0 &lt;AVDocCheckPermission&gt;
+
+
+
+And last but not least (don't forget the parameter of the first push):
+
+
+
+(... bla bla bla ...)
+
+Reference to function : AVDocGetPDDoc
+
+0807c944  call   0807ca90 &lt;&lt; get pointer in eax of some pdf structure
+
+0807c949  addl   $0x4,%esp
+
+0807c94c  movl   %eax,%eax
+
+0807c94e  pushl  %eax:  &lt;&lt; save pointer
+
+
+
+
+
+Reference to function : PDDocGetPermissions
+
+0807c94f  call   08038828 &lt;_init+1ab8&gt;      &lt;&lt; this function returns en eax the permis. word
+
+0807c954  addl   $0x4,%esp
+
+0807c957  movl   %eax,%eax
+
+0807c959  movl   %eax,%edx   &lt;&lt; copy permissions to edx
+
+0807c95b  andl   0xc(%ebp),%edx; &lt;&lt; AND with the parameter !!!!
+
+0807c95e  cmpl   %edx,0xc(%ebp)
+
+0807c961  sete   %al
+
+0807c964  movzbl %al,%edx
+
+0807c967  movl   %edx,%eax
+
+0807c969  jmp    0807c970 
+
+0807c96b  nop    
+
+0807c96c  nop    
+
+0807c96d  nop    
+
+0807c96e  nop    
+
+0807c96f  nop    
+
+
+
+Referenced from jump/call at 0807c93d ; 0807c969 ; 
+
+0807c970  movl   %ebp,%esp
+
+0807c972  popl   %ebp
+
+0807c973  ret   
+
+
+
+We are at the end of our long way. The permission word for an unprotected
+
+document is 0x7fff (rather curious :-). </PRE><HR><I><CENTER>For an explanation of this 7FF, 
+
+check <A href="zeropdf.htm" tppabs="http://www.anticrack.de/fravia/zeropdf.htm">+Zer0's essay</A>:</CENTER></I><PRE><FONT color="purple">Actually the value has been transformed a bit high order byte to 7F 
+
+and low order byte incremented by 1 so the desired value at this position 
+
+is 7FFD instead of FFFC. </FONT><HR>
+
+You may realise that PDDocGetPermissions is not inside acroread. 
+
+It is an imported function. 
+
+The code is located in a library (Acrobat/Reader/intellinux/lib/libreadcore.so.3). 
+
+You can disassemble it (I'm not gonna punish you any more inside this essay :-) 
+
+and the function just returns the input parameter+0x78, hence the offset of 
+
+the permission is 0x78.
+
+Now you can crack it any way you want. You may patch the library, overwrite
+
+some nops. If you are working with xxgdb I propose you patch quietly
+
+AVDocGetPDDoc, and not only return the pointer but &quot;initialise&quot; permissions.
+
+These are the commands:
+
+
+
+(xxgdb)br *0807cac3   (the ret point of the function AVDocGetPDDoc)
+
+(xxgdb)commands
+
+&gt;silent
+
+&gt;set *($eax+0x78)=0x7fff
+
+&gt;cont
+
+&gt;end
+
+
+
+There are a lot of things to do (delving into permission word, encryption
+
+routines, ...) but you will allow me not to do them right now. 
+
+I hope this essay will help you with the Windoze version, or at least will 
+
+help you if you are up to crack some other linux commercial application.
+
+
+
+For this particular crack I would like to thank Quine for his obstination.
+
+Regards also to all +HCUkers and all other friends.
+
+<FONT color="purple">
+
+&quot;Long is the way and hard, that out of Hell leads up to the light&quot;
+
+</FONT>
+
+</PRE>
+
+<FONT color="green">(c) SiuL+Hacky 1997. All rights reversed</FONT>
+
+<HR ALIGN="CENTER" WIDTH="100%" SIZE="3">
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</I></CENTER>
+
+<BR><CENTER>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="pdffing.htm" tppabs="http://www.anticrack.de/fravia/pdffing.htm">Back to the PDF-project</A>
+
+<HR width="22%">
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut CGI-scripts</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering legal?</A></CENTER>
+
+<CENTER><HR ALIGN="CENTER" WIDTH="100%" SIZE="2"></CENTER>
+
+</BODY>
+
+</HTML>
+
+
+

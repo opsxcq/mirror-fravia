@@ -1,0 +1,472 @@
+<HTML>
+
+<HEAD>
+
+<META Name="Voluntary Content Rating" content="it's
+
+fravia's: great!">
+
+
+
+
+
+<TITLE>rebirth.htm: Outtiming the time limit and stack defeating two CRC checks</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR=#C0C0C0 TEXT=#001010 ALINK=#405040
+
+VLINK=#8850AA><P><CENTER>
+
+<H2>Outtiming the time limit and stack defeating two CRC checks</H2>
+
+<BR>by 
+
+douby<BR>
+
+21 October 1998<BR>
+
+(slightly edited by fravia+)
+
+<HR>Courtesy of fravia's pages of reverse engineering
+
+<HR>Well, this is a very "clean" (and interesting) beginners essay. Of course 
+
+there are many other approaches you could have used in order 
+
+to tackle such protection schemes, yet the simple 
+
+approach used by Douby is very effective and well-thought. Protectors will note 
+
+(and make use of)  
+
+the idea about false time-limit compares inside the code. It is in general true that 
+
+ crackers believe most protections to be stupid (since -tautologically- 
+
+they see most stupid protections)... therefore a couple of red-herrings could 
+
+seriously delay the cracking of the real scheme.<BR>And now enjoy this good essay, and  
+
+I hope that Douby will add to it the re-enabling of the save as well: there's absolutely 
+
+no need of the relevant code inside the target (where it probably lays anyway): just 
+
+enable the save using some spare space inside the target's code (see the old 
+
+wdasm-demo essays in <A href="project0.htm" tppabs="http://www.anticrack.de/fravia/project0.htm">Project 0</A>, for instance)...
+
+<HR>
+
+</CENTER>
+
+<PRE>
+
+Target: Rebirth-338 1.5 demo version
+
+Protection: Time limit/Save disabled/Crc check
+
+
+
+Tools used: 	- soft-ice 3.23
+
+		- wdasm v8.5
+
+		- Uedit 32
+
+
+
+I couldn't fix the save disabled function because i think the code is
+
+simply missing :-( but hey! I could be wrong ;-) Never the less it was fun
+
+cracking this target so let's proceed .. shall we?
+
+
+
+<H2>OUTTIMING THE TIME LIMIT</H2>
+
+The first time i fired up rebirth i got a dialogbox saying something
+
+like ... This is a demo version of rebirth 338. Saving is disabled and 
+
+the program quits after 30 minutes ... 
+
+The first thing i could think of was 30d=1eh. I hoped rebirth was using
+
+2 counters one to keep track of the minutes and another one for the seconds
+
+so i searched the dead listing for a cmp eax, 0000001eh and.... BINGO! 
+
+I went into softice put a breakpoint on it and.... alas! nothing 
+
+happenend so i was wrong... the target uses a compare on a dword pointer...
+
+yet this gives us a good idea for protectors that want to annoy crackers 
+
+badly: just put inside your code two or three redherrings with the 
+
+corresponding cmp hexvalue, and send the cracker on a useless chase (or 
+
+worse)...
+
+I searched the dead listing again for inc byte ptr and inc dword ptr but 
+
+there were too many possibilities... and it wasn't worth to check them all. 
+
+So i did the simplest thing i could think of: i took a nip of my hoegaarden 
+
+beer and put a bpx on <FONT color=blue>dialogboxparama</FONT> and waited 
+
+patiently all the time it was needed.
+
+30 minutes later ... BINGO i was back in softice .. i pressed f10 a couple of
+
+times and this is where it got me...
+
+
+
+:00411026 8945FC           mov dword ptr [ebp-04], eax
+
+:00411029 E89DFD0300       call 00450DCB
+
+:0041102E 3B45FC           cmp eax, dword ptr [ebp-04]	;time up?
+
+:00411031 0F8C28000000     jl 0041105F			;if so don't jump
+
+							;else jmp to 0041105F
+
+							;and continue with Rb
+
+:00411037 33C0            xor eax, eax
+
+:00411039 A054354700      mov al, [00473554]		
+
+:0041103E 85C0            test eax, eax			;is this my 1st time here?
+
+:00411040 0F8519000000    jne 0041105F			;if not jmp to 0041105f
+
+:00411046 C6055435470001  mov byte ptr [00473554], 01	;else set flag
+
+:0041104D 6A06            push 00000006			
+
+:0041104F E8E37D0200      call 00438E37			;display quit message
+
+:00411054 83C404          add esp, 00000004
+
+:00411057 8B4DF8          mov ecx, dword ptr [ebp-08]
+
+:0041105A E8959A0300      call 0044AAF4			;quit
+
+:0041105F E900000000      jmp 00411064			;the continue jump
+
+
+
+Now crack it, fire up rebirth again and see what happens .... First the
+
+annoying demonstration message and then a dialogbox containing a <U>quitting 
+
+rebirth</U> message...
+
+
+
+Mmmm there's probably some kind of crc check... let's put a bpx on dialogboxparama 
+
+and fire up Rb again... When SI pops up for the first time we're in the display 
+
+demonstration dialogbox routine ... the second time we're in the quitting rb message 
+
+routine ... now press f10 a couple of times and... a dead end!!
+
+
+
+:0041312F C3                      ret
+
+:00413130 6A25                    push 00000025			
+
+:00413132 E8005D0200              call 00438E37	     ;displays the quit message
+
+:00413137 83C404                  add esp, 00000004
+
+:0041313A 6A00                    push 00000000
+
+:0041313C 6A00                    push 00000000
+
+:0041313E E88D3D0400              call 00456ED0	     ;the quit routine
+
+:00413143 B849314100              mov eax, 00413149
+
+:00413148 C3                      ret
+
+
+
+Hmm probably the dialogbox containing the demonstration message and the
+
+dialogbox containing the quit message are in the initialization routine. 
+
+So if we compare the return values of the 2 dialogboxes when they are in 
+
+their display routine and put a bpx on the first return value of the 
+
+demonstration dialogbox that differs from the quit dialogbox we'll end 
+
+up right before the checksum (hopefully ;-) ... 
+
+
+
+
+
+<H2>STACK FISHING FOR CHECKSUMS</H2>
+
+
+
+let's take a look at the return values of the demonstration 
+
+dialogbox ... so put a bpx on dialogboxparama and fire up Rb again... 
+
+
+
+We're in the first dialogbox display routine... type stack [enter] and...
+
+
+
+XXXX:0045787B
+
+XXXX:0044C199
+
+XXXX:00413CDB
+
+XXXX:00412EDF
+
+XXXX:00438E79
+
+XXXX:00438F4F
+
+
+
+Ok press Ctrl-D again and... we're in the display quit routine... type
+
+stack [enter] and ...
+
+
+
+XXXX:0045787B
+
+XXXX:0044C199
+
+XXXX:00413CDB
+
+XXXX:00413137	&lt;- This is the one
+
+XXXX:00438E79
+
+XXXX:00438F4F
+
+
+
+Ok let's put a bpx on XXXX:00412EDF and fire up Rb again ... this is
+
+where it will get us...
+
+
+
+:00412ED8 6A05                    push 00000005
+
+:00412EDA E8585F0200              call 00438E37	        ;display demonstration msg
+
+:00412EDF 83C404                  add esp, 00000004
+
+:00412EE2 E8F6030000      call 004132DD	        	;create checksum
+
+:00412EE7 A330354700      mov [00473530], eax		;save checksum
+
+:00412EEC A12C354700      mov eax, [0047352C]		;get right checksum
+
+:00412EF1 390530354700    cmp dword ptr [00473530], eax	;if different GET LOST!!
+
+:00412EF7 0F8405000000            je 00412F02		;else continue
+
+:00412EFD E92A010000              jmp 0041302C		;GET LOST!!
+
+
+
+Ok let's change the code of mov eax, [0047352C] in mov eax, [00473530]
+
+this way we'll always pass the test no matter what we change in the code ... 
+
+ahh i thought I was finally done ...  so i fired up Rb again and tested it ... 
+
+
+
+<H2>A SECOND CHECK!</H2>
+
+Alas!! some of the functions weren't working at all... 
+
+hmm how could this be? .. we'll i must have made some mistake... so i
+
+put a bpx again on 00412EDF again and took a good look around... 
+
+
+
+:00412ED8 6A05                    push 00000005
+
+:00412EDA E8585F0200              call 00438E37			
+
+:00412EDF 83C404                  add esp, 00000004
+
+:00412EE2 E8F6030000              call 004132DD			
+
+:00412EE7 A330354700              mov [00473530], eax			
+
+:00412EEC A12C354700              mov eax, [00473530]	   ;used to be [0047352C]
+
+:00412EF1 390530354700            cmp dword ptr [00473530], eax	
+
+:00412EF7 0F8405000000            je 00412F02			
+
+:00412EFD E92A010000              jmp 0041302C			
+
+
+
+Aha !! ... the value at location [0047352C] and the value at location
+
+[00473530] both contain  a different value .. so if there is some kind 
+
+of future check on these values the program will 
+
+still know that someone has been messing around with the code ... let's
+
+put a bpm on both locations 
+
+press ctrl-d again, click on the save as menu function and .. BINGO!!
+
+we're in...
+
+
+
+:0040C639 25FFFF0000              and eax, 0000FFFF
+
+:0040C63E 2B052C354700            sub eax, dword ptr [0047352C]
+
+:0040C644 030530354700            add eax, dword ptr [00473530]
+
+:0040C64A 668945F0                mov word ptr [ebp-10], ax
+
+:0040C64E 8B4D08                  mov ecx, dword ptr [ebp+08]
+
+
+
+Aha!! .. if the values in [0047352C] and [00473530] are different the
+
+original value of eax will change ... so all we have to do is to make 
+
+sure the values in both [0047352C] and [00473530] are the 
+
+same ... so this is what i did ... i changed this (the checksum
+
+check)...
+
+
+
+:00412EE2 E8F6030000         call 004132DD			
+
+:00412EE7 A330354700         mov [00473530], eax			
+
+:00412EEC A12C354700         mov eax, [00473530]		; used to be [0047352C]
+
+:00412EF1 390530354700       cmp dword ptr [00473530], eax	
+
+
+
+into ..
+
+
+
+:00412EE2 E8F6030000         call 004132DD			;create checksum
+
+:00412EEC A12C354700         mov eax, [0047352C]		;get right checksum
+
+:00412EE7 A330354700         mov [00473530], eax		;save checksum
+
+:00412EF1 390530354700       cmp dword ptr [00473530], eax	;if different GET LOST!!
+
+
+
+this way you'll always have the right checksum in both locations ... ;-)
+
+the end...
+
+
+
+i hope you liked my essay 
+
+if you've got any suggestions or something else to say you can email 
+
+me at douby_(at)hotmail(dot)com
+
+
+
+bye..</PRE>
+
+<CENTER>
+
+<HR width="33%" align="center">
+
+
+
+<P align="center"><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" BORDER="0" VSPACE="0"
+
+HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage</A> <IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A
+
+HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links</A> <IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" BORDER="0"
+
+VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity</A> <IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13"
+
+HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC</A> <IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM"
+
+BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="javascri.htm" tppabs="http://www.anticrack.de/fravia/javascri.htm">javascript
+
+wars</A> <IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0"
+
+WIDTH="13" HEIGHT="13"><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database</A> <BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0"
+
+WIDTH="13" HEIGHT="13"><A HREF="botstart.htm" tppabs="http://www.anticrack.de/fravia/botstart.htm">bots' wars</A> <IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A
+
+HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools</A> <IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" BORDER="0"
+
+VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails</A> <IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13"
+
+HEIGHT="13"><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut CGI-scripts</A> <IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red"
+
+ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A
+
+HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search forms</A> <IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM"
+
+BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail fravia+</A>
+
+<BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0"
+
+WIDTH="13" HEIGHT="13"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering legal?</A> </P>
+
+
+
+</BODY>
+
+</HTML>
+
+
+
+
+

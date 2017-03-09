@@ -1,0 +1,586 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>crushed1</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+
+
+<P><CENTER><FONT SIZE="+3">Symantec Visual Cafe<BR>
+
+</FONT><FONT SIZE="+2">Demonstration of some  
+
+principles of code reading</FONT>
+
+<BR>
+
+</CENTER>
+
+
+
+<H4><CENTER><I>by Crushed_ICE</I><BR>
+
+(17 September 1997)</CENTER></H4>
+
+
+
+<CENTER><HR><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"> Courtesy of Fravia's page of reverse engineering<BR>
+
+<HR> <I>Well, I'm once more impressed by the quality of the essay of a &quot;new&quot; (for 
+
+my page) zen-cracker. Let's hope 
+
+that Crushed_ICE will send more essays of this kind</I>!<I> It's exactly as he writes: 
+
+&quot;<FONT color="purple">How to gain an understanding of a rather simple time evaluation 
+
+protection without using SoftICE or any other code debugger. 
+
+Demonstration of some  
+
+principles of code reading</FONT>&quot;...here we also have an IDA-expert</I>!<I> ...as 
+
++ORC wrote: good crackers should learn to use all available TOOLS (exspecially 
+
+very good ones like IDA :-)<BR><BR>A last consideration: This stupid protection 
+
+scheme has been written by Symantec</I>!<I> What do you think of programmers that protect 
+
+their own most valuable products in this sloppy way? Would you buy (and trust) <U>languages</U> 
+
+coded by such 
+
+inept programmers?</I></CENTER><HR size="6">
+
+<PRE>
+
+Contributor: 
+
+Crushed_ICE
+
+
+
+Abstract: 
+
+How to gain an understanding of a rather simple time evaluation protection 
+
+without using SoftICE or any other code debugger. Demonstration of some 
+
+principles of code reading and a most excellent interactive disassembler.
+
+
+
+Target:	
+
+Symantec Visual Cafe 30 day evaluation supplied CD ROM PC Magazine August 1997.
+
+
+
+Tools:
+
+IDA Pro 3.5 (a most excellent tool well worth purchasing)
+
+
+
+
+
+Introduction.
+
+
+
+Personally I have a dislike of working with debuggers, process monitors and 
+
+the like. Code analysis should be possible by direct vision of the code, 
+
+resources and general structure of the target perhaps akin to the felling 
+
+of Zen mentioned in the informative +ORC's tutorials. 
+
+
+
+This quick, simple analysis and reverse of a &quot;childs&quot; time limit implementation, 
+
+for there is no better description of the stupidity of this one, hopefully 
+
+shows the technique and benefits of a good disassembler. The IDA Pro excels in 
+
+this example because of its ability to identify C Runtime library calls.
+
+
+
+
+
+The Target.
+
+
+
+Wanting to learn about Java I came across the August issue of PC Magazine with 
+
+a free evaluation of Visual Cafe, 30 days or until the end of September which 
+
+ever came first. Time is short and there are many things to do in life, so 
+
+this limitation is a little bit troublesome especially as it was mid September 
+
+before it hit my CDROM drive.
+
+
+
+Thinking Time.
+
+
+
+Moving the computers clock forward produces the rather boring 'Time Expired' 
+
+dialog as soon as Visual Cafe is launched so the time test is early on in the 
+
+code making the most likely target the executable VCafe.exe rather than one of 
+
+its supporting DLLs. Setting the time back restores normal operation. 
+
+
+
+Taking the Target.
+
+
+
+So starting an initial analysis of VCafe.Exe with IDA Pro what can we find?
+
+
+
+In general <U>C compilers tend to place all initialised data in one area of the 
+
+executable</U> so if you find a string literal you will tend to find all the other 
+
+initialised structures in the same place. This is especially useful when UniCode 
+
+strings are used as these are not detected automatically.
+
+
+
+So step 1. From the IDA Menu Select [Navigate|Jump To|Choose from list of Names]. 
+
+Those valuable string literals will have been given prefix of 'a' and paging 
+
+down you will find *lots* of them. Spend a few moments getting <U>the feel</U> of them 
+
+and what jumps up but:
+
+
+
+		db    0	;  
+
+		dd offset j_SFC42_800
+
+aHack		db 'HACK',0             ; DATA XREF: _TEXT:0043DC31_o
+
+					; _TEXT:0043DD0C_o
+
+unk_4B04FC	db    1	;		; DATA XREF: _TEXT:0043DC63_o
+
+
+
+Double clicking on the second reference to this interesting literal produces the code 
+
+fragment:
+
+
+
+loc_43DD04:				; CODE XREF: _TEXT:0043DCE9_j
+
+		cmp	[ebx+200h], edi
+
+		jz	short loc_43DD66
+
+		push	offset aHack	; 'HACK'
+
+		lea	ecx, [ebp-1Ch]
+
+		call	j_SFC42_860
+
+		mov	ecx, [ebp-1Ch]
+
+		push	ecx
+
+		mov	ecx, esi
+
+		call	j_SFC42_6199
+
+		push	dword ptr [ebx+20h]
+
+		call	ds:GetParent
+
+		push	eax
+
+		call	j_SFC42_2864
+
+
+
+But, stop wait look and listen. This might well be an interesting literal by nature 
+
+of its value but the usage of it does not look right. We can read:
+
+
+
+	if  (edi != [ebx+200])
+
+		{
+
+		call SFC42_860(EA[EBP-1C],'Hack')
+
+		call SFC42_6199(...
+
+		..
+
+
+
+All very interesting but doubtful. In these cases make a note of the area and push 
+
+it aside, while returning to the literals to see what else there might be.
+
+
+
+Scanning through the rest does not immediately produce anything seemingly of interest 
+
+for now.
+
+
+
+Step 2. Now the IDA Pro disassembler has a very clever trick in that it can find and 
+
+label calls to most of the C Runtime packages. As the program must discover the current 
+
+date and time we might expect (but should not find) a call to the standard function:
+
+
+
+	time_t 	time(time_t *timex);
+
+
+
+As discussed in other papers this would be **stupid but looking in Navigate|Jump To|Function 
+
+there is a <FONT color="blue">j_time</FONT> runtime call.
+
+
+
+;		S u b ro u t in e
+
+
+
+j_time		proc near		; CODE XREF: sub_46C96F+E_p
+
+					; _TEXT:0046CBB8_p
+
+		jmp	ds:time
+
+j_time		endp
+
+
+
+and only called 2 times! Now you see the power of IDA in the instant identification of 
+
+calling routines.
+
+
+
+Step 3. Look at the calling routines
+
+
+
+sub_46C96F	proc near		; CODE XREF: _TEXT:0046CB84_p
+
+		sub	esp, 28h
+
+		push	ebx
+
+		push	esi
+
+		mov	[esp+8], ecx
+
+		lea	eax, [esp+0Ch]
+
+		push	eax
+
+		call	j_time
+
+		mov	eax, [esp+0Ch]
+
+		mov	ecx, [eax+110h]
+
+		imul	esi, ecx, 15180h
+
+		add	esi, [esp+10h]
+
+		mov	dword ptr [esp+14h], 105h
+
+		mov	ecx, [esp+10h]
+
+		mov	[esp+2Ch], ecx
+
+
+
+And
+
+
+
+loc_46CBB0:				; CODE XREF: _TEXT:0046CB9E_j
+
+					; _TEXT:0046CBA6_j
+
+		lea	eax, [esp+134h]
+
+		push	eax
+
+		call	j_time
+
+		lea	ecx, [esp+14h]
+
+		call	sub_0046CC57
+
+		mov	eax, [esp+18h]
+
+		shl	eax, 10h
+
+		or	eax, [esp+1Ch]
+
+		mov	[esp+13Ch], eax
+
+
+
+The second routine using the time function looks interesting as it immediately calls 
+
+another function making the likely code:
+
+
+
+	..sub_0046CC57(time())..
+
+
+
+What does this function do?
+
+
+
+sub_0046CC57	proc near	; CODE XREF: sub_46C96F+81_p
+
+					; _TEXT:0046CBC1_p
+
+		push	eax
+
+		mov	[esp], ecx
+
+		mov	ecx, [esp]
+
+		mov	edx, [esp]
+
+		add	edx, 14h
+
+
+
+loc_46CC64:				; CODE XREF: sub_0046CC57+18_j
+
+		xor	dword ptr [ecx], 0ABCDh	; Odd thing to do!
+
+		add	ecx, 4
+
+		cmp	edx, ecx
+
+		ja	short loc_46CC64 ; Odd thing to	do!
+
+		add	esp, 4
+
+		retn	
+
+sub_0046CC57	endp
+
+
+
+Well an XOR with a literal value! What a result given we known that the time() function 
+
+returns a time_t this make the above routine an encryptor (barely) of the result of 
+
+time(). We must be close as the only use of such a value is to detect the expiry date.
+
+
+
+Step 4. Think. Somewhere the protection method must hide the time limits so the most 
+
+obvious place would be the registry (and the worst place). Looking around the call to 
+
+this encryptor we find:
+
+
+
+		mov	eax, [esp+14h]
+
+		add	eax, 10h
+
+		push	eax
+
+		push	80000000h
+
+		call	ds:RegOpenKeyExA
+
+
+
+and a bit lower:
+
+
+
+		push	offset aBackupinfo
+
+		lea	ecx, [esp+30h]
+
+		push	ecx
+
+		call	sub_497140
+
+		add	esp, 8
+
+
+
+A reference to a string literal 
+
+
+
+aShelldefault	db '\ShellDefault',0    ; DATA XREF: sub_46C834+1C_o
+
+aBackupinfo	db 'BackupInfo',0       ; DATA XREF: sub_46C923+2D_o
+
+					; _TEXT:0046CB05_o
+
+
+
+So the key might be ..\ShellDefault\BackupInfo. Make a note in future to work the 
+
+literal a bit harder! Fire up regedit and search for this key and what do we find 
+
+but:
+
+
+
+	\\HKEY_CLASSES_ROOT\.java\ShellDefault\BackupInfo
+
+	C8 AA 00 00 FF 9F 00 00 A9 BE 00 00 D3 9F 00 00 29 EF 00 00 9D CD 00 00
+
+
+
+Step 5. Stop. Put the code to one side and study the above plus the information gained.
+
+
+
+	- Result of time() is encrypted by repeated XOR'ing with 0xABCD
+
+	- Before getting the time the program reads a value from the registry key  		\\HKEY_CLASSES_ROOT\.java\ShellDefault.
+
+
+
+So what is the current result of the time() function? Well a quick and simple C program 
+
+returns 0x341E44E4 which is the number of seconds since 01/01/70. Encrypt this 
+
+with 0xABCDABCD and you get 0x9FD3EF29 which compares to the contents of the key value:
+
+
+
+... D3 9F 00 00 29 EF 00 00 ... = 0x9FD3EF29 
+
+
+
+So the last bit ..9D CD 00 00 is likely to be the least significant digits or perhaps 
+
+something to catch us out!
+
+
+
+Looking at the other bit of the key value we have 
+
+0x9FFFAAC8 which XOR 0xABCDABCD = 0x34320105 
+
+and taking the install date from this results in the answer 14.9 to time left to the 
+
+end of September!
+
+
+
+Step 6. The Proof. So what happens if we change the expiry section of the value 
+
+to, say:
+
+
+
+	C8 AA 00 00 FF FF
+
+
+
+and move the date forward on the machine. Nothing! Protection scheme understood!
+
+
+
+Conclusion:
+
+
+
+Hidding expiry details in the registry gives little protection and with 
+
+a little application of <FONT color="blue">code analysis</FONT> it is not always necessary to 
+
+SoftICE, or otherwise debug a program. Working in this way you also gain 
+
+a better understanding on how the compiler generates code and soon learn 
+
+how to read high level structure directly from the disassembly.
+
+
+
+
+
+</PRE><FONT color="green">
+
+(c) Crushed_ICE, 1997. All rights reversed.</FONT>
+
+		<HR size="2">
+
+<CENTER><I>You are deep inside fravia's page of reverse
+
+engineering, choose your way out:</I></CENTER>
+
+
+
+
+
+<P><CENTER>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#84'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#84">homepage </A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"> <A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#73'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#73">links
+
+</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0" NATURALSIZEFLAG="0"> <A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity
+
+</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#82'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#82">students' essays </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools
+
+</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails </A><BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database </A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia
+
+</A><BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">is reverse engineering legal? </A></FONT></CENTER></P>
+
+
+
+<P><CENTER><FONT SIZE="-1"><HR></FONT></CENTER>
+
+</BODY>
+
+</HTML>
+

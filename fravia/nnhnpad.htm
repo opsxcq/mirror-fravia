@@ -1,0 +1,4349 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>nnhnpad.htm: Reversing, functions addition, modifications in the existing code 
+
+and classic cracking of a typical M$-target: notepad.exe</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR=#C0C0C0 TEXT=#001010 ALINK=#405040 VLINK=#8850AA>
+
+
+
+<TABLE border="0" cellpadding="0" width="100%" align="center">
+
+<TR>
+
+
+
+<TD colspan=3><P align="center"><FONT size="6">Reversing, functions addition, modifications in the existing code 
+
+and classic cracking of a typical M$-target: notepad.exe</FONT></TD>
+
+<TR><TD colspan=3><PRE>  </PRE></TD></TR>
+
+</TR><TR>
+
+<TD width="22%" bgcolor="#FFFFEA"><P><FONT size="4" color="#00254A"><CENTER>18 September 1999</CENTER></FONT></TD>
+
+<TD width="56%" bgcolor="#FFFFEA"><P><FONT size="4" color="#00254A"><CENTER>By NeuRaL_NoiSE</CENTER></FONT></TD>
+
+<TD width="22%" bgcolor="#FFFFEA"><P><FONT size="4" color="#00254A"><CENTER>a 1999 RingZ3r0 production</CENTER></FONT></TD>
+
+</TR><TR>
+
+<TD><CENTER><A href="advanced.htm" tppabs="http://www.anticrack.de/fravia/advanced.htm"><IMG
+
+SRC="xtranio.gif" tppabs="http://www.anticrack.de/fravia/xtranio.gif" 
+
+ALT="advanced" ALIGN=CENTER WIDTH=114 HEIGHT=43
+
+BORDER=0 VSPACE=0 
+
+HSPACE=0></A><BR><FONT color=gray>Advanced</FONT>
+
+</CENTER></TD><TD><CENTER><FONT size=+3>tools used:</FONT></CENTER></TD>
+
+<TD width="56%"><TABLE border="0" cellpadding="0" 
+
+cellspacing="0" width="100%" align="Center">
+
+<TR>
+
+
+
+<TD><PRE>
+
+* W32Dasm v8.93
+
+* SoftICE v3.24
+
+* HIEW v6.1
+
+* Borland Resource Workshop (BRW) v4.5
+
+* ProcDump32 v1.3
+
+* API Reference</PRE></TD>
+
+</TR></TABLE></TD>
+
+<TD width="22%"><P>&nbsp;</TD>
+
+</TR><TR>
+
+<TD colspan=3 bgcolor="#FFFFEA"><CENTER>
+
+( )<B>Beginner</B> (X)<B>Intermediate</B> (X)<B>Advanced</B> ( 
+
+)<B>Expert</B></FONT>
+
+</CENTER></TD></TR><TR>
+
+<TD width="22%"><P>&nbsp;</TD>
+
+<TD width="56%"><P>&nbsp;</TD>
+
+<TD width="22%"><P>&nbsp;</TD>
+
+</TR><TD BGCOLOR="898030" colspan=3><CENTER>Courtesy of Fravia's page
+
+of 
+
+reverse engineering</CENTER> 
+
+</CENTER></TD></TABLE>
+
+<PRE>lo fravia,
+
+hnotepad...
+
+i chose this one because i actually think that it's complete and contains
+
+some code injection techniques that will interest most 'new' reversers, at
+
+least those who want to evade from the grayscaled cracking scenario and
+
+taste the technicolor reversing one....and hopefully, on your site, such a 
+
+goal will be easier to accomplish...i think this is the most complete essay 
+
+i wrote (i write REALLY REALLY few stuff, i'm lazy and usually my thoughts
+
+remain on paper only...even if i actually finish a project, 99% of the time
+
+i dont write anything about it..i know, it's a really bad thing, no matter
+
+how good/bad the resulting tutes could be, but i'm trying to change :)
+
+
+
+laters,
+
+nN.</PRE><HR width=44%><CENTER>
+
+<I>What should I say? A great essay about "real" software reversing: 
+
+functionality adding, playing with targets, "deviating" alien code (and 
+
+therefore individuating buffers and exploiting the "overbloatessness" of windoze's 
+
+targets), menu juggling, API function adding, new functions... name a reverser's fancy 
+
+activity and 
+
+our fine Author has already done it inside this very essay you are about 
+
+to read...<BR>It's a beautiful example of a classical "<A href="corporat.htm" tppabs="http://www.anticrack.de/fravia/corporat.htm">corporate</A>  
+
+target" reversing (nothing more classic than Notepad: you'll 
+
+find it on whatever PC you'll be working on... and with the help of NeuRaL_NoiSE's 
+
+teachings you'll now be able to transform it in your preferred Trojan horse, eheh: screw 
+
+your sysads... Enjoy!
+
+ 
+
+</I></CENTER>
+
+<HR><PRE>
+
+REVERSING, FUNCTIONS ADDITION, MODIFICATIONS IN THE EXISTING CODE AND CLASSIC CRACKING IN
+
+A TYPICAL TARGET FROM MICRO$OFT: NOTEPAD.EXE....DETAILED DESCRIPTION OF THE CREATION OF
+
+HNOTEPAD
+
+
+
+REVISION 1
+
+
+
+By -NeuRaL_NoiSE
+
+<HR>
+
+
+
+Some time ago, I was saying....
+
+
+
+
+
+" Hiho!
+
+
+
+So here we go again with Micro$oft-related stuff...after my last tutorial (about shell32.dll
+
+reversing), i decided to stop having to do with Micro$tuff...alas it looks like i can't get rid
+
+of it :D
+
+In this tute i'll give a detailed explanation about how to modify notepad.exe (and in general,
+
+many other programs) in order to add/remove/modify some functions, to better adapt it to the
+
+project that me and two friends of mine, Anub|s and Insanity are trying to get to an end. In a
+
+few words, this project is about modifying notepad.exe and creating a .hlp file which will
+
+contain every info needed to program in raw html. Their duty was to create the help (i suck
+
+when it comes to program html :) and mine was to reverse engineer notepad.exe and add the
+
+necessary new functions. Of course the .hlp file will be (it's not ready yet) in italian (since
+
+we are all italians, tho i'll ask my friends if they will translate it into english as well)."
+
+
+
+I already published a tutorial about Hnotepad creation, but as you may have noticed this last
+
+tute only pointed to Windows 95 compatibility, no Win98, and above all you should have noticed
+
+that code generation was strictly related to the machine where you were assembling it. I myself
+
+was suggesting to work on it, but in the end i finished it, making the code more portable and
+
+stable...so here i'll describe you how, with a few additions/side changes, your code will work
+
+under both 95 and 98.
+
+
+
+Another improvement from last tute is in the fact that after you've made the changes i describe
+
+in the last phase of this document your Notepad will read files much bigger than the usual FFFF
+
+bytes (special thanks to GEnius for his GENIAL idea :), but mind, i say you will be able to READ
+
+them, not WRITE on them -- do u remember that insufficient mem nag ? I thought i'd leave it
+
+there, it might be useful to have a nag that reminds you when your page is exceeding 50/60 Kb...
+
+Nonetheless i might change that as well in some next version, who knows - hnotepad is a pretty
+
+open project, and it's amazing the number of friends that are asking me to improve it and add
+
+functions :)
+
+
+
+
+
+___________________________
+
+
+
+PART 1: PRELIMINARY REMARKS
+
+___________________________
+
+
+
+
+
+As i said, this tutorial wishes to introduce intermediate (this won'be for COMPLETE newbies)
+
+crackers to the world of reverse engineering, in its (imho) most interesting aspect: ADDITION
+
+OF FUNCTIONS IN AN ALIEN TARGET. That's it, really simple...you'll discover (if u didn't know
+
+it yet) that it's not such a monster to add your new stuff to targets.
+
+I'll try to explain things in the easiest and most extensive way i can, tho i warn you about
+
+three things: first, you *MUST* have a (at least) basic knowledge of w32 assembly language and, in
+
+general, of cracking (furthermore, i STRONGLY suggest reading something about pe headers and
+
+Windows executable files structure as it'll help alot).
+
+Second, my english sucks so please consider that it is a great effort for me to translate this
+
+whole (damn LONG:) tute -- italian version at http://ringzer0.cjb.net .
+
+Third, READ THIS TUTORIAL *WITHOUT* THE WORDWRAPPING, OR YOU WON'T UNDERSTAND MUCH :)
+
+
+
+
+
+IMPORTANT : Even if this tutorial describes the creation of a portable version of Hnotepad (good
+
+for both 95 and 98), i'll use the Notepad.exe file that comes with WINDOWS *95*...so i suggest
+
+you use the same file i used (for the english translation, i used notepad.exe in english so u
+
+should have no problems finding it around).
+
+
+
+__________________________
+
+
+
+PART 2 : INTRO TO HNOTEPAD
+
+__________________________
+
+
+
+Here's what we'll do in this tutorial:
+
+
+
+* We'll add a menu to Notepad, that will open our new .hlp file
+
+
+
+* We'll create the about box (as for now there isn't a REAL about box, but u'll understand
+
+  later)
+
+
+
+* We'll find the way to add "HTML Files" (both *.htm and *.html), "JS Files" and "VBS Files" to
+
+  the masks (*.xyz) in the "Open file" and "Save as" dialogs
+
+
+
+* We'll add a nice .INI file, where we'll save the status of the WordWrapping option and the
+
+  name of the last file opened. When restarting hnotepad, wrapping will be put in the position
+
+  (ON/OFF) indicated in the file, and the last file will be automatically reopened if we
+
+  launched hnotepad without command line. Furthermore, this .INI file will be automatically
+
+  created every time we'll quit the program, so there'll be no problem related to
+
+  modifying/damaging it.
+
+ 
+
+* We'll eliminate the size limit of the opened file. In order to do this, we'll need an API
+
+  function which is not imported with original notepad, tho we won't touch the import table.
+
+  Rather, we'll use a piece of memory scanning code, which, as you'll see if you continue
+
+  reading, will probably be REALLY useful for you reversers out there who have not yet noticed
+
+  this interesting alternative to GetProcAddress.
+
+
+
+That's all, we can start!
+
+
+
+
+
+_________________________________
+
+
+
+PART 3 : THE CREATION OF HNOTEPAD
+
+
+
+PHASE 1 : THE NEW MENU
+
+_________________________________
+
+
+
+
+
+So....first of all let's try to understand WHAT we will do to our target: we have to ADD a menu
+
+to those already existing in the program....but let's keep in mind that during the session
+
+we'll surely have to add parts of OUR own code to the file....in the case of the menu, we'll
+
+have to add that part of the window procedure that analizes the selected menu IDs relative to
+
+our new menu. So we'll first of all take a look at how our target behaves when it has to
+
+analize menu IDs (as you know every item, from menus to buttons on dialog boxes and so on, have
+
+an ID that is needed to allow the program to distinguish among various resource items)....we
+
+could climb back to window procedure using the API RegisterClass as hook but we'll follow
+
+another route, a quicker one....we'll get right to the point that interests us. We said that we
+
+want to add a menu....so we will start looking at HOW the program behaves when you select a
+
+menu: the API we'll break on will be WinHelpA (which runs the file winhelp.exe under \windows,
+
+that is needed to open any .HLP file, of course if in windows help format). In SoftICE, then,
+
+"BPX WinHelpA".
+
+Then go to notepad, and select menu "Help", then the item "Help topics".
+
+Sice will break on WinHelpA: F12 and u'll be at the caller, which is here:
+
+
+
+:00401E51 FF7514                  push [ebp+14]
+
+:00401E54 57                      push edi
+
+:00401E55 FF7508                  push [ebp+08]
+
+:00401E58 E80FF3FFFF              call 0040116C    ; <WE COME BACK FROM THIS CALL
+
+:00401E5D 85C0                    test eax, eax
+
+:00401E5F 0F8582000000            jne 00401EE7
+
+:00401E65 FF7514                  push [ebp+14]
+
+:00401E68 57                      push edi
+
+:00401E69 56                      push esi
+
+:00401E6A FF7508                  push [ebp+08]
+
+
+
+* Reference To: USER32.DefWindowProcA, Ord:0078h
+
+                                  |
+
+:00401E6D FF1534744000            Call dword ptr [00407434]
+
+:00401E73 EB74                    jmp 00401EE9
+
+
+
+
+
+Good...DefWindowProcA indicates the part of the window procedure where the messages are
+
+processed by default (ie when you don't process a certain message, this msg won't just "fall
+
+somewhere" but will be "catched" anyway by DefWindowProcA which will process it accordingly).
+
+This means that the menu value passes for (and is checked by) that call at 1E58 (it's parameter
+
+2/3, the one in EDI) where we are coming back from.
+
+Let's see what's inside the call:
+
+
+
+* Referenced by a CALL at Address:
+
+|:00401E58  
+
+|
+
+:0040116C 55                      push ebp
+
+:0040116D 8BEC                    mov ebp, esp
+
+:0040116F 81EC04010000            sub esp, 00000104
+
+:00401175 33C0                    xor eax, eax
+
+:00401177 56                      push esi
+
+:00401178 57                      push edi
+
+:00401179 BE38614000              mov esi, 00406138
+
+:0040117E 8DBDFCFEFFFF            lea edi, dword ptr [ebp+FFFFFEFC]
+
+:00401184 B940000000              mov ecx, 00000040
+
+:00401189 A4                      movsb
+
+:0040118A 8DBDFDFEFFFF            lea edi, dword ptr [ebp+FFFFFEFD]
+
+:00401190 F3                      repz
+
+:00401191 AB                      stosd
+
+:00401192 66AB                    stosw
+
+:00401194 AA                      stosb
+
+:00401195 0FB7750C                movzx esi, word ptr [ebp+0C] ; <- ID VALUE OF THE CHOSEN MENU
+
+:00401199 83FE20                  cmp esi, 00000020 ; COMPARES ID VALUE AND 20h
+
+:0040119C 8BC6                    mov eax, esi
+
+:0040119E 7F1A                    jg 004011BA       ; IF ID > 20h, TAKE THE JUMP
+
+:004011A0 0F84C1030000            je 00401567
+
+:004011A6 48                      dec eax
+
+:004011A7 83F81B                  cmp eax, 0000001B
+
+:004011AA 7736                    ja 004011E2
+
+:004011AC 0FB68838174000          movzx ecx, byte ptr [eax+00401738]
+
+:004011B3 FF248DF8164000          jmp dword ptr [4*ecx+004016F8] ; OTHERWISE PROCESS
+
+                                                                 ; ACCORDINGLY
+
+
+
+So we have the menu ID (you can check all values with BRW, under "MENU") in esi, then a check
+
+if esi>20h. 20h is 32 dec, so we know that the IDs with value <THAN 32 will be processed by a
+
+variable jump, which will change from situation to situation, and will point every time to the
+
+appropriated part of code (the jmp at 11B3). So, if we don't want to mess up, we'll better give
+
+our menu an ID value > than 32, so that we will be able to process it following the jg at 119E,
+
+which brings here:
+
+
+
+
+
+* Referenced by a JUMP at Address:0040119E(C)
+
+|
+
+* Possible Ref to Menu: MenuID_0001, Item: "Cut   Ctrl+X"
+
+                                  |                                 
+
+:004011BA 3D00030000              cmp eax, 00000300 ; 300h (768 dec) = "Cut" menu item
+
+:004011BF 7C21                    jl 004011E2
+
+
+
+* Possible Ref to Menu: MenuID_0001, Item: "Copy   Ctrl+C"
+
+                                  |
+
+:004011C1 3D01030000              cmp eax, 00000301
+
+:004011C6 0F8E0F030000            jle 004014DB
+
+
+
+* Possible Ref to Menu: MenuID_0001, Item: "Paste   Ctrl+V"
+
+                                  |
+
+:004011CC 3D02030000              cmp eax, 00000302
+
+:004011D1 0F8427030000            je 004014FE
+
+..............
+
+..........
+
+
+
+
+
+
+
+and so on with the other checks. So we found a good point to insert a deviation to OUR code,
+
+which will process FIRST the ID value relative to the new menu. But first we'll have to CREATE
+
+this menu, don't you think ? :)
+
+In order to do so, open notepad.exe in BRW and, under "menu" section, and under "Help" menu,
+
+add a new item, I called it "Anub|s+Insa's Help on HTML". Give it the id value 33 (21h), that
+
+is useful because as we said with an id value bigger than 20h the part of the code which will
+
+process the id will be the one after the jg, not the one reached after the variable jump. Any
+
+value higher than 32 will do just fine (of course it must not be related to any other item).
+
+Now, in the "KEY" section, add "VK_F1", which will make THIS menu pop up when we press F1 (and
+
+not the old Notepad's one). Don't forget to delete the same key from old notepad's menu.
+
+Save, and like some kinda magic when you next start notepad you'll have this new menu under
+
+"Help", which will have as you know an id value of 21h.
+
+So now we must solve the problem of the addition of our code to the file. How can we do this??
+
+Well we must check a thing or two first. If you open the file with HIEW, with ProcDump or with
+
+god only knows how many other programs, u'll have all the infos you need to add you own code. Of
+
+course, as you know, we can't occupy MORE bytes than the ones we have in the actual code (which
+
+resides in .TEXT section), so we are compelled to APPEND our code to the end of the file, so that
+
+afterwards we will be able to redirect jumps from PE .TEXT section to the section where we added
+
+the code, which is the one we'll see in a few. Usually when you want to add your own code, the
+
+last section will be just fine for the trick. BUT, in notepad case, we already added a new menu,
+
+and this addition has brought to the extention of the .RSRC (resource) section in the pe
+
+header...so BRW has appended this section at the end of the file in order to not overwrite the
+
+bytes of the following section (in other words, it has done something similar to what we want to
+
+do:)...you can easily check it by entering HIEW, pressing F8 (from hex or disasm mode) to see the
+
+header-related infoes, then F6 for the sections. So i was saying, the pe (and the file) has now
+
+been modified by BRW, but we must keep in mind that "natively" notepad.exe ended with the .RELOC
+
+section, where we could actually find therefore some free space for our code, and which, for this
+
+reason, is the one where we'll go and add our code (at least for the first part of it, because
+
+we'll soon be out of space and we'll have to continue within .RSRC). The first thing to do is
+
+checking the physical space (i'm talking about BYTES) we have for our code: so we check the
+
+Virtual Size (VirtSize = 91Eh) and the Physical one (PhysSize = A00h); the virtsize shows us the
+
+number of bytes that we can't modify, in other words the ones already used by the program, while
+
+the physsize shows us the raw size of the section: a simple subtraction A00h-91Eh will give us
+
+E2h (226 dec.) free bytes , in which we will be able to add our code. We won't need to enlarge
+
+the section, because we have all the space we need; if you had to enlarge it, BEFORE creating the
+
+menu with BRW, you would have loaded the file with ProcDump, edited the section, and increased
+
+the physical/virtual size to whatever you needed, aligning it to the FileAlignment, plus the size
+
+of image, aligning it to the section alignment.... 
+
+Good! But we still have a problem...how can we know at WHICH OFFSET we should add our code ? Easy,
+
+we must look at the section's intial offset: we know that it's 5000h, so Initial_Offset+VirtSize =
+
+5000h+91Eh = 591Eh, our entrypoint for code addition. Why did i use the PHYSICAL offset and the 
+
+VIRTUALY size ?? Think of it this way: the raw data (psize, offset) is relative to the dead file on
+
+your hard disk...while the virtual data (vsize, RVA) is relative to the mapped file, the one that
+
+you get when windows loader maps it in the linear address space. So, adding code in memory would
+
+rely on the RVA, but we need to add it on the dead file...hence we need the RAW offset...yet we HAVE
+
+to use the VIRTUAL size, since that'll be the amount of bytes actually taken by our section once
+
+mapped in memory!
+
+Yet we have ANOTHER problem....WHICH code should we add ? :))
+
+First of all, let's draw a scheme of the operations we want our code to perform. To make the
+
+code jump from .TEXT section (where we have that call that processes the ID values) to the
+
+.RELOC one (where our code will be), we'll necessarily need to turn some instruction to a
+
+jmp....we'll modify the CMP at 11BA: so we have to find a way to turn that cmp to a jump TO
+
+ANOTHER SECTION: this could have caused problems to a cracker once, because one poor guy who
+
+wanted to add his code to targets was usually compelled to use a compiler in order to generate
+
+valid opcodes to add to the existing code, and this implied wasting time with first section and
+
+last one's RVA subtractions and so on...then, one nice day SoftICE appeared into our pc's,
+
+along with his "A" function (Assemble instruction) :))))))))
+
+Thanks to this great tool, we can assemble the instructions at runtime, time by time, and
+
+obtain thus the valid opcodes with which we'll physically patch the target afterwards. In order
+
+to see the bytes beside every code line in SoftICE, insert "CODE ON" either at command prompt
+
+or in your winice init string. The opcodes will be universal for PUSHes, CMP's and so on, so
+
+for THIS kind of instructions we can use HIEW directly, but for long JUMPS we'll need SoftICE,
+
+because the distance between the starting offset and the destination one isn't easily obtainable
+
+with HIEW when it comes to long jumps.
+
+Ok for the jumps then, but what about the CALLS ?? Simple...a call to an API function (thing that
+
+we'll use) is nothing more than a call to a dword pointer, that resides in the so called FirstThunk
+
+array of the Import Table (usually in section .IDATA (imported data): every single API function name
+
+used by our program is usually included in this section at compiling time, and when the loader maps
+
+the file, it retrieves the addresses of the imported functions and patches the dword pointers in the
+
+FirstThunk array...these pointers, thus, head towards kernel32, or user32, or whatever other dll,
+
+and specifically to a determined function's entrypoint. In order to use it from our code we'll have
+
+to use CALL [DWORD_PTR_TO_THE_API]. To discover which dword pointer we'll have to call in order to
+
+invoke a certain API, we'll use W32Dasm. Every single API call will correspond to a CALL DWORD PTR [xyz]
+
+(you can look that up really easily by making a search inside the disasm): everytime u'll need
+
+that API you'll call that IAT (import address table, aka FirstThunk array) pointer from hiew, nothing
+
+more nothing less.
+
+
+
+This semplifies our job ALOT, but you may be asking one thing now...HOW do we know, from
+
+SoftICE, WHERE (to which offset) we should jump to from section .TEXT to reach our code ?? We
+
+can't find the location with W32Dasm because the disassembled part only concerns .TEXT section,
+
+not .RELOC (where our code will be)...the solution resides in HIEW (or better yet, use IDA;): 
+
+open notepad.exe with hiew: switch to HEX or DISASM mode, then press ALT+F1 until you have 
+
+selected LOCAL in the way hiew will display offsets. You'll notice that, if you had "global" 
+
+before, now there'll be a difference in the way the offsets are showed: indeed, not offsets 
+
+anymore, but complete VA's (Virtual Addresses, = RVA+Image Base of the location), which are 
+
+everything we have to know in order to assemble a valid jump in softice. So we'll just assemble 
+
+a "JMP VA_of_our_new_code", and sice will give us the correct opcodes. Only for short jumps 
+
+(within a certain code range, or for those with 2 opcodes and so on) we don't need sice, but 
+
+we can insert the offset directly in HIEW, because the jump won't exit from a short code range,
+
+and HIEW is still ok for opcode generation. So from now on, when you see some asterisks (*******)
+
+beside the instruction, it means that it has been assembled with softice, and that i patched the 
+
+file with the bytes that it gave me back.
+
+
+
+Another problem...we said that we have to make the program open a new file with this menu,
+
+which will be Anub|s and Insanity's file on HTML programming...this file will surely have a
+
+name (something.hlp), even if i don't know yet (but nor do them i believe :))), anyway we'll
+
+use a demonstrative name here, and it'll be HNOTEPAD.HLP. So i was saying, we have to make the
+
+code recognize the name "HNOTEPAD.HLP" as well, but of course this name isn't present anywhere in
+
+the code...so we'll have to add it to our target's STRINGTABLE. The stringtable is nothing more
+
+than the place where we can find all the strings among the resources of the program. We could
+
+turn some old string into our new "HNOTEPAD.HLP", or we could append it (the 'raw' way;) to the
+
+code of our target (thing that we'll do later in this tutorial, and that is useful when you can't
+
+gain access to a program's resources), but considered that we have access to the resources, we'll
+
+ADD it to the stringtable and we'll treat it just as any other string already existing. So the
+
+first step is, in BRW, to select the LAST stringtable (# 48), press the right mouse button and
+
+EDIT IT AS TEXT (be careful not to edit it only, or you won't be able to add items to the table).
+
+Once you are in the table, just add this line at the end:
+
+
+
+ 58, "hnotepad.hlp"
+
+
+
+Save the file, and you're done! Now we have a brand new string, that we'll be able to use from
+
+the code at our will...do you start to see the HUGE possibilities that appear before us?? :)
+
+So...now you have to know (if you didn't know it already:) that strings are loaded from the
+
+stringtable with the LoadStringA function, whose prototype is:
+
+
+
+int LoadString(
+
+
+
+    HINSTANCE hInstance,// handle of module containing string resource
+
+    UINT uID,	        // resource identifier (in our case 58, or 3Ah)
+
+    LPTSTR lpBuffer,	// address of buffer for resource
+
+    int nBufferMax 	// size of buffer (# of chars to take from the string: if the string is
+
+                        // shorter it's ok, but if it's longer it will be truncated!
+
+   );
+
+
+
+
+
+Hmmm....the problem here is the buffer....how do we know which buffer we should use for our new
+
+string? Well, we just need a little experience with the program i'd say....start setting
+
+breakpoints, and you'll pretty soon find a buffer good for our new resource. You have two
+
+choices:
+
+1 - finding a buffer which is loaded ONLY ONCE (at program execution): in this case you'll have
+
+to use LoadStringA one more time, like some sorta PUSH and POP with the buffer.
+
+2 - finding a buffer that is loaded EVERY TIME the program needs the string which is supposed
+
+to fill that buffer....in this case, you won't have to worry about replacing the new string
+
+with the old one once u're done with it, because it will be the program itself to do the job
+
+for you. This last one is definately the best choice, as it avoids us coding bigger routines.
+
+So, let's take a look around us..let's take the messagebox that says "This file is too large
+
+for Notepad to open...wanna use Wordpad??"...if u choose "yes", you'll notice a LoadStringA
+
+that loads the variable "wordpad.exe" into a buffer, which is needed to run the program
+
+(wordpad)...here's the disasm (keep in mind that the values are pushed on the stack in reverse
+
+order):
+
+
+
+:00402D70 6804010000              push 00000104 ; PUSHES # OF CHARS TO TAKE FROM THE STRING
+
+:00402D75 8D85B8FEFFFF            lea eax, dword ptr [ebp+FFFFFEB8] ; EAX BECOMES=63F8C4h
+
+:00402D7B 50                      push eax ; PUSHES 63F8C4h AS BUFFER TO RECEIVE THE STRING
+
+
+
+* Reference To: USER32.LoadStringA, Ord:0168h
+
+                                  |
+
+:00402D7C 8B1DB0734000            mov ebx, dword ptr [004073B0]
+
+:00402D82 837D1001                cmp dword ptr [ebp+10], 00000001 ; (DUMMY)
+
+:00402D86 1BFF                    sbb edi, edi                     ; (DUMMY)
+
+
+
+* Possible Reference to String Resource ID=00056: "wordpad.exe"
+
+                                  |
+
+:00402D88 6A38                    push 00000038              ; ID TO "WORDPAD.EXE" IN THE TABLE
+
+:00402D8A FF3570514000            push dword ptr [00405170]  ; HANDLE TO THE MODULE CONTAINING
+
+                                                             ; THE TABLE
+
+:00402D90 FFD3                    call ebx                   ; CALL LOADSTRING
+
+
+
+
+
+
+
+Excellent! We found our buffer...write down that memory address, and REMEMBER it, as we'll use it
+
+as a "multi-purpose" variable during our session: 63F8C4h...even if we'll
+
+overwrite it with our new string "hnotepad.hlp", the buffer will be replaced with the old string
+
+whenever the program tries to run wordpad. Notice that we can, following this method, find out
+
+the "unvariable" informations of a call as well, in this case the handle to the module
+
+containing the stringtable (the "dword ptr [405170]" pushed at 2D8A, which contains the value
+
+400000h, that will be our handle) (a simple GetModuleHandleA with a NULL param would have the same
+
+effect, and anyhow, 99% of the times the hModule value is 400000h for exe's..since we have no address
+
+clash when mapping the file...why ? because windows loader creates a per-process area for every
+
+process, as opposed to the shared area... hence, every process will be mapped at that imagebase,
+
+except in 2 cases (always talking about exe's, not dll's, remember): one, the file is remapped on 
+
+purpose, or two, there's a MAJOR resource leak in the system, and windows loader decides it has not
+
+enough mem to page a new per-process area, and simply maps the new process in an existing memory
+
+context, just at a different base...)...
+
+ We could push 400000h directly when we needed, but we'll always use this pointer (remember that 
+
+when you modify already compiled targets it's safe, above all for those who haven't got much 
+
+experience, to verify data twice, and generally to use AS OFTEN AS POSSIBLE pointers and not 
+
+immediate values), yet we'll use the immediate value later, for reasons that you will understand.
+
+
+
+Now we know how to obtain the string "hnotepad.hlp" in our code, and where we'll find it when we
+
+need it, but yet we miss the final detail....HOW do we call the WinHelpA function? Once again
+
+our API reference helps us:
+
+
+
+BOOL WinHelp(
+
+
+
+    HWND hWndMain,	// handle of window requesting Help
+
+    LPCTSTR lpszHelp,	// address of directory-path string
+
+    UINT uCommand,	// type of Help
+
+    DWORD dwData 	// additional data
+
+   );
+
+
+
+Well, this is simple...once again we'll see how things really work by looking at practical
+
+examples of the function in the code: so, a BPX WinHelpA in softice will help us examine the
+
+code when we choose "Help"/"Help Topics"...
+
+there u go:
+
+
+
+:0040121C 6A00             push 00000000 ; NO ADDITIONAL DATA
+
+:0040121E A194604000       mov eax, dword ptr [00406094] ; EAX=POINTER TO "NOTEPAD.HLP" STRING
+
+:00401223 6A0B             push 0000000B ; =HELP_FINDER, JUST A WAY TO CALL HELP
+
+:00401225 50               push eax      ; PUSHES "NOTEPAD.HLP"
+
+:00401226 FF3500604000     push dword ptr [00406000] ; HERE IS THE POINTER TO THE HANDLE OF THE
+
+                                                     ; WINDOW
+
+
+
+* Reference To: USER32.WinHelpA, Ord:0225h
+
+                                  |
+
+:0040122C FF154C744000     Call dword ptr [0040744C] ; CALLS WINHELPA
+
+
+
+
+
+You may be wondering how did i know that 0Bh is equal to HELP_FINDER parameter. I suggest you
+
+download Masm/Tasm and take a look at the file "windows.inc" (or "win32.inc"). It contains all
+
+the equates you will need when you want to associate a literal param to a hex number (literal
+
+params are just equates to numbers, so when you code your own .ASM program you can either push
+
+the number or the literal parameter, it just makes no difference. But when it comes to patching
+
+a compiled target you HAVE to know the numeric value, or you will never know what to push).
+
+Good....now we know that the handle (which was the thing that we wanted to know the most) will
+
+be found, when needed, at the address where dword ptr [406000] points to...
+
+One last word about this function: our API reference informs us that we'll have to call
+
+WinHelpA with parameter HELP_QUIT (= 02) when we close the program, but we won't have to worry
+
+about it in our case because notepad automatically does the job for us at closing time.
+
+
+
+Great! Now we have all the infoes we need to dive into the bytes and add code to our target!
+
+First of all, we'll change the CMP at 4011BA (@offset 5BAh) into a "JMP 40891E"
+
+
+
+was:
+
+
+
+:004011BA 3D00030000              cmp eax, 00000300
+
+:004011BF 7C21                    jl 004011E2
+
+
+
+and becomes:
+
+
+
+:004011BA E95F770000 ************ jmp 0040891E ; -> TOWARDS OUR NEW CODE
+
+:004011BF 90                      nop
+
+:004011C0 90                      nop
+
+
+
+So we turned a CMP and a JL into a JMP and 2 NOPs. The nops are needed to fill the bytes of the
+
+jl that is useless now (we could even keep those bytes, but it's a matter of clearness...u'll
+
+find it easier to organize in this way), because we will move the whole check to the .RELOC
+
+section. One last note before adding our code. We have to keep in mind that when we execute our
+
+operations the stack and the registers must be kept intact, in other words we don't have to leave
+
+any "i-was-here" track, if u get what i mean :)
+
+We can easily do that by saving all the registers and restoring them in the end with PUSHAD and
+
+POPAD. Here's the code we'll add with HIEW at offset 591Eh (F3 then F2 to insert an asm
+
+instruction...when you find the asterisks it means that you have to exit from F2 mode and write
+
+the bytes manually, as they have been generated by SoftICE (the bytes are in the "OPCODES:"
+
+part in the comments), while when you find API calls you can read the address of the dword ptr to
+
+call within CALL D,[40xxxx]):
+
+
+
+SIDENOTE: IN HIEW, IF YOU WANT TO WRITE "DWORD PTR [xyz]", USE "D,[xyz]", IF YOU WANT TO WRITE
+
+"BYTE PTR" USE "B" AND SO ON...GENERALLY, REFER TO OTHER INSTRUCTIONS TO FIND OUT THE WAY YOU
+
+MUST TYPE IN YOURS.
+
+
+
+
+
+591Eh: cmp eax, 21    ; eax holds current item's ID. 21h = ID of our new menu ("Anub|s+Insa..")
+
+       jz 5933        ; if you clicked there, process it. 2-opcodes jump, so HIEW is OK
+
+
+
+       cmp eax,300    ; THESE ARE THE 2 CODE LINES THAT WE REPLACED WITH THE JMP IN .TEXT
+
+****** jl 4011E2      ; SECTION...WE RESTORE THEM HERE! ...OPCODES: 0F8CB488FFFF
+
+
+
+****** jmp 4011C1     ; continue with the other checks, jumping back to .TEXT
+
+                      ; OPCODES: E98E88FFFF  
+
+
+
+5933h: pushad                  ; saves all regs
+
+       push 20                 ; max # of chars to take from the string
+
+       push 63F8C4             ; address of the input buffer, see above
+
+       push 3a                 ; 3Ah=58 dec...this is the ID of our new string "hnotepad.hlp"
+
+       push dword ptr [405170] ; handle of module containing string resource
+
+
+
+       call LoadStringA        ; loads 20 chars of "hnotepad.hlp" string in 63F8C4
+
+                               ; CALL D,[4073B0]
+
+
+
+       popad                   ; restores all regs
+
+
+
+          ; now we'll stick in parameters pushing for our customized call to WinHelpA
+
+      
+
+       push 0               ; no additional data
+
+       push 3               ; 3=HELP_INDEX, will allow us to see the help index when we open it
+
+       push 63f8c4             ; buffer containing "hnotepad.hlp"
+
+       push dword ptr [406000] ; handle of window requesting Help (see above)
+
+****** jmp 40122c              ; come back to .TEXT section at the point where we have the
+
+                               ; WinHelpA call - OPCODES: E9CE88FFFF
+
+
+
+
+
+Great...now run your "new" notepad, paying attention to put a help file named "hnotepad.hlp" into
+
+the same dir where u're running it from....click on our new menu, et voila! It's done...we just
+
+added a brand new function to notepad.exe :)
+
+
+
+
+
+
+
+_______________________
+
+
+
+PHASE 2 : THE ABOUT BOX
+
+_______________________
+
+      
+
+      
+
+Here we go with phase two...why did i choose to put a new about box ?? easy...first of all,
+
+Insanity and Anub|s had to be aknowledged in the about, and then, a little bit of personal
+
+satisfaction.....:))
+
+Furthermore this procedure will teach us some new things as well, because we'll soon discover
+
+that notepad.exe HASN'T GOT a OWN about box...the guys at Micro$oft have invented a pretty
+
+useful API function, located in shell32.dll...I'm talking about ShellAboutA. This API just
+
+creates a PREDEFINED message box, with the percentage of free resources, memory and so on (in
+
+other words notepad's about box) plus some additional info that you can specify at the moment.
+
+Needless to say, this bothers us SO MUCH that we HAVE to put our own code here :D
+
+In sice, a bpx on ShellAboutA (first load the exports from shell32.dll! You can do that with
+
+either "File/Load Exports" from SoftICE's symbol loader, or appending it to the EXP='s of your
+
+winice.dat) points us in the right direction: here's where the code for the about box starts:
+
+
+
+
+
+:004013D0 6A02                    push 00000002
+
+:004013D2 A170514000              mov eax, dword ptr [00405170]
+
+:004013D7 50                      push eax
+
+
+
+* Reference To: USER32.LoadIconA, Ord:015Eh
+
+                                  |
+
+:004013D8 FF1550744000            Call dword ptr [00407450]
+
+:004013DE 50                      push eax
+
+:004013DF 683C614000              push 0040613C
+
+:004013E4 FF3560604000            push dword ptr [00406060]
+
+:004013EA FF3500604000            push dword ptr [00406000]
+
+
+
+* Reference To: SHELL32.ShellAboutA, Ord:004Ch
+
+                                  |
+
+:004013F0 FF1580734000            Call dword ptr [00407380]
+
+      
+
+
+
+bah, useless stuff...rather, we'll stick here the jump to .RELOC section, where our code will
+
+be.
+
+
+
+Like in the previous situation, we must first understand WHAT we want to do. An about box,
+
+right ? Then a message box will be more than enough. Here's the prototype for this simple API
+
+function:
+
+
+
+int MessageBox(
+
+
+
+    HWND hWnd,	        // handle of owner window
+
+    LPCTSTR lpText,	// address of TEXT in message box
+
+    LPCTSTR lpCaption,	// address of TITLE of message box 
+
+    UINT uType 	        // style of message box
+
+   );
+
+
+
+Hmmm....how about those two buffers ? The text we want to stick in is quite long...we could add
+
+more strings to the stringtable and use two more buffers as the title and text of the message
+
+box, but we won't, for two reasons: first of all, when you patch a program and want to insert
+
+new things, you *MUST* try to optimize your code and make it as fast and as compact as possible
+
+, and SECOND, NEVER leave unused strings...in other words, before adding new resources, you have 
+
+to figure out if there are any older resources that you will not use anymore...
+
+if so, rather than adding new resources for you purposes, you'd better OVERWRITE obsolete ones...
+
+remember, SAVING SPACE IS FUNDAMENTAL!). 
+
+Now let's try to figure out that in our case: in PHASE 5 of this tutorial we'll eliminate the 
+
+box that says "This file is too large for Notepad to open...", as we'll remove the limit in size, 
+
+so consequently we could stick our new about text in the place of that string...so the pointer to
+
+the old "This file blah blah" string (which is the one at 4060B0, as you can see breaking on
+
+the message box above) would point now to the TEXT of our about box...so everything we have to
+
+do is, in BRW, modifying the string that has ID 52, changing it from
+
+
+
+"This file is too large for Notepad to open.\nWould you like to use WordPad to read this file?"
+
+
+
+into
+
+
+
+"RingZ3r0's Hnotepad v1.00\nModified version of Micro$oft's Notepad.exe\n\n\n* 
+
+Code reverse engineering and implementation of new functions by -NeuRaL_NoiSE\n\n* 
+
+Help file on HTML programming by Anub|s and Insanity"
+
+
+
+You can just copy&paste the above text. Those "\n" mean "newline", as in c.
+
+We still have the problem of the title. C'mon we could add this little string you say...NO ! I
+
+answer :)...we MUST learn to optimize our code (even if we get some real big quantities of
+
+redundant stuff here, but that's for "educational purposes" so don't bother asking yourself
+
+why;)...Mmh let's see...the title of the about box must be something like "Hnotepad" right ?
+
+well, now take a look at all those strings in the stringtable where the word "Notepad"
+
+appears...let's do one thing. We'll modify all those "Notepad" into "Hnotepad"....except for
+
+"notepad.hlp" of course! So, do it! :)
+
+Now make the program start, set a breakpoint somewhere and, once in the code, take a look at
+
+memory...a simple "s 0 l ffffff 'Hnotepad'" from SoftICE (or a research from hiew, if you wish to
+
+find the string physically inside the .exe) will point us to every place in memory where the
+
+string "Hnotepad" appears...once you found the first one, proceed by entering just "s" to look
+
+for the next match...now stop by the match at 41027E. You'll notice that it's preceded AND
+
+followed by 00 bytes...this means that the string is simply that, between the zero bytes...in
+
+other words, it's just "Hnotepad"...a prefect title for our message box don't you think ?? ;)
+
+We could, just as above, have pushed directly the address 41027E when we needed it (in other
+
+words when specifying the title of the MessageBoxA)...but we'll find the pointer to that
+
+buffer, and we'll push it instead of the direct memory address...the reasons are the same of
+
+above. Don't be frightened by the sound of the words, a buffer is nothing more than a variable,
+
+and a pointer.....well let's say that it's the "name" of this variable, to make it easier for
+
+everyone :). Pointers to common variables reside in .DATA section. We have already seen some
+
+pointers, do you remember ? I'm talking about the "handle of module containing string resource"
+
+we must know for the LoadStringA function, the pointer to the text of the message box, and so
+
+on....the first pointer, for example, was at 405170....this is enough for us to locate .DATA
+
+section...now everything we must do is finding a pointer (the 'name') to the buffer (of the
+
+'variable') 41027E ("Hnotepad")...so, in SoftICE, "DD 405170" and look among the dwords...and
+
+there it is, the pointer we were looking for is at 406060.
+
+So what's left ?? Hmmm, the handle of the owner window...from a practical example (once again
+
+the "wanna load wordpad?" box), we notice that [ebp+8] contains the hwnd....and this doesn't
+
+change, as you will see if you experiment a bit...so, we have our last parametere as well, the
+
+hwnd! (we could have chosen also 0, would have made no difference, but hey, we're here to explore
+
+no?? :)
+
+Now we just have to decide the style of message box...imho, being this an "about" message box,
+
+a value of 0 (=MB_OK, in other words a single button with "OK" written on it) will be perfect
+
+as style...
+
+
+
+So now we're ready! All is left to do is modify the existing code to make it jump to our own
+
+instructions in the .RELOC section....the VA where we'll append our code will be 40895E 
+
+(@offset 595Eh), so we have to stick in a jump in .TEXT section to jump to it. The beginning 
+
+of the ShellAboutA routine (@VA 4013D0, @offset 7D0h) will be good:
+
+
+
+was
+
+
+
+:004013D0 6A02                    push 00000002
+
+:004013D2 A170514000              mov eax, dword ptr [00405170]
+
+
+
+and becomes
+
+
+
+:004013D0 E989750000 ************ jmp 0040895E ; --> TOWARDS OUR NEW CODE
+
+
+
+
+
+The code that follows the new jmp will be changed in a weird way, but we don't give a damn
+
+because we don't need it anymore...the program will now continue in the .RELOC section, at
+
+offset 595Eh, with OUR own code:
+
+
+
+       ...
+
+
+
+595Eh: pushad                  ; saves all regs
+
+       push 00                 ; 0 = MB_OK
+
+       push dword ptr [406060] ; pushes the pointer to "Hnotepad" as TITLE
+
+       push dword ptr [4060B0] ; pushes the pointer to new string "RingZ3r0 blabla..." as TEXT
+
+       mov esi, [ebp+8]        ; hWnd of the owner window in esi
+
+       push esi                ; pushes the handle
+
+       call MessageBoxA        ; shows the message box - CALL D,[407430]
+
+       popad                   ; restores all regs
+
+****** jmp 4016eb              ; back to .text - OPCODES: E96E8DFFFF
+
+
+
+       nop                     ; this part of the code ends as well (the nop is useless but keep
+
+                               ; it if u're following the procedure i'm using)
+
+      
+
+
+
+Good! So even this one has gone...now try to make the about box pop up...u'll notice that it
+
+now shows our brand new string, plus "Hnotepad" as title...of course if you try to open a file
+
+larger than FFFFh (first dimension check) bytes you'll get a nonsense message box, because old
+
+"wanna load wordpad" string is gone...but it's just a matter of patience, we'll eliminate that
+
+box as well, as i said, in PHASE 5.
+
+
+
+
+
+________________________________________________
+
+
+
+PHASE 3 : ADDING MASKS TO OPENFILENAME STRUCTURE
+
+________________________________________________
+
+
+
+
+
+Well...seen that this is gonna be an Html files editor, it looks clear to me that it will have
+
+to show "HTML Files", "JS Files" and "VBS Files" among the masks u get when you try to open/save
+
+as something...(well if you want the truth, i HAVE to do that or Anub|s will kill me...:))) I'm
+
+joking of course ;)))
+
+
+
+Let's start with the "Open file" dialog box.
+
+First of all you must know that the "Open file" dialog box is a predefined dialog, that is
+
+called by a specific API function, GetOpenFileNameA, which resides in Comdlg32.dll...
+
+So, in order to work with this API, start loading the exports for this dll.
+
+Another thing you should know, is that filter strings (masks) are to be specified, together
+
+with other parameters (i suggest you read Iczelion's excellent tutorials or API reference for
+
+more details) in a structure of the OPENFILENAME type, a pointer to whose is pushed on the 
+
+stack before the call to GetOpenFileNameA. So, the structure will contain all the data we 
+
+need - the filters as well :). The filters are defined in this way (let's take for instance 
+
+a text files filter): Filtername db "Text files",0,"*.txt",0,0.....<THE second zero is 
+
+not an error, but it's put if the filter is the LAST one in the list. Otherwise we'll have 
+
+just one zero and, immediately after, the description of the next filter. This is all we need. 
+
+We can define a new string in the stringtable, that will join it at position 59 (3Bh):
+
+
+
+ 59, "HTML Files|*.htm; *.html|JS Files|*.js|VBS Files|*.vbs"
+
+
+
+Don't worry about that "|" between descriptions and actual filters, we just need a place to
+
+locate where we'll put a ZERO BYTE once appended the string to the filter list, so that the
+
+program will believe that there are TWO strings there ("description","|","filter"...the "|"
+
+will become a 00 byte).
+
+In Sice, BPX GetOpenFileNameA and then choose "File/Open". Sice will pop, press F12 and the
+
+dialog "Open file" will appear on your screen. Press ESC and u'll be back into sice, here:
+
+
+
+
+
+:004012E7 6880524000              push 00405280    ; OPENFILENAME STRUCTURE IS PUSHED....
+
+:004012EC C7058C52400080514000    mov dword ptr [0040528C], 00405180
+
+:004012F6 C7059052400030524000    mov dword ptr [00405290], 00405230
+
+:00401300 C705B452400004100000    mov dword ptr [004052B4], 00001004
+
+:0040130A 83C003                  add eax, 00000003
+
+:0040130D A3BC524000              mov dword ptr [004052BC], eax
+
+
+
+* Reference To: comdlg32.GetOpenFileNameA, Ord:0005h
+
+                                  |
+
+:00401312 E8FA350000              Call 00404911     ; <-- .......AND HERE'S THE CALL !
+
+
+
+
+
+Excellent, now let's take a look at memory location 405280. Move the pointer a bit upwards,
+
+and, one or two PGUPs above, you'll notice clear tracks of the filter strings ("Text Documents
+
+*.txt" and so on). The filter strings end, as you can see, at memory location 4051A9 (with the
+
+second BYTE 00, that marks the end of the member). So, a simple LoadStringA at this address
+
+will allow us to append our brand new filter string to the filters already present. Our code,
+
+once again, will continue, down into .RELOC section, at VA 40897E (@offset 597Eh). We'll stick
+
+in the jump to our code in the place of the push at 4012E7 (@offset 6E7h), that we'll restore
+
+later.
+
+
+
+was
+
+
+
+:004012E7 6880524000              push 00405280
+
+:004012EC C7058C52400080514000    mov dword ptr [0040528C], 00405180
+
+
+
+and becomes
+
+
+
+:004012E7 E992760000 ************ jmp 0040897E ; --> TOWARDS OUR NEW CODE
+
+:004012EC C7058C52400080514000    mov dword ptr [0040528C], 00405180
+
+
+
+
+
+As you can notice, the following MOV isn't changed, so that we'll just come back here once
+
+we're done with the mofifications and the pushing of the structure.
+
+
+
+Now all we must do is to modify, for the same purpose, the code relative to "Save as" dialog.
+
+This dialog is a predefined one as well, and is called with API function GetSaveFileNameA
+
+(located in comdlg32.dll as usual). We won't need big modifies, it will be enough to make the
+
+code relative to the pushing of the "Save as" structure point to the "new" code relative to
+
+"Open file" (our new code). So, a bpx on GetSaveFileNameA will help us find the point we'll
+
+modify, which happens to be 40168A (@offset A8Ah):
+
+
+
+was
+
+
+
+:0040168A 6880524000              push 00405280 ; pushes the structure
+
+:0040168F E86B320000              Call 004048FF ; Call GetSaveFileNameA
+
+
+
+and becomes
+
+
+
+:0040168A E9EF720000 ************ jmp 0040897E  ; --> TOWARDS OUR NEW CODE
+
+:0040168F E86B320000              Call 004048FF ; Call GetSaveFileNameA
+
+
+
+
+
+
+
+As you can see, the following call to GetSaveFileNameA hasn't changed, so we don't need to
+
+include it into our code (we'll just jump back here once we're done).
+
+
+
+But how will our code distinguish between a GetSaveFileNameA and a GetOpenFileNameA (a
+
+differentiation is NECESSARY, seen that we MUST know WHERE in .TEXT section to jump back once
+
+we're done with structure modifying & pushing) ??
+
+Take a look at the registers, once reached our code (or the new jumps which will bring there):
+
+when we have chosen "Open file", the value in ESI will always be 0Ah (=10 dec.), which is the
+
+menu ID of the File/Open menu item. If we have chosen "Save as", the value will always be another
+
+one, of course. So, we'll just check if ESI=Ah, and we'll jump back
+
+to the according part of .TEXT section.
+
+
+
+
+
+So our code will be this:
+
+
+
+       ...
+
+
+
+597Eh: pushad                   ; saves all regs
+
+
+
+       push 50                  ; max # of chars to take from the string
+
+
+
+       push 4051A9              ; addres of input buffer (appends to existing filters)
+
+
+
+       push 3b                  ; 3Bh=59 dec...this is the ID to our new string,
+
+                                ; "HTML Files|*.htm; *.html|JS Files|*.js|VBS Files|*.vbs"
+
+
+
+       push dword ptr [405170]  ; handle of module containing string resource
+
+
+
+       call LoadStringA         ; Loads the string at 4051A9
+
+                                ; CALL D,[4073B0]
+
+      
+
+       mov byte ptr [4051b3], 0 ; puts a ZERO BYTE where we had "|" between "HTML Files" and
+
+                                ; "*.htm", so that the separation between description and filter
+
+                                ; is done, and the program will belive they are 2 different
+
+                                ; strings
+
+
+
+       mov byte ptr [4051c1], 0 ; same as above but between "*.html" and "JS Files"
+
+     
+
+       mov byte ptr [4051ca], 0 ; same as above but between "JS Files" and "*.js"
+
+
+
+       mov byte ptr [4051cf], 0 ; same as above but between  "*.js" and "VBS Files"
+
+
+
+       mov byte ptr [4051d9], 0 ; same as above but between "VBS Files" and "*.vbs"
+
+
+
+       cmp esi,0ah              ; ESI=Ah if we come from a click on "Open file"
+
+
+
+       jnz 59c7                 ; ESI != 0ah??
+
+     
+
+       popad                    ; if not, restore all regs...
+
+     
+
+       push 405280              ; ...push the modified structure...
+
+
+
+****** jmp 4012ec               ; AND CONTINUE WITH THE GetOpenFileNameA PART (back to .TEXT)
+
+                                ; OPCODES: E92589FFFF
+
+  59C7:     
+
+
+
+       popad                    ; else if esi!=0ah, restore all regs...
+
+     
+
+       push 405280              ; ...push the modified structure...
+
+
+
+****** jmp 40168f               ; AND CONTINUE WITH THE GetSaveFileNameA (back to .TEXT)
+
+                                ; OPCODES: E9BD8CFFFF
+
+
+
+
+
+There u go...now your "Open file" and "Save as" dialogs will show more masks.
+
+
+
+You can even lengthen your new filter string to add more masks, but you must keep in mind that
+
+you can't exceed the memory block reserved for the structure, you can't overwrite other members
+
+of the structure, and that you must put a 00 byte between the various
+
+"description","filter","description" and so on...PLUS *TWO* ZERO BYTES AT THE END OF THE LAST
+
+FILTER. If the space you have is not enough, just choose another brand new place and put the
+
+whole customized structure there, and push it afterwards in the place of the former one...
+
+
+
+
+
+
+
+
+
+____________________________
+
+
+
+PHASE 4 : .INI FILE ADDITION
+
+____________________________
+
+
+
+
+
+So, here we go with the (apparently) most difficult part of this tutorial. First of all let's
+
+take a look at how our .INI file will look like by default:
+
+
+
+
+
+
+
+****
+
+FILE AUTOMATICALLY GENERATED BY HNOTEPAD v1.0
+
+USE ONLY 'Y' OR 'N' IN THE 'AutoWrap' FIELD !!
+
+
+
+-NeuRaL_NoiSE 1999
+
+****
+
+
+
+AutoWrap=N
+
+LastFileIs=
+
+
+
+
+
+
+
+
+
+Now we can think about how do we want to organize the code relative to this function. Obviously
+
+we'll have to write a part of code that READS the .INI at program start and one that
+
+CREATES/WRITES it at quitting time.
+
+Let's analize the READ function first:
+
+
+
+
+
+* At Hnotepad start, the code will have to look for a predefined file C:\Windows\Hnotepad.ini.
+
+  If this file isn't found, go on as if nothing happened.
+
+
+
+* If it's found, read data from it and look for the first equal sign ('=') contained in it.
+
+  After this sign there will be the desired position of the WordWrapping at start. If the '='
+
+  can't be found, come back to .text without more checks and proceed by default.
+
+
+
+* If the first '=' is found, check the letter next to it, and verify if it's 'Y', 'y', 'N' or 
+
+  'n'. If the letter does not match, come back to .text and proceed by default.
+
+
+
+* If the letter matches a 'Y' or 'y', append the 'WordWrapping toggle' message to the process's
+
+  message queue, u'll understand later how to do it.
+
+ 
+
+* If it matches 'N' or 'n', go on without sending the message.
+
+
+
+* Check if Command Line == NULL. If the user chose a file to open, we'll have to load this one
+
+  and not the one pointed in the .INI, because of course the last one has less priority than the
+
+  file we're trying to load from command line.
+
+ 
+
+* ONLY if Command Line == NULL, we'll try the last file opened pointed by the .INI. Starting
+
+  from previous position, we'll look for the next '='. After this '=', there'll be the name of
+
+  the last file opened. If the '=' can't be found, come back to .text and proceed opening a
+
+  new document (like notepad would behave in normal conditions).
+
+
+
+* if the '=' is found, check that immediately after it there's a letter ranging from 'a' to 'z'
+
+  or from 'A' to 'Z'. This is useful to determine wheter the filename is correct or not (don't
+
+  misunderstand, we're not checking if the file exist, we're just trying to avoid loading of
+
+  files such as "7:\xyz\xyz.txt"). In other words we check if the initial char is an alphabet
+
+  letter, thus a valid identifier for a drive, and not a number or a symbol. If it's not a valid
+
+  letter, come back to .text and proceed by default.
+
+
+
+* If we found a valid letter, proceed reading until the string that defines the filename ends:
+
+  save the initial position of the string, and then go on from there looking for a space (' ',
+
+  =20h) or a carriage return (=0Dh). If neither the first nor the second can be found, proceed
+
+  until the end of file. One thing must be cleared: when we save our default .INI, after the
+
+  second '=' there's a space (' '), that, if found in the check, indicates the end of the
+
+  filename string. If, instead, we save the .INI with the name of a file to reopen afterwards,
+
+  we'll append a CR (=0Dh), which will work like the space of before. If the user has inserted
+
+  manually the name of the last file in the .INI, there's no problem as well cuz we'll have a
+
+  third check, the one for the lenght of the file. Once we reach the EOF we'll consider FINISHED  
+
+  the filename definition string.
+
+
+
+* Once we found the end of the filename definition string, copy it directly inside the buffer
+
+  that is used to open a file when cmdline!=NULL. Notepad will automatically load the file cuz
+
+  we'll do this operation BEFORE the native check for the cmdline is done. In other words, we'll
+
+  'bruteforce' the name of a file inside the buffer that would otherwise contain only 00 bytes,
+
+  thus 'simulating' the choice by the user of a file to open from command line (as in
+
+  "notepad xyz.txt").
+
+ 
+
+* At this point, we'll come back to .TEXT to normally continue with the code.
+
+
+
+
+
+Now we must notice one thing. To add more code, we'll have to use .RSRC section, as the space in
+
+.RELOC is almost finished. Alas there'a limitation, and this limitation resides in BRW.
+
+Obviously with the help of a little logic we'll get around it pretty easily, tho you have the
+
+right to know what we're gonna face: the limitation i'm talking about is that, everytime we
+
+modify the resources, BRW RECREATES from scratch the .RSRC section. U dig it ? All your nice
+
+additional code would be DESTROYED by a single change in any of the resources if u do it with
+
+BRW. There are severals systems to get around this, and we'll use two of them: first of all we'll
+
+put (almost) all the strings we need in the stringtable BEFORE coding our stuff in .RSRC. Then,
+
+when everything will be written, we'll have to face the problem that we'll need more strings in
+
+the fifth phase of this tute, but we'll solve this later.
+
+So, start adding these two strings to the stringtable of our target (u'll understand later why we
+
+need them):
+
+
+
+ 60, "c:\\windows\\hnotepad.ini"
+
+ 61, "****\nFILE AUTOMATICALLY GENERATED BY HNOTEPAD v1.0\nUSE ONLY 'Y' OR 'N' 
+
+IN THE 'AutoWrap' FIELD !!\n\n-NeuRaL_NoiSE 1999\n****\n\nAutoWrap=N\nLastFileIs= "
+
+
+
+
+
+Another problem we'll meet will be the lack of physical space at disposition for our bytes.
+
+Towards the end of this piece of code, you will almost have ended the space in .RSRC as well, so
+
+don't waste your time later and open ProcDump now, then edit notepad's pe and click on
+
+"sections". Once there, edit .RSRC and enlarge both raw & virtual size (safer) from 3000 to 3200
+
+bytes (aligned to FileAlignment, remember), then enlarge the Size of Image to cover these new bytes
+
+(C200h is the final value...they way to compute the size of image is by adding last section's RVA+last
+
+section's VIRTUAL size), and finally save the changes (only to PE header will do fine).
+
+This will give us all the space we need.
+
+
+
+This said, i suppose that we can think about the point where to place the deviation to our .INI
+
+checking code. We have to keep in mind 2 things before doing this little research:
+
+
+
+1) in order to inform the program that we want Wrapping on (if that's the case), we need to
+
+simulate a click on the "Word Wrap" option. This is fairly easy, we can do it with PostMessageA
+
+or with SendMessageA. SendM. will immediately jump to the window procedure so it's not suitable
+
+for our needs, as we have to make more checks (and clean everything up) afterwards. So, we'll use
+
+PostMessageA, that simply ADDS the message to the message queue of the executing thread. But wait
+
+a second...in order to use PostMessageA we need a HWND (in other words a window) where to send
+
+our message!
+
+So the first thing we'll have to mind is that the EDIT control (that notepad uses at the moment)
+
+must have been ALREADY CREATED WHEN WE DEVIATE TOWARDS OUR CODE.
+
+
+
+IMPORTANT SIDE NOTE: WHEN WE DON'T SEND ANY "WORD WRAP TOGGLE" MESSAGE, WITH AN EDIT CONTROL
+
+IT WILL BE OK, THE WRAPPING WILL BE KEPT OFF...BUT, WITH A RICHEDIT CONTROL (WHICH WE'LL 
+
+IMPLEMENT IN OUR HNOTEPAD IN THE 5TH PHASE) EVERYTHING GOES NUTS. THIS IS A BUG DUE TO THE 
+
+PROBLEMS THAT COME BECAUSE WE'RE TRYING TO MAKE A SLOPPY PROGRAM LIKE NOTEPAD INTERACT WITH A 
+
+POTENTIALLY POWERFUL CONTROL LIKE THE RICHEDIT. ANYWAY IN 2 WORDS WHAT I UNDERSTOOD FROM ALL 
+
+THIS IS : IF WE SEND *ONE* "WORDWRAP" MESSAGE AT STARTUP, THE RICHEDIT CONTROL WILL PUT WRAPPING 
+
+*ON* (EVERYTHING AS NORMAL). IF WE DO *NOT* SEND ANY MESSAGES AT STARTUP, WE'LL BE IN TROUBLE 
+
+BECAUSE EVERYTHING BECOMES MESSED (LIKE OPTION TURNED OFF, BUT WRAPPING TURNED ON). IF WE SEND 
+
+*TWO* "WORDWRAP" MESSAGES, THE PROGRAM WILL FIRST PUT WRAPPING ON, THEN RE-PUT IT OFF...THIS IS
+
+IDEAL FOR OUR PURPOSES: IF WE WANT THE WRAPPING, WE'LL SEND *ONE* MESSAGE, IF WE DON'T WANT IT,
+
+INSTEAD OF AVOIDING TO SEND IT AT ALL, WE'LL SEND *TWO* OF THE SAME "WRAP TOGGLE" MESSAGES, 
+
+AVOIDING ALL THE MESS THAT THIS ANNOYING BUG IMPLIES.
+
+CONTACT ME IF THIS IS NOT CLEAR :)
+
+
+
+2) BUT, if we wait too long, we could fall in the opposite mistake: the thread might have already
+
+created the edit control, but the cmdline check could have been already made too! so our second
+
+check (for the file to open pointed in the .INI) would be useless...
+
+So here's the second thing we'll have to consider: THE CHECK FOR THE COMMAND LINE MUST HAVE *NOT*
+
+BEEN MADE YET.
+
+
+
+We can easily guess that the check for the command line happens AFTER the creation of the
+
+control, and this is real good news for us. All we must do is "catching" that fleeting moment
+
+between the two operations, and insert there all our checks. Ahh, zen owns, heheh :)
+
+
+
+I'd say that a good start might be that message box that says "Cannot find the xyz.xxx file...",
+
+that appears everytime we try to open a file that doesn't exist. It points us to a potential
+
+place where the control has been ALREADY created and the command line has been JUST checked.
+
+
+
+So here is where we'll arrive with a BPX MessageBoxA:
+
+
+
+
+
+* Reference To: USER32.MessageBoxA, Ord:0176h
+
+                                  |
+
+:00402251 FF1530744000            Call dword ptr [00407430]
+
+:00402257 8BE5                    mov esp, ebp
+
+:00402259 5D                      pop ebp
+
+:0040225A C21400                  ret 0014
+
+
+
+
+
+Hmm, let's go back past the ret...
+
+
+
+
+
+:004028D0 E84FF9FFFF              call 00402224 ; <WE COME BACK FROM THIS CALL
+
+:004028D5 83F806                  cmp eax, 00000006
+
+:004028D8 7545                    jne 0040291F
+
+
+
+
+
+Here's the check for the key we pressed. But let's take a look at the code that comes before,
+
+what's that CreateFileA?? :)
+
+
+
+
+
+:00402853 803B00                  cmp byte ptr [ebx], 00
+
+:00402856 0F84F4000000            je 00402950
+
+:0040285C 53                      push ebx
+
+:0040285D 68D0524000              push 004052D0
+
+:00402862 E8F6F9FFFF              call 0040225D
+
+:00402867 6A00                    push 00000000
+
+:00402869 6880000000              push 00000080
+
+
+
+:0040286E 6A03                    push 00000003
+
+
+
+* Reference To: KERNEL32.CreateFileA, Ord:0039h
+
+                                  |
+
+:00402870 8B1D44734000            mov ebx, dword ptr [00407344]
+
+
+
+
+
+Very interesting...here we have the check that interested us, the cmd line check!!
+
+The byte ptr [ebx] contains 00 if we didn't put anything as command line, but let's try to put a
+
+bpx on the check (at 402853), then let's get back to DOS prompt and let's type
+
+NOTEPAD FAKE_FILE...sice will pop at 402853. Now try "D EBX"...u'll find there "FAKE_FILE", just
+
+as you wrote it...right! this is the command line buffer! :)
+
+but wait a sec...that's not the buffer we have to use...can u see that call next to the check?
+
+here it is:
+
+
+
+:0040285C 53                      push ebx
+
+:0040285D 68D0524000              push 004052D0
+
+:00402862 E8F6F9FFFF              call 0040225D
+
+
+
+If you trace into it, u'll notice that this call is comparable to an lstrcpy, in other words it
+
+COPIES the name of the file (in d,[ebx]) into the predefined buffer at 4052d0: furthermore, if in
+
+the command line, like in our case, you have written something like FAKE_FILE, after this call
+
+u'll notice that the name has changed into FAKE_FILE.txt -- all this call does at this point is
+
+clear, and what we can understand is clear as well: the buffer to use is that one at 4052d0 (as
+
+you can see even if u take a look at the params pushed before the CreateFileA that comes
+
+afterwards). So this will be the buffer where we'll write our filename into. But there were 2
+
+things to keep in mind, remember? We must check if the edit control has already been created at
+
+this point. In SoftICE, once arrived at 402853, type in HWND NOTEPAD (if the name of the file
+
+you're running is notepad.exe, or else refer to it, or find out with the TASK command); u'll
+
+notice that the second class name is an EDIT CONTROL....bingo, it's already present, so we found
+
+a good zone for our deviation! :)
+
+
+
+We'll place the jump to our code in the place of that JE at 402856.
+
+
+
+
+
+*** NOTE ***
+
+
+
+The return addresses from our code will be several:
+
+* if the .INI file is NOT present (or it's there but contains some errors) and the USER has NOT
+
+chosen any file from the command line, we'll come back at 402950 (where that je would jump
+
+normally).
+
+* if the .INI is present but the user chose a command line, we'll come back at 40285c with that
+
+'Copy & Add Extension' call.
+
+* if the .INI is present and the user did NOT choose a command line, we'll copy the filename
+
+(pointed by the .INI) DIRECTLY INSIDE THE BUFFER AT 4052d0, and we'll come back at 402867 with
+
+the first CreateFileA parameter pushing, that refers to that buffer.
+
+
+
+***END NOTE***
+
+
+
+
+
+
+
+Our code will begin at 40BEED (@88edh) -- actually we could have saved some bytes but it's safe
+
+this way -- thus the deviation will be this (@1c56h):
+
+
+
+was
+
+
+
+:00402856 0F84F4000000            je 00402950
+
+
+
+and becomes
+
+
+
+:00402856 E992960000 ************ jmp 0040BEED ; --> TOWARDS OUR NEW CODE
+
+:0040285B 90                      nop
+
+
+
+
+
+Ah, obviously we'll need some API functions...every time you find an API call in the code, just
+
+substitute (from HIEW) call d,[dword_ptr_of_the_api].
+
+
+
+here are the dd's u'll need:
+
+
+
+LoadStringA:  call d,[4073b0]
+
+_lopen:       call d,[407364]
+
+_lread:       call d,[407368]
+
+PostMessageA: call d,[40745c]
+
+lstrcpyA:     call d,[40733c]
+
+_lclose:      call d,[4072f0]
+
+
+
+
+
+
+
+Now let's take a look at our code: seen that it might be quite difficult to understand the
+
+structure with only the offsets as references, i decided to put some explicit labels (with the
+
+relative offset in parenthesis).
+
+
+
+
+
+Start (@88ed):
+
+
+
+  pushad ; saves all regs
+
+  push 20 ; # of chars to take from the string
+
+  push 63f8c4 ; buffer for reception
+
+  push 3c ; =60 dec, the ID of "c:\\windows\\hnotepad.ini"
+
+  push 400000 ; handle of the module with the stringtable
+
+  call LoadStringA
+
+
+
+  push 0 ; pushes a dummy parameter on the stack, we'll overwrite it with the handle of the file
+
+         ; if the .INI is found.
+
+
+
+  push dword ptr [406000] ; saves the hWnd. You always find it here. You can easily find this
+
+                          ; out by looking at the pointers in the .IDATA section. We can't use
+
+                          ; the old [ebp+8] we used before, because this passage is yet to come
+
+                          ; at this point.
+
+
+
+
+
+
+
+; NOW WE MUST OPEN THE FILE...WE'LL USE _lopen:
+
+;
+
+; HFILE _lopen(
+
+;
+
+;    LPCSTR lpPathName,	// pointer to name of file to open
+
+;    int iReadWrite 	// file access mode
+
+;   );	
+
+
+
+
+
+  push 0 ; = OF_READ, opens for reading only and the call fails if the file doesn't exist
+
+  push 63f8c4 ; "c:\windows\hnotepad.ini"
+
+  call _lopen
+
+  cmp eax, -1 ; was there an error while opening ??
+
+  jnz FILE_FOUND (@8924h)
+
+
+
+    pop eax ; throw away the dummy param
+
+    pop eax ; throw away the hWnd
+
+    popad   ; restores all regs
+
+    jmp ERROR_IN_FILE (@8a11h)
+
+
+
+FILE_FOUND (@8924h):
+
+
+
+  mov [esp+4], eax ; file handle in the place of the dummy param
+
+
+
+
+
+
+
+
+
+; NOW WE MUST READ DATA FROM THE FILE....WE'LL USE _lread:
+
+;
+
+; UINT _lread(
+
+;
+
+;     HFILE hFile,	// handle to file
+
+;     LPVOID lpBuffer,	// pointer to buffer for read data
+
+;     UINT uBytes 	// length, in bytes, of data buffer
+
+;    );	
+
+
+
+
+
+
+
+
+
+  push ff; # of bytes to read; ATTENTION - USE OPCODES 68FF000000, otherwise HIEW will put
+
+         ; 6AFF, that will be interpretated by Win98 (not by 95) as PUSH FFFFFFFF, not
+
+         ; PUSH 000000FF
+
+  push 4109a1 ; buffer "RingZ3r0's Hnotepad.....", restored in CLOSE (@89EBh)
+
+  push eax ; file handle
+
+  call _lread
+
+
+
+  mov edi, 4109a1 ; what we have read from the file
+
+  mov ecx, eax ; effective lenght of the file in ecx
+
+  mov al, 3d ; '='
+
+  repnz scasb ; search AL ('=') in the buffer pointed by EDI for a lenght of ECX bytes
+
+  jnz ERROR (@895Fh) ; if the '=' has not been found
+
+
+
+; if the '=' has been found, EDI points to the byte NEXT TO THE '='.
+
+
+
+  mov esi, 1 ; esi will count HOW MANY TIMES WE MUST SEND THE "WRAP TOGGLE" MESSAGE -- READ THE
+
+             ; IMPORTANT SIDENOTE OF BEFORE FOR MORE INFOES
+
+
+
+  cmp byte ptr [edi], 59 ; 'Y'
+
+  jz SEND_AUTOWRAP (@896Dh)
+
+  cmp byte ptr [edi], 79 ; 'y'
+
+  jz SEND_AUTOWRAP (@896Dh)
+
+  cmp byte ptr [edi], 4E ; 'N'
+
+  jz AUTOWRAP_OFF (@896Ch)
+
+  cmp byte ptr [edi], 6E ; 'n'
+
+  jz AUTOWRAP_OFF (@896Ch)
+
+
+
+ERROR (@895Fh):
+
+
+
+  pop eax ; throw away hWnd
+
+  mov dword ptr [63f8c4], 40c011 ; this dword ptr will be the location containing the variable
+
+                                 ; VA where we'll jump within our "universal" return routine,
+
+                                 ; CLOSE (@89EBh).
+
+                                 ; 40c011 is the VA for ERROR_IN_FILE (@8a11h)
+
+  jmp CLOSE (@89EBh) ; = jmps in HIEW
+
+
+
+
+
+
+
+AUTOWRAP_OFF (896Ch):
+
+ 
+
+  inc esi ; esi=2 so it will send the "wrap toggle" message TWO times, switching wrapping ON and
+
+          ; then OFF!
+
+
+
+
+
+SEND_AUTOWRAP (@896Dh):
+
+
+
+
+
+; NOW WE'LL SEND THE MESSAGE RELATIVE TO THE WRAPPING, USING PostMessageA:
+
+;
+
+; BOOL PostMessage(
+
+;
+
+;     HWND hWnd,	// handle of destination window
+
+;     UINT Msg,  	// message to post
+
+;     WPARAM wParam,	// first message parameter
+
+;     LPARAM lParam 	// second message parameter
+
+;    );
+
+;
+
+; OBVIOUSLY WE WANT TO SIMULATE A CLICK ON A MENU ITEM: THE MSG WILL THEREFORE BE 111h
+
+; (WM_COMMAND), AND wParam WILL BE 1Bh (=27 DEC, THE MENU ID OF "Edit/Word Wrap")
+
+
+
+
+
+
+
+  pop eax ; restores hWnd....
+
+  push eax; ...and re-saves it
+
+  push ecx; saves the remaining bytes for next check's scasb because PostMessageA
+
+          ; modifies the ECX register
+
+
+
+  push 0 ; lParam
+
+  push 1b ; wParam
+
+  push 111; = WM_COMMAND
+
+  push eax ; l'hWnd
+
+  call PostMessageA
+
+
+
+  pop ecx ; restores the remaining bytes for the scasb in the next check
+
+  dec esi ; decrease counter
+
+  jnz SEND_AUTOWRAP (896Dh) ; jumps if esi=2, so we want the wrapping to be OFF
+
+
+
+
+
+
+
+  cmp byte ptr [ebx], 0 ; check if CMDLINE==NULL
+
+  jz CONTINUE (@8996h)
+
+  pop eax ; throw away hWnd
+
+  mov dword ptr [63f8c4], 40285c ; else return VA = 40285c, see "*** NOTE ***"
+
+  jmp CLOSE (@89EBh) ; = JMPS in HIEW
+
+
+
+CONTINUE (8996h):
+
+
+
+  mov al, 3d ; '='
+
+  repnz scasb ; search AL ('=') in the buffer pointed by EDI for a lenght of ECX bytes
+
+              ; ecx has been decreased (by the previous repnz scasb) of the # of
+
+              ; bytes between the BEGINNING of file and the FIRST '='
+
+  jnz ERROR (@895Fh) ; if the '=' has not been found
+
+
+
+
+
+
+
+
+
+; NOW WE'LL CHECK IF THE CHAR IMMEDIATELY AFTER '=' IS A CORRECT ALPHABET LETTER. ASCII
+
+; VALUES ARE : 'a' = 61  ,   'z' = 7A  ,   'A' = 41   and    'Z' = 5A
+
+
+
+
+
+
+
+  cmp byte ptr [edi], 61 ; 'a'
+
+  jge 2_LOWCASE (@89A3h)
+
+  jmp UPCASE (@89A8h) ; JMPS in HIEW
+
+
+
+2_LOWCASE (89A3h):
+
+
+
+  cmp byte ptr [edi], 7a; 'z'
+
+  jle OK (@89C1h)
+
+
+
+UPCASE (@89A8h):
+
+
+
+  cmp byte ptr [edi], 41 ; 'A'
+
+  jge 2_UPCASE (@89AFh)
+
+  jmp INVALID (@89B4); = JMPS in HIEW
+
+
+
+2_UPCASE (89AFh):
+
+
+
+  cmp byte ptr [edi], 5a ; 'Z'
+
+  jle OK (@89C1h)
+
+
+
+INVALID(@89B4h):
+
+
+
+  pop eax ; throw away hWnd
+
+  mov dword ptr [63f8c4], 402950 ; return VA, see "*** NOTE ***"
+
+  jmp CLOSE (@89EBh) ; = JMPS in HIEW
+
+
+
+OK (@89C1h):
+
+
+
+  push edi ; saves the position of the first byte in the filname defintion string
+
+
+
+
+
+SEARCH_CR_OR_SPACE (@89C2):
+
+
+
+      inc edi
+
+      cmp byte ptr [edi], 20 ; ' '
+
+      jz FOUND (@89D0h)
+
+      cmp byte ptr [edi], 0D ; = Carriage Return
+
+      jz FOUND (@89D0h)
+
+      dec ecx ; ECX contains the bytes between the second '=' and EOF
+
+      jnz SEARCH_CR_OR_SPACE (@89C2)
+
+
+
+FOUND (@89D0):
+
+
+
+  mov byte ptr [edi], 0 ; marks, in memory, the end of the filename definition string
+
+  pop edi ; restores the initial position of the string (that now ends with a 00 byte)
+
+
+
+  push edi
+
+  push 4052d0
+
+  call lstrcpyA ; copies EDI (begin name of file - zero byte) in 4052d0 (buffer for the file to
+
+                ; open)
+
+
+
+  mov dword ptr [63f8c4], 402867 ; VA for the return jump, see "*** NOTE ***"
+
+  pop eax ; throws away hWnd
+
+
+
+
+
+CLOSE (@89EBh):
+
+
+
+  pop eax ; file handle in eax
+
+
+
+
+
+
+
+; NOW WE HAVE TO CLOSE HNOTEPAD.INI; WE'LL USE _lclose:
+
+;
+
+; HFILE _lclose(
+
+;
+
+;     HFILE hFile 	// handle to file to close
+
+;
+
+;    );	
+
+
+
+
+
+
+
+  push eax ; file handle
+
+  call _lclose
+
+
+
+  push 100            --\ 
+
+  push 4109a1           |
+
+  push 34 ; = 52 DEC    | --> This LoadStringA restores the buffer "RingZ3r0's Hnotepad....."
+
+  push 400000           |
+
+  call LoadStringA    --/ 
+
+
+
+  popad ; restores all regs
+
+  jmp dword ptr [63f8c4] ; our variable return jump
+
+
+
+
+
+ERROR_IN_FILE (@8A11h):
+
+
+
+    cmp byte ptr [ebx], 0 ; the CMDLINE check, also present in .TEXT
+
+*** jnz 40285c ; if CMDLINE!=NULL, OPCODES: 0F854268FFFF
+
+*** jmp 402950 ; if CMDLINE==NULL, OPCODES: E93169FFFF
+
+
+
+
+
+  NOP
+
+  NOP ; i put them here to mark the end of this code piece.
+
+  NOP
+
+
+
+
+
+
+
+
+
+
+
+The end.....now try to edit a file C:\windows\hnotepad.ini, insert two '=' in it, and after the
+
+first one write 'Y', while after the second one write the name (with path) of a file on your hdd.
+
+Hnotepad will automatically use these infoes at start.
+
+
+
+---
+
+
+
+Ok, but we solved only part of the problem. Let's analize now the part relative to automatic
+
+WRITING of the .INI file every time we quit hnotepad:
+
+
+
+* Before quitting, the program will create a file "C:\windows\hnotepad.ini"; if the file
+
+  exists, it truncates its size to 0 and it recreates it; if creation fails, exit as if nothing
+
+  happened :)
+
+
+
+* If the file is created correctly, load the "skeleton" of the .INI file (seen before) into
+
+  memory, and retrieve the necessary info to write data in it (name of the last file opened and
+
+  Word Wrapping status at exit time).
+
+ 
+
+* Write (in memory) all data relative to wrapping and last file, putting them in the correct
+
+  points of the skeleton in memory.
+
+
+
+* Write the skeleton along with the new data in the file
+
+
+
+* Quit the program
+
+
+
+
+
+In order to do this, obviously, we need to know these 2 things:
+
+
+
+1) WHERE we'll find the name of the last file opened before closing and
+
+2) WHERE we can check the present status of the Word Wrapping.
+
+
+
+Good...first answer is really easy: the name is always there, into the same open-file-name
+
+buffer, at exit time as well: 4052d0.
+
+
+
+Second question is just a bit harder, but nothing serious.
+
+
+
+Do you remember that main call in the window procedure ? the one that processed the messges sent
+
+to the window? let's take another look:
+
+
+
+
+
+* Referenced by a CALL at Address:
+
+|:00401E58 
+
+|
+
+:0040116C 55                      push ebp
+
+:0040116D 8BEC                    mov ebp, esp
+
+:0040116F 81EC04010000            sub esp, 00000104
+
+:00401175 33C0                    xor eax, eax
+
+:00401177 56                      push esi
+
+:00401178 57                      push edi
+
+:00401179 BE38614000              mov esi, 00406138
+
+:0040117E 8DBDFCFEFFFF            lea edi, dword ptr [ebp+FFFFFEFC]
+
+:00401184 B940000000              mov ecx, 00000040
+
+:00401189 A4                      movsb
+
+:0040118A 8DBDFDFEFFFF            lea edi, dword ptr [ebp+FFFFFEFD]
+
+:00401190 F3                      repz
+
+:00401191 AB                      stosd
+
+:00401192 66AB                    stosw
+
+:00401194 AA                      stosb
+
+:00401195 0FB7750C                movzx esi, word ptr [ebp+0C] ; <ID VALUE OF THE CHOSEN MENU
+
+:00401199 83FE20                  cmp esi, 00000020 ; COMPARES ID VALUE AND 20h
+
+:0040119C 8BC6                    mov eax, esi
+
+:0040119E 7F1A                    jg 004011BA       ; IF ID > 20h, TAKE THE JUMP
+
+:004011A0 0F84C1030000            je 00401567
+
+:004011A6 48                      dec eax
+
+:004011A7 83F81B                  cmp eax, 0000001B
+
+:004011AA 7736                    ja 004011E2
+
+:004011AC 0FB68838174000          movzx ecx, byte ptr [eax+00401738]
+
+:004011B3 FF248DF8164000          jmp dword ptr [4*ecx+004016F8] ; OTHERWISE PROCESS
+
+                                                                 ; ACCORDINGLY
+
+                                                                
+
+Excellent. Intuitively, our best bet is to confide in a "BPX 401199 if esi==1b" in order to
+
+analize code behaviour in case of wrapping toggling. We'll reach the variable jmp at 11b3 and
+
+this will redirection us towards 401491:
+
+
+
+
+
+:00401491 833D1860400001          cmp dword ptr [00406018], 00000001 ; [406018]=0 if wrap=OFF
+
+                                                                     ; [406018]=1 if wrap=ON
+
+:00401498 1BC0                    sbb eax, eax
+
+:0040149A F7D8                    neg eax
+
+:0040149C 50                      push eax
+
+:0040149D E8EC1E0000              call 0040338E
+
+:004014A2 85C0                    test eax, eax
+
+:004014A4 7415                    je 004014BB
+
+:004014A6 833D1860400001          cmp dword ptr [00406018], 00000001
+
+:004014AD 1BC0                    sbb eax, eax
+
+:004014AF F7D8                    neg eax
+
+:004014B1 A318604000              mov dword ptr [00406018], eax ; REFRESH THE PTR WITH THE NEW
+
+                                                                ; WRAPPING POSITION
+
+
+
+
+
+We can easily deduct from this that the dword ptr [406018] is nothing more than a status flag, to
+
+be more precise it's our Word Wrapping Status Flag :)
+
+If it's 0, wrapping is OFF, and this procedure ACTIVATES it, setting the dword ptr [406018] to 1.
+
+If it's 1, wrapping is ON, and the procedure does exactly the contrary.
+
+At exit time, this ptr is kept, and it clearly indicates us wheter wrapping was ON or OFF when we
+
+chose to quit, so we'll just need to check it and that's it.
+
+
+
+Intuitively, the point where to jump from is the code relative to WM_DESTROY, in other words when
+
+we have almost closed everything up and the user can't decide to cancel the quitting operation.
+
+In order to track down the correct code zone, we'll use a fairly easy method: the API function
+
+RegisterClass.
+
+In the Disasm, look for "registerclass" and u'll be here:
+
+
+
+
+
+:00402B19 C745F820604000          mov [ebp-08], 00406020
+
+:00402B20 C745D8AD1A4000          mov [ebp-28], 00401AAD
+
+:00402B27 C745F006000000          mov [ebp-10], 00000006
+
+:00402B2E C745D400100000          mov [ebp-2C], 00001000
+
+:00402B35 50                      push eax
+
+:00402B36 897DDC                  mov dword ptr [ebp-24], edi
+
+:00402B39 897DE0                  mov dword ptr [ebp-20], edi
+
+
+
+* Reference To: USER32.RegisterClassExA, Ord:0196h
+
+                                  |
+
+:00402B3C FF15CC734000            Call dword ptr [004073CC]
+
+
+
+
+
+Really easy, just take a look at the locations MOVed in [ebp-xx] before the call and you'll soon
+
+notice that the beginning of the window procedure is at 401aad:
+
+
+
+:00401AAD 55                      push ebp
+
+:00401AAE 8BEC                    mov ebp, esp
+
+:00401AB0 56                      push esi
+
+:00401AB1 57                      push edi
+
+:00401AB2 8B750C                  mov esi, dword ptr [ebp+0C]
+
+:00401AB5 83FE05                  cmp esi, 00000005
+
+:00401AB8 7714                    ja 00401ACE
+
+:00401ABA 0F8406010000            je 00401BC6
+
+:00401AC0 83FE02                  cmp esi, 00000002
+
+:00401AC3 0F84F0000000            je 00401BB9
+
+
+
+With a bpx 401ab5, you'll notice that ESI contains the message that is analized at present time.
+
+but the one we are interested in is obviously WM_DESTROY (=02h). Good, as you can see we have a
+
+jump at 401ac3 that will be taken only if the current message is WM_DESTROY. it'll be enough to
+
+substitute that VA with our code starting line and the problem is gone. Our code will begin at VA
+
+40c022 (@8A22h), and the offset of the je to change is EC3h.
+
+
+
+was
+
+
+
+:00401AC3 0F84F0000000            je 00401BB9
+
+
+
+and becomes
+
+
+
+:00401AC3 0F8459A50000 ********** je 0040C022 ; --> TOWARDS OUR NEW CODE
+
+
+
+
+
+The new API functions we'll need are these:
+
+
+
+_lcreat:     call d,[407360]
+
+_lwrite:     call d,[4072f8]
+
+ExitProcess: call d,[407354]
+
+
+
+
+
+Our code is this:
+
+
+
+
+
+Start (@8A22h):
+
+
+
+  pushad ; saves all regs
+
+  push 20 ; # of chars to take
+
+  push 63f8c4 ; reception buffer
+
+  push 3c ; = 60 dec, "C:\\windows\\hnotepad.ini"
+
+  push 400000 ; handle to the module with the stringtable
+
+  call LoadStringA
+
+
+
+
+
+
+
+; NOW WE MUST CREATE THE FILE; WE'LL USE _lcreat
+
+;
+
+; HFILE _lcreat(
+
+;
+
+;     LPCSTR lpPathName,// pointer to name of file to open
+
+;     int iAttribute 	// file attribute
+
+;    );
+
+;
+
+; THE ATTRIBUTE WE'LL USE WILL BE 0, OR "Normal" (THE FILE CAN BE READ OR WRITTEN 
+
+; TO WITHOUT RESTRICTIONS).
+
+; _lcreat AUTOMATICALLY TRUNCATES THE SIZE OF THE FILE TO 0 IF IT EXISTS ALREADY, 
+
+; OR, IF IT DOESN'T EXISTS, IT CREATES THE FILE FROM SCRATCH.
+
+
+
+
+
+  push 0      ; "Normal" attribute
+
+  push 63f8c4 ; "C:\windows\hnotepad.ini"
+
+  call _lcreat
+
+
+
+    cmp eax, -1 ; if we had an error during creation
+
+    jnz CREATED_OK (@8A4Fh)
+
+    popad ; restores all regs
+
+*** jmp 401bb9 ; where it would have jumped if we hadn't sticked in our deviation
+
+               ; OPCODES : E96A5BFFFF
+
+
+
+CREATED_OK (@8A4Fh):
+
+
+
+  push eax ; saves file handle
+
+
+
+  push 100 ; # of chars to take
+
+  push 4109a1 ; reception buffer
+
+  push 3d ; = 61 DEC, the ID of the "****\nFILE AUTOMATICALLY GENERATED...." string
+
+  push 400000 ; handle to the module with the stringtable
+
+  call LoadStringA
+
+
+
+  cmp dword ptr [406018], 0 ; it's zero if WordWrapping = OFF
+
+  jz CHECK_LASTFILE (@8A77)
+
+  mov byte ptr [410a26], 59 ; changes the default "N" after "AutoWrap=" with "Y" (059h)
+
+
+
+
+
+CHECK_LASTFILE (@8A77):
+
+
+
+
+
+
+
+; IN THIS CHECK WE'LL VERIFY IF WE HAVE A FILENAME OR THE WORD "Untitled", WHICH 
+
+; MEANS THAT THERE WAS NO LAST FILE OPENED.
+
+
+
+
+
+  mov eax, 4052d0 ; the starting address of the buffer with the last file name
+
+  cmp byte ptr [eax], 55   ; = 'U'
+
+  jnz LASTFILE_PRESENT (@8AB3h)
+
+  cmp byte ptr [eax+1], 6e ; = 'n'
+
+  jnz LASTFILE_PRESENT (@8AB3h)
+
+  cmp byte ptr [eax+2], 74 ; = 't'
+
+  jnz LASTFILE_PRESENT (@8AB3h)
+
+  cmp byte ptr [eax+3], 69 ; = 'i'
+
+  jnz LASTFILE_PRESENT (@8AB3h)
+
+  cmp byte ptr [eax+4], 74 ; = 't'
+
+  jnz LASTFILE_PRESENT (@8AB3h)
+
+  cmp byte ptr [eax+5], 6c ; = 'l'
+
+  jnz LASTFILE_PRESENT (@8AB3h)
+
+  cmp byte ptr [eax+6], 65 ; = 'e'
+
+  jnz LASTFILE_PRESENT (@8AB3h)
+
+  cmp byte ptr [eax+7], 64 ; = 'd'
+
+  jnz LASTFILE_PRESENT (@8AB3h)
+
+  cmp byte ptr [eax+8], 00 ; the zero byte that marks the end of the name
+
+  jnz LASTFILE_PRESENT (@8AB3h)
+
+
+
+  jmp WRITE_DATA (@8AC3h)  ; JMPS in HIEW
+
+
+
+
+
+LASTFILE_PRESENT (@8AB3h):
+
+
+
+  push 4052d0 ; last file name
+
+  push 410a33 ; buffer that begins immediately after the second '=' in the skeleton which is
+
+              ; already in memory
+
+  call lstrcpyA
+
+
+
+WRITE_DATA (@8AC3h):
+
+
+
+  pop eax ; restores file handle in eax...
+
+  push eax; ...and re-saves it
+
+
+
+
+
+
+
+; NOW WE'LL WRITE THE SKELETON TO THE FILE. WE'LL USE _lwrite, BUT THERE'S A PROBLEM. ON MY PC,
+
+; DUE TO YET UNKNOWN REASONS I CAN'T SAVE MORE THAN 7Fh BYTES PER TIME, AND CONSIDERED THAT THE
+
+; TEXT WE WANT TO SAVE IS 92h BYTES LONG, WE'LL USE _lwrite 2 TIMES, THE FIRST ONE WITH THE
+
+; FIRST 7Fh BYTES, THE SECOND ONE WITH THE REMAINING 13h.
+
+;
+
+; UINT _lwrite(
+
+;
+
+;     HFILE hFile,	// handle to file
+
+;     LPCSTR lpBuffer,	// pointer to buffer for data to be written
+
+;     UINT uBytes 	// number of bytes to write
+
+;    );
+
+
+
+
+
+
+
+  push 7f ; the first 7fh bytes of the skeleton
+
+  push 4109a1 ; beginning of the skeleton buffer in memory
+
+  push eax ; file handle
+
+  call _lwrite
+
+
+
+  pop eax ; restores file handle in eax...
+
+  push eax; ...and re-saves it
+
+
+
+  push 13 ; the remaining 13h bytes of the skeleton
+
+  push 410a20 ; memory location where the remaining 13 bytes of the skeleton start
+
+  push eax ; file handle
+
+  call _lwrite
+
+
+
+
+
+; NOW WE MUST CHECK THE LENGHT OF THE NAME OF THE FILE, PUSH THOSE BYTES AND APPEND THAT NAME
+
+; TO OUR .INI FILE
+
+
+
+
+
+  xor eax, eax ; resets counter for filename lenght
+
+  mov edi, 410a33 ; location with the first letter of the filename
+
+
+
+CHECK_LASTFILE_NAME_LENGHT (@8AEAh):
+
+
+
+  cmp byte ptr [edi], 0
+
+  jz ENDCHECK (@8AF3h)
+
+  inc edi
+
+  inc eax
+
+  jmp CHECK_LASTFILE_NAME_LENGHT (@8AEAh); JMPS in HIEW
+
+
+
+ENDCHECK (@8AF3h):
+
+
+
+  mov byte ptr [edi], 0d ; appends a CR (carriage return) to the string
+
+  inc eax
+
+  pop edi ; file handle in edi
+
+  push eax ; # of bytes to write
+
+  push 410a33 ; where filname begins
+
+  push edi ; file handle
+
+  call _lwrite
+
+
+
+  push edi ; file handle
+
+  call _lclose
+
+
+
+  popad ; restores all regs
+
+
+
+  call ExitProcess ; quit the program
+
+
+
+  NOP
+
+  NOP ; end of this part of code
+
+  NOP
+
+
+
+
+
+There would be something to explain here. Why did i stick in a direct call to ExitProcess without
+
+allowing the program to execute the PostQuitMessage (in order to exit in a more 'clean' way)? The
+
+problem is easy...if you try to exit under certain conditions (in our case choosing anything else
+
+than File/Exit) you'll get a fault. The reason is still unknown to me, yet i suspect it might be
+
+due to stack trashing following some LoadStringA, and the fault happens while tracing through
+
+kernel code. Anyway, the call to ExitProcess doesn't cause any problems, it's just a "quicker"
+
+way to quit the process. Processing WM_CLOSE instead of WM_DESTROY doesn't give much different
+
+results.
+
+
+
+
+
+From now on, everytime you exit and reopen Hnotepad, the last file (if present) and the Word
+
+Wrapping will be restored. Isn't that nice :)
+
+
+
+
+
+
+
+
+
+__________________________________________________________________
+
+
+
+PHASE 5 : ELIMINATION OF THE LIMIT IN THE SIZE OF THE OPENED FILES
+
+__________________________________________________________________
+
+
+
+
+
+Here we go with the fifth and last part of the creation of Hnotepad, the elimination of the limit
+
+in the size of the files opened with Notepad.
+
+What we'll do is fairly easy: we'll change the Edit control (which Notepad currently uses) into a
+
+RichEdit control, the one used by WordPad.
+
+If you want more infos on this subject, i suggest looking at you API reference and looking for
+
+"RichEdit".
+
+
+
+The thing would be really easy, if it wasn't for a single detail: in order to use a RichEdit
+
+control, we need the Riched32.dll library to be present in memory at runtime. And in order to
+
+load the Riched32.dll library we need the LoadLibraryA API function. But, alas (or luckily,
+
+because we'll have some fun;), Notepad doesn't include this function among the imported ones (you
+
+can check it with W32Dasm under Imported Functions, or with HIEW taking a look at the .IDATA
+
+section)...this is not a big problem, we could stick in a GetProcAddress instead of another
+
+function in the it (GetTimeFormatA for example) and use this API in order to retreive the
+
+address of the KERNEL32!LoadLibraryA function dynamically, at runtime...or we might decide to
+
+work heavily on the import table and completely remove it from there, implementing a thunking
+
+table, or still we might retrieve kernel32 base address and quickly scan the Export Table of the
+
+library to retrieve the function entrypoint to LoadLibraryA, etc..but we'll do it in the simplest
+
+way: we'll use a piece of code written for a virus by Jacky Qwerty, a virii programmer
+
+from one of the best virii writers groups on the scene (29A), which executes an operation exactly
+
+identical to GetProcAddress: infact it scans the requested library in memory (in our case
+
+Kernel32.dll) and retrieves the address of the desired function (in our case LoadLibraryA). I
+
+won't discuss more what the code does, as (if you're lucky:) you might use this link 
+
+to a zipped version of <A href="javascript:if(confirm('http://129.105.116.5/fravia/hnotepad.zip  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://129.105.116.5/fravia/hnotepad.zip'" tppabs="http://129.105.116.5/fravia/hnotepad.zip">hnotepad.exe</A>, along with the needed include files, the commented source 
+
+code for this scanning function (KBASE.ASM) and the file i called <A href="javascript:if(confirm('http://129.105.116.5/fravia/scacode.zip  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://129.105.116.5/fravia/scacode.zip'" tppabs="http://129.105.116.5/fravia/scacode.zip">COMPILED_SCANNING_CODE</A>, 
+
+containing the already compiled code.
+
+This you can copy & paste inside your own targets (anywhere in the .exe, because
+
+all the jumps are relative to its own offsets, and being a procedure to be called, the only
+
+return point is marked by a ret). The function accepts 2 parameters, the HANDLE to the library
+
+(or, better, the address where the library begins), in our case kernel32.dll, and the NAME of the
+
+desired function we want to retrieve (LoadLibraryA for us). In order to copy and paste the hex
+
+bytes inside your alien target, you can use a program like UltraEdit32 or Hex Workshop, just act
+
+like if it was plain text (be careful to paste at the right offsets ;).
+
+
+
+If there's something you don't understand in the way you should apply this code to targets, take
+
+a look at part 4 of this tute to see how you can contact me.
+
+
+
+But let's see how this system will work in OUR case: so here's the little problem i was talking
+
+before: we'll need some variables (3 to be precise), but we can't modify the stringtable for our
+
+purposes, because the minimal change would destroy our own work in .RSRC section. How to do then?
+
+Easy: we'll write our variables DIRECTLY in the physical file, in a place we don't need (towards
+
+the end of the file). But let's proceed gradually.
+
+
+
+First of all we need to load the riched32.dll library and after that we'll need to change "EDIT"
+
+into "RICHEDIT" at the right place in order to obtain an edit control that supports big files.
+
+
+
+So, let's start tracing from the entry point:
+
+
+
+:00401000 55                      push ebp
+
+:00401001 8BEC                    mov ebp, esp
+
+:00401003 83EC44                  sub esp, 00000044
+
+:00401006 56                      push esi
+
+
+
+* Reference To: KERNEL32.GetCommandLineA, Ord:00BCh
+
+                                  |
+
+:00401007 FF1548734000            Call dword ptr [00407348]
+
+:0040100D 8BF0                    mov esi, eax
+
+:0040100F 8A00                    mov al, byte ptr [eax]
+
+:00401011 3C22                    cmp al, 22
+
+:00401013 7513                    jne 00401028
+
+
+
+
+
+Our deviation will be at the line next to the GetCommandLineA call, the "mov esi, eax" at 40100d
+
+(@40Dh). Our code, included those previous NOPs, will begin at 40c116 (@8B16).
+
+So here's the change we'll do:
+
+
+
+was
+
+
+
+:0040100D 8BF0                    mov esi, eax
+
+:0040100F 8A00                    mov al, byte ptr [eax]
+
+:00401011 3C22                    cmp al, 22
+
+:00401013 7513                    jne 00401028
+
+
+
+and becomes
+
+
+
+:0040100D E904B10000 ************ jmp 0040C116 ; --> TOWARDS OUR NEW CODE
+
+:00401012 90                      nop
+
+:00401013 7513                    jne 00401028
+
+
+
+
+
+We'll have to remember to restore the 3 instructions we have replaced before returning back to
+
+.text with the jne at 401013.
+
+
+
+Now we have the problem of the variables. Let's leave a bit of free space in the .RSRC section,
+
+and let's write in there the vars we need. Consider that we'll have to stick in the scanning
+
+code, so, given a good margin, change to HEX mode in HIEW and go to offset 8BD0h, then edit the
+
+asciis and write:
+
+
+
+LoadLibraryA
+
+
+
+This will be our first variable. Then go to offset 8BE0h and write:
+
+
+
+Riched32.dll
+
+
+
+Here's our second variable. We'll also need Kernel32.dll, but as you can imagine this variable is
+
+already present in our code, in the .IDATA section: a search from HIEW will make us reach
+
+directly this section, and among the names of the imported dll's you'll also find Kernel32.dll.
+
+The VA is 4076E0. We can now trace a little scheme of the variables we have at our disposition,
+
+so here are the VA's that interest us (the ones we'll use in order to refer to the variables from
+
+the code):
+
+
+
+LoadLibraryA = 40C1D0 (@8BD0h)
+
+Riched32.dll = 40C1E0 (@8BE0h)
+
+KERNEL32.DLL = 4076E0 (@48E0h)
+
+
+
+
+
+Furthermore, we'll use a new API, which is
+
+
+
+GetModuleHandleA = call d,[40735c]
+
+
+
+it will provide us the HANDLE to the library KERNEL32.DLL, which we'll scan looking for our API
+
+LoadLibraryA. There's a thing to say here: what is returned in EAX by this function
+
+(GetModuleHandleA), in reality, is the BASE ADDRESS of the interested module, in other words the
+
+address where, in memory, the mapped library begins. This is not said in your API reference :)
+
+
+
+And here's the code we'll add to load the library:
+
+
+
+
+
+Start (@8B16):
+
+
+
+  pushad ; saves all regs
+
+
+
+  push 4076e0 ; "KERNEL32.DLL"
+
+  call GetModuleHandleA ; retrieves the handle to (base address of) of the Kernel32.dll library
+
+
+
+  push 40c1d0 ; "LoadLibraryA"
+
+  push eax ; handle to (beginning address of) of KERNEL32.DLL
+
+* call SCANNING_CODE (@8B40); THE CALL TO THE SCANNING CODE : OPCODES E813000000
+
+
+
+; IMPORTANT: THE SCANNING CODE WILL RETURN THE ADDRESS OF THE DESIRED API, BUT IN *ECX*, NOT IN
+
+; EAX
+
+
+
+  push 40c1e0 ; "Riched32.dll"
+
+  call ecx    ; CALL THE LoadLibraryA FUNCTION
+
+
+
+  popad ; restores all regs
+
+
+
+  mov esi, eax  --\
+
+  mov al, [eax]   |____ Here we restore the code we modified in .TEXT with our JMP
+
+  cmp al, 22      |     OPCODES FOR THE JMP : E9D34EFFFF
+
+  jmp 401013    --/
+
+
+
+SCANNING_CODE (@8B40):
+
+
+
+  ; HERE YOU MUST SIMPLY PASTE THE CODE I PROVIDED IN THE FILE COMPILED_SCANNING_CODE. FOR A
+
+  ; DETAILED DESCRIPTION OF ITS FUNCTIONS TAKE A LOOK AT AUTHOR'S COMMENTS IN THE SOURCE CODE
+
+  ; (KBASE.ASM, INSIDE ARCHIVE SCANNING_CODE.ZIP)
+
+
+
+
+
+Excellent, now our code is ready...we just have one more problem..we must create the control in
+
+RichEdit mode, not Edit, or all those changes are useless. In order to modify the control, we
+
+have to find the CreateWindowExA call (that notepad uses) that is called with the string "Edit"
+
+pushed on the stack, and redirect that push towards our new variable "RichEdit". First of all,
+
+let's create this variable. In HEX mode as usual, from HIEW edit the ascii at offset 8BF0, and
+
+write
+
+
+
+RichEdit
+
+
+
+So the VA for this new var is 40C1F0.
+
+
+
+In order to find the call we are interested in, from sice "BPX CreateWindowExA" and run notepad.
+
+You'll arrive to this point:
+
+
+
+:00402785 53                      push ebx
+
+:00402786 A100604000              mov eax, dword ptr [00406000]
+
+:0040278B 56                      push esi
+
+:0040278C 6A0F                    push 0000000F
+
+:0040278E 50                      push eax
+
+:0040278F 6890010000              push 00000190
+
+:00402794 6858020000              push 00000258
+
+:00402799 53                      push ebx
+
+:0040279A 53                      push ebx
+
+:0040279B 6804013050              push 50300104
+
+:004027A0 688C614000              push 0040618C
+
+
+
+* Possible StringData Ref from Data Obj ->"Edit"
+
+                                  |
+
+:004027A5 6890614000              push 00406190
+
+:004027AA 6800020000              push 00000200
+
+:004027AF FFD7                    call edi ; CALLS CreateWindowExA
+
+
+
+Good....it's easy to guess what the change will be...at offset 1BA5h:
+
+
+
+was
+
+
+
+:004027A5 6890614000              push 00406190 ; "Edit"
+
+
+
+and becomes
+
+
+
+:004027A5 68F0C14000              push 0040C1F0 ; "RichEdit"
+
+
+
+
+
+Now we just have TWO more details to modify, and then we can finally close this incredibly long
+
+tutorial :)
+
+
+
+1) If you try to open big files, you'll still have the nag that asks you if you want to run
+
+WordPad: bpx MessageBoxA, and you'll climb back to the check of the size, which is
+
+
+
+:00402E8B 81FEFFFF0000            cmp esi, 0000FFFF
+
+:00402E91 0F8FEC010000            jg 00403083
+
+
+
+Just NOP that jg out (@2291h) and the problem will go away.
+
+
+
+
+
+2) If you open a big file and you try to insert (or you have already inserted) the Word Wrapping,
+
+you'll notice an annoying nag that says something like "cannot carry out the wrapping because
+
+there's too much text in the file...." and blah blah, just BPX MessageBoxA and you'll climb back
+
+here:
+
+
+
+:004014A2 85C0                    test eax, eax
+
+:004014A4 7415                    je 004014BB ; EVIL JUMP
+
+:004014A6 833D1860400001          cmp dword ptr [00406018], 00000001
+
+
+
+Avoiding that jump (@8A4h) you'll avoid the NAG as well. So NOP it out.
+
+
+
+
+
+Woooh.....THE END!!!! :D
+
+
+
+
+
+
+
+
+
+_________________________________________________
+
+
+
+PART 4 : Known Bugs and how to contact the author
+
+_________________________________________________
+
+
+
+
+
+I hope to fix them in the next versions of Hnotepad, anyway the bugs I know so far are two:
+
+
+
+* WHEN YOU CLOSE A FILE, YOU ALWAYS GET THE DIALOG "WANNA SAVE THE FILE?", EVEN IF YOU DIDN'T
+
+  EVEN TOUCH IT. THE MOST ANNOYING, DECISELY, AND I SUSPECT IT'S TIED TO THE RICHEDIT CONTROL.
+
+  ANY HELP IS WELCOME.
+
+
+
+* SOMETIMES, OPENING A BIG FILE WHEN YOU ARE *ALREADY* INTO HNOTEPAD WILL MAKE THE OLD "WANNA
+
+  LOAD WORDPAD" NAG POP UP, EVEN IF YOU'RE WORKING WITH THE RICHEDIT AND NOT WITH THE EDIT. 99%
+
+  IT'S A SECOND CHECK ON THE LENGHT OF THE FILE, THO I COULDN'T TRACK IT DOWN YET, I HAD SOME  
+
+  PROBLEMS WITH UNIVERISTY, MY TIME AND MY LAZINESS ;)
+
+
+
+If you happen to find some other bug, please contact me. You can do it either via email
+
+(neural@cryogen.com or neuro@mad.scientist.com) or looking for me on IRC. I'm often in 
+
+#cracking4newbies (EFnet) and my nickname is nuural_en or nN. If u're sending an email, please 
+
+specify which operating system you're using.
+
+
+
+
+
+
+
+__________________
+
+
+
+PART 5 : Greetings
+
+__________________
+
+
+
+
+
+So this is the end....this tutorial is dedicated to (no particular order):
+
+
+
+GEnius, for having contributed a LOT with his moral support and his ideas about RichEdit, with
+
+his precious help as beta tester, and for having provided me the scanning code. Without him all
+
+this wouldn't have been possible, so THANK YOU GENIUS :)
+
+
+
+Kill3xx, for having been a patient beta tester, and being a good friend and a neverending well of
+
+knowledge...excellent work with the Pesentry killo! :)
+
+
+
+d4eMoN (aka Patr1zia ;P), for his help and his kindness, and for being a good friend...thanx
+
+MONSTAH :)
+
+
+
+{Suby}, for being a old friend and for his help as beta tester. Won't forget that, man :)
+
+
+
+BrahzVooZ, for being the person that studies the more among the ones i know, and for being a dear
+
+'live' friend...COME BACK TO CRACKING BRO!! :)
+
+
+
+Anub|s, for having liked the Hnotepad project at first sight, and for being a good friend.
+
+
+
+Insanity (not insa|nity :), for being a big fella and the nicest web/botmaster ever :)
+
+
+
+Quine, the (humble humble opinion of a common dude) best reverser ever...hell, i mean, have you
+
+ever taken the time to read something written by this GENIUS? do it, you won't repent :)
+
+
+
++MaLaTTiA, for being a great friend and the moderator of the most inactive mailing list of the
+
+universe :)....and because he will be so kind that he will post me those infoes on steganography
+
+he promised some time ago as soon as he reads this text...isn't that true, mala??? ;))
+
+
+
+ytc, one of my dearest internet friends, he's a great dude and keeps telling me that i should
+
+send my tutes to Fravia...but damn, i don't think they're worth :)...anyway thanks for everything
+
+bro, and congrats for that beautiful unpacking program (it's growing up real l33to;) Hope to see
+
+a tute on mem patching from you very soon ;)
+
+
+
+Tin, great friend from #c4n, hope to see you soon in Italy, and bring the GIRLZ huh!! ;)
+
+
+
+Carpathia, another great friend from #c4n...real l33t0, fantastic page about lamer logs
+
+(http://lamerlogs.cjb.net) and a beta tester too, thx for everything mate :)
+
+
+
+DEZM, keep on learning and you'll soon kick all those so-called crackers in the arse ;))
+
+
+
++yoshi aka _y aka yman, 15 yrs (YEAHS;) old whiny bitch with a big attitude against italians ;))
+
+j/k of course, a real good boy, and an incredibly clever person imho (and nah i don't wanna have
+
+sex with you :)
+
+
+
+knotty dread, my nettwin...he can always make me smile :)
+
+
+
+razzia, for his great tutorial about notepad that gave me some big times reading it, and great
+
+zen-level inspiration for my tutorial!
+
+
+
+Fravia+, the BIG one, one of the best reversers at the moment imho.
+
+
+
++ORC, the legend, the myth...another real BIG one, the reason why all crackers are so 
+
+proud of their past :)
+
+
+
+Guybrush (^__^ ;), Quequero, N6U5, Furb3t, courier^, guiz, Corn, Crackz, Ghirijizzo, Iczelion,
+
+sortof, Alor, Along3x, Yan Orel, [lazarus], Quantico, llamagone, virogen, fresh(&clean;), mr nop,
+
+the+q, peneviso (aka xoanino;), moonshado, [r]ipley and all the other friends from #crack-it, 
+
+#cracking4newbies and RingZ3r0 that i don't remember at the moment :)
+
+
+
+NOW TURN OFF YOUR PC AND GO TO SLEEP ! ;P
+
+
+
+'till next time,
+
+
+
+NeuRaL_NoiSE 1999 for RingZ3r0, absolutely the BEST ITALIAN REVERSE ENGINEERING GROUP !
+
+(http://ringzer0.cjb.net) and for DREAD, the BEST INTERNATIONAL REVERSING GROUP !
+
+(http://dread99.cjb.net)
+
+</PRE></PRE>
+
+<!-- OB DUH STARTS HERE -->
+
+<TABLE CELLPADDING="1" CELLSPACING="2" BORDER="1"
+
+WIDTH= "100%"  HEIGHT="22" >
+
+<TR><TD bgcolor="#C6E7C6"><CENTER><FONT size=+2><FONT
+
+color=blue>Ob Duh</FONT></FONT>
+
+</CENTER></TD></TR></TABLE><CENTER><I>I wont even
+
+bother explaining you 
+
+   that you should BUY programs if you
+
+intend to use them for a 
+
+   longer period than the allowed one. Should you want
+
+to STEAL  
+
+   software instead (unlikely in this case :-) you don't need to
+
+crack protection schemes at all: 
+
+   you'll find everything on most Warez sites, complete and
+
+already regged, 
+
+   farewell, don't come back.</I></CENTER>
+
+
+
+<!-- WAY OUT STARTS HERE -->
+
+<HR><CENTER><I>You are deep inside fravia's page of
+
+reverse engineering,  
+
+choose your way out:<BR><BR></I></CENTER>
+
+<BR><CENTER>
+
+<!-- EITHER A NICE GIF LIKE THIS -->
+
+<!-- 
+
+<a href="project3.htm" tppabs="http://www.anticrack.de/fravia/project3.htm"><IMG SRC="project3.gif" tppabs="http://www.anticrack.de/fravia/project3.gif" 
+
+ALT="projecT3" ALIGN=CENTER WIDTH=114 HEIGHT=43
+
+BORDER=0 VSPACE=0 HSPACE=0></a>
+
+<br>
+
+<font color=gray>Back to project 3</FonT>
+
+<br><bR>
+
+-->
+
+<!-- OR JUST A LINK LIKE THIS -->
+
+
+
+<!--
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="project1.htm" tppabs="http://www.anticrack.de/fravia/project1.htm">Back
+
+to Your_chosen_project</A> 
+
+<hr width=33%>
+
+-->
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html"
+
+>homepage</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="protec.htm" tppabs="http://www.anticrack.de/fravia/protec.htm">how to
+
+protect</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database</A>
+
+<BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="realicra.htm" tppabs="http://www.anticrack.de/fravia/realicra.htm">reality cracking</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="howtosea.htm" tppabs="http://www.anticrack.de/fravia/howtosea.htm">how
+
+to search</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="javascri.htm" tppabs="http://www.anticrack.de/fravia/javascri.htm">javascript wars</A>
+
+<BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity academy</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut CGI-scripts</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia+</A>
+
+<BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is
+
+reverse engineering legal?</A>
+
+</CENTER>
+
+<HR>
+
+<!-- THAT'S ALL, THANKS A LOT this will allow
+
+automated retrieval -->
+
+</BODY>
+
+</HTML>

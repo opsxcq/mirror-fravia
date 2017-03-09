@@ -1,0 +1,1026 @@
+<html> <HTML>
+
+
+
+<HEAD>
+
+
+
+<TITLE>x86dd2</TITLE>
+
+
+
+</HEAD>
+
+
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+
+
+
+
+
+
+<P><CENTER><FONT SIZE="+3">Adding Functionality You're Not Supposed To Have<BR>
+
+
+
+(Part II)<BR><BR>
+
+
+
+</FONT><FONT SIZE="+2">Recording restricted audio AND video clips in Real Player Plus</FONT>
+
+
+
+<BR>
+
+
+
+</CENTER>
+
+
+
+
+
+
+
+<H4><CENTER><I>by x86</I><BR>
+
+
+
+(16 September 1997)</CENTER></H4>
+
+
+
+
+
+
+
+<CENTER><HR><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"> Courtesy of Fravia's page of reverse engineering<BR>
+
+
+
+<HR> <I>Well, here is x86's last email:</I></CENTER>
+
+
+
+<PRE>
+
+
+
+Fravia-
+
+
+
+    Greetings, I now submit to you the conclusion of the 'Enable
+
+Recording of RealPlayer Clips'.  It is now complete and works like a champ.
+
+As I mentioned, the 'recording video' part was very interesting and (to
+
+me at least!) quite a challenge.  I hope you find it interesting.
+
+Regards, x86</PRE> <CENTER><I>
+
+Needless to say, I love this functionalities adding/modifying stuff.<BR>I notice
+
+that even x86, a wdasm &quot;debugger aficionado&quot;, has to use softice in order to
+
+reverse
+
+this target...<BR>A last note: heed the part of this essay that begins with
+
+ &quot;So, I made an assumption...&quot; that's a bit of very nice zen-reversing!</I></CENTER>
+
+
+
+<HR size="6">
+
+
+
+<PRE><B>
+
+
+
+Adding Functionality You're Not Supposed To Have Part II (Final Chapter)</B>
+
+
+
+
+
+
+
+(Recording restricted audio AND video clips in Real Player Plus)
+
+
+
+
+
+Tools and Files needed:
+
+SoftIce
+
+Wdasm 8.9 (for some debugging, disassembling)
+
+Your favorite hex editor
+
+Real Player 4.0 available at:
+
+<A href="javascript:if(confirm('http://www.real.com/products/player/index.html  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.real.com/products/player/index.html'" tppabs="http://www.real.com/products/player/index.html">http://www.real.com/products/player/index.html</A>
+
+(needs serial # to function as the Plus version)
+
+
+
+
+
+Optional Items:
+
+RealPlayer Encoder (free) available at:
+
+<A href="javascript:if(confirm('http://www.real.com/products/encoder/index.html  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.real.com/products/encoder/index.html'" tppabs="http://www.real.com/products/encoder/index.html">http://www.real.com/products/encoder/index.html</A>
+
+
+
+
+
+
+
+ Hello once again!  Here is the final installment in my Real Player tutorial.  
+
+We will now see how to enable the saving of ANY audio and/or video clip (with ONE 
+
+caveat!).  If you haven't yet read the first installment of this essay, go and do 
+
+it now. You must complete <A href="x86new1.htm" tppabs="http://www.anticrack.de/fravia/x86new1.htm">part one</A> before starting on 
+
+part two, or things won't work correctly.
+
+ To understand what you are looking for in this target, you MUST have a full
+
+understanding of how Real Media clips are designed, and in particular
+
+how the header sections of these clips are organized and used.
+
+For a total description of the header sections and their structure, visit:
+
+<A href="javascript:if(confirm('http://www.real.com/devzone/tools/rmsdk/guide/index.html  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.real.com/devzone/tools/rmsdk/guide/index.html'" tppabs="http://www.real.com/devzone/tools/rmsdk/guide/index.html">http://www.real.com/devzone/tools/rmsdk/guide/index.html</A> and 
+
+look arnd.
+
+
+
+Here is a short introduction to the part which interest us.
+
+The basic design convention of the main objects in the header is as follows:
+
+
+
+
+
+ RealMedia File Header (This must be the first chunk of the file)
+
+ Properties Header
+
+ Media Properties Header
+
+ Content Description Header
+
+
+
+
+
+ Each of these sections begin with a 32 bit descriptor which corresponds
+
+to 4 ascii letters called the `object_id'.
+
+For the RealMedia file header the object_id is `RMF.'.
+
+For the Properties header it is `PROP'.
+
+If you look at one of the .ra or .rm files you made (while following Part I
+
+of this tutorial) in a hexeditor,  you can clearly see this.
+
+Notice above I said this was the `convention'.
+
+The only thing about the header that is mandatory is that the RealMedia File
+
+Header be the first chunk of the file.
+
+The other headers can come anywhere, but most content providers do follow the
+
+convention, and if they don't it won't affect us anyway.
+
+I have dumped the header of a .rm file using the
+
+dump utility included with the free RealPlayer encoder mentioned above.
+
+I cleaned it up a bit and added the hex values and byte sizes for your convenience.
+
+I only included the first two header sections, since we only need to deal with
+
+them for our lesson.
+
+
+
+
+
+RealMedia File: E:\Program Files\RealPlayer\OKRecord.rm
+
+================RM_HEADER_OBJECT
+
+(8 bytes) object_id:                                   0x2E524D46 (FMR.)
+
+(8 bytes) size: 18                                     0x00000012
+
+(4 bytes) object version: 0                            0x0000
+
+(8 bytes) file version: 0                              0x00000000
+
+(8 bytes) num_headers: 6                               0x00000006
+
+====================RM_PROPERTIES_OBJECT
+
+(8 bytes) object_id:                               0x50524F50 (PORP)
+
+(8 bytes) size: 50 bytes                           0x00000032
+
+(4 bytes) object version: 0                        0x0000
+
+(8 bytes) max_bit_rate: 21286 bps                  0x00005326
+
+(8 bytes) avg_bit_rate: 21286 bps                  0x00005326
+
+(8 bytes) max_packet_size: 821 bytes               0x00000335
+
+(8 bytes) avg_packet_size: 338 bytes               0x00000152
+
+(8 bytes) num_interleave_packets: 77               0x0000004D
+
+(8 bytes) duration: 12000 milliseconds             0x00002EE0
+
+(8 bytes) preroll: 1252 milliseconds               0x000004E4
+
+(8 bytes) index_offset: 27376 bytes                0x00006AF0
+
+(8 bytes) data_offset: 357 bytes                   0x00000165
+
+(4 bytes) num_streams: 2                           0x0002
+
+(4 bytes) flags: 1                                 0x0001
+
+
+
+ If you haven't created a couple of test files yet with the Encoder,
+
+do it now and then dump the header to a text file and study it.
+
+Your values in the above fields will be different for each file you create.
+
+The field which our lesson revolves around is the last word (by word I mean
+
+4 bytes) in the properties object
+
+The flag field denotes if the clip is recordable or not (see my last essay
+
+for a complete description of the possible values for the flag).
+
+
+
+ Ok, with that background out of the way, let's discuss our strategy. There are
+
+two parts to this.  The first is to allow a clip we create on our machine to be
+
+recorded and saved with the video and audio intact.  The second part is to allow
+
+a clip retrieved off of the internet to be recorded and saved as well. Why do
+
+we need to first do a local file?  Well, figuring out what the target does with
+
+the header info is MUCH easier when you can step through code at your leisure
+
+without having a remote server timeout because you take too long. NOTE:  The
+
+patches in the next section are for learning purposes only.  We do this because
+
+we want to see how the header is handled and how modifications to the code
+
+effect our results.  I recommend using W32dasm's code patch utility to do these
+
+patches, as they will be temporary.  Otherwise, you can change them back when
+
+you are done.  The purpose of these patches is to allow us to record and save
+
+the audio and video content of clips WE create and designate to be
+
+NON-recordable.  Obviously, when we complete the REAL patch, we don't care about
+
+being able to record the clips, because they will already be on our
+
+machines?  Get it?
+
+
+
+ So, if we have a local file, and it has a header which needs to be
+
+read-in, we can assume Kernel32!ReadFile is going to be used.
+
+Let's fire up SoftIce (my beloved W32Dasm's debugger capabilities just
+
+don't cut mustard for this one :(
+
+Load kernel32 as an export and then load rvplayer.exe.
+
+Bpx on readfile and then open one of the .rm files you created.
+
+SoftIce pops in kernel32, so hit F12 twice and you return here, inside of
+
+pncrt.dll (Progressive Network C Runtime Library):
+
+
+
+:6541FA1C 8D442418           lea eax, dword ptr [esp+18]
+
+:6541FA20 6A00               push 00000000       ;lpOverlapped (not used)
+
+:6541FA22 50                 push eax            ;Address of buffer for #bytes read
+
+:6541FA23 51                 push ecx            ;Number of bytes to read in
+
+:6541FA24 52                 push edx            ;Address of buffer for data read-in
+
+:6541FA25 8B4D00             mov ecx, dword ptr [ebp+00]
+
+:6541FA28 8B1419             mov edx, dword ptr [ecx+ebx]
+
+:6541FA2B 52                 push edx            ;File handle
+
+:6541FA2C FF155C244465       Call dword ptr [6544245C] ;KERNEL32.ReadFile
+
+:6541FA32 85C0               test eax, eax
+
+:6541FA34 7551               jne 6541FA87
+
+
+
+
+
+ After the call, [esp-10] contains the address of the buffer holding the
+
+data you just read in.  If you take a look at the contents of that that address,
+
+the first thing you'll see is `RMF.', and a little farther down `PROP' and so on.
+
+Here is our header!
+
+
+
+The next header after `PROP' is the content header `CONT'.
+
+We don't yet know how the header is dealt with, so let's set a read-breakpoint of
+
+the range of memory from the first byte to the last byte of the property header
+
+(PROP).
+
+The last byte of the property header occurs right before the content header, so
+
+look for `CONT' and the byte right before the `C' is the last byte of the property
+
+header.
+
+
+
+ BPR `ADDRESS_START' `ADDRESS_END' R
+
+
+
+If you type `FORMAT' a few times, you can get the memory laid out in word format
+
+for easier reading.  I am learning SoftIce as I go, so excuse me if I may not do
+
+things the easiest way!  Once your breakpoint is set, hit `X' to return to
+
+RealPlayer.
+
+SoftIce pops again on ReadFile.  Hit F12 twice, and then `d esp-10'.
+
+Then `d xxxxxxxx' on the location at esp-10.  Here is the file header again.
+
+Set another breakpoint on the memory containing the property header, same as
+
+above, just change the start and end addresses.
+
+
+
+Return to RealPlayer, and immediately we pop back at ReadFile again.
+
+Repeat the above instructions, look at the memory contents of the address
+
+in esp-10, here is the header again.
+
+The buffer is in another memory location again, so we need to set another
+
+breakpoint, just like the others.  That is the last file-read we care
+
+about (subsequent readfile calls read in the data portion of the clip),
+
+so let's disable the breakpoint on readfile.
+
+Since readfile was the first breakpoint we set, we can type `bd 0' to disable
+
+it.  Now, hit `X' and return to the program.
+
+
+
+ SoftIce pops again, this time on one of our memory breakpoints.
+
+We are in pncrt.dll, at this section of code:
+
+
+
+:6542CBBC 668B06         mov ax, word ptr [esi]       ;[esi] holds our memory
+
+:6542CBBF 668907         mov word ptr [edi], ax       ;location
+
+:6542CBC2 8B4508         mov eax, dword ptr [ebp+08]
+
+:6542CBC5 5E             pop esi
+
+:6542CBC6 5F             pop edi
+
+:6542CBC7 C9             leave
+
+:6542CBC8 C3             ret
+
+
+
+
+
+ If we trace out of this section, we find ourselves in pnen3240.dll right here:
+
+|
+
+:63924C2A E81F1BFEFF              Call 6390674E         ;pncrt.memcpy, where we were.
+
+:63924C2F 83C40C                  add esp, 0000000C     ;Return here
+
+:63924C32 8B4DEC                  mov ecx, dword ptr [ebp-14]
+
+:63924C35 8DBE8C000000            lea edi, dword ptr [esi+0000008C]
+
+:63924C3B 898EC0000000            mov dword ptr [esi+000000C0], ecx
+
+:63924C41 837DEC00                cmp dword ptr [ebp-14], 00000000
+
+:63924C45 8B8E90000000            mov ecx, dword ptr [esi+00000090]
+
+:63924C4B 8B17                    mov edx, dword ptr [edi]
+
+:63924C4D 0F8637020000            jbe 63924E8A
+
+:63924C53 837DEC32                cmp dword ptr [ebp-14], 00000032
+
+:63924C57 0F822D020000            jb 63924E8A
+
+:63924C5D 0FB601                  movzx eax, byte ptr [ecx]
+
+:63924C60 C1E018                  shl eax, 18
+
+:63924C63 41                      inc ecx
+
+:63924C64 8902                    mov dword ptr [edx], eax
+
+:63924C66 0FB619                  movzx ebx, byte ptr [ecx]
+
+:63924C69 C1E310                  shl ebx, 10
+
+:63924C6C 41                      inc ecx
+
+:63924C6D 0BD8                    or ebx, eax
+
+:63924C6F 891A                    mov dword ptr [edx], ebx
+
+:63924C71 0FB601                  movzx eax, byte ptr [ecx]
+
+:63924C74 C1E008                  shl eax, 08
+
+
+
+ This is a long section of code, which basically does the following:
+
+ Take one byte of the property header from [ecx], put it into either eax
+
+or ebx (alternating), shift that byte left to the next unoccupied byte of eax
+
+or ebx, OR eax and eax together and put the result into [edx], repeating
+
+until the property header has been fully processed.
+
+So what the target is doing is copying the property header from the
+
+original memory buffer to a new location in memory for later use.
+
+This is the key to our whole project.
+
+Once this data has been moved to another memory location, all bets are
+
+off.  Who knows (or cares?) what the target does with it later.
+
+All we care about is intercepting the copying of the flag bit and replacing
+
+it with the value we choose.
+
+If we do it here, we can rest easy.  If we try and track the flag down
+
+later, good luck.
+
+Remember, the flag variable is going to be that last word of the
+
+property header, so let's look down to the end of the memory moving routine:
+
+
+
+:63924E76 66894230                mov word ptr [edx+30], ax
+
+:63924E7A 660FB619                movzx bx, byte ptr [ecx] ;[ecx]=FLAG_VARIABLE
+
+:63924E7E 660BD8                  or bx, ax
+
+:63924E81 41                      inc ecx
+
+:63924E82 66895A30                mov word ptr [edx+30], bx
+
+
+
+* Referenced by a Jump at Address:63924CCB(C)
+
+|
+
+:63924E86 85C9                    test ecx, ecx
+
+:63924E88 7507                    jne 63924E91
+
+
+
+ So, here is our first patch.  If the clip is non-recordable, the flag
+
+variable will either be 00 or 02 (if PerfectPlay was enabled).
+
+If we make the flag variable 03, then the clip will be both recordable, and
+
+&quot;PerfectPlay-able&quot;, so let's do that.
+
+
+
+Change at offset:
+
+(2427A) 66 0F B6 19 movzx bx, byte ptr [ecx]
+
+to
+
+(2427A) 66 BB 03 00     mov bx, 0003
+
+
+
+ To save you the trouble of having to re-enter all of your break points,
+
+I'll tell you now that we aren't done.
+
+Don't try and test the target yet.
+
+Hit `X' and continue.
+
+We'll break again inside of pncrt.dll.  Hit F12 until you are back
+
+inside of pnen3240.dll.  You will be here:
+
+|
+
+:63910351 E8F263FFFF              Call 63906748 ;pncrt.??2@YAPAXI@Z
+
+:63910356 83C404                  add esp, 00000004       ;return here
+
+:63910359 8BF8                    mov edi, eax
+
+:6391035B 85FF                    test edi, edi
+
+:6391035D 0F84F2080000            je 63910C55
+
+:63910363 8B45F0                  mov eax, dword ptr [ebp-10]
+
+:63910366 85C0                    test eax, eax
+
+:63910368 0F8430020000            je 6391059E
+
+:6391036E 83F832                  cmp eax, 00000032
+
+:63910371 0F8227020000            jb 6391059E
+
+:63910377 0FB606                  movzx eax, byte ptr [esi]
+
+:6391037A C1E018                  shl eax, 18
+
+:6391037D 46                      inc esi
+
+:6391037E 8907                    mov dword ptr [edi], eax
+
+:63910380 0FB60E                  movzx ecx, byte ptr [esi]
+
+:63910383 C1E110                  shl ecx, 10
+
+:63910386 46                      inc esi
+
+
+
+ I only show here the first section of this part of the code, but if you
+
+look at your deadlisting, it should look familiar.
+
+Here, we do the same type of byte-by-byte memory movement, only now [esi]
+
+points to our property header.  Since we want to
+
+intercept the flag byte, let's scroll down to the end of this section:
+
+
+
+:63910581 46                      inc esi
+
+:63910582 66894F2E                mov word ptr [edi+2E], cx
+
+:63910586 660FB60E                movzx cx, byte ptr [esi]
+
+:6391058A 66C1E108                shl cx, 08
+
+:6391058E 66894F30                mov word ptr [edi+30], cx
+
+:63910592 660FB64601              movzx ax, byte ptr [esi+01]     ;Here is our flag!
+
+:63910597 660BC1                  or ax, cx
+
+:6391059A 66894730                mov word ptr [edi+30], ax
+
+
+
+ Let's apply the same strategy as before.  Put a 0003 into ax instead of
+
+the real flag, and record to your hearts content (maybe...?).
+
+
+
+Change at offset:
+
+(2427A) 66 0F B6 46 01   movzx ax, byte ptr [esi+01]
+
+to
+
+(2427A) 66 BB 03 00       mov ax, 0003
+
+90 nop
+
+
+
+Time to test our work.  Disable your breakpoints and load one of your
+
+non-recordable clips.  Try and record it, and then view the playback.
+
+Bingo!
+
+It works, so let's try it live.  Get on the internet and go to your
+
+favourite site with RealVideo.
+
+Ok, test it out.
+
+Does it work? NO!
+
+Ok, here is the problem.
+
+
+
+When testing on a local file, our target uses the kernel32 `readfile'
+
+function.  However, when receiving data from an internet stream, it does NOT
+
+(how could it? We don't have access to the file directly!).
+
+You might be asking, &quot;What's wrong with x86?  Why does he make us follow all
+
+of this stuff if it doesn't work?&quot;
+
+Because the principle of operation is the same, regardless if the
+
+file is local or over the net.  <FONT color="blue">
+
+The header STILL must be (and is!) read in and processed.</FONT>
+
+This is the end of the first part of the essay.  You needn't save the patches here,
+
+so if you used W32Dasm's code patch utility, simply terminate the process,
+
+and the code will be back to the original.  Otherwise, just change the patches back.
+
+As I said, this was to let you see how the header was processed.
+
+Without this basic understanding, (at least for me anyway) the next section
+
+wouldn't make much sense.
+
+
+
+
+
+This part gave me quite a bit of trouble.
+
+My basic approach was to start loading a remote file, then break into SoftIce
+
+and peform a string search for `RMF' or `PROP', but the problem with this approach
+
+is: who knows how long it takes to get the connection with the remote
+
+server, or when the actual header is sent?
+
+So, I made an assumption (oh, careful...).  I assumed that the header would be
+
+handled the same way for a local file as for a remote file.
+
+The locations that we patched are not executed when loading a remote file so
+
+there MUST be a similar routine (the memory-moving routine) somewhere.
+
+
+
+So, here it gets a little ugly.
+
+In order to find the location we need, I did a string search for
+
+`movzx eax, byte ptr ` and then examined the locations where this string was
+
+found.  Actually, there weren't that many, and I knew
+
+that the routine we were looking for was a long section of repeating
+
+code just like the other spots we patched.
+
+Well, I only came across one location which matched these criteria
+
+(excluding the ones we already patched).  I scrolled to the end of the
+
+routine, to find where our supposed flag is moved.  Here it is:
+
+
+
+:639155D7 66894F30                mov word ptr [edi+30], cx
+
+:639155DB 660FB64501              movzx ax, byte ptr [ebp+01]     ;Flag Variable
+
+:639155E0 660BC1                  or ax, cx
+
+:639155E3 66894730                mov word ptr [edi+30], ax
+
+
+
+Set a breakpoint here and then run rvplayer.  Load a non-recordable clip
+
+from the net (most already are) and BAM, we break right where we want.
+
+
+
+Take a look at ebp+1, and sure enough, it is either a 00 or a 02
+
+(depending on if its buffer-able or not).  So, here begins the problem I
+
+spoke of at the beginning.  I thought originally we could simply do like we
+
+did on the other patches, and put a 0x03 into ax, and we'd be done.
+
+I did that and it worked fine on pre-recorded audio and video, just like
+
+I thought.  Then, I tried it on a live audio stream.  Well, it started
+
+recording fine, but after about 3 seconds, the `Net Congestion: Rebuffering Clip'
+
+message appeared.  Ok, wait, wait, wait.  Nothing.  Endless buffering.
+
+I thought it might be actual congestion, so I tried again.  Worked
+
+fine until I hit the record button, then after about 3 seconds, same message,
+
+same endless buffering.  I tried it on a live video stream and the exact
+
+same symptoms occurred.  I got to thinking, and decided to try and replace
+
+the flag patch I had done at 639155E3 from a 0x03 to a 0x07
+
+(live stream (0x04) + bufferable (0x02) + recordable (0x01) = 0x07). Guess
+
+what?  Now, exactly the OPPOSITE occurred.  Live streams were fine, but
+
+pre-recorded ones got the endless buffering message.
+
+
+
+One solution to this is to create TWO pnen3240.dll's.  One for live streams,
+
+and the other for pre-recorded.  Needless to say, besides being a pain the
+
+butt, it's ugly and non-efficient reverse engineering.  I realized what I
+
+needed was some way to check the flag value and then set it to either
+
+0x03 or 0x07, depending on its value.  But how to do this? We use things
+
+our fellow +crackers have taught us, in this case, Razzia's and PNA's essays
+
+about adding code to programs will be our guide.  Read them and understand them.
+
+We are going to add a small section of code which will see what our flags are,
+
+and then reset them accordingly!
+
+Go to the very bottom of your deadlisting of pnen3240.dll.  You'll see
+
+starting from 63935F60 to 63935FF8 a series of `BYTE 10 dup(0)'.  These
+
+are just zeros, and as you learned from Razzia and PNA, this is simply free
+
+space between the last instruction and the start of the data section, left
+
+over due to the way the compiler/linker segments the file.  Perfect for us!
+
+So, in the place where we would've moved our flag value, we will have a jump:
+
+
+
+:639155CA 66894F2E                mov word ptr [edi+2E], cx
+
+:639155CE 660FB64D00              movzx cx, byte ptr [ebp+00]
+
+:639155D3 66C1E108                shl cx, 08
+
+:639155D7 66894F30                mov word ptr [edi+30], cx
+
+:639155DB E980090200              jmp 63935F60   ;Jump to our new instructions
+
+:639155E0 660BC1                  or ax, cx      ;Return here from our code
+
+:639155E3 66894730                mov word ptr [edi+30], ax
+
+
+
+Here is the code we are adding:
+
+(The byte ptr [ebp+01] has our flag)
+
+| :63935F60 66807D0104              cmp byte ptr [ebp+01], 04 ;Is the stream live?
+
+:63935F65 7E09                    jle 63935F70              ;If not, jump
+
+:63935F67 66B80700                mov ax, 0007              ;It's live, move our flag
+
+:63935F6B E970F6FDFF              jmp 639155E0              ;Return
+
+
+
+* Referenced by a Jump at Address:
+
+|:63935F65(C)
+
+:63935F70 66B80300                mov ax, 0003              ;Not live, move the flag
+
+:63935F74 E967F6FDFF              jmp 639155E0              ;Return
+
+
+
+ So, now we try again.  Video and audio clips are saved and recorded
+
+exactly as we wanted, whether live or pre-recorded.  I tested this patch on
+
+about 25 different sites with every different combination of live and
+
+pre-recorded audio and video and they all worked perfectly.  The only thing
+
+I noticed, and I'm not even sure if it's related, is that once in a while when
+
+playing back video clips I recorded, the player stalled right at the beginning
+
+and I had to hit the frame-advance button once or twice to get it going.  Other
+
+than that, I'd say our work has been a total success.  Hopefully, you've learned
+
+how easy it can be to add the functionality needed in order to get what we want!
+
+
+
+Until next time-
+
+
+
+x86
+
+</PRE><FONT color="green">
+
+
+
+(c) x86, 1997. All rights reversed.</FONT>
+
+
+
+  <HR size="2">
+
+
+
+<CENTER><I>You are deep inside fravia's page of reverse
+
+
+
+engineering, choose your way out:</I></CENTER>
+
+
+
+
+
+
+
+
+
+
+
+<P><CENTER>
+
+
+
+
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"> <A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links
+
+
+
+</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0" NATURALSIZEFLAG="0"> <A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity
+
+
+
+</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools
+
+
+
+</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails </A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia
+
+
+
+</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">is reverse engineering legal? </A></FONT></CENTER></P>
+
+
+
+
+
+
+
+<P><CENTER><FONT SIZE="-1"><HR></FONT></CENTER>
+
+
+
+</BODY>
+
+
+
+</HTML>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

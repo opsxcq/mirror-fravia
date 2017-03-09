@@ -1,0 +1,852 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>x861</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+<CENTER><FONT size="+3">Cracking HEdit 2.0<BR></FONT><FONT size="+2">
+
+(using wdasm as a debugger)</FONT>
+
+
+
+<H4>by x86<BR>
+
+<BR>
+
+(19 August 1997, slightly edited by Fravia)</H4>
+
+<HR width="22%">
+
+With an addition by itzMagik1, 4 January 1998
+
+<BR>
+
+<A href="#anchoritz">Cracking HEdit version 2.1.11</A>
+
+
+
+<HR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">Courtesy of Fravia's page 
+
+of reverse engineering<BR><BR><I>Well, this essay is interesting, for me, because 
+
+it's the first time that somebody explains how to use Urbanik's disassembler as 
+
+a &quot;quick and dirty&quot; debugger tool... now, you see, I mostly disassemble files in 
+
+order to reverse engineer them, and use winice only if really compelled (why 
+
+burn your eyes on a screen, as +ORC said, when you can crack relaxed in the shadows of your 
+
+garden, sipping a good cocktail in fresh air?) so the idea of &quot;remaining&quot; inside 
+
+wdasm to try a couple of probes is not bad at all...<BR><BR>Besides, HEdit is an 
+
+hexeditor, and for hexeditors the chase is always open!<BR><BR>Yet I'm not happy that 
+
+an +HCUker &quot;leaves&quot; a crack part to others... PROFESSIONAL PRIDE! If you're a 
+
++cracker (or if you want to be one) you should finish your cracks! Therefore I 
+
+expect an addition to this essay FROM x86 (and nobody else :-)<BR><BR>
+
+ADDITION: 20 August 1997. ...and I got it! Good x86, right so +cracker! You'll find it 
+
+as second part of this essay!<BR><BR>
+
+<HR width="22%">
+
+There is also an addition by itzMagik1, 4 January 1998
+
+<BR>
+
+<A href="#anchoritz">Cracking HEdit version 2.1.11</A>
+
+
+
+
+
+</I></CENTER><HR size="2">
+
+<PRE><FONT size="+2"><CENTER>
+
+Cracking HEdit 2.0
+
+
+
+By x86</CENTER></FONT>
+
+
+
+
+
+HEdit  2.0 can be found at:
+
+<A href="javascript:if(confirm('ftp://ftp.cdrom.com/.23/simtelnet/win95/editor/hedit2.zip  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='ftp://ftp.cdrom.com/.23/simtelnet/win95/editor/hedit2.zip'" tppabs="ftp://ftp.cdrom.com/.23/simtelnet/win95/editor/hedit2.zip">ftp://ftp.cdrom.com/.23/simtelnet/win95/editor/hedit2.zip</A>
+
+
+
+This is my first essay, and I'm still a bit of a beginner, so bear with
+
+me.  I decided to do this crack using <U>AS A DEBUGGER</U> wdasm 8.9 
+
+instead of SoftIce, simply for a change of pace, and to show how the code 
+
+patch utility can be quite a time saver for trying out cracks on the fly.  
+
+This protection scheme is really stupid, given the amount of code dedicated 
+
+to the registration routines (more on that later).
+
+
+
+ I started HEdit to get an idea of what I was dealing with.  No opening
+
+nag screen, that's nice.  Close it down, still no nag screen.  
+
+Hmmm, what is there to crack?  
+
+Set my clock ahead 1 month, and bingo.  A nice message telling me my
+
+14 day trial had expired.
+
+
+
+- A quick aside here-
+
+I started off trying to crack the registration functions of the program,
+
+looking for the typical 'cmp good, bad' and 'test eax, eax'.  
+
+To make a long story short, this program goes through tons of convoluted 
+
+checks all over the place, and after about an hour, I decided screw it.  
+
+I'll leave that to one of our more experienced crackers, and besides, once 
+
+you crack the time-check mechanism, you're in home free.
+
+
+
+ So, now we look for the call to Kernel32.GetLocalTime (see, I have
+
+learned something!).  There is only one and the code around it looks like 
+
+this:
+
+
+
+* Reference To: KERNEL32.GetLocalTime, Ord:00E2h
+
+                                  |
+
+:00409CFC FF1524A94400            Call dword ptr [0044A924]
+
+:00409D02 8D4C2404                lea ecx, dword ptr [esp+04]
+
+:00409D06 51                      push ecx
+
+
+
+* Reference To: KERNEL32.GetSystemTime, Ord:0121h
+
+                                  |
+
+:00409D07 FF151CA94400            Call dword ptr [0044A91C]
+
+:00409D0D 668B0DDA7D4400          mov cx, word ptr [00447DDA]
+
+:00409D14 66394C240E              cmp word ptr [esp+0E], cx
+
+:00409D19 753C                    jne 00409D57
+
+:00409D1B 66A1D87D4400            mov ax, word ptr [00447DD8]
+
+:00409D21 663944240C              cmp word ptr [esp+0C], ax
+
+:00409D26 752F                    jne 00409D57
+
+:00409D28 66A1D67D4400            mov ax, word ptr [00447DD6]
+
+:00409D2E 663944240A              cmp word ptr [esp+0A], ax
+
+:00409D33 7522                    jne 00409D57
+
+:00409D35 66A1D27D4400            mov ax, word ptr [00447DD2]
+
+:00409D3B 6639442406              cmp word ptr [esp+06], ax
+
+:00409D40 7515                    jne 00409D57
+
+:00409D42 66A1D07D4400            mov ax, word ptr [00447DD0]
+
+:00409D48 6639442404              cmp word ptr [esp+04], ax
+
+:00409D4D 7508                    jne 00409D57
+
+:00409D4F 8B15C87D4400            mov edx, dword ptr [00447DC8]
+
+:00409D55 EB46                    jmp 00409D9D
+
+
+
+By tracing where this code goes, we eventually get a 'ret' and end up
+
+here:
+
+
+
+* Reference To: ADVAPI32.RegQueryValueExA, Ord:00E1h
+
+                                  |
+
+:00403D55 FF154CA74400            Call dword ptr [0044A74C]
+
+:00403D5B 85C0                    test eax, eax
+
+:00403D5D 0F85DE000000            jne 00403E41
+
+:00403D63 83EC04                  sub esp, 00000004
+
+:00403D66 8965D0                  mov dword ptr [ebp-30], esp
+
+:00403D69 FF75EC                  push [ebp-14]
+
+:00403D6C 8B4DD0                  mov ecx, dword ptr [ebp-30]
+
+:00403D6F E8C5020000              call 00404039
+
+:00403D74 8D45E0                  lea eax, dword ptr [ebp-20]
+
+:00403D77 8D4DD4                  lea ecx, dword ptr [ebp-2C]
+
+:00403D7A 50                      push eax
+
+:00403D7B 51                      push ecx
+
+:00403D7C E826320100              call 00416FA7
+
+:00403D81 8BC8                    mov ecx, eax
+
+:00403D83 E8BC020000              call 00404044   *** <RETURN here :00403D88 B980510100 mov ecx, 00015180 :00403D8D 8B45E0 mov eax, dword ptr [ebp-20] <--How many days :00403D90 99 cdq ; used so far? :00403D91 F7F9 idiv ecx :00403D93 83F80E cmp eax, 0000000E <--Less than 15? :00403D96 0F8E4BFFFFFF jle 00403CE7 <--Good boy! :00403D9C 6A00 push 00000000 :00403D9E 83F81C cmp eax, 0000001C :00403DA1 7D33 jge 00403DD6 :00403DA3 8D8D78FFFFFF lea ecx, dword ptr [ebp+FFFFFF78] :00403DA9 E8120F0000 call 00404CC0 :00403DAE C645FC01 mov [ebp-04], 01 :00403DB2 8D8D78FFFFFF lea ecx, dword ptr [ebp+FFFFFF78] :00403DB8 E88E6A0100 call 0041A84B :00403DBD C645FC00 mov [ebp-04], 00 :00403DC1 E805000000 call 00403DCB :00403DC6 E91CFFFFFF jmp 00403CE7 Now we know what to do! Make this a "jump always", and use the target as long as you want. To test this theory, set a break point on 00403d96. Run the program and when it breaks, hit the 'Patch Code' button which is on the lower-right debug window. It will show you the instruction at the current EIP. In the window below it, type in what you want it to be, in this case 'jmp 00403ce7'. Hit the 'apply patch' button. Now, notice that the new instruction is only 5 bytes, where we had 6 originally. So, once again, in the same window you entered the new jump, enter 'nop'. Now its 6 bytes and all is well. Apply that patch, and hit the 'run' button to test it out. Works like a champ. Ok, so HEdit is all yours for as long as you want it now. I wanted to show that although most of the time SoftIce is the superior debugger, W32Dasm does have some very nice features for debugging as well. I know that the same thing (code patching) can be done under SoftIce as well, but I find it pretty useful to patch our targets with wdasm. All that's left is to edit the HEdit executable (since the code "patch.class" tppabs="http://fravia.org/patch.class" is temporary) as follows: At offset 3196h: Change 0F8E4BFFFFFF To E94CFFFFFF90 I leave it to the more experienced (or at least those with more time!) to crack the registration function. Till next time, happy cracking x86 </prE><HR>
+
+<I>And this is the SECOND part to this session, that x86 sent me one day 
+
+later (see: constructive critics works! :-)</I><HR><PRE>
+
+Fravia - 
+
+'Professional pride', ouch!  Got me where it hurts! :) 
+
+Anyway, here is the addition to my previous essay.  It's now fully cracked,
+
+and (hopefully!) no lame copouts. 
+
+
+
+<FONT size="+2">
+
+Cracking HEdit 2.0 Part II</FONT>
+
+
+
+By x86
+
+
+
+Ok, Fravia had a good point, I should've finished what I started!  I am so 
+
+ashamed!  Well, rest assured it won't happen again.
+
+Ok, on to the crack.  This addendum to my original essay targets the 
+
+registration functions of HEdit 2.0 and will allow you to enter any
+
+name/number you want and be fully registered.  
+
+I should point out that this crack actually supercedes my previous one, 
+
+in that this crack will automatically take care of the expiration problem 
+
+since the program will actually think you entered a valid registration 
+
+number. 
+
+
+
+There are a couple of different approaches to consider.  You can try to
+
+figure out how the program decides if you are registered (what I originally 
+
+tried to do... don't bother) or you can attack the registration key 
+
+encrypt/decrypt section directly, which is what we will do!
+
+
+
+Once again, I'll be using Wdasm as a debugger to try my patches on the fly,
+
+so load up HEdit and follow along.
+
+To start, I tried to find out what happened when I entered an invalid 
+
+registration name/number.  
+
+I got the message, &quot;The user name and/or registration number you entered 
+
+are incorrect.&quot;
+
+Ok, Wdasm has a string reference listing of all the strings in the data
+
+section, so let's see if we can find a match.  Sure enough, and there 
+
+are 3 occurrences of it.  
+
+Let's set breakpoints on each one, and run the program again. 
+
+Enter a name and number into the registration box (Help/About/Register) 
+
+and Wdasm will break here:
+
+
+
+* String: &quot;The user name and/or registration number you entered are inc&quot;
+
+                                  |
+
+:00405099 6888000000              push 00000088
+
+:0040509E E8BCFC0100              call 00424D5F  ? Display bad msg
+
+:004050A3 EB14                    jmp 004050B9   ? Bye bye, try again
+
+
+
+We know something is triggering this message so let's find it.  
+
+We don't need to look far.  
+
+Right above lies this code snippet:
+
+
+
+:0040506B 56                      push esi
+
+:0040506C 57                      push edi
+
+:0040506D 8BF1                    mov esi, ecx
+
+:0040506F E808AE0200              call 0042FE7C
+
+:00405074 8B7804                  mov edi, dword ptr [eax+04]
+
+:00405077 6A01                    push 00000001
+
+:00405079 8BCE                    mov ecx, esi
+
+:0040507B E870890100              call 0041D9F0
+
+:00405080 85C0                    test eax, eax
+
+:00405082 7435                    je 004050B9  
+
+:00405084 FF7660                  push [esi+60] ? The number you entered
+
+:00405087 FF765C                  push [esi+5C] ? The name you entered
+
+:0040508A 8BCF                    mov ecx, edi
+
+:0040508C E82DEFFFFF              call 00403FBE ? Main reg. check routine!
+
+:00405091 85C0                    test eax, eax ? eax != 0 means `Go boy'!
+
+:00405093 7510                    jne 004050A5
+
+:00405095 6AFF                    push FFFFFFFF ? Begin beggar off routine.
+
+:00405097 6A00                    push 00000000    
+
+
+
+
+
+Now, at this point, you might be tempted to say, &quot;Hey, we can just change 
+
+the jne instruction to a jmp, and away we go!&quot;  Well, go ahead and try it, 
+
+it won't work.  
+
+This is why my previous approach was such a lame way to go.  
+
+There are other checks in this program besides this one, so what we need 
+
+to do is to crack the main registration checking routine.  
+
+Let's have a look.
+
+
+
+
+
+* Referenced by a CALL at Addresses:00403A3D, :00403CDE, :00403E07, :0040508C   
+
+|
+
+:00403FBE 55                      push ebp
+
+:00403FBF 8BEC                    mov ebp, esp
+
+:00403FC1 81EC00010000            sub esp, 00000100
+
+:00403FC7 6800010000              push 00000100
+
+:00403FCC 8D8D00FFFFFF            lea ecx, dword ptr [ebp+FFFFFF00]
+
+:00403FD2 FF7508                  push [ebp+08]
+
+:00403FD5 51                      push ecx
+
+:00403FD6 E8054F0000              call 00408EE0
+
+:00403FDB 83C40C                  add esp, 0000000C
+
+:00403FDE 8D8D00FFFFFF            lea ecx, dword ptr [ebp+FFFFFF00]
+
+:00403FE4 51                      push ecx
+
+:00403FE5 E856200100              call 00416040
+
+:00403FEA 83C404                  add esp, 00000004
+
+:00403FED B904000000              mov ecx, 00000004
+
+
+
+* Referenced by a Jump at Address:00404015
+
+|
+
+:00403FF2 8BC1                    mov eax, ecx
+
+:00403FF4 41                      inc ecx
+
+:00403FF5 99                      cdq
+
+:00403FF6 33C2                    xor eax, edx
+
+:00403FF8 2BC2                    sub eax, edx
+
+:00403FFA 83E003                  and eax, 00000003
+
+:00403FFD 33C2                    xor eax, edx
+
+:00403FFF 2BC2                    sub eax, edx
+
+:00404001 8A940DFFFEFFFF          mov dl, byte ptr [ebp+ecx-00000101]
+
+:00404008 30940500FFFFFF          xor byte ptr [ebp+eax-00000100], dl
+
+:0040400F 81F900010000            cmp ecx, 00000100
+
+:00404015 7CDB                    jl 00403FF2
+
+:00404017 8B8500FFFFFF            mov eax, dword ptr [ebp+FFFFFF00]
+
+:0040401D 85C0                    test eax, eax
+
+:0040401F 7D02                    jge 00404023
+
+:00404021 F7D8                    neg eax
+
+
+
+* Referenced by a Jump at Address:0040401F
+
+|
+
+:00404023 39450C        cmp dword ptr [ebp+0C], eax  ***Here! [ebp+0C] 
+
+:00404026 7509          jne 00404031                 is what the num.   
+
+:00404028 85C0          test eax, eax                should be and eax
+
+:0040402A B801000000    mov eax, 00000001            is what you 
+
+:0040402F 7502          jne 00404033                 entered.
+
+
+
+* Referenced by a Jump at Address:00404026
+
+|
+
+:00404031 33C0                    xor eax, eax
+
+
+
+* Referenced by a Jump at Address:0040402F
+
+|
+
+:00404033 8BE5                    mov esp, ebp
+
+:00404035 5D                      pop ebp
+
+:00404036 C20800                  ret 0008
+
+
+
+
+
+Ok, so here is what happens.  If your number doesn't match what is
+
+expected, the jump to xor eax, eax is executed (remember, the program 
+
+expects a non-zero return in eax if the registration number is correct).  
+
+If it does match and isn't zero, 1 gets put into eax and we return and 
+
+all is well.  
+
+So, what we need to do is skip the bad jump if our numbers don't match.  
+
+Let's test it to make sure.  
+
+Clear all of the breakpoints and set a new one at 00404026 and run it, 
+
+and enter something for the name/number.  When Wdasm breaks, use the code
+
+patch utility to change the `jne 00404031' to `nop, nop'.  
+
+Apply the patch and hit `run'.  Presto!  You are regged!  
+
+
+
+Summary of the crack:
+
+Offset (3426h)
+
+Change 75 09 
+
+To     90 90
+
+
+
+You can use this crack rather than my previous one.  
+
+Once again, sorry for my temporary lameness.  
+
+I'm going to give myself 0x28 lashes and send myself to
+
+bed with no dessert!  Until next time-
+
+
+
+x86</PRE>
+
+<A name="anchoritz"></A>
+
+<I> Here is an addition to this essay by 
+
+itzMagik1, added on 4 Jnuary 1998</I><BR>
+
+<PRE>
+
+Cracking HEdit version 2.1.11
+
+Written by itzMagik1 on December 30, 1997.
+
+Contact itzMagik1(at)aol(point)com for questions/comments.
+
+
+
+Introduction: This is my first crack for the +HCU. 
+
+Granted it's not very hard, but everyone has to start somewhere. 
+
+The crack for HEdit version 2.1.11 was relatively simple thanks 
+
+to x861's earlier essay, Cracking HEdit 2.0, that you can read 
+
+above.
+
+
+
+Tools Required: Windows Disassembler 8.x
+
+A hex editor (why not use HEdit 2.1.11)
+
+SoftIce (or WDASM for debugging)
+
+
+
+Program History: HEdit 2.1.11 uses the same protection scheme as it's previous
+
+version. I've never used anything before that, so I can't describe it's
+
+scheme.
+
+
+
+Let's get right to the crack. Start up HEdit, then click Help, then about
+
+HEdit. Notice the button that says register. I love programs that have this
+
+button: they are so easy to crack. Click the button. You'll get another dialog
+
+with a place for your name and registration number. Type your name in the
+
+first box and a 1 in the second. Click OK. You'll see some long, drawn out
+
+error message about how your &quot;registration&quot; number isn't correct. That's our
+
+key.
+
+
+
+Now Run hedit.exe through WDASM. I think it's a good disassembler, but it's
+
+not the best debugger, so I'll use SoftIce. Search for the word
+
+&quot;registration.&quot; You should find it 3 times. I set breakpoints on each one in
+
+SoftIce (BPX 004017CF, 00402239, 004353DA). Now load it into SoftIce. When
+
+SoftIce breaks, you'll land at 00402239. Here's what you'll see:
+
+
+
+:00402239  push 00000088  
+
+:0040223E  call 00427930
+
+
+
+In WDASM, that corresponds to:
+
+
+
+* Referenced by Jump at Address:0040221A(C)
+
+
+
+:00402235  6AFF		push FFFFFFFF
+
+:00402237  6A00		push 00000000
+
+
+
+* Possible Reference to &quot;The user name.....&quot;
+
+
+
+:00402239  6888000000	push 00000088  
+
+:0040223E  E8ED560200	call 00427930  - display bad message
+
+
+
+Let's see where this is getting called from. Look up a few lines and you'll
+
+see:
+
+
+
+:00402209  8B4660	mov eax, dword ptr [esi+60] - The number you entered
+
+:0040220C  8B4E5C	mov ecx, dword ptr [esi+5c] - The name you entered
+
+:0040220F  50		push eax
+
+:00402210  51		push ecx
+
+:00402211  8BCF		mov ecx, edi
+
+:00402213  E878170000	call 00403990	- Call the registration check routine
+
+:00402218  85C0		test eax, eax	- If eax  != 0, you're good
+
+:0040221A  7419		je 00402235
+
+
+
+As with the previous HEdit, it does the same thing. How do we fix this?
+
+Simple.
+
+
+
+The main registration routine is exactly the same as in the previous version.
+
+All we have to do is search for the block of code that checks what you entered
+
+versus what the number should be. Lucky for us, x861 has already provided it
+
+for us. Here's the code:
+
+
+
+* Referenced by Jump at Address:004039ED(C)
+
+
+
+:004039F1  3B84240C010000 cmp eax, dword ptr [esp+0000010C] - What you entered
+
+vs the 							      &quot;correct&quot; number
+
+:004039F8  7513		  jne 00403A0D - You're gone
+
+:004039FA  85C0		  test eax, eax
+
+:004039FC  740F		  je 00403A0D  - You're good
+
+:004039FE  B801000000     mov eax, 00000001	
+
+:00403A03  5B		  pop ebx
+
+:00403A04  81C400010000   add esp, 00000100
+
+:00403A0A  C20800	  ret 0008
+
+
+
+* Referenced by Jump at Address 004039F8(C), :004039FC(C)
+
+
+
+:00403A0D  33C0		  xor eax, eax
+
+:00403A0F  5B		  pop ebx
+
+:00403A10  81C400010000   add esp, 00000100
+
+:00403A16  C20800	  ret 0008
+
+
+
+What happened in HEdit 2.0 also happens here. If you're number isn't
+
+&quot;correct,&quot; the jump to xor eax, eax is executed and you're done. If it does
+
+match, 1 gets put into eax and you're registered. So we can change the jne to
+
+nop. Here's the crack:
+
+
+
+At Offset 0x00002DF8
+
+Change 75 13
+
+To     90 90
+
+
+
+Once changed, you can use any name and registration number you want.
+
+
+
+HEdit 2.1.11 can be downloaded from http://www.yurisw.com/hedit/download.htm.
+
+
+
+Hope you enjoyed this easy crack. Thanks to x861 for his previous essay.
+
+Hopefully you'll see more of my essays in the future. I'll aim for something a
+
+little more difficult next time.
+
+
+
+itzMagik1</PRE>
+
+<FONT color="green">(c) itzMagik1 1998. All rights reversed</FONT>
+
+<HR>
+
+
+
+ <FONT color="green">(c) x86 1997. All rights reversed</FONT>
+
+<HR ALIGN="CENTER" WIDTH="100%" SIZE="3">
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</I></CENTER>
+
+<BR><CENTER>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">
+
+<A HREF="project1.htm" tppabs="http://www.anticrack.de/fravia/project1.htm">Back to project 1 (tools of the trade)</A><BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">
+
+<A HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"> 
+
+<A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0">
+
+<A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut CGI-scripts</A>
+
+
+
+
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia+</A><BR>
+
+
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering legal?</A></CENTER>
+
+<CENTER><HR ALIGN="CENTER" WIDTH="100%" SIZE="2"></CENTER>
+
+</BODY>
+
+</HTML>
+
+
+
+
+

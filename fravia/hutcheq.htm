@@ -1,0 +1,709 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>cdromch.htm: grasshopper's <I>A CDRom check with a twist>/i></TITLE>
+
+
+
+<BODY bgcolor="C0C0C0" text="#001010" vlink="#405040 Alink=#00FF50">
+
+<CENTER><H2>
+
+Hutch's<BR><I>get a full set of prototypes for ASM in a fast and automated way</I>
+
+<BR>4 October 1998<BR> 
+
+</H2>Courtesy of fravia's pages of reverse engineering<BR>(http://www.fravia.org)</CENTER><PRE>
+
+fravia+,
+
+
+
+I hope you are well, I am starting to see the small changes you are
+
+making and it is a good idea...
+
+
+
+I have pasted in at the bottom, the code for a MASM application skeleton
+
+
+
+as I know you have an eye for assembler and I thought you may like the
+
+use of the MASM pseudo/high level syntax. it compiles at 5.5k with a
+
+menu & icon and I have some GDI graphics written into the test piece.
+
+
+
+I found that there are no header files from M$ for MASM so instead of
+
+writing them manually which would take years, I have written a special
+
+purpose utility that raeds the function name out of the Platformsdk
+
+libraries and converts them into PROTOTYPES.
+
+
+
+It reads them in the form "_FunctionName@12" and converts them to the
+
+form,
+
+
+
+BeginUpdateResourceA PROTO :DWORD,:DWORD
+
+BeginUpdateResource equ <BEGINUPDATERESOURCEA>
+
+
+
+BuildCommDCBA PROTO :DWORD,:DWORD
+
+BuildCommDCB equ <BUILDCOMMDCBA>
+
+
+
+BuildCommDCBAndTimeoutsA PROTO :DWORD,:DWORD,:DWORD
+
+BuildCommDCBAndTimeouts equ <BUILDCOMMDCBANDTIMEOUTSA>
+
+
+
+CallNamedPipeA PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+
+CallNamedPipe equ <CALLNAMEDPIPEA>
+
+
+
+CancelIo PROTO :DWORD etc...
+
+
+
+The idea is to be able to get a full set of prototypes for ASM in a fast
+
+
+
+and automated way. The template pasted in below uses them. I have
+
+attached the EXE which I hope gets to you. If not, give me a yell and I
+
+will post it on my page for you.
+
+
+
+Regards,
+
+
+
+--
+
+Steve Hutchesson <HUTCH@pbq.com.au >
+
+Sydney
+
+Australia
+
+
+
+;
+
+#########################################################################
+
+
+
+      include    w2.inc
+
+
+
+      include ..\include\winusr32.inc
+
+      include ..\include\wingdi32.inc
+
+      include ..\include\winknl32.inc
+
+
+
+      includelib j:\sdktools\lib\user32.lib
+
+      includelib j:\sdktools\lib\kernel32.lib
+
+      includelib j:\sdktools\lib\gdi32.lib
+
+
+
+;
+
+#########################################################################
+
+
+
+;     Equates
+
+;     ~~~~~~~
+
+;     COLORREF format colors. = 00-BB-GG-RR
+
+;     ~~~~~~~~~~~~~~~~~~~~~~
+
+      crRed   equ 000000FFh
+
+      crGreen equ 0000FF00h
+
+      crBlue  equ 00FF0000h
+
+      crWhite equ 00FFFFFFh
+
+      crBlack equ 00000000h
+
+      crGray  equ 00808080h
+
+      crDgray equ 00404040h
+
+      crLgray equ 00B0B0B0h
+
+
+
+;     Local prototypes
+
+;     ~~~~~~~~~~~~~~~~
+
+      TopXY proto      :DWORD, :DWORD
+
+      Paint_Proc proto :DWORD, :DWORD
+
+      FrameWin proto   :DWORD, :DWORD, :DWORD, :DWORD, :DWORD
+
+      WinMain proto    stdcall :DWORD, :DWORD, :DWORD, :DWORD
+
+
+
+;     Local macros
+
+;     ~~~~~~~~~~~~
+
+      szText MACRO Name, Text    ; embedd zero terminated string
+
+        LOCAL lbl
+
+          jmp lbl
+
+            Name db Text,0
+
+          lbl:
+
+        ENDM
+
+
+
+      m2m MACRO M1, M2           ; memory to memory copy
+
+        push M2
+
+        pop  M1
+
+      ENDM
+
+
+
+      return MACRO arg:VARARG    ; return in eax & call ret
+
+        mov eax, arg
+
+        ret
+
+      ENDM
+
+
+
+;
+
+#########################################################################
+
+
+
+    .data
+
+        szDisplayName db "fravia, Cracking the 21st Century",0
+
+
+
+        hInstance     dd 0  ; Useful as global variable
+
+        hWnd          dd 0  ; Useful as global variable
+
+        CommandLine   dd 0
+
+
+
+    .code
+
+start:
+
+        invoke GetModuleHandle, NULL
+
+        mov hInstance, eax
+
+
+
+        invoke GetCommandLine
+
+        mov CommandLine, eax
+
+
+
+        invoke WinMain,hInstance,NULL,CommandLine,SW_SHOWDEFAULT
+
+        invoke ExitProcess,eax
+
+
+
+;
+
+#########################################################################
+
+
+
+WinMain proc hInst     :DWORD,
+
+             hPrevInst :DWORD,
+
+             CmdLine   :DWORD,
+
+             CmdShow   :DWORD
+
+
+
+        LOCAL wc   :WNDCLASSEX
+
+        LOCAL msg  :MSG
+
+
+
+        LOCAL Wwd  :DWORD
+
+        LOCAL Wht  :DWORD
+
+        LOCAL Wtx  :DWORD
+
+        LOCAL Wty  :DWORD
+
+
+
+        mov wc.cbSize,         sizeof WNDCLASSEX
+
+        mov wc.style,          CS_HREDRAW or CS_VREDRAW \
+
+              or CS_BYTEALIGNWINDOW
+
+        mov wc.lpfnWndProc,    offset WndProc
+
+        mov wc.cbClsExtra,     NULL
+
+        mov wc.cbWndExtra,     NULL
+
+        m2m wc.hInstance,      hInst           ; my macro, looks nicer !
+
+
+
+        mov wc.hbrBackground,  COLOR_3DFACE+1
+
+        mov wc.lpszMenuName,   NULL
+
+        mov wc.lpszClassName,  offset szClassName
+
+          invoke LoadIcon,hInst,500    ; icon ID
+
+        mov wc.hIcon,          eax
+
+        mov wc.hIconSm,        0
+
+          invoke LoadCursor,NULL,IDC_ARROW
+
+        mov wc.hCursor,        eax
+
+
+
+        invoke RegisterClassEx, addr wc
+
+
+
+        mov Wwd, 500
+
+        mov Wht, 350
+
+
+
+        invoke GetSystemMetrics,SM_CXSCREEN
+
+        invoke TopXY,Wwd,eax
+
+        mov Wtx, eax
+
+
+
+        invoke GetSystemMetrics,SM_CYSCREEN
+
+        invoke TopXY,Wht,eax
+
+        mov Wty, eax
+
+
+
+        szText szClassName,"Template_Class"
+
+
+
+        invoke CreateWindowEx,WS_EX_OVERLAPPEDWINDOW,
+
+             ADDR szClassName,
+
+             ADDR szDisplayName,
+
+             WS_OVERLAPPEDWINDOW,
+
+             Wtx,Wty,Wwd,Wht,
+
+             NULL,NULL,
+
+             hInst,NULL
+
+        mov   hWnd,eax
+
+
+
+        invoke LoadMenu,hInst,600  ; menu ID
+
+        invoke SetMenu,hWnd,eax
+
+
+
+        invoke ShowWindow,hWnd,SW_SHOWNORMAL
+
+        invoke UpdateWindow,hWnd
+
+
+
+    StartLoop:
+
+      invoke GetMessage,ADDR msg,NULL,0,0
+
+      cmp eax, 0
+
+      je ExitLoop
+
+      invoke TranslateMessage, ADDR msg
+
+      invoke DispatchMessage,  ADDR msg
+
+      jmp StartLoop
+
+    ExitLoop:
+
+
+
+      return msg.wParam
+
+
+
+WinMain endp
+
+
+
+;
+
+#########################################################################
+
+
+
+WndProc proc hWin   :DWORD,
+
+             uMsg   :DWORD,
+
+             wParam :DWORD,
+
+             lParam :DWORD
+
+
+
+    LOCAL hDC :DWORD
+
+    LOCAL Rct :RECT
+
+    LOCAL Ps  :PAINTSTRUCT
+
+
+
+    .if uMsg == WM_COMMAND
+
+    ;======== menu commands ========
+
+        .if wParam == 1000
+
+            invoke SendMessage,hWin,WM_SYSCOMMAND,SC_CLOSE,NULL
+
+        .elseif wParam == 1900
+
+            szText TheMsg,"fravia, Cracking the 21st Century"
+
+            invoke MessageBox,hWin,ADDR TheMsg,ADDR szDisplayName,MB_OK
+
+        .endif
+
+    ;====== end menu commands ======
+
+
+
+    .elseif uMsg == WM_PAINT
+
+        invoke BeginPaint,hWin,ADDR Ps
+
+          mov hDC, eax
+
+          invoke Paint_Proc,hWin,hDC
+
+        invoke EndPaint,hWin,ADDR Ps
+
+        return 0
+
+
+
+    .elseif uMsg == WM_CLOSE
+
+        szText TheText,"Please Confirm Exit"
+
+        invoke MessageBox,hWin,ADDR TheText,ADDR szDisplayName,MB_YESNO
+
+          .if eax == IDNO
+
+            return 0
+
+          .endif
+
+
+
+    .elseif uMsg == WM_DESTROY
+
+        invoke PostQuitMessage,NULL
+
+        return 0
+
+    .endif
+
+
+
+    invoke DefWindowProc,hWin,uMsg,wParam,lParam
+
+
+
+    ret
+
+
+
+WndProc endp
+
+
+
+;
+
+########################################################################
+
+
+
+TopXY proc wDim:DWORD, sDim:DWORD
+
+
+
+    shr sDim, 1      ; divide screen dimension by 2
+
+    shr wDim, 1      ; divide window dimension by 2
+
+    mov eax, wDim    ; copy window dimension into eax
+
+    sub sDim, eax    ; sub half win dimension from half screen dimension
+
+
+
+    return sDim
+
+
+
+TopXY endp
+
+
+
+;
+
+########################################################################
+
+
+
+Paint_Proc proc hWin:DWORD, hDC:DWORD
+
+
+
+    LOCAL btn_hi   :DWORD
+
+    LOCAL btn_lo   :DWORD
+
+
+
+    invoke GetSysColor,20
+
+    mov btn_hi, eax
+
+
+
+    invoke GetSysColor,21
+
+    mov btn_lo, eax
+
+
+
+    invoke FrameWin,hWin, hDC, btn_hi, btn_lo, 2
+
+    invoke FrameWin,hWin, hDC, btn_lo, btn_hi, 4
+
+    invoke FrameWin,hWin, hDC, btn_hi, btn_lo, 7
+
+
+
+    return 0
+
+
+
+Paint_Proc endp
+
+
+
+;
+
+########################################################################
+
+
+
+FrameWin proc hWin:DWORD,hDC:DWORD,
+
+             btn_hi:DWORD,btn_lo:DWORD,step:DWORD
+
+
+
+    LOCAL Rct      :RECT
+
+    LOCAL rv       :DWORD
+
+    LOCAL var      :DWORD
+
+    LOCAL hPen     :DWORD
+
+    LOCAL hPen2    :DWORD
+
+    LOCAL hpenOld  :DWORD
+
+
+
+    invoke GetClientRect,hWin,ADDR Rct
+
+
+
+    m2m var, step
+
+    mov eax, var
+
+    sub Rct.right, eax
+
+
+
+    mov eax, var
+
+    sub Rct.bottom, eax
+
+
+
+    invoke CreatePen,0,1,btn_hi
+
+    mov hPen, eax
+
+
+
+    invoke SelectObject,hDC,hPen
+
+    mov hpenOld, eax
+
+
+
+        invoke MoveToEx,hDC,var,var,NULL
+
+        invoke LineTo,hDC,Rct.right,var
+
+
+
+        invoke MoveToEx,hDC,var,var,NULL
+
+        invoke LineTo,hDC,var,Rct.bottom
+
+
+
+    invoke CreatePen,0,1,btn_lo
+
+    mov hPen2, eax
+
+
+
+    invoke SelectObject,hDC,hPen2
+
+    mov hPen, eax
+
+    invoke DeleteObject,hPen
+
+
+
+        invoke MoveToEx,hDC,var,Rct.bottom,NULL
+
+        invoke LineTo,hDC,Rct.right,Rct.bottom
+
+
+
+        invoke MoveToEx,hDC,Rct.right,var,NULL
+
+        inc Rct.bottom
+
+        invoke LineTo,hDC,Rct.right,Rct.bottom
+
+
+
+    invoke SelectObject,hDC,hpenOld
+
+    invoke DeleteObject,hPen2
+
+
+
+    return 0
+
+
+
+FrameWin endp
+
+
+
+;
+
+#########################################################################
+
+
+
+    end start
+
+
+
+
+
+
+
+hutch(at)pbq(point)com(point)au
+
+</PRE> 
+
+</BODY></HTML>

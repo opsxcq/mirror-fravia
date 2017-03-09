@@ -1,0 +1,1432 @@
+<HTML>
+
+<HEAD>
+
+<!--  formamus.htm version 02 February 1998 
+
+      INSTRUCTIONS FOR SUBMITTING: DO NOT USE HTML EDITORS!
+
+      SEARCH THIS TEXT FOR THE STRING "Your_" 
+
+      AND REPLACE WITH WHATEVER YOU WANT TO PUBLISH! 
+
+      THANKS A LOT: this will allow automated retrieval -->
+
+<TITLE>pna3.htm: How to hook any API function in kernel32.dll	</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR=#C0C0C0 TEXT=#001010 VLINK=#405040>
+
+
+
+<TABLE CELLPADDING="1" CELLSPACING="2" BORDER="1" WIDTH= "100% 
+
+HEIGHT=" 22">
+
+<TR><td></td>
+
+<td>
+
+<!-- Choose  a TITLE probably wont be changed -->
+
+<center><FONT SIZE="+2">How to hook any API function in
+
+kernel32.dll</fonT><br>
+
+	<FONT SIZE="+1">with simple exports of your own DLL</fonT>
+
+</center>
+
+
+
+</td>
+
+
+
+
+
+
+
+<td>
+
+
+
+<!-- Choose  a PROJECT GIF, leave this if unsure -->
+
+
+
+<center><a href="advanced.htm" tppabs="http://www.anticrack.de/fravia/advanced.htm"><IMG SRC="xtranio.gif" tppabs="http://www.anticrack.de/fravia/xtranio.gif"
+
+ALT="Advanced" 
+
+ALIGN=CENTER WIDTH=114 HEIGHT=43 BORDER=0 VSPACE=0 
+
+HSPACE=0></a>
+
+<br>
+
+<font color=gray>Advanced</FonT>
+
+
+
+</center></td></tr>
+
+
+
+<tR>
+
+
+
+<td bgcolor="#FFFFEA"><center>
+
+
+
+<FONT COLOR="890000">
+
+
+
+<!-- CHOOSE A DATE (will probably be changed) -->
+
+5 
+
+September 1998
+
+
+
+</FONT></center>
+
+
+
+</td>
+
+
+
+<td bgcolor="#FFFFEA"><center>by <font size=+3>
+
+
+
+<!-- CHOOSE A HANDLE (wont be changed) -->
+
+
+
+PNA
+
+
+
+</fonT></center>
+
+
+
+</td>
+
+
+
+<td VALIGN="center" bgcolor="#FFFFEA">
+
+
+
+
+
+<center>
+
+<a href="papers.htm" tppabs="http://www.anticrack.de/fravia/papers.htm"><IMG SRC="papers.gif" tppabs="http://www.anticrack.de/fravia/papers.gif" ALT="papers" ALIGN=BOTTOM 
+
+
+
+WIDTH=114 HEIGHT=43 BORDER=0 VSPACE=0 HSPACE=0></a><br>
+
+<font color=gray>+HCU papers</fonT>
+
+</center>
+
+
+
+</td>
+
+
+
+</tr>
+
+
+
+<TR><td><center><a href="index.html" tppabs="http://www.anticrack.de/fravia/index.html"><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALIGN="BOTTOM" 
+
+
+
+BORDER="0" VSPACE="0" HSPACE="0" width="13" height="13"></a></center></td>
+
+
+
+<TD BGCOLOR="898030"><center>Courtesy of Fravia's page of 
+
+
+
+reverse engineering</center> 
+
+
+
+</center></TD>
+
+
+
+<td BGCOLOR="898030"><pre> </prE></td>
+
+
+
+</TR>
+
+
+
+<!-- this is for the
+
+data.....fra_00xx....yymmdd....handle..beg+int...not ass... -->
+
+
+
+<tr><td><font color="#C4C0CF">fra_00xx<bR>980906<br>PNA<br>0010<br>AD<br>PC<br></fonT>
+
+</td>
+
+
+
+<td><center>There's no need to present you PNA,  whose essays have always 
+
+been admired, inter alia, by myself, Quine, Razzia and Greythorne.<br>PNA is a great reverser who 
+
+has always had the 
+
+capacity and the cleverness to choose VERY IMPORTANT fields for his essays. You'll be able to 
+
+read on my site his<br>
+
+<a href="javascript:if(confirm('http://www.anticrack.de/fravia/pna1.htm-  \n\nThis file was not retrieved by Teleport Pro, because the server reports that this file cannot be found.  \n\nDo you want to open it from the server?'))window.location='http://www.anticrack.de/fravia/pna1.htm-'" tppabs="http://www.anticrack.de/fravia/pna1.htm-">
+
+Ulead PhotoImpact Trial 3.01</a> -29 August 1997<br>
+
+("Protections" spitting the name of the calling dll and of the calling function)<br>and<br>
+
+<a href="pna2.htm" tppabs="http://www.anticrack.de/fravia/pna2.htm">W32Dasm Version 8.0 Save re-enabling</a> by PNA - 31 August 1997<br>
+
+(How to get our dialogs and our routines inside our targets)<p>. Well a good question, from 
+
+my own reversing point of view, would be: "PNA, d'you have only towards end August some time to 
+
+write your beautiful essays?"<p>
+
+This said, I agree totally with PNA: if there will be some good contributions, additions 
+
+and -more generally- some sound work on this, Troja 
+
+will indeed be ours!
+
+
+
+</center></td>
+
+
+
+<td></td>
+
+
+
+</tr>
+
+
+
+<TR><td></td>
+
+
+
+<!-- Leonard Coehn's old song, because we are poets, not only crackers -->
+
+
+
+<TD BGCOLOR="898030"><center></i><b>There is a crack, a crack in
+
+everything 
+
+
+
+That's how the light gets in</b></center>
+
+
+
+<!-- Leonard Coehn's old song, because we are poets, not only crackers
+
+-->
+
+</center></TD><td></td>
+
+</TR>
+
+<TR>
+
+<td VALIGN= "MIDDLE" bgcolor="#C6E7C6"><font color=blue><center>
+
+Rating</FONT></FONT></center>
+
+</TD>
+
+<td VALIGN = "MIDDLE" bgcolor="#C6E7C6"><font color=blue><center>
+
+<!-- CHOOSE A RATING (may be changed) -->
+
+( )<B>Beginner</B> ( )<B>Intermediate</B> (x)<B>Advanced</B> (
+
+)<B>Expert</B></FONT>
+
+</center></td>
+
+<td></td>
+
+</tr>
+
+</table>
+
+<!-- END HEAD  -->
+
+<bR>
+
+<!-- CORPUS  -->
+
+<!-- CHOOSE A COMMENT (may be changed)  -->
+
+
+
+<hR>
+
+<center>
+
+   <FONT SIZE="+2">
+
+<!-- CHOOSE A TITLE (wont probably be changed) -->
+
+How to hook any API function in kernel32.dll
+
+   </FONT><BR>
+
+
+
+   <FONT SIZE="+2">
+
+
+
+<!-- CHOOSE A SUBTITLE (wont proabbly be changed) -->
+
+
+
+with simple exports of your own DLL
+
+
+
+   </FONT><BR>
+
+
+
+   <FONT COLOR="0B7FC1">
+
+
+
+<!-- REPEAT YOUR CHOSEN HANDLE HERE -->Written by 
+
+
+
+PNA
+
+
+
+   </FONT>
+
+
+
+</center><br><br>
+
+
+
+
+
+
+
+<!-- INTRO STARTS HERE -->
+
+
+
+<TABLE CELLPADDING="1" CELLSPACING="2" BORDER="1" WIDTH= "100%" 
+
+HEIGHT="22" >
+
+
+
+<tr><td bgcolor="#C6E7C6"><center><font size=+2><font
+
+color=blue>Introduction</fonT>
+
+
+
+</fonT></center></td></tr></table>
+
+
+
+<!-- PASTE HERE YOUR INTRODUCTION -->
+
+
+
+<P>
+
+To accomplish this it was necessary to modify the kernel32.dll of 
+
+course. Despite all shortcomings I decided to patch the file itself. I
+
+coded a 
+
+patcher that uses PE file format infos to find free space for code and
+
+to 
+
+determine the addresses of the functions to hook. The only things the
+
+patcher 
+
+takes for granted are the sectionnames _FREQASM, .text and .edata in the 
+
+kernel32.dll. This will change in future versions as there are better
+
+ways 
+
+to retrieve the needed information.
+
+<p> 
+
+	But the patcher is not the objective of this essay. I will rather 
+
+discuss the results of the patching process as they are far more
+
+interesting. If 
+
+you are interested in the files and sources or if you want to put them
+
+on your 
+
+site please contact me at <a
+
+href="mailto:PNA@starwarsfan.com">PNA@starwarsfan.com</a>
+
+<p>
+
+	As an example I hooked GetLocalTime and GetSystemTime by writing a DLL 
+
+that exports 2 functions, one for every original one. If they are called
+
+they 
+
+identify the calling module's filename, compare it with entries in an
+
+ini-file 
+
+and if the names match, the functions return a fake SYSTEMTIME struct
+
+also 
+
+specified in the ini-file. Otherwise they execute the original
+
+functions. This 
+
+makes patching time trials (almost) obsolete.
+
+<P>
+
+<br><br>
+
+
+
+
+
+
+
+<!-- TOOLS STARTS HERE -->
+
+
+
+<TABLE CELLPADDING="1" CELLSPACING="2" BORDER="1" WIDTH= "100%" 
+
+HEIGHT="22" >
+
+
+
+<tr><td bgcolor="#C6E7C6"><center><font size=+2><font color=blue>Tools
+
+required</fonT>
+
+
+
+</fonT></center></td></tr></table>
+
+<UL>
+
+<LI>HookIt.exe, the patcher (contact me)</LI>
+
+<LI>Fake.dll, the DLL containing the hook-functions. You can get mine or
+
+create your own one with</LI>
+
+<LI>SrcGen.exe, the C source code generator for your own DLLs (contact
+
+me)</LI>
+
+<LI>A Win32 DevTool, try <a
+
+href="javascript:if(confirm('http://www.cs.virginia.edu/~lcc-win32/  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.cs.virginia.edu/~lcc-win32/'" tppabs="http://www.cs.virginia.edu/~lcc-win32/">lcc-win32</a> . A tremendous
+
+C devtool. 
+
+Creates fast, SMALL code and it is freeware !!!</LI>
+
+</UL>
+
+<br><br>
+
+
+
+
+
+
+
+<!-- TARGET URL STARTS HERE -->
+
+
+
+<TABLE CELLPADDING="1" CELLSPACING="2" BORDER="1" WIDTH= "100%" 
+
+HEIGHT="22" >
+
+
+
+<tr><td bgcolor="#C6E7C6"><center><font size=+2><font
+
+color=blue>Target's URL/FTP</fonT>
+
+
+
+</fonT></center></td></tr></table>
+
+
+
+<!-- DON'T FORGET TO PASTE HERE THE URL/FTP OF YOUR TARGET(S) -->
+
+
+
+<p>
+
+<a href="file:///c|/windows/system/kernel32.dll">Your Kernel</a>
+
+<p>
+
+
+
+
+
+<!-- REAL ESSAY  STARTS HERE -->
+
+<TABLE CELLPADDING="1" CELLSPACING="2" BORDER="1" WIDTH= "100%" 
+
+HEIGHT="22" >
+
+<tr><td bgcolor="#C6E7C6"><center><font size=+2><font
+
+color=blue>Essay</fonT></fonT>
+
+</center></td></tr></table>
+
+<p>
+
+First of all, I'll give you an overview of my approach:
+
+<br>1. The patcher will install a bypass-routine common to all hooked
+
+functions at a free spot in the .text section. It serves as an 
+
+interface to your DLL.
+
+<br>2. The patcher will install a header-code for each exported
+
+hook-function in your fake.dll at a 
+
+free spot in _FREQASM. The header-code will jump to the 
+
+bypass-routine.
+
+<br>3. The AddressOfFunctions pointers in .edata will be modified to
+
+point 
+
+to the new header-code.
+
+<br>
+
+<p>
+
+Now to the details:
+
+<p>
+
+Let's dig into the bypass-routine:
+
+<p>
+
+<pre>
+
+		
+
+:BFFB95C0 EB0A                    jmp BFFB95CC
+
+:BFFB95C2 6661      <- "fa        popa		
+
+:BFFB95C4 6B652E64  <- ke.d       imul esp, dword ptr [ebp+2E],00000064
+
+:BFFB95C8 6C        <- l          insb
+
+:BFFB95C9 6C        <- l"         insb
+
+:BFFB95CA 0000      		  add byte ptr [eax], al
+
+
+
+:BFFB95CC 50                      push eax
+
+:BFFB95CD 68C295FBBF              push BFFB95C2 *)
+
+
+
+* Reference To: KERNEL32.GetModuleHandleA
+
+                                  |
+
+:BFFB95D2 E8E6DFFBFF              call BFF775BD *)
+
+:BFFB95D7 85C0                    test eax, eax
+
+:BFFB95D9 750E                    jne BFFB95E9
+
+:BFFB95DB 68C295FBBF              push BFFB95C2 *)
+
+
+
+* Reference To: KERNEL32.LoadLibraryA
+
+                                  |
+
+:BFFB95E0 E892DFFBFF              call BFF77577 *)
+
+:BFFB95E5 85C0                    test eax, eax
+
+:BFFB95E7 7413                    je BFFB95FC
+
+:BFFB95E9 50                      push eax
+
+
+
+* Reference To: KERNEL32.GetProcAddress
+
+                                  |
+
+:BFFB95EA E86DD7FBFF              call BFF76D5C *)
+
+:BFFB95EF 85C0                    test eax, eax
+
+:BFFB95F1 7402                    je BFFB95F5
+
+:BFFB95F3 FFD0                    call eax
+
+
+
+:BFFB95F5 61                      popad		**)
+
+:BFFB95F6 C3                      ret
+
+
+
+:BFFB95F7 61                      popad		***)
+
+:BFFB95F8 032424                  add esp, dword ptr [esp]
+
+:BFFB95FB C3                      ret
+
+
+
+:BFFB95FC 83C404                  add esp, 00000004
+
+:BFFB95FF C3                      ret
+
+
+
+<- The string "fake.dll" is stored there. This DLL contains the
+
+hook-functions.
+
+*) These addresses are calculated by the patcher
+
+**) The call eax returns to this address if nothing is to be hooked
+
+***) The call eax returns to this address (the stack is modified by
+
+     fake.dll) if the function was hooked
+
+<p>
+
+</pre>
+
+The bypass-routine gets input from the functions header-code:
+
+<pre>
+
+Exported fn(): GetLocalTime - Ord:0157h
+
+:BFF77FF0 687D71F7BF              push BFF7717D *)
+
+:BFF77FF5 60                      pushad
+
+:BFF77FF6 B801000000              mov eax, 00000001
+
+:BFF77FFB E9C0150400              jmp BFFB95C0  *)
+
+</pre>
+
+<p>
+
+	This header-code is the new entry point of GetLocalTime in this 
+
+case. First it puts the original address of GetLocalTime on the stack. 
+
+Then all registers are pushed and the ordinal number of the 	
+
+corresponding hook-function is stored in eax. Next it jumps to the 
+
+bypass-routine.
+
+<p>
+
+	The bypass-routine itself does nothing special. It tries to retrieve
+
+the 
+
+ProcAddress of the hook-function specified by the ordinal. I suppose you
+
+are 
+
+familiar with GetModuleHandle, LoadLibrary and GetProcAddress. Otherwise
+
+refer 
+
+to your Win32 help.
+
+<p>
+
+	After BFFB95F3: CALL EAX the real action takes place in fake.dll. I
+
+coded a source code generator for all this, so you don't have to copy
+
+and paste
+
+yourself to death. Let's have a closer look (it does not necessarily
+
+have to
+
+be in C):
+
+<p><pre>
+
+
+
+void FakeGetLocalTimeFake(DWORD dummy)
+
+{
+
+	DWORD NumberOfArgs=1;
+
+	DWORD stack;
+
+	DWORD *ret,val;
+
+1:	if (GetLocalTimeFlag) return;
+
+	GetLocalTimeFlag=TRUE;
+
+	ret=&val;
+
+2:	stack=(DWORD)&dummy-4;
+
+3:	if (GetLocalTimeAction(stack+0x2c,ret))
+
+	{
+
+4:		if (ret!=NULL) {
+
+			*(PULONG)(stack+0x20)= *ret;
+
+			ret=NULL;
+
+		}
+
+5:		*(PULONG)(stack+0x28+4*(NumberOfArgs))= *(PULONG)(stack+0x28);
+
+6:		*(PULONG)(stack+0x24)=NumberOfArgs*4+4;
+
+7:		*(PULONG)stack+=2;
+
+	}
+
+	GetLocalTimeFlag=FALSE;
+
+}
+
+
+
+BOOL GetLocalTimeAction(DWORD param,PULONG result)
+
+{
+
+....
+
+}
+
+</pre>
+
+<p>
+
+	This structure is common to all hook-functions. The function's name is 
+
+the original name enclosed by the word Fake. This is required because
+
+the 
+
+patcher has to distinguish the hook-functions from other exported
+
+functions. 
+
+Note that this is case-sensitive. C calling convention has to be used
+
+i.e. the 
+
+stack is cleaned by the CALLING function. 
+
+<p>
+
+	Next the NumberOfArgs variable must be adjusted to the number of 
+
+arguments the original function (here GetLocalTime) expects. Then change
+
+the 
+
+name (here GetLocalTimeAction) in 3: to a selfwritten function that can
+
+do 
+
+anything you want.
+
+<p>
+
+	That function expects two arguments. The first one points to the first 
+
+parameter of the original function. So *(cast)param is the first
+
+parameter, 
+
+*(cast)(param+4) the second one and so on (STDCALL). If the original
+
+function returns
+
+a value it must be assigned to *result. Otherwise result must be NULL.
+
+XXXAction
+
+has to return TRUE if it hooks the function and FALSE if the original
+
+function
+
+is to be called. A little example:
+
+<p><pre>
+
+
+
+BOOL GetLocalTimeAction(DWORD param,PULONG result)
+
+{
+
+	char name[MAX_PATH];
+
+	pentries p;
+
+	LPSYSTEMTIME st;
+
+	result=NULL;
+
+	if (phead==NULL) initialize();//initialize linked list of programs to
+
+fool
+
+	GetModuleFileName(NULL,name,MAX_PATH);//get name of calling module
+
+	p=phead;
+
+	while ((p!=NULL)&&(stricmp(p->name,name))) p=p->next;
+
+	if (p!=NULL)
+
+	{
+
+		st=*(LPSYSTEMTIME*)param;//if names match, modify SYSTEMTIME
+
+		memcpy(st,&(p->time),16);
+
+		return TRUE;
+
+	}
+
+	return FALSE;
+
+}
+
+</pre><p>	
+
+	I still owe you the explanation of the FakeXXXFake function. The dummy 
+
+argument is only used to retrieve the stackpointer in 2:. If XXXAction
+
+returns 
+
+FALSE, the function returns to **) in the bypass-routine. There a POPAD
+
+is 
+
+executed to restore all registers and the RET brings us to the original 
+
+function's address we pushed at the very beginning of our header-code.
+
+<p>
+
+	The XXXFlag (1:) is global and enables you to call XXX (GetLocalTime in
+
+this case) from within the corresponding XXXAction without blowing up
+
+the 
+
+stack. The original function will be called then. This is essential if
+
+you only
+
+want to modify few values of a complex operation you cannot simulate.
+
+<p>
+
+	If XXXAction returns TRUE, at 5: the return address of the caller to 
+
+GetLocalTime is copied to Parameter n (see picture below). This is done
+
+because 
+
+our bypass has to clean the parameters (API-Functions are STDCALL) but
+
+we still 
+
+need the return address. In line 6: we store the number of bytes to be
+
+cleaned from the stack by 
+
+the bypass-routine in Adr of orig. Function as we don't need it anymore.
+
+At 7: 
+
+we add 2 to the return address of the bypass so it will continue at ***)
+
+after 
+
+return. If we must return a value we modify EAX in 4:. Back at ***) in
+
+our 
+
+bypass a POPAD is executed then the ADD ESP,[ESP] cleans the stack
+
+excluding 
+
+parameter n, where the RetAdr of orig. Caller was copied to, so that the 
+
+following RET brings us there. Done!
+
+<p><pre>
+
++-----------------------+
+
+| Parameter n		|
+
++-----------------------+
+
+|			|
+
+
+
+|			|
+
++-----------------------+
+
+|Parameter 1		|
+
++-----------------------+- $2c  <- offsets to stack variable in
+
+FakeXXXFake
+
+|RetAdr of orig. Caller |
+
++-----------------------+- $28
+
+|Adr of orig. Function	|
+
++-----------------------+- $24
+
+|EAX			|  $20
+
+|ECX			|
+
+|EDX			|
+
+|EBX			|
+
+|ESP			|
+
+|EBP			|
+
+|ESI			|
+
+|EDI			| 
+
++-----------------------+- $04
+
+|RetAdr of bypass	|
+
++-----------------------+- $00
+
+</pre><p>
+
+	To sum it up, you don't have to deal with all that to apply this 
+
+technique. You can create or add functions to a fake.dll with my source
+
+code
+
+generator.
+
+<br><br>
+
+
+
+<!-- FINAL NOTES STARTS HERE -->
+
+
+
+<TABLE CELLPADDING="1" CELLSPACING="2" BORDER="1" WIDTH= "100%" 
+
+HEIGHT="22" >
+
+
+
+<tr><td bgcolor="#C6E7C6"><center><font size=+2><font color=blue>Final
+
+Notes</fonT>
+
+
+
+</fonT></center></td></tr></table>
+
+
+
+<!-- PASTE HERE YOUR FINAL NOTES (if any) -->
+
+<p>
+
+	There are still many things to improve. First I will change the patcher 
+
+not to rely on the section names. This is quite easy as it only has to
+
+scan the 
+
+section headers for the executable flag and use these sections for
+
+bypass- and 
+
+header-code. The .edata section can be found in the DataDirectory of the 
+
+OptionalHeader. These are some steps to apply this method on any DLL,
+
+not only 
+
+the kernel32.dll.
+
+<p>
+
+	For now you can only hook STDCALL or Pascal functions, i.e. all 
+
+functions that clean their stack themselves. As far as I know all API
+
+functions 
+
+in kernel32.dll are STDCALL.
+
+<p>
+
+	I don't know if it works under NT. It actually should. I am running 
+
+the patched kernel for two weeks now and tried 6 different time trials.
+
+Neither
+
+did any of these change behavior after the trial period, nor did I
+
+experience
+
+any anomalies concerning performance or stability of the OS.
+
+Nevertheless I
+
+don't recommend hooking very frequently called functions.
+
+<p>
+
+	The main idea of all this is to build a common interface for hooking
+
+API 
+
+functions. You control the gateway between an application and the
+
+Windoze OS by 
+
+simply writing a DLL. This empowers you to implement generic cracks like
+
+the 
+
+time trial crack briefly introduced here. More power you cannot get at 
+
+application level. My aim is to have a collection of fake.dlls written
+
+by many 
+
+different crackers, dealing with the root of a problem, not solving an
+
+instance 
+
+of it. Troja will be ours!
+
+<p><br>
+
+
+
+PNA
+
+
+
+<br><br>
+
+
+
+
+
+
+
+<!-- OB DUH STARTS HERE -->
+
+
+
+<TABLE CELLPADDING="1" CELLSPACING="2" BORDER="1" WIDTH= "100%" 
+
+HEIGHT="22" >
+
+
+
+<tr><td bgcolor="#C6E7C6"><center><font size=+2><font color=blue>Ob
+
+Duh</fonT></fonT>
+
+
+
+</center></td></tr></table>
+
+
+
+ <center>
+
+
+
+   <i>Ob duh doesn't apply here: this is not low level application cracking, 
+
+this is higher OS reversing.</i>
+
+
+
+</center>
+
+
+
+
+
+
+
+<!-- WAY OUT STARTS HERE -->
+
+
+
+<hr>
+
+
+
+<center><i>You are deep inside fravia's page of reverse engineering,  
+
+
+
+choose your way out:</i></center>
+
+
+
+<br><center>
+
+
+
+<!-- EITHER A NICE GIF LIKE THIS -->
+
+
+
+
+
+
+
+
+
+
+
+<a href="papers.htm" tppabs="http://www.anticrack.de/fravia/papers.htm"><IMG SRC="papers.gif" tppabs="http://www.anticrack.de/fravia/papers.gif" 
+
+ALT="papers" ALIGN=CENTER WIDTH=114 HEIGHT=43 BORDER=0 VSPACE=0
+
+HSPACE=0></a>
+
+
+
+<br>
+
+
+
+<font color=gray>Back to Papers</FonT>
+
+
+
+<br><bR>
+
+
+
+
+
+
+
+
+
+
+
+<!-- OR JUST A LINK LIKE THIS -->
+
+
+
+
+
+
+
+<!--
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="project1.htm" tppabs="http://www.anticrack.de/fravia/project1.htm">Back to
+
+Your_chosen_project</A> 
+
+
+
+<hr width=33%>
+
+
+
+-->
+
+
+
+
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links</A> 
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms</A>
+
+
+
+
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database</A>
+
+
+
+<br>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="realicra.htm" tppabs="http://www.anticrack.de/fravia/realicra.htm">reality cracking</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="howtosea.htm" tppabs="http://www.anticrack.de/fravia/howtosea.htm">how to search</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="javascri.htm" tppabs="http://www.anticrack.de/fravia/javascri.htm">javascript wars</A>
+
+
+
+<br>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity academy</A> 
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+
+
+BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut CGI-scripts</A>
+
+
+
+
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia+</A>
+
+
+
+<br>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering
+
+legal?</A>
+
+
+
+</CENTER>
+
+
+
+<hr>
+
+
+
+<!-- THAT'S ALL, THANKS A LOT this will allow automated retrieval -->
+
+
+
+</BODY>
+
+</HTML>
+
+
+
+
+

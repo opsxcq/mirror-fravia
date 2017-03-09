@@ -1,0 +1,1305 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>Flipper's Visual Basic 5 tough protection</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+<CENTER><FONT size="+3">Flipper's Visual Basic 5 tough protection</FONT>
+
+<BR>(How to (try) to write a short app in Visual Basic and to protect it: a difficult task!)<BR>
+
+<A href="protecti.htm" tppabs="http://www.anticrack.de/fravia/protecti.htm"><IMG SRC="tough.gif" tppabs="http://www.anticrack.de/fravia/tough.gif" ALT="tough" ALIGN="BOTTOM" WIDTH="114" HEIGHT="43" BORDER="0" VSPACE="0" HSPACE="0"></A>
+
+<BR>
+
+
+
+<H2><B>by Flipper (ucg)</B></H2>
+
+<H4>(06 December 1997)</H4>
+
+<HR>
+
+With some solutions:<BR>
+
+The first solution, by <A href="#anchorroc">r0ketman</A><BR>
+
+and an <A href="#anchoransw">answer</A> by flipper<BR>
+
+and another solution, by <A href="#anchorrcg">+Rcg</A><BR>
+
+and another <A href="#anchor_2_answ">answer</A> by flipper<BR>
+
+<HR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">Courtesy of fravia's page 
+
+of reverse engineering<HR>       
+
+<I>Well, I'm happy that Flipper decided to send a contribution to the &quot;our protections&quot; 
+
+section. Hope many will tackle this target... Flipper is right: Visual Basic cracking 
+
+may be pretty boring, but you learn a lot in the process! Yet read the letter by madmax! 
+
+on our main <A href="protecti.htm" tppabs="http://www.anticrack.de/fravia/protecti.htm">our protections</A> page... many believe that our 
+
+protection schemes should be written in assembly!<BR>
+
+Well, I agree with the assembly people: see, there is only on problem with Visual Basic 5 apps: the existence of Numega's Smartcheck! And 
+
+using it onto this flipper's creation, you'll find something pretty interesting at event
+
+25259! (MsgBox [VARIANT: String: &quot;This Application will now terminate...&quot;; and at 
+
+event 84183: lbl_reg.caption: &quot;Unregistered delay initiated...&quot; and this is 
+
+at APP1.EXE!000052F6, 
+
+according to Smartcheck (I didn't dead list this little monster :-) and at event 84198 we have 
+
+a timer(1) enabled (code:5350) and so on, and so on..;<BR>
+
+Btw, flipper, according to Smartcheck your app has 2 errors, 12 leaks, 2246 VB and Windozes API and 
+
+18853 C/C++ and system API calls... ah yes, and 69 hooks as well :-)<BR>I wrote some time ago 
+
+a small essay dar¸ber: <A HREF="anonma2.htm" tppabs="http://www.anticrack.de/fravia/anonma2.htm">An interesting tool: Numega's Smartcheck</A>... I think 
+
+that many people that will have a go trying to crack this flipper's target could find 
+
+very useful help using this Numega's tool...</I></CENTER><HR size="6"> 
+
+<PRE>
+
+-- Overbloated Notepad v1.00 Documentation
+
+
+
+-- A short summary of what this program is. 
+
+
+
+Finally, an honest to goodness Visual Basic 5.0 Overbloated Notepad to call
+
+your very own! What you could have written on a scrap piece of paper suddenly
+
+comes to life in this wannabe MFC code, with no strings attached.
+
+<FONT color="purple">
+
+Download flipper's protection here (<A href="javascript:if(confirm('http://129.105.116.5/fravia/ucg10.zip  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://129.105.116.5/fravia/ucg10.zip'" tppabs="http://129.105.116.5/fravia/ucg10.zip">ucg10.zip, 15742 bytes</A>) and work!
+
+</FONT>
+
+This notepad does not do anything other than to serve as a tool for learning
+
+how to reverse enginner visual basic 5.0 programs. I myself tried a few
+
+different approaches to patching this program, but each time the vbRuntime
+
+DLL abomination stepped in and saved the day with another arcane error call.
+
+
+
+Eventually I found my own methods of cracking the program, and figured that
+
+since I could accomplish the job then _anyone_ could. That's where I began
+
+to figure out new methods of stopping petty byte patches instead of real
+
+keygens. What you have in front of you is probably one of the most advanced
+
+visual basic protection schemes ever. That doesn't mean it is though, you'll
+
+just have to try and crack it. The reason I say this, is that most vb
+
+protections encountered by crackers can be defeated with a few set break-
+
+points, whereas you may have to dead list this program to get a 'deeper' look
+
+at it.
+
+
+
+-- Registration Benefits.
+
+
+
+If you register this program you'll get rid of that awfully slow nag, and
+
+enable file saving (which is why you downloaded this program in the first
+
+place, right?). Not to mention you'll gain valuable cracking skills in the
+
+process <G>
+
+
+
+-- How Do I Register?
+
+
+
+Simple. Place &#156;10 in an old envelope.. and when you get your reg code back,
+
+click on the &quot;Register&quot; option under the &quot;About&quot; menu and type in all your
+
+misc. info.
+
+
+
+-- Helpful hints for the beginner cracker.
+
+
+
+Since this program was written in visual basic you can safely assume that
+
+the code will be a mixture of function calls and random byte placings (as
+
+with all Micro$oft programs). I never tried Soft-Ice out on this program
+
+yet, so you're welcomed to do that. I also tried to keep the file size as
+
+low as possible (it was more difficult that you think <G>) so anyone,
+
+especially newbyes could use wdasm or IDA to poke around inside the multi-
+
+volume listing.
+
+
+
+ (a) read the configuration file carefully, and try to decipher the code
+
+     in your head (okay, let's not go _that_ far..)
+
+
+
+ (b) use softice and set breakpoints at vb sensitive calls and poke around
+
+     the code a little.
+
+
+
+ (c) I've used my own error handler routines, so if you decide to disable
+
+     them, vb will jump in and save the day with it's own error handler.
+
+
+
+ (d) There are no keyfiles involved in the protection, just good old
+
+     calculations and the like (nothing a person with a calculator couldn't
+
+     figure out..)
+
+
+
+ (e) I won't reveal all of my protections, but rest assured nothing like
+
+     this has ever before been attempted in visual basic. I don't mean the
+
+     serial number routine, I mean the rest of the protection. Visual Basic
+
+     programmers don't often know any assembler, and therefore have never
+
+     tried out protections involving trig. functions, etc.
+
+
+
+-- Acceptable Solutions
+
+
+
+You can either write
+
+
+
+ (i) a byte patch
+
+
+
+     ; this will be the most commonly done crack by far, but you'll soon
+
+       find out that it's not worth your time to try -- I've put up large
+
+       detours and 'roadblocks' to handle generic byte patches. This should
+
+       not discourage you though. If you find a way around all this, you're
+
+       more than welcome to try.
+
+
+
+ (ii) a keymaker
+
+
+
+     ; if you can make one of these, even with all that messy vb code,
+
+       then consider yourself a windows guru, it's just that impressive.
+
+
+
+Of course, each should be accompanied by the method at which you arrived
+
+to your final conclusion (ie: in essay format) and submitted to Fravia's
+
+page at http://fravia.org/.
+
+
+
+flipper (upg) 04/Dec/97</PRE>
+
+<HR><A name="anchorroc"></A><FONT size="+2">
+
+14 Dicember 1997: A first &quot;answer-solution&quot; by r0ketman!
+
+<HR></FONT>
+
+<PRE>
+
+
+
+Defeating Flipper's Visual Basic 5 tough protection scheme
+
+The Easy Way.
+
+---------------------------------------------------------
+
+by r0ketman.
+
+=========================================================
+
+
+
+[tools you will need: Wdasm, Winice, and a hex editor.]
+
+
+
+
+
+Intro.
+
+======
+
+This is my first submission, I hope everybody can understand it--I try
+
+to keep things simple so you don't need an extra brain to figure out
+
+what the heck I'm talking about. 
+
+
+
+At first look, app1 appears to be a difficult crack. You say: &quot;oh my
+
+god! What is all of this vb tomfoolery??!?&quot; Well I must admit, I too was
+
+sucked into the despair mentality of &quot;damn, I can't even crack a vb
+
+app?&quot; If you screw your head back on and use some common sense, you will
+
+find it is not very difficult after all. In fact, this is as simple as
+
+they get folks. 
+
+
+
+A First Glance.
+
+===============
+
+You can spend all the time you want trying to figure out the damn algo
+
+for the serial number--if spending time is your thing. I prefer to be
+
+done as quickly as possible and that means in this case to byte patch.
+
+Ok, on to the real info.
+
+
+
+How to go about cracking app1.
+
+==============================
+
+Run app1 and see what it does. Do not rush to use tools without running
+
+mr. exe to see what you are looking for. In the case of app1 we find
+
+that giving a bad serial number will not display an error messagebox
+
+whereas trying to save the file without registering the exe will. Ok,
+
+now go into wdasm
+
+or whatever you like and look at the imported functions. We find that
+
+there is a function &quot;rtcmsgbox.&quot;
+
+Now, if we want to spend a million years tracing here and there in the
+
+app we could set a bpx to rtcmsgbox, but lets look around some more in
+
+the imported functions list. Hrmmm... Hey, wonder
+
+what &quot;rtcinputbox&quot; does? It might be the function called to get the
+
+serial number info. Load up winice 
+
+and set a &quot;bpx rtcinputbox&quot; and run app1. If you click on the
+
+registration menuitem it will not break which leaves us wondering what
+
+rtcinputbox does. Considering the amount of options available in the
+
+program, it would be a likely assumption that it is in fact the dialog
+
+entry for saving files. Lets go back into wdasm and search for
+
+rtcinputbox.
+
+
+
+We get one hit:
+
+
+
+* Ref to MSVBVM50.rtcInputBox
+
+:00403F80 Call 00401366
+
+
+
+Well uhh what else could that go to other than a file entry dialog? Lets
+
+trace up...
+
+Aha!
+
+
+
+:00403E85 mov ax, word ptr [00408030]
+
+:00403E8B xor esi, esi
+
+:00403E8D cmp ax, 03FB
+
+[lots of mov instructions here]
+
+:00403EC4 jnl 00404035
+
+:00403ECA cmp ax, 001B
+
+:00403ECE jle 00404035
+
+:00403ED4 cmp ax, 00FE
+
+:00403ED8 jle 00404030
+
+
+
+Well, we dont want to jump to any of those locations so the first number
+
+that comes to mind that will keep it from jumping would be ax=00FF. Ok
+
+thats logical enough. We can give it a whirl in winice:
+
+
+
+bpx 00403E8D
+
+&gt;break due to BPX 0137:00403E8D
+
+r ax=00FF
+
+cntl+d
+
+
+
+Goody goody, it works! We now get a file save dialog and it appears to
+
+actually save the file. But that still leaves the nag to get rid of.
+
+Well at this point I was assuming that 00FF was the &quot;goodguy&quot; flag and I
+
+got inspired to go back to wdasm and search for 00FF hoping for an
+
+obvious mov function.
+
+
+
+Wdasm hit on:
+
+
+
+:0040129F add bh,bh   [no i dont think this is what we want]
+
+:004016D8 add bh,bh   [nope]
+
+...
+
+:00405242 mov word ptr [00408030], 00FF [finally! hey, loc 408030 is familiar!]
+
+
+
+Ok, I think we found our bad boy. I don't know much about visual basic,
+
+but I don't think its a coincidence that right before the mov there is a
+
+reference to MSVBVM50.__vbaVarTstEq. Guess that stands for
+
+VisualBasic_Test_Equation--I dunno. Well, the whole snippet looks like:
+
+
+
+* Ref to MSVBVM50.__vbaVarTstEq
+
+:00405232 Call 0040143E
+
+:00405237 test ax, ax			  [ax=0000 no wonder it jumps all the time]
+
+:0040523A je 00405293                     [hey if we NOP this we can get to the badboy]
+
+:0040523C cmp dword ptr [00408010], edi
+
+:00405242 mov word ptr [00408030], 00FF   [our badboy, we must not be hitting this loc] 
+
+:0040524b jne 0040525C			  [leave this alone or we will wind up in a loop]
+
+
+
+Now Flipper states that his program will check if its been tampered
+
+with. Err, lets suppose I'm stupid and I missed that part. Using Joe
+
+Blow Hex Editor, change 7457h at offset 463Ah [:0040523A je 00405293] to
+
+9090h. Ok, the badboy has been NOP'd. Lets run app1 to see if it worked.
+
+Ok, no nag. Put some junk
+
+text in and click save. Hey!, it seems to be fully operational without
+
+actually registering the program.
+
+
+
+The End.
+
+========
+
+
+
+Here we are after a few minutes at the end of my text. See, it wasn't
+
+that hard now was it? This [app1] is certainly an interesting try at
+
+visual basic protection, but I doubt any amount of trig func's are going
+
+to keep people from finding an easy way out. Visual
+
+Basic has a nasty habit of naming functions that we can breakpoint on
+
+that are very difficult to avoid programming-wise. In sum,
+
+when dealing with Visual Basic apps, try to think simple as the more
+
+complex a method you try the use, the more likely it will
+
+be more difficult to crack.
+
+
+
+the r0ket.
+
+wicketimp@hotmail.com</PRE>
+
+<HR>
+
+
+
+<HR><A name="anchoransw"></A><FONT size="+2">
+
+14 Dicember 1997: A first answer by flipper!
+
+<HR></FONT>
+
+<PRE>
+
+  That was indeed a very well written essay with a sound approach. I'd like
+
+to say &quot;ya got me&quot; to rOcket, as I did not anticipate him byte patching that
+
+particular function. Some explaination is required of course to why my
+
+program didn't snap when he changed that byte :-)
+
+
+
+  I didn't have time to write a full blown CRC check on the whole EXE, so I
+
+rigged up a makeshift byte checker. The file APP1.DAT contains offsets (in
+
+decimal), and correct byte patterns for those offsets xor'd of course. The
+
+formula to 'decrypt' the values is not important, but the truth is, I had
+
+only placed checks on what I thought would scare newbies away at first
+
+glance <G>
+
+
+
+  The byte checks are at the comparison routines jge, jbe, etc. where I
+
+thought most new crackers would try and patch the program. Also, there's a
+
+check around the timer call to stop anyone from changing that.
+
+
+
+  What would have worked much better was a full EXE check, but even on a
+
+pII-300 it would take eons using visual basic! I have also found a nice
+
+trick to pin down any message box in VB to the dead listed code.
+
+
+
+  You may see a 'push 00401234' and get no string reference to that, so I
+
+have a little trick for soft-ice and vb apps. I think someone else used this
+
+before, but not quite in this way. Also, with this method, there's no need
+
+to understand the call relocation table (but you should!).
+
+
+
+  Load the target app, wait for a messagebox or event, etc. Set your
+
+breakpoints, and when soft-ice snaps, press F12 (assuming it is still 'p
+
+ret') as many times as it takes to get back to the application code [watch
+
+the green status bar between the command window and code window]. Once
+
+there, you have the dead listing offset where your function lies, say at
+
+014f:00405211. Switch to IDA or wdasm32, and have a look. You'll see
+
+something like 'call [ebx+08]' maybe, and that's the call to the messagebox
+
+or whatever. This approach also works with VC apps, and just about anything.
+
+
+
+  Of course, you'll have to still 'feel' the code and decide where to patch,
+
+but I'll leave that up to the cracker.
+
+
+
+&quot;I have been defeated, but will be back with a visual basic app that'll do
+
+away  with smartcheck and perhaps softice..&quot; ;-)
+
+
+
+Best Regards,
+
+
+
+  flipper (upg)</PRE>
+
+<HR>
+
+<A name="anchorrcg"></A><FONT size="+2">
+
+14 Dicember 1997: A second &quot;answer-solution&quot; by +Rcg!
+
+<HR></FONT>
+
+<PRE>
+
+How to reverse Overbloated Notepad by Flipper (upg).
+
+
+
+After all as usual lets 'enter in contact' with the program and then
+
+extract some conclutions:
+
+
+
+	* Register option is available.
+
+	* Heavy disk activity.
+
+	* Check for a good 'Code' is done at next sesion.
+
+	* App1.dat is necesary.
+
+	* App1.cfg is generated if it doens't exist.
+
+	* It was writen in VB :-)
+
+	* A nagscreen appears if you are 'Unregistered' .-)
+
+	 
+
+
+
+Why there are so much disk activity?
+
+Let's use FileMonitor filtered with App1 and the current directory.
+
+
+
+Seek	\APP1.EXE	SUCCESS	 Beginning Offset: 1024	
+
+Read	\APP1.EXE	SUCCESS	 Offset: 1024 Length: 4096	
+
+Seek	\APP1.EXE	SUCCESS	 Beginning Offset: 5120	
+
+Read	\APP1.EXE	SUCCESS	 Offset: 5120 Length: 4096	
+
+Seek	\APP1.EXE	SUCCESS	 Beginning Offset: 28160	
+
+Read	\APP1.EXE	SUCCESS	 Offset: 28160 Length: 512	
+
+Seek	\APP1.EXE	SUCCESS	 Beginning Offset: 9216	
+
+Read	\APP1.EXE	SUCCESS	 Offset: 9216 Length: 4096	
+
+Seek	\APP1.EXE	SUCCESS	 Beginning Offset: 21504	
+
+Read	\APP1.EXE	SUCCESS	 Offset: 21504 Length: 4096	
+
+Open	\APP1.EXE	SUCCESS	 OPENEXISTING OPENALWAYS 	
+
+Open	\APP1.EX~	NOTFOUND 	 CREATEALWAYS REPLACEEXISTING 	
+
+Open	\APP1.EX~	SUCCESS	 CREATENEW CREATEALWAYS 
+
+				        OPENALWAYS REPLACEEXISTING 	
+
+Read	\APP1.EXE	SUCCESS	 Offset: 0 Length: 65024	
+
+Write	\APP1.EX~	SUCCESS	 Offset: 0 Length: 35840	
+
+Read	\APP1.EXE	SUCCESS	 Offset: 35840 Length: 65024	
+
+Close	\APP1.EX~	SUCCESS		
+
+Close	\APP1.EXE	SUCCESS		
+
+Open	\APP1.EXE	SUCCESS	OPENEXISTING OPENALWAYS 	
+
+Open	\APP1.EX~	SUCCESS	OPENEXISTING OPENALWAYS 	
+
+Attrib.\APP1.EXE	SUCCESS	Get Creation	
+
+Attrib.\APP1.EXE	SUCCESS	Get Access	
+
+Attrib.\APP1.EXE	SUCCESS	Get Modify	
+
+Attrib.\APP1.EX~	SUCCESS	Set Creation	
+
+Attrib.\APP1.EX~	SUCCESS	Set Access	
+
+Attrib.\APP1.EX~	SUCCESS	Set Modify	
+
+Close	\APP1.EXE	SUCCESS		
+
+Close	\APP1.EX~	SUCCESS		
+
+Open	\APP1.EX~	SUCCESS	CREATENEW CREATEALWAYS 
+
+					OPENEXISTING OPENALWAYS 	
+
+Open	\APP1.DAT	SUCCESS	OPENEXISTING OPENALWAYS 	
+
+Read	\APP1.DAT	SUCCESS	Offset: 0 Length: 512	
+
+Seek	\APP1.EXE	SUCCESS	Beginning Offset: 13312	
+
+Read	\APP1.EXE	SUCCESS	Offset: 13312 Length: 4096	
+
+Seek	\APP1.EX~	SUCCESS	Beginning Offset: 12941	
+
+Read	\APP1.EX~	SUCCESS	Offset: 12941 Length: 5	
+
+Seek	\APP1.EX~	SUCCESS	Beginning Offset: 12996	
+
+Read	\APP1.EX~	SUCCESS	Offset: 12996 Length: 28	
+
+Seek	\APP1.EX~	SUCCESS	Beginning Offset: 13992	
+
+Read	\APP1.EX~	SUCCESS	Offset: 13992 Length: 5	
+
+Seek	\APP1.EX~	SUCCESS	Beginning Offset: 14014	
+
+Read	\APP1.EX~	SUCCESS	Offset: 14014 Length: 22	
+
+Seek	\APP1.EX~	SUCCESS	Beginning Offset: 17626	
+
+Read	\APP1.EX~	SUCCESS	Offset: 17626 Length: 8	
+
+Seek	\APP1.EX~	SUCCESS	Beginning Offset: 18313	
+
+Read	\APP1.EX~	SUCCESS	Offset: 18313 Length: 5	
+
+Seek	\APP1.EX~	SUCCESS	Beginning Offset: 23555	
+
+Read	\APP1.EX~	SUCCESS	Offset: 23555 Length: 9	
+
+Read	\APP1.DAT	SUCCESS	Offset: 220 Length: 512	
+
+Seek	\APP1.EXE	SUCCESS	Beginning Offset: 25600	
+
+Read	\APP1.EXE	SUCCESS	Offset: 25600 Length: 2560	
+
+Close	\APP1.DAT	SUCCESS		
+
+Close	\APP1.EX~	SUCCESS		
+
+FindOp.\APP1.EX~	SUCCESS	APP1.ex~	
+
+FindOp.\APP1.EX~	SUCCESS	APP1.ex~	
+
+FindCl.\APP1.EX~	SUCCESS		
+
+Delete	\APP1.EX~	SUCCESS		
+
+FindNe.\APP1.EX~	NOMORE		
+
+FindCl.\APP1.EX~	SUCCESS		
+
+Seek	\APP1.EXE	SUCCESS	Beginning Offset: 17408	
+
+Read	\APP1.EXE	SUCCESS	Offset: 17408 Length: 4096	
+
+Open	\VALIDATE.DAT	NOTFOUND OPENEXISTING OPENALWAYS 	
+
+Open	\APP1.KEY	NOTFOUND OPENEXISTING OPENALWAYS 	
+
+Open	\CHCKSUM.DAT	NOTFOUND OPENEXISTING OPENALWAYS 	
+
+Open	\A_VERIFY.REG	NOTFOUND OPENEXISTING OPENALWAYS 	
+
+Open	\EB6A		NOTFOUND OPENEXISTING OPENALWAYS 	
+
+Open	\EB6B		NOTFOUND OPENEXISTING OPENALWAYS 	
+
+Open	\EB6C		NOTFOUND OPENEXISTING OPENALWAYS 	
+
+..
+
+..
+
+Open	\ED9H		NOTFOUND OPENEXISTING OPENALWAYS 	
+
+Open	\ED9I		NOTFOUND OPENEXISTING OPENALWAYS 	
+
+Open	\ED9J		NOTFOUND OPENEXISTING OPENALWAYS 	
+
+Open	\PATCH.EXE	NOTFOUND OPENEXISTING OPENALWAYS 	
+
+Open	\A.DAT		NOTFOUND OPENEXISTING OPENALWAYS 	
+
+Open	\APP1.CFG	SUCCESS	 OPENEXISTING OPENALWAYS 	
+
+Read	\APP1.CFG	SUCCESS	 Offset: 0 Length: 512	
+
+Read	\APP1.CFG	SUCCESS	 Offset: 180 Length: 512	
+
+Close	\APP1.CFG	SUCCESS		
+
+
+
+
+
+
+
+Conclutions:
+
+
+
+	1. Files named EB6A,EB6B...ED9J  are generated
+
+	   by a bucle and are fog to our eyes...so ignore them.
+
+	2. Files APP1.KEY, VALIDATE.DAT, CHCKSUM.DAT and
+
+	   A_VERIFY.REG are only opened and closed (not read),
+
+	   so it may only check for it existence.
+
+	3. The only file read is APP1.DAT.
+
+	4. File App1.ex~ is copy of App1.exe ==&gt; file check
+
+						 integrity?
+
+
+
+Let's use the normal aproach to all UserName/RegisterCode schemes.
+
+bpx at nagscreen====&gt;bpx rtcmsgbox (this is the MessageBoxA 
+
+VB function) and F11.
+
+
+
+Now, write down the address (4055A0) and W32Dasm.
+
+
+
+
+
+* Referenced by a CALL at Address:00404030   
+
+|
+
+405512     push ebp
+
+405513     mov ebp, esp
+
+..
+
+..
+
+405595     lea eax, dword ptr [ebp-20]
+
+405598     push 00000010
+
+40559A     push eax
+
+40559B     Call 00401396		;rtcMsgBox
+
+4055A0     lea eax, dword ptr [ebp-50]
+
+
+
+
+
+And at 404030:
+
+
+
+* Referenced by a  Jump at Address:403ED8(C)
+
+|
+
+404030 E8DD140000              call 00405512
+
+
+
+
+
+So 
+
+
+
+* Referenced by a Jump at Address:0040252A(U)
+
+|
+
+403E43    push ebp
+
+403E44    mov ebp, esp
+
+403E46    sub esp, 0000000C
+
+403E49    push 004012A6
+
+403E4E    mov eax, dword ptr fs:[00000000]
+
+403E54    push eax
+
+403E55    mov dword ptr fs:[00000000], esp
+
+403E5C    sub esp, 000000F8
+
+403E62    mov eax, dword ptr [ebp+08]
+
+403E65    and dword ptr [ebp+08], FFFFFFFE
+
+403E69    and eax, 00000001
+
+403E6C    mov [ebp-08], 00401038
+
+403E73    push ebx
+
+403E74    mov dword ptr [ebp-04], eax
+
+403E77    mov eax, dword ptr [ebp+08]
+
+403E7A    push esi
+
+403E7B    push edi
+
+403E7C    mov ebx, dword ptr [eax]
+
+403E7E    mov dword ptr [ebp-0C], esp
+
+403E81    push eax
+
+403E82    call [ebx+04]
+
+403E85    mov ax, word ptr [00408030] <== Ok this is our flag!!! 403E8B xor esi, esi 403E8D cmp ax, 03FB 403E91 mov dword ptr [ebp-18], esi .. .. 403EB8 mov dword ptr [ebp+FFFFFF50], esi 403EBE mov dword ptr [ebp+FFFFFF40], esi 403EC4 jnl 00404035 403ECA cmp ax, 001B 403ECE jle 00404035 403ED4 cmp ax, 00FE 403ED8 jle 00404030 <="=" Here .. So the flag is at [408030]: But, where is modified our flag (searching for 408030 we find ocurrences at: 403E85 4042A0 404B95 405242 405296 Let's see: :00403E81 50 push eax :00403E82 FF5304 call [ebx+04] :00403E85 66A130804000 mov ax, word ptr [00408030] :00403E8B 33F6 xor esi, esi :00403E8D 663DFB03 cmp ax, 03FB :0040429C 50 push eax :0040429D FF5104 call [ecx+04] :004042A0 66A130804000 mov ax, word ptr [00408030] :004042A6 33FF xor edi, edi :004042A8 663DFB03 cmp ax, 03FB :00404B8E 5E pop esi :00404B8F 8D8D18FFFFFF lea ecx, dword ptr [ebp+FFFFFF18] :00404B95 66893D30804000 mov word ptr [00408030], di :00404B9C 89BDD4FEFFFF mov dword ptr [ebp+FFFFFED4], edi :00404BA2 89B5CCFEFFFF mov dword ptr [ebp+FFFFFECC], esi :00405231 50 push eax :00405232 E807C2FFFF Call 0040143E ;__vbaVarTstEq :00405237 6685C0 test ax, ax :0040523A 7457 je 00405293 :0040523C 393D10804000 cmp dword ptr [00408010], edi :00405242 66C70530804000FF00 mov word ptr [00408030], 00FF :0040524B 750F jne 0040525C :0040524D 6810804000 push 00408010 :00405293 8B4508 mov eax, dword ptr [ebp+08] :00405296 66C70530804000FE00 mov word ptr [00408030], 00FE Ok!!! solution is in front of you at this time!!!!! Look at 405237="="> FF Good Guy.
+
+		   FE Bad  Guy.
+
+
+
+bpx at 405232 and wait.
+
+Look at the stack:
+
+
+
+ss:esp+0 ==&gt; 2nd Value to Tst
+
+ss:esp+4 ==&gt; 1st Value to Tst
+
+
+
+e ss:esp+0 =&gt; arguments to the function, looking at address 
+
+referenced by the 3er dword  you can see the correct code.
+
+
+
+So: Name: +HCU
+
+    Code: 6AB76748
+
+
+
+Let's see the posible file integrity check.
+
+
+
+Seek	\APP1.EX~	SUCCESS	Beginning Offset: 12941	
+
+Read	\APP1.EX~	SUCCESS	Offset: 12941 Length: 5	
+
+Seek	\APP1.EX~	SUCCESS	Beginning Offset: 12996	
+
+Read	\APP1.EX~	SUCCESS	Offset: 12996 Length: 28	
+
+Seek	\APP1.EX~	SUCCESS	Beginning Offset: 13992	
+
+Read	\APP1.EX~	SUCCESS	Offset: 13992 Length: 5	
+
+Seek	\APP1.EX~	SUCCESS	Beginning Offset: 14014	
+
+Read	\APP1.EX~	SUCCESS	Offset: 14014 Length: 22	
+
+Seek	\APP1.EX~	SUCCESS	Beginning Offset: 17626	
+
+Read	\APP1.EX~	SUCCESS	Offset: 17626 Length: 8	
+
+Seek	\APP1.EX~	SUCCESS	Beginning Offset: 18313	
+
+Read	\APP1.EX~	SUCCESS	Offset: 18313 Length: 5	
+
+Seek	\APP1.EX~	SUCCESS	Beginning Offset: 23555	
+
+Read	\APP1.EX~	SUCCESS	Offset: 23555 Length: 9
+
+
+
+
+
+And now look at app1.dat
+
+
+
+14989 6338FE068C
+
+15044 0A886E04050563381E050A8B640405056338FB050A8B570405056F0F
+
+16040 6338FE068C
+
+16062 0A888E05050563381E050A8B840505056338FA05787E
+
+19674 3EC20A81A9070505
+
+20361 EC49F8FAFA
+
+25603 5755FA545D80C5780B
+
+
+
+Do you see something in common????????
+
+
+
+14989-2048=12941
+
+15044-2048=12996
+
+16040-2048=13992
+
+16062-2048=14014
+
+19674-2048=19626
+
+20361-2048=18313
+
+25603-2048=23555
+
+
+
+
+
+12941: 66 3D FB 03 89  (from App1.exe offset 12941) 
+
+Xor:   63 38 FE 06 8C  (from App1.dat)
+
+--------------------- 
+
+       05 05 05 05 05 
+
+
+
+12996: 0F 8D 6B 01-00 00 66 3D 1B 00 0F 8E 61 01 00 00 66 3D FE ...
+
+Xor:   0A 88 6E 04 05 05 63 38 1E 05 0A 8B 64 04 05 05 63 38 FB ...
+
+-------------------------------------------------------------------
+
+       05 05  05 05 ...
+
+
+
+
+
+and more....
+
+
+
+
+
+Ok!!! now you can patch is because you know the correct code in
+
+file App1.dat.
+
+
+
+
+
+But, why it not checks at:
+
+
+
+:00405231 50                      push eax
+
+:00405232 E807C2FFFF              Call 0040143E  ;__vbaVarTstEq
+
+:00405237 6685C0                  test ax, ax
+
+:0040523A 7457                    je 00405293 <== Here 'Nopping' at 40523A is more than enough to patch the program. The 'KeyMaker' Let's use a zen approach. Let's make a table using different UserNames and getting the correct code. UserName Code "A.class" tppabs="http://fravia.org/A.class" 6AB65BEC AA 6AB6B1F4 AAA 6AB707FC B 6AB65D3F BB 6AB6B499 BBB 6AB70BF4 C 6AB65E91 CC 6AB6B73F CCC 6AB70FED . . . Z 6AB67D02 ZZ ... ZZZ ... + 6AB63ECD Nothing 6AB605E3 Look, the increment between two consecutive values can be 152h or 153h. Lets make the next operation: value of nothing-value of letter. Letter Value at first position difference at other positions + 38EA EVEN ODD A 5609 (-1) (+1) B 575B (-1) (0) C 58AD (+1) (0) D 5A01 () E 5B54 () F 5CA7 () G 5DF9 (0) (0) H 5F4C (0) (O) I 609F () J 61F2 () K 6345 () L 6498 (-1) (0) M 65EA () N 674C () O 6890 () P 69E3 (0) (-1) Q 6B36 () R 6C89 (+1) (0) S 6DDB () T 6F2D () U 7081 (0) (0) V 71D4 () W 7327 () X 747A () Y 75CC () Z 771E () The formula is="=">  6AB605E3+(sum of every letter)+differences
+
+
+
+Now, lets create some codes:
+
+
+
+	+ABC = 6AB605E3+(38EA+5609+575B+58AD)-1+1=6AB744DE
+
+	+HCU = 6AB605E3+(38EA+5F4E+58AF+7085)+0=6AB76748
+
+	+ALL = 6AB605E3+(38EA+5609+6498+6498)-1-1=6AB75E04
+
+	+RCG = 6AB605E3+(38EA+6C89+58AD+5DF9)+1+0+0=6AB761FD
+
+	APP =  6AB605E3+(5609+69E3+69E3)+0-1=6AB72FB1
+
+	
+
+
+
+Now, you can find out the missing values and create your own
+
+keymaker.
+
+
+
+
+
++Rcg 1997</PRE>
+
+<HR>
+
+
+
+<HR><A name="anchor_2_answ"></A><FONT size="+2">
+
+26 Dicember 1997: A second answer by flipper!
+
+<HR></FONT>
+
+<PRE>Fravia+,
+
+
+
+  I'm sorry for the long delay, I've been busy as of late, but here's a
+
+response to +RCG's essay on my Visual Basic protection.
+
+
+
+  For the second time now, I've seen my Visual Basic protection 'byte the
+
+dust'. It seems that +RCG has a certain routine he follows whenever he cracks
+
+an app. Using filemon is an excellent way of seeing which files are fetched
+
+by the program. I set up my program to create random files galore, but it
+
+didn't fool +RGC (a seasoned +cracker).
+
+
+
+  It just goes to show how insecure VB really is. You can use SoftIce,
+
+SmartCheck, and a dead list (works quite well for vb5 apps) among other
+
+things to crack any vb program. Since my protection has been defeated twice
+
+now :-) the full source code will be published as well so that anyone who
+
+chooses to compare dead lists with actual source code can keep track of the
+
+soup mix we've all come to known as Windows.
+
+
+
+  The reason I didn't use an external DLL to perform a CRC check on the file
+
+is (1) an OCX was not available, and (2) would be easily defeated by anyone
+
+who has read &quot;DLL Based Protections Are Dead&quot; from your page. So I made my
+
+first fatal mistake; copying the actual program to a temp file and then
+
+performing the necessary byte checks on that copy instead of the original
+
+(VB can't bloody well do that either). Filemon was able to reveal exactly
+
+which bytes I was reading, so RCG was able to figure out quite easily that
+
+the locations in APP1.DAT were only 2048 bytes away fron their actual
+
+position. He also figured out (I won't ask how long this took!) that I XOR'd
+
+each byte by 05 to scare off the newbie crackers. I only wish I could have
+
+implemented a CRC32 check (at the least) to thwart off our good friend +RCG.
+
+
+
+  That about covers it, and as I learn more about cracking, I'll apply those
+
+tips and techniques to try and develop an application that is next to
+
+impossible to crack. It's a dream, I know.. but I already have a few plans
+
+in the works.
+
+
+
+  My next protection will be in VB 3.0 (I'll be using Visual C later on in
+
+February), so it's going to be 16bit. Also, it will not decompile very
+
+easily and it will kick SmartCheck, BoundsChecker, FileMon, OpenTrap, etc.
+
+out of memory before it starts up. The last thing I'll try to implement is
+
+some nice anti soft-ice code that will hopefully kick that code collector
+
+out of memory also. You'll just have to wait and see. Hopefully I can
+
+deliver on these outrageous promises ;) Until next time.
+
+
+
+Best Regards,
+
+
+
+  flipper (upg) 12/25/1997</PRE>
+
+<HR>
+
+<FONT color="green">(c) <FONT color="#5500AA">flipper (upg)</FONT> All rights reversed</FONT>
+
+<HR ALIGN="CENTER" WIDTH="100%" SIZE="3">
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</I></CENTER>
+
+<BR><CENTER>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="protecti.htm" tppabs="http://www.anticrack.de/fravia/protecti.htm">Back to 'Our Protections'</A> 
+
+           <HR width="33%">
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut CGI-scripts</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering legal?</A></CENTER>
+
+<CENTER><HR ALIGN="CENTER" WIDTH="100%" SIZE="2"></CENTER>
+
+</BODY>
+
+</HTML>

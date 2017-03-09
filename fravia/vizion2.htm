@@ -1,0 +1,459 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>The Easy Protection Schemes And The Lazy Protectionists</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+<CENTER><FONT size="+3">The Easy Protection Schemes And The Lazy Protectionists</FONT>
+
+<BR>(InstallShield Software Corporation protection schemes)<BR>
+
+<A href="stupid.htm" tppabs="http://www.anticrack.de/fravia/stupid.htm"><IMG SRC="stupid.gif" tppabs="http://www.anticrack.de/fravia/stupid.gif" ALT="HCU" ALIGN="BOTTOM" WIDTH="114" HEIGHT="43" BORDER="0" VSPACE="0" HSPACE="0"></A>
+
+<BR>
+
+<BR>
+
+<H2><B>by Vizion</B></H2>
+
+<H4>(05 December 1997)</H4>
+
+
+
+<HR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">Courtesy of fravia's page 
+
+of reverse engineering<HR>       
+
+<I>Well, Vizion has sent a very interesting addition for a (future?) section 
+
+solely dedicated to the various Installwizards routines, which revest an obvious 
+
+interest for our activities... a short essay, yet I know that there is great request 
+
+for the bruteforce password routines... what could you enjoy more than seeing one 
+
+of them, programmed by you in your language of choice, thank to Vizion's pseudocode, 
+
+finding langsam its way inside the target under your very eyes... like in the old 
+
+&quot;War games&quot; film, where a (may be a little too young) 
+
+cracker saved the whole world?</I></CENTER><HR size="6">
+
+<PRE>
+
+
+
+           The Easy Protection Schemes And The Lazy Protectionists           
+
+
+
+ Everyone in our trade knows InstallShield Software Corporation. Well those
+
+ great programmers have created some new packages, InstallFromTheWeb v2.1,
+
+ PackageForTheWeb v2.1 and InstallShield Professional East Edition v5.0 all 
+
+ very neat products indeed. I got a request to crack InstallFromTheWeb, 
+
+ which I did quite fast. Due to my curiosity I downloaded the other two 
+
+ packages also and came up with the next amusing results.
+
+
+
+ The First Time,
+
+
+
+ I started InstallFromTheWeb v2.1 and it asked for a password. Those great
+
+ protectionist had dimmed the &quot;next button&quot; so we needed a working password.
+
+ Ok, a breakpoint on GetWindowTextA got me in SoftIce. And I could observe
+
+ the next piece of code,
+
+
+
+ * Reference To: USER32.GetWindowTextA, Ord:013Fh
+
+                                   |
+
+ :00403713 FF155C144100   Call dword ptr [0041145C]
+
+ :00403719 8B1590EF4000   mov edx, dword ptr [0040EF90]  <U should be here :0040371F 52 push edx :00403720 E86BD9FFFF call 00401090 << ?!? :00403725 8B1588EA4000 mov edx, dword ptr [0040EA88] << static value :0040372B 83C404 add esp, 00000004 :0040372E 33C9 xor ecx, ecx << :00403730 3BC2 cmp eax, edx << good password? :00403732 0F94C1 sete cl << good/bad flag :00403735 8BC1 mov eax, ecx :00403737 5D pop ebp :00403738 C3 ret I think for the trained eye, this snippet says enough. A call, a compare and a good/bad flag. We all know what sete does if the ZF is set and we all know when cmp will set the ZF. I traced the code "a.class" tppabs="http://fravia.org/a.class" couple of times in SoftIce and the value in edx is always the same, F450D3h. So lets take a look at the only call we got in our snippet, * Referenced by a CALL at Addresses:004032A2 , :00403720 | :00401090 55 push ebp :00401091 8BEC mov ebp, esp :00401093 8B5508 mov edx, dword ptr [ebp+08] << offset password :00401096 B8AC43F100 mov eax, 00F143AC << :0040109B 8A0A mov cl, byte ptr [edx] << 1st digit :0040109D 84C9 test cl, cl << empty? :0040109F 740D je 004010AE << yes! get out * Referenced by a Jump at Address:004010AC(C) | :004010A1 0FBEC9 movsx ecx, cl << :004010A4 42 inc edx << :004010A5 8D0448 lea eax, dword ptr [eax+2*ecx] << mathematics ! ;) :004010A8 8A0A mov cl, byte ptr [edx] << next digit :004010AA 84C9 test cl, cl << the end? :004010AC 75F3 jne 004010A1 << no! go on * Referenced by a Jump at Address:0040109F(C) | :004010AE 3593190500 xor eax, 00051993 << more math... :004010B3 5D pop ebp :004010B4 C3 ret Well, even a +newbie could understand this. So I don't know what I can explain more. So how do get a working password. You should have noticed that the target tells us that the password is case-sensitive, so the password may contain chars (a..z,A..Z) and numbers (0..9). There is no check on the lenght of the password, so we can choose that. So here is what I came up with. After some vodka-martini I came up with the next little random password generator. The code below is pseudo code, I hope that most of you can translate this to their favourite programming language, <font color="blue">
+
+ STR_LEN = 10
+
+
+
+ CREATE_STR                                              
+
+  FOR IDX = 1 TO STR_LEN DO                              
+
+   VAL[IDX] = RANDOM_VAL                                 
+
+  RETURN VAL                                             
+
+ END CREATE_STR                                          
+
+
+
+ DO_MATH( VAL )
+
+  EAX = F143ACh
+
+  FOR IDX = 1 TO STR_LEN DO
+
+   EAX = EAX + ( 2 * BYTE( VAL[IDX] ) )
+
+  EAX = EAX XOR 51993h
+
+  RETURN EAX
+
+ END DO_MATH
+
+
+
+ MAIN_PART
+
+  STAT_VAL = F450D3h
+
+  REPEAT
+
+   TEST_STR = CREATE_STR
+
+   TEST_VAL = DO_MATH( TEST_STR )
+
+  UNTIL (TEST_VAL - STAT_VAL = 0)
+
+  SHOW(TEST_STR)
+
+ END MAIN_PART
+
+</FONT>
+
+ Why should this work? The whole idea is to create values that are close to
+
+ the test value loaded into edx because we need cmp to set the ZF (see code
+
+ above). How can we do this (and quickly, if possible)? The value of TEST_VAL
+
+ depends on the length of the strings we create in CREATE_STR. The best way
+
+ to see if we're on the right track is to make the program print out the
+
+ values of TEST_VAL and of TEST_VAL - STAT_VAL. I started with strings of 10
+
+ digits, if we're doing ok the value of TEST_VAL - STAT_VAL should oscillate 
+
+ around zero,
+
+<FONT color="purple">
+
+ 16011357 -118
+
+ 16012173 698
+
+ 16011963 488
+
+ 16012179 704
+
+ 16011431 -44
+
+ 16012209 734
+
+ 16011535 60
+
+ 16011349 -126
+
+ 16012237 762
+
+ 16011365 -110
+
+ ...
+
+ 16011517 42
+
+ 16011437 -38
+
+ 16011631 156
+
+ 16012225 750
+
+ 16012171 696
+
+ 16011381 -94
+
+ 16012103 628
+
+ 16012269 794
+
+ 16012245 770
+
+ 16011475 0         <PASSWORD : Cy042L6Yf7 </fonT>
+
+ And I had luck from the first time, the program returned a working password
+
+ within a couple of seconds. If you still don't understand how I came to this
+
+ solution, call it +ZEN and just accept it.
+
+
+
+ Well this does it for InstallFromTheWeb, pretty easy if you ask me...
+
+
+
+ The Second Time,
+
+
+
+ Lets go on with PackageForTheWeb v2.1 - start the program and enjoy almost
+
+ the same password screen, why not try a password from InstallFromTheWeb ;).
+
+ Well it won't work, else there wouldn't be more to write about. Again, a
+
+ breakpoint on GetWindowTextA got me in SoftIce. Again the same code showed
+
+ up. So why didn't it work? I traced the code and noticed only one difference
+
+ in the whole protection scheme. The static value that is loaded into edx was
+
+ different, F4528Dh . I changed this number in my password generator and ran
+
+ it again,
+
+<FONT color="purple">
+
+ 16011317 -600
+
+ 16011447 -470
+
+ 16011295 -622
+
+ 16012233 316
+
+ 16012273 356
+
+ 16012255 338
+
+ 16011519 -398
+
+ 16012249 332
+
+ 16011267 -650
+
+ ...
+
+ 16011359 -558
+
+ 16012275 358
+
+ 16012171 254
+
+ 16012199 282
+
+ 16011509 -408
+
+ 16011501 -416
+
+ 16012211 294
+
+ 16012081 164
+
+ 16012167 250
+
+ 16011353 -564
+
+ 16011917 0         <PASSWORD : kaHpjnDEqc </font>
+
+ Bingo! Again within a couple of seconds the generator returned a working
+
+ password. Voila, that does it for this target, let's go on with the next
+
+ one.
+
+
+
+ The Third Time,
+
+
+
+ Its time for our third target, InstallShield Professional v5.0 - again do
+
+ all the same as the two times before. Again the only difference is the
+
+ static value loaded into edx, now the value was F44F75h. Again I changed the
+
+ password generator and ran it. But now it kept running, so something else
+
+ needed to change. I traced the code in SoftIce a couple of times but all was
+
+ the same as in the previous two targets. Uhm?!? Remember what I said about
+
+ the values of TEST_VAL? You do! Great! The values are dependent of the
+
+ length of the passwords. So I tried a couple of different lengths from 5
+
+ digits to 30 digits. And found that 30 was quite satisfying,
+
+<FONT color="purple">
+
+ 16010815 -310
+
+ 16009819 -1306
+
+ 16010325 -800
+
+ 16010657 -468
+
+ 16010535 -590
+
+ 16011047 -78
+
+ 16010353 -772
+
+ 16010933 -192
+
+ 16011131 6
+
+ 16010925 -200
+
+ ...
+
+ 16011145 20
+
+ 16010529 -596
+
+ 16010605 -520
+
+ 16011165 40
+
+ 16010861 -264
+
+ 16011239 114
+
+ 16010287 -838
+
+ 16011135 10
+
+ 16010259 -866
+
+ 16010305 -820
+
+ 16011125 0         <PASSWORD : 25sJWhqxN4C51Klyq31Y0ql2U6WkNn </fonT>
+
+ Like you'll notice the value of TEST_VAL is in most cases negative, this
+
+ means that shorter passwords would do the job also. Again, the generator
+
+ returns a good value within some seconds. Voila, I'm a happy man for the
+
+ third time.
+
+
+
+ So this is all, I hope I explained the title of this essay...
+
+ It's a shame that great programs like those used in this essay use so easy
+
+ protections schemes ;). Again this shows that a good programmer is NOT the
+
+ same as a good protectionist.
+
+
+
+ Well, what can I say, I enjoyed writing this essay, you enjoyed reading it
+
+ else you won't be here right now...
+
+
+
+ I better stop...
+
+
+
+ Greets fly to,
+
+ all regulars and members of mEX/c4N, all members of REVOLT, all +crackers
+
+
+
+ Vizion, 12/97.
+
+</PRE>
+
+<FONT color="green">(c) <FONT color="#5500AA">Vizion</FONT> All rights reversed</FONT>
+
+<HR ALIGN="CENTER" WIDTH="100%" SIZE="3">
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</I></CENTER>
+
+<BR><CENTER>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="project7.htm" tppabs="http://www.anticrack.de/fravia/project7.htm">Back to project 7</A> 
+
+           <HR width="33%">
+
+
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut CGI-scripts</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering legal?</A></CENTER>
+
+<CENTER><HR ALIGN="CENTER" WIDTH="100%" SIZE="2"></CENTER>
+
+</BODY>
+
+</HTML>

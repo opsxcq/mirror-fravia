@@ -1,0 +1,330 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>zeepdf</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+<CENTER><FONT size="+3">PDF: Create PDF documents for free<BR>reversing Adobe PDF Writer<BR></FONT><FONT size="+2">
+
+(You know how to create .pdf documents? No? I will -shortly- explain it)</FONT>
+
+
+
+<H4>by zeezee<BR>
+
+<BR>
+
+(31 October 1997)</H4>
+
+<HR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">Courtesy of Fravia's page 
+
+of reverse engineering<BR><BR><I>Well, a nice contribution by zeezee, it's the 
+
+'lazy' way, yet it's interesting indeed, and can be useful for all those following 
+
+the 'harder' way...</I></CENTER><HR size="6">
+
+<PRE>
+
+   The last +ORC idea to crack .pdf is pretty cool. I thought about it several
+
+   months ago, having a need to produce .pdf documents without Acrobat.
+
+   I'm too lazy to even think about writing a txt -&gt; pdf converter myself.
+
+
+
+   First (and not so bad) idea was to go to Adobe site and look through.
+
+   Bingo! (say 'small bingo'). I found an update to PdfWriter for NT. 
+
+   Seems that they have not released the correct PDFWriter on the Exchange 
+
+   CD.
+
+   D/L it and tried to install. Wanted serial# to install.
+
+   1/2 hour reversing and it worked fine (I had lost my serial).
+
+
+
+   So, now I'm able to produce .pdf documents from, say, Word using PDFWriter
+
+   as one of the printers (exactly like Ghiribizzo does, see File/Doc Info/
+
+   General).
+
+   This should solve the &quot;txt -&gt; pdf converter&quot; problem for all the lazy ones. 
+
+   Download PDFWriter update from Adobe site, do some minor cracking, and 
+
+   you're able to produce full-blown .pdf files.
+
+
+
+   The approach I used is somewhat original. No IDA, no SoftICE, HIEW only.
+
+
+
+   A short description of my work is here:
+
+
+
+------------------------------------------------------------------------------
+
+                Create PDF documents for free using Adobe PDF Writer
+
+                               (for NT-ers only)
+
+                                   by zeezee
+
+
+
+You know Acrobat Reader and .pdf documents. Everyone knows them.
+
+You know how to create .pdf document? No? I - shortly - explain it.
+
+
+
+There are many ways.
+
+First, you can buy Adobe Exchange. Simple but not so elegant for real crackers.
+
+  You would then get Acrobat Distiller, which converts PostScript to PDF and
+
+  PDFWriter, which is a printer driver allowing making PDF documents from all
+
+  Windoze programs that can print. You simply print to PDF Writer and your PDF
+
+  document is ready.
+
+Second, you can write a nice txt-&gt;pdf converter if you wish. Not-so-simple, 
+
+  but interesting and formative work (+orc will thank you personally on his 
+
+  new recyclable bits).
+
+And, <FONT color="blue">third</FONT>: look for our target! Adobe is giving it for free on its web site!
+
+
+
+So, let's focus on this third variant.
+
+
+
+Files needed:
+
+- PWNT302.EXE (or maybe newer version) from adobe or mirror
+
+- HIEW.EXE as usual.
+
+
+
+The smart people at Adobe released NT version of Acrobat Exchange before the
+
+final version of PDFWriter was released. So they released update version 3.02
+
+on their web site. PWNT302.EXE it's the name and ca. 1.2M is the length.
+
+But this version asks for our beloved serial# during setup and does not install
+
+when it's not correct.
+
+First I tried to disassemble setup program. It is compressed InstallShield
+
+image using setup.ins as a compiled script file. I had no idea how to find
+
+serial# screen.
+
+So I tried to find other way. How to change the script (common to 80% of
+
+installed software for '95 or NT) so that it skips this screen.
+
+
+
+When you have PWNT302.EXE and HIEW ready go this way.
+
+
+
+Steps marked '-' are essential, steps marked '*' are informational only.
+
+
+
+- start Windows Explorer
+
+- clear the contents of your Windows temp directory (c:\temp or something like
+
+  that), just to avoid copying junk
+
+- start PWNT302.EXE and press Next until serial# screen is shown
+
+- then press Alt-Tab to go to Explorer
+
+- copy all files from temp folder to, say, c:\t1
+
+  You have uncompressed setup program there.
+
+
+
+* go to _ISTMP0.DIR (the digit may vary if temp dir wasn't empty)
+
+* open ACROINST.INI with notepad
+
+  Nice script, isn't it?
+
+  Look at keys starting with Display - there are dialogs setup shows.
+
+  DisplaySVAL is the key to success. It controls displaying of serial# valida-
+
+  tion (surprise???)
+
+  But we can't simply change it to NO because setup _creates_ this file always
+
+  and it's locked during setup so we can't edit it.
+
+  I used grep to find 'DisplaySVAL' in all setup files and found 2 occurrences
+
+  in SETUP.INS. It's a kind of compiled setup script and I have no idea how to
+
+  patch it to assume 'NO' to this question. But there is another possibility.
+
+  SETUP.INS wants to find DisplaySVAL string in ACROINST.INI. So we can change
+
+  one letter in this string inside SETUP.INS and it will search for DisplayXVAL
+
+  which it definitely doesn't find. Now all depends on default behaviour when
+
+  DisplaySVAL key isn't found but - to our luck - it is good.
+
+  Close Notepad. You now know what to do.
+
+
+
+- switch back to setup and close it. Files from temp will be deleted.
+
+
+
+- open copied SETUP.INS with hiew. Search for DisplaySVAL
+
+  Edit it so (offsets may vary in next versions of setup)
+
+  20A0B: 53 -&gt; 58
+
+  20CAD: 53 -&gt; 58
+
+  This changes DisplaySVAL to DisplayXVAL 2 times.
+
+
+
+- run setup.exe and - voila! no serial# validation. Other installation goes
+
+  smoothly.
+
+
+
+- happy PDF writing.
+
+
+
+Greets to +orc and all in the cracking universe.
+
+------------------------------------------------------------------------------
+
+
+
+3. Conclusion: InstallShield SETUP.INS cracking is a challenge. I will work on
+
+   this target as time allows.  
+
+
+
+zeezee (zee_zee@hotmail.com)  
+
+
+
+</PRE>   
+
+ <FONT color="green">(c) zeezee 1997. All rights reserved</FONT>
+
+<HR ALIGN="CENTER" WIDTH="100%" SIZE="3">
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</I></CENTER>
+
+<BR><CENTER>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="pdffing.htm" tppabs="http://www.anticrack.de/fravia/pdffing.htm">Back to the PDF-Project </A> 
+
+ 
+
+<HR width="33%">
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">
+
+<A HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage </A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"> 
+
+<A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links </A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0">
+
+<A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity </A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">Academy database </A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut CGI-scripts </A>
+
+
+
+
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_Fravia </A><BR>
+
+
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering illegal? </A></CENTER>
+
+<CENTER><HR ALIGN="CENTER" WIDTH="100%" SIZE="2"></CENTER>
+
+</BODY>
+
+</HTML> 
+
+
+

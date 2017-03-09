@@ -1,0 +1,868 @@
+<html>                 <HTML>
+
+                 <HEAD>
+
+                 <META Name="Voluntary Content Rating" content="it's fravia's: great!">
+
+
+
+
+
+                 <TITLE>fuhr_o1.htm:  slightly different kind of dongle cracking by Dr. Fuhrball
+
+ </TITLE>
+
+                 </HEAD>
+
+                 <BODY BGCOLOR=#C0C0C0 TEXT=#001010 ALINK=#405040 VLINK=#8850AA>
+
+                 <CENTER><A href="advanced.htm" tppabs="http://www.anticrack.de/fravia/advanced.htm"><IMG SRC="xtranio.gif" tppabs="http://www.anticrack.de/fravia/xtranio.gif" 
+
+                 ALT="advanced" ALIGN=CENTER WIDTH=114 HEIGHT=43 BORDER=0 VSPACE=0
+
+                 HSPACE=0></A>
+
+                 <BR>
+
+                 <FONT color=gray>Advanced cracking</FONT>
+
+                 <P> 
+
+                  <FONT size=+3>A slightly different kind of dongle cracking<BR>by Dr. Fuhrball<BR> 
+
+4 October 1998
+
+                 </FONT><HR>
+
+                 Courtesy of fravia's pages of reverse engineering
+
+                 <P><I>Well, Dr Fuhrball calls the investigation of a visual basic 
+
+target trough a pure software approach (dead listing and smartchecking) 
+
+'methode ý la fravia', which is flattering yet inacceptable, since these methods are 
+
+known "depuis l'aube de la crackhumanitÈ". Dr Fuhrball demonstrates 
+
+here how an hardware approach 
+
+("ý la +ORC") can 
+
+be at times very useful in dongle cracking. Yet something puzzles me: 
+
+"<FONT color=purple>Numega's smartcheck shows absolutely
+
+nothing</FONT>"... are you sure smartcheck's settings were right Dr Fuhrball? If so it would 
+
+be <U>REALLY</U> worth checking WHY smartcheck failed... (Matt, r you reading this?). And now enjoy this (advanced) dongle 
+
+reversing essay...
+
+
+
+</I><P><HR></CENTER>
+
+<PRE>
+
+A slightly different kind of dongle cracking by Dr. Fuhrball
+
+
+
+Todays target is an extremely expensive program with a highly limited
+
+market. Its a tool for advanced modeling and simulation of a mechanical
+
+device. The two pieces of software plus the data acquisition box cost
+
+over $100,000 USD. A search of companys that would be in a position to
+
+use such software came up with less than 100 world wide. The program
+
+is not available on the net.
+
+
+
+HINT:	4 wheels
+
+
+
+It does however use a slight twist on a trick which makes it interesting
+
+to explore.
+
+
+
+This program is massive. 20 custom dll's written in C++, and 30 VB OCX's
+
+29 of which are written in native compiled VB OCX's, and one of which
+
+is compiled to P code.
+
+
+
+Two days of soft-icing, wdasming basically led nowhere, because of an
+
+interesting trick exposed later. After a weekend of tracing thru the
+
+VB5 virtual machine, and looking at virtually everything, i finally
+
+discovered 3 different places where the dongle code was called.
+
+Two were in the C++ dll's  which took about
+
+10 minutes each. The OCX was an entirely different matter.
+
+
+
+After spending these two days "methode ý la fravia" I got tired and went
+
+back to "Dr. Fuhrballs patented hardware method". This realized results
+
+in under an hour.
+
+
+
+Normally at home i would have used my personal logic analyzer, a
+
+Tektronix 7d01F2. 
+
+But I was at work and had a better one. This time a Biomation K205. 
+
+This really nice antique has an additional property of being able
+
+to run with completely clockless operation. Setting the jitter time to
+
+20 nanoseconds, and running on just state changes gave a pretty picture
+
+of exactly what was going on.
+
+
+
+Oh, lookie, absolutely every time the dongle is accessed, absolutely the
+
+same information is returned. There are alienation bits similar to the
+
+microphar technique, but after printing out 3 different sets of patterns
+
+and holding them up to the light shows the typical device.
+
+One output data line, One output clock line, and one Input data line.
+
+
+
+Sad really, one of these days i might actually find a dongle used in a
+
+way thats gonna be really tough.
+
+
+
+As an aside, after reading fravia's message board with the guy asking
+
+about the Autocad Crack, I took a look at this, and less than 15 minutes
+
+later had that one obliterated using the same technique below.
+
+
+
+Notice: some of the code below has been slightly modified to force you
+
+to actually learn something about how this works.
+
+
+
+I decided to write a dongle emulator using a pic chip (<A href="javascript:if(confirm('http://129.105.116.5/fravia/www.microchip.com  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://129.105.116.5/fravia/www.microchip.com'" tppabs="http://129.105.116.5/fravia/www.microchip.com">www.microchip.com</A>)
+
+Numerous assemblers most of which are shareware or freeware are
+
+available all over the net. You will need a pic programmer however, like 
+
+the one that parallax sells.
+
+
+
+
+
+;PICC54 with 4mhz clock
+
+;instructions take 1 microsecond
+
+;fuses cp=off, wdte=enabled, osc=xt
+
+
+
+;count the correct number of pulses ignoring any data
+
+;then output the correct acknowledgement
+
+;its amazing how many different dongles this variation
+
+;on a theme works on
+
+
+
+
+
+
+
+;equates
+
+
+
+portb   equ     6
+
+w       equ     0
+
+count   equ     8
+
+pic54   equ     1FFH
+
+
+
+
+
+        org     0
+
+start   goto    main
+
+
+
+
+
+main    movlw   B'00000100'
+
+        tris    portb
+
+
+
+;now wait for SLCT = 1
+
+
+
+L1      btfss   portb,1
+
+        goto    L1
+
+
+
+;now wait for SLCT = 0
+
+
+
+L2      btfsc   portb,1
+
+        goto    L2
+
+
+
+;now count 84 clock times
+
+
+
+        movlw   84
+
+        movwf   count
+
+
+
+;wait for clock=0
+
+
+
+L3      btfsc   portb,2
+
+        goto    L3
+
+
+
+;wait for clock = 1
+
+
+
+L4      btfss   portb,2
+
+        goto    L4
+
+
+
+        decfsz  count,f
+
+        goto    L3
+
+
+
+; now funnel the correct data out
+
+
+
+;wait for clock = 0
+
+
+
+L4      btfsc   portb,2
+
+        goto    L4
+
+
+
+; output databit 0
+
+
+
+        movlw   0
+
+        movwf   portb
+
+
+
+;wait for clock = 1
+
+L5      btfss   portb,2
+
+        goto    L5
+
+
+
+;wait for clock = 0
+
+
+
+L14     btfsc   portb,2
+
+        goto    L14
+
+
+
+; output databit 1
+
+
+
+        movlw   4
+
+        movwf   portb
+
+
+
+;wait for clock = 1
+
+L15     btfss   portb,2
+
+        goto    L15
+
+
+
+;wait for clock = 0
+
+
+
+L24     btfsc   portb,2
+
+        goto    L24
+
+
+
+; output databit 2
+
+
+
+        movlw   0
+
+        movwf   portb
+
+
+
+;wait for clock = 1
+
+L25     btfss   portb,2
+
+        goto    L25
+
+
+
+;wait for clock = 0
+
+
+
+L34     btfsc   portb,2
+
+        goto    L4
+
+
+
+; output databit 3
+
+
+
+        movlw   4
+
+        movwf   portb
+
+
+
+;wait for clock = 1
+
+L35     btfss   portb,2
+
+        goto    L35
+
+
+
+;wait for clock = 0
+
+
+
+L44     btfsc   portb,2
+
+        goto    L44
+
+
+
+; output databit 4
+
+
+
+        movlw   0
+
+        movwf   portb
+
+
+
+;wait for clock = 1
+
+L45     btfss   portb,2
+
+        goto    L45
+
+
+
+;wait for clock = 0
+
+
+
+L54     btfsc   portb,2
+
+        goto    L54
+
+
+
+; output databit 5
+
+
+
+        movlw   4
+
+        movwf   portb
+
+
+
+;wait for clock = 1
+
+L55     btfss   portb,2
+
+        goto    L55
+
+
+
+
+
+;wait for clock = 0
+
+
+
+L64     btfsc   portb,2
+
+        goto    L64
+
+
+
+; output databit 6
+
+
+
+        movlw   0
+
+        movwf   portb
+
+
+
+;wait for clock = 1
+
+L65     btfss   portb,2
+
+        goto    L65
+
+
+
+
+
+;wait for clock = 0
+
+
+
+L74     btfsc   portb,2
+
+        goto    L74
+
+
+
+; output databit 7
+
+
+
+        movlw   4
+
+        movwf   portb
+
+
+
+;wait for clock = 1
+
+L75     btfss   portb,2
+
+        goto    L75
+
+
+
+        clrwdt
+
+        goto    L1
+
+
+
+        org     pic54
+
+        goto    start
+
+
+
+        END
+
+
+
+
+
+
+
+This works great, however its certainly not a "methode ý la fravia" in 
+
+that we have not actually learned anything about cracking the software.
+
+
+
+OK, now that we know whats going on, we can go back into reversing and 
+
+modify the DK12wn32.dll code thats the dongle driver.
+
+
+
+Here is a code snippet:
+
+
+
+
+
+Exported fn(): FindDK12 - Ord:0008h
+
+:200012DD 55                      push ebp
+
+:200012DE 8BEC                    mov ebp, esp
+
+:200012E0 83EC0C                  sub esp, 0000000C
+
+:200012E3 53                      push ebx
+
+:200012E4 56                      push esi
+
+:200012E5 57                      push edi
+
+:200012E6 33C0                    xor eax, eax
+
+:200012E8 66A114300020            mov ax, word ptr [20003014]
+
+:200012EE 8945F4                  mov dword ptr [ebp-0C], eax
+
+:200012F1 E9A0000000              jmp 20001396
+
+
+
+* Referenced by a  Jump at Address:2000139A(C)
+
+|
+
+:200012F6 6AFF                    push FFFFFFFF
+
+:200012F8 A18C500020              mov eax, dword ptr [2000508C]
+
+:200012FD 50                      push eax
+
+
+
+* Reference To: KERNEL32.WaitForSingleObject, Ord:026Ah
+
+                                  |
+
+:200012FE FF15D8600020            Call dword ptr [200060D8]
+
+:20001304 8B4508                  mov eax, dword ptr [ebp+08]
+
+:20001307 50                      push eax
+
+:20001308 E80B080000              call 20001B18
+
+:2000130D 83C404                  add esp, 00000004
+
+:20001310 668945F8                mov word ptr [ebp-08], ax
+
+:20001314 6A00                    push 00000000
+
+:20001316 6A01                    push 00000001
+
+:20001318 A18C500020              mov eax, dword ptr [2000508C]
+
+:2000131D 50                      push eax
+
+
+
+
+
+I think you all know what to do with the first few lines of the
+
+routine to always return the right return code. But once again
+
+its not the "methode ý la fravia"
+
+
+
+Back to this annoying OCX.
+
+
+
+(I do not need to show the two dll's, as they are trivial)
+
+
+
+
+
+This OCX is compiled to VB5 p code. Numega's smartcheck shows absolutely
+
+nothing. W32dsm89 is also of no use, it generates garbage. Softice
+
+is of some use, but traveling thru the VB5 virtual machine is tons of
+
+fun.
+
+
+
+I started writing a VB5 p code discompiler. And kept adding to it as
+
+i encountered p codes that i did not know. Someday I may actually
+
+complete this with all the p codes, then publish it. Its a true mess 
+
+at the moment which is why i will not publish it now.
+
+
+
+Anyway back to the OCX. With the dongle installed, debugging thru the
+
+mess continued to get VB5 on errors. Without the dongle installed there are
+
+no VB5 on errors, but the code does not run. To make a long story short
+
+here is some pseudo code that shows the trick.
+
+
+
+
+
+ON ERROR GOTO continuetoprocess
+
+
+
+
+
+mound of initialization and setup code here
+
+
+
+
+
+Call the 32 bit dongle code, which calls the dongle vxd
+
+in particular we are looking for a dongle with developer id = XXXXXXX
+
+the return code is 0 for not installed, or 1,2,3 for the device
+
+found on port LPT1,2,3
+
+
+
+A=FINDK12(XXXXXX, , ,...)
+
+B=A-1
+
+C=100.0/B
+
+B=B-1
+
+C=100.0/B
+
+B=B-1
+
+C=100.0/B
+
+
+
+print out the fact that the dongle was not found!
+
+goto YOULOOSE
+
+
+
+
+
+continuetoprocess:
+
+
+
+Therefore: <FONT color=red>if error code is floating point divide by zero then
+
+we must have found the dongle</FONT>!
+
+
+
+(this is a little bogus, but is REALLY how the code works.)
+
+
+
+
+
+Cute little trick.  What this shows is that the statement
+
+<FONT color=green>
+
+IF</FONT> Visual Basic <FONT color=green>THEN</FONT> cracked at once
+
+
+
+is not necessarily true!
+
+
+
+
+
+Next I will write an OCX using the above tricks and a few more
+
+to show that cracking VB based protection schemes can be much 
+
+tougher than you might think.
+
+
+
+But its time for me to have some down time to listen to my new
+
+Wilson speakers.
+
+</FONT></PRE><HR>
+
+
+
+                 <CENTER><A href="advanced.htm" tppabs="http://www.anticrack.de/fravia/advanced.htm"><IMG SRC="xtranio.gif" tppabs="http://www.anticrack.de/fravia/xtranio.gif" 
+
+                 ALT="advanced" ALIGN=CENTER WIDTH=114 HEIGHT=43 BORDER=0 VSPACE=0
+
+                 HSPACE=0></A>
+
+                 <BR>
+
+                 <FONT color=gray>Advanced cracking</FONT></CENTER> 
+
+                 <BR><BR>
+
+                 <HR>
+
+                 <CENTER>
+
+                 <IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+                 BORDER=0 VSPACE=0 HSPACE=0><A HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage</A>
+
+                 <IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+                 BORDER=0 VSPACE=0 HSPACE=0><A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links</A> 
+
+                 <IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+                 BORDER=0 VSPACE=0 HSPACE=0><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms</A>
+
+
+
+                 <IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+                 BORDER=0 VSPACE=0 HSPACE=0><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC</A>
+
+                 <IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+                 BORDER=0 VSPACE=0 HSPACE=0><A HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays</A>
+
+                 <IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+                 BORDER=0 VSPACE=0 HSPACE=0><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database</A>
+
+                 <BR>
+
+                 <IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+                 BORDER=0 VSPACE=0 HSPACE=0><A HREF="realicra.htm" tppabs="http://www.anticrack.de/fravia/realicra.htm">reality cracking</A>
+
+                 <IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+                 BORDER=0 VSPACE=0 HSPACE=0><A HREF="howtosea.htm" tppabs="http://www.anticrack.de/fravia/howtosea.htm">how to search</A>
+
+                 <IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+                 BORDER=0 VSPACE=0 HSPACE=0><A HREF="javascri.htm" tppabs="http://www.anticrack.de/fravia/javascri.htm">javascript wars</A>
+
+                 <BR>
+
+                 <IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+                 BORDER=0 VSPACE=0 HSPACE=0><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools</A>
+
+                 <IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+                 BORDER=0 VSPACE=0 HSPACE=0><A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity academy</A> 
+
+                 <IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+                 BORDER=0 VSPACE=0 HSPACE=0><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails</A>
+
+                 <IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+                 BORDER=0 VSPACE=0 HSPACE=0><A
+
+                 HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut CGI-scripts</A>
+
+
+
+                 <IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+                 BORDER=0 VSPACE=0 HSPACE=0><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia+</A>
+
+                 <BR>
+
+                 <IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+                 BORDER=0 VSPACE=0 HSPACE=0><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering
+
+                 legal?</A>
+
+                 </CENTER>
+
+
+
+                 </BODY>
+
+                 </HTML>
+
+
+

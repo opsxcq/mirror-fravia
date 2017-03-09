@@ -1,0 +1,530 @@
+<html>  <HTML>
+
+<HEAD>
+
+<TITLE>wrapper</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+<CENTER><H2>SoftWrapper - Cracking Windows Calculator?<BR>
+
+(how to reverse engineer a simple &quot;anti-Winice&quot; protection scheme)</H2>
+
+
+
+<IMG SRC="stupid.gif" tppabs="http://www.anticrack.de/fravia/stupid.gif" ALT="HCU" ALIGN="BOTTOM" WIDTH="114" HEIGHT="43" BORDER="0" VSPACE="0" HSPACE="0">
+
+<BR><BR>
+
+<H4>by +Sync, 14 August 1997</H4>
+
+<IMG SRC="hcu1.gif" tppabs="http://www.anticrack.de/fravia/hcu1.gif" ALT="HCU" ALIGN="BOTTOM" WIDTH="114" HEIGHT="43" BORDER="0" VSPACE="0" HSPACE="0">
+
+	<BR>
+
+<BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">Courtesy of Fravia's page 
+
+of reverse engineering<BR><BR><I>Well, this is indeed another confirmation 
+
+of the old saying: &quot;who will protect the shareware programmers from their 
+
+commercial protectors?&quot; Only correct answer: <U>the sublime 
+
+cracker's community</U> (of course :-)
+
+  </I>					  <HR size="3">
+
+<PRE><FONT size="+2">SoftWrapper - Cracking Windows Calculator?
+
+By +Sync</CENTER></FONT>
+
+	I came across a very interesting target recently, and I thought that
+
+this info might interest some of the other +HCU students.  While the cracking
+
+techniques I used in this crack are not special in any way, I think that the
+
+company's attempt to assure it's clients that their software is secure, when
+
+in reality it's extremely vulnerable via a few simple tricks deserves an essay. 
+
+The program is called SoftWrapper and it is made by Seven Locks software, 
+
+<A href="tppmsgs/msgs1.htm#179" tppabs="http://www.anticrack.de/fravia/tppmsgs/msgs1.htm#179">http://www.sevenlocks.com</A>. 
+
+
+
+	This is another one of those &quot;registration systems&quot; whichbelieve to be 
+
+the panacea for the world's problems.  
+
+What I found very interesting about this program is that, unlike most I have 
+
+seen, the protective encryption is applied after your program is compiled.  
+
+It adds an envelope to an already existing windows executable (Greythorne, 
+
+I thought of you and your Windows Symbiote), and it actually does it quite 
+
+cleanly.  So, I read the manual, as usual, and came across some surprising 
+
+stuff.  Read my excerpts below:
+
+ <FONT color="purple">
+
+--------------------------From SoftWrapper Manual-----------------------
+
+Anti-Hacking:
+
+-Encrypts your file to protect against modification.
+
+
+
+-Uses an advanced polymorphic engine to create completely different decryptors
+
+   for each installation. This prevents any &quot;hack one, hack them all&quot; approach
+
+   to removing WRAP-EXE/WRAP-COM from protected files.
+
+-Uses dual encryption loops laced with advanced anti-debugging code which 
+
+   deters all debugging attempts.
+
+-Contains code to specifically target Soft-ICE, a protected mode 32-bit 
+
+   debugger which bypasses many other wrapper's anti-debugging code with ease.
+
+
+
+Disassembly Resistance
+
+-There are no tools on the market that will take a wrapped program apart - not
+
+   DEBUG, not Sourcer, not Soft-Ice.
+
+
+
+-----------------------------------------------------------------------</FONT>
+
+
+
+	Well, this one certainly sounds like a challenge.  It apparently cannot
+
+be traced with our beloved Soft-Ice, dissassembled with *anything*, or patched
+
+in any way because it *detects* alterations to itself.  When I read this I first
+
+thought that maybe it was uncrackable.  But did not +Orc say that nothing was 
+
+uncrackable?  So I thought, maybe I can get a valid registration number, and
+
+then no patch would be necessary.  The best thing for this (In my opinion) is
+
+a live approach using Soft-Ice.  So where to start?  First, go to your WINDOWS
+
+directory and copy CALC.EXE, the windows calculator, to your SoftWrapper 
+
+directory.  Now, experiment a bit with SoftWrapper.  Unfortunately the demo
+
+version only produces one valid code, and it never changes.  But wrap up CALC
+
+anyway, and run it a few times to get the feel for how Softwrapper has changed
+
+it.  Be sure that the 'Enable Registration' option is checked when you wrap
+
+up the program.  As you might have guessed, SoftWrapper appends some code to 
+
+the end of the target, and relocates and modifies a little bit at the beginning
+
+of the program, so that program execution jumps immediately to the new code, 
+
+then is returned to where it should have started once the protection code has
+
+executed.  Many of you will say to yourselves, &quot;Hey, doesn't that sound just 
+
+like a Virus?&quot;.  And you will be correct - this program, as has been discussed
+
+in other essays is one of the money-driven parasites on our society. 
+
+	We decided to start with Soft-Ice. So fire up Symbol loader and load 
+
+the program. What, you say? You can't load the Symbol loader?  Ah yes, the tricky
+
+'Anti Soft-Ice Code' they have placed in their program fools the symbol loader 
+
+into thinking that Soft-Ice is not loaded (even if it is) and it will not load. 
+
+I'm sure someone out there may be able to explain to us how this is done, however
+
+for now we do not care in the slightest.  Hit Ctrl-D and you will be in Soft-Ice
+
+just as normal with no problems at all.  Run the program from Explorer or 
+
+however you wish, and we will target as has been explained in earlier essays.
+
+Enter an invalid code, and when the message pops up telling you that your code
+
+is incorrect (the exact content of this message is up to you, you enter it 
+
+when you wrap the program) break into Soft-Ice with a Ctrl-D.  Check out the
+
+current window handles owned by CALC.EXE by typing HWND CALC.  The first one
+
+listed will be the nag window.  In my case it was 59C, however it will be 
+
+different for everyone.  So BMSG 59C WM_COMMAND, and then Ctrl-D to return to
+
+the Calculator.  Click on either the 'Yes' or 'No' buttons in the nag dialog
+
+and Soft-Ice will break out into (probably) the middle of nowhere.  So P RET
+
+(press F12) a few times until you get back to the CALC code.  You should land
+
+on the last line of the code below.  Carefully examine the code above this CALL
+
+you just returned from (which displayed the nag dialog).
+
+
+
+:00414698 E8B4010000              call 00414851
+
+:0041469D 6683F801                cmp ax, 0001		;Check Flag here (should be 1)
+
+:004146A1 742A                    je 004146CD		;Jump over nag if 1
+
+
+
+* Possible Reference to String Resource ID=00064: &quot;Deg&quot;
+
+                                  |
+
+:004146A3 6A40                    push 00000040
+
+:004146A5 E8B1030000              call 00414A5B
+
+
+
+* Possible Reference to String Resource ID=00068: &quot;Invalid input for function.&quot;
+
+                                  |
+
+:004146AA 6A44                    push 00000044
+
+:004146AC 8D85DD0D0000            lea eax, dword ptr [ebp+0DDD]
+
+:004146B2 50                      push eax
+
+:004146B3 8B9D170F0000            mov ebx, dword ptr [ebp+0F17]
+
+:004146B9 8D042B                  lea eax, dword ptr [ebx + ebp]
+
+:004146BC 50                      push eax
+
+:004146BD 6A00                    push 00000000
+
+:004146BF E891030000              call 00414A55		;Display wrong number box
+
+:004146C4 83F806                  cmp eax, 00000006	;You should land HERE!
+
+
+
+So, if you cheated and looked at the comments you should see that the first
+
+call in that section should return a 1 in ax in order to signal a correct
+
+registration number.  If you have been paying close attention, you will say
+
+to yourself, &quot;hey where did that dead listing come from? I thought this program
+
+could not be dissassembled with *anything* &quot;.  If you caught this error, I 
+
+salute you.  The answer to that question is simple: <U>they lied</U>.  
+
+WDASM 8.7 (and 8.5 too for that matter) works quite well on it.  
+
+Once again we owe Urbanik (my registration is in the mail ;) quite a lot for his 
+
+wonderful tool.  
+
+Looking at the dead-listing you will notice that all of the text you entered 
+
+into SoftWrapper to be used in the various dialogs is encrypted, and cannot be 
+
+located with a simple text search.  
+
+So, I guess they did not lie about the encryption.  
+
+However, once again we do not care in the slightest.  
+
+We know a Call to 00414851 should return a 1, but it is unfortunately returning 
+
+0 for us.  Lets look at it, it's a rather large chunk of code to look at at 
+
+once, but most of it is not important.
+
+
+
+* Referenced by a CALL at Addresses:		;This is the call which sets the flag
+
+|:004140E2   , :00414698   			;Notice it is called 2x
+
+
+
+* Possible Reference to String Resource ID=00012: &quot;x^y&quot;		;Some encrypted data?
+
+                                  |
+
+:00414851 B90C000000              mov ecx, 0000000C
+
+:00414856 56                      push esi
+
+:00414857 57                      push edi
+
+:00414858 8DB5CB0B0000            lea esi, dword ptr [ebp+0BCB]	;ESI points to 'real' code
+
+:0041485E 8DBDDE0A0000            lea edi, dword ptr [ebp+0ADE] ;EDI points to our code
+
+:00414864 33C0                    xor eax, eax
+
+:00414866 33D2                    xor edx, edx
+
+:00414868 8A1E                    mov bl, byte ptr [esi]
+
+:0041486A 8A07                    mov al, byte ptr [edi]
+
+:0041486C 3C2D                    cmp al, 2D
+
+:0041486E 7503                    jne 00414873		
+
+:00414870 47                      inc edi
+
+:00414871 8A07                    mov al, byte ptr [edi]
+
+
+
+* Referenced by a Jump at Address :0041486E(C)
+
+|
+
+:00414873 32C3                    xor al, bl
+
+:00414875 0BD0                    or edx, eax
+
+:00414877 46                      inc esi
+
+:00414878 47                      inc edi
+
+:00414879 E2ED                    loop 00414868
+
+:0041487B 33C0                    xor eax, eax		;Zero in AX
+
+:0041487D 0BD2                    or edx, edx
+
+:0041487F 7505                    jne 00414886	        ;Beggar off if edx <> 0
+
+
+
+* Possible Reference to String Resource ID=00001: &quot;Ave&quot;
+
+                                  |
+
+:00414881 B801000000              mov eax, 00000001     ;Put in Good Guy Value
+
+
+
+* Referenced by a Jump at Address: 0041487F(C)
+
+|
+
+:00414886 5F                      pop edi
+
+:00414887 5E                      pop esi
+
+:00414888 C3                      ret
+
+
+
+ 
+
+The above code is easy enough to patch in any of a number of ways in order to
+
+prevent the Beggar Off jump.  Below is how I did it:
+
+
+
+Change: 
+
+:0041487F 7505                    jne 00414886	        ;Beggar off if edx <> 0
+
+To:
+
+:0041487F 7500                    jne 00414881	        ;jmp to next line
+
+
+
+That's all there is to cracking Calculator.  What about 'our' code and the 'real'
+
+code's mentioned in the code comments above.  Well, you can double check them
+
+if you like.  The code pointed to by ESI will be YLJY-Y1HB-TH2P which is the
+
+only code the 'Register' option of the demo SoftWrapper will give.  While this
+
+is not very useful now, it does tell us that the 'memory echo' technique will
+
+probably work for any SoftWrapped products.  This brings up another question.
+
+What software is currently protected by SoftWrapper?  Well, that's a good 
+
+question, one I am working on right now.  If and when I find some, I will
+
+write a brief follow-up to this essay.  It is interesting that Seven Locks
+
+Software praises this product so highly, but does not use it to protect any
+
+of their own products.  How much confidence do they really have that this is
+
+hack-proof?
+
+					  <FONT color="purple">
+
+-----------------------More From The SoftWrapper Manual------------------
+
+At the present time, it is unknown how a hacker would attack the SOFTWrapper
+
+to defeat its protection.  But the requirement of monitoring the underground
+
+for such information is a good idea, and the developer of the wrapping 
+
+technology should alert all users of the wrapping product when such a breach 
+
+becomes known, and should develop fixes as needed.
+
+--------------------------------------------------------------------</FONT>
+
+
+
+I guess they know how SoftWrapper would be attacked now, but why should a <FONT COLOR="PURPLE"><U>hacker?</U></FONT> 
+
+attack software? They are dealing with software protection and do not know that 
+
+there is a difference between hackers and crackers?
+
+I am insulted.  
+
+I would hope they are monitoring our discussion, so they can correct and improve 
+
+their protection from any &quot;low&quot; pirates who might use this to steal software, but 
+
+I don't think that there is any SoftWrapped software out there to steal anyway, 
+
+so I guess it does not matter much.  
+
+Is it possible that the fact that there are almost no Shareware authors dumb 
+
+enough to use this kind of 'cookie cutter' protector is a sign that they are 
+
+ebentally beginning to learn something from us?  
+
+It would be nice, yet I doubt it, considering how close the race is
+
+for the new 'Most stupid Protection' Award.  
+
+A message to Seven Locks Software now, from me:<B> 
+
+I salute your attempt.  You did encrypt the data, you did include Soft-Ice
+
+hostile and anti-dissassembling code, however why did you spend all that 
+
+time and efforts to install 'Seven Locks' when the window has been left 
+
+wide open?</B>
+
+
+
+If anyone has more info, keep me posted.
+
++Sync
+
+   </PRE>
+
+ <FONT color="green">(c) +Sync 1997. All rights reserved</FONT>
+
+<HR ALIGN="CENTER" WIDTH="100%" SIZE="3">
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</I></CENTER>
+
+<BR><CENTER>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">
+
+<A HREF="project7.htm" tppabs="http://www.anticrack.de/fravia/project7.htm">Project 7 (Most stupid protections) </A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">
+
+<A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#84'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#84">homepage </A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"> 
+
+<A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#73'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#73">links </A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0">
+
+<A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity </A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#82'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#82">students' essays </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">Academy database </A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut CGI-scripts </A>
+
+
+
+
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_Fravia </A><BR>
+
+
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering illegal? </A></CENTER>
+
+<CENTER><HR ALIGN="CENTER" WIDTH="100%" SIZE="2"></CENTER>
+
+</BODY>
+
+</HTML>
+

@@ -1,0 +1,1114 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>quine_21.htm</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR=#C0C0C0 TEXT=#001010 VLINK=#405040>
+
+<CENTER><FONT size=+3>Interactive Disassembler Pro v3.7 Demo (II)</FONT>
+
+<BR>(How to load the previous databases)
+
+  <BR>
+
+<H4><BR>by Quine<BR>
+
+(30 October 1997)</H4><BR>
+
+<IMG SRC="xtranio.gif" tppabs="http://www.anticrack.de/fravia/xtranio.gif" ALT="advanced" ALIGN=BOTTOM WIDTH=114 HEIGHT=43 BORDER=0 VSPACE=0 HSPACE=0></A>
+
+<BR>Advanced cracking series
+
+
+
+<HR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALIGN=BOTTOM BORDER=0 VSPACE=0 HSPACE=0 width="13" height="13">Courtesy of fravia's page 
+
+of reverse engineering<BR>
+
+<BR><I>Well, this is SERIOUS ADVANCED CRACKING once more. Once more a fundamental tool of the 
+
+trade (IDA). Once more a function reenabling work (the loading of the previous databases, i.e. 
+
+one of the most important crippled functions of the crippled version: you do not want to 
+
+start everything anew every time you use IDA, do you?). Once more something 
+
+we all need: new knowledge that you can at once apply to other targets and reverse 
+
+engineering endeavours.<BR>
+
+Quine is getting us used to 
+
+this kind of well-crafted essays. I'm afraid newbyes will not understand much here, 
+
+please read the 'basic' essays first, and peruse the <A href="javascript:if(confirm('http://207.30.50.126/gthorne/  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://207.30.50.126/gthorne/'" tppabs="http://207.30.50.126/gthorne/">other</A> 
+
+ +HCU page (where you'll find a lot of help for newbyes) before delving in this.<BR>
+
+For all other reverser: some considerations.<BR>
+
+1)	Read it twice (at least) what you'll find daunting at the first quick 
+
+        glance will be understandable at the second and easy to follow at the 
+
+        third pass. In my opinion if you read this at least a couple of times 
+
+you will not even need to have a crippled IDA target on 
+
+        your HD to follow the path;<BR>
+
+2)	Note how all this is built and buids on the contributes of others. Quine is 
+
+        an extraordinary reverser and a very good didact, witty and deep, whose 
+
+        mighty essays never forget (as unfortunately some other do :-( to quote all 
+
+        contributions to the crumb trail he has followed <U>and left behind</U>;<BR> 
+
+3)	I believe it is time to tackle a VITAL sector: compiler specifities.<BR>Actually 
+
+        that what we are doing is not very professional. This has some 
+
+advantages (only non programmers can see the non-obvious) and some disadvantages 
+
+(we find relocation tables and we don't even know that they are called vtables :-)<BR>Time to 
+
+correct the disadvantages keeping the advantages. Let's begin to work on 'compiler 
+
+specific differences' or whatever you want to call that what we should understand 
+
+perfectly if we really want to migrate from 'good dilettante' to 'elite' reverse engineers.<BR><BR>
+
+This said, here you have a real reverse engineering essay in all its glory... enjoy!
+
+</I></CENTER><HR size=6><PRE>
+
+Target:
+
+
+
+Interactive Disassembler Pro v3.7 Demo
+
+We're going to enable the <U>loading of saved databases</U>.
+
+
+
+
+
+Source:
+
+                                
+
+<A href="javascript:if(confirm('http://www.datarescue.com/ida.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.datarescue.com/ida.htm'" tppabs="http://www.datarescue.com/ida.htm">http://www.datarescue.com/ida.htm</A> (homepage)
+
+<A href="javascript:if(confirm('http://www.datarescue.com/ida/demo37.zip  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.datarescue.com/ida/demo37.zip'" tppabs="http://www.datarescue.com/ida/demo37.zip">http://www.datarescue.com/ida/demo37.zip</A> (9,884,100 bytes)
+
+ or, rather, <A href="javascript:if(confirm('ftp://195.0.122.253/pub/ida/375evl.zip  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='ftp://195.0.122.253/pub/ida/375evl.zip'" tppabs="ftp://195.0.122.253/pub/ida/375evl.zip">ftp://195.0.122.253/pub/ida/375evl.zip</A> (thank Ed!) 
+
+read on for more web resources :-)
+
+
+
+Tools used:
+
+
+
+IDA Pro 3.7 itself  (nothing comes close to comparing to it)
+
+SoftICE for NT v3.2 (that new video driver is amazing)
+
+(if you can't get Pinnacle's version to install, change the byte at
+
+2B6C in setup.ins from 2B to B8)
+
+HexWorkshop32 (for patching - any hex editor will do)
+
+
+
+In this essay, I will assume that you are familiar with my previous
+
+essay here on fravia+'s site about cracking the file size limit on the
+
+IDA Pro demo.  I am also assuming that you have ida.wll loaded into
+
+IDA Pro.
+
+
+
+Ok, the first thing to do is to find the place where it puts up the
+
+message that it can't load old databases.  Our previous work on the
+
+file size limit suggests that this message will be in ida.hlp, which
+
+it is.  Using the method I outlined in that article, compute the index
+
+number for the help message and use IDA's search for immediate
+
+function to find the place where 36Eh is moved into a register or
+
+pushed on the stack.  Sure enough, we find it early on at 403520.
+
+This routine is directly called anywhere in the program, but IDA very
+
+helpfully tells us that the value 403520 is referenced at 403D3F
+
+(actually it will give you the starting address of the function it
+
+occurs in and an offset, but I will usually translate that into an
+
+address in this article).  Follow the hyperlink and we find ourselves
+
+in a familiar place:  just past the explicit file size check and
+
+before the rather vulgar expiration date check (now would be a good
+
+time to patch it before you forget-- Jan 1st isn't that far away).
+
+403520 is moved into ebx, then we get the expiration check, then call
+
+ebx.  But look, depending on the value of esi at 403CDE, either 403520
+
+or 40352C is moved into ebx.  Let's jump back to 40352C and see what's
+
+going on there.
+
+
+
+40352C calls two functions, one indirectly, and returns.  A little
+
+thought will tell you that this routine must be called when a new file
+
+(i.e., a file to be disassembled rather than a saved database) is
+
+loaded into IDA.  Why?  Well, we ought to assume that the expiration
+
+date is always checked and therefore, since execution follows
+
+immediately to the call ebx and we don't get the message about loading
+
+old databases when we load new files (obviously), it must call 40352C
+
+(this can be verified in SoftICE if you feel like it).  Therefore, the
+
+value of esi at 403CDE must indicate whether or not we've got a new
+
+file or a saved database.
+
+
+
+This, unfortunately, is the point at which pedagogy must depart from
+
+actual practice, because explaining everything I tried at this point
+
+would take far too long and furthermore I can't even remember
+
+everything I did that might be significant.  Instead, I will attempt a
+
+rational reconstruction of the process and try to cover the major
+
+points of interest.  Remember, though, that this crack required a lot
+
+of tedious pouring through code and slowing but surely putting
+
+together a rather detailed picture of everything that IDA does between
+
+starting up and displaying the message saying that it can't load old
+
+databases.  I could not have hoped to put such a picture of IDA
+
+together without IDA itself.  The commenting and renaming features and
+
+all the other features that make it a truly interactive disassembler
+
+(unlike w32dasm which is basically a text viewer) are what saved me
+
+hours of scratching done notes and trying to remember where I had been
+
+and what functions did what.
+
+
+
+Enough of that and on with the crack.  There are two reasonable things
+
+to do here.  One is to trace back the value of esi and see how it gets
+
+set.  The other is to simply force the code to jump to 40352C no
+
+matter what.  Let's try the second, but it sounds like more fun.  Fire
+
+up the text editor and change the byte at file offset 3340h from 20h
+
+to 2Ch.  Start up IDA, load a saved database and see what happens.
+
+Well, it happens is that it crashes at location 44D2BB trying to
+
+access memory at 00000064.  That's no good.  No memory access there
+
+for humble console applications.  Load up SoftICE and try it again.
+
+Now when it crashes, we'll be able to look at what's going on.  Turns
+
+out that the function in which it crashes got a null pointer from
+
+sonewhere, because the offending instruction is mov edi, [eax+64h] and
+
+eax is 0.  This is bad news for us because there are any number of
+
+ways that that pointer could be set.  Also, patching the code to jump
+
+to 40352C could have introduced further problems.  This is a tough
+
+position to be in when cracking a target.  So, let's sit back and
+
+evaluate the situation and try to gather everything we know about
+
+IDA's start up code so far.
+
+
+
+First, how perceptive where you when you loaded your old database?
+
+I'll tell you that I (stupidly) wasn't very perceptive at all for
+
+quite some time.  Part of the problem is that I was using as a test
+
+database one that I had created from the tiny hello.exe sample program
+
+included in IDA.  The fact that this program is small means that it
+
+disassembles quickly and produces a small database (which is why I
+
+chose it).  With a bigger database what I'm about to point out is much
+
+more obvious.  Look at the screen when you load the old database.  IDA
+
+allocates memory for the database, it unpacks the file, it compiles
+
+the default macro (ida.idc) and at least begins to execute it.
+
+Furthermore, it does this whether you've patched the program or not.
+
+Only after having done all this does it display the mesg box/crash.
+
+What does this tell us?  Well, it tells that Mr. Guilfanov did not
+
+remove large sections of the code that have to do with loading saved
+
+files and furthermore that that code actually executes.  However,
+
+there's still something that needs to be done to get the database
+
+loaded.  Here's the crucial point:  INSTEAD OF DOING THAT EXTRA THING,
+
+IDA CALLS THE ROUTINE THAT DISPLAYS THE MSG BOX.  In other words, the
+
+call to 403520 needs to be replaced with a call to a function that
+
+works the missing magic.  I wouldn't expect anyone to figure out this
+
+last point exactly without more work, because it certainly took me
+
+forever to figure it out, but it does seem rather obvious in
+
+hindsight.  Of course, we still don;t know what the missing magic is
+
+or what function does it.  We do know that 40352C doesn't do it.
+
+Also, having 403520 simply return instantly doesn't work either.
+
+
+
+Now, let's get back into SoftICE and learn a little more about our
+
+crashing patched program.  When the crash puts you into SoftICE, we're
+
+going to walk the stack back as far we can go and find out where that
+
+null pointer comes from (see my previous article on IDA for a
+
+description of my particular stack walking technique).
+
+
+
+44D2BB is sub_44D2AC which was called at 417CC4 in sub_417CA4.  eax
+
+came into sub_44D2AC live and it was assigned a value just before the
+
+call in sub_417CA4 with the following command: mov eax, [ebx+0Eh].
+
+Great.  Another pointer.  What are these pointers that have immediate
+
+values added to them?  
+
+
+
+Brief digression about the importance of understanding the compiler
+
+When I ask this question, I am asking "What is the program's author
+
+doing here that causes the compiler to generate such commands?".  This
+
+is THE SINGLE MOST IMPORTANT QUESTION a reverse engineer can ask
+
+him/herself when dealing with compiled code (which is almost always
+
+unless you're in a library routine where you shouldn't be in the first
+
+place).  No person wrote the code you are looking at.  Who would write
+
+the following?
+
+0041809A mov     edi, edx
+
+0041809C mov     ebx, eax
+
+0041809E mov     edx, edi
+
+004180A0 mov     eax, ebx
+
+Only an idiot or a compiler.  This is taken straight out of ida.wll
+
+which was compiled by Borland C++ 5.01 with the optimization level set
+
+to maximize speed of execution (I know because I have the
+
+makefile---read on :-).  Compilers just have their ways of doing
+
+things and it is very helpful to figure out just what those ways are.
+
+End digression.
+
+
+
+They are pointers into structures when the immediate value is not an
+
+address offset.  Here's the situation.  You pass a pointer or a
+
+reference as an argument to a function and that function is then able
+
+to get at the members of the structure by adding values to the pointer
+
+that was passed.  Keep in mind, also, that the same goes for C++
+
+classes (but they have added complexities that I'll get into in a
+
+moment).  So, in the struct/class based at [ebx] in sub_417CA4 there
+
+is a member at offset 0Eh which is itself a pointer to a struct/class
+
+which in turn has another pointer at offset 64h and that pointer is
+
+00000000h and we don't want it to be.  On with the tracing!
+
+
+
+sub_417CA4 is called at 417B89, which is in sub_417B50.  We see that
+
+again in this function ebx is used to hold the pointer to the struct.
+
+(Since writing my last article, i have read that most Win32 compilers
+
+use ebx, edi, and esi as holders for enregistered local variables).
+
+Anyway, it came in through eax from a call at 41E941 in sub_41E934.
+
+Here's where we get our first break.  eax is assigned the address of
+
+export _637.  Now, let's dump the memory at _637 and see what we get.
+
+What we get are mostly zeros and FFFFh at one point.  And of course at
+
+_637+0Eh we get zeros.  However, significant progress has been made.
+
+We can safely assume that the struct/class at _637, which was declared
+
+at global scope in the program or else it wouldn't be able to be
+
+executed, isn't filled porperly.  Furthermore, this must be a fairly
+
+significant struct or else it wouldn't be exported.  Before we get too
+
+excited, though, let's continue tracing backwards as far as we can.
+
+
+
+There are quite a few functions that you will go through before you
+
+get back to the function that has the file size check, the expiration
+
+check, etc.  I won't go through all the details here, but it is worth
+
+looking at one function call in particular.  sub_422AF8 calls
+
+sub_403300 at 422B23, but it does it with the following instruction:
+
+call dword ptr [esi+2Ch].  This is interesting.  I trust that everyone
+
+has read fravia+'s fine article on call relocation tables.  But now we
+
+must ask what these call relocation tables are.  Are they a structure
+
+or array of pointers to functions declared explicitly by the
+
+programmer?  Almost always not.  In fact, the average programmer
+
+probably only has the vaguest idea that they exist at all.  They are
+
+an invention of the compiler used to deal with virtual function calls
+
+in C++ and are commonly referred to as vtables.  I am still working on
+
+the details of how they are implemented (it differs from compiler to
+
+compiler and the optimization settings also affect it), but notice
+
+that the pointer to the beginning of the vtable is gotten in a fairly
+
+roundabout way.  You will see these offsets (7D9, 7DD) in other places
+
+in the program and if you get an indirect call right after that,
+
+you'll be able to know which vtable you are dealing with.  This
+
+particular vtable starts at 489191.  Another thing you know is that
+
+all the functions in a particular vtable are member functions of the
+
+same class and are therefore related.
+
+
+
+Ok, so you end up in sub_403934, which is the big routine that has the
+
+date check, etc. at loc_403E2E, which calls sub_408100.  This tells us
+
+quite a lot.
+
+First, the call to 40352C does not crash when we're loading a saved
+
+file.  Second, an obvious test with SoftICE will tell us that
+
+sub_408100 is only called when a saved file is loaded.  That means
+
+that at 403E23 esi==0 if and only if we're loading a database.
+
+Furthermore, sub_408044 isn't called at 403E27 when we are loading a
+
+database.  Finally, at 403E33, the load new file and the load database
+
+paths meet up.  Something has happened in the routines that handle
+
+loading a new file, that hasn't happened in the routines that load a
+
+saved database and that something has to do with the struct/class at
+
+export _637.
+
+
+
+So, let's start up IDA, load a new file, let it run for a minute and
+
+then break in with SoftICE and see what's going on at _637.  With
+
+ida.wll loaded into IDA, this is what I get (remember, ida.wll is
+
+relocated to BB0000 on my machine):
+
+
+
+00C47A74 09 00 00 FF 29 00 90 AE-C6 00 00 00 00 00 28 E6
+
+00C47A84 C7 00 90 AE C6 00 E0 B8-C6 00 B0 B8 C6 00 00 00
+
+
+
+Good, we've got some pointers in here.  In particular we've got one at
+
+_637+0Eh.  Dumping the memory at [_637+0Eh] doesn't tell us much (try
+
+it), so let's look at some of these other pointers:
+
+
+
+00C6AE90: 00401000  00489000  FF001CF5  FF001CF5
+
+00C6AEA0: 00000000  01000203  00010000  FFFFFFFF
+
+
+
+00C6B8E0: 00489000  004A1000  FF001CF6  FF001CF6
+
+00C6B8F0: 00000000  01000203  00020000  FFFFFFFF
+
+
+
+00C6B8B0: 004A118C  004A12DC  FF001CF7  FF001CF6
+
+00C6B8C0: 00000000  01000203  00030000  FFFFFFFF
+
+
+
+Now we're getting somewhere.  These ought to look familiar because the
+
+first two dwords at each pointer are the begin and end addresses of
+
+the various segments in ida.wll!  So, it looks like the struct at _637
+
+holds information about all the segments in the open file.  No wonder
+
+the program couldn't get anywhere without this information.  What we
+
+need to do now is figure out how to get this information out of the
+
+saved database and into the struct at _637 before getting to the call
+
+to sub_408100.  Is this our missing magic that 403520 was supposed to
+
+do?
+
+
+
+Well, this is where I got stuck for a long time.  I pretty sure I knew
+
+what had to be done, but had no idea how to do it.  Furthermore, I
+
+wasn't sure that this was the only thing that had to be done.  Where
+
+there other structures that needed to be filled in?  I wouldn't know
+
+until I figured out how to get the segment structure filled in.  What
+
+saved me is what some might consider cheating, because it involves
+
+having access to way more information than you usually do when
+
+reversing.  Here's the story.  On IDA's US web site
+
+(www.datarescue.com) there is a mention of an SDK (Software
+
+Developer's Kit) for IDA that enables you to write processor modules
+
+for IDA (see my first essay on IDA).  This sounded very helpful, but
+
+it wasn't available for download.  They said to e-mail them for
+
+information on it.  So I did.  This was the response:
+
+
+
+It is free to registered users of IDA Pro. Have you registered your
+
+copy ?
+
+
+
+Well, no, I was planning to crack my copy instead.  I went out in
+
+search of more information on IDA.  Maybe there was some out of the
+
+way web site containing more info.  There was and still is.  IDA is
+
+written by a brilliant Russian man named Ilfak Guilfanov and Mr.
+
+Guilfanov has his own IDA web site on a server in Russia (
+
+http://www.unibest.ru/~ig/index.html ).  Go there now and download
+
+everything you can, because it has, among other things, the IDA SDK.
+
+The IDA SDK has very well commented C++ header files for most of the
+
+program.  This was an unimaginable boon.  Even better, it has a
+
+Borland lib file for accessing the exported functions in ida.wll.
+
+This lib file conatins the real names of all those 500+
+
+functions/global variables.  To get at this information, you need a
+
+program that dumps out the contents of Borland lib files (which are a
+
+proprietary format).  tdump.exe, which is included in most Borland
+
+development products, does it, and you can easily find that or a
+
+freeware equivalent on the web.  Now you can go into IDA and start
+
+renaming the exports to their real names instead of those meaningless
+
+numbers.  Between the headers and the lib file I had more than enough
+
+to finish the job.
+
+
+
+Sure enough, export _637 is called _segs (this made me feel pretty
+
+good).  In the header files you can find a complete desription of the
+
+class object that resides there (it's an area control block
+
+(areacb_t)).  Furthermore, looking through the segment.hpp and
+
+area.hpp headers you'll see some very interesting functions, including
+
+the following:
+
+
+
+// Link area control block to Btree. Allocate cache, etc.
+
+// Btree should contain information about the specified areas.
+
+// After calling this function you may work with areas.
+
+.. some comments deleted ...
+
+  int link(const char *file,		// Access to existing areas
+
+  	   const char *name,
+
+  	   int useva,
+
+  	   int infosize);
+
+  	   
+
+// Initializa work with segments
+
+// Called by the kernel itself.
+
+//	file - name of input file
+
+
+
+void	initSegment	(const char *file);
+
+
+
+Btree is the database.  Calling one of these two functions seemed like
+
+the thing to do.  However, neither of them are exported by ida.wll, so
+
+we've got to find them.  Finding them took a while, but I realized an
+
+interested fact about executable files in the course of doing it.
+
+What determines where a particular function is put inside of an
+
+exe/dll/etc.?  When a programmer compiles a project, each source file
+
+is compiled into .obj files, which contain the machine code to be
+
+processed by the linker.  The linker then combines all the obj files
+
+into the finished product, changing the addresses appropriately so
+
+that everything works out.  What does this mean?  It means that all
+
+functions in the same source file will be adjacent to one another.
+
+Now,of course, different programmers arrange their source files in
+
+different ways, but we still know that adjacent functions tend to be
+
+conceptually linked in some way.  Of course, when we have the header
+
+files, we have a very good idea where to look for functions.
+
+
+
+To make a long story short, here's how I found the link and
+
+initsegment functions.  First, we know in general where to look.
+
+Second, we know what parameters each function takes and that they,
+
+like just about every function in ida.wll, were compiled with the
+
+__fastcall option (see the appendix to my last essay).  Borland
+
+implements __fastcall in the following way:
+
+
+
+arg1:  eax
+
+arg2:  edx
+
+arg3:  ecx
+
+arg4:  last thing pushed on stack
+
+arg5:  second to last pushed
+
+etc.
+
+
+
+I looked for link first because it has more arguments and ought to be
+
+easier to find.  Well, I found what I'm pretty sure is it at
+
+sub_4399AC, but more importantly, in the course of looking, I found
+
+the right function which is initSegment (with a name like that and
+
+given our problem, you may be wondering how I could have thought that
+
+any other function could possibly be the right one---well, it was late
+
+and I'd been looking at this program for days and managed to get
+
+myself to believe all sorts of crazy things about it).  initSegment is
+
+at sub_456D70.  The first thing it does is call areacb_t::create to
+
+create the _segs area control block.  It then calls another function
+
+which in turn calls link.
+
+
+
+Ok, what we need to try now is to rewrite the function at sub_403520
+
+to call initSegment.  However, we need to pass it the name of the EXE
+
+file that was saved in the database.  However, eax comes in sub_403520
+
+with a pointer to the name of DATABASE file.  So, how do we get a
+
+pointer to the right filename?  Well, in the course of studying IDA, I
+
+discovered that there is a very easy way to do this.  Look at this
+
+code snippet which is straight out of my ida.wll database:
+
+
+
+00403DB0    mov     eax, offset _RootNode ; idb specific
+
+00403DB5    call    @netnode@value$xqqrv ; netnode::value(void)
+
+00403DBA    push    eax         ; pointer to exe filename from dbase
+
+00403DBB    push    244h        ; Database for file '%s' is loaded.
+
+00403DC0    call    @Message$qie    ; Message(int,...)
+
+00403DC5    add     esp, 8          ; end idb specific
+
+
+
+To get the filename pointer into eax, all we have to do is call
+
+netnode::value and pass it the address of _RootNode (4998B0).  So,
+
+sub_403520 needs to be this:
+
+
+
+mov  eax, 4998B0h
+
+call 425F5C ; netnode::value
+
+call 456D70 ; initSegment
+
+ret
+
+
+
+Unfortunately, we've got two problems.  (1) This code takes 10h bytes
+
+and we've only got 0Fh in the area of sub_403520.  (2)  We're
+
+referencing a global variable in a program that is inevitably going to
+
+be relocated.  That means that _RootNode is never actually going to be
+
+at 4998B0.  Windows deals with this little issue in the .reloc section
+
+of PE files.  This section contains all the addresses of places in the
+
+program that make absolute reference to an address (note the most jmp
+
+and call instructions use relative offsets and are therefore not
+
+affected by reloctaion).
+
+
+
+The first problem is easy to get around.  Take a look at PNA's essay
+
+on adding a save function to the demo of w32dasm.  We'll just stick
+
+the code at the end of the CODE segment where there are about 190h
+
+free bytes.  The second problem involves patching the relocation
+
+table.  I won't describe the details of this table, because they are
+
+somewhat hairy and you can find many good descriptions other places.
+
+The best I have seen is in the ESSENTIAL and INVALUABLE book "Windows
+
+95 System Programming Secrets" by Matt Pietrek (a NuMega employee no
+
+less), but descriptions of the PE file format are a dime a dozen on
+
+the web (I think there is even one on the site).
+
+
+
+Let's start patching.  First thing is change the value assigned to ebx
+
+at 403D3F to point to our new routine.  We're going to put the routine
+
+at 488875, right after the dll import jump stubs.  So, patch
+
+403D3F  mov     ebx, offset loc_403520
+
+to
+
+403D3F BB 75 88 48 00   mov  ebx, offset loc_488875
+
+
+
+Notice that we don't have to worry about relocations here because
+
+there already was an absolute address reference at the location where
+
+we've stuck the new one, so the loader already knows to fix it up.
+
+Now, let's insert our new routine:
+
+
+
+488875 B8 B0 98 49 00  mov  eax, 4998B0h
+
+48887A E8 DD D6 F9 FF  call 425F5C ; netnode::value
+
+48887F E8 EC E4 FC FF  call 456D70 ; initSegment
+
+488884 C3              ret
+
+
+
+The last thing left to do is patch the relocation table.  We need the
+
+dword at 488876 to be adjusted.  The necessary patch is to change the
+
+two bytes at offset 96DA4 in ida.wll from 00 00 to 76 38.  I'll leave
+
+it as an exercise to figure out exactly how this works if you don't
+
+already know. 
+
+<HR>
+
+Here a small correction: the relocation table patch must be applied 
+
+to locations 9EDA4 and 9EDA5, not 96DA4 and 96DA5, as Quine says.
+
+It may be a Tipo.	greets as usual
+
+zeezee
+
+<HR>
+
+
+
+Now, the moment of truth.  Run it.  Load a database.  It works.
+
+That's it.
+
+
+
+
+
+I really didn't think it would work, to be honest.  I assumed that all
+
+the other global areacb_t's (_funcs, etc.) would have to be
+
+initialized also.  That, however, gets done eventually in the call to
+
+sub_408100.  Could I have done it without the header files and the
+
+export names?  Who knows.  If I could have, it's not entirely clear
+
+that I wouldn't have given up in frustration after weeks of trying
+
+before I ever got it.  I was glad to know that I was at least on the
+
+right track.
+
+
+
+Demo function enabling is what I suppose that I find most enjoyable in
+
+cracking and I have a word of advice to demo writers:  TAKE AS MANY
+
+FUNCTIONS AS YOU CAN OUT OF THE DEMO.  Mr. Guilfanov took one very
+
+small function out and left in a ton of code that he never intended
+
+the demo to execute.  With those functions gone, it is simply
+
+impossible barring an act of God to re-enable the function.  I don't
+
+care how good a cracker you are.  There would be no concievable way to
+
+reconstruct what happens in the call to 408100.  
+
+
+
+
+
+Future Plans for IDA Pro
+
+
+
+First, enable the saving of ASM files.  This code really is gone from
+
+the demo, but with the information I have about the program, I'm half
+
+way there.  It's going to involve inserting rather a lot of code in
+
+the target, so hopefully I'll come up with tricks for that.  Second,
+
+and more interesting, adding features.  This can be done in part
+
+through the IDC macro language, but also through code patching.  To
+
+get an idea of the features I have in mind, check out
+
+http://www.cs.uq.edu.au/groups/csm/dcc.html and anything you can find
+
+written by Cristina Cifuentes (she is truly BRILLIANT).  DCC is a full
+
+fledged DOS deCOMPILER!  That's right, it kicks out real C code.
+
+Admittedly this can be done only to a limited extent with large and
+
+complex programs, the concepts she discusses are very deep and
+
+important for understanding how to reverse engineer.  Ilfak Guilfanov
+
+has certainly read her work (see his web site).  Well, I'm tired and I
+
+am very behind in my work. Good Night.
+
+
+
+</PRE>
+
+<HR size=2>
+
+<I><CENTER>And you better don't joke with this request of Quine either, because
+
+I'll find out if you do.</I></CENTER><PRE>
+
+fravia+,
+
+
+
+	I was wondering if you could add to my essay(s) the note that I
+
+would very much like for no one to release the cracks to IDA as crack
+
+programs (those vulgar little .com files) on the web or for anyone to
+
+publish the cracks <U>without</U> the full essay.  I have too much respect
+
+for the author of the program to have the demo crack tossed about the
+
+web for people who are not serious about reverse engineering.  He has
+
+written such a beautiful program that those of us who really cannot 
+
+afford to buy it ought to -at least- earn the right to use it.
+
+
+
+Thanks,
+
+Quine</PRE> 
+
+<FONT color=green>(c) Quine 1997. All rights reversed</FONT>
+
+<HR ALIGN=CENTER WIDTH=100% SIZE=3>
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</I></CENTER>
+
+<BR><CENTER>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A HREF="advanced.htm" tppabs="http://www.anticrack.de/fravia/advanced.htm">Back to Advanced Cracking</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A HREF="project1.htm" tppabs="http://www.anticrack.de/fravia/project1.htm">Back to Project 1</A>
+
+<HR width=33%>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN=BOTTOM
+
+BORDER=0 VSPACE=0 HSPACE=0 width="13" height="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut CGI-scripts</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering legal?</A></CENTER>
+
+<CENTER><HR ALIGN=CENTER WIDTH=100% SIZE=2></CENTER>
+
+</BODY>
+
+</HTML>
+
+
+

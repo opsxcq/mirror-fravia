@@ -1,0 +1,512 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>fuhrba.htm</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+<CENTER><FONT size="+3">MCSE MCNE tests - BeachFront Quizzer</FONT>
+
+<BR>(Visual Basic: the weak point inside VBRUN300.DLL)
+
+  <BR>
+
+<H4><BR>by +drlan<BR>
+
+(7 November 1997)</H4><BR>
+
+<A href="project8.htm" tppabs="http://www.anticrack.de/fravia/project8.htm"><IMG SRC="project8.gif" tppabs="http://www.anticrack.de/fravia/project8.gif" ALT="project8" ALIGN="BOTTOM" WIDTH="114" HEIGHT="43" BORDER="0" VSPACE="0" HSPACE="0"></A>
+
+<BR><FONT color="gray">Visual Basic reversing</FONT>
+
+
+
+<HR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">Courtesy of fravia's page 
+
+of reverse engineering<BR>       
+
+<BR><I>Well, an 'add-on to <A href="razzia.htm" tppabs="http://www.anticrack.de/fravia/razzia.htm">Razzia's tutorial</A> with a very interesting 
+
+trick (&quot;another twist on cracking VB&quot; as +drlan writes). 
+
+Here is what +drlan (who is the author -inter alia- of an important essay 
+
+about <A href="lan003.htm" tppabs="http://www.anticrack.de/fravia/lan003.htm">MKS Toolkit Release 5.2</A>) wrote to me:</I></CENTER><PRE>
+
+Fravia+,
+
+
+
+The enclosed essay doesn't present any new rocket science to our art but 
+
+it does combine a few tricks that may be of use to folks.  It highlights 
+
+an area where I had difficulty early on and presents an easy way to get 
+
+around it.  This will make it more enjoyable for the students and save 
+
+them some of the pains I encountered.
+
+
+
+Enjoy,
+
+
+
++drlan
+
+
+
+<HR size="6">
+
+Target Program : BeachFront Quizzer
+
+Protection     : demo, serial numbers to unlock tests
+
+Cracked by     : drlan [ME97]
+
+Location       : <A href="javascript:if(confirm('http://www.bfquiz.com/  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.bfquiz.com/'" tppabs="http://www.bfquiz.com/">http://www.bfquiz.com</A>
+
+
+
+Tools needed:
+
+- SoftICE Win95
+
+- Hex Editor (I like PSEdit and Hex Workshop)
+
+
+
+Conventions used:
+
+&gt; denotes a SoftICE command
+
+
+
+This program is designed to help students prepare to take the Sylvan/
+
+Prometric (formerly Drake) tests for Microsoft and Novell products.  It
+
+is similar to CNE Quizzer, Transcender, etc.  BeachFront has an entire
+
+library of self-tests for both Microsoft and Novell.  So, if you want to
+
+take some of your MCSE or MCNE tests, these are great study aids.
+
+
+
+Let me say right up front that this is a tutorial only.  I am not going
+
+to hand out serial numbers here for lamers.  The intent of this tutorial
+
+is to provide you (the cracker) with another approach for defeating those
+
+damn Visual Basic apps.  So, if you're just looking for serials, then go
+
+elsewhere.  If you want to learn another twist on cracking VB, then please
+
+read on!
+
+
+
+Download the target (the testing module) and a few of the self-tests.  Run
+
+it a few times to get a feel for what's going on.  You'll notice that the
+
+only test you can actually try is the &quot;demo&quot; one with limited questions.
+
+When you try to run one of the real tests, it asks you to enter a 12 digit
+
+&quot;database key.&quot;
+
+
+
+I already mentioned that this is a VB application, so our standard approach
+
+of dis-assembling or playing in SoftICE will not work (or at least will not
+
+be all that much fun).
+
+
+
+I want to take a moment here to extend a very warm thank you to Razzia.  It
+
+was Razzia who did the hard work which makes this essay possible.  His essay
+
+on cracking VB apps is one of the best I've ever read.  However, early on in
+
+my cracking career, for some reason I had trouble following the essay and I
+
+just had a hell of a time trying to crack VB programs.  I fully understand
+
+it now and appreciate it for what it is.  My intent here is to save some of
+
+the newbie crackers from losing hair over VB apps and to save Razzia from
+
+people asking too many questions about his wonderful essay.
+
+
+
+So here goes...
+
+
+
+We know from Razzia's work that VB apps typically do their comparisons like
+
+this:
+
+
+
+   [borrowed from Razzia's essay]<FONT color="purple">
+
+   Step 8: Now we have found the code where the VB3 dll does the comparing
+
+   we can now place a breakpoint there and disable the other breakpoints. We
+
+   won't need them anymore. We HAVE FOUND the place where things get compared
+
+   in VB3. What you see is this :
+
+
+
+:The_VB3_compare_snippet
+
+   : 8BCA         mov cx, dx
+
+   : F3A6         repz cmpsb  ;<HERE the strings in ds:si and es:di : 7401 je 8CB6 ; are being compared : 9F lahf : 92 xchg ax,dx : 8D5E08 lea bx, [bp+08] : E80E06 call 92CB Just before the REPZ CMPSB if you do a 'ed si' and a 'ed es:di', you will see what is compared with what. </font>
+
+
+
+Now that we know where VB 3 does its string comparing, we know &quot;where&quot; to
+
+set our breakpoint.  Then we can see what it compares (the right string)
+
+with the string we entered.  Razzia suggests using SoftICE to do a search
+
+for the hex values of the instructions (while you're in the code of the
+
+VBRUN300.DLL) and this is what I always had trouble with.  I could never
+
+get sICE to find the code segment this way.
+
+
+
+However, I know a little trick that I learned from my good friend josephco
+
+that will allow me to do exactly what I need to do here and that is break
+
+in right on that MOV CX, DX.  The trick is to hex edit the file and stick
+
+in some instruction that we know we can break on (like an INT 3).  The hex
+
+value for an INT 3 is CC.  So, make a backup copy of your VBRUN300.DLL...
+
+Then open it in your favorite hex editor and search for the above code
+
+block.  This search string will be unique:
+
+
+
+8BCAF3A674019F928D5E08E80E06
+
+
+
+Once you've found it, change the 8B into CC.  Now we have an INT 3 stuck in
+
+right at the beginning of the compare routine.  We definately do not want
+
+this instruction to execute, so before you do anything else, go into sICE
+
+and set a breakpoint on int 3.
+
+
+
+&gt;BPINT 3
+
+
+
+Okay, now you can run the target.  It will break on the INT 3 because it
+
+must be doing some other string comparison work.  IMPORTANT: when it does
+
+break, you must assemble back in the original instruction (MOV CX, DX) so
+
+it does not execute the INT 3.  If you skip this step, your system will
+
+crash!  So, after SoftICE breaks on the INT 3, assemble back in the old
+
+instruction.
+
+
+
+&gt;A
+
+&gt;MOV CX, DX
+
+&gt;press ESC
+
+
+
+Let's &quot;clear&quot; all existing breakpoints now.
+
+
+
+&gt;BC *
+
+
+
+Now, set a new breakpoint on the MOV CX, DX line.  You can do this by just
+
+double clicking on the line if you have mouse support enabled.  Or, type
+
+BPX ssss:oooooooo (where ssss is the segment and oooooooo is the offset).
+
+So, now we have the original instruction assembled back in place and we
+
+have a breakpoint set there so we can pop in right before the magic moment.
+
+
+
+Before you toggle back over to the program (using Ctrl-D or F5), let's go
+
+ahead and &quot;disable&quot; this breakpoint for now (otherwise it will pop several
+
+times before we really need it).
+
+
+
+&gt;BD *
+
+
+
+Okay, now toggle back over and select a self-test.  Type in a 12 digit key
+
+but don't click OK yet.  Toggle back in to SoftICE (Ctrl-D) and &quot;enable&quot;
+
+the breakpoint.
+
+
+
+&gt;BE *
+
+
+
+Toggle back to the app (Ctrl-D or F5) and now click on OK.  You should be
+
+staring at a SoftICE screen now and sitting on the MOV CX, DX line.
+
+
+
+We know (again from Razzia) that VB 3 is about to compare what's in ES:DI
+
+with what's in DS:SI. So, let's &quot;display&quot; what's there in memory.  In this
+
+case ES == DS, so:
+
+
+
+&gt;D di    ; should be the 12 digit number you entered
+
+
+
+&gt;D si    ; yeeha; the correct number!  (only the first 12 digits)
+
+
+
+You can save yourself a few keystrokes by editing your breakpoint and
+
+making it do the &quot;D si&quot; for you.  To do this:
+
+
+
+&gt;BPE 0   ; edit breakpoint 0
+
+
+
+Remove the # in front of your address and add this to the end of the line:
+
+
+
+DO &quot;d si&quot;
+
+
+
+So, your new breakpoint should look something like this (if you do a BL).
+
+
+
+00)   BPX #2B67:00008CAF  DO &quot;d si&quot;
+
+
+
+You'll want to &quot;disable&quot; it before you toggle back to the program to try
+
+a different test module, otherwise it will break several times and slow
+
+you down.  Then once you're ready to find another key, just toggle back
+
+to sICE (Ctrl-D) and &quot;enable&quot; the breakpoint.
+
+
+
+Since you already have your breakpoint set, you can loop through all the
+
+tests you want and find out all the correct &quot;database keys.&quot;  Again, I am
+
+not going to list any of them here.  Sorry, lamers...
+
+
+
+VERY IMPORTANT: Do not forget to restore your backup copy of the VB dll
+
+(VBRUN300.DLL).  You may want to save your debug version as vbrun300.cc
+
+just in case you need to do another exercise like this sometime. :-)
+
+
+
+I use this same trick a lot when I know where I want to break in on a
+
+target but have troulbe pin pointing it.  I just stick in an INT 3 and
+
+BPINT 3, then re-assemble the old instruction back in.  It works quite
+
+well and can save a considerable amount of time when you're &quot;seeking the
+
+needle in the haystack.&quot;
+
+
+
+This same technique should work equally well for VB4 (and perhaps 5).
+
+From Razzia's earlier essay, we know VB 4 usually does its compares like
+
+this:
+
+
+
+   [borrowed from Razzia's essay]<FONT color="purple">
+
+   I have done all the hard work for you and found the VB4 dll code
+
+   that compares two strings (in WideChar format !).
+
+   Heres the listing :
+
+
+
+   : 56            push esi
+
+   : 57            push edi
+
+   : 8B7C2410      mov edi, [esp + 10]
+
+   : 8B74240C      mov esi, [esp + 0C]
+
+   : 8B4C2414      mov ecx, [esp + 14]
+
+   : 33C0          xor eax, eax
+
+   : F366A7        repz cmpsw  ;<HERE the (WideChar) strings at ds:esi : 7405 je 0F79B362 ; and es:edi get compared : 1BC0 sbb eax, eax : 83D8FF sbb eax, FFFFFFFF : 5F pop edi : 5E pop esi : C20C00 ret 000C</font>
+
+
+
+So, just stick an INT 3 (CC) in place of the push esi (56) and you're on
+
+the track...
+
+
+
+That's it for this lesson.  Hope this was fun and instructional.
+
+
+
+Disclaimer: THIS ESSAY IS FOR EDUCATIONAL PURPOSES ONLY.  ANY USE, MIS-USE
+
+OR ILLEGAL ACTIVITY IS THE SOLE RESPONSIBILITY OF THE READER.
+
+
+
+Personal GreetZ: Razzia, josephco, niabi, fravia+, +gthorne and +ORC!
+
+
+
+drlan</PRE>     
+
+<FONT color="green">(c) +drlan. All rights reversed</FONT>
+
+<HR ALIGN="CENTER" WIDTH="100%" SIZE="3">
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</I></CENTER>
+
+<BR><CENTER>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="project8.htm" tppabs="http://www.anticrack.de/fravia/project8.htm">project8</A> 
+
+           <HR width="33%">
+
+
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut CGI-scripts</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering legal?</A></CENTER>
+
+<CENTER><HR ALIGN="CENTER" WIDTH="100%" SIZE="2"></CENTER>
+
+</BODY>
+
+</HTML>
+
+
+
+
+
+
+
+
+

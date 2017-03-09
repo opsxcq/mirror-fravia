@@ -1,0 +1,399 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>wi_igno</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+
+
+
+
+
+
+<CENTER>
+
+
+
+
+
+<H1>+HCU 1997, Project2: Winice cracking<BR>Phase 4<BR></H1>
+
+Courtesy of Fravia's page of reverse engineering
+
+</CENTER>
+
+
+
+<H2>Phase 4</H2>By IgNorAMUS - 
+
+
+
+27 May 1997<BR></CENTER>
+
+<PRE>
+
+
+
+SoftIce 3.01 cracking again, NTIce this time...
+
+         (How EXE checksums work)
+
+
+
+------------------------------------------------
+
+
+
+When I found Project 2 on Fravia, I said to myself: Great, let's try 
+
+it. But then I thought: I have the full version of SoftIce 3.01 for 
+
+Windows 95 already, so why should I crack the trial version? 
+
+Let's crack the demo of SoftIce 3.01 for <B>Windows NT</B> instead.
+
+
+
+As I expected, everything was exactly the same. The only tool I needed 
+
+was HIEW (which is really a great thing, I hope you all know it). 
+
+I took the Project 2 page and searched for the pieces of code described 
+
+there. Within a few minutes the crack of Loader32 was done.
+
+
+
+At the time ofd my session only the first part of Project 2 was available, 
+
+so I had to do all the rest by myself. I disassembled the NTICE.SYS (which 
+
+is the NT version of WINICE.EXE) and looked for the substring &quot;time&quot;, 
+
+following +ORC's advice in his lesson 4.2. 
+
+I found 2 imported functions: RtlTimeToTimeFields and KeQuerySystemTime. 
+
+The second function looked pretty interesting. Wow! Only one occurence 
+
+in the whole file. A few lines below KeQuerySystemTime I found the call to 
+
+a routine VERY similar to NmGetNumDaysLeft. Well, you know all this from 
+
++Rcg's essay. So I simply changed the end of the check and thought that 
+
+everything was done. 
+
+
+
+But when I tried to start the NTIce, the only result was an error 
+
+messagebox:
+
+
+
+<FONT color="purple">System Process - Unable to Load Device Drivers
+
+\SystemRoot\System32\DRIVERS\NTice.sys device driver could not be 
+
+loaded. Error Status was 0xc0000221.</FONT>
+
+
+
+What's this? Does our target hyde some checksum protection inside?
+
+
+
+I tried to change some stupid byte inside the string &quot;This program 
+
+cannot be run in DOS mode&quot;, in the file header. The result was exactly the 
+
+same - again this nasty message: checksum protection!
+
+
+
+OK. I wanted to know where the checksum was counted and checked. 
+
+So I loaded the original (unaltered) version of NTIce - to be able to trace
+
+it, I renamed the &quot;cracked&quot; NTICE.SYS to PNPISA.SYS and tried to fire 
+
+it. Again the same message.
+
+
+
+Whenever I started up my version of NTIce (called PNPISA now), my 
+
+computer seemed to do something for a few tenths of second (I have a  
+
+P100). 
+
+So I started it again and pressed CTRL+D immediately afterwards, 
+
+&quot;manually&quot; trying to fish the scheme.
+
+I landed in a piece of code that really looked like some kind of checksum 
+
+counting. I followed... after a while I got here: 
+
+
+
+0008:80178A0E  CALL   80187400
+
+0008:80178A13  TEST   AL,AL	
+
+0008:80178A15  JNZ    80178A29
+
+0008:80178A17  JMP    80178A22
+
+0008:80178A19  MOV    EAX,000000001
+
+0008:80178A1E  RET
+
+0008:80178A1F  MOV    ESP,[EBP-18]
+
+0008:80178A22  MOV    DWORD PTR [EBP-1C],C0000221; 
+
+
+
+STATUS_IMAGE_CHECKSUM_MISMATCH
+
+
+
+0008:80178A29  MOV    DWORD PTR [EBP-04],FFFFFFFF
+
+0008:80178A30  PUSH   DWORD PTR [EBP-24]
+
+0008:80178A33  PUSH   FF
+
+0008:80178A35  CALL   80178AAA
+
+ ...
+
+
+
+Where are we? Hey, look! We're not in NTIce, but in 
+
+NTOSKRNL.EXE. So it's not a Numega's protection anymore, 
+
+it's Microsoft's own protection! Interesting.
+
+
+
+I run HIEW a looked at NTICE.SYS header description 
+
+- there is a checksum there. I wrote down its value and 
+
+traced inside the checking call (the one at 80178A0E).
+
+
+
+I found CMP EAX,EDX at the end of the function. 
+
+The value of EDX was exactly the same as the checksum 
+
+reported by HIEW. That means that EAX must contain the 
+
+REAL checksum. I wrote this value into my NTIce/PNPISA 
+
+header, fired it - and it worked!!! 
+
+So I rebooted -  NTIce was cracked! :-)
+
+
+
+Later I searched the Internet for some EXE file description 
+
+-I wanted to know if I had traced the NT kernel just to 
+
+find something everybody knows already. 
+
+I found quite comprehensive PE EXE description at 
+
+<A href="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#81'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#81">http://www.microsoft.com/win32dev/base/pefile.htm</A>.
+
+
+
+Let's take a look at it: description of EXE header, PE signature, PE 
+
+header, PE Optional Header - here it is!
+
+  ...
+
+    ULONG   CheckSum;
+
+  ...
+
+
+
+Where's its description? Ah, here:
+
+ ...
+
+CheckSum.
+
+A checksum value is used to validate the executable file at load time. 
+
+The value is set and verified by the linker. <FONT color="red"><B><U>The algorithm used for 
+
+creating these checksum values is proprietary information and will not be 
+
+published</U></B></FONT>.
+
+ ...
+
+
+
+Do you love Microsoft as much as I do?
+
+
+
+A pretty scary world... let's take a better look at the algorithm. 
+
+Here's the code from NTOSKRNL.
+
+(Sorry it's written by hand, but I could not disassemble it, because 
+
+WDASM8 crashes down before it reaches this piece of code and 
+
+WDASM7 simply stops around the same position :-(
+
+
+
+; this is just a subroutine, the main entry point is a little below...
+
+; ----------------------------------------------------------------------
+
+
+
+873C2:  push ebp
+
+        mov edx,[esp+10]           ; number of word components in file
+
+        mov ebp,esp
+
+        mov eax,edx
+
+        push esi
+
+        dec edx
+
+        mov ecx,[ebp+8]            ; always 0
+
+        test eax,eax
+
+        je 873F3
+
+        mov esi,[ebp+0C]           ; buffer address
+
+873D7:  movzx eax,[word ptr esi]   ; LOOP beginning
+
+        add ecx,eax
+
+        add esi,2
+
+        mov eax,ecx                ; in this loop
+
+        and ecx,0ffff              ; the checksum is done
+
+        shr eax,10
+
+        add ecx,eax
+
+        mov eax,edx
+
+        dec edx
+
+        test eax,eax
+
+        jne 873D7                  ; LOOP end
+
+
+
+873F3:  mov eax,ecx
+
+        pop esi
+
+        shr eax,10
+
+        pop ebp
+
+        add ax,cx
+
+        retn 0c
+
+
+
+;  <THIS is the entry point push ebx push esi mov esi,[esp+10] ; file length push edi push ebp lea eax,[esi+1] shr eax,1 push eax ; number of word components in file ; if the file length is odd, ; 00h is appended after the last byte push [dword ptr esp+18] ; buffer (file image in memory) push dword 00 ; checksum start value call 873C2 push [dword ptr esp+14] ; buffer address mov di,ax ; ax changes during call, so store it call RtlImageNtHeader ; returns position of 'PE' in buffer test eax,ea je 87454 mov edx,[eax+58] ; checksum from the file header mov ebx,1 cmp di,dx mov ebp,ebx adc ebp,-1 mov cx,dx sub di,bp ; subtract low word of checksum sub di,cx mov ax,[eax+5A] ; high word of the checksum cmp di,ax adc ebx,-1 sub di,bx sub di,ax ; subtract high word of checksum jmp 87459 87454: xor di,di mov edx,esi 87459: movzx eax,di add eax,esi ; add file length pop ebp pop edi cmp eax,edx ; compare real and reported checksum sete al pop esi pop ebx retn 08 So that's all. The algorithm is just simply adding the file (by words). Whenever overflow occurs, checksum is cut to word and incremented. The position of the checksum itself is excluded from this processing. After "summing" the whole file, this checksum is expanded to DWORD and the file length is added. That's all. Simple but effective. Just two remarks: 1) If you wanna easily get inside the checksum test, set breakpoint on ZwOpenFile. When you get there, type P RET once. I'm sure you'll find the way then :-) 2) As you can see from the code "above,.class" tppabs="http://fravia.org/above,.class" the PE EXE file checksum is stored at offset 05A, starting from "PE". For more info see the relative Microsoft documentation. Happy NT drivers cracking!! by igNorAMUS, 27 May 1997 </Pre>
+
+<HR size="2">
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering, 
+
+choose your way out:</I></CENTER>
+
+
+
+<BR><CENTER>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#84'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#84"> homepage</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"> 
+
+<A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#73'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#73"> links</A> 
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0">
+
+<A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm"> anonymity</A> 
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm"> +ORC</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#82'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#82"> students' essays</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">
+
+<A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm"> tools</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm"> cocktails</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm"> antismut CGI-tricks</A>
+
+
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm"> search_forms</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm"> mailFraVia</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm"> Is software reverse engineering legal?</A></CENTER>
+
+
+
+</CENTER>
+
+<CENTER><HR ALIGN="CENTER" WIDTH="100%" SIZE="2"></CENTER>
+
+
+
+
+
+
+
+</PRE><HR size="3">

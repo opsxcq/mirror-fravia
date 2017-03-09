@@ -1,0 +1,740 @@
+<HTML>
+
+<HEAD>
+
+  <TITLE>x86new1</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR=#C0C0C0 TEXT=#001010 VLINK=#405040>
+
+<P><CENTER><FONT SIZE=+4>How to enable the recording<BR>of Real
+
+Player audio clips<BR><BR>
+
+</FONT><FONT SIZE=+2>...even if the content provider has designated them 
+
+as non-recordable!</FONT>
+
+<BR>
+
+</CENTER>
+
+
+
+<H4><CENTER><I>by x86</I><BR>
+
+(10 September 1997, slightly edited by fravia+)</CENTER></H4>
+
+
+
+<CENTER><HR><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER=
+
+"0" VSPACE="0" HSPACE="0" width="13" height="13"> Courtesy of Fravia's page of reverse engineering<BR>
+
+<HR> <I>Well, this kind of reverse engineering essays ("<FONT color=blue>adding 
+
+functionality you're 
+
+NOT supposed to have</FONT>") are (in my 
+
+opinion) among the most interesting works... we let software do 
+
+things that "it should not do"... that's the amazing "white magic" that 
+
+you are learning here! And our +friend x86 
+
+has found a particularly interesting target... I have inserted this 
+
+essay among the "crippledwarez" section, but, as you will see, it 
+
+shows NOT the crack of a "crippled" program, it explains how to 
+
+reverse engineer a whole (idiotic) software convention! Here is 
+
+x86's email text:</I></CENTER>
+
+
+
+<PRE>
+
+Fravia-
+
+Here is an essay I wrote describing how to enable the recording of 
+
+Real Player audio clips even if the content provider has designated 
+
+the clip to be non-recordable.  
+
+As I mention in the essay, I am currently working on enabling the 
+
+saving of the video-clip content as well (right now, this enhancement 
+
+will record the audio portions of video clips but not the actual video
+
+itself) and will submit that as another tutorial when I finish.  
+
+
+
+ x86 <HR size=6><FONT size=+2>
+
+   Adding Functionality You're Not Supposed To Have
+
+(Recording restricted audio clips in Real Player Plus)</FONT>  
+
+
+
+                          by x86, September 1997
+
+                     
+
+
+
+Tools and Files needed:
+
+Wdasm 8.9 (for code patching <U>and</U> debugging, but any version will do)
+
+Your favorite hex editor
+
+Real Player 4.0 available at:
+
+<A href="javascript:if(confirm('http://www.real.com/products/player/index.html  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.real.com/products/player/index.html'" tppabs="http://www.real.com/products/player/index.html">http://www.real.com/products/player/index.html</A>
+
+(needs easy to crack serial # to function as the Plus version)
+
+RealPlayer Encoder (free) available at:
+
+<A href="javascript:if(confirm('http://www.real.com/products/encoder/index.html  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.real.com/products/encoder/index.html'" tppabs="http://www.real.com/products/encoder/index.html">http://www.real.com/products/encoder/index.html</A>
+
+
+
+Optional Items:
+
+SoftIce (for you diehards :) 
+
+Borland Resource Workshop
+
+
+
+	Hello again, fellow +crackers!  I have a registered copy of Real Player
+
+Plus, and it allows you to record Real Player clips to your hard drive so 
+
+you can listen to them whenever you want.  However, the content providers 
+
+can designate whether or not a clip is recordable.  
+
+As you might guess, commercial sites like Warner Bros. do not "allow" you 
+
+to record their clips.  In this tutorial, I will show you how to enable
+
+saving of Real Audio files in Real Player Plus, regardless of whether or
+
+not THEY want you to!  
+
+Note, this is for the registered version only.  This isn't a tutorial
+
+on cracking the registration functions, but a more interesting example
+
+of adding functionality to the program.  
+
+Serial numbers for this program are all over the web, so finding one 
+
+shouldn't be a problem, should you be too lazy to crack directly its 
+
+banale protection scheme.
+
+	I will also point out now that my goal in this project was simply 
+
+to be able to record any sound files that I wanted to.  
+
+The following lesson will allow you to record the audio portions of ANY 
+
+clip (including the audio portions of video clips), but you will not be 
+
+able to record the video.  
+
+It was only after finishing this that I thought about recording videos as 
+
+well.  Since the video quality can be on the poor side, unless you have 
+
+an ISDN or better connection, this wasn't really a priority of mine to 
+
+start with.
+
+However, in the interest of taking full advantage of our target, I am
+
+working on that right now, and will post the results as a separate essay.
+
+
+
+	<B>A brief introduction to Real Player clips</B>
+
+There are 3 types of files that can be played.  
+
+<FONT color=blue>.ra</FONT> files are audio files only.  
+
+<FONT color=blue>.rm</FONT> files are audio/video,
+
+and 
+
+<FONT color=blue>.ram</FONT> files are real audio metafiles and simply contain the path of the 
+
+clip you want to play (which can either be a file on your system or an 
+
+URL type locator called a <FONT color=blue>pnm</FONT>, which looks like 
+
+pnm://204.34.5.455/somefile.ra or something similar).
+
+The .ra and .rm files have a header which contains info about the clip.  
+
+Progressive Networks helps us reverse engineer their programs by giving 
+
+away copies of the RealVideo encoder so we can create our own audio and 
+
+video files to see how they work.
+
+Included in this program is a utility which will dump the headers of .ra 
+
+and .rm files to a text file.
+
+Progressive's website also has a developers section which gives information 
+
+about adding Real Media capabilities to your own programs.  
+
+Among other things, they tell you exactly what the header information 
+
+means and how it's laid out.
+
+The most interesting thing is that there is a flag variable which describes 
+
+the properties of the clip as follows:
+
+
+
+flags: 16 bits
+
+
+
+     Flags indicating characteristics of the RealMedia file. The
+
+following flags are defined:
+
+          #define PN_SAVE_ENABLED 0x0001
+
+          Allows clients to save a copy of the RealMedia file to disk.
+
+          #define PN_PERFECT_PLAY_ENABLED 0x0002
+
+          Allows clients to use extra buffering to ensure Perfect Play.
+
+          #define PN_LIVE_BROADCAST 0x0004
+
+          The RealMedia file is being generated by a live broadcast.
+
+
+
+ Why do we care about this?  Because, the flags parameter is what will
+
+tell us if the clip is designated to be recordable or not.  
+
+This information will be particularly relevant for my next essay, saving 
+
+Real Player video clips.  
+
+We don't even really need the header dumping utility if we know how the 
+
+header is designed, but dumping a .ra or .rm file and then comparing 
+
+the text output with the binary data can help you see how the files are 
+
+arranged. The relevant byte of the flag variable will be at offset 0x43.  
+
+If you want to learn more about the Real Media file format, visit:
+
+http://www.real.com/devzone/tools/rmsdk/guide/index.html.   
+
+As I mentioned, this info isn't absolutely necessary for this exercise, 
+
+but understanding the file format of one of our targets can't hurt you
+
+either!
+
+
+
+ So, let's begin.  We need some sample files for testing.  Use the Real
+
+Encoder to create two clips, one which is recordable and one which is not.
+
+  I simply imported a short .wav file.  Make sure to use the same .wav for 
+
+both clips, that way the only difference between them will be the flag 
+
+bits.  The encoder is pretty easy to use and has a help file, so I won't 
+
+explain its use here (it's easy).
+
+
+
+The first thing I did was to see how the program reacted when trying to
+
+record a `non-recordable' clip.  You see a message saying `Can't record 
+
+clip' and a tape deck icon with an `X' through it.  Ok, lets see what we 
+
+get if we try and record a "recordable" clip.  
+
+Ok, we get a `save file' dialog box.  Get your dead listing of the
+
+main executable rvplayer.exe.  The `save file' dialog resides in
+
+comdlg32.dll.  
+
+We see that it IS an imported library, but the only function from this
+
+library imported in rvplayer.exe is GetOpenFileNameA.  
+
+Ok, so the call is in another .dll somewhere.
+
+Let's take a look at all of the imported modules in rvplayer.exe.
+
+
+
+   Import Module 001: KERNEL32.dll
+
+   Import Module 002: USER32.dll
+
+   Import Module 003: GDI32.dll
+
+   Import Module 004: comdlg32.dll
+
+   Import Module 005: ADVAPI32.dll
+
+   Import Module 006: SHELL32.dll
+
+   Import Module 007: ole32.dll
+
+   Import Module 008: pncrt.dll
+
+   Import Module 009: pnui3240.dll
+
+   Import Module 010: VERSION.dll
+
+
+
+Ok, you can see here that all of these dll's are basic windows libraries
+
+with the exception of pncrt.dll and pnui3240.dll.  
+
+If you look at the imported function list for pncrt.dll you see that it 
+
+looks like some kind of C runtime library (pncrt = Progressive Networks 
+
+C Runtime Library?), but pnui3240 has got some interesting looking 
+
+functions!
+
+
+
+ Addr:0000E450 hint(002A) Name: RaguiSetupClient
+
+ Addr:0000E464 hint(000C) Name: RaguiDoPlay
+
+ Addr:0000E472 hint(0027) Name: RaguiSetSource
+
+
+
+Could `Ragui' mean `Real Audio Graphical User Interface'?  Fire up Wdasm
+
+and load rvplayer.exe into memory.  Hit F9 (run) and let it go until the 
+
+main Real Player window is fully loaded.  
+
+Now, in the lower left debugging window, scroll down the list of active 
+
+dll's until you reach pnui3240.dll.  Double click on it to load it
+
+into memory (make sure your debugger options under Debugger/Options/Debug 
+
+only this process is unchecked).  Now let's have a look at the string 
+
+references here.  
+
+(You could also just get a dead listing of this file, and peruse it at 
+
+your leisure under a palm tree somewhere, but hey, I like eye strain!)  
+
+Immediately we see we are in the right location.  There are many 
+
+references to `recording', but what immediately caught my eye were the 
+
+references "NO_RECORDING" and "RECORDING".  
+
+Let's look at the relevant section:
+
+
+
+* Referenced by a Jump at Address:64064628(C)
+
+|
+
+:64064638 B934D40864        mov ecx, 6408D434  ->"NO_RECORDING"
+
+:6406463D BF01000000        mov edi, 1
+
+:64064642 EB0A              jmp 6406464E
+
+
+
+* Referenced by a Jump at Address:6406462D(C)
+
+|
+
+:64064644 B928D40864        mov ecx, 6408D428  ->"RECORDING"
+
+:64064649 BF08000000        mov edi, 08
+
+
+
+If we follow the jumps backwards, we get here:
+
+
+
+* Referenced by a CALL at Addresses:6406330F, :640645D0
+
+|
+
+:64064609 56                push esi
+
+:6406460A 57                push edi
+
+:6406460B 83B90508000000    cmp dword ptr [ecx+00000805], 0
+
+:64064612 8BF1              mov esi, ecx
+
+:64064614 745B              je 64064671
+
+:64064616 8D865D080000      lea eax, dword ptr [esi+0000085D]
+
+:6406461C 8B4C240C          mov ecx, dword ptr [esp+0C]
+
+:64064620 3908              cmp dword ptr [eax], ecx
+
+:64064622 744D              je 64064671
+
+:64064624 8908              mov dword ptr [eax], ecx
+
+:64064626 85C9              test ecx, ecx      ;If ecx == 0, NO_RECORDING
+
+:64064628 740E              je 64064638        ;We are here
+
+:6406462A 83F901            cmp ecx, 1         ;If ecx == 1, RECORDING
+
+:6406462D 7415              je 64064644
+
+:6406462F 33C9              xor ecx, ecx
+
+:64064631 BF01000000        mov edi, 1
+
+:64064636 EB16              jmp 6406464E
+
+
+
+So, what do you say?  Patch the 'je 6406438' to 'jmp 64064644'?  
+
+That was my first thought too.  
+
+Before you answer, if you have Borland Resource Workshop, fire it
+
+up and take a look at pnui3240.dll.  
+
+Notice under the bitmap section we have NO_RECORDING and RECORDING.  
+
+So, these are just the tape deck <FONT color=red>icons</FONT> which indicate
+
+whether or not the clip is being recorded.  
+
+Changing this location will do nothing other than give you an 'always 
+
+recording' icon.  Let's take another approach.
+
+
+
+ We know that if a clip is recordable, we will get the `save file'
+
+dialog if we hit the record button.  
+
+Look at the import section of pniu3240.dll and you'll see:   
+
+
+
+Import Module 004: comdlg32.dll
+
+
+
+ Addr:0004109C hint(000B) Name: GetSaveFileNameA
+
+ Addr:00041084 hint(0004) Name: CommDlgExtendedError
+
+ Addr:000418C2 hint(0009) Name: GetOpenFileNameA
+
+
+
+Ok, so let's see where it's called from:
+
+
+
+* Referenced by a Jump at Address:6405CDDD(U)
+
+:6405CDE4 50               push eax
+
+:6405CDE5 E826090100       Call 6406D710   <PNCRT.strcpy
+
+:6405CDEA 83C408           add esp, 00000008
+
+:6405CDED 8D45A0           lea eax, dword ptr [ebp-60]
+
+:6405CDF0 50               push eax
+
+:6405CDF1 E8E4EB0000       Call 6406B9DA   <- comdlg32.GetSaveFileNameA
+
+:6405CDF6 85C0             test eax, eax
+
+:6405CDF8 7412             je 6405CE0C
+
+:6405CDFA 56               push esi
+
+:6405CDFB 8B4D08           mov ecx, dword ptr [ebp+08]
+
+:6405CDFE E82DEE0000       call 6406BC30
+
+:6405CE03 C745F400000000   mov [ebp-0C], 00000000
+
+:6405CE0A EB0E             jmp 6405CE1A
+
+
+
+If we trace back through the calls and jumps, we eventually get here:
+
+(Most of what you trace back through is stuff dealing with parameters
+
+for the 'save file' dialog box)
+
+
+
+* Referenced by a Jump at Address:6405C42C(C)
+
+|
+
+:6405C43D 83FB02           cmp ebx, 02    ? RECORD Flag, 02 if recordable
+
+:6405C440 0F85B2000000     jne 6405C4F8   ? 01 if not.
+
+:6405C446 33DB             xor ebx, ebx
+
+:6405C448 395E3C           cmp dword ptr [esi+3C], ebx
+
+:6405C44B 740C             je 6405C459
+
+:6405C44D 8BCE             mov ecx, esi
+
+:6405C44F BB01000000       mov ebx, 1
+
+:6405C454 E889EEFFFF       call 6405B2E2
+
+
+
+* Referenced by a Jump at Address:6405C44B(C)
+
+|
+
+:6405C459 8B4508                  mov eax, dword ptr [ebp+08]
+
+:6405C45C 85C0                    test eax, eax
+
+:6405C45E 740B                    je 6405C46B
+
+:6405C460 50                      push eax
+
+:6405C461 8D4DEC                  lea ecx, dword ptr [ebp-14]
+
+:6405C464 E8C7F70000              call 6406BC30
+
+:6405C469 EB1C                    jmp 6405C487
+
+
+
+ Initially, I wasn't sure which place was the record flag check, either
+
+at 6405C45C or at 6405C43D, so I set breakpoints at each, and noticed 
+
+that if the clip was recordable, at 6405C43D ebx was 02 otherwise it 
+
+was 01 if not recordable.  
+
+Note that this flag is not (as far as I can tell) related to the file 
+
+header flags in the .rm or .ra files I mentioned at the top of this 
+
+essay.  
+
+Regardless of if the clip is a video or audio clip, ebx will either be 
+
+02 if recordable, 01 if not.
+
+
+
+ So, what do we do here?  Well, we want the target to think every clip
+
+is recordable, so when we get to the cmp ebx, 02 we expect that the jump 
+
+at the next instruction 'jne 6405C4F8' will NOT be taken.  
+
+We could nop the 6 bytes at 6405C440, but a cleaner way might be to 
+
+replace the comparison altogether with a jump to the instruction we want 
+
+to go to, like the following patch:
+
+
+
+:6405C43D EB07    jmp 6405C446
+
+:6405C43F 90      nop
+
+
+
+ Now, we simply go directly to where we would go anyway if the clip was
+
+recordable.  Try this out using the code "patch.class" tppabs="http://fravia.org/patch.class" utility in Wdasm (see my
+
+<a href="x86_1.htm" tppabs="http://www.anticrack.de/fravia/x86_1.htm">previous</A> essays if you don't know how to do this).  
+
+Now, see if it works.  Load up the demo clip and try and record it.  
+
+Ok, the save dialog comes up and it seems to work.  
+
+The `RECORDING' icon is on and tere is no message about `Can't record clip'.  
+
+Let's play it back.
+
+Ok, the audio works perfectly.  Get out on the net and give it a test
+
+drive.  
+
+May I recommend <A href="javascript:if(confirm('http://www.hardradio.com/  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.hardradio.com/'" tppabs="http://www.hardradio.com/">http://www.hardradio.com</A>?  You'll see that you can now save
+
+any audio clip you choose!
+
+
+
+A summary of the patch:
+
+At offset:
+
+(B83D)  Change 83 FB 02
+
+        to     EB 07 90
+
+
+
+ Well, I hope this essay was informative.  
+
+I don't know yet why the video portion of the clip is not saved, but from 
+
+a cursory inspection it appears to be a little more complex, and will 
+
+definitley involve analyzing the file header and its subsequent use.  
+
+Should be interesting!  Until next time -
+
+
+
+x86  
+
+</PRE><FONT color= green>
+
+(c) x86, 1997. All rights reversed.</FONT>
+
+		<HR size=2>
+
+<CENTER><I>You are deep inside fravia's page of reverse
+
+engineering, choose your way out:</I></CENTER>
+
+
+
+
+
+<P><CENTER>
+
+           
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" width="13" height="13">
+
+<A HREF="project6.htm" tppabs="http://www.anticrack.de/fravia/project6.htm">Back to project 6</A>
+
+<BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0"
+
+VSPACE="0" HSPACE="0" width="13" height="13"><A HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage </A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" width="13" height="13">
+
+<A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13"
+
+BORDER="0" VSPACE="0" HSPACE="0" NATURALSIZEFLAG="0"> <A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity
+
+</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" width="13" height="13"><A
+
+HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0"
+
+VSPACE="0" HSPACE="0" width="13" height="13"><A HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays </A><IMG SRC=
+
+"bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" width="13" height="13"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools
+
+</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" width="13" height="13"><A
+
+HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails </A><BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" width="13" height="13"><A
+
+HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database </A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" width="13" height="13"><A
+
+HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER=
+
+"0" VSPACE="0" HSPACE="0" width="13" height="13"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms </A><IMG SRC=
+
+"bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" width="13" height="13"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia
+
+</A><BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" width="13" height="13"><A
+
+HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">is reverse engineering legal? </A></FONT></CENTER></P>
+
+
+
+<P><CENTER><FONT SIZE=-1><HR></FONT></CENTER>
+
+</BODY>
+
+</HTML>
+
+
+
+
+
+
+

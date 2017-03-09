@@ -1,0 +1,1272 @@
+<html><HEAD>
+
+<TITLE>filemon2</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+<CENTER><FONT size="+3">How to reverse engineer a Windows 95 target</FONT><BR>
+
+<FONT size="+2">
+
+REVERSE ENGINEERING EXERCISES FOR THE MASSES - (2b)</FONT>
+
+
+
+<BR>
+
+<FONT Size="+2">by fravia+ (MSRE), August 1997<BR><BR>
+
+<IMG SRC="hcu1.gif" tppabs="http://www.anticrack.de/fravia/hcu1.gif" ALT="HCU" ALIGN="BOTTOM" WIDTH="114" HEIGHT="43" BORDER="0" VSPACE="0" HSPACE="0">
+
+<BR>(Part B: reverse engineering without source code - 04 August 1997)</FONT>
+
+
+
+<HR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">
+
+Courtesy of Fravia's page of reverse engineering<BR>
+
+<HR>
+
+<BR>
+
+<FONT size="+1"><I>Well, a very interesting essay... I wrote it myself! :-)
+
+This essay will be divided in 
+
+four (or more) parts:</I><PRE>A = Introduction to filemon
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><U><B>B = reverse engineering without source code</U></B> 
+
+C = Filemon reversed
+
+D = Back to Main
+
+E = VXD vagaries and mysteries</PRE><I>
+
+Although already disponible, this essay is still under construction
+
+and will be modified and ameliorated until the wording below will disappear (I reckon 
+
+until mid-september)</I></FONT>
+
+<BR><BR><FONT size="+3"><FONT color="magenta">UNDER CONSTRUCTION</FONT></FONT><BR>
+
+</CENTER>
+
+<HR size="2">
+
+<CENTER>
+
+<FONT size="+2">
+
+REVERSE ENGINEERING EXERCISES FOR THE MASSES - (2b)<BR>
+
+</FONT><FONT size="+1">
+
+How to reverse engineer a Windows 95 program<BR>
+
+Filemon.exe Version 2<BR><FONT><FONT size="+1">(Part B: Reverse engineering without 
+
+
+
+source code)<BR>
+
+by Fravia (MSRE), August 1997<BR><BR></CENTER>
+
+</FONT><HR>
+
+<I>
+
+Well, in the first part of this essay we have got an &quot;introduction&quot; to the structure 
+
+of filemon.exe, let's have a &quot;global&quot; look before continuing...
+
+</I>
+
+<HR>
+
+<FONT size="+2"><B>The structure of our target</B></FONT><BR>
+
+Have a look at your C source code, smack at the beginning:<BR>
+
+<FONT color="purple">usual #includes</FONT><BR>
+
+Note that among the various &quot;standard&quot; includes there is an #include 
+
+resource.h and an #include /vxd/ioctlcmd.h... there you'll find &quot;homemade&quot; 
+
+IDs since, as applications grow, Micro$oft's developer studio defines 
+
+for the 
+
+programmers a number of new IDs (symbols). This are MOST important for reverse 
+
+engineering purposes... have a look at the RESOURCE.H file, for instance.<BR>
+
+(Note, moreover, that the &quot;windowsx.h&quot; included file is, among other API-macro 
+
+functions, the official <I><U>&quot;window message crackers&quot;</U></I> file :-)<BR>
+
+<FONT color="purple">usual #defines</FONT><BR>
+
+(check also the #defines inside the #includes)<BR>
+
+<FONT color="purple">usual variable declarations</FONT><BR>
+
+<FONT color="purple">usual procedure declarations</FONT><BR>
+
+And then, <FONT color="purple">the c code</FONT> for the various functions of this winprogram:<BR>
+
+01)	FUNCTION Abort <FONT color="blue">;This, as we have already seen, starts at 1000</FONT><BR>
+
+02)	FUNCTION WinMain<BR>
+
+03)	FUNCTION InitApplication <FONT color="blue">;This, as we have already seen, starts at 10B0</FONT><BR>
+
+04)	FUNCTION InitInstance <FONT color="blue">;This, as we have already seen, starts at 1130</FONT><BR>
+
+05)	FUNCTION MainWndProc<BR>
+
+06)	FUNCTION Split<BR>
+
+07)	FUNCTION List_Append<BR>
+
+08)	FUNCTION UpdateStatistics<BR>
+
+09)	FUNCTION CreateListView<BR>
+
+10)	FUNCTION SaveFile <FONT color="blue">;This, as we have already seen, starts at 1C20</FONT><BR>
+
+11)	FUNCTION FilterProc<BR>
+
+12)	FUNCTION About<BR>
+
+<BR>
+
+Where are the other corrispondences?<BR>
+
+Let's examine the dead listing of our target... looking for &quot;CALLS&quot; we get 
+
+the quite long (and therefore truncated) list below:<BR><PRE>
+
+:Location_List
+
+:00401000 ; START OF CODE SEGMENT (Error handling: Abort function)
+
+:1020     ; (2626 calls)
+
+:10B0     ; (102B calls) ;This is InitApplication
+
+:1130     ; (1048 calls) ;This is InitInstance
+
+:1750     ; (17A9 calls)   
+
+:1790     ; (1AFB calls)
+
+:1A40     ; (166E and 16E5 calling)
+
+:1B50     ; (124A calls)
+
+:1C20     ; (1579 and 1596 calling); This is SaveFile
+
+:21CC     ; (1D0C calls)
+
+:21E0     ; (1276, 1288, 129A, 20A2, 20B9, 20CB calling)
+
+....
+
+:004024E0 ;program entry point
+
+...</PRE>
+
+And so on, and so on, there are many more routines (the target's listing reaches :0040696E)  but, 
+
+as you can see from the Location_List above, the FUNCTIONS we are looking for are evidently situated 
+
+in the same (first) part of the code, in a sequence that recalls the 
+
+C listing's one.<BR>Besides, note how the routine starting at 21E0 is called from six different points... typical of a &quot;inner working&quot; routine as opposite to a function, that's the reason I did not listed the following routines beteen this 210 and &quot;program entry point&quot;.<BR>If you are unsure just have a look... examining routines, you'll get an idea of what they are about, and there is a quick &quot;automated&quot; routine sniffing trick (&quot;climbing the tree&quot;), that you'll learn in the third part of this essay...
+
+<BR>
+
+Let's first of all discuss the &quot;program entry point&quot; sequence, a code snippet 
+
+that you'll find ALWAYS, with the usual small variations, inside all windows programs.
+
+<BR>
+
+<BR>Here at program entry, before calling WinMain, we have the &quot;usual&quot; preparation 
+
+performed by all (compiled) windows programs.<BR>See - at program entry - the 
+
+following sequence of &quot;catering&quot; routines: GetVersion-HeapCreate-Variable 
+
+setting-GetStartupInfo-GetFileType-SetHandleCount-GetCommandLineA  (btw: you should investigate, on more obscure targets, this 
+
+&quot;GetCommandLine&quot; part of the code, in order to see if there are, &quot;secret&quot; argument 
+
+switches that you could trigger starting your target :-); GetStartupInfoA, 
+
+GetModuleHandleA, and then we find following call:<BR><PRE>
+
+:00402626 E8F5E9FFFF  call 00401020,</PRE> which smells from 
+
+far away like the call to WinMain...<BR><BR>
+
+Indeed, if you look at our target's Location_List above, you'll see that this 1020 
+
+address is the only possible function's entry between 1000 (start of code and Abort 
+
+function, as we have already seen) and 10B0 (InitApplication function). Then 
+
+follow 1130 (InitInstance function), and what do we have thereafter? 1750, 1790, 1A40 
+
+1B50 and 1C20 (and this we know already! It's the SaveFile function!)<BR>
+
+These four functions' entry points should correspond, 
+
+respectively, to the C source code functions MainWndProc, Split, List_Append, UpdateStatistic and 
+
+CreateListView... mmm... bad! 4 routines in assembly and 5 functions in C... let's 
+
+have a closer look at everything!<BR>
+
+<BR>
+
+<FONT size="+2"><B>Our first loop</B></FONT><BR>
+
+The first one, at 1750, is a routine that &quot;counts&quot; something, with a loop that 
+
+increases the value bx, value that this routine returns to the caller:
+
+<BR><PRE>:00401750 8B442404   mov eax, [esp + 04] ;get the 1st param from caller
+
+:00401754 53         push ebx            ;save old bx
+
+:00401755 56         push esi            ;save old esi
+
+:00401756 33DB       xor ebx, ebx        ;clean bx
+
+:00401758 0FBE742410 movsx byte ptr esi, [esp + 10] ;2nd param 
+
+:0040175D 57         push edi            ;save old edi
+
+:0040175E 8B7C2418   mov edi, [esp + 18] ;3rd param from caller
+
+
+
+:loop_1762_call 2260
+
+:00401762 8907         mov [edi], eax ;get ax in [edi] holder
+
+:00401764 83C704       add edi, 4    ;increase holder 
+
+:00401767 43           inc ebx       ;we are counting (cnt++)
+
+:00401768 56           push esi      ;rightmost param for call
+
+:00401769 50           push eax      ;leftmost param, loop increased
+
+:0040176A E8F10A0000   call 00402260 ;call 2260 (with increased ax)
+
+:0040176F 83C408       add esp, 8    ;correct stack
+
+:00401772 85C0         test eax, eax ;is it 0?
+
+:00401774 7406         je 0040177C   ;exit loop if 0 returned
+
+:00401776 C60000       mov byte ptr [eax], 0 ;else zero *[ax]
+
+:00401779 40           inc eax       ;returned value =returned value+1
+
+:0040177A EBE6         jmp 00401762  ;loop back
+
+
+
+:exit_loop
+
+:0040177C 8BC3      mov eax, ebx ;this, <U>ebx</U> is the value
+
+:0040177E 5F        pop edi      ;returned by this function,
+
+:0040177F 5E        pop esi      ;it corresponds to cnt in the
+
+:00401780 5B        pop ebx      ;c code and corresponds to the
+
+:00401781 C3        ret          ;number of loops and 2260 calls</PRE>
+
+So, what does this function do? It's substantially a loop, calling ANOTHER routine 
+
+until this one returns zero!... Looks like a for construction, therefore we are 
+
+most probably looking at the SPLIT function (which is the first one in our c source 
+
+code with such a construction!).<BR>
+
+If we have a look at the 2260 routine that this function calls at each loop, we'll see that it's main purpose is to manipulate the value in ax (with a couple of loops).
+
+<BR>
+
+Since the split function is in turn called from the List_Append function, let's go on, 
+
+and examine the next function in our disassembled text, at 1790. 
+
+This function is connected to the previous one (which is called after a couple of 
+
+pushes), and it calls in turn a sequence of string operations (lstrlenA, wsprintfA) 
+
+before sending a Message<BR>
+
+We have obviously to do with a string manipulation function... we will in short 
+
+imagine that we DO NOT have the source code of our target, and we'll see what we 
+
+can figure out, but first, since in the reality we know that this is the List_Append 
+
+function, let's have a look at the beginning of List_Append, here below, which coincides with the following three lines of c code:<PRE><FONT color="purple">itemcnt = itemcnt= Split( line, '\t', items );
+
+	     if ( itemcnt == 0 )
+
+	     return TRUE;</FONT></PRE>These lines translate into:<PRE>
+
+:00401790 81ECA0000000    sub esp, 000000A0     ;adjust stack
+
+:00401796 8D442450        lea eax, [esp + 50]   ;get items
+
+:0040179A 53              push ebx              ;will pop
+
+:0040179B 8B8C24B0000000  mov ecx, [esp + 000000B0] ;get line
+
+:004017A2 56              push esi              ;will pop
+
+:004017A3 57              push edi              ;will pop
+
+:004017A4 55              push ebp              ;will pop
+
+:004017A5 50              push eax              ;items param
+
+:004017A6 6A09            push 00000009         ;\t (char delimiter)
+
+:004017A8 51              push ecx              ;line param
+
+:004017A9 E8A2FFFFFF      call 00401750=split   ;split(line, '\t', items)
+
+:004017AE 83C40C          add esp, 0000000C     ;adjust stack
+
+:004017B1 8BD8            mov ebx, eax      ;save return value cnt=itemcnt
+
+:004017B3 85DB            test ebx, ebx     ;if itemcnt is NOT zero
+
+:004017B5 7510            jne 004017C7      ;continue List_Append
+
+:004017B7 B801000000      mov eax, 1        ;else return TRUE
+
+:004017BC 5D              pop ebp           ; and poppall
+
+:004017BD 5F              pop edi
+
+:004017BE 5E              pop esi
+
+:004017BF 5B              pop ebx
+
+:004017C0 81C4A0000000    add esp, 000000A0 ;re-orden stack
+
+:004017C6 C3              ret</PRE>
+
+Note, above at 17A6, the escape sequence 9 for &quot;horizontal tab&quot;... have a look at your ASCII table... 07 is bell, 08 is backspace and so on... basically, ANY TIME you see a &quot;funny&quot; value (i.e. not one and not zero) pushed for a call, you have the possibility to understand what the call itself is about using just a little &quot;feeling&quot;, most of the time you wont even need to &quot;climb&quot; the calling tree (you'll anyway learn how to climb effectively in the third part of this essay). Here, the fact that one of the passed parameter is a TAB let's us immediately understand that the other two parameters for our split function must have to do with  characters... as they indeed do<BR><BR>
+
+<FONT size="+2"><B>Cracking without source code</B></FONT><BR>
+
+So, let's now imagine that we have NOT the source code of our target, and let's see 
+
+what does this &quot;mysterious&quot; function do, once passed the &quot;1050&quot; call check.<BR>
+
+We'll now study a little this function<BR>
+
+A word about the three routines, that we will encounter in the snippet of code 
+
+below: <FONT color="blue">wsprintf</FONT>, <FONT color="blue">lstrlen</FONT> and <FONT color="blue">SendMessage</FONT><BR><PRE>
+
+<B>wsprintf(lpszOutput, lpszFormat, ...)</B>
+
+LPSTR lpszOutput;	/* address of string for output*/
+
+LPSTR lpszFormat;	/* address of format-control string*/
+
+. . .	             /* Specifies zero or more optional arguments*/
+
+The wsprintf function formats and stores a series of characters 
+
+and values in a buffer. Each argument (if any) is converted 
+
+according to the corresponding format specified in the format 
+
+string. The return value is the number of bytes stored in the 
+
+lpszOutput string, not counting the terminating null character, 
+
+if the function is successful.<HR>
+
+<B>lstrlen(lpszString)</B>
+
+LPCSTR lpszString;	/* address of string to count*/
+
+The lstrlen function returns in bytes the length of the specified 
+
+string (not including the terminating null character).<HR>
+
+<B>SendMessage(hwnd, uMsg, wParam, lParam)</B>
+
+HWND hwnd;	/* handle of destination window	*/
+
+UINT uMsg;	/* message to send	*/
+
+WPARAM wParam;	/* first message parameter	*/
+
+LPARAM lParam;	/* second message parameter	*/
+
+The SendMessage function sends the specified message to the given 
+
+window. The function calls the window procedure for the window and 
+
+does not return until that window procedure has processed the 
+
+message. The return value specifies the result of the message 
+
+processing and depends on the message sent.
+
+</PRE>
+
+<FONT size="+2"><B>A big chunk of List_Append</B></FONT><BR>
+
+Now be patient, there is a big chunk of code awaiting you, just read it slowly, 
+
+and check my findings... you do not need to check the source c code yet, you'll 
+
+(I hope) understand everything LOOKING AT THE DISASSEMBLED CODE, with the 
+
+knowledge you already have if you followed me until this point. You'll see that 
+
+the beginning of the code chunk below &quot;turns&quot; around a &quot;big verification&quot;  and a 
+
+&quot;little loop&quot;.
+
+Let's have a good look at this mysterious (List_Append :-) routine<PRE>
+
+:004017C7 8B442460                mov eax, [esp + 60]    ;get parameter
+
+:004017CB 803800                  cmp byte ptr [eax], 00 ;is it zero?
+
+:004017CE 0F84B6000000            je 0040188A            ;yes do not big verify
+
+:004017D4 BFFFFFFF7F              mov edi, 7FFFFFFF      ;no, big verify
+
+                                                         ;with edi=0x7FFFFFFF
+
+:004017D9 8BB424B4000000          mov esi, [esp + B4]    ;with this si
+
+:004017E0 8BAC24B8000000          mov ebp, [esp + B8]    ;and these optional
+
+                                                         ;arguments for wsprintf
+
+:big verify from above or from Address:004018E6(C)
+
+:004017E7 8B442460           mov eax, [esp + 60]         ;get parameter
+
+:004017EB 803800             cmp byte ptr [eax], 00      ;is it zero?
+
+:004017EE 0F8408010000       je 004018FC                 ;yes, exit big verify
+
+:004017F4 55                 push ebp       ;optional arguments
+
+:004017F5 68BC814000         push 004081BC  ;(&quot;%d&quot;) format-control string
+
+:004017FA 68A0944000         push 004094A0  ;address of string for output
+
+:004017FF FF15BCB24400       Call dword ptr [0044B2BC] ;USER32.wsprintfA output
+
+:00401805 C744244405000000   mov [esp + 44], 5
+
+:0040180D 897C2448           mov [esp + 48], edi
+
+:00401811 83C40C             add esp, C
+
+:00401814 C744244000000000   mov [esp + 40], 0
+
+:0040181C C744244CA0944000   mov [esp + 4C], 004094A0 ;save address here
+
+:00401824 68A0944000         push 004094A0         ;address of stringbuffer
+
+:00401829 FF15D4B14400       Call dword ptr [0044B1D4] ;KERNEL32.lstrlenA, count
+
+:0040182F 40                 inc eax               ;add one to count
+
+:00401830 8D4C2438           lea ecx, [esp + 38]   ;get lMsgParam2
+
+:00401834 89442450           mov [esp + 50], eax   ;save counted bytes
+
+:00401838 51                 push ecx	              ;push lMsgParam2
+
+:00401839 896C245C           mov [esp + 5C], ebp  ;save ebp there
+
+:0040183D 6A00               push 0               ;push wMsgParam1
+
+:0040183F 6807100000         push 00001007        ;push uMsg 1007 (see below)
+
+:00401844 56                 push esi             ;push hWnd	
+
+:00401845 FF15D8B24400       Call dword ptr [0044B2D8] ;USER32.SendMessageA
+
+:0040184B 83F8FF             cmp eax, FFFFFFFF    ;returned -1?
+
+:0040184E 8BF8               mov edi, eax	;save returned result (row)
+
+:00401850 0F85A6000000       jne 004018FC	;-1, let's exit big verify
+
+:00401856 55                 push ebp        ;else let's prepare error message
+
+:00401857 6898814000         push 00408198   ;&quot;Error adding item %d to list view&quot;
+
+:0040185C 68A0944000         push 94A0=Strings_buffer;address of output string
+
+:00401861 FF15BCB24400       Call dword ptr [0044B2BC] ;USER32.wsprintfA, Ord:262h
+
+:00401867 83C40C             add esp, C     ;correct stack
+
+:0040186A 6A00               push 0         ;push MB_OK
+
+:0040186C 6888814000         push 00408188  ;&quot;filemon Error&quot; is WMsgParam
+
+:00401871 68A0944000         push 004094A0  ;previous string is the message
+
+:00401876 56                 push esi       ;push usual hWnd
+
+:00401877 FF1590B24400       Call dword ptr [0044B290] ;USER32.MessageBoxA, Ord:195h
+
+:0040187D 33C0               xor eax, eax   ;exit routine with a return FALSE
+
+:0040187F 5D                 pop ebp        ;pop them all
+
+:00401880 5F                 pop edi
+
+:00401881 5E                 pop esi
+
+:00401882 5B                 pop ebx
+
+:00401883 81C4A0000000       add esp, A0
+
+:00401889 C3                 ret            ;exit FALSE
+
+
+
+:here_from_start_if_no_need_to_big_verify
+
+:0040188A 8BB424B4000000    mov esi, [esp + B4]  ;get hWnd
+
+:00401891 6A00              push 0		    ;lMsgParam2
+
+:00401893 C744243C04000000  mov [esp + 3C], 4
+
+:0040189B C744244400000000  mov [esp + 44], 0
+
+:004018A3 6A00              push 0		;wMsgParam1
+
+:004018A5 6804100000        push 1004		;message 1004
+
+:004018AA 56                push esi		;usual window
+
+:004018AB FF15D8B24400      Call dword ptr [0044B2D8] ;USER32.SendMessageA, Ord:01D9h
+
+:004018B1 8D78FF            lea edi, [eax-01] ;edi = return-1
+
+:004018B4 8BAC24B8000000    mov ebp, [esp + B8]
+
+:004018BB 85FF              test edi, edi     ;OK SendMessage?
+
+:004018BD 7C24              jl 004018E3      ;do not little loop if lower
+
+
+
+:little loop
+
+:004018BF 8D442438          lea eax, [esp + 38]       ;get lMsgParam2
+
+:004018C3 897C243C          mov [esp + 3C], edi       ;save edi
+
+:004018C7 50                push eax                  ;lMsgParam2
+
+:004018C8 6A00              push 0                    ;wMsgParam1
+
+:004018CA 6805100000        push 1005                 ;message 1005
+
+:004018CF 56                push esi                  ;usual window
+
+:004018D0 FF15D8B24400      Call dword ptr [0044B2D8] ;USER32.SendMessageA, Ord:01D9h
+
+:004018D6 85C0              test eax, eax             ;test result
+
+:004018D8 7406              je 004018E0	         ;continue if zero
+
+:004018DA 396C2458          cmp [esp + 58], ebp ;else check if [sp+58]=bp
+
+:004018DE 7403              je 004018E3         ;and exit little loop if it is
+
+:004018E0 4F                dec edi                   ;edi lowered
+
+:004018E1 79DC              jns 004018BF              ;little loop 
+
+
+
+:exit little loop
+
+:004018E3 83FFFF                  cmp edi, FFFFFFFF
+
+:004018E6 0F85FBFEFFFF            jne 004017E7 ;big verify if not
+
+:004018EC B801000000              mov eax, 1 ;RETURN TRUE if edi=FFFFFFFF
+
+:004018F1 5D                      pop ebp
+
+:004018F2 5F                      pop edi
+
+:004018F3 5E                      pop esi
+
+:004018F4 5B                      pop ebx
+
+:004018F5 81C4A0000000            add esp, A0
+
+:004018FB C3                      ret</PRE>
+
+That was a big chunk of code! And we are not yet finished... but first let's have a 
+
+closer look at one of our most interesting &quot;findings&quot;:<PRE>
+
+:004017FA 68A0944000         push 004094A0  ;address of string buffer</PRE>
+
+As you'll learn with practice, all targets utilise part of their own data area as a &quot;buffer&quot; for strings, a  sort of &quot;blackboard&quot; in order to prepare, update, modify and destroy string messages.
+
+Once you find it you  may add as a tag &quot;Strings_buffer&quot;, for instance, in the whole 
+
+disassembled listing... In our target there are 16 locations... this helps a lot, as 
+
+you'll see...<BR>
+
+Exiting from the &quot;big verify&quot; above we land here, smack in the middle of a forest of 
+
+switches:<PRE>
+
+:process block
+
+:004018FC 85DB                test ebx, ebx          ;SWITCH ebx=0?
+
+:004018FE 7E3B                jle 0040193B           ;go to next block if le 0
+
+:00401900 8B442460            mov eax, [esp + 60]    ;get next Oemstring
+
+:00401904 803800              cmp byte ptr [eax], 00 ;finish Oemstring?
+
+:00401907 7432                je 0040193B            ;go to next block if so
+
+:00401909 68A0944000          push 94A0=Strings_buffer   ;translate here
+
+:0040190E 8B2DB0B24400        mov ebp, [0044B2B0]    ;OemToChar address
+
+:00401914 50                  push eax               ;push Oemstring
+
+:00401915 FFD5                call ebp               ;call OemToChar
+
+:00401917 C744241801000000    mov [esp + 18], 1      ;PARAMETER 1     (PROCESS)
+
+:0040191F C7442424A0944000    mov [esp + 24], 94A0=Strings_buffer
+
+:00401927 8D4C2410            lea ecx, [esp + 10]
+
+:0040192B 51                  push ecx
+
+:0040192C 57                  push edi
+
+:0040192D 682E100000          push 102E             ;message 102E (1=ROCESS)
+
+:00401932 56                  push esi
+
+:00401933 FF15D8B24400        Call dword ptr [0044B2D8] ;USER32.SendMessage_102E
+
+:00401939 EB06                jmp 00401941              ;continue
+
+
+
+:falls from process_block
+
+:0040193B 8B2DB0B24400            mov ebp, [0044B2B0]   ;must have OemToChar address
+
+
+
+:continue_request_block
+
+:00401941 83FB01                  cmp ebx, 1              ;switch ebx=1
+
+:00401944 7E33                    jle 00401979            ;next block if le 1
+
+:00401946 8B442464                mov eax, [esp + 64]     ;get Oemstring
+
+:0040194A 803800                  cmp byte ptr [eax], 00  ;finish Oemstring?
+
+:0040194D 742A                    je 00401979             ;next block if so
+
+:0040194F 68A0944000              push 94A0=Strings_buffer;traslate here
+
+:00401954 50                      push eax                ;push Oemstring
+
+:00401955 FFD5                    call ebp                ;OemToChar
+
+:00401957 C744241802000000        mov [esp + 18], 2   ;PARAMETER 2	 (REQUEST)
+
+:0040195F C7442424A0944000        mov [esp + 24], 94A0=DataAreaStrings
+
+:00401967 8D442410                lea eax, [esp + 10]
+
+:0040196B 50                      push eax
+
+:0040196C 57                      push edi
+
+:0040196D 682E100000              push 102E           ;message 102E	  (2=REQUEST)
+
+:00401972 56                      push esi
+
+:00401973 FF15D8B24400            Call dword ptr [0044B2D8] ;USER32.SendMessage_102E </PRE>Well, you've seen already two of the switch blocks, there are three more, and they are all the same... therefore I'll print below only the first, the relevant and the last isntruction of each one of them...<PRE>
+
+:continue_path_block
+
+:00401979 83FB03             cmp ebx, 3             ;switch ebx=3? See above comments
+
+...
+
+:0040198F C744241803000000   mov [esp + 18], 3    ;PARAMETER 3	 (PATH)
+
+...
+
+:004019AB FF15D8B24400       Call dword ptr [0044B2D8] ;USER32.SendMessage_1025
+
+
+
+:continue_result_block
+
+:004019B1 83FB02             cmp ebx, 2         ;switch ebx=2? See above comments
+
+...
+
+:004019C7 C744241804000000   mov [esp + 18], 4	;PARAMTER 4 (RESULT)
+
+...
+
+:004019E3 FF15D8B24400       call dword ptr [0044B2D8] ;USER32.SendMessage_1025
+
+
+
+:continue_block_other
+
+:004019E9 83FB03             cmp ebx, 3  ;switch ebx=3? See above comments
+
+...
+
+:004019FF C744241805000000   mov [esp + 18], 5  ;PARAMETER 5 (OTHER)
+
+...
+
+:00401A1B FF15D8B24400       Call dword ptr [0044B2D8] ;USER32.SendMessage_1025
+
+
+
+:continue from block_other
+
+:00401A21 B801000000         mov eax, 1  ;RETURN value=TRUE
+
+:00401A26 5D                 pop ebp     ;popall
+
+:00401A27 5F                 pop edi
+
+:00401A28 5E                 pop esi
+
+:00401A29 5B                 pop ebx
+
+:00401A2A 81C4A0000000       add esp, A0  ;stack adjust
+
+:00401A30 C3                 ret          ;end of &quot;row&quot;</PRE>
+
+
+
+So, what's happening here? Let's THINK a little... this is the most important &quot;visualisation&quot; function of our target... it is here that the target gets the data from the virtual device and through Message 1025 (which is SetItemText) adds various &quot;rows&quot; (&quot;items&quot;) to the main activity window...<BR>
+
+Well, this was the &quot;gut&quot; of our program... the Filevxd.vxd intercepted operations 
+
+have been &quot;translated&quot; into strings on 5 different columns: Process, Request, Path,
+
+Result and Other. Note that after having done this we will return with one &quot;written 
+
+row&quot;, ready for the next one.<BR><BR>Yes... but return WHERE? Who called List_Append? Let's have a look... [1790-1A30]:List_Append... Therefore let's look who has called 1790, here you are:<PRE>:00401AFB E890FCFFFF  call 00401790List_Append</PRE>This is the only call to List_Append inside our target, and it comes from the NEXT routine, which starts at 1A40. We will examine it very soon, but what about the big MainWndProc?<BR>
+
+<BR>
+
+<FONT size="+2"><B>MainWndProc did not disappear!</B></FONT><BR>
+
+Let's go back to MainWndProc for a 
+
+moment... you'll have noticed that we have reversed &quot;Split&quot; and &quot;List_Append&quot;... What about &quot;MainWndProc&quot;... she should come now, following the Location_List of &quot;called&quot;  procedures that we have seen at the beginning... indeed! MainWndProc starts at 1190, as we have seen in the first part of this essay (through the WNDCLASS trick), as a matter of fact this procedure does not seem to be &quot;called&quot; by anybody at all:<PRE>
+
+ 
+
+:0040118D CC              int 03  ;filler: compiler must reach a correct location (90)
+
+:0040118E CC              int 03  ;filler: compiler must reach a correct location (90)
+
+:0040118F CC              int 03  ;filler: compiler must reach a correct location (90)
+
+:00401190 81EC44010000    sub esp, 144   ; THIS IS MainWndProc start!
+
+:00401196 53              push ebx
+
+:00401197 56              push esi
+
+:00401198 8BB42454010000  mov esi, [esp + 154]
+
+:0040119F 57              push edi
+
+:004011A0 83FE0F          cmp esi, F
+
+...</PRE>
+
+<FONT size="+2"><B>The filler using, &quot;snake&quot; trick</B></FONT><BR>
+
+All these int03 fillers, disseminated inside compiled code, can be very useful for &quot;patching&quot; other targets... say you want to add to a target a completely new function WITHOUT modifying its size (which is at times pretty important for applied reverse engineering :-)<BR>Let's imagine that the function you have written is, say, 200 bytes long (which is quite a lot for a tight code function written in assembler)... ok, now imagine  that you modify the little &quot;about window&quot; of your target, which usually has only a MB_OK button, adding a cancel button, or something more hidden, which WILL TRIGGER your completely new function, that you have &quot;spread&quot; along the many int03 &quot;nuggets&quot; of the program. Your function will run like a snake inside the code of your target, where you'll have substituted many &quot;CC&quot; instructions with your function's ones... something like Inst1, Ints2, Inst3, jmpInst4, Inst4, Inst5, Inst6, JmpInst7, Inst7...Inst197, JmpInst19A, Inst19A, ret... You dig it? 
+
+<BR><BR>
+
+We could have found the beginning of MainWndProc also with a simpler method: checking THE END of the routines we have already investigated... if you remember the first part of this essay, InitInstance terminated with<PRE>
+
+UpdateWindow(hWndMain); 
+
+	return hWndMain;</PRE>
+
+which translates into:<PRE>
+
+UpdateWindow(hWndMain);
+
+:00401182 56              push esi ; hWndMain (handle was in esi)
+
+:00401183 FF15F0B24400    Call dword ptr [0044B2F0] ;USER32.UpdateWindow, Ord:024Fh 
+
+:00401189 8BC6            mov eax, esi ;return to WinMain with hWndMain in eax
+
+:0040118B 5E              pop esi ;let's have the old esi back
+
+:0040118C C3              ret</PRE>
+
+And, as you can see, the code that immediately follows (after three &quot;CC&quot;) is, as it 
+
+is logical to expect and as the information from WNDCLASS has already told us, 
+
+the beginning of MainWndProc, which is &quot;automatically&quot; (and logically) initiated once 
+
+the various InitInstance create, show and update window procedures have terminated...<BR>
+
+Have windows... program may start!<BR>
+
+<BR>
+
+Alas we are not yet ready for the reverse engineering of MainWndProc. 
+
+We need some more &quot;muscles&quot; first. Let's go on with the function which follows (and calls) List_Append... we'll come back to MainWndProc don't worry: you'll master this application like nobody else!<BR>
+
+<BR>
+
+<FONT size="+2"><B>How to sniff main functions (as opposed to routines)</B></FONT><BR>
+
+We have seen how the Split function began at 1750 ending at 1781, and the List_Append function, began at 1790 ending at 1A30. Since &quot;good&quot; Address 1A30 is already taken by List_Append's last ret instruction, and since the compiler needs a &quot;good&quot; starting location for the next function, the compiler stuffs again a lot of (eventually useful for us) int 03 interrupts inside the code of our target, until the next &quot;good&quot; location:<PRE>
+
+:00401A40 8B44240C                mov eax, [esp + 0C]</PRE>
+
+You know already enough to grasp immediately that this is a function, not a &quot;lower&quot; routine: it gets in ax one of the passed parameters as first priority in order to test it...  &quot;lower&quot; routines usually do not recover immediately passed parameter... they push values, or jump straight away, or compare flags, or perform other tasks... studying the beginning of routines you'll quickly develop the right &quot;feeling&quot; for the important ones.<BR>You'll know that you have to do with an &quot;important&quot; function (as opposed to a &quot;lower&quot; routine) even if you don't understand WHAT the hell it does :-)<BR>
+
+Let's recall the various beginnings of the functions we have reversed until now:<PRE>
+
+:00401000 8B442408     mov eax, [esp + 08]       Abort (get second par)
+
+:00401020 83EC1C       sub esp, 0000001C        (WinMain)
+
+:004010B0 8B442404     mov eax, [esp + 04]       InitApplication (get second par)
+
+:00401130 8B442404     mov eax, [esp + 04]       InitInstance (get second par)
+
+:00401190 81EC44010000 sub esp, 00000144        (WinMainProc)
+
+:00401750 8B442404     mov eax, [esp + 04]       Split (get second par)
+
+:00401790 81ECA0000000 sub esp, 000000A0         List_Append 1st line, (shuffle)
+
+:00401796 8D442450     lea eax, [esp + 50]                   2nd line, (get par)</PRE>
+
+Well, with the exceptions of the two &quot;Main&quot; procedures of our target, 
+
+ALL OTHER FUNCTIONS have as first (or second) instruction a<PRE>
+
+mov eax, [esp + nn]</PRE> instruction... and the &quot;nn&quot; location to be added to esp can give you often as well, by the way, an idea of HOW MANY arguments is the unknown function expecting...<BR>
+
+<BR>
+
+Let's have a look at the next function after List_Append, it's of course the &quot;UpdateStatistics&quot; function, but ignore the C source code alone for a while, just follow the disassembled code... I'll keep your hand:<BR><BR>
+
+<FONT size="+2"><B>The UpdateStatistics function</B></FONT><PRE>
+
+:00401A40 8B44240C          mov eax, [esp + 0C] ;get Main_param (third one)
+
+:00401A44 53                push ebx            ;save bx
+
+:00401A45 56                push esi            ;save si
+
+:00401A46 85C0              test eax, eax       ;Main_param=0?
+
+:00401A48 57                push edi            ;save di
+
+:00401A49 55                push ebp            ;save bp
+
+:00401A4A 7511              jne 00401A5D        ;have Main_param, let's go on
+
+:00401A4C 833DB496400006    cmp dword ptr [004096B4], 6 ;is [96B4]<6? :00401A53 0F82E3000000 jb 00401B3C ;param="0" and [96B4]<6: ret :00401A59 85C0 test eax, eax ;[96B4]>6 Main_param sure zero?
+
+:00401A5B 7468              je 00401AC5         ;Main_param zero but [96B4]&gt;6
+
+
+
+:Have Main_Param, let's go on
+
+:00401A5D 8B442414          mov eax, [esp + 14]       ;get hWnd
+
+:00401A61 50                push eax                  ;hWnd for all mouse input
+
+:00401A62 FF15B4B24400      Call dword ptr [0044B2B4] ;USER32.SetCapture (hWnd)
+
+:00401A68 8B0DB0964000  **  mov ecx, [004096B0]  ;get parameter for next call
+
+:00401A6E 8B3DB8B24400  **  mov edi, [0044B2B8]  ;get next call name
+
+:00401A74 51            **  push ecx             ;push handle of cursor
+
+:00401A75 FFD7          **  call edi   ;Call [0044B2B8] ;USER32.SetCursorA</PRE>
+
+<FONT size="+2"><B>The &quot;indirect function call&quot; trick</B></FONT><BR>
+
+Watch the typical construction above (the four lines with **)... every time the programmer builds an own
+
+&quot;homemade&quot; function (here hSaveCursor), the compiler will resolve it like that.<BR>
+
+The four lines above correspond to <FONT color="magenta">hSaveCursor = SetCursor(hHourGlass)</FONT>; but -alas- you'll not find, in your disassembled dead listing,
+
+the useful tag<BR>
+
+<FONT color="blue">:00401A75 FF15B8B24400 Call dword ptr [0044B2B8] ;USER32.SetCursorA</FONT>... you'll only have a forsaken line<BR><FONT color="blue">:00401A75 FFD7 call edi</FONT>... it's up to you to &quot;solve&quot; it (which is easy, given the corrispondence between  44B2B8 and SetCursorA :-)<BR>
+
+Let's go on<PRE>
+
+:00401A77 8B742418           mov esi, [esp + 18]    ;get hWnd for next call
+
+:00401A7B 6A00               push 00000000          ;push rightmost NULL
+
+:00401A7D 6A00               push 00000000          ;push next NULL
+
+:00401A7F 8B2DD8B24400       mov ebp, [0044B2D8]    ;get real call
+
+:00401A85 6804100000         push 00001004          ;push 1004
+
+:00401A8A A3BC964000         mov [004096BC], eax    ;save ax in [96BC]  
+
+:00401A8F 56                 push esi     ;push leftmost parameter
+
+:00401A90 FFD5               call ebp     ;call ebp (si, 1004, 0, 0)</PRE>
+
+This function is SendMessage, can you feel it? (If not ook inside your disassembled listing for &quot;44B2D8&quot; :-) Therefore the above call corresponds to SendMessage(hwnd, 1004, NULL, NULL)<PRE>
+
+:00401A92 C6056C80400001 mov byte ptr [0040806C], 01 ;[806CSEndMsg1008]=TRUE
+
+:00401A99 85C0           test eax, eax               ;if zero returned
+
+:00401A9B 7E11           jle 00401AAE                ;don't loop_SendMessage_1008
+
+:00401A9D 8BD8           mov ebx, eax                ;else get counter
+
+
+
+:loop_1A9F_call_SendMessage_1008
+
+:00401A9F 6A00                push 00000000      ;since ebp has not changed,
+
+:00401AA1 6A00                push 00000000      ;we use it to SendMessage
+
+:00401AA3 6808100000          push 00001008      ;Number 1008
+
+:00401AA8 56                  push esi           ;always to the same window
+
+:00401AA9 FFD5                call ebp  ;call SendMessage(hWnd,1008,NULL,NULL)
+
+:00401AAB 4B                  dec ebx            ;cnt--
+
+:00401AAC 75F1                jne 00401A9F       ;loop until cnt=0
+
+
+
+:after_loop_1A9F_call_SendMessage_1008
+
+:00401AAE C6056C80400000  mov byte ptr [0040806C], 00 ;[806CSEndMsg1008]=FALSE
+
+:00401AB5 A1BC964000      mov eax, [004096BC]    ;Want my old ax back
+
+:00401ABA 50              push eax               ;as parameter for next call
+
+:00401ABB FFD7            call edi               ;call SetCursorA(ax)
+
+:00401ABD FF15C4B24400    Call dword ptr [0044B2C4] ;USER32.ReleaseCapture 
+
+:00401AC3 EB0A            jmp 00401ACF           ;continue without updating
+
+
+
+:From_entrance_if_Main_param=zero_but_[96B4]&gt;6
+
+:00401AC5 8B742418                mov esi, [esp + 18] ;update esi
+
+:00401AC9 8B2DD8B24400            mov ebp, [0044B2D8] ;ebp must point to SendMessage
+
+
+
+:continue_from_SendMessage_1008_loop
+
+:00401ACF BBF0994000      mov ebx, 004099F0   ;pointer to the data area
+
+:00401AD4 A1B4964000      mov eax, [004096B4] ;get this value in ax
+
+:00401AD9 03C3            add eax, ebx        ;check and
+
+:00401ADB 3BC3            cmp eax, ebx        ;if [4096B4]=0
+
+:00401ADD 7632            jbe 00401B11        ;do not loop_1ADF_List_Append
+
+
+
+:loop_1ADF_List_Append
+
+:00401ADF 8D5304     lea edx, [ebx+04]     ;get parameter
+
+:00401AE2 B9FFFFFFFF mov ecx, FFFFFFFF	;prepare counter
+
+:00401AE7 8BFA       mov edi, edx  ;get correct value for scasb
+
+:00401AE9 2BC0       sub eax, eax  ;repnz condition
+
+:00401AEB F2         repnz     ;repeat while not equal
+
+:00401AEC AE         scasb     ;this compare string operation
+
+:00401AED 52         push edx  ;parameter (char*line)
+
+:00401AEE 8B03       mov eax, [ebx]  ;get parameter (seg)
+
+:00401AF0 F7D1       not ecx   ;count how many scasb
+
+:00401AF2 50         push eax  ;parameter (seq)
+
+:00401AF3 56         push esi  ;parameter (hWndList)
+
+:00401AF4 8D5C1904   lea ebx, [ecx + ebx + 04] 
+
+:00401AF8 8D79FF     lea edi, [ecx-01]         
+
+:00401AFB E890FCFFFF call 00401790List_Append
+
+:00401B00 83C40C     add esp, 0000000C   ;correct stack
+
+:00401B03 A1B4964000 mov eax, [004096B4] ;check [96B4]
+
+:00401B08 05F0994000 add eax, 004099F0   ;add to it &quot;DATAbottom&quot;
+
+:00401B0D 3BC3       cmp eax, ebx        ;check against bx and if lower
+
+:00401B0F 77CE       ja 00401ADF  ;loop1ADF ;exit loop_List_Append
+
+
+
+:Exit_loop_List_Append
+
+:00401B11 C705B496400000000000 mov dword ptr [004096B4], 0 ;zero [96B4]location
+
+:00401B1B 803D6880400000       cmp byte ptr [00408068], 00 ;is [8068]=0?
+
+:00401B22 7418                 je 00401B3C                 ;return if so
+
+:00401B24 6A00                 push 00000000    ;NULL for the <U>second</U> call
+
+:00401B26 6A00                 push 00000000
+
+:00401B28 6A00                 push 00000000
+
+:00401B2A 6804100000           push 00001004
+
+:00401B2F 56                   push esi
+
+:00401B30 FFD5                 call ebp  ;CALL SendMessage(hWnd,1004,NULL,NULL)
+
+:00401B32 48                   dec eax   ;result value=resultvalue-1
+
+:00401B33 50                   push eax  ;will be pushed
+
+:00401B34 6813100000           push 00001013    ;along with message 1013
+
+:00401B39 56                   push esi         ;same hWnd of course
+
+:00401B3A FFD5                 call ebp  ;CALL SendMessage(hWnd,1013,eax,NULL)
+
+
+
+:return_home_Lassie
+
+:00401B3C 5D                      pop ebp
+
+:00401B3D 5F                      pop edi
+
+:00401B3E 5E                      pop esi
+
+:00401B3F 5B                      pop ebx
+
+:00401B40 C3                      ret</PRE>
+
+Well, what ARE actually these mysterious messages that we are continuously finding inside our target?<BR>
+
+What did we have until now? Let's see:<PRE>
+
+Message 1007 in List_Append at 183F 
+
+Message 1004 in List_Append at 18A5 
+
+Message 1005 in List_Append at 18CA 
+
+Message 102E in List_Append at 192D, 196D, 19A5, 19DD and 1A15
+
+(and List_Append is called inside a loop of UpdateStatistics)
+
+Message 1004 in UpdateStatistics at 1A85, 1B2A
+
+Message 1008 in UpdateStatistics at 1AA3 (a loop)
+
+Message 1013 in UpdateStatistics at 1B34</PRE>
+
+Since these messages are all correlated with the main window of our target, we would be well advised to use as part of their new tags something like &quot;Main_Wnd_Msg&quot;, or a similar name (at least until we FIND OUT what's the real name of the main window of our target :-)<BR>Basically the whole &quot;spirit&quot; of windows programming dwells inside such messages: any window procedure must examine messages it receives from the system or from other windows, or from the user, and determine what action, if any, to take<BR>We must delve a little deeper inside Windows messages... here you go:<BR>
+
+<FONT size="+2">Window Messages</FONT><PRE>
+
+A window message is a set of values that Windows sends to a window procedure 
+
+as input or requesting the window to carry out some action. Windows includes 
+
+a wide variety of messages that it (or any other application) can send to a 
+
+window procedure. Most messages are sent to a window as a result of a given 
+
+function being executed or as a result of input from the user.
+
+ Every message consists of four values: a handle that identifies the window 
+
+(hWnd), a message identifier (msg), a 16-bit message-specific value, and a 
+
+32-bit message-specific value. These values are passed as individual parameters 
+
+to the window procedure. The window procedure then examines the message 
+
+identifier to determine what response to make and how to interpret the 16- 
+
+and 32-bit values.
+
+Although Windows generates most messages, an application can create its own 
+
+messages and place them in its own message queue or that of another 
+
+application. </PRE>
+
+ 
+
+Seems like we are at a dead point of our cracking session... without knowing what these &quot;private&quot; and &quot;home-made&quot; ID_ mean, we'll not figure them out...<BR>And yet... let's THINK a little: When we have run our target we have SEEN what it does: it writes in the main window all system activities... it get's them from its VXD driver, ok, we'll examine that later on... but substantially it writes row after row of data inside the window, and it has an &quot;autoscroll&quot; function to keep new added items visible, and a &quot;clear display&quot; option to delete all items... mmm... one of the message must be Main_Window_Delete_Items... will it be the &quot;1008&quot; one in the UpdateStatistics loop? (Yes! Have a look at the C source code of UpdateStatistics NOW :-)<BR>
+
+Hey, 42000 bytes, time to switch over to a new lesson!
+
+<HR>
+
+<FONT color="blue">(c) fravia+ 1997.</FONT> All rights reserved.<BR>
+
+
+
+
+
+
+
+<HR ALIGN="CENTER" WIDTH="100%" SIZE="3">
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</I><BR><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A href="filemon1.htm" tppabs="http://www.anticrack.de/fravia/filemon1.htm">filemon1</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A href="filemon3.htm" tppabs="http://www.anticrack.de/fravia/filemon3.htm">filemon3</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A href="filemon4.htm" tppabs="http://www.anticrack.de/fravia/filemon4.htm">filemon4</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A href="filemon5.htm" tppabs="http://www.anticrack.de/fravia/filemon5.htm">filemon5</A>
+
+<BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"> 
+
+<A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links </A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0">
+
+<A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity </A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays </A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails </A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mailFraVia </A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">is reverse engineering legal? </A></CENTER>
+
+<CENTER><HR ALIGN="CENTER" WIDTH="100%" SIZE="2"></CENTER>
+
+
+
+</BODY>
+
+</HTML>
+
+
+
+
+
+
+

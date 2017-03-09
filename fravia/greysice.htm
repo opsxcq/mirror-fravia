@@ -1,0 +1,646 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>greysice.htm +Greythorne's SoftICE breakpoints</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR=#C0C0C0 TEXT=#001010 VLINK=#405040><P><CENTER>
+
+<CENTER><H2>
+
+Softice's breakpoints, an interesting list<BR>
+
+by +Greythorne<BR>
+
+30 October 1997</FONT>
+
+<BR></H2>
+
+<HR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0>Courtesy of Fravia's page 
+
+of reverse engineering
+
+<HR></CENTER>
+
+<PRE>
+
+/******************************************************\
+
+
+
+  +HCU NOTES: 
+
+
+
+       Below is a nice handly little guide that answers the question:
+
+        'What can I breakpoint on in softice to find what I want?'
+
+
+
+       It was originally a decent win32 guide, but I have modified it
+
+       quite alot since I originally received it.
+
+
+
+       Credit goes to the original author for the easy to follow format
+
+       though it pains me to say i do not have a clue who it was who sent 
+
+       me the original listing.
+
+
+
+  NEW USER NOTES: 
+
+
+
+     (Yes I get these questions alot, so here I answer them)
+
+   
+
+     To use these api, just flip into SoftICE and BPX MessageBoxA
+
+     (or any other call you want to bpx on)
+
+
+
+     THE ONES WITH 'A' AT THE END ARE 32-BIT CALLS, 
+
+     so you will need to make sure that your WINICE.DAT file has been 
+
+     modified to EXPORT the proper symbol files (in softice for '95 of course 
+
+     since NT-ice uses 32 bit rather than the 16 bit calls you will need for many apps)
+
+
+
+     Being redundant in case this file has been separated from the website,
+
+     your winice.dat file is in your softice'95 directory with the executable
+
+     (look in your autoexec.bat file for the location of WINICE.EXE if you
+
+     have forgotten it's install location)
+
+
+
+                   EDITING WINICE.DAT TO INCLUDE 32-BIT CALLS
+
+
+
+     REMOVE THE SEMICOLONS to uncomment the particular ones you need,
+
+
+
+          Use THESE for now:    (see ED!SON's tutorial for more info)
+
+
+
+          gdi32.dll           
+
+          kernel32.dll 
+
+          user32.dll    
+
+
+
+  WELL - without anymore boring taglines, here it is...
+
+
+
+     +gthorne'97
+
+
+
+\******************************************************/
+
+
+
+The Cracker's Guide of Common Win32 API Calls
+
+---------------------------------------------
+
+          
+
+Reading & Writing Files
+
+-----------------------
+
+These are generic calls to read/write to a file, usually binary in nature:
+
+
+
+ReadFile
+
+WriteFile
+
+
+
+     more on locating file accesses:
+
+
+
+SetFilePointer
+
+
+
+GetSystemDirectory
+
+GetSystemDirectoryA
+
+
+
+These are the most common calls to read/write from/to a *.ini file
+
+or a file of similar format.
+
+
+
+ for 16-bit win apps:
+
+
+
+GetPrivateProfileString
+
+GetPrivateProfileInt
+
+WritePrivateProfileString
+
+WritePrivateProfileInt
+
+
+
+  for 32-bit win apps:
+
+
+
+GetPrivateProfileStringA
+
+GetPrivateProfileIntA
+
+WritePrivateProfileStringA   
+
+WritePrivateProfileIntA
+
+
+
+Interrupt info:
+
+_____________
+
+
+
+file accesses (A couple by YOSHi)
+
+
+
+   bpint 21 if (ah==3d)
+
+   bpint 2f if (ah==01)
+
+
+
+The Registry
+
+------------
+
+Create or delete a new key in the registry:
+
+
+
+RegCreateKey
+
+RegDeleteKey 
+
+
+
+RegCreateKeyA
+
+RegDeleteKeyA 
+
+
+
+
+
+     Read a value from the currently open registry key:
+
+
+
+RegQueryValue
+
+RegQueryValueA
+
+
+
+
+
+     Open or close a registry key:
+
+
+
+RegCloseKey
+
+RegOpenKey
+
+
+
+RegCloseKeyA
+
+RegOpenKeyA    
+
+
+
+
+
+
+
+Dialog Boxes
+
+------------
+
+Get text or integer from a dialog box edit:
+
+
+
+GetWindowText
+
+GetDlgItemText
+
+
+
+GetWindowTextA
+
+GetDlgItemTextA
+
+
+
+GetDlgItemInt    
+
+
+
+
+
+Open a message box, usually one that says "invalid registration":
+
+
+
+MessageBox
+
+MessageBoxA
+
+MessageBoxExA
+
+MessageBeep   
+
+
+
+and other ways to display text...
+
+
+
+SENDMESSAGE
+
+WSPRINTF
+
+
+
+Time & Date
+
+-----------
+
+These get the time and date
+
+
+
+GetSystemTime
+
+GetLocalTime 
+
+
+
+SystemTimeToFileTime
+
+
+
+
+
+
+
+Generating a Window
+
+---------------------
+
+
+
+createwindow
+
+createwindowexa
+
+showwindow
+
+
+
+bitblt (a type of memory move, similar to hmemcpy)
+
+
+
+CD-ROM Calls (Donated by: +-=Riddler=-+)
+
+----------------
+
+
+
+GetDriveType      (if eax=5 then it is a cdrom check)
+
+GetDriveTypeA
+
+
+
+     GetDriveType Return Function codes:
+
+
+
+     Value               Meaning
+
+     0                 Drive Cannot Be determined
+
+     1                 Root Dir Does not exist
+
+     2                 DriveRemoveable
+
+     3                 A Fixed Disk (HardDrive)  
+
+     4                 Remote Drive(Network)
+
+     5                 Cd-Rom Drive
+
+     6                 RamDisk
+
+
+
+GetLogicalDrives
+
+GetLogicalDrivesA
+
+
+
+GetLogicalDriveStrings
+
+GetLogicalDriveStringsA
+
+
+
+OTHER CDROM INFORMATION
+
+-----------------------
+
+
+
+interrupt 2f is the mscdex interrupt
+
+
+
+     bpint 2f, al=0  ah=15 checks if mscdex installed  
+
+
+
+     try breaking on file accesses as well
+
+
+
+Window Numerical Inputs
+
+----------------------------
+
+
+
+GETWINDOWWORD
+
+GETWINDOWLONG
+
+
+
+Some other nice breakpoints from the ORC
+
+-----------------------------------------------
+
+
+
+BOZOSLIVEHERE
+
+HMEMCPY
+
+GLOBALGETATOMNAME
+
+
+
+message breaks, not quite the same but completely useful
+
+-----------------------------------------------------------
+
+
+
+BMSG xxxx WM_GETTEXT   (good for passwords)
+
+BMSG xxxx WM_COMMAND   (good fro OK buttons)
+
+
+
+the xxxx is of course the hwnd value, but important info:
+
+
+
+assuming you are using wm_command to try to locate the button push,
+
+you hwnd the result and see the hwnd of the button is 0324 and the 
+
+hwnd of the window is 0129
+
+
+
+to find the button, use the window value, not the button value to bmsg on
+
+(the other just won't work)
+
+
+
+so for the example here, to find our button push we would
+
+
+
+BMSG 0129 WM_COMMAND
+
+
+
+Note *from the original author*
+
+------------------------------
+
+These aren't the only win32 api calls you need to know in order to crack windows.There are many many more that programs will use, many are derivatives of these calls.  
+
+Try substituting a W for the A at the end of some calls, or placingan Ex right before the A. Also, in SoftIce, typing 'EXP GETPRIVATEPROFILE'will give you a list of all of the procs to read from .ini files, and thereare more than the ones i have listed.  
+
+
+
+- - -
+
+
+
+The above statement referring to many many calls is actually an uderstatement
+
+Windows being as overbloated a mess of code as it is, the lists of calls is rather insane.
+
+
+
+in one of my OrcPaks, i released a list of wm_* calls 
+
+   (shamelessly grep'ped from the windows header files)
+
+and if you have seen the DOS interrupt files as well, you have only seen the tip of the iceberg.
+
+
+
+At one point I found it useful to go through the intlist and make a file full of all references
+
+to CD-ROM and MSCDEX calls alone (why do I mention these DOS interrupts in this file? SIMPLE:
+
+16-bit windows - which many programs still are written in and use today use mostly DOS calls to
+
+handle protection schemes - like file times, etc... but that is another file ;)
+
+
+
+   +gthorne'97
+
+
+
+ps - anything you think I should have added but left out?
+
+
+
+ let me know - i am always open to suggestions</PRE>
+
+<HR ALIGN=CENTER WIDTH=100% SIZE=3>
+
+
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</I></CENTER><BR>
+
+<BR><CENTER><H2><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A href="howtouse.htm" tppabs="http://www.anticrack.de/fravia/howtouse.htm">How to use our tools</A></H2>
+
+<HR width=44%>
+
+
+
+
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0> 
+
+<A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links </A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0>
+
+<A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity </A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN=BOTTOM
+
+BORDER=0 VSPACE=0 HSPACE=0 width="13" height="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC </A>
+
+
+
+<IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays </A>
+
+
+
+<IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database </A><BR>
+
+<IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut </A>
+
+
+
+<IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 
+
+VSPACE=0 HSPACE=0><A
+
+HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13
+
+BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia </A><BR>
+
+
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering illegal? </A></CENTER>
+
+<HR size=4></FONT>
+
+
+
+</BODY>
+
+</HTML>
+
+
+

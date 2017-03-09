@@ -1,0 +1,555 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>Fravia's Message Board - IDA primer</TITLE>
+
+</HEAD>
+
+
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#000000" LINK="#FF0000"
+
+VLINK="#8000FF"><CENTER>
+
+<A href="ourtools.htm" tppabs="http://www.anticrack.de/fravia/ourtools.htm"><IMG SRC="ourtools.gif" tppabs="http://www.anticrack.de/fravia/ourtools.gif" ALT="TOUGH" ALIGN=BOTTOM 
+
+WIDTH=114 HEIGHT=43 BORDER=0 VSPACE=0 HSPACE=0></A><BR>
+
+<FONT color=gray>Our Tools</FONT>
+
+
+
+<H2>
+
+<B>How to use 'Our Tools': 1) IDA primer</B><BR>
+
+</H2>
+
+<H4>
+
+Ida's philosophy, main settings, how to start<BR>
+
+By +Mammon, The Owl and <I>alia</I><BR>
+
+21 October 1998</H4><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=600 HEIGHT=5 BORDER=0
+
+VSPACE=0 HSPACE=0><BR><BR>
+
+Courtesy of fravia's pages of reverse engineering<BR><BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=600 HEIGHT=5 BORDER=0
+
+VSPACE=0 HSPACE=0><BR><BR></CENTER>
+
+<I>Well, I'm glad to present the first of a series of article about 
+
+'how to use our tools', a very important 'reference' section for all 
+
+reversers that do peruse my site and for all beginners that never had 
+
+the courage to ask...<BR>I hope that many more contributions will follow, so 
+
+that this 'first stab at' can develop into a real fundamental reference.</I>
+
+</CENTER>
+
+<HR>
+
+<BR>The Owl<BR><BR>
+
+let me have my 2 cents on this ;-)<BR><BR>IDA is a reverse
+
+engineering tool which brings us to the definition of RevEng (as i
+
+like to abbreviate it, pun indended ;-). in contrast to crackers,
+
+RevEngers want to get some knowledge embedded in an executable to
+
+put it to their own use or for the experience itself. this info
+
+includes protection routines of course, but that's only a subset of
+
+the info you can find in a program. now, how does IDA come into the
+
+picture?<BR><BR>the entire structure of IDA represents a philosophy
+
+which is very pleasing for a true RevEnger, but may not be obvious
+
+for the first time user, especially if he's looking for some quick
+
+substitute for w32dasm or some other disassembler. IDA treats an
+
+executable file as a structured object which has been created from a
+
+database representing the knowledge of the programmer (called the
+
+source code). IDA wants to help a RevEnger in recreating this
+
+database and has many features for this very purpose. since this is
+
+not an IDA tutorial, i won't go into details, but wanted you to have
+
+some picture on the philosophy behind IDA. so, if you look at IDA
+
+with a different eye, you will understand the enthusiasm of real IDA
+
+users very soon. if you have more questions you can try to use the
+
+various discussion forums or IRC or email...<BR><BR>regards,<BR>       
+
+the owl
+
+<HR>
+
+<BR><BR>
+
+_Mammon+ (1)<BR><BR>
+
+IDA really changes the way you think about disassemblers.
+
+It's like having an intelligent hex editor--the entire file is avail
+
+for viewing (unlike in W32dasm, which shows you what it feels to be
+
+the important sections) meaning you can root out code hidden in the
+
+.data or .rsrc segments. You also have a c-style script language
+
+(which contains routines for changing data and code, reading and
+
+writing bytes/files, prompting the user, re-analyzing the
+
+code...everythign you need) to automate things like, say, parsing
+
+string tables or decrypting packed code.<BR><BR>The key to IDA is
+
+that you do NOT save the text to a file and search the file; rather
+
+you view the listing in IDA and root things out using the
+
+View-Functions and View-Names commands to find subroutines. You can
+
+label code on-the fly using the ";" operator, so that if you label
+
+<BR>:010100  call CreateWindow <BR>to "Nagscreen", then all
+
+references to that location will change from<BR>jz 08<BR>to<BR>jz
+
+Nagscreen<BR>As you can see, this helps tremendously when poring
+
+through huge code listings.<BR><BR>In addition, the comments area of
+
+the code will often have address references showing code that refers
+
+to that location or code that is referred by that location. These
+
+are known as X-Refs and the are *very* useful...double clicking on
+
+them will bring you to the code that referred to/is reffered by your
+
+current location (ESC brings you back). This allows you to "trace"
+
+through the code --in a rudimentary manner of course-- without
+
+running the program. Try it, you'll like it.<BR><BR>A few hints...in
+
+the loader screen, make sure "Load Resources" is checked and "Rename
+
+DLL entries" is NOT checked. You should of course make sure that the
+
+system directory points to c:\\windows\\system or
+
+c:\\winnt\\system32 or /usr/lib depending on OS. To search for
+
+strings, you can try "find text in core", but it is much easier to
+
+go to View-Names and look for any name beginning with "a" (IDA's
+
+identifier for "ASCII string").... these will be the strings in the
+
+program. Also, in Options-TextRepresentation, display 6 to 8 opcode
+
+bytes...this will give the opcodes of the file and cause things to
+
+make a lot more sense (in case IDA is interpreting data as
+
+code).<BR><BR>It does not hurt to know the PE file format either
+
+(and ELF, if you will be doing Linux...you can run IDA under DOSEMU
+
+and use it to disassemble ELF files)...IDA splits the file into its
+
+native segments (.text =code, .data =data, .stack =empty, .bss
+
+=data/empty, .rsrc =resources, .idata =imports, .edata =exports);
+
+you simply have to look in the various segments for the information
+
+you need (if you want to know the exports for a DLL, look at the
+
+.edata section; if you want to know what API functions a program
+
+uses, browse the .idata section, for string tables check the .rsrc
+
+section).<BR><BR><BR>(deep breath)<BR>Now, for linux....<BR>your
+
+friends are strace and od. I have done quite a bit of aliasing with
+
+od to use it for different things, for example:<BR>alias hexdump='od
+
+-A x -t x2'<BR>alias asciidump = 'od -A x -t a'<BR>(actually I
+
+combine these last two)<BR>alias ss='od -s'<BR><BR>strace will show
+
+you all system calls made by a program. IDA will disassemble linux
+
+files. GDB will debug them (but who needs to do that?). It's fairly
+
+straightforward, once you get into it...but then again, very little
+
+linux software needs cracking :)<BR><BR>have fun<BR>_m<BR><BR><BR>
+
+<BR>
+
+<BR>
+
+<HR>
+
+_Mammon+ (2)<BR><BR>
+
+
+
+There are a few things that make IDA easier to use. I can't think of
+
+any tutorials on IDA offhand, I think Ghiribizzo did one on
+
+Greythorne's site...<BR><BR>But anyhow:<BR>ida.cfg is your
+
+equivalent to the winice.dat file, it allows you to make the program
+
+easier to use.<BR><BR>look for:<BR>SCREEN_MODE		<BR>line and change
+
+the parameters to<BR>SCREEN_MODE		= 0x6030<BR>This will allow you to
+
+have multiple windows in IDA, so that you do not have to only see
+
+one screen at a time. You may want to change the font for the DOS
+
+box as well.<BR><BR>below this you have the hotkey
+
+definitions...print them out or change them to your
+
+liking.<BR><BR>In the "Second Pass" area there is a Text
+
+Representation area that I have adjusted as follows (not much, but a
+
+little bit helps):<BR>//	Text
+
+representation<BR>//<BR>//------------------------------------------
+
+-----<BR><BR>OPCODE_BYTES       	= 8		<BR>INDENTION		= 0	
+
+<BR>COMMENTS_INDENTION	= 30	<BR>MAX_TAIL		= 16<BR>MAX_XREF_LENGTH		=
+
+80<BR>MAX_DATALINE_LENGTH	= 70<BR>SHOW_AUTOCOMMENTS	=
+
+NO<BR>SHOW_BAD_INSTRUCTIONS	= NO	<BR>SHOW_BORDERS		= YES	
+
+<BR>SHOW_EMPTYLINES		= YES	<BR>SHOW_LINEPREFIXES	=
+
+YES<BR>SHOW_SEGMENTS		= YES<BR>USE_SEGMENT_NAMES	=
+
+YES<BR>SHOW_REPEATABLE_COMMENTS = YES<BR>SHOW_VOIDS		=
+
+NO<BR>SHOW_XREFS		= 10	<BR>SHOW_XREF_VALUES	= YES<BR>SHOW_SEGXREFS		
+
+= NO<BR>SHOW_SOURCE_LINNUM	= YES<BR>SHOW_ASSUMES		= YES	
+
+<BR>SHOW_ORIGINS		= NO		<BR>USE_TABULATION		= YES		<BR><BR>...hope
+
+the board doesn't hose the formatting too much :)<BR><BR>the last
+
+thing to change is the<BR>WINDIR<BR>line to<BR>WINDIR			=
+
+"c:\\winnt\\system32"<BR>or<BR>WINDIR			=
+
+"c:\\windows\\system"<BR><BR><BR>...the rest of the file you do not
+
+need to worry about.<BR><BR>Now, the rest of it is just getting use
+
+to IDA. Heed OWL's words: it is designed to produce compilable
+
+source code, not to do a "quick crack". When you start off, cracking
+
+with IDA will take you ten times longer than cracking with W32dasm,
+
+of course using soft-ice; when you get used to it, you will crack
+
+10x as fast in IDA and never touch soft-ice again (as Quine said,
+
+how many times do you really NEED to be in ring 0
+
+code?).<BR><BR>Now, for IDA's "strange names".<BR>the "a" prefix
+
+stands for "ASCII String". You can change it in ida.cfg in the
+
+line<BR>ASCII_PREFIX		= "a"	<BR>the prefix "j_" stands for "jump to
+
+location labelled:"<BR>the prefix "sub_" stands for "subroutine at
+
+address:"<BR><BR>Now, let's just say that you open explorer.exe in
+
+IDA. you want to see what the exports are. You can either<BR>1)
+
+View-Segments, look for .idata and jump to that segment...which
+
+isn't here (for some reason they are in _rdata) so we<BR>2)
+
+View-Names, and look for API functions. Wow, there are a ton. A good
+
+one might be CreateWindowExW. Doubleclick that name, and the code
+
+window will jump to the imports section. There will be a line with a
+
+yellow label (white is comment) CreateWindowExW about 10 (the max I
+
+allowed in my ida.cfg; usually it is 2) blue XREFs (things like
+
+sub_159295F). These are locations that call CreateWindow; double
+
+click on any of them to view the code. Press Esc to come back to the
+
+CreateWindow imports area.<BR><BR>Well, that's neat, but how do you
+
+search for strings? You can try Navigate-SearchFor-Text, though it
+
+is slow and the results are printed in the Message (yellow-on-blue)
+
+window if nothing is found. I prefer either browsing the Names
+
+window for entries beginning with "a" 9they are all clustered
+
+together). Actually, I lie, I have written IDc scripts to extract
+
+the strings and imports for me :)<BR><BR>OK, this is getting long.
+
+Important things to remember:<BR>* IDA is not w32dasm and requires a
+
+different approach<BR>* Use the Names window<BR>* Learn to write IDC
+
+scripts (they help a lot)<BR>* Know the file format (i.e., where the
+
+imports are)<BR>* Always define data strings when you find
+
+them<BR>ans<BR>* Always Name (and comment!) code locations
+
+!!!<BR><BR>I cannot stress this last one
+
+enough.<BR><BR>_m<BR><BR>
+
+<HR>
+
+<BR>
+
+fravia+,<BR><BR>I just read the IDA page in the new 
+
+section and thought I might be able to add something
+
+helpful that I discovered recently.<BR><BR>IDA by
+
+default prefixes string names with an "a".  One of the
+
+other things it does is strip out characters that may
+
+affect recompilation.  From a crackers point of view,
+
+this can increase the time an tedium involved in our
+
+pursuit.<BR><BR>For example, the string "%s-%c%c-%d"
+
+would be converted to "asccd", which is nowhere near as
+
+obvious.  Sure, you can click on the reference and be
+
+taken to the actual string, but that's an extra click
+
+for every string you want to look at.<BR><BR>The
+
+solution can be found in the ida.cfg file under the
+
+NameChars section.  The heading states, "the following
+
+characters are allowed in user-defined names," and
+
+looks like this:<BR><BR>NameChars =<BR>      "$?@"          
+
+// asm specific character<BR>      "_0123456789"<BR>     
+
+"ABCDEFGHIJKLMNOPQRSTUVWXYZ"<BR>     
+
+"abcdefghijklmnopqrstuvwxyz";<BR><BR>What the comment
+
+doesn't tell you is that autogenerated names are
+
+considered user-defined.  That means that only the
+
+above chars can be display in a name.  Phooey!  That
+
+certainly detracts from the code readability.  Let's
+
+fix that.<BR><BR>Change the entry to read something
+
+like this:<BR><BR>NameChars =<BR>        "
+
+!\"#$%&'()*+,-./0123456789:;<=>?"<BR>       
+
+"@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_"<BR>       
+
+"`abcdefghijklmnopqrstuvwxyz{|}~";<BR><BR>Now we can
+
+see our "%s-%c%c-%d" string the way it is in the
+
+program!<BR>
+
+<BR>
+
+<BR>
+
+<A HREF="mailto:edison@dhp.com"><FONT size="-1"
+
+face="arial,helvetica">edison (No, not
+
+ed!son)</FONT></A>
+
+
+
+
+
+
+
+<HR>
+
+<CENTER><I>in fieri... October 1998</I></CENTER><BR>
+
+<BR>
+
+<BR><HR ALIGN=CENTER WIDTH=100% SIZE=3>
+
+
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</I></CENTER>
+
+<BR><CENTER>
+
+
+
+
+
+<A href="ourtools.htm" tppabs="http://www.anticrack.de/fravia/ourtools.htm"><IMG SRC="ourtools.gif" tppabs="http://www.anticrack.de/fravia/ourtools.gif" ALT="TOUGH" ALIGN=BOTTOM 
+
+WIDTH=114 HEIGHT=43 BORDER=0 VSPACE=0 HSPACE=0></A><BR>
+
+<FONT color=gray>Our Tools</FONT>
+
+<HR width=33%>
+
+
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0> 
+
+<A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links </A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0>
+
+<A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity </A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN=BOTTOM
+
+BORDER=0 VSPACE=0 HSPACE=0 width="13" height="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC </A>
+
+
+
+<IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays </A>
+
+
+
+<IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database </A><BR>
+
+<IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut </A>
+
+
+
+<IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 
+
+VSPACE=0 HSPACE=0><A
+
+HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13
+
+BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia </A><BR>
+
+
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering illegal? </A></CENTER>
+
+
+
+</BODY>
+
+</HTML>

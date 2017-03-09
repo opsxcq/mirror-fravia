@@ -1,0 +1,480 @@
+<HTML>
+
+<HEAD>
+
+  <META NAME="GENERATOR" CONTENT="Bypassing Ready made Commercial Protection Schemes (RSAgent32)">
+
+  <TITLE>x86_1.htm</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+<P><CENTER><FONT SIZE="+3">Bypassing Ready made Commercial Protection Schemes (RSAgent32)<BR>
+
+</FONT><FONT SIZE="+2">(Cracking Xing Technology's Mpeg Player)</FONT>
+
+</CENTER>
+
+
+
+<H4><CENTER><I>by x86</I><BR><IMG SRC="stupid.gif" tppabs="http://www.anticrack.de/fravia/stupid.gif" ALT="stupid" ALIGN="BOTTOM" WIDTH="114" HEIGHT="43" BORDER="0" VSPACE="0" HSPACE="0"><BR><BR>
+
+(04 September 1997, slightly edited by fravia+)</CENTER></H4>
+
+
+
+<CENTER><HR><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"> Courtesy of fravia's page of reverse engineering<BR>
+
+<HR><I>Hey, I notice that more and more crackers are using wdasm for debugging 
+
+and not only for disassembling purposes... may be I was wrong and Urbanik, 
+
+the good Author of wdasm, is indeed beginning to do a good job on the 
+
+debugging side of his splendid disassembler... we'll see.
+
+
+
+</I></CENTER><HR size="6"><PRE><FONT size="+2">
+
+Bypassing Ready made Commercial Protection Schemes (RSAgent32)
+
+(Cracking Xing Technology's Mpeg Player)</FONT>
+
+
+
+XingMpeg player can be found at:
+
+http://www.xingtech.com/now_downloads/xmplayer/xmpdown.html
+
+
+
+Tools you need:
+
+Wdasm 8.9
+
+Any hex editor of your choice
+
+SoftIce (optional)
+
+
+
+RSAgent is another ready made commercial protection program that lazy
+
+programmers can use to allow 'instant' unlocking of their programs.
+
+Basically, you enter your credit card number and the program dials up 
+
+a remote server and will send you an 'unlocking code' that will remove 
+
+the annoying nags and time limits.
+
+
+
+The target we are cracking is Xing Technology's Mpeg Player.  
+
+The program is free to download for 14 days.  
+
+In addition to the time limit, every time you start the program, a 
+
+message pops up reminding you this is a demo, and gives
+
+you the option to either register, or evaluate.
+
+
+
+ To crack this program, we have three choices.  We can attempt to bypass
+
+the time limit, but will still be left with the nag screens, and 
+
+potentially other problems with redundant checks in other files etc... 
+
+Not a good method. Two, we can try to crack rsagnt32.dll directly to obtain
+
+the correct registration code, or we can simply modify the main program to 
+
+avoid using rsagnt32.dll in the first place.
+
+I am choosing to show you the last method mainly because after examining
+
+rsagnt32.dll I decided it would be a shorter and cleaner crack to simply
+
+crack the main executable.
+
+
+
+ To begin, fire up Xmplayer.exe and observe the nags.  When cracking
+
+time limited programs, I like to expire them, and then examine the message 
+
+I get once they are expired, so let's set our clock ahead a month or so, 
+
+and restart Xmplayer.  
+
+Notice, you don't get any message, it simply pops up the purchase
+
+window, (which by the way, resides in rsagnt32.dll.  Take a look at it
+
+with Borland Resource Workshop if you want...) and if you hit cancel now, 
+
+the program ends.  
+
+Go ahead and set your clock back now, and try running Xmplayer again.  
+
+Ahh, same purchase window!  A hidden registry entry or file, no doubt.  
+
+No matter what, no matter where... we'll get it!  Ok, now since we want 
+
+to bypass rsagnt altogether, let's have a look at our dead listing.  
+
+Since, rsagnt32 is a dll, it has to get loaded before it can be
+
+used, so let's look for Kernel32.LoadLibraryA.  It occurs only once, and
+
+here it is:
+
+
+
+* Referenced by a CALL at Addresses:0040E02C, :0041AF7C, :0041C1A0
+
+|
+
+:0041B1F0 56                      push esi
+
+:0041B1F1 E86AFEFFFF              call 0041B060
+
+:0041B1F6 6818314500              push 00453118		    ;-&gt;&quot;rsagnt32.dll&quot;
+
+:0041B1FB FF1530294600            Call dword ptr [00462930]	;LoadLibraryA
+
+:0041B201 8BF0                    mov esi, eax
+
+:0041B203 68F86A4500              push 00456AF8
+
+:0041B208 A1BC6C4500              mov eax, dword ptr [00456CBC]
+
+:0041B20D 50                      push eax
+
+:0041B20E E8B14F0000              Call 004201C4	 ;rsagnt32.startSalesAgent
+
+:0041B213 83C408                  add esp, 00000008
+
+:0041B216 56                      push esi
+
+
+
+ You can see here that this routine loads rsagnt32 and then calls
+
+rsagnt32.startSalesAgent, which is the purchase window I referred to
+
+earlier.
+
+Also notice that this section of code is called from three different
+
+locations, so let's take a look at them:
+
+
+
+<B>1st location:</B>
+
+:0040E01C 8B461C             mov eax, dword ptr [esi+1C]
+
+:0040E01F 50                 push eax
+
+:0040E020 E83BCD0000         call 0041AD60  ;Check reg. status
+
+:0040E025 83C404             add esp, 00000004
+
+:0040E028 85C0               test eax, eax  ;eax == 0 if not regged
+
+:0040E02A 7533               jne 0040E05F   ;Good guy if not zero,
+
+:0040E02C E8BFD10000         call 0041B1F0  ;otherwise, buy me!
+
+
+
+<B>2nd location:</B>
+
+:0041AF71 E8A1010200         call 0043B117       ;Check status again
+
+:0041AF76 837DA801           cmp dword ptr [ebp-58], 1  ;Another flag
+
+:0041AF7A 7505               jne 0041AF81        ;Use freely, else
+
+:0041AF7C E86F020000         call 0041B1F0       ;Buy me!
+
+
+
+<B>3rd location:</B>
+
+:0041C194 E8C7EBFFFF         call 0041AD60       ;Identical to the first
+
+:0041C199 83C404             add esp, 00000004   ;one...
+
+:0041C19C 85C0               test eax, eax
+
+:0041C19E 751A               jne 0041C1BA        ;Have fun, else
+
+:0041C1A0 E84BF0FFFF         call 0041B1F0       ;C'mon, buy me!
+
+
+
+ At this point, we can begin to crack.  Change the jne instructions to
+
+jmp always, and we'll bypass rsagnt32 altogether!
+
+Change at offset:
+
+(1B59E)  751A to EB1A
+
+(1A37A)  7505 to EB05
+
+(D42A)   7533 to EB33
+
+
+
+Now, run Xmplayer again, and presto, we're in.  Try playing an mpeg
+
+file.  What? The purchase window again?  How can that be?  
+
+Ok, check your dead listing again for references to rsagnt32.  
+
+You'll notice that all references MUST pass through
+
+the locations we patched, so there is no way that this new nag it's 
+
+getting loaded from Xmplayer.exe.  
+
+Let's think and see where it could be getting called from.  In the
+
+xmplayer directory there are 5 other dlls.  
+
+We could check each one for references to rsagnt, and we would eventually 
+
+find the culprit, <FONT color="blue">but there is any easier way</FONT>.  
+
+Now, I use Wdasm <U>for debugging</U> simply because I like it, and those 
+
+of you who prefer SoftIce can easily follow along the following using 
+
+SoftIce, (just make sure that you have loaded the relevant exports...)
+
+
+
+Fire up Wdasm and load Xmplayer.exe. Make sure, under &quot;debugger options&quot; 
+
+(Debug/Debugger Options) that the box 'Debug only this Process' is
+
+unchecked.
+
+Once that the target is loaded, in the lower left debugging window, there 
+
+is a list of all of the active dlls. Find rsagnt32.dll and double click 
+
+on it.  This will load rsagnt32 into memory, but also keep Xmplayer active.  
+
+We know that the function which starts the purchase procedure is called
+
+startSalesAgent (see above), so let's find it.
+
+It is an exported function and occurs once:
+
+
+
+Exported fn(): startSalesAgent - Ord:000Fh
+
+:10006080 81EC28020000            sub esp, 00000228
+
+:10006086 A138EA0210              mov eax, dword ptr [1002EA38]
+
+:1000608B 53                      push ebx
+
+:1000608C 56                      push esi
+
+:1000608D 57                      push edi
+
+:1000608E 6A05                    push 00000005
+
+:10006090 68D1070000              push 000007D1
+
+:10006095 50                      push eax
+
+
+
+Set a break point at :10006080.  Now, hit the 'run' button in the lower
+
+right debugging window.  Once Xmplayer is started, try opening an mpeg.  
+
+Wdasm will then break at our suspect function.  
+
+To see where this function was called from, take a look at the sp register 
+
+(stack pointer).
+
+
+
+A brief assembly comment for those new to assembly language:  When a
+
+procedure, like startSalesAgent, is called, the return address (where 
+
+the procedure was called from) is placed on the stack.  So, immediately 
+
+after the call, the stack pointer will point to that address.  Get it?
+
+
+
+It contains the address 100020DE.  If you click on the [SP] register
+
+button in the lower left debugging window, then look in the data display 
+
+area, (make sure the 'disp 1' button to the left of this area is checked) 
+
+it will tell you that this address is in the module Xmdriver.dll.  
+
+Aha!  Here it is.  So, go ahead and terminate the process, and get a dead 
+
+listing of Xmdriver.dll.  The relevant code section looks like this:
+
+
+
+* Referenced by a CALL at Address:100062D0
+
+|
+
+:100020C0 56                      push esi
+
+:100020C1 E88AFEFFFF              call 10001F50
+
+:100020C6 683C810110              push 1001813C		; -&gt;&quot;rsagnt32.dll&quot;
+
+:100020CB FF1524440210            Call dword ptr [10024424]	 ;KERNEL32.LoadLibraryA
+
+:100020D1 8BF0                    mov esi, eax
+
+:100020D3 68A8B10110              push 1001B1A8
+
+:100020D8 A16CB30110              mov eax, dword ptr [1001B36C]
+
+:100020DD 50                      push eax
+
+
+
+* Reference To: rsagnt32.startSalesAgent, Ord:000Eh
+
+                                  |
+
+:100020DE E8655F0000              Call 10008048      ;Here is where we were.
+
+:100020E3 83C408                  add esp, 00000008
+
+:100020E6 56                      push esi
+
+
+
+
+
+This code is only called from one place, and it is here:
+
+:100062BE A120820110              mov eax, dword ptr [10018220]
+
+:100062C3 50                      push eax
+
+:100062C4 E857BAFFFF              call 10001D20      ;Check your status
+
+:100062C9 83C404                  add esp, 00000004
+
+:100062CC 85C0                    test eax, eax      ;Same type of check as before
+
+:100062CE 7526                    jne 100062F6       ;Play on...
+
+:100062D0 E8EBBDFFFF              call 100020C0      ;Buy me, sneaky cracker!
+
+:100062D5 85C0                    test eax, eax
+
+:100062D7 751D                    jne 100062F6
+
+
+
+As before, let's change the jne to a jmp always, and skip rsagnt32.
+
+Change at offset:
+
+(56BC)   7538 to EB38
+
+
+
+Ok, go ahead and try out Xmplayer.  It works now, and no more nags, nor 
+
+time limits, nor rsagnt32!  So, yet another company takes the lazy way 
+
+out.  What good is an expensive 3rd party protection scheme, when you can 
+
+just walk right around it?
+
+I've seen other programs 'protected' (so to say) with rsagnt, but haven't 
+
+yet tried cracking them.  I imagine that this technique, although possibly 
+
+slightly different, would probably work on them too.
+
+
+
+Until next time, Happy Cracking!
+
+x86                                            
+
+
+
+</PRE><FONT color="green">
+
+(c)x86, 1997. All rights reversed.</FONT>
+
+		<HR size="2">
+
+<CENTER><I>You are deep inside fravia's page of reverse
+
+engineering, choose your way out:</I></CENTER>
+
+
+
+
+
+<P><CENTER>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="project7.htm" tppabs="http://www.anticrack.de/fravia/project7.htm">Back to project 7 </A><BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#84'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#84">homepage </A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"> <A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#73'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#73">links
+
+</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0" NATURALSIZEFLAG="0"> <A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity
+
+</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#82'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#82">students' essays </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools
+
+</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails </A><BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database </A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia
+
+</A><BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">is reverse engineering legal? </A></FONT></CENTER></P>
+
+
+
+<P><CENTER><FONT SIZE="-1"><HR></FONT></CENTER>
+
+</BODY>
+
+</HTML>
+
+
+
+
+
+
+

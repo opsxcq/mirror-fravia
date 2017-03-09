@@ -1,0 +1,567 @@
+<HTML>
+
+<HEAD>
+
+  <TITLE>banda_56.htm</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+
+
+<CENTER>
+
+<A href="snippets.htm" tppabs="http://www.anticrack.de/fravia/snippets.htm"><IMG SRC="snippets.gif" tppabs="http://www.anticrack.de/fravia/snippets.gif" ALT="snippets" ALIGN="BOTTOM" WIDTH="114" HEIGHT="43" BORDER="0" VSPACE="0" HSPACE="0"></A><BR>
+
+<FONT color="gray">Back to the Snippets</FONT><HR>
+
+UNPACK/UNPROTECT COM FILES USING DEBUG.EXE<BR>
+
+(old powerful dos debugging - still useful today)<BR>
+
+(&quot;An acquarium for your viri&quot;)<BR>
+
+BY<BR>
+
+THE UNDERTAKER -=BANDA=-<BR>
+
+more than slightly edited by fravia+, 16 January 1998
+
+<HR><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"> Courtesy of Fravia's page of reverse 
+
+engineering<BR></CENTER><HR><PRE>
+
+Most of today's com packers &amp; protectors can be removed using DOS 
+
+debug. Many young crackers seem to have forgotten the mighty power 
+
+of this very small and powerful utility: &quot;the swiss knife of all 
+
+crackers&quot;, as Master +ORC wrote.
+
+<FONT color="blue">
+
+debug.exe  	20.522 bytes  (MS dos ver. 7, usually inside C:\WINDOWS\COMMAND)
+
+<A href="javascript:if(confirm('http://129.105.116.5/fravia/symdeb.zip  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://129.105.116.5/fravia/symdeb.zip'" tppabs="http://129.105.116.5/fravia/symdeb.zip">symdeb.exe</A>	37.021 bytes  (Ver. 4, Micro$oft)
+
+</FONT>
+
+This method is very useful, If you don't have tools around you. Also it
+
+works with most of the popular packers &amp; unpackers. 
+
+Actually DEBUG is a very powerful tool when it comes to the handling 
+
+of com files. 
+
+In those almost forgotten days, our bane micro$oft wanted to grab the 
+
+market by producing good programs, an approach they have long forgotten, 
+
+seen that it is now easier to grab the market bankrupting the adversaries. 
+
+
+
+Anyway, that way DEBUG came up. 
+
+Once they captured the market, they only cared about the money. 
+
+Finally ending up with stupid programs like micro$oft word, access, VB+ 
+
+and all other junk, useless programs that we are lobotomized with.
+
+
+
+Before we start this approach, let's check how com files are organized.
+
+
+
+ Com files are memory images that do not have any relocatable item. 
+
+ They can only fit into one segment (SS,ES,DS = CS).
+
+
+
+ Com files has a size of 64k. 
+
+ Maximum amount one offset can vary between 0000 - FFFF
+
+
+
+ Com files are slightly faster than the exe files, when it comes to 
+
+ execution (bet you didn't know it).
+
+
+
+ Com files do not have a header nor a checksum, like exe files.
+
+
+
+ Com files should start at 100h, immediatly above the PSP.
+
+
+
+ At the time of loading the com file. ES,DS,SS,CS are pointed to PSP. 
+
+ And SP is pointed as high as possible in memory, minus 2 bytes 
+
+ (SP = FFFE). In fact MS-DOS pushes a zero word on the stack before 
+
+ entry.
+
+
+
+Well, the information above will help you to handle com files. 
+
+Ok, let us start the work. You'll see how you can UNPACK a 
+
+file packed using an unknown packer using old silly debug!!
+
+
+
+First, using a packer, compress your com file
+
+I use pklite to pack a target com file of mine (CO.COM) 
+
+Then load your packed com file using DEBUG.EXE
+
+<FONT color="purple">
+
+DEBUG CO.COM
+
+</FONT>
+
+Now type (r) to check the register contains.
+
+<FONT color="purple">
+
+-r
+
+AX=0000  BX=0000  CX=0F6D  DX=0000  SP=FFFE  BP=0000  SI=0000  DI=0000
+
+DS=20AB  ES=20AB  SS=20AB  CS=20AB  IP=0100   NV UP EI PL NZ NA PO NC
+
+20AB:0100 B80524        MOV     AX,2405
+
+-
+
+</FONT>
+
+Check the CX register. 
+
+This contains the program size. If you convert the value inside the CX 
+
+register to decimal you will get the actual file size, here it is
+
+0xF6D = 3949 bytes
+
+
+
+Once you uncompress the program you will have to &quot;adjust&quot; the value of 
+
+CX, of course.
+
+
+
+To uncompress the file just use the command go (g) and exit from the program. 
+
+Then you simply land inside the debugger.
+
+<FONT color="purple">
+
+-g
+
+</FONT>
+
+After having exited the program you will see the following message:
+
+<FONT color="purple">
+
+Program terminated normally
+
+-
+
+</FONT>
+
+Ok, Now you have got in memory the original(Uncompressed) file (of course: the 
+
+point of any compressor is to compress a file UNTIL IT MUST RUN, duh). 
+
+To Verify that you have an uncompressed program, you can chek the Unassembly 
+
+listing by typing (u).
+
+<FONT color="purple">
+
+-u100
+
+20AB:0100 E9B903        JMP     04BC
+
+20AB:0103 0A434F        OR      AL,[BP+DI+4F]
+
+20AB:0106 2031          AND     [BX+DI],DH
+
+20AB:0108 2E            CS:
+
+20AB:0109 3020          XOR     [BX+SI],AH
+
+20AB:010B 286329        SUB     [BP+DI+29],AH
+
+20AB:010E 2031          AND     [BX+DI],DH
+
+20AB:0110 3938          CMP     [BX+SI],DI
+
+20AB:0112 37            AAA
+
+20AB:0113 205A69        AND     [BP+SI+69],BL
+
+20AB:0116 66            DB      66
+
+20AB:0117 66            DB      66
+
+20AB:0118 20436F        AND     [BP+DI+6F],AL
+
+20AB:011B 6D            DB      6D
+
+20AB:011C 6D            DB      6D
+
+20AB:011D 756E          JNZ     018D
+
+20AB:011F 69            DB      69
+
+-
+
+</FONT>
+
+Now we have to give the new size to our program. 
+
+This is (a bit) the difficult part.
+
+First we have to locate were the program ends. 
+
+To do that we have check the program's terminating 
+
+functions, and there are quite a lot of them. 
+
+Like ...
+
+<FONT color="purple">
+
+        FUNCTION                SEARCH STRING
+
+        --------                -------------
+
+
+
+        1. RET          --&gt;     C3
+
+        2. INT  20H     --&gt;     CD 20
+
+        3. MOV  AH,4C  
+
+           INT  21H     --&gt;     4C CD 21
+
+        4. MOV  AX,4C00 
+
+           INT  21H     --&gt;     4C CD 21
+
+        5. INT  27H     --&gt;     CD 27    (For TSR's)
+
+        6. MOV  AX,3100
+
+           INT  21H     --&gt;     31 CD 21 (For TSR's)
+
+</FONT>
+
+Now we have to search our program for the above strings. 
+
+You may of course write a short C program in order to do it, 
+
+or you may do it 'per hand'. I'll show you how:
+
+Lets start searching our program using the most common 
+
+terminate function (AX=4C, INT 21).
+
+<FONT color="purple">
+
+-s cs:100 ffff 4c cd 21
+
+20AB:0646
+
+-
+
+</FONT>
+
+Aha.. found it at 0646. 
+
+Now convert 0646 into decimal (1606) and then check if the 
+
+value you have written down is smaller than this.
+
+
+
+Oh...No! The previous value (0xF6D) is greater than this. 
+
+This happens because this program's exit function is in the 
+
+middle of the program, not at the end. 
+
+
+
+In this case we have 2 options.
+
+ 1) Feel the code
+
+
+
+ 1. Search the program starting from 100h to the end of the code &amp; data. 
+
+    Some times after the code starts all the data. 
+
+    This is easy to detect: dump the program (d) starting from 100h and 
+
+    just have a look at the code. 
+
+    Once the program code &amp; data are over, you can identify the rest
+
+    of the area easyly. 
+
+    In fact, once the program is over, you will see some path settings &amp; 
+
+    Ascii strings. Now write down the offset address were
+
+    the program ends. 
+
+    (To use this methods you need a good expriance of X86 assembly 
+
+    OPCODES. By the way, getting this experience you will learn how to 
+
+    detect patterns)
+
+
+
+Lets say that we think that the program ends at offset 1105. 
+
+Now he have to take off the starting 100h, because all com programs start 
+
+from 100h. To do that we can use a Debug command of course...
+
+<FONT color="purple">
+
+-h 1105 100
+
+1205  1005
+
+-
+
+</FONT>
+
+Yes: answer is 0x1005. Now we have to set this value in CX register. 
+
+We also have to give a <U>new name</U> to our 'new' uncompressed 
+
+program...
+
+<FONT color="purple">
+
+-rcx
+
+CX 0F6D
+
+:1005           -- Our calculated program length.
+
+-n test.com     -- New name for uncompressed file. (TEST.COM)
+
+-w              -- Write test com into the disk.
+
+</FONT>
+
+Now you got an uncompressed file called TEST.COM. 
+
+
+
+Ok, feeling the end of the code was not really difficult... 
+
+Lets pass over to option 2.
+
+
+
+ 2. If you can't find the program end use a simple trick.  
+
+    Multiply the compressed file size by 2. This will double the 
+
+    compressed file size. Now put the new file size into the CX 
+
+    register and give a name to the uncompressed file and save 
+
+    it.
+
+
+
+
+
+    NOTE :- Multification factor depend on the packer. 
+
+    Some packers are able to pack files more efficiently
+
+    than others.
+
+
+
+Ok... Now using debug -as you can see- you can get the unpacked file. 
+
+In fact debug is the <U>most effective</U> generic unpacker for com files. 
+
+This is fairly known, and therefore many packed files may contain various 
+
+INT 3 instructions(0xCC) inside their packed code. 
+
+These int 3 have been put there ON PURPOSE, in order to &quot;gasp&quot; debug. 
+
+These instructions will in fact cause the debugger to breakpoint. 
+
+
+
+Do not worry: you could not care less!
+
+Once you gasp with debug onto an INT 3 instruction just do the following 
+
+steps...
+
+
+
+Check the value in IP register and increment IP register by 1. Then 
+
+countinue the program (g) that's all.
+
+<FONT color="purple">
+
+-rip      --- asking for ip
+
+IP 016D   --- say this is the answer
+
+:016E     --- then you just type 16E
+
+-g        --- let's go on!
+
+</FONT>
+
+If you find more than one INT 3 in the packed code just repeat the above 
+
+steps. If there are too many INT 3, just use your hexeditor's replace 
+
+function and nop every single one of them.
+
+
+
+This is just the start of course...
+
+Keep on experimenting with com files. 
+
+You will find lot of things inside com files. 
+
+Also we can use this method to remove com viruses from our files
+
+per hand (who said you should trust Norton?). 
+
+<HR><FONT size="+2"><FONT color="blue">&quot;AN ACQUARIUM FOR YOUR VIRI&quot;</FONT></FONT>
+
+
+
+C'mon, make yourself a very nice present! 
+
+Buy for next to nothing an old 'almost thrown away' 80286 
+
+computer in some shoddy second hand shop and use it to create 
+
+your own VIRUS ACQUARIUM. You'll use it in order to experiment 
+
+all sort of assembly viri/antiviri tricks, without any risk 
+
+of having them biting your 'real' programs... and you'll 
+
+moreover be able to use its screen for a real 'winice' session 
+
+on your main computer if needs be... if you never used the 
+
+ALTSCR ON command when you work with winice (using a second 
+
+monitor for output) you don't know what you are loosing!
+
+
+
+Anyway, once you have bought for the price of two pizzas 
+
+your 80286, go fishing on the web and fish some interesting 
+
+viri (with assembly source code) out of the net.
+
+
+
+Now handle evrything with care and pour them into your 
+
+acquarium, infecting all the fake files you have installed 
+
+there.
+
+Now try first to see if you can identify and remove them 
+
+from your infected (fake) files using only debug WITHOUT 
+
+and your 'feeling', without looking at their source code!
+
+(You wont, at least not at the beginning :-)
+
+Now study their source code, watch them 'alive', eating 
+
+your files, kill them with YOUR OWN probes (and not with 
+
+Norton's cram)
+
+You'll learn an incredible amount of assembly doing this!
+
+It's fun, great fun! (Yet keep a copy of F-prot handy :-)
+
+<HR>
+
+
+
+Learn assembly! Use assembly! Donate something to the world to 
+
+destroy this gasthly micro$oft's dictature... HuH Huh...
+
+
+
+Readers can write me...
+
+undertakerd(at)hotmail(point)com
+
+
+
+A final thank goes to all the +HCU's guys and to master +ORC. 
+
+Keep up the good work Guys!!. 
+
+Also Special thank goes to Fravia+ and +gthorne for their great 
+
+contribution to our small reversing world.
+
+
+
+                The Undertaker -=BANDA=-     //SRI LANKA//</PRE><HR>
+
+<CENTER>
+
+<A href="snippets.htm" tppabs="http://www.anticrack.de/fravia/snippets.htm">
+
+<IMG SRC="snippets.gif" tppabs="http://www.anticrack.de/fravia/snippets.gif" ALT="snippets" ALIGN="BOTTOM" WIDTH="114" HEIGHT="43" BORDER="0" VSPACE="0" HSPACE="0"></A>
+
+<BR><FONT color="gray">Back to the snippets</FONT><BR><BR><HR>
+
+</BODY>
+
+</HTML>

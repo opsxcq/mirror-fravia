@@ -1,0 +1,2122 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>flipper1</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+<CENTER><FONT size="+3">Wingroove V0.9e for Windows (v3.1 and Bug '95)</FONT>
+
+<BR>(the 'PrestoChangoSelector' encryption method)<BR>
+
+  <BR>
+
+    
+
+
+
+<H4>by dph-man<BR>
+
+<BR>
+
+(14 October 1997)</H4>
+
+<HR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">Courtesy of fravia's page 
+
+of reverse engineering<BR>
+
+<BR><I>Well, indeed I said - 'No more serial
+
+number tutorials', but what is interesting about this essay is not the
+
+serial generation part, but how the protectionist (rather badly) hides
+
+his checking routine.<BR>This essay is nevertheless a well-written, EASY TO FOLLOW AND THOROUGH essay about writing a serial generator ripping the code directly off your 
+
+target with a &quot;live&quot; reversing approach<BR>Here a synopsis of what you'll find here:</I></CENTER><PRE>
+
+<BR>-     What is this 'PRESTOCHANGOSELECTOR' business?
+
+<BR>-     encrypted code! Compilers almost NEVER generate 
+
+      the opcodes 'ror' or 'rol'.
+
+<BR>-     TIMESETEVENT this function is just an indirect call to the protection 
+
+      routine... Treat with suspicion calls to MMSYSTEM!TimeSetEvent which 
+
+      appear in the middle of protection schemes!
+
+<BR>-     Remember from now on that 'PrestoChangoSelector' is a VERY
+
+      suspicious routine to be called!
+
+<HR size="6">
+
+dph presents...<CENTER>
+
+<FONT size="+2">the 'PrestoChangoSelector' encryption method</FONT></CENTER>
+
+ 
+
+Target:		Wingroove V0.9e for Windows (v3.1 and Bug '95)
+
+ 
+
+Function:	Wavetable Emulator (Make your pathetic SB16 sound like an AWE32)
+
+ 
+
+Get it from:	<A href="javascript:if(confirm('http://www.cc.rim.or.jp/~hiroki/english/  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.cc.rim.or.jp/~hiroki/english/'" tppabs="http://www.cc.rim.or.jp/~hiroki/english/">http://www.cc.rim.or.jp/~hiroki/english/</A>
+
+ 
+
+Tools required:
+
+---------------
+
+SoftIce 3          (make sure you have the exports loaded for MMSYSTEM.DLL)
+
+W32DAsm            (any version),
+
+TASM v2 or greater (a copy wouldn't hurt)
+
+ 
+
+Procedure:
+
+----------
+
+Being lazy, my first impulse when cracking a program is to see if anyone
+
+else has cracked it first. Hmm. Searches of KrackaVista (on the 
+
+glorious <A href="javascript:if(confirm('http://www.cracking.net/  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.cracking.net/'" tppabs="http://www.cracking.net/">http://www.cracking.net/</A>), Astalavista, and Altavista return 
+
+only two matches. 
+
+One is a serial number (User: BJG70109, Password: ZAAAAAAA).
+
+I detest using serial numbers. That's really lazy. 
+
+The other is a crack by Madmax! (done in '96), which patches 'WINGROOV.DRV'. 
+
+Now, I don't like that either.
+
+Why crack something when you could simply produce a serial generator?
+
+But if Madmax! couldn't do it, perhaps neither could I? So with suitably
+
+subdued sentiments, I began cracking.
+
+ 
+
+Start 'WG Player' - the player utility which is part of WinGroove.
+
+Choose Help, About.
+
+Press the 'Register' button in the about box.
+
+A dialog box with four radio buttons will pop up. Select 'You got
+
+PASSWORD from the author other way', and press OK. Another dialog will
+
+pop up, this time with three edit boxes: 'Password from author', 'User
+
+ID from author', 'Your Name'. Enter some dummy values, such as Password:
+
+ABCDEFGHIJK, UserID: DPHDPHDPHDPH,Your Name:dph-man. These values
+
+probably won't be accepted, but every time we get the dialog box telling
+
+us that these values are incorrect, go back and enter some values which
+
+are correct based upon what we later know.
+
+Now we fire up Soft-ICE and breakpoint the usual suspects used for
+
+getting text out of a dialog box:
+
+bpx GetWindowText
+
+bpx GetDlgItemText
+
+ 
+
+and hit Ok in the dialog box. SoftIce will immediately pop in the middle
+
+of code belonging to 'wingroov.drv':
+
+
+
+:0005.21E5 FF760E                 push word ptr [bp+0E]
+
+:0005.21E8 6A65                   push 0065
+
+:0005.21EA 16                     push ss
+
+:0005.21EB 8D46AA                 lea ax, [bp-56]
+
+:0005.21EE 50                     push ax
+
+:0005.21EF 6A20                   push 0020
+
+:0005.21F1 9AFFFF0000             call USER.GETDLGITEMTEXT
+
+ 
+
+Dumping ss:bp-56 (db ss:bp-56) tells us that our password goes here...
+
+ 
+
+:0005.21F6 FF760E        push word ptr [bp+0E]
+
+:0005.21F9 6A66          push 0066
+
+:0005.21FB 16            push ss
+
+:0005.21FC 8D46CA        lea ax, [bp-36]
+
+:0005.21FF 50            push ax
+
+:0005.2200 6A20          push 0020
+
+:0005.2202 9AFFFF0000    call USER.GETDLGITEMTEXT ;bp-36 is now the User ID
+
+:0005.2207 FF760E        push word ptr [bp+0E]
+
+:0005.220A 6A68          push 0068
+
+:0005.220C 16            push ss
+
+:0005.220D 8D468A        lea ax, [bp-76]
+
+:0005.2210 50            push ax
+
+:0005.2211 6A20          push 0020
+
+:0005.2213 9AFFFF0000    call USER.GETDLGITEMTEXT ;bp-76 is Your Name
+
+:0005.2218 807EAA00      cmp byte ptr [bp-56], 00
+
+:0005.221C 751E          jne 223C
+
+ 
+
+The above two lines check whether the password is of zero 
+
+length (first byte is 0, remember windows strings are null-terminated). 
+
+If it is, then the program sets focus to the corresponding edit box 
+
+and leaves the routine.
+
+ 
+
+:0005.221E FF760E                 push word ptr [bp+0E]
+
+:0005.2221 6A65                   push 0065
+
+:0005.2223 9AFFFF0000             call USER.GETDLGITEM
+
+:0005.2228 50                     push ax
+
+:0005.2229 9AFFFF0000             call USER.SETFOCUS
+
+:0005.222E B80100                 mov ax, 0001
+
+...
+
+:0005.2239 CA0A00                 retf 000A
+
+ 
+
+* Referenced by a Jump at Address:0005.221C(C)
+
+|
+
+:0005.223C 807ECA00               cmp byte ptr [bp-36], 00
+
+:0005.2240 751E                   jne 2260
+
+ 
+
+A similar thing is being done here with the User ID...
+
+ 
+
+:0005.2242 FF760E                 push word ptr [bp+0E]
+
+:0005.2245 6A66                   push 0066
+
+:0005.2247 9AFFFF0000             call USER.GETDLGITEM
+
+:0005.224C 50                     push ax
+
+:0005.224D 9AFFFF0000             call USER.SETFOCUS
+
+:0005.2252 B80100                 mov ax, 0001
+
+...
+
+:0005.225D CA0A00                 retf 000A
+
+ 
+
+* Referenced by a Jump at Address:0005.2240(C)
+
+|
+
+:0005.2260 807E8A00               cmp byte ptr [bp-76], 00
+
+:0005.2264 751E                   jne 2284
+
+ 
+
+And again with Your Name...
+
+ 
+
+:0005.2266 FF760E                 push word ptr [bp+0E]
+
+:0005.2269 6A68                   push 0068
+
+:0005.226B 9AFFFF0000             call USER.GETDLGITEM
+
+:0005.2270 50                     push ax
+
+:0005.2271 9AFFFF0000             call USER.SETFOCUS
+
+:0005.2276 B80100                 mov ax, 0001
+
+...
+
+:0005.2281 CA0A00                 retf 000A
+
+ 
+
+* Referenced by a Jump at Address:0005.2264(C)
+
+|
+
+:0005.2284 33FF                   xor di, di
+
+:0005.2286 16                     push ss
+
+:0005.2287 8D46AA                 lea ax, [bp-56]
+
+:0005.228A 50                     push ax
+
+:0005.228B E852FD                 call 1FE0
+
+ 
+
+Now we're starting to get into checks on the validity 
+
+of the entered data. 
+
+The routine at 1FE0 referenced by the call above 
+
+checks for illegal characters in the entered data (eg. spaces 
+
+and hardreturns).
+
+ 
+
+:0005.228E 83C404                 add sp, 0004
+
+:0005.2291 8956FC                 mov [bp-04], dx
+
+:0005.2294 8946FA                 mov [bp-06], ax
+
+:0005.2297 E98500                 jmp 231F
+
+ 
+
+* Referenced by a Jump at Address:0005.2322(C)
+
+|
+
+:0005.229A C45EFA                 les bx, [bp-06]
+
+:0005.229D 26803F61               cmp byte ptr es:[bx], 61 ;'a'
+
+:0005.22A1 7C17                   jl 22BA
+
+:0005.22A3 C45EFA                 les bx, [bp-06]
+
+:0005.22A6 26803F7A               cmp byte ptr es:[bx], 7A ;'z'
+
+:0005.22AA 7F0E                   jg 22BA
+
+ 
+
+Is the character at es:bx lowercase?
+
+ 
+
+:0005.22AC C45EFA                 les bx, [bp-06]
+
+:0005.22AF 268A07                 mov al , es:[bx]
+
+:0005.22B2 04E0                   add al, E0
+
+:0005.22B4 C45EFA                 les bx, [bp-06]
+
+:0005.22B7 268807                 mov es:[bx], al
+
+ 
+
+If so make it uppercase.
+
+ 
+
+* Referenced by a Jump at Addresses:0005.22A1(C), :0005.22AA(C)
+
+|
+
+:0005.22BA C45EFA                 les bx, [bp-06]
+
+:0005.22BD 26803F41               cmp byte ptr es:[bx], 41
+
+:0005.22C1 7C19                   jl 22DC ;Beggar off
+
+:0005.22C3 C45EFA                 les bx, [bp-06]
+
+:0005.22C6 26803F5A               cmp byte ptr es:[bx], 5A
+
+:0005.22CA 7F10                   jg 22DC ;Beggar off
+
+ 
+
+Is it an uppercase letter? If not, then beggar off.
+
+The call to 22DC is the 'beggar off' call - you can test this 
+
+by typing:<FONT color="blue"> 
+
+a cs:ip
+
+jmp 22dc
+
+press <ENTER>
+
+x</FONT>
+
+And you will get a dialog telling you that your registration 
+
+is incorrect.
+
+ 
+
+:0005.22CC C45EFA                 les bx, [bp-06]
+
+:0005.22CF 268A07                 mov al , es:[bx]
+
+:0005.22D2 88855D19               mov [di+195D], al
+
+:0005.22D6 FF46FA                 inc word ptr [bp-06]
+
+:0005.22D9 47                     inc di
+
+:0005.22DA EB43                   jmp 231F
+
+ 
+
+The lines above copy the character which is now checked into ds:di+195D.
+
+ 
+
+Now have a look at the beggar off routine:
+
+ 
+
+* Referenced by a Jump at Addresses          :0005.22C1(C), :0005.22CA(C), 
+
+:0005.233A(C), :0005.2348(C), :0005.2386(C), :0005.2391(C), :0005.23B1(C),
+
+:0005.23BC(C), :0005.23E7(C), :0005.2460(C), :0005.246A(C)
+
+|
+
+:0005.22DC FF760E                 push word ptr [bp+0E]
+
+:0005.22DF 16                     push ss
+
+:0005.22E0 8D46AA                 lea ax, [bp-56]
+
+:0005.22E3 50                     push ax
+
+:0005.22E4 6A40                   push 0040
+
+:0005.22E6 9AFFFF0000             call USER.GETWINDOWTEXT
+
+:0005.22EB 6A10                   push 0010
+
+:0005.22ED 9AFFFF0000             call USER.MESSAGEBEEP ; Annoy user
+
+:0005.22F2 FF760E                 push word ptr [bp+0E]
+
+:0005.22F5 680000                 push 0000
+
+:0005.22F8 68EA0E                 push 0EEA
+
+:0005.22FB 16                     push ss
+
+:0005.22FC 8D46AA                 lea ax, [bp-56]
+
+:0005.22FF 50                     push ax
+
+:0005.2300 6A30                   push 0030
+
+:0005.2302 9AFFFF0000             call 0001.3895h
+
+:0005.2307 FF760E                 push word ptr [bp+0E]
+
+:0005.230A 6AFF                   push FFFF
+
+:0005.230C 9AFFFF0000             call USER.ENDDIALOG ;Bad User. No password for you.
+
+:0005.2311 B80100                 mov ax, 0001
+
+...
+
+:0005.231C CA0A00                 retf 000A
+
+ 
+
+Well, that was the beggar off routine. It beeps, and ends the dialog.
+
+Let's go onwards: 
+
+ 
+
+* Referenced by a Jump at Addresses:0005.2297(U), :0005.22DA(U)
+
+|
+
+:0005.231F 83FF08                 cmp di, 0008
+
+:0005.2322 0F8574FF               jne 229A
+
+ 
+
+Interesting... the above lines suggest that the password is 8 
+
+bytes long, and consists entirely of uppercase letters. 
+
+Hmmm... Ok, now we know that...
+
+The protection will pop - (beggar off). Select Register again 
+
+and this time enter a password which is 8 characters in length 
+
+and entirely uppercase (eg. AAAAAAAA )
+
+ 
+
+:0005.2326 FF76FC                 push word ptr [bp-04]
+
+:0005.2329 FF76FA                 push word ptr [bp-06]
+
+:0005.232C E8B1FC                 call 1FE0
+
+:0005.232F 83C404                 add sp, 0004
+
+:0005.2332 8BD8                   mov bx, ax
+
+:0005.2334 8EC2                   mov es, dx
+
+:0005.2336 26803F00               cmp byte ptr es:[bx], 00
+
+:0005.233A 75A0                   jne 22DC
+
+:0005.233C C606651900             mov byte ptr [1965], 00
+
+ 
+
+Miscellaneous checks above...
+
+ 
+
+:0005.2341 A05D19                 mov al, [195D]
+
+:0005.2344 3A06340A               cmp al , [0A34]
+
+:0005.2348 7592                   jne 22DC ; If you used password
+
+                                           ; 'AAAAAAAA' it will jump here
+
+ 
+
+Now this is interesting... 195D is our password. Do a 'db ds:0A34' 
+
+and see what they are comparing our password with. 
+
+Hmmm, the letter 'Z' 
+
+Ok, perhaps the first letter needs to be Z. 
+
+Ok, let's try 'ZAAAAAAA' as a password...
+
+What's that I hear? How do I know that the letter in question will 
+
+<U>always</U> be 'Z'? 
+
+The answer is: I don't really. 
+
+But use a little 'Zen'. 
+
+Nowhere before in this routine has a value been written to [0A34]. 
+
+Therefore, it was probably placed there outside this routine. 
+
+Outside this routine there is no knowledge of the 'user/password/your name' 
+
+strings you used as yet. 
+
+Therefore it is unlikely to be a <U>calculated</U> value.
+
+Are there any more checks for any more letters below?
+
+ 
+
+:0005.234A 33FF                   xor di, di
+
+:0005.234C 16                     push ss
+
+:0005.234D 8D46CA                 lea ax, [bp-36]
+
+ 
+
+No, the program is starting to process the User ID. Seems that 
+
+the first letter of the password has to be Z, irrespective of 
+
+the username.
+
+ 
+
+The routines below seem to be pretty much a repeat of the ones 
+
+above - all uppercase letter checks...
+
+ 
+
+:0005.2350 50                     push ax
+
+:0005.2351 E88CFC                 call 1FE0
+
+:0005.2354 83C404                 add sp, 0004
+
+:0005.2357 8956FC                 mov [bp-04], dx
+
+:0005.235A 8946FA                 mov [bp-06], ax
+
+:0005.235D EB44                   jmp 23A3
+
+ 
+
+* Referenced by a Jump at Address:0005.23A6(C)
+
+|
+
+:0005.235F C45EFA                 les bx, [bp-06]
+
+:0005.2362 26803F61               cmp byte ptr es:[bx], 61
+
+:0005.2366 7C17                   jl 237F
+
+:0005.2368 C45EFA                 les bx, [bp-06]
+
+:0005.236B 26803F7A               cmp byte ptr es:[bx], 7A
+
+:0005.236F 7F0E                   jg 237F
+
+:0005.2371 C45EFA                 les bx, [bp-06]
+
+:0005.2374 268A07                 mov al , es:[bx]
+
+:0005.2377 04E0                   add al, E0
+
+:0005.2379 C45EFA                 les bx, [bp-06]
+
+:0005.237C 268807                 mov es:[bx], al
+
+ 
+
+* Referenced by a Jump at Addresses:0005.2366(C), :0005.236F(C)
+
+|
+
+:0005.237F C45EFA                 les bx, [bp-06]
+
+:0005.2382 26803F41               cmp byte ptr es:[bx], 41
+
+:0005.2386 0F8C52FF               jl 22DC
+
+:0005.238A C45EFA                 les bx, [bp-06]
+
+:0005.238D 26803F5A               cmp byte ptr es:[bx], 5A
+
+:0005.2391 0F8F47FF               jg 22DC
+
+:0005.2395 C45EFA                 les bx, [bp-06]
+
+:0005.2398 268A07                 mov al , es:[bx]
+
+:0005.239B 88856619               mov [di+1966], al
+
+:0005.239F FF46FA                 inc word ptr [bp-06]
+
+:0005.23A2 47                     inc di
+
+ 
+
+* Referenced by a Jump at Address:0005.235D(U)
+
+|
+
+:0005.23A3 83FF03                 cmp di, 0003
+
+:0005.23A6 75B7                   jne 235F
+
+ 
+
+Hey, but that means 3 characters of the User ID are passed 
+
+through the alphabet check... Is there any more of the 
+
+username? Let's see...
+
+ 
+
+:0005.23A8 EB24                   jmp 23CE
+
+ 
+
+ 
+
+* Referenced by a Jump at Address:0005.23D1(C)
+
+|
+
+:0005.23AA C45EFA                 les bx, [bp-06]
+
+:0005.23AD 26803F30               cmp byte ptr es:[bx], 30 ; '0'
+
+:0005.23B1 0F8C27FF               jl 22DC
+
+:0005.23B5 C45EFA                 les bx, [bp-06]
+
+:0005.23B8 26803F39               cmp byte ptr es:[bx], 39 ; '9'
+
+:0005.23BC 0F8F1CFF               jg 22DC
+
+:0005.23C0 C45EFA                 les bx, [bp-06]
+
+:0005.23C3 268A07                 mov al , es:[bx]
+
+:0005.23C6 88856619               mov [di+1966], al
+
+:0005.23CA FF46FA                 inc word ptr [bp-06]
+
+:0005.23CD 47                     inc di
+
+ 
+
+Aha! The remaining characters in the User ID must be numbers!
+
+ 
+
+* Referenced by a Jump at Address:0005.23A8(U)
+
+|
+
+:0005.23CE 83FF08                 cmp di, 0008
+
+:0005.23D1 75D7                   jne 23AA
+
+ 
+
+And it also appears that the User ID is 8 characters long! 
+
+Go back, try the 'username' ABC12345 and the 'password' ZAAAAAAA, 
+
+and whatever you want for 'your name'. 
+
+There have been no checks on the Your Name field as yet, so perhaps 
+
+there are none...
+
+ 
+
+:0005.23D3 FF76FC                 push word ptr [bp-04]
+
+:0005.23D6 FF76FA                 push word ptr [bp-06]
+
+:0005.23D9 E804FC                 call 1FE0
+
+:0005.23DC 83C404                 add sp, 0004
+
+:0005.23DF 8BD8                   mov bx, ax
+
+:0005.23E1 8EC2                   mov es, dx
+
+:0005.23E3 26803F00               cmp byte ptr es:[bx], 00
+
+:0005.23E7 0F85F1FE               jne 22DC
+
+:0005.23EB C6066E1900             mov byte ptr [196E], 00
+
+:0005.23F0 8C1E4E12               mov [124E], ds
+
+:0005.23F4 C7064C126619           mov word ptr [124C], 1966
+
+:0005.23FA 8C1E4A12               mov [124A], ds
+
+:0005.23FE C70648125E19           mov word ptr [1248], 195E
+
+:0005.2404 9AFFFF0000             call 0001.6569h
+
+
+
+Hmm, this looks suspicious... let's follow this call...
+
+
+
+* Referenced by a CALL at Addresses:0001.434B, :0001.483A, :0001.63CF
+
+|
+
+:0001.6569 B8FFFF       mov ax, SEG ADDR of Segment 0003 ;<FONT color="red">*HEY!</FONT>
+
+:0001.656C 8EC0         mov es, ax
+
+:0001.656E 26A00A00     mov al, es:[000A]
+
+:0001.6572 260A060B00   or al , es:[000B]
+
+:0001.6577 0F848300     je 65FE
+
+ 
+
+Interesting... According to W32DASM, segment 3 is a code segment...
+
+ 
+
+:0001.657B 1E                     push ds
+
+:0001.657C 56                     push si
+
+:0001.657D 57                     push di
+
+:0001.657E B8FFFF                 mov ax, SEG ADDR of Segment 0003
+
+:0001.6581 50                     push ax
+
+:0001.6582 9AFFFF0000             call KERNEL.ALLOCSELECTOR
+
+ 
+
+What does AllocSelector do? From the API reference...
+
+<FONT color="purple">
+
+AllocSelector (3.0)     (WINPROCS unit)
+
+ 
+
+function AllocSelector(Selector: Word): Word;
+
+ 
+
+The AllocSelector function allocates a new selector.
+
+Do not use this function in an application unless it is absolutely
+
+necessary, since its use violates preferred Windows programming
+
+practices.
+
+ 
+
+Target
+
+Windows, DOS Protected Mode (WinAPI unit)
+
+ 
+
+Parameter       Description
+
+ 
+
+Selector        Specifies the selector to return. If this 
+
+parameter specifies a valid selector, the function returns a 
+
+new selector that is an exact copy of the one specified here. 
+
+If this parameter is zero, the function returns a new, 
+
+uninitialized sector.
+
+ 
+
+Returns
+
+Returns a selector that is either a copy of an existing selector, 
+
+or a new, uninitialized selector. Otherwise, it returns zero.
+
+ </FONT>
+
+Ok, they want a copy of the selector of Segment 3 do they? Why 
+
+don't they just use the existing one?
+
+ 
+
+:0001.6587 96                     xchg ax,si
+
+:0001.6588 B8FFFF                 mov ax, SEG ADDR of Segment 0003
+
+:0001.658B 50                     push ax
+
+:0001.658C 56                     push si
+
+:0001.658D 9AFFFF0000             call KERNEL.PRESTOCHANGOSELECTOR
+
+ 
+
+<B>What the h#@$$#%?</B> What is this 'PRESTOCHANGOSELECTOR' business?
+
+(This is an indication that someone in Micro$oft is either bored, has a
+
+sense of humour, or is Italian. Again, from the API reference:
+
+PrestoChangoSelector (3.0)     (WIN31 unit)
+
+ 
+
+function PrestoChangoSelector(SourceSel, DestSel: Word): Word;
+
+ 
+
+The PrestoChangoSelector function generates a code selector 
+
+that corresponds to a given data selector, or it generates a 
+
+data selector that corresponds to a given code selector.
+
+An application should not use this function unless it is absolutely
+
+necessary, because its use violates preferred Windows programming
+
+practices.
+
+                         ^^^^^^^^^
+
+Typical: Micro$oft restricts all the good functions to itself... :-(
+
+<FONT color="purple"> 
+
+Target
+
+Windows, DOS Protected Mode (WinAPI unit)
+
+ 
+
+Parameter       Description
+
+SourceSel       Specifies the selector to be converted.
+
+DestSel         Specifies a selector previously allocated 
+
+                by the AllocSelector function. This previously 
+
+                allocated selector receives the converted selector.
+
+ 
+
+Returns
+
+Returns the copied and converted selector if the function is successful.
+
+Otherwise, it is zero.
+
+ 
+
+Comments
+
+Windows does not track changes to the source selector. Consequently,
+
+before any memory can be moved, the application should use the converted
+
+destination selector immediately after it is returned by this function.
+
+ 
+
+The PrestoChangoSelector function modifies the destination selector 
+
+to have the same properties as the source selector, but with the 
+
+opposite code or data attribute. 
+
+This function changes only the attributes of the selector, not the 
+
+value of the selector.
+
+This function was named ChangeSelector in the Windows 3.0 documentation.
+
+</FONT> 
+
+Ok... That all makes sense now, so long as you remember a selector is
+
+not the same thing as a segment. A selector is a value loaded into a
+
+segment register in protected mode that is a pointer to an entry in the
+
+GDT (global descriptor table). A selector can't be a code selector and a
+
+data selector at the same time. (eg. mov cs:[bx],ax is an illegal
+
+instruction in protected mode.)
+
+ 
+
+Ok, so they want to reference one of their code segments as data? Step
+
+back, use a little 'Zen'... Can't you feel it? They've encrypted their
+
+code! What follows should be a decryptor!
+
+ 
+
+:0001.6592 56                     push si
+
+:0001.6593 8ED8                   mov ds, ax
+
+:0001.6595 8EC0                   mov es, ax
+
+:0001.6597 8B160C00               mov dx, [000C]
+
+:0001.659B BE1000                 mov si, 0010
+
+:0001.659E 8BFE                   mov di, si
+
+:0001.65A0 8A0E0A00               mov cl , [000A]
+
+:0001.65A4 8A2E0B00               mov ch, [000B]
+
+:0001.65A8 33DB                   xor bx, bx
+
+:0001.65AA 32E4                   xor ah, ah
+
+:0001.65AC FC                     cld
+
+ 
+
+* Referenced by a Jump at Address:0001.65B6(C)
+
+|
+
+:0001.65AD AC                     lodsb
+
+:0001.65AE 2AC5                   sub al , ch
+
+:0001.65B0 D2C8                   ror al, cl
+
+:0001.65B2 AA                     stosb
+
+ 
+
+That's definately a decryptor. Compilers almost NEVER generate the
+
+opcodes 'ror' or 'rol'. (Evidently the programmer has used some inline 
+
+assembly in his C program. This guy obviously has some slight clue, 
+
+which should suffice against the average crackers, but is absolutely no 
+
+good against any average reverse engineer) It appears that the programmer 
+
+has encrypted part of the code rotating the value of some bytes...
+
+ 
+
+:0001.65B3 03D8                   add bx, ax
+
+:0001.65B5 4A                     dec dx
+
+:0001.65B6 75F5                   jne 65AD
+
+:0001.65B8 88160A00               mov [000A], dl
+
+:0001.65BC 88160B00               mov [000B], dl
+
+:0001.65C0 8BF3                   mov si, bx
+
+:0001.65C2 8B3E0E00               mov di, [000E]
+
+:0001.65C6 810E0E000080           or word ptr [000E], 8000
+
+:0001.65CC EAD165FFFF             jmp 0001.65D1
+
+ 
+
+:0001.65D1 33C0                   xor ax, ax
+
+:0001.65D3 8ED8                   mov ds, ax
+
+:0001.65D5 8EC0                   mov es, ax
+
+:0001.65D7 9AFFFF0000             call KERNEL.FREESELECTOR
+
+:0001.65DC 8BDE                   mov bx, si
+
+:0001.65DE 8BCF                   mov cx, di
+
+:0001.65E0 B80000                 mov ax, 0000
+
+:0001.65E3 8ED8                   mov ds, ax
+
+:0001.65E5 C70668381000           mov word ptr [3868], 0010
+
+:0001.65EB C7066A380000           mov word ptr [386A], 0000
+
+:0001.65F1 5F                     pop di
+
+:0001.65F2 5E                     pop si
+
+:0001.65F3 1F                     pop ds
+
+:0001.65F4 51                     push cx
+
+:0001.65F5 53                     push bx
+
+:0001.65F6 90                     nop
+
+:0001.65F7 0E                     push cs
+
+:0001.65F8 E8F8CD                 call 33F3
+
+:0001.65FB 83C404                 add sp, 0004
+
+ 
+
+* Referenced by a Jump at Address:0001.6577(C)
+
+|
+
+:0001.65FE B89E00                 mov ax, 009E
+
+:0001.6601 50                     push ax
+
+:0001.6602 B80000                 mov ax, 0000
+
+:0001.6605 50                     push ax
+
+:0001.6606 90                     nop
+
+:0001.6607 0E                     push cs
+
+:0001.6608 E8C8CD                 call 33D3 ;This routine does bugger all...
+
+:0001.660B 83C404                 add sp, 0004
+
+:0001.660E CB                     retf
+
+ 
+
+Ok, so now whatever it is has been decrypted. Let us see if 
+
+they actually try to execute it...
+
+ 
+
+:0005.2409 6A64                   push 0064
+
+:0005.240B 6A64                   push 0064
+
+:0005.240D 680000                 push 0000
+
+:0005.2410 68FFFF                 push WORD_VALUE_AT_ADDRESS 0002.1AFCh
+
+:0005.2413 680000                 push 0000
+
+:0005.2416 68FFFF                 push WORD_VALUE_AT_ADDRESS 0003.01BCh
+
+:0005.2419 6A01                   push 0001
+
+:0005.241B 9AFFFF0000             call MMSYSTEM.TIMESETEVENT
+
+ 
+
+@#$#&amp;#&amp;^&amp;*#$!@!!!! <B>What??? Is this a debugger trap?</B> Timing execution?
+
+ 
+
+From the API reference:
+
+<FONT color="purple">/snip/
+
+ timeSetEvent
+
+ 
+
+ MMRESULT timeSetEvent(UINT uDelay, UINT uResolution,
+
+     LPTIMECALLBACK lpTimeProc, DWORD dwUser, UINT fuEvent);
+
+ 
+
+Starts a specified timer event. After the event is activated, 
+
+it calls the specified callback function.
+
+- Returns an identifier for the timer event if successful or an 
+
+  error otherwise. This function returns NULL if it fails and the 
+
+  timer event was not created.(This identifier is also passed to 
+
+  the callback function.)
+
+ 
+
+      uDelay
+
+      Event delay, in milliseconds. If this value is not in 
+
+      the range of the minimum and maximum event delays supported 
+
+      by the timer, the function returns an error.
+
+ 
+
+      uResolution
+
+      Resolution of the timer event, in milliseconds. The 
+
+      resolution increases with smaller values; a resolution 
+
+      of 0 indicates periodic events should occur with the 
+
+      greatest possible accuracy. To reduce system overhead, 
+
+      however, you should use the maximum value appropriate 
+
+      for your application.
+
+ 
+
+      lpTimeProc
+
+      Address of a callback function that is called once upon 
+
+      expiration of a single event or periodically upon expiration 
+
+      of periodic events.
+
+ 
+
+      dwUser
+
+      User-supplied callback data.
+
+ 
+
+      fuEvent
+
+      Timer event type. The following values are defined:
+
+ 
+
+      TIME_ONESHOT = 0
+
+      Event occurs once, after uDelay milliseconds.
+
+ 
+
+      TIME_PERIODIC = 1
+
+      Event occurs every uDelay milliseconds.
+
+ 
+
+Each call to timeSetEvent for periodic timer events must be matched 
+
+with a call to the timeKillEvent function.
+
+/snip/</FONT>
+
+ 
+
+Very interesting..., It calls the function referenced by 0002.1AFCh
+
+every 64 milliseconds.
+
+ 
+
+Set a breakpoint on both of the addresses which are pushed (exactly 
+
+what is pushed as the segment address will change depending on your
+
+system...) for me it was:
+
+
+
+bpx 378F:1AFC
+
+bpx 3787:01BC
+
+ 
+
+It will pop here:
+
+
+
+3787:1AFC
+
+mov ax,375F
+
+inc bp
+
+push bp
+
+mov bp,sp
+
+push ds
+
+mov ds,ax
+
+pushad
+
+ 
+
+; Trace into this call...
+
+ 
+
+call far [bp+0e]
+
+; bp+0e contains 3787:01BC !!! That was the other address 
+
+; we breakpointed!
+
+popad
+
+pop ds
+
+pop bp
+
+dec bp
+
+retf 0010
+
+ 
+
+; Now, at 3787:01BC, we have (this is somewhat interpreted by 
+
+; me, ie.labels added):
+
+
+
+ push esi
+
+ les bx,[1248] ; make es:[bx] point to last 7 bytes of password
+
+ mov cx,0007h
+
+ xor esi,esi
+
+@loop1:
+
+ mov eax,0000001ah
+
+ mul esi
+
+ xchg eax,esi
+
+ mov al,es:[bx]
+
+ sub al,41h
+
+ movzx eax,al
+
+ add esi,eax
+
+ inc bx
+
+ loop @loop1
+
+ push esi
+
+ 
+
+; The above routine makes a magic number out of the password.
+
+ 
+
+ les bx,[124C]  ; es:[bx] now points to the User ID
+
+ mov cx,0008h
+
+ xor esi,esi
+
+ xor dl,dl
+
+@loop2:
+
+ mov al,es:[bx]
+
+ add dl,al
+
+ sub al,30h
+
+ cmp al,09h
+
+ jbe @label1
+
+ sub al,11h
+
+ and al,0fh
+
+@label1:
+
+ 
+
+; The reason for the jbe above is that letters and numbers 
+
+; are processed seperately.
+
+ 
+
+ shl esi,04h
+
+ xor ah,ah
+
+ or si,ax
+
+ inc bx
+
+ loop @loop2
+
+ pop eax
+
+ mov cl,dl
+
+ and cl,01fh
+
+ ror eax,cl
+
+ 
+
+; Here they 'play' with the results of the first loop based 
+
+; upon the results of the second.
+
+ 
+
+ xor eax,19670109h
+
+ sub eax,esi
+
+ mov [124C],eax
+
+ 
+
+; Ok, the results of this password function are placed in [124C]... 
+
+; Hmmm, what value do we want to have here for a password to be correct...
+
+ 
+
+ xor eax,eax
+
+ mov [1248],eax
+
+ 
+
+; This appears to be a flag to say that the function has occurred.
+
+ 
+
+ pop esi
+
+ retf
+
+ 
+
+; To find out what the value at [124C] should be for a correct 
+
+; answer, let us go back to the original code... (the call 
+
+; MMSYSTEM.TIMESETEVENT has just occurred...)
+
+ 
+
+:0005.2420 8946F4                 mov [bp-0C], ax
+
+:0005.2423 9AFFFF0000             call USER.GETTICKCOUNT
+
+:0005.2428 8956F8                 mov [bp-08], dx
+
+:0005.242B 8946F6                 mov [bp-0A], ax
+
+:0005.242E EB1A                   jmp 244A
+
+ 
+
+ 
+
+* Referenced by a Jump at Address:0005.2450(C)
+
+|
+
+:0005.2430 9AFFFF0000             call USER.GETTICKCOUNT
+
+:0005.2435 66C1E010               shl eax, 10
+
+:0005.2439 660FACD0               shrd eax, edx, 10
+
+:0005.243D 10662B                 adc [bp+2B], ah
+
+:0005.2440 46                     inc si
+
+:0005.2441 F6663D                 mul byte ptr [bp+3D]
+
+:0005.2444 A00F00                 mov al, [000F]
+
+:0005.2447 007308                 add [bp+di+08], dh
+
+ 
+
+; This loop appears to be a do-nothing loop, as a pathetic attempt 
+
+; to hide thefact that the real password value routine is elsewhere. 
+
+; You might notice that Soft-ICE interprets the above code 
+
+; differently to W32DASM, possibly some trick to annoy people. 
+
+; (ie. the code is changed during execution)
+
+ 
+
+* Referenced by a Jump at Address:0005.242E(U)
+
+|
+
+:0005.244A 66833E481200           cmp dword ptr [1248], 00000000
+
+:0005.2450 75DE                   jne 2430
+
+ 
+
+The loop continues running until the password routine flag 
+
+has been cleared ([1248] has been zeroed...)
+
+ 
+
+:0005.2452 FF76F4                 push word ptr [bp-0C]
+
+:0005.2455 9AFFFF0000             call MMSYSTEM.TIMEKILLEVENT
+
+ 
+
+The program now stops the password routine from running again...
+
+ 
+
+:0005.245A 66833E481200           cmp dword ptr [1248], 00000000
+
+:0005.2460 0F8578FE               jne 22DC  ;Beggar off call
+
+ 
+
+The above lines are redundant...
+
+ 
+
+:0005.2464 66833E4C1200           cmp dword ptr [124C], 00000000
+
+:0005.246A 0F856EFE               jne 22DC  ;Beggar off call
+
+ 
+
+AHA! It expects the value 0 to be returned in [124C]. Change 
+
+the value in memory at ds:124c to 0 if it isn't already... 
+
+Keep on tracing...
+
+ 
+
+:0005.246E 807E8A00               cmp byte ptr [bp-76], 00
+
+:0005.2472 7507                   jne 247B
+
+:0005.2474 8CDA                   mov dx, ds
+
+:0005.2476 B86619                 mov ax, 1966
+
+:0005.2479 EB05                   jmp 2480
+
+ 
+
+* Referenced by a Jump at Address:
+
+|:0005.2472(C)
+
+|
+
+:0005.247B 8CD2                   mov dx, ss
+
+:0005.247D 8D468A                 lea ax, [bp-76]
+
+ 
+
+* Referenced by a Jump at Address:
+
+|:0005.2479(U)
+
+|
+
+:0005.2480 52                     push dx
+
+:0005.2481 50                     push ax
+
+:0005.2482 1E                     push ds
+
+:0005.2483 686619                 push 1966
+
+:0005.2486 1E                     push ds
+
+:0005.2487 685D19                 push 195D
+
+:0005.248A 9AFFFF0000             call 0001.4AC5h
+
+ 
+
+Yes! The call above gives a 'Thank you, congratulations' dialog box!
+
+Now, all that needs to be done is to reverse engineer the password
+
+verification routine.
+
+ 
+
+Here is a short assembler program which will is basically a copy of the
+
+verification routine.
+
+ 
+
+; regotest.asm
+
+.386
+
+.model tiny
+
+.code
+
+org 100h
+
+start:
+
+ mov ah,9
+
+ mov dx,OFFSET beginpassword
+
+ int 21h
+
+ mov dx,OFFSET beginusername
+
+ int 21h
+
+ mov bx,OFFSET password
+
+ mov cx,0007h
+
+ xor esi,esi
+
+@loop1:
+
+ mov eax,0000001ah
+
+ mul esi
+
+ xchg eax,esi
+
+ mov al,es:[bx]
+
+ sub al,41h
+
+ movzx eax,al
+
+ add esi,eax
+
+ inc bx
+
+ loop @loop1
+
+ push esi
+
+ mov bx,OFFSET username
+
+ mov cx,0008h
+
+ xor esi,esi
+
+ xor dl,dl
+
+@loop2:
+
+ mov al,es:[bx]
+
+ add dl,al
+
+ sub al,30h
+
+ cmp al,09h
+
+ jbe @label1
+
+ sub al,11h
+
+ and al,0fh
+
+@label1:
+
+ shl esi,04h
+
+ xor ah,ah
+
+ or si,ax
+
+ inc bx
+
+ loop @loop2
+
+ pop eax
+
+ mov cl,dl
+
+ and cl,01fh
+
+ ror eax,cl
+
+ xor eax,19670109h
+
+ sub eax,esi
+
+ test eax,eax ;If eax is zero now, the rego is valid
+
+ jz @good
+
+ mov dx,OFFSET badrego
+
+ jmp @printit
+
+@good:
+
+ mov dx,OFFSET goodrego
+
+@printit:
+
+ mov ah,09h
+
+ int 21h
+
+@done:
+
+ mov ax,04c00h
+
+ int 21h
+
+ 
+
+beginpassword db 'Password: Z'
+
+password      db 'HGXIJFT',13,10,'$'
+
+beginusername db 'User ID: '
+
+username      db 'DPH01997',13,10,'$'
+
+goodrego      db 'Congratulations! Correct registration code.',13,10,'$'
+
+ 
+
+badrego       db 'ERROR: Incorrect registration code.',13,10,'$'
+
+END start
+
+ 
+
+Now here is the same thing, turned into a key generator:
+
+ 
+
+;wgkey.asm - by dph-man
+
+.model tiny
+
+.386
+
+.code
+
+org 100h
+
+start:
+
+ 
+
+ mov ah,9
+
+ mov dx,OFFSET prompt ;Prompt the user for input
+
+ int 21h
+
+ ;Input routine
+
+ ;Gets string of three letters and five numbers from the user
+
+ mov cx,8
+
+ mov di,OFFSET username
+
+ push di
+
+ mov ah,8
+
+@cloop:
+
+ cld
+
+ int 21h        ;Get char in al
+
+ cmp al,8       ;Is al=backspace?
+
+ jne @procchar  ;If not, go to the processing routines
+
+ cmp cl,al      ;Is this the first character?
+
+ je @cloop      ;If so, you can't backspace!
+
+ inc cx         ;Increment character pointer
+
+ std
+
+ jmp @printchar ;Get another character
+
+@procchar:
+
+ cmp cl, 5      ;Is this the third character?
+
+ jbe @numbers   ;If so, it should be a number. Jump to number processing
+
+ cmp al,'a'     ;Is this after the letter 'a'?
+
+ jb @iscapital
+
+ sub al,20h     ;If so subtract 20h to make it Uppercase.
+
+@iscapital:
+
+ cmp al,'A'
+
+ jb @cloop      ;Is this letter between 'A' and 'Z'
+
+ cmp al,'Z'
+
+ jbe @incs      ;If its a letter, print it. If not, the numbers 
+
+                ;routine will catch it
+
+@numbers:
+
+ cmp al,'0'     ;Is this a number?
+
+ jb @cloop
+
+ cmp al,'9'
+
+ ja @cloop      ;If not, get another character.
+
+@incs:
+
+ dec cx         ;Decrement the string pointer
+
+@printchar:
+
+ stosb
+
+ int 29h        ;Write the last character to the screen.
+
+ test cx,cx     ;Do we now know the complete string?
+
+ jne @cloop     ;If not, get more of it
+
+ 
+
+ ;Key generator
+
+ ;Section 1. This is lifted from the actual program code.
+
+ ;This calculates what esi should be in the final sub eax,esi, 
+
+ ;based on the user's input.
+
+ ;This is the second magic number loop.
+
+ pop si
+
+ mov cl,08h
+
+ xor edi,edi
+
+ xor dl,dl
+
+@loop1:
+
+ lodsb
+
+ add dl,al
+
+ sub al,30h
+
+ cmp al,09h
+
+ jbe @label1
+
+ sub al,11h
+
+ and al,0fh
+
+@label1:
+
+ shl edi,04h
+
+ xor ah,ah
+
+ or di,ax
+
+ loop @loop1
+
+ mov eax,edi
+
+ 
+
+;Section 2. Ok, we have the value which eax and esi should be 
+
+;in the final subtraction let us work backwards to what the 
+
+;result of the first magic number loop should be.
+
+ 
+
+ xor eax,19670109h ;Reverse XOR by commutative property
+
+ mov cl,dl
+
+ and cl,01fh
+
+ rol eax,cl ;Reverse ROR by ROL
+
+ 
+
+;The first magic number loop should output eax. As the 2nd 
+
+;loop does this:
+
+;<FONT color="blue">eax=((((((((((d1*1a)+d2)*1a)+d3)*1a)+d4)*1a)+d5)*1a)+d6)*1a)+d7</FONT>
+
+;This is simply an algebraic reversal of the above.
+
+ 
+
+ mov di,OFFSET password
+
+ mov cl,07h
+
+ mov esi,01269AE40h
+
+ xor ebx,ebx
+
+ mov bl,01ah
+
+@divloop:
+
+ xor edx,edx
+
+ div esi
+
+ add al,41h
+
+ stosb
+
+ mov eax,edx
+
+ xor edx,edx
+
+ xchg eax,esi
+
+ div ebx
+
+ xchg eax,esi
+
+ loop @divloop
+
+ mov al,'$'
+
+ stosb
+
+ ;Tell the user our generated password.
+
+ 
+
+ mov ah,9
+
+ mov dx,offset beginpassword
+
+ int 21h
+
+ 
+
+ ;Leave...
+
+ int 20h
+
+ 
+
+prompt        db 'WinGroove serial number generator',13,10,13,10
+
+              db 'Enter three alphabetic and five numeric characters.'
+
+              db 13,10,'User ID: $'
+
+beginpassword db 13,10,'Password: Z'
+
+password      db 8 dup (?)
+
+username      db 8 dup (?)
+
+ 
+
+END start
+
+ 
+
+So there you are, my first key generator. That wasn't so hard. But why
+
+did Madmax! implement a crack rather than a generator? I think it was
+
+because he was stepping through the region of the call to
+
+MMSYSTEM!TIMESETEVENT, and didn't realise that this function was just an
+
+indirect call to the protection routine. If you just step through this
+
+routine, even with Soft-ICE, the protection routine is never called. His
+
+crack simply nops the beggar off jumps immediately after the loop.
+
+The second question is, why is only the serial/password pair
+
+'User:BJG70109, Pass:ZAAAAAAA' around in the serial lists? (Usually
+
+people contribute more than one serial no. to any list.) The simple
+
+answer is this is the easiest set of values to work out manually
+
+(without writing a program). Play around with the first assembly
+
+listing, forgetting that you ever knew any serial numbers at all, and
+
+you'll see what I mean.
+
+What was interesting about this scheme is the way he hides his serial
+
+number check! Remember from now on that 'PrestoChangoSelector' is a VERY
+
+suspicious routine to be called! Treat with suspicion calls to
+
+MMSYSTEM!TimeSetEvent which appear in the middle of protection schemes!
+
+ 
+
+:-)
+
+dph-man
+
+ 
+
+Greetingz to all +crackers!</PRE>
+
+<FONT color="green">(c) dph-man 1997. All rights reversed</FONT>
+
+<HR ALIGN="CENTER" WIDTH="100%" SIZE="3">
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</I></CENTER>
+
+<BR><CENTER>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut CGI-scripts</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering legal?</A></CENTER>
+
+<CENTER><HR ALIGN="CENTER" WIDTH="100%" SIZE="2"></CENTER>
+
+</BODY>
+
+</HTML>
+
+ 
+

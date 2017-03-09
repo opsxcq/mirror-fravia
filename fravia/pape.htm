@@ -1,0 +1,738 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>pape</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+<CENTER><H2>How to crack CuteFtp 1.8 (32 bit version)<BR>
+
+(The hidden file algorhitm protection)</H2><H4><I>by +RCG</I></H4>
+
+<BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">Courtesy of Fravia's page of reverse engineering</CENTER>
+
+<HR size="2">
+
+<PRE>
+
+	First of all I want to express my sincerely gratitude to +ORC, 
+
+without his help I would never have been capable to write this document, 
+
+and to +his students too, for their great pages and dedication, giving 
+
+us all the info we need to learn.
+
+	Secondly , my mother tongue is not english, so I am sure this 
+
+document has a lot of grammatical and spelling mistakes. I made a great 
+
+effort writing this in English, so please think about it and bear with 
+
+me reading it.
+
+	There are some kind of programs that check if you are a registered 
+
+owner looking for a file more or less hidden in some place of your hard 
+
+drive, then, if the program find that file, it makes some manipulations 
+
+with the file data and then check if it is in correct place,or the 
+
+checksum is correct, or many others things.
+
+	Obviously, crack this protection is a hard work, and completely 
+
+different to the other type of crack we have learned yet.
+
+	Personally, I like much more &quot;trying&quot; to crack this protection 
+
+type than the typical &quot;test eax,eax&quot; after a &quot;call Is_Correct?&quot;, because 
+
+the programmer has lost more time protecting his program (usually 
+
+splendid programs, like CuteFtp) than the other people that makes a 
+
+program, who tell you what is the time is L.A. and ask 20$ for it, and 
+
+protects the programs asking you for a number (could even be the date 
+
+he began to go out with his girlfriend) and comparing it to your answer.
+
+--------------------------------------------------------------
+
+
+
+	Well,  lets go with our main purpose, &quot;learn&quot;.
+
+	Normal Steps to crack this protection are:
+
+	1) Stop the program went it opens the file, how?
+
+	bpx CreateFileA (the last push is the pointer to the 
+
+				     asciiz &quot;filename&quot;)
+
+		
+
+	Usually  programs makes the comparision to know if it exists:
+
+		.
+
+		.
+
+		push	offset lpszFileName
+
+		call	CreateFileA
+
+		cmp 	eax,-1
+
+		je	Unregisted_Version
+
+		mov	offset File_Handle,eax	;Saves the file_handle
+
+		.
+
+		.
+
+
+
+Let¥s create a file with a few bytes with the name of &quot;reginfo.dat&quot;, 
+
+for example with this bytes:
+
+
+
+		2B  52 43 47 50  50  50 50  50  50 (10 bytes)
+
+		+   R  C  G   P   P   P  P   P  P			 
+
+
+
+	2) Stop the program when it reads the file, how?
+
+		bpx ReadFile
+
+
+
+ 	Usually programs read the file using this funtion (not always), 
+
+for example it can check the file lenght using the SetFilePointer 
+
+funtion, or the date or the attributes, before reading it, stopping 
+
+if some of these values are wrong.
+
+	Take care for Dos Interrupts use, old Win3.x programs can use 
+
+them to read files. 
+
+	.
+
+	.
+
+	push 	offset Buffer  ;Here is where the funtion will left the data
+
+	push	[File_Handle]
+
+	call	ReadFile
+
+	test	eax,eax
+
+	jnz	No_errors
+
+	.
+
+	.
+
+
+
+	3) Stop the program when it manipulates the file data, how?
+
+	bpr ds:offset Buffer ds:offset Buffer+6 R (for example)
+
+
+
+	Now, when SoftIce pops up, follow the data until they're left 
+
+in a correct place and the manipulation begins. In the case of CuteFtp, 
+
+there is only one intermediate movement before its final position. 
+
+(look for a &quot;repz movsd&quot; ar &quot;repz movsb&quot;), in the CuteFtp case it 
+
+is as follows:
+
+
+
+137:00432F14		MOV	EDI,[ESP+10]	;Destination
+
+137:00432F18		MOV	ESI,[EBX]		;Source
+
+137:00432F1A		SUB	ESP,EDX
+
+137:00432F1C		REPZ	MOVSD			;Desplacement
+
+137:00432F1E		MOV	ECX,EAX
+
+137:00432F20		AND	ECX,03
+
+137:00432F23		REPZ 	MOVSB			;if any byte alone
+
+		
+
+	Now,
+
+		 bpr ds:di ds:di+6 R
+
+	 And you will pop up in the middle of the manipulation routine.
+
+
+
+	4) Study the manipulation until you were capable of generate 
+
+a valid file, how?
+
+		It depens on your habitity, there are no rules. Look 
+
+at this code fragment.
+
+	
+
+:00416430 81EC00010000            	sub esp, 00000100
+
+:00416436 833DD04C470000          	cmp dword ptr [00474CD0], 0
+
+:0041643D 53                   	push ebx
+
+:0041643E 56                   	push esi
+
+:0041643F 57                   	push edi
+
+:00416440 55                   	push ebp
+
+:00416441 7439                 	je 0041647C
+
+:00416443 8B942414010000         	mov edx, [esp + esp + 00000114]
+
+:0041644A 85D2                 	test edx, edx
+
+:0041644C 7424                 	je 00416472
+
+:0041644E BFE8514700              	mov edi, 004751E8
+
+:00416453 B9FFFFFFFF              	mov ecx, FFFFFFFF
+
+:00416458 2BC0                 	sub eax, eax
+
+:0041645A F2                   	repnz
+
+:0041645B AE                   	scasb
+
+:0041645C F7D1                 	not ecx
+
+:0041645E 2BF9                 	sub edi, ecx
+
+:00416460 8BC1                 	mov eax, ecx
+
+:00416462 C1E902                  	shr ecx, 02
+
+:00416465 8BF7                 	mov esi, edi
+
+:00416467 8BFA                 	mov edi, edx
+
+:00416469 F3                   	repz
+
+:0041646A A5                   	movsd
+
+:0041646B 8BC8                 	mov ecx, eax
+
+:0041646D 83E103                  	and ecx, 00000003
+
+:00416470 F3                   	repz
+
+:00416471 A4                   	movsb
+
+:00416472 B801000000              	mov eax, 00000001
+
+:00416477 E94B010000              	jmp 004165C7
+
+:0041647C 8D442414                	lea eax, [esp + esp + 14]
+
+:00416480 68FA000000              	push 000000FA
+
+:00416485 50                   	push eax
+
+:00416486 8B4960                  	mov ecx, [ecx+60]
+
+:00416489 51                   	push ecx
+
+:0041648A FF1534CA4700            	call GetModuleFileNameA
+
+:00416490 8D7C2414                	lea edi, [esp + esp + 14]
+
+:00416494 B9FFFFFFFF              	mov ecx, FFFFFFFF
+
+:00416499 2BC0                    	sub eax, eax
+
+:0041649B F2                      	repnz
+
+:0041649C AE                     	scasb
+
+:0041649D F7D1                    	not ecx
+
+:0041649F 8D440C13                	lea eax, [esp + ecx + 13]
+
+:004164A3 80385C                  	cmp byte ptr [eax], 5C
+
+:004164A6 7406                    	je 004164AE
+
+:004164A8 48                      	dec eax
+
+:004164A9 80385C                  	cmp byte ptr [eax], 5C
+
+:004164AC 75FA                    	jne 004164A8
+
+:004164AE BFDC514700              	mov edi, 004751DC
+
+:004164B3 B9FFFFFFFF              	mov ecx, FFFFFFFF
+
+:004164B8 C6400100                	mov [eax+01], 00
+
+:004164BC 2BC0                    	sub eax, eax
+
+:004164BE F2                      	repnz
+
+:004164BF AE                      	scasb
+
+:004164C0 F7D1                    	not ecx
+
+:004164C2 2BF9                    	sub edi, ecx
+
+:004164C4 8BD1                    	mov edx, ecx
+
+:004164C6 8BF7                mov esi, edi&nbsp;;String(&quot;reginfo.dat&quot;)
+
+:004164C8 B9FFFFFFFF          mov ecx, FFFFFFFF
+
+:004164CD 8D7C2414            lea edi, [esp + esp + 14]&nbsp;;Destination
+
+:004164D1 2BC0                     sub eax, eax
+
+:004164D3 F2                      	repnz
+
+:004164D4 AE                      	scasb
+
+:004164D5 4F                      	dec edi
+
+:004164D6 8BCA                    	mov ecx, edx
+
+:004164D8 C1E902                  	shr ecx, 02
+
+:004164DB F3                      	repz
+
+:004164DC A5                      	movsd
+
+:004164DD 8BCA                    	mov ecx, edx
+
+:004164DF 68D8514700              	push 004751D8
+
+:004164E4 83E103                  	and ecx, 00000003
+
+:004164E7 F3                      	repz
+
+:004164E8 A4                      	movsb
+
+:004164E9 8D442418                	lea eax, [esp + esp + 18]
+
+:004164ED 50                 push eax	;Complete name with path
+
+:004164EE E83DCB0100         call 00433030	;ReadFile
+
+:004164F3 83C408                  	add esp, 00000008
+
+:004164F6 8BF8                    	mov edi, eax
+
+:004164F8 85FF               test edi, edi	;Is something wrong?
+
+:004164FA 0F84C5000000       je 004165C5	;Bad Guy
+
+:00416500 8D442414                	lea eax, [esp + esp + 14]
+
+:00416504 57                      	push edi
+
+:00416505 68FA000000              	push 000000FA
+
+:0041650A 6A01                    	push 00000001
+
+:0041650C 50                      	push eax
+
+:0041650D E84EC90100         call 00432E60&nbsp; ;Check for file lenght
+
+:00416512 83C410                  	add esp, 00000010
+
+:00416515 8BF0               mov esi, eax   ;esi=file lenght
+
+:00416517 57                      	push edi
+
+:00416518 E8A3C80100              	call 00432DC0		
+
+:0041651D 83C404                  	add esp, 00000004	
+
+:00416520 83FE04             cmp esi, 00000004	;Is less than 4?
+
+:00416523 0F8C9C000000       jl 004165C5		;Bad Guy
+
+
+
+	** Look at the file data structure:(try to find it out 
+
+by your own)
+
+	? represents one byte.
+
+
+
+	???????... 	  ?? 	      ??
+
+	name		seed 	checksum	
+
+	
+
+	[esp+12] points to the fisrt character of the file.
+
+	esi is the lenght, so: 
+
+	[esp+esi+12] is the last word of the file (the CheckSum) 
+
+	[esp+esi+10] is the first seed used 
+
+
+
+:00416529 0FBF443412             movsx word ptr eax,[esp+esi+12] 
+
+:0041652E 0FBF7C3410             movsx word ptr edi, [esp + esi + 10]
+
+:00416533 83EE02                 sub esi, 00000002
+
+:00416536 89442410               mov [esp + esp + 10], eax
+
+:0041653A 8D46FF                 lea eax, [esi-01]
+
+:0041653D 83EE02                 sub esi, 00000002
+
+:00416540 50                     push eax
+
+:00416541 33DB                   xor ebx, ebx   ;Clear CheckSum value
+
+:00416543 E802D10200             call 0044364A
+
+:00416548 83C404                 add esp, 00000004
+
+:0041654B 8BE8                   mov ebp, eax
+
+:0041654D 57                     push edi
+
+:0041654E E82DC80100             call 00432D80
+
+:00416553 83C404                 add esp, 00000004
+
+:00416556 33FF                   xor edi, edi	;edi=0
+
+:00416558 85F6                   test esi, esi	;Is esi&gt;0
+
+:0041655A 7E19                   jle 00416575		
+
+
+
+***This part of code is the most important.
+
+	At this point the registers have:		
+
+					edi=0
+
+					esi=lenght of the file less 4.
+
+					ss:[esp+edi+13] = &quot;+RCGPPPPPP&quot;
+
+
+
+:0041655C 47                  inc edi
+
+:0041655D E82EC80100          call Get_Next_Number&nbsp;;Get next number
+
+:00416562 8A4C3C13            mov cl , [esp + edi + 13]
+
+:00416566 32C8                xor cl , al 				
+
+:00416568 0FBEC1              movsx byte ptr eax, ecx
+
+:0041656B 03D8                add ebx,eax&nbsp;  ;Add to checksum number
+
+:0041656D 884C3DFF            mov [ebp+edi-01],cl&nbsp;;Decrypted byte
+
+:00416571 3BFE                cmp edi, esi	;Is finished?
+
+:00416573 7CE7                jl 0041655C		;No, continue
+
+:00416575 C644350000          mov [ebp+esi+00],00 ;Write end stringz
+
+:0041657A 3B5C2410            cmp ebx,[esp+esp+10]&nbsp;;Is checksum ok?
+
+:0041657E 753C                jne 004165BC	   ;Bad Guy
+
+
+
+	**We can crack this program putting 2 NOP'S at the previous 
+
+line and writing a few (lets say 5) junk bytes to &quot;reginfo.dat&quot; file.
+
+
+
+:00416580 8B942414010000          	mov edx, [esp + esp + 00000114]
+
+:00416587 85D2                    	test edx, edx		
+
+:00416589 7421                    	je 004165AC	
+
+:0041658B 8BFD                    	mov edi, ebp		
+
+:0041658D B9FFFFFFFF              	mov ecx, FFFFFFFF
+
+:00416592 2BC0                    	sub eax, eax
+
+:00416594 F2                      	repnz
+
+:00416595 AE                      	scasb
+
+:00416596 F7D1                    	not ecx
+
+:00416598 2BF9                    	sub edi, ecx
+
+:0041659A 8BC1                    	mov eax, ecx
+
+:0041659C C1E902                  	shr ecx, 02
+
+:0041659F 8BF7                    	mov esi, edi
+
+:004165A1 8BFA                    	mov edi, edx
+
+:004165A3 F3                      	repz
+
+:004165A4 A5                      	movsd
+
+:004165A5 8BC8                    	mov ecx, eax
+
+:004165A7 83E103                  	and ecx, 00000003
+
+:004165AA F3                      	repz
+
+:004165AB A4                      	movsb
+
+:004165AC 55                      	push ebp
+
+:004165AD E8CAD00200              	call 0044367C
+
+:004165B2 83C404                  	add esp, 00000004
+
+:004165B5 B801000000              	mov eax, 00000001 ;Good Guy
+
+:004165BA EB0B                    	jmp 004165C7		
+
+:004165BC 55                      	push ebp
+
+:004165BD E8BAD00200              	call 0044367C
+
+:004165C2 83C404                  	add esp, 00000004
+
+:004165C5 33C0                    	xor eax, eax	;Bad Guy
+
+:004165C7 5D                     	pop ebp
+
+:004165C8 5F                     	pop edi
+
+:004165C9 5E                     	pop esi
+
+:004165CA 5B                     	pop ebx
+
+:004165CB 81C400010000            	add esp, 00000100
+
+:004165D1 C20400                  	ret 0004
+
+
+
+
+
+Get_Next_Number PROC
+
+
+
+:00432D90 E85B4D0000         call 00437AF0			
+
+:00432D95 8B4814             mov ecx, [eax+14]	;Get previous seed
+
+:00432D98 8BD1               mov edx, ecx
+
+:00432D9A 8D0C89             lea ecx, [ecx + 4*ecx]
+
+:00432D9D 8D0C89             lea ecx, [ecx + 4*ecx]
+
+:00432DA0 03CA               add ecx, edx
+
+:00432DA2 8D0CCA             lea ecx, [edx + 8*ecx]
+
+:00432DA5 C1E108             shl ecx, 08
+
+:00432DA8 2BCA               sub ecx, edx
+
+:00432DAA 8D8C8AC39E2600     lea ecx, [edx + 4*ecx + 00269EC3]
+
+:00432DB1 894814             mov [eax+14], ecx	  ;Saves next seed
+
+:00432DB4 8BC1               mov eax, ecx
+
+:00432DB6 250000FF7F         and eax, 7FFF0000
+
+:00432DBB C1E810             shr eax, 10		;Only high word
+
+:00432DBE C3                 ret
+
+
+
+
+
+	Study it and you will see that the return value is:
+
+	Next_Seed=Previous_Seed*0x343FD+0x269EC3
+
+	Return_Value is:
+
+	HighWord (Next_Seed-0x8000000);
+
+
+
+	5) Now, that we understant the code, and we can make a 
+
+correct &quot;reginfo.dat&quot; file.
+
+		Lets take &quot;12&quot; as seed.	
+
+		1,2 in ascii are 0x31,0x32
+
+	First Seed is then 0x3231 (Remember bytes are low first 
+
+and high second)
+
+	1st Value Returned:
+
+(0x3231*0x343FD+0x269EC3)=0xA40E0C30 (Next_Seed)
+
+				  0xA40E0C30-0x8000000=0x240E0C30 
+
+				  HighWord is 0x240E
+
+	2nd Value Returned:
+
+(0xA40E0C30*0x343FD+0x269EC3)=0x(217BB)F3C93A33
+
+				  Now, only use the first 8 digits
+
+				  0xF3C93A33-0x80000000=0x73C93A33
+
+				  HighWord is 0x73C9
+
+	3rd Value Returned:	0x46D9
+
+	4th Value Returned: 	0x6513
+
+
+
+	Now, you know that the low byte is xored with the file 
+
+encrypted name, so if I want the program registered to +RCG, 
+
+the encrypted values are:
+
+
+
+	+ = 0x2B	==&gt; 0x2B=XOR(0x0E, ??) ==&gt; ??=0x25
+
+	R = 0x52	==&gt; 0x52=XOR(0xC9, ??) ==&gt; ??=0x9B
+
+	C = 0x43	==&gt; 0x43=XOR(0xD9, ??) ==&gt; ??=0x9A
+
+	R = 0x47	==&gt; 0x47=XOR(0x13, ??) ==&gt; ??=0x54
+
+
+
+	The checksum is (0x2B+0x52+0x43+0x47)=0x0107
+
+	And seed used was &quot;12&quot; = 0x3132
+
+
+
+	So our &quot;reginfo.dat&quot; file must contain the next 
+
+bytes (remember that checksum bytes are inverted in a 
+
+comparation, so we must invert them):
+
+
+
+	25 9B 9A 54 31 32 07 01
+
+
+
+That's it folk
+
+
+
+(c) +Rcg 1997
+
+</PRE>
+
+<BR>
+
+
+
+<BR>
+
+<CENTER><HR ALIGN="CENTER" WIDTH="100%" SIZE="3">
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</I></CENTER>
+
+<BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#84'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#84"> homepage</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"> 
+
+<A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#73'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#73"> links</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0">
+
+<A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm"> anonymity</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm"> +ORC</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#82'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#82"> students' essays</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm"> tools</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm"> cocktails</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm"> search_forms</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm"> mailFraVia</A></CENTER>
+
+<CENTER><HR ALIGN="CENTER" WIDTH="100%" SIZE="2"></CENTER>
+
+
+
+
+

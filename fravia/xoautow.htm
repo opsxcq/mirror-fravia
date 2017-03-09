@@ -1,0 +1,492 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>xoautow</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+<CENTER><FONT size="+3">aUTOWINNET 95 v4.0b<BR></FONT><FONT size="+2">
+
+(An interesting protection based on a &quot;weird&quot; use of a keyfile)</FONT>
+
+
+
+<H4>by xOANON / UnitedCrakingForce<BR>
+
+<BR>
+
+(19 August 1997, slightly edited by Fravia)</H4>
+
+<HR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">Courtesy of Fravia's page 
+
+of reverse engineering<BR><BR><I>Well, xOANON criticizes me, may be rightly, for being 
+
+AGAINST keygenerators. Truly I believe that we should NOT deliver ready made cracks to the 
+
+zombies, but teach anyone who cares to work at least a little how to tackle difficult 
+
+software 
+
+reverse engineering sessions... yet I'm ready to change my mind: if somebody can explain 
+
+me the point of cracking one hundred times the 
+
+same banale protection schemes in order to give to many luser, that will never in their 
+
+life understand the difference 
+
+between xoring and oring, the possibility to use for free some crap application I will, 
+
+pheraphs, change my 
+
+mind... (and yes, what xOANON writes is also true:  
+
+I would like you all writing essays on difficult reverse engineering sessions... because 
+
+this is the task that long ago +ORC entrusted to me and because everything 
+
+you learn IS everything you teach :-)
+
+<BR><BR>
+
+This said, xOANON's essay, that we present to you today, is as usual outstanding AND interesting... gee!	The name you enter 
+
+copied 430 times... the protectionist must have thought: &quot;this will give them a lesson! Try 
+
+to breakpoint memory on this whole lot of locations, stupid cracker!&quot;... Ah!
+
+</I></CENTER><HR size="2"><PRE>
+
+<CENTER><FONT size="+3">aUTOWINNET 95 v4.0b<BR></FONT><FONT size="+2">
+
+
+
+An interesting protection based on a &quot;weird&quot; use of a keyfile</FONT><BR>
+
+Your name copied 430 times and a &quot;growing&quot; file which modifyes the shadow!<BR>
+
+
+
+<H4>by xOANON - uNITED cRACKING fORCE 1997<BR>
+
+</H4></I></CENTER><HR><PRE>
+
+	Hi there! it's a lot of time i don't write an essay.... eh eh, ya know.... 
+
+it's summer, i'm too busy molesting girls and stuff! :))) But, some 
+
+days ago i mailed Fravia to ask him something ... and he replied &quot;Don't waste 
+
+your time cracking for the zombies that would not recognize a byte if it would 
+
+stay up and bite them a finger off... write essays and teach the poor sods 
+
+how to do it instead!&quot;. 
+
+	I think Fravia is a little bit hostile to the work we all crackers do every 
+
+day for our groups, like cracking warez, he'd want we all only write essays! 
+
+But let's close this little parenthesis, and begin talking about this essay.
+
+
+
+I got AutoWinnet 95 Pro v4.0b last day, and i'm really happy to see a kind of 
+
+protection like this. I mean, there's nothing really difficult, as you will see, 
+
+but it's a &quot;new&quot; mode of using a keyfile which maybe less experienced crackers 
+
+could not be able to understand at all. 
+
+
+
+I think this essay can be put also in the &quot;stupidity&quot; section..... but i leave 
+
+the decision to Fravia himself. As i said, is not too hard to crack. It seems 
+
+difficult at a first approach, but when you realize how it works... well, it
+
+turns out to be one of the easiest. :)
+
+
+
+
+
+Ok, let's start.
+
+
+
+<HR ALIGN="Center" SIZE="1">
+
+
+
+First of all, get the program at <A HREF="tppmsgs/msgs2.htm#254" tppabs="http://www.anticrack.de/fravia/tppmsgs/msgs2.htm#254">http://www.webcom.com/autownet/download.htm</A> 
+
+
+
+
+
+After installing it, prepare your cigarettes (if you smoke, but also some chips/coke/etc. 
+
+would work fine) and SoftICE and run it.
+
+As you will see, a pretty nagscreen appears, reminding to register this app. 
+
+Don't bother about it and step ahead. Locate the &quot;Enter Registration&quot; option in the 
+
+&quot;Tools&quot; menu and... ooops, &quot;No keyfile found&quot; appears. Since the programmer is so clever 
+
+to tell you also the name of the keyfile, choose your favourite hexeditor (mine is 
+
+HexWorkshop) and immediately create in the installed directory a file named 
+
+&quot;autown95.key&quot; with a bunch of bytes (ex. 121212121212 <FONT color="red">[TM of +ORC]</FONT>).
+
+
+
+Now, retry. As you can see, now you can enter a name. Do it, and you will get the error 
+
+&quot;Your name did not match the keyfile&quot;. So, what do you think? Maybe in the keyfile there
+
+should be a registration number or something? Who knows? Let's start our LIVE approach 
+
+with SoftICE.
+
+
+
+Setting a BPX on HMEMCPY you will get easily inside the code of the program, and after 
+
+some steps you'll land here:
+
+
+
+
+
+:00481826 BAF8184800              mov edx, 004818F8
+
+:0048182B E8D425F8FF              call 00403E04
+
+:00481830 8B55F8                  mov edx, dword ptr [ebp-08]
+
+:00481833 A13CA94900              mov eax, dword ptr [0049A93C] &gt; Your name at DS:EAX<A name="calcs"> <A>
+
+:00481838 E8FF90FFFF              call 0047A93C                 &gt; Here are done the calcs
+
+:0048183D 84C0                    test al, al                   &gt; AL=0?<A name="patch"> <A>  
+
+:0048183F 740C                    je 0048184D                   &gt; Yes=Bad guy,jump over!
+
+:00481841 C70568A9490001000000    mov dword ptr [0049A968], 01  &gt; AL=1? Good guy!
+
+:0048184B EB5F                    jmp 004818AC
+
+
+
+
+
+* Referenced by a Jump at Address:0048183F(C)
+
+|
+
+* Possible StringData Ref from Code Obj -&gt;&quot;The name you entered did not match &quot;
+
+                                        -&gt;&quot;your keyfile.  Please read your &quot;
+
+                                        -&gt;&quot;registration Email again, then &quot;
+
+                                        -&gt;&quot;retry by using Tools/Enter Registration &quot;
+
+                                        -&gt;&quot;from the main menu&quot;
+
+
+
+As you can see, NOPPING <A href="#patch">this JE</A> will (maybe, i didn't tried it) 
+
+crack the program too. But i think we're here to learn, no? So, it is better to examine 
+
+the program a little bit deeper, in order to accomplish the real goal of this essay: 
+
+making a working keyfile.
+
+
+
+So, back at work. If you trace inside the <A href="#calcs">CALL 47a93c</A> you will find 
+
+something interesting. Look here:
+
+
+
+:0047A9A2 BBAE010000              mov ebx, 000001AE                &gt; sets ebx to 430 dec.
+
+
+
+* Referenced by a Jump at Address:0047A9B3(C)
+
+|
+
+:0047A9A7 8D45E4                  lea eax, dword ptr [ebp-1C]      &gt; ds:eax = your name 
+
+:0047A9AA 8B55FC                  mov edx, dword ptr [ebp-04]       
+
+:0047A9AD E85294F8FF              call 00403E04                    &gt; after this call, 
+
+                                                                     you can see at ds:edx
+
+:0047A9B2 4B                      dec ebx                            your name copied 
+
+:0047A9B3 75F2                    jne 0047A9A7                     &gt; for 430 times!!!!
+
+
+
+Hmmm.... what the f?@*k is happening? if you do a D EDX now, you will see your name 
+
+repeated exactly 430 times....... ri-hmmmm.... let's step a little bit more:
+
+
+
+:0047A9B5 8D4DF4          lea ecx, dword ptr [ebp-0C] 
+
+:0047A9B8 8B55E8          mov edx, dword ptr [ebp-18] &gt; here comes a crypt_table in edx
+
+:0047A9BB 8B45E4          mov eax, dword ptr [ebp-1C] &gt; your 430 names in eax
+
+:0047A9BE E8A5FEFFFF      call 0047A868               &gt; calculations with your name 
+
+                                                        &amp; cryptable 
+
+:0047A9C3 33F6            xor esi, esi                  as you will see, no need to 
+
+                                                        know much more about this.<A name="keyfile"> <A>
+
+:0047A9C5 8B45F4          mov eax, dword ptr [ebp-0C] &gt; the beginning of a new &quot;table&quot; 
+
+                                                        coming from your name&amp;cryptable<A name="calc2"> <A>  
+
+:0047A9C8 E82F94F8FF      call 00403DFC               &gt; other calculations with this 
+
+                                                        table, result in eax
+
+:0047A9CD 85C0            test eax, eax
+
+:0047A9CF 7E13            jle 0047A9E4
+
+:0047A9D1 BB01000000      mov ebx, 00000001
+
+																
+
+Here comes the interesting part:
+
+
+
+:0047A9D6 8B55F4        mov edx, dword ptr [ebp-0C]      &gt; ds:edx = new table
+
+:0047A9D9 0FB6541AFF    movzx edx, byte ptr [edx+ebx-01] &gt; Get each element of this table
+
+:0047A9DE 03F2          add esi, edx                     &gt; and adds it to esi
+
+:0047A9E0 43            inc ebx                          &gt; until ebx matches
+
+:0047A9E1 48            dec eax                          &gt; the value in eax
+
+                                                         &gt; coming from this CALL  
+
+:0047A9E2 75F2          jne 0047A9D6                     &gt; <A href="#calc2">above</A>
+
+
+
+Well, now we have what i call a &quot;MAGIC NUMBER&quot; stored in EAX, coming from all the
+
+manipulations made to your name. Stepping further, you will see that the same routines
+
+are applied to your keyfile, with another MAGIC NUMBER (this time coming from what you 
+
+entered in the keyfile) stored in EBX.
+
+
+
+:0047AA71 E8127DF8FF   call 00402788<A name="cmp"> <A>  
+
+:0047AA76 3BDE         cmp ebx, esi &gt; That's what we're searching for, the CMP!
+
+:0047AA78 0F94C0       sete al
+
+:0047AA7B 8BD8         mov ebx, eax
+
+
+
+	Now comes the ZEN part.... when i found the piece of code above, i told 
+
+myself: oh, this is interesting! maybe i found the solution... probably if i 
+
+would obtain esi=ebx, it would accept my keyfile. 
+
+So, i BPXed the <A href="#cmp">location</A>, i exited SoftICE and i changed the 
+
+contents of my keyfile.... simply, i typed in another string. 
+
+What i saw when SoftICE popped up at the cmp location? Well, the number is a little bit
+
+changed, but remained about the same. Anyway, a lot (quite a lot) minor than the one in 
+
+esi.
+
+	Ok, let's change the keyfile again.... And now, i've had the &quot;illumination&quot; :)
+
+I noticed this: if the keyfile grows (I mean: if there are more bytes in it) the number 
+
+in ebx grows.
+
+	I said: what kind of weird algorithm is this? It means that no matter what's in the 
+
+keyfile, the only thing checked is how many characters are in it?? YESSSSSSS, more or 
+
+less YES! :)
+
+
+
+	So, let's start creating an huge keyfile with anything you want.... you can also type 
+
+in it your favourite song lyrics, no matter :) Just use the copy/paste feature (present 
+
+in HexWorkshop) to repeat what you typed, else it will take too much time to create the 
+
+keyfile.
+
+
+
+	Obviously, everytime check with softice how your baby is going..... if ebx is going 
+
+to be near to esi. When you are at this point (ex. EBX= 409CB and ESI=409DA), ZEN again.
+
+
+
+	I already told you that not only the size of the file is checked, but something more. 
+
+I don't know what (maybe some kind of sum of the value of the bytes.... i don't know), nor
+
+I care much... since i found a fast way to accomplish our goal.
+
+
+
+When you're near to match EBX with ESI, simply modify a byte in the file.
+
+Modify it in the following way:
+
+
+
+Get one byte (what you want), for ex. an A=0x41 hex. Now, assume that you have 
+
+an EBX only minor of ESI by 2. 
+
+So, change your A in C=0x43 (41+2). And.... IT MATCHES! :)
+
+Same if you have EBX major of ESI... in that case instead of adding, you have to 
+
+subtract.
+
+
+
+After some experimentation with the BPX set on the <A href="#cmp">cmp instruction</A> you
+
+will easily find the correct way.
+
+
+
+I know, it's weird..... but works. Now you have a functional keyfile, maybe for all 
+
+versions of AutoWinnet.
+
+
+
+Later.....    
+
+
+
+PS: i'm like 100% sure that the programmer intended the keyfile to be the <A href="#keyfile">table we
+
+found there</A>, calculated with your name and the program's cryptable.... but maybe he didn't
+
+know his routine would work also with our &quot;handmade&quot; keyfiles :))) 
+
+   </PRE>
+
+ <FONT color="green">(c) xOANON 1997 cRACKRIGHTS RESERVED </FONT>
+
+
+
+<HR ALIGN="CENTER" WIDTH="100%" SIZE="3">
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</I></CENTER>
+
+<BR><CENTER>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">
+
+<A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#84'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#84">homepage</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"> 
+
+<A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#73'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#73">links</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0">
+
+<A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#82'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#82">students' essays</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut CGI-scripts</A>
+
+
+
+
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia</A><BR>
+
+
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering illegal?</A></CENTER>
+
+<CENTER><HR ALIGN="CENTER" WIDTH="100%" SIZE="2"></CENTER>
+
+</BODY>
+
+</HTML>
+
+
+

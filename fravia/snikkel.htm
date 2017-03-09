@@ -1,0 +1,2016 @@
+<html><HEAD>
+
+<TITLE>snikkel</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR=#C0C0C0 TEXT=#001010 VLINK=#405040>
+
+<CENTER><FONT size=+3>An asm keygenerator code</FONT><BR>
+
+<FONT size=+2>
+
+("Hypersnap-DX version 3.02 Key generator")</FONT>
+
+
+
+<BR>
+
+<A href="project7.htm" tppabs="http://www.anticrack.de/fravia/project7.htm">
+
+<IMG SRC="stupid.gif" tppabs="http://www.anticrack.de/fravia/stupid.gif" ALT="STUPID" ALIGN=BOTTOM WIDTH=114 HEIGHT=43 BORDER=0 VSPACE=0 HSPACE=0></A>
+
+</A>
+
+<H4><I>by +SNiKkEL</I>
+
+<BR>
+
+<A href="hcu98_3.htm" tppabs="http://www.anticrack.de/fravia/hcu98_3.htm"><IMG SRC="hcu1.gif" tppabs="http://www.anticrack.de/fravia/hcu1.gif" ALT="cracker" ALIGN=BOTTOM WIDTH=114 
+
+HEIGHT=43 BORDER=0 VSPACE=0 HSPACE=0></A><BR>
+
+<BR>(28 July 1997 ~ 
+
+<A href="#anchorupda">Updated</A> 25 January 1998)</H4>
+
+<HR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN=BOTTOM BORDER=0 VSPACE=0 HSPACE=0 width="13" height="13">
+
+Courtesy of Fravia's page of reverse engineering<BR><HR size=2>
+
+	<I>
+
+Well, another of these stupid protections with crackers' handles inside them... 
+
+a "blacklist" of names as +SNiKkEL calls it... 
+
+study the asm code, understand +SNiKkEL's reverse engineering effort and 
+
+learn!<BR>Here is +SNiKkEL's email snippet:<BR></CENTER></I><FONT color=purple><PRE>
+
+...thanx to +ORC and you I can now write something like this source
+
+code for a license code generator... for educational purposes.
+
+I put some comments with it so it's pretty much self explanatory...</FONT></PRE><I><CENTER>
+
+Indeed it is, a bright essay, by the way... May be we should from now on leave the "deep explanations" 
+
+stuff (with heavy code disassembly) and 
+
+simply publish good commented ASM code of the complete solution... lusers would not be able to follow (and this would be nice :-) yet people 
+
+that understand a little our work would enjoy it much more...<BR>(dunno, it's 
+
+just a suggestion, let me know what you think :-)<BR></I></CENTER>
+
+HERE WE GO:
+
+
+
+<HR size=3><XMP>
+
+.model small
+
+.stack 100h
+
+.data
+
+
+
+;******************************************************************************
+
+;   variables for code gen
+
+;
+
+;******************************************************************************
+
+
+
+
+
+
+
+header          DB ' Hypersnap-DX 3.02 license generator by +SNiKkEL',0ah,0dh,0ah,0dh,'$'
+
+info            DB 0ah,0dh,' for some reason they decided to insert a ',027h,'-',027h,' into the code',0ah,0dh
+
+                DB ' invalid names are:',0ah,0dh
+
+                DB ' xygorf, Saltine, super user, tHATDUDE, ED!SON and hacker... sigh',0ah,0dh
+
+                db 0ah,0dh,'enter any name:',0ah,0dh,' $'
+
+notright        db 0ah,0dh,' your name must contain at least one letter',0ah,0dh,'$'
+
+should_be       DB 'WORDXCJOSEFMENGELEJOSE',0   ;this is the regcode before 'encryption'
+
+                 ;WOR = world license (SIT = site license)  DXC = some check
+
+                 ;the rest is the name; snikkel will be SNIKKELSNIKKELSN
+
+                 ;the alphabet will be  A t/m F + L t/m o + U t/m Z  (over 16 chars)
+
+                 ;according to this principle: divide total letters in name by 2
+
+                 ;sub 2 from answer and get 4 chars from beginning of name+answer
+
+                 ;put those 4 after first 6 chars, then put the last 6 letters in the
+
+                 ;name at the end  (spaces, numbers etc are ignored, all letters must be capitalized)
+
+fifthchar       db 0ah,0dh,0ah,0dh,'what would you like to be the 5th letter in your code?',0ah,0dh
+
+                db ' enter anything from a to z',0ah,0dh,' $'
+
+wrong           db 'anything from a to z, isn',027h,'t that enuff?',0ah,0dh,' $'
+
+wagain          db 'why don',027h,'t you just fuck off',0ah,0dh,'$'
+
+whatkind        db 0ah,0dh,'would you like a site or a worldwide license? (s or w)',0ah,0dh,' $'
+
+personals       db 0ah,0dh,0ah,0dh,' your personal unlimited site license code is:',0ah,0dh,0ah,0dh,' $'
+
+personalw       db 0ah,0dh,0ah,0dh,' your personal unlimited world-wide license code is:',0ah,0dh,0ah,0dh,' $'
+
+to_enter        DB 'S2345678901234-6789012345',0ah,0dh,0ah,0dh,'$'   ;the code will be put here
+
+                                                           ;the S is the fifth char on which the 1st letter depends
+
+encodestr       DB 'XCFNAKSHIPZUJLDORGVQTEWYBM',0         ;according to this the letters will be 'encoded'
+
+checks          Dw 0                                      ;checksum (last char) will be put here
+
+keyb            db  033h,033h,034h  dup (0)               ;keyboard buffer, place for input
+
+
+
+;******************************************************************************
+
+;       end of data, begin of code
+
+;******************************************************************************
+
+
+
+.code
+
+start:          JMP     begin
+
+
+
+;******************************************************************************
+
+;       calculate code proc
+
+;******************************************************************************
+
+
+
+calculate       PROC    near
+
+                mov     ax,@data
+
+                mov     ds,ax
+
+                mov     es,ax
+
+                xor     bx,bx
+
+                mov     cx,00001h
+
+                xor     dx,dx
+
+
+
+go:             mov     si,offset should_be
+
+                add     si,bx
+
+                MOV     al,byte ptr [si]              ;put byte of name you want in al
+
+                cmp     al,000h
+
+                jz      done
+
+                mov     si,offset to_enter
+
+                cmp     cx,00010h
+
+                jnz     dont_use_the_2D_for_calculating
+
+                inc     dx      ;make it skip the '-' for calculating next
+
+                inc     dx
+
+dont_use_the_2D_for_calculating:
+
+                add     si,bx
+
+                add     si,dx
+
+                mov     ah,byte ptr [si]    ;put byte in ah for substracting (adding)
+
+
+
+                inc     al
+
+                cmp     bx,00000h
+
+                jz      fifth
+
+                jmp     continue
+
+
+
+fifth:          mov     si,offset to_enter
+
+                add     si,00004h              ;put the 1st char in should_be
+
+                MOV     [si],ah                ;in the right place fer output
+
+                sub     dx,001h
+
+
+
+continue:       sub     ah,041h
+
+                sub     al,041h
+
+                add     al,ah
+
+                cmp     al,01ah
+
+                jge     rotate
+
+                jmp     continue2
+
+
+
+rotate:         sub     al,01ah
+
+
+
+continue2:      mov     si,offset encodestr
+
+                mov     ah,000h
+
+                add     si,ax
+
+                MOV     al,byte ptr [si]
+
+                cmp     cx,0000eh
+
+                jnz     dont_overwrite_the_2D_check
+
+                inc     cx
+
+                dec     dx       ; make it read the char before the '-' for calculating
+
+dont_overwrite_the_2D_check:
+
+                cmp     cx,00005h
+
+                jg      fifth2
+
+                jz      incdx
+
+                jmp     continue3
+
+
+
+incdx:          inc     dx
+
+
+
+fifth2:         mov     si,offset to_enter
+
+                add     si,cx
+
+                MOV     byte ptr [si],al
+
+                inc     bx
+
+                inc     cx
+
+                jmp     go
+
+
+
+continue3:      mov     si,offset to_enter
+
+                add     si,bx
+
+                MOV     byte ptr [si],al
+
+                inc     bx
+
+                inc     cx
+
+                jmp     go
+
+
+
+done:           RET                             ;return
+
+
+
+calculate       ENDP
+
+
+
+;******************************************************************************
+
+;       this part asks for name
+
+;******************************************************************************
+
+
+
+input           PROC    near
+
+                mov     ax,@data
+
+				mov     ds,ax
+
+                mov     es,ax
+
+
+
+                MOV     ah,09h
+
+                mov     dx,offset info             ;spam info
+
+                int     21h
+
+                mov     dx,offset keyb
+
+                mov     ah,0ah
+
+                int     21h                        ;and get user name
+
+
+
+                MOV     AH,09H
+
+                MOV     DX,offset fifthchar        ;display fifth char message
+
+                INT     21H
+
+                xor     cx,cx
+
+
+
+get5char:       mov     ax,0c07h        ;clear keyb buffer & wait for input
+
+				int		21h
+
+                cmp     al,061h         ; 'a'
+
+                jge     letsee
+
+                cmp     al,041h         ; 'A'
+
+                jge     letsee2
+
+                jmp     wrongg
+
+
+
+letsee:         cmp     al,07bh         ;'z'
+
+                jge     wrongg
+
+                sub     al,020h
+
+                jmp     putitin
+
+
+
+letsee2:        cmp     al,05bh         ;'Z'
+
+                jge     wrongg
+
+
+
+putitin:        mov     si,offset to_enter
+
+                MOV     byte ptr [si],al
+
+
+
+                MOV     AH,09H
+
+                MOV     DX,offset whatkind        ;display question
+
+                INT     21H
+
+
+
+getregmode:     mov     ax,0c07h        ;clear keyb buffer & wait for input
+
+				int		21h
+
+                cmp     al,073h         ; 's'
+
+                jz      sitelic
+
+                cmp     al,041h         ; 'S'
+
+                jz      sitelic
+
+                cmp     al,077h         ;'w'
+
+                jz      worldlic
+
+                cmp     al,057h         ;'W'
+
+                jz      worldlic
+
+                jmp     getregmode
+
+
+
+sitelic:        mov     si,offset should_be
+
+                MOV     byte ptr [si],'S'
+
+                MOV     byte ptr [si+1],'I'
+
+                MOV     byte ptr [si+2],'T'
+
+                ret
+
+
+
+worldlic:       mov     si,offset should_be
+
+                MOV     byte ptr [si],'W'
+
+                MOV     byte ptr [si+1],'O'
+
+                MOV     byte ptr [si+2],'R'
+
+                ret
+
+
+
+wrongg:         cmp     cx,001h
+
+                jz      wrongagain
+
+                mov     ah,09h
+
+                mov     dx,offset wrong
+
+				int		21h
+
+                inc     cx
+
+                jmp     get5char
+
+
+
+wrongagain:     mov     ah,09h
+
+                mov     dx,offset wagain
+
+				int		21h
+
+                jmp     exit
+
+
+
+
+
+ret
+
+
+
+input           endp
+
+
+
+;******************************************************************************
+
+;       calculate checksum
+
+;******************************************************************************
+
+
+
+checksum        PROC    near
+
+                mov     ax,@data
+
+				mov     ds,ax
+
+                mov     es,ax
+
+                xor     cx,cx
+
+                mov     di,offset checks
+
+
+
+go2:            mov     si,offset should_be
+
+                xor     ax,ax
+
+                cmp     cx,016h
+
+                jz      cal_char
+
+                add     si,cx
+
+                MOV     al,byte ptr [si]              ;put byte of calculated in al
+
+                sub     al,041h
+
+                push    ax
+
+                push    cx
+
+                mov     ax,cx
+
+                mov     cx,00002h
+
+                div     cx
+
+                pop     cx
+
+                pop     ax
+
+                test    dx,dx
+
+                jz     nodouble
+
+                add     ax,ax
+
+
+
+nodouble:       cmp     ax,0001ah
+
+                jb      allrighty
+
+                sub     ax,00019h
+
+
+
+allrighty:      add     [di],ax
+
+                inc     cx
+
+                jmp     go2
+
+
+
+cal_char:       mov     ax,[di]
+
+                mov     cx,01ah
+
+                xor     dx,dx
+
+                div     cx
+
+                mov     bx,dx
+
+                inc     bl
+
+                mov     si,offset to_enter+017h   ;added one here, made it read the last char
+
+                mov     bh,byte ptr [si]
+
+                sub     bh,041h
+
+                add     bl,bh
+
+                cmp     bl,01ah
+
+                jge     rotate2
+
+                jmp     go_on
+
+
+
+rotate2:        sub     bl,01ah
+
+
+
+go_on:          mov     si,offset encodestr
+
+                mov     bh,000h
+
+                add     si,bx
+
+                MOV     bl,byte ptr [si]
+
+                mov     si,offset to_enter+018h     ;added one here cause of the '-'
+
+                mov     byte ptr [si],bl
+
+
+
+                RET
+
+
+
+checksum        endp
+
+
+
+;******************************************************************************
+
+;      check and shape up user input
+
+;******************************************************************************
+
+
+
+ read_input     proc    near
+
+                mov     ax,@data
+
+				mov     ds,ax
+
+                mov     es,ax
+
+                xor     dx,dx
+
+                xor     ax,ax
+
+                xor     cx,cx
+
+                mov     si,offset keyb
+
+                mov     al,byte ptr [si+1]  ;get number of chars put in by user
+
+                cmp     al,000h
+
+                jz      step_no_input            ;number is zero
+
+                mov     bx,ax
+
+                add     si,2              ;move si to beginning of input
+
+
+
+loopstart:      cmp     bx,000h
+
+                jnz     notalldone
+
+                jmp     reformat
+
+
+
+step_no_input:  jmp     no_input
+
+
+
+notalldone:     mov     al,byte ptr [si]
+
+
+
+                cmp     al,061h         ; 'a'     checking for letters or other chars
+
+                jge     letsee3
+
+                cmp     al,041h         ; 'A'
+
+                jge     letsee4
+
+                jmp     nolet
+
+
+
+letsee3:        cmp     al,07bh         ;'z'
+
+                jge     nolet
+
+                sub     al,020h         ;capitalize
+
+                jmp     putitinmem
+
+
+
+letsee4:        cmp     al,05bh         ;'Z'
+
+                jge     nolet
+
+
+
+putitinmem:     mov     di,si
+
+                sub     di,dx
+
+                mov     byte ptr [di],al
+
+                dec     bx
+
+                inc     si
+
+                jmp     loopstart
+
+
+
+nolet:          inc     dx
+
+                dec     bx
+
+                inc     si
+
+                jmp     loopstart
+
+
+
+reformat:       xor     bx,bx
+
+                mov     si,offset keyb
+
+                mov     bl,byte ptr [si+1]  ;get number of chars put in by user
+
+                sub     bx,dx               ;substract number of not-letters
+
+                cmp     bl,000h
+
+                jz      no_input
+
+                cmp     bl,010h
+
+                jg      strip               ;if name is over 16, strip 6th to ...
+
+
+
+                mov     si,offset keyb      ;if name is =<16 chars, repeat till full
+
+                add     si,002h
+
+                mov     di,offset should_be
+
+                add     di,006h
+
+                mov     al,010h
+
+                div     bl             ;full times to repeat is in al, remaining is in ah
+
+                                       ;(bl= number of valid letters in code)
+
+
+
+loopje:         mov     si,offset keyb      ;if name is =< 16 chars, repeat till full
+
+                add     si,002h
+
+                mov     cl,bl
+
+                repz    movsb                 ;put it in once
+
+                dec     al                    ;one done
+
+                cmp     al,000h               ;check if needs repeating
+
+                jz      last_time             ;no, go put in remaining
+
+                jmp     loopje                ;yes, do it again
+
+
+
+last_time:      mov     si,offset keyb
+
+                add     si,002h
+
+                mov     cl,ah
+
+                repz    movsb          ;put in the remaining chars
+
+                ret
+
+
+
+strip:          mov     si,offset keyb
+
+                add     si,002h
+
+                mov     di,offset should_be
+
+                add     di,006h
+
+                mov     cl,006h
+
+                repz    movsb                      ;put 1st 6 in place
+
+                xor     ax,ax
+
+                mov     al,bl
+
+                mov     cl,002h
+
+                div     cl
+
+                mov     si,offset keyb
+
+                xor     cx,cx
+
+                mov     cl,al
+
+                add     si,cx                   ;put next 4 in place
+
+                mov     cl,004h
+
+                repz    movsb
+
+                sub     bl,004h                  ;six from end, the two non chars
+
+                                                 ;from beginning 'keyb' counted
+
+                mov     si,offset keyb
+
+                add     si,bx
+
+                mov     cl,006h
+
+                repz    movsb
+
+                ret
+
+
+
+no_input:       mov     dx,offset notright
+
+                mov     ah,009h
+
+                int     21h
+
+                jmp     exit
+
+
+
+
+
+ read_input     endp
+
+;******************************************************************************
+
+;       spam  the code
+
+";------------------------------------------------------------------------------.class" tppabs="http://fravia.org/;******************************************************************************.class"
+
+
+
+spam            PROC    near
+
+                mov     ax,@data
+
+				mov     ds,ax
+
+                mov     es,ax
+
+                mov     di,offset should_be
+
+                mov     al,byte ptr[di]
+
+                cmp     al,'S'
+
+                MOV     AH,09H
+
+                jnz     wormessage
+
+                MOV     DX,offset personals        ;display personal message
+
+				INT     21H
+
+                jmp     dispcode
+
+
+
+wormessage:     MOV     DX,offset personalw        ;display personal message
+
+				INT     21H
+
+
+
+dispcode:       MOV     AH,09H
+
+                MOV     DX,offset to_enter        ;display right code
+
+				INT     21H
+
+                RET
+
+
+
+spam            endp
+
+
+
+
+
+;******************************************************************************
+
+;       the main program
+
+;******************************************************************************
+
+
+
+begin           PROC    near
+
+				mov     ax,@data
+
+				mov     ds,ax
+
+                mov     es,ax
+
+                MOV     AH,09H
+
+				MOV     DX,offset header        ;display header
+
+				INT     21H
+
+                CALL    input         ;get user input
+
+                call    read_input
+
+
+
+                CALL    calculate               ;calculate code from input
+
+                call    checksum                ;calculate last char
+
+                CALL    spam                    ;spam calculated code
+
+
+
+exit:           MOV     AX,4C00H                ;and exit
+
+				INT     21H
+
+
+
+begin           ENDP
+
+
+
+END     START</xmp>
+
+<A name="anchorupda"></A>
+
+<HR size=3>
+
+Well, +Snikkel sent an update on 25 January 1998... here it is, with his email:
+
+<PRE><FONT color=purple>here's the update to the hypersnap thingy.
+
+
+
+severely,
+
++SNiKkEL</FONT></PRE>
+
+<HR size=3>
+
+
+
+<XMP>
+
+;hypersnap 3 keygen by +SNiKkEL
+
+;16 bit exe, only tried with tasm
+
+
+
+.model small
+
+.stack 100h
+
+.data
+
+
+
+;******************************************************************************
+
+;   variables for code gen
+
+;
+
+;******************************************************************************
+
+
+
+
+
+
+
+header          DB ' Hypersnap-DX 3.08 license generator by +SNiKkEL',0ah,0dh,0ah,0dh,'$'
+
+info            DB 0ah,0dh,' this one works all seasons ;)',0ah,0dh
+
+                DB ' invalid names are:',0ah,0dh,0ah,0dh
+
+				db ' Marcko, jackkuo, Monkey, abel, ALI-BABA, Unlimited World-Wide Lic, xygorf,',0ah,0dh
+
+				db ' Gone Hyper, ^SaTaNa, -M-O-A-, Hypersnap, Alexander Chen, Saltine,',0ah,0dh
+
+                DB ' super user, tHATDUDE, ED!SON and hacker... sjees',0ah,0dh
+
+                db 0ah,0dh,'enter any name:',0ah,0dh,' $'
+
+notright        db 0ah,0dh,' your name must contain at least one letter',0ah,0dh,'$'
+
+should_be       DB 'WORDXCJOSEFMENGELEJOSE',0   ;this is the regcode before 'encryption'
+
+                 ;WOR = world license (SIT = site license)  DXC = some check
+
+                 ;the rest is the name; snikkel will be SNIKKELSNIKKELSN
+
+                 ;the alphabet will be  A t/m F + L t/m o + U t/m Z  (over 16 chars)
+
+                 ;according to this principle: divide total letters in name by 2
+
+                 ;sub 2 from answer and get 4 chars from beginning of name+answer
+
+                 ;put those 4 after first 6 chars, then put the last 6 letters in the
+
+                 ;name at the end  (spaces, numbers etc are ignored, all letters must be capitalized)
+
+fifthchar       db 0ah,0dh,0ah,0dh,'what would you like to be the 5th letter in your code?',0ah,0dh
+
+                db ' enter anything from a to z',0ah,0dh,' $'
+
+wrong           db 'anything from a to z, isn',027h,'t that enuff?',0ah,0dh,' $'
+
+wagain          db 'why don',027h,'t you just fuck off',0ah,0dh,'$'
+
+whatkind        db 0ah,0dh,'would you like a site or a worldwide license? (s or w)',0ah,0dh,' $'
+
+personals       db 0ah,0dh,0ah,0dh,' your personal unlimited site license code is:',0ah,0dh,0ah,0dh,' $'
+
+personalw       db 0ah,0dh,0ah,0dh,' your personal unlimited world-wide license code is:',0ah,0dh,0ah,0dh,' $'
+
+to_enter        DB '1234-5678-9012-3456-7890-1234',0ah,0dh,0ah,0dh,'$'   ;the code will be put here
+
+                                                           
+
+encodestr       DB 'XCFNAKSHIPZUJLDORGVQTEWYBM',0   ;according to this the letters will be 'encoded'
+
+checks          Dw 0                                ;checksum (last char) will be put here
+
+keyb            db  033h,033h,034h  dup (0)         ;keyboard buffer, place for input
+
+temp			DB 'S23412341234123412341234',0   ;place for temporary key without dashes
+
+												  ;the S is the fifth char on which the 1st letter depends
+
+												  ;it gets put in the fifth place in the code
+
+;******************************************************************************
+
+;       end of data, begin of code
+
+;******************************************************************************
+
+
+
+.code
+
+start:          JMP     begin
+
+
+
+;******************************************************************************
+
+;       calculate code proc
+
+;******************************************************************************
+
+
+
+calculate       PROC    near
+
+                mov     ax,@data
+
+                mov     ds,ax
+
+                mov     es,ax
+
+                xor     bx,bx
+
+                mov     cx,00001h
+
+                xor     dx,dx
+
+
+
+go:             mov     si,offset should_be
+
+                add     si,bx
+
+                MOV     al,byte ptr [si]      ;put byte of name you want in al
+
+                cmp     al,000h
+
+                jz      done
+
+                mov     si,offset temp
+
+                add     si,bx
+
+                add     si,dx
+
+                mov     ah,byte ptr [si]      ;put byte in ah for substracting (adding)
+
+
+
+                inc     al
+
+                cmp     bx,00000h
+
+                jz      fifth
+
+                jmp     continue
+
+
+
+fifth:          mov     si,offset temp
+
+                add     si,00004h              ;put the 1st char in should_be
+
+                MOV     [si],ah                ;in the right place fer output
+
+                sub     dx,001h
+
+
+
+continue:       sub     ah,041h
+
+                sub     al,041h
+
+                add     al,ah
+
+                cmp     al,01ah
+
+                jge     rotate
+
+                jmp     continue2
+
+
+
+rotate:         sub     al,01ah
+
+
+
+continue2:      mov     si,offset encodestr
+
+                mov     ah,000h
+
+                add     si,ax
+
+                MOV     al,byte ptr [si]
+
+
+
+do_not_loop:    cmp     cx,00005h
+
+                jg      fifth2
+
+                jz      incdx
+
+                jmp     continue3
+
+
+
+incdx:          inc     dx
+
+
+
+fifth2:         mov     si,offset temp
+
+                add     si,cx
+
+                MOV     byte ptr [si],al
+
+                inc     bx
+
+                inc     cx
+
+                jmp     go
+
+
+
+continue3:      mov     si,offset temp
+
+                add     si,bx
+
+                MOV     byte ptr [si],al
+
+                inc     bx
+
+                inc     cx
+
+                jmp     go
+
+
+
+done:           RET
+
+
+
+calculate       ENDP
+
+
+
+;******************************************************************************
+
+;       this part asks for name
+
+;******************************************************************************
+
+
+
+input           PROC    near
+
+                mov     ax,@data
+
+				mov     ds,ax
+
+                mov     es,ax
+
+
+
+                MOV     ah,09h
+
+                mov     dx,offset info             ;spam info
+
+                int     21h
+
+                mov     dx,offset keyb
+
+                mov     ah,0ah
+
+                int     21h                        ;and get user name
+
+
+
+                MOV     AH,09H
+
+                MOV     DX,offset fifthchar        ;display fifth char message
+
+                INT     21H
+
+                xor     cx,cx
+
+
+
+get5char:       mov     ax,0c07h        ;clear keyb buffer & wait for input
+
+				int		21h
+
+                cmp     al,061h         ; 'a'
+
+                jge     letsee
+
+                cmp     al,041h         ; 'A'
+
+                jge     letsee2
+
+                jmp     wrongg
+
+
+
+letsee:         cmp     al,07bh         ;'z'
+
+                jge     wrongg
+
+                sub     al,020h
+
+                jmp     putitin
+
+
+
+letsee2:        cmp     al,05bh         ;'Z'
+
+                jge     wrongg
+
+
+
+putitin:        mov     si,offset temp
+
+                MOV     byte ptr [si],al
+
+
+
+                MOV     AH,09H
+
+                MOV     DX,offset whatkind        ;display question
+
+                INT     21H
+
+
+
+getregmode:     mov     ax,0c07h        ;clear keyb buffer & wait for input
+
+				int		21h
+
+                cmp     al,073h         ; 's'
+
+                jz      sitelic
+
+                cmp     al,041h         ; 'S'
+
+                jz      sitelic
+
+                cmp     al,077h         ;'w'
+
+                jz      worldlic
+
+                cmp     al,057h         ;'W'
+
+                jz      worldlic
+
+                jmp     getregmode
+
+
+
+sitelic:        mov     si,offset should_be
+
+                MOV     byte ptr [si],'S'
+
+                MOV     byte ptr [si+1],'I'
+
+                MOV     byte ptr [si+2],'T'
+
+                ret
+
+
+
+worldlic:       mov     si,offset should_be
+
+                MOV     byte ptr [si],'W'
+
+                MOV     byte ptr [si+1],'O'
+
+                MOV     byte ptr [si+2],'R'
+
+                ret
+
+
+
+wrongg:         cmp     cx,001h
+
+                jz      wrongagain
+
+                mov     ah,09h
+
+                mov     dx,offset wrong
+
+				int		21h
+
+                inc     cx
+
+                jmp     get5char
+
+
+
+wrongagain:     mov     ah,09h
+
+                mov     dx,offset wagain
+
+				int		21h
+
+                jmp     exit
+
+
+
+
+
+ret
+
+
+
+input           endp
+
+
+
+;******************************************************************************
+
+;       calculate checksum
+
+;******************************************************************************
+
+
+
+checksum        PROC    near
+
+                mov     ax,@data
+
+				mov     ds,ax
+
+                mov     es,ax
+
+                xor     cx,cx
+
+				xor     dx,dx ;(?, dx=0002 gave me an illegal opcode in windows with DIV CX)
+
+                mov     di,offset checks
+
+
+
+go2:            mov     si,offset should_be
+
+                xor     ax,ax
+
+                cmp     cx,016h
+
+                jz      cal_char
+
+                add     si,cx
+
+                MOV     al,byte ptr [si]              ;put byte of calculated in al
+
+                sub     al,041h
+
+                push    ax
+
+                push    cx
+
+                mov     ax,cx
+
+                mov     cx,00002h
+
+                div     cx
+
+                pop     cx
+
+                pop     ax
+
+                test    dx,dx
+
+                jz     nodouble
+
+                add     ax,ax
+
+
+
+nodouble:       cmp     ax,0001ah
+
+                jb      allrighty
+
+                sub     ax,00019h
+
+
+
+allrighty:      add     [di],ax
+
+                inc     cx
+
+                jmp     go2
+
+
+
+cal_char:       mov     ax,[di]
+
+                mov     cx,01ah
+
+                xor     dx,dx
+
+                div     cx
+
+                mov     bx,dx
+
+                inc     bl
+
+                mov     si,offset temp+016h
+
+                mov     bh,byte ptr [si]
+
+                sub     bh,041h
+
+                add     bl,bh
+
+                cmp     bl,01ah
+
+                jge     rotate2
+
+                jmp     go_on
+
+
+
+rotate2:        sub     bl,01ah
+
+
+
+go_on:          mov     si,offset encodestr
+
+                mov     bh,000h
+
+                add     si,bx
+
+                MOV     bl,byte ptr [si]
+
+                mov     si,offset temp+017h
+
+                mov     byte ptr [si],bl
+
+
+
+                RET
+
+
+
+checksum        endp
+
+
+
+;******************************************************************************
+
+;      check and shape up user input
+
+;******************************************************************************
+
+
+
+ read_input     proc    near
+
+                mov     ax,@data
+
+				mov     ds,ax
+
+                mov     es,ax
+
+                xor     dx,dx
+
+                xor     ax,ax
+
+                xor     cx,cx
+
+                mov     si,offset keyb
+
+                mov     al,byte ptr [si+1]  ;get number of chars put in by user
+
+                cmp     al,000h
+
+                jz      step_no_input       ;number is zero
+
+                mov     bx,ax
+
+                add     si,2                ;move si to beginning of input
+
+
+
+loopstart:      cmp     bx,000h
+
+                jnz     notalldone
+
+                jmp     reformat
+
+
+
+step_no_input:  jmp     no_input
+
+
+
+notalldone:     mov     al,byte ptr [si]
+
+
+
+                cmp     al,061h         ; 'a'     checking for letters or other chars
+
+                jge     letsee3
+
+                cmp     al,041h         ; 'A'
+
+                jge     letsee4
+
+                jmp     nolet
+
+
+
+letsee3:        cmp     al,07bh         ;'z'
+
+                jge     nolet
+
+                sub     al,020h         ;capitalize
+
+                jmp     putitinmem
+
+
+
+letsee4:        cmp     al,05bh         ;'Z'
+
+                jge     nolet
+
+
+
+putitinmem:     mov     di,si
+
+                sub     di,dx
+
+                mov     byte ptr [di],al
+
+                dec     bx
+
+                inc     si
+
+                jmp     loopstart
+
+
+
+nolet:          inc     dx
+
+                dec     bx
+
+                inc     si
+
+                jmp     loopstart
+
+
+
+reformat:       xor     bx,bx
+
+                mov     si,offset keyb
+
+                mov     bl,byte ptr [si+1]  ;get number of chars put in by user
+
+                sub     bx,dx               ;substract number of not-letters
+
+                cmp     bl,000h
+
+                jz      no_input
+
+                cmp     bl,010h
+
+                jg      strip               ;if name is over 16, strip 6th to ...
+
+
+
+                mov     si,offset keyb      ;if name is =<16 chars, repeat till full
+
+                add     si,002h
+
+                mov     di,offset should_be
+
+                add     di,006h
+
+                mov     al,010h
+
+                div     bl             ;full times to repeat is in al, remaining is in ah
+
+                                       ;(bl= number of valid letters in code)
+
+
+
+loopje:         mov     si,offset keyb      ;if name is =< 16 chars, repeat till full
+
+                add     si,002h
+
+                mov     cl,bl
+
+                repz    movsb                 ;put it in once
+
+                dec     al                    ;one done
+
+                cmp     al,000h               ;check if needs repeating
+
+                jz      last_time             ;no, go put in remaining
+
+                jmp     loopje                ;yes, do it again
+
+
+
+last_time:      mov     si,offset keyb
+
+                add     si,002h
+
+                mov     cl,ah
+
+                repz    movsb          ;put in the remaining chars
+
+                ret
+
+
+
+strip:          mov     si,offset keyb
+
+                add     si,002h
+
+                mov     di,offset should_be
+
+                add     di,006h
+
+                mov     cl,006h
+
+                repz    movsb                      ;put 1st 6 in place
+
+                xor     ax,ax
+
+                mov     al,bl
+
+                mov     cl,002h
+
+                div     cl
+
+                mov     si,offset keyb
+
+                xor     cx,cx
+
+                mov     cl,al
+
+                add     si,cx                    ;put next 4 in place
+
+                mov     cl,004h
+
+                repz    movsb
+
+                sub     bl,004h                  ;six from end, the two non chars
+
+                                                 ;from beginning 'keyb' counted
+
+                mov     si,offset keyb
+
+                add     si,bx
+
+                mov     cl,006h
+
+                repz    movsb
+
+                ret
+
+
+
+no_input:       mov     dx,offset notright
+
+                mov     ah,009h
+
+                int     21h
+
+                jmp     exit
+
+
+
+
+
+ read_input     endp
+
+;******************************************************************************
+
+;       spam  the code
+
+";------------------------------------------------------------------------------.class" tppabs="http://fravia.org/;******************************************************************************.class"
+
+
+
+spam            PROC    near
+
+                mov     ax,@data
+
+				mov     ds,ax
+
+                mov     es,ax
+
+                mov     di,offset should_be
+
+                mov     al,byte ptr[di]
+
+                cmp     al,'S'
+
+                MOV     AH,09H
+
+                jnz     wormessage
+
+                MOV     DX,offset personals        ;display personal message
+
+				INT     21H
+
+                jmp     dispcode
+
+
+
+wormessage:     MOV     DX,offset personalw        ;display personal message
+
+				INT     21H
+
+
+
+dispcode:       MOV     AH,09H
+
+                MOV     DX,offset to_enter       ;display right code
+
+				INT     21H
+
+                RET
+
+
+
+spam            endp
+
+
+
+;******************************************************************************
+
+;      put stuff in place
+
+;******************************************************************************
+
+
+
+move_stuff      proc    near
+
+                mov     ax,@data
+
+				mov     ds,ax
+
+                mov     es,ax
+
+				xor		dx,dx
+
+
+
+                mov     si,offset temp
+
+                mov     di,offset to_enter
+
+
+
+agin:			mov		cx,00004h      ;copy 4
+
+				repz	movsb
+
+				cmp		dx,00005h
+
+				jz 		yes
+
+				inc		dx
+
+				inc		di             ;skip 1
+
+				jmp 	agin
+
+
+
+yes:			ret
+
+
+
+move_stuff		endp
+
+;******************************************************************************
+
+;      main program
+
+;******************************************************************************
+
+
+
+begin           PROC    near
+
+				mov     ax,@data
+
+				mov     ds,ax
+
+                mov     es,ax
+
+                MOV     AH,09H
+
+				MOV     DX,offset header        ;display header
+
+				INT     21H
+
+                CALL    input         			;get user input
+
+                call    read_input
+
+
+
+                CALL    calculate               ;calculate code from input
+
+                call    checksum                ;calculate last char
+
+				call	move_stuff              ;move from temp into to_enter
+
+                CALL    spam                    ;spam calculated code
+
+
+
+exit:           MOV     AX,4C00H                ;and exit
+
+				INT     21H
+
+
+
+begin           ENDP
+
+
+
+END     START
+
+
+
+</xmp>
+
+<FONT color=blue>(c) +SNikkel 1997.</FONT> All rights reserved.
+
+   </PRE>
+
+
+
+<HR ALIGN=CENTER WIDTH=100% SIZE=3>
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</I></CENTER>
+
+<BR><CENTER>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALIGN=BOTTOM BORDER=0 VSPACE=0 HSPACE=0 width="13" height="13"><A
+
+HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALIGN=BOTTOM BORDER=0 VSPACE=0 HSPACE=0 width="13" height="13"> 
+
+<A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links </A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0>
+
+<A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity </A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN=BOTTOM
+
+BORDER=0 VSPACE=0 HSPACE=0 width="13" height="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC </A>
+
+
+
+<IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN=BOTTOM BORDER=0 VSPACE=0 HSPACE=0 width="13" height="13"><A
+
+HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays </A>
+
+<IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN=BOTTOM BORDER=0 VSPACE=0 HSPACE=0 width="13" height="13"><A
+
+HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN=BOTTOM
+
+BORDER=0 VSPACE=0 HSPACE=0 width="13" height="13"><A
+
+HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails </A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALIGN=BOTTOM BORDER=0 VSPACE=0 HSPACE=0 width="13" height="13"><A
+
+HREF="javascript:if(confirm('http://www.fravia.org/ideale.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.fravia.org/ideale.htm'" tppabs="http://www.fravia.org/ideale.htm">antismut CGI scripts</A>
+
+
+
+
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALIGN=BOTTOM BORDER=0 VSPACE=0 HSPACE=0 width="13" height="13"><A
+
+HREF="javascri.htm" tppabs="http://www.anticrack.de/fravia/javascri.htm">Javascript wars </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALIGN=BOTTOM BORDER=0 VSPACE=0 HSPACE=0 width="13" height="13"><A
+
+HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALIGN=BOTTOM BORDER=0 VSPACE=0 HSPACE=0 width="13" height="13"><A
+
+HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia+</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALIGN=BOTTOM BORDER=0 VSPACE=0 HSPACE=0 width="13" height="13"><A
+
+HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">is reverse engineering legal? </A></CENTER>
+
+<CENTER><HR ALIGN=CENTER WIDTH=100% SIZE=2></CENTER>
+
+
+
+</BODY>
+
+</HTML>
+
+
+

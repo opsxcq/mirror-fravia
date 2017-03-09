@@ -1,0 +1,1185 @@
+<HTML>
+
+<HEAD>
+
+<META Name="Voluntary Content Rating" content="it's
+
+fravia's: great!">
+
+
+
+
+
+<TITLE>bulga_1.htm: Data reverse engineering</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR=#C0C0C0 TEXT=#001010 ALINK=#405040
+
+VLINK=#8850AA><P><CENTER><BR><A href="papers.htm" tppabs="http://www.anticrack.de/fravia/papers.htm"><IMG SRC="papers.gif" tppabs="http://www.anticrack.de/fravia/papers.gif" ALT="papers" ALIGN=BOTTOM WIDTH=114 
+
+HEIGHT=43 BORDER=0 VSPACE=0 HSPACE=0></A><BR><FONT color=gray>Back to the +HCU papers</FONT><BR>
+
+<BR>
+
+<H2>
+
+<U>Data</U> reverse-engineering - Lesson 1
+
+<BR></H2>
+
+(by SvD (<A href="javascript:if(confirm('http://129.105.116.5/fravia/py/nfCmp.py-Pyt=Tnf&1st=1&to=svd_bg@mail.yahoo.com&YY=28357  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://129.105.116.5/fravia/py/nfCmp.py-Pyt=Tnf&1st=1&to=svd_bg@mail.yahoo.com&YY=28357'" tppabs="http://129.105.116.5/fravia/py/nfCmp.py-Pyt=Tnf&1st=1&to=svd_bg@mail.yahoo.com&YY=28357">svd_bg@mail.yahoo.com</A>)<BR>
+
+slightly edited by fravia+<BR>
+
+<BR><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" BORDER="0" VSPACE="0"
+
+HSPACE="0" WIDTH="613" HEIGHT="4"><BR><H4>
+
+Well, here we have once more the already know web-phenomenon of a great reverser 'appearing' out of 
+
+the blue. Read (and head) the following, even if SvD's style may result a 
+
+little 'hard' to 
+
+follow...listen, just keep reading and then re-read this essay a second time... you will not regret it...<BR>Here we deal with data structures (mainly) yet there are hundred little snippets 
+
+of reversing advices and techniques that are gold worth... that is, if you have the 
+
+patience and the skill...
+
+</H4>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" BORDER="0" VSPACE="0"
+
+HSPACE="0" WIDTH="613" HEIGHT="4">
+
+</CENTER><BR>
+
+Well, I dont know if I could teach someone how to reverse-engineer data,
+
+but
+
+i'll try to make a live unplugged show of some old things. May be
+
+within it
+
+I
+
+could point some important topics.<BR>
+
+Note: I will use "C" style: 0x0000 for hex numbers; WORD=16bit-int,
+
+DWORD=32bit<BR>
+
+Note: I will use square brackets <FONT color=purple>[]</FONT> and uppercase to enclose important
+
+things.<BR><BR>
+
+
+
+<FONT color=purple>[FIRST one: to reverse-engineer data, you must be able to SEE it (not to
+
+watch
+
+- "everyone's watching, but nobody sees" (Rainbow'81)).]</FONT><BR>
+
+I will explain what I mean using a bulgarian anecdote, actually an old
+
+fairytail.<BR>
+
+Excuse my english, it is technical, not philologist's.<BR>
+
+Story:" Once upon a time there was a hero, that had to fight a dragon.<BR>
+
+He
+
+walked 
+
+through 9 lands into the tenth, and found the mountain of the dragon. He
+
+enters 
+
+the biggest cave and shouts: "Come out, dragon, and fight with me".
+
+Nobody answers. Then he shouted "Come on, you silly dragon! or I will
+
+kill
+
+you
+
+while you sleep!". Again silence. Third time he shouted with all his 
+
+force :
+
+"Come out, dragon, I'll kill you". Then some powerful voice "from
+
+beyound"
+
+said:
+
+"Well, then. Yet I cannot understand why the hell are you screaming 
+
+from inside my belly?"
+
+"/eo story /eo explanation. i.e. one must see much farther than his own
+
+nose. ]</FONT>
+
+<BR><BR>
+
+<FONT color=purple>[SECOND]</FONT> one: these are technologies on how to make your own technology.
+
+<BR>
+
+It is not ready-cooked fast-food.]</FONT>
+
+Note: most of techniques here are very usable also while reversing code.
+
+<BR><BR>
+
+
+
+Instruments needed:
+
+<BR><BR>
+
+1. any utility that can show you 2 or more files simultaneoiusly in
+
+text/hex and switch between them without loosing the current pointer in
+
+each. I.e. software collation tools<BR>
+
+Or at least, comp or diff. We here use a little 20K DOS file-manager
+
+(files.com), bulgarian-made and 12 years old, yet still 
+
+a VERY WELL WORKING program... I wish the windoze programs would last so 
+
+long...
+
+<BR><BR>
+
+2. red-eyed mammal, that usualy talks with computer (I mean the hacker/cracker 
+
+being), with very good analytical BRAIN and really VERY GOOD EYES.<BR>
+
+You must be able to catch the difference, for example, between 0 and O
+
+or
+
+between I and l while switching between two absolutely "identical"
+
+things;
+
+And you must memorize long passages of data, to compare it in mind, with
+
+others.<BR>
+
+And one must have at least a rough idea what it is (text, font,
+
+database,
+
+picture, data-stream...); Need a good knowledge of theory of
+
+data-structures, obviously, (but simple things like boosting number of lifes or
+
+ammunitions
+
+in a savegame could go without this).
+
+<BR><BR>
+
+3. if you are needed to build a new instance of data of the wanted kind,
+
+you may need some file-editing utility and/or some programming language skills 
+
+(e, diskedit, hexview ~ perl, python, C, C++; any other ~ all of them - as
+
+needed)
+
+<BR><BR>
+
+Reversing data is different from reversing code, because:<BR>
+
+1. code is a "living creature", you can try it's behaviour; while data
+
+is
+
+"a sleeping creature", some sort of "shell", you can see what it is only when you
+
+"awake"
+
+it, or either when you make <U>another creature</U> using its resources.<BR>
+
+2. the above distinction is not very clear, ok, once more:  - the most effective code
+
+operates
+
+over a structureural data, that describes it's behaviour; and vice-versa,
+
+as
+
+world
+
+is going object (and object means "independent data together WITH
+
+methods
+
+of its
+
+use", there could be data, that is itself code (like pseudocode streams
+
+of
+
+all
+
+interpreters; or like SQL inside-table procedures).
+
+
+
+<BR><BR>
+
+There are several ways of reversing data:
+
+<BR><BR>
+
+1. Look into it... +ORC would have said 'just feel it'... 
+
+sometimes the structure is obvious (if you know what to
+
+ expect) This approach works well over text files, like .ini's, or
+
+.html,
+
+or Frame Maker's MIF format, or any other structured markup language (by
+
+the 
+
+way, all those files are just instances of an SGML with pre-defined
+
+structure/grammar).
+
+<BR><BR>
+
+2. comparing MANY "almost" equal instances of a same or similar
+
+thing(s);<BR>
+
+Use this when the structure is not sophisticated, or it is impossible to
+
+use
+
+the 
+
+software-creator of the data (because it costs money, or you don't know
+
+how to
+
+
+
+use it, or it cant be found anymore. I think the last one will set many
+
+ people on fire VERY SOON).
+
+<BR><BR>
+
+3. comparing several stages of one thing, i.e. create it, save; then
+
+changing
+
+(very) small part of it, save again; compare both saves; repeat this
+
+process
+
+step-by-step until you know enough about the structure.
+
+<BR><BR>
+
+4. if there is a software, working with that data, it may be
+
+code-reversed,
+
+and data-structure could be derived from there. But this is the last way,
+
+and
+
+use it only if you'r really sure there's no-other-way, 
+
+coz' sometimes it is easer to rewrite the
+
+whole thing again, or to abort the reversing, than to get something
+
+from a
+
+badly coded software (The easiest way to protect something, is to make
+
+it
+
+so
+
+badly, that no one wants to use that code). And also, sometimes there is more
+
+data, than that software can understand.
+
+<BR><BR>
+
+Of course, one must know about all these methods, and to combine them if
+
+and where appropriate.
+
+<BR><BR>
+
+Example1 (to way 2):
+
+you have many bitmap fonts of same family and different sizes/weight
+
+(like Bitstream screen fonts), or you have many .pfm's (that is for
+
+Poscript
+
+Font Metrics files). While switching between them, at same current
+
+pointer 
+
+(zero), you must see the differences in the headers (AH! they have
+
+headers!)<BR><FONT color=purple>
+
+<FONT color=purple>[BOOKMARK 1: there are data-files with Headers, may be containing
+
+auxilary
+
+ info about the following after that Contents (this is usual, coz more
+
+ flexible); and there are data-files without Headers (or with Headers
+
+only).<BR>
+
+ These two kinds could be divided into many others, possibly recursive
+
+subkinds.]</FONT></FONT><BR>
+
+Then, if you still remember what file you are looking at (or YES! it is
+
+written
+
+on the screen), you could see, that 12-points-font-file has a 0x0C at
+
+offset
+
+002, that 10-points-font-file has 0x0A at same offset etc. So you get
+
+several
+
+data items that look similar AND you are almost imaging what they meant;
+
+check your intuition - look into some other file. If your intuition is
+
+right,
+
+save that info as Rule1.<BR><FONT color=purple>
+
+<FONT color=purple>[BOOKMARK 2: keep track of the rules you suppose or guess. Never destroy
+
+old
+
+ ones before absolutely sure they are wrong, or they have a substitute).
+
+ A rule that is less than 20% proved is just a guess; if it is 50-60%,
+
+it
+
+is
+
+ a working rule; if it more than 90%, you are more (or at least not
+
+less)
+
+ clever than the creator of the structure; the hardest thing is to gain
+
+that
+
+ final 10-20%; sometimes it is needless, or impossible (90/10 razor:
+
+ 10% of resources go for 90% of a thing, and the final 10% of the thing
+
+may
+
+ eat the rest 90% OR MORE of resources.]</FONT></FONT><BR>
+
+...etc about font structure: you see, that a chunk of non-zero data starts
+
+at
+
+ offset 0x220, and you notice, that there is such a number written at
+
+some
+
+offs, etc.<BR><FONT color=purple>
+
+BOOKMARK 3: a data could content pointers to itself. Thats way some
+
+files
+
+are
+
+ not easy changeable..]</FONT></FONT><BR>
+
+<BR>
+
+Example2 (to way 3):<BR>
+
+you have a kill-them-all-and-try-get-to-next-level game with
+
+savegame feature. You make a savegame, shoot once, then make another
+
+savegame
+
+(or rename first savegame and save over it). Now compare both files.
+
+Better dont move - most of the "clever" games are tracking your hero and
+
+there
+
+may be very big differrences if you move.<BR><FONT color=purple>
+
+<FONT color=purple>[BOOKMARK 4: always try to compare the most little possible instances
+
+you
+
+can,
+
+thus avoiding mistakes from "noise". Bigger things may be usable when
+
+you
+
+think you know enough and you are testing the resulted structure against
+
+reality.]</FONT></FONT><BR>
+
+and
+
+<BR><FONT color=purple>
+
+<FONT color=purple>[BOOKMARK 5: if You are in doubt, you may be right. Some of the data in
+
+a
+
+data-file could be redundant, i.e. not at all looked through (e.g. some
+
+non-initialized array - if the buffer is 100 byte long, and the message
+
+is
+
+5
+
+byte long, and 0'th byte is its size, why then clear buffer to the end
+
+?)]</FONT></FONT><BR><BR>
+
+
+
+Example3:<BR>
+
+Target: MS Word (DOS!) .doc format (do not mess with new stupid
+
+winword's
+
+ format, or with any other .doc). It is a good example of<BR>
+
+a) at first glance, very simple thing: a header, then text, then...we
+
+ dont need the rest. But if we do ?<BR>
+
+b) Very sophisticated data structure with headers, streams, blocks,
+
+ subheaders, stack-like-arrays,...;<BR>
+
+c) non-clean data, or data-redundancy: i.e. do not always believe your
+
+eyes.<BR>
+
+There are more things in the file, than Word understands. Or, some
+
+things
+
+you see are simply not used by by Word itself (they are just some mess -
+
+state of the stack frame).<BR>
+
+Here I will explain shortly how I derived the structure (about 70%) of a
+
+Word
+
+file.<BR>
+
+It takes about 2 weeks (6 years ago - then I needed only to know how to
+
+make
+
+longer/shorter (change) some text with another, without destroying
+
+formatting
+
+info, but without understanding it), then 3 days more, just 5 months
+
+ago,
+
+when I needed to understand what formatting it is). I have used all of
+
+above
+
+ways/techniques, except 4), and the most useful one was just a lot of 
+
+staring onto my screen.<BR>
+
+1. compare some (small) .doc files: you must know what text is in, and
+
+how
+
+ long they are.<BR>
+
+<BR>1.1. they all start with 0x31 0xBE, zeroes, 0xAB. OK, assume 0xBE31
+
+ (16bit-word) is an identifier of file-type
+
+<BR>1.2. name of style-sheet is at offs 0x1E; name of printer is at offs
+
+0x62
+
+<BR>1.3. they have 128 (0x80) byte long header
+
+<BR>1.4. after the header is raw text as it is; look well where it finishes
+
+<BR>1.5. look into header again. Something familiar? the eo-text offset is a
+
+DWORD
+
+(Intel style, 4bytes) at offset 0x0E. check with a large file. Is it so
+
+?
+
+<BR>1.6. now go eoText and look carefully. There are some meaningless
+
+characters,
+
+but they stopped when offset came to a 128 byte boundary. Sounds
+
+familiar ?<BR>
+
+Did you see any word4dos file that is not rounded to 512 bytes? Ok, lets
+
+see
+
+what is it at next 128 byte boundary. Hm, it is similar. It starts with
+
+0x80,
+
+then zeros, then it is like an array of offsets,... no, they aren't
+
+reasonable.<BR>
+
+But there is really a 128 byte chunk,or block, that is repeated. Ok,
+
+we'll
+
+assume:<BR>
+
+Word is using these 128 byte blocks to save it's formatting info. As the
+
+program
+
+works with VERY large files on very small memory (256K RAM was more than
+
+enough,
+
+in these good old times ...I used it with a 3Meg textfile, and it works
+
+fine),
+
+it is using some paging technique (do you know what is memory paging?
+
+what
+
+is
+
+a virtual memory machine? hmmm..) to get these things allright. And only
+
+whole
+
+such blocks are saved. (and the mess that is in the stack, goes with it
+
+-
+
+why to
+
+be slow and clear it if it is not/never used?)
+
+<BR>1.7. hm, how much 128-byte blocks are there ? divide whole-file-size by
+
+128.
+
+What you get ? did you remember where you saw such numbers? go at
+
+header.<BR>
+
+See it?
+
+If you get a small file (1-2 lines, NO Formatting), you will see it. If
+
+you
+
+go
+
+wrong with a big file, you will not understand. There are several
+
+word's,
+
+starting at 0x012, just after the eoText-offs. OK. lets guess again.<BR>
+
+Multiply
+
+1st number by 128, what you get? go there. hm, second block start. 2nd
+
+number?
+
+3rd number? ... all they point to some block with (2byte-words) 0x12,
+
+0x13,
+
+x014, ... then some dates as text, and then shits. OK, there is another
+
+number
+
+after the printer name. Mult by 0x80, go there - hm, the end of that
+
+same
+
+block.<BR>
+
+Try several files with differrent sizes (but without formatting!) OK,
+
+that
+
+last
+
+number will be assumed the meaningfull size of the file in 128byte
+
+blocks. 
+
+the rest up to 512byte boundary is just a filling.
+
+<BR>1.8. Up to here we have used only way 2 (and 1). Now WILL go inside, and
+
+format
+
+first 5 letters bold. Save to another file and look at both of them (I
+
+just
+
+do
+
+the same at the moment, coz I cannot explain on-air).
+
+1.9. things are changed, but only in 1st block after text. hmmmmm,
+
+second
+
+offset
+
+is where formatting ends. then its is 0xFFFF, then .. eoText +1, then
+
+0xFFFF,
+
+then mess again. Ah, and the last byte of the block is now 2, but was 1.
+
+Lets try
+
+harder. add chars into bold part. look at file again. See? second offset
+
+moves,
+
+again to the eoBold. Divide bold thing into three things - 1 bold, one
+
+normal,
+
+one bold. look again. last byte becomes 4 (yes, they Are 4: bold,
+
+non-bold,
+
+bold, the rest); other offsets move and now are 2 more.. OK, assumed
+
+structure
+
+is:<PRE>
+
+structure block128 {
+
+ DWORD 0x80;
+
+  structure { DWORD offset_of_eo_formatting; WORD some_format; } repeated;
+
+  mess...
+
+  BYTE number_of_formattings_in_block;
+
+};</PRE>
+
+<BR>1.10. try with many char formats. you will see, no more than 15-20 are
+
+in a
+
+block. if there are more, a new block is opened, and YES! 1st DWORD is
+
+not
+
+0x80,
+
+but start of the block! and the numbers in header move!
+
+Add paragraph formats. What changes ? the block<FONT color=purple>[s]</FONT> after character's.
+
+<BR>
+
+2.0. here we know that .doc structure is:<PRE>
+
+structure MSWordHeader {
+
+        WORD  BE31, w1_0, ab00, w4_0<FONT color=purple>[4]</FONT>;
+
+        DWORD text_end_file_ofs;             //0E
+
+        WORD  Nblock_start_para;             //12
+
+        WORD  Nblock_start_footnote;         //14
+
+        WORD  Nblock_start_dontknowwhat;     //16
+
+        WORD  Nblock_start_divisions;        //18
+
+        WORD  Nblock_start_summary;          //1A
+
+        WORD  Nblock_start_summary2;         //1C
+
+        BYTE  nameStylesheet<FONT color=purple>[68]</FONT>;            //1E
+
+        BYTE  namePrinter<FONT color=purple>[8]</FONT>;                //62
+
+        WORD  N_total_blocks;                //6A
+
+        BYTE  _others<FONT color=purple>[0x14]</FONT>;                 //6C
+
+};
+
+
+
+//and char & paragraph format block's structure is
+
+
+
+block128 = {
+
+ DWORD start_of_block;
+
+ { DWORD offset_of_eo_formatting; WORD some_format; } repeated;
+
+   meaningless mess... up to offs 126
+
+ BYTE number_of_formattings_in_block; //at offs 127
+
+};
+
+
+
+and whole file is 128-byte-blocked:
+
+ header
+
+ raw-text //rounded to 128-byte-boundary
+
+ char format block1
+
+ char format block2
+
+ ...
+
+ para format block1
+
+ ...
+
+ bookmarks             if available ?
+
+ Footnotes             if available ?
+
+ unknown               if available ?
+
+ Pages info:           if available paginating ?
+
+ Header/footers info:  if available paginating ?
+
+ Divisions info        if available ?
+
+ Summary info
+
+ EOF At next 128-byte block
+
+ EOF-real At next 512-byte block</PRE>
+
+As the most thing used are character and paragraph formats; rarely
+
+divisions
+
+and pages; this was enough to make a hyphenation program, that reads
+
+.doc
+
+file,
+
+inserts discrete hyphens where needed, and saves the result (without
+
+understanding a bit of formatting).<BR><FONT color=purple>
+
+<FONT color=purple>[BOOKMARK 6: Do not try to understand everything. It may be not
+
+necessary
+
+to
+
+have the work done.]</FONT></FONT>
+
+<BR>
+
+When I needed to understand the formatting, I started from beginning,
+
+but
+
+now
+
+looking on how the file changes when I change one format to another. It
+
+was
+
+a
+
+good starring, trying, comparing, repeating from start.<BR>
+
+As a result, here is the description of a block:<PRE>
+
+
+
+structure Thing {
+
+    DWORD file_ofs;     //where the thing/property ends
+
+    WORD  descr_ofs;    //ofs from first thing in block;
+
+                        // descr is  1 byte sz + sz bytes def
+
+//thing is applied from prev-thing's ofs upto (not including) its own ofs
+
+//char's are applied from-to; N_of_char_things = N_of_changes_in_char_style
+
+//para's have one thing for every paragraph; no matter same, or different
+
+};
+
+structure ThingBlock {                     //size:0x80; char or para
+
+    DWORD prevblock_last_file_ofs;         //(1st block begins with ofs
+
+80h)
+
+    Thing things<FONT color=purple>[17]</FONT>;
+
+    BYTE deflist<FONT color=purple>[21]</FONT>;           //format definition list
+
+    BYTE Nvalid_things;         //<FONT color=purple>[0x7f]</FONT>
+
+
+
+//and several methods, regarding type of format; plus iterator over the
+
+list.
+
+    void thingtype( Thing * p, const BYTE * typ ) const;
+
+    Thing * eothings()          { return things+Nvalid_things; }
+
+    const BYTE*thingdef( Thing * p) const { return p-&gt;descr_ofs==0xFFFF
+
+?
+
+(BYTE*)~0 : (BYTE*)things + p-&gt;descr_ofs; }
+
+};</PRE>
+
+
+
+
+
+It is a very sophisticated structure: so-called Things are filled from
+
+start-to-end,
+
+the definition list is filled end-to-start; different def's have
+
+different
+
+sizes;
+
+where they meet Things, the block is over, and new is started.
+
+<BR><BR>
+
+For all interested, I could post somewhere the whole src I derived, plus
+
+the
+
+rest of that work: a DOS WORD's .doc parser/converter, that turns .doc
+
+into
+
+little TEX machine: use for Publishing or other reasons.<BR><BR>
+
+You just define how character and paragraph styles to be converted (also
+
+headings, define pictures, markers - into same-Word file!), define DTP's
+
+stylesheet
+
+and go on. The thing is working automagically. I got several 100+ page
+
+documentations entered into VP and Frame Maker, formatted (to resize
+
+pictures),
+
+tuned for best size-versus-cost relation and printed into 3 days!
+
+<BR><BR>
+
+So, adio for now. I think, too much as a first attempt.
+
+sorry if you are tired of. it is a pleasure for me to stop here too.
+
+<BR><BR>
+
+P.S. if someone have heard about some good job in Adelaide, Australia,
+
+let
+
+me
+
+know about it. I will be there end October. Unemployed, 20000km from home,....
+
+Thanx.<BR><BR>
+
+P.P.S. I could show many old things also, most of them REPAIRs or
+
+ IMPROVEMENTs, i think the world soon will need more and more such
+
+specialists,
+
+ that could repair the rocket (remotely ofcourse) just before it
+
+explodes.<BR>
+
+ As there are already microwaves with websurfer in them (NEC), hmmm, I
+
+dont
+
+ like blowing up houses, but someone may will ....
+
+a brief list is of major ones (in my opinion):
+
+
+
+<PRE>1. I can use X32VM extender with highC 3.0 (i have not hc3.1)
+
+   I rewrote the Cstarts; patch all libs; and get it! all is about 50k
+
+   It works very well: the power of highC + simplicity of x32vm;
+
+
+
+2. ain 2.2 repair/improve:
+
+   file list was limited to 64k: I change near malloc to halloc,
+
+                                 and some near ptr arithmetics to huge ones
+
+   fix getOption: look for switches at arg-start only;
+
+                  because "my-file" was treated as "my" and option "-file"
+
+
+
+3. prn2file by Tom Kihlken :: handle properly Dos write to device's
+
+    there is some place (in the name Tom...); I use a virus technique
+
+    and use place for my repairing proc
+
+
+
+4. NG.EXE :: handle properly int 16/fn 11
+
+   patch NG.EXE @6d3f /z /wb:11
+
+
+
+5. STRIPEXE.COM :: please close files; there are no billions of handles free
+
+   patch STRIPEXE.COM @377 /z /wb:ff 36 92 05 e8 ec 10 44 44 b8 b9 01 e9 07 01
+
+
+
+6. turbo GREP 3.0 (.com size 7023): allow tab-search
+
+    x12E7 : 0 -&gt; 9
+
+   and use CHECKASC.BAT:
+
+     grep -d "<FONT color=purple>[^rnt -~]</FONT>" *.h *.c *.cpp *.asm *.inc
+
+   : will find all things inside your sources that are not ascii
+
+   : when i made this, i had no perl... then ...
+
+
+
+7. circad31 :: no date protection
+
+   patch circad.com @7313 /z /wb:2b c0 a3 6a 00
+
+   : 006a = maxdate - today
+
+   : this func is encoded; so crack it afterwards
+
+   :2239:7413 A16A00   MOV    AX,Word Ptr <FONT color=purple>[006A]</FONT>   -&gt;  2bc0     xor ax,ax
+
+   :2239:7416 85C0     TEST   AX,AX                -&gt;  a36a00   mov <FONT color=purple>[006a]</FONT>,ax
+
+   :2239:7418 7415     JZ     742F
+
+   : a)make it zero
+
+   :!! this is in FILE OPEN process, so you must open file to kill protection
+
+   : all other checks are only  test <FONT color=purple>[6a]</FONT>,8000
+
+   : b)another way is to make date = last year, like 1.1.94
+
+
+
+8. excel4 files - protection
+
+   find 4304-table; get xxyy before first 4304
+
+   switch on addr&0x000F:
+
+        01:use F3C7
+
+        02:use 0F3A
+
+        03:use F2DE
+
+        04:use 14BB
+
+        05:use 73C7
+
+        06:use 0FB0
+
+        09:use 7141
+
+        0a:use 89B7
+
+        0d:use 155E</PRE>
+
+   and you'll have the file with password: a
+
+   this is stupid and non always valid de-protection, but it works at
+
+50-60%<BR><BR>
+
+
+
+GAMEs: I will mention only key generators:
+
+       Gobliiins level codes; megalomania level codes;
+
+I have a friend, that wrote a SIERRA's games pseudocode decompiler. This
+
+way
+
+ he played them all. By the way, i learned about fravia's site from him.
+
+<BR><BR>
+
+ciao,<BR>
+
+SvD
+
+<BR>
+
+<CENTER>
+
+<HR width="33%" align="center">
+
+<BR><A href="papers.htm" tppabs="http://www.anticrack.de/fravia/papers.htm"><IMG SRC="papers.gif" tppabs="http://www.anticrack.de/fravia/papers.gif" ALT="papers" ALIGN=BOTTOM WIDTH=114 
+
+HEIGHT=43 BORDER=0 VSPACE=0 HSPACE=0></A><BR><FONT color=gray>Back to the +HCU papers</FONT><BR>
+
+
+
+<P align="center"><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" BORDER="0" VSPACE="0"
+
+HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage</A> <IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A
+
+HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links</A> <IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" BORDER="0"
+
+VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity</A> <IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13"
+
+HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC</A> <IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM"
+
+BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="javascri.htm" tppabs="http://www.anticrack.de/fravia/javascri.htm">javascript
+
+wars</A> <IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0"
+
+WIDTH="13" HEIGHT="13"><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database</A> <BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0"
+
+WIDTH="13" HEIGHT="13"><A HREF="botstart.htm" tppabs="http://www.anticrack.de/fravia/botstart.htm">bots' wars</A> <IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A
+
+HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools</A> <IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" BORDER="0"
+
+VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails</A> <IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13"
+
+HEIGHT="13"><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut CGI-scripts</A> <IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red"
+
+ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A
+
+HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search forms</A> <IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM"
+
+BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail fravia+</A>
+
+<BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0"
+
+WIDTH="13" HEIGHT="13"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering legal?</A> </P>
+
+
+
+</BODY>
+
+</HTML>

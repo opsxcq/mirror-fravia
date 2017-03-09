@@ -1,0 +1,556 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>twdwdas.htm</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+<CENTER><FONT size="+3">W32Dasm ver. 8.7 the textfile-problem</FONT>
+
+<BR>(An hidden memory mover)<BR>
+
+  <BR>
+
+    
+
+
+
+<H4>by TWD <BR>
+
+<BR>
+
+(15 October 1997)</H4>
+
+<HR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">Courtesy of fravia's page 
+
+of reverse engineering<BR>
+
+<BR><I>Well, poor Urbanik is under attack once more. I tell you one thing: THIS IS THE LAST ESSAY I WOULD LIKE TO PUBLISH ABOUT WDASM CRACKING. I feel we must leave to this good programmer the time to update his program (which needs it badly IMHO) instead of concentrating 
+
+(uselessly) on protecting it. I know that some friends will not agree with me (first of all TWD himself, who writes:</I><PRE>
+
+Mr. Peter &quot;Cool&quot; Urbanik is a damned Micro$oft pussy as well 
+
+(look at his &quot;official&quot; eMail-address: urbie@msn.com)
+
+</PRE><I>
+
+Yet I believe that we owe something to Urbanik (I paid my copy, for instance). Look. 
+
+Our cracking essays are *NOT* his main problem. He knows perfectly well, as well as 
+
+anybody else who cares looking for them, that THOUSAND copies of his Wdasm 8.9, complete and 
+
+registered and fully functional, notwithstanding the &quot;<FONT color="purple">This is the Full Version 8.x Series of W32Dasm. It is not to be copied for distribution or downloaded as shareware</FONT>&quot; warning, are roaming the warez scene (actually pestering the whole Net... I believe you can find them on every major scene's page but mine :-). So our new essays represent a problem only because we are &quot;tackling&quot; the development of his protection schemes, driving him more and more on a tight protection path that does not allow any substantial amelioration of his software product, which, I repeat, is a GOOD (if in need of amelioration) product. By the way, I notice that our good TWD inserts here a <FONT color="blue">series of nop</FONT> inside the target's code, which is <U>not</U> a very good patching idea: +ORC has always warned us, yet many keep ignoring his warnings. In this case, Urbanik, a simple &quot;wannabye punition&quot; code, snapping on more than four patched nops, would have made havoc inside TWD's computer and given you much more satisfaction that your simple (yet interesting) &quot;cloaking&quot; scheme.<BR><BR>Back to our &quot;deal&quot;...<BR>
+
+<FONT color="blue">We</FONT> will not publish any more reversing essays about Urbanik's targets (we'll obviously work on them and reverse any protection they may have, yet we will keep the results inside the +HCU)... <FONT color="blue">Urbanik</FONT> will add functionality that WE NEED to the next versions of his creature... (relocation calls identification, less cluttering through strings like &quot;a conditional or unconditional&quot; and so on, he knows perfectly what we need)...  call this &quot;a gentleman agreement&quot;... the word of the pirates of ancient times (and ancient sees) was worth a lot (&quot;parole de gentilhomme de fortune&quot;), our word of travellers of the deep code sees is as much worth, I believe.<BR><BR>
+
+So this is the last essay I would like to publish on this target (if the rest of the +HCU agrees with me and +ORC does not order me to &quot;stop caring too much for the commercial shareware lusers&quot; :-)<BR>Enjoy this reading: it's a good work by our new contributor TWD<BR></I></CENTER><HR size="6">
+
+<PRE><FONT size="+2"><CENTER>
+
+w32dasm version 8.7
+
+by TDW</CENTER></FONT>
+
+this is the patch for textfile at w32dasm version 8.7. This one 
+
+is a brand new and very tricky scheme done by Mr. Urbanik.
+
+
+
+    this time we patch the textfile-problem of W32Dasm ver. 8.7 
+
+
+
+I've read about it on fravia's page and thought that I wanted to have 
+
+a go at thsi target. 
+
+I downloaded version 8.7. at <A href="tppmsgs/msgs1.htm#188" tppabs="http://www.anticrack.de/fravia/tppmsgs/msgs1.htm#188">www.expages.com/pages/w32dsm/</A>
+
+You can also search for w32dsm87.zip, in this case you'll find 
+
+protected targets and fully registered versions as well, download 
+
+a protected one in order to follow this essay.
+
+
+
+After unzipping it, I had a look at the essay of +Frog's Print
+
+and I thought I could do it the same way. I just looked for the bytes 
+
+and changed them. Well, with the counter this worked (I think so) but
+
+I had a lot of problems with the temporary file. 
+
+
+
+Yes, a temporary file is created (I can see it in my tmp-dir) but 
+
+there is nothing inside it. I tried to change the flags of CreateFileA, 
+
+this suggestion was made by +Frog's Print. 
+
+Nothing (0 bytes). 
+
+Then I had a look for the call to DeleteFileA. 
+
+Nothing. Not used.
+
+After this I set a breakpoint on the WriteFile-proc.
+
+Guess what happened ! Nothing again. 
+
+This must mean that Mr. Urbanik doesn't write anything to the 
+
+opened file. Nice idea. The opened file is just a fake (in my 
+
+opinion). 
+
+
+
+But if we want a solution to this problem, we have to try...
+
+
+
+First, I took a deeper look at the code where the fake-file is
+
+created. The program tries to open a file until the handle of this 
+
+file is not $FFFFFFFF. If we've got a legal handle, it leaves and 
+
+stores the handle in [ebx+000000BF].
+
+
+
+:00457D2E E876480000      call 0045C5A9                &lt;-- Open the file
+
+:00457D33 83C408          add esp, 00000008 
+
+:00457D36 8983BF000000    mov dword ptr [ebx+BF], eax  &lt;--- and store the handle 
+
+
+
+Now lets look where the handle is used. We set a BPM on ebx+bf.
+
+
+
+SoftIce pops up in a region like that.
+
+
+
+:00456744 FFB3BF000000    push dword ptr [ebx+000000BF]      &lt;--The handle
+
+:0045674A 8D9360534900    lea edx, dword ptr [ebx+00495360]
+
+:00456750 52              push edx                           &lt;--A string
+
+:00456751 53              push ebx                           &lt;--Memory position
+
+:00456752 E820610000      call 0045C877                      &lt;--???
+
+
+
+When we step inside the call, there is a lot of code but one part
+
+is very interesting.
+
+
+
+:0045C9E3 8B8B32F00100   mov ecx, [ebx+0001F032]  &lt;--start position of all strings
+
+:0045C9E9 03C8           add ecx, eax                   in memory
+
+:0045C9EB 8BBB2EF00100   mov edi, [ebx+0001F02E]  &lt;--length of strings written
+
+:0045C9F1 03CF           add ecx, edi                   to memory
+
+:0045C9F3 51             push ecx             &lt;--ecx+edi = position where to 
+
+:0045C9F4 8B0C06         mov ecx, [esi + eax]           store the string in esi
+
+:0045C9F7 5F             pop edi
+
+:0045C9F8 890F           mov [edi], ecx
+
+:0045C9FA 83C004         add eax, 00000004
+
+:0045C9FD 3BD0           cmp edx, eax         &lt;--edx = length of the string (esi)
+
+:0045C9FF 77E2           ja 0045C9E3               
+
+:0045CA01 3BD0           cmp edx, eax
+
+:0045CA03 761C           jbe 0045CA21            
+
+:0045CA05 8B8B32F00100   mov ecx, [ebx+0001F032]
+
+:0045CA0B 03C8           add ecx, eax
+
+:0045CA0D 8BBB2EF00100   mov edi, [ebx+0001F02E]
+
+:0045CA13 03CF           add ecx, edi
+
+:0045CA15 51             push ecx
+
+:0045CA16 8A0C06         mov cl , [esi + eax]
+
+:0045CA19 5F             pop edi
+
+:0045CA1A 880F           mov [edi], cl 
+
+:0045CA1C 40             inc eax
+
+:0045CA1D 3BD0           cmp edx, eax
+
+:0045CA1F 77E4           ja 0045CA05
+
+:0045CA21 01832EF00100   add dword ptr [ebx+0001F02E], eax
+
+
+
+
+
+This piece of code moves a string with the length &quot;edx&quot; from &quot;esi&quot; to 
+
+&quot;ecx&quot;. Urbanik moves the string to it's position in memory after
+
+having completed it. And this without any lstrcpy, etc. This part of code 
+
+is essential. You can try to nop it out, or jump over it. Nothing 
+
+will appear after it disassembled enough.
+
+
+
+This code stores the string only in memory, but why should it
+
+need the handle of tmp-file. Maybe Mr.Urbanik changed only the contents 
+
+of this procedure and not the parameters, because he did not wanted to 
+
+change the source-code at thousand positions.
+
+
+
+Now we can start to change the code...
+
+
+
+First we have to change the creation-proc, because we want a 
+
+visible, unhidden file, which will not overwrite any other 
+
+existing files.
+
+
+
+
+
+:0045C657 6A00          push 00000000                     &lt;-- no template
+
+:0045C659 6880000000    push 00000080                     &lt;-- normal flags
+
+:0045C65E 6A01          push 00000001                     &lt;-- no overwrite
+
+:0045C660 90            nop
+
+:0045C661 90            nop
+
+:0045C662 90            nop
+
+:0045C663 90            nop                               &lt;-- nopping dangerously
+
+:0045C664 90            nop                                   along
+
+:0045C665 90            nop
+
+:0045C666 90            nop
+
+:0045C667 8D93404F4900  lea edx, dword ptr [ebx+00494F40]
+
+:0045C66D 52            push edx                          &lt;--the security struc
+
+:0045C66E 6A00          push 00000000                     &lt;--share - mode
+
+:0045C670 68000000C0    push C0000000                     &lt;--read and write
+
+:0045C675 8D8BC0524900  lea ecx, dword ptr [ebx+004952C0]
+
+:0045C67B 51            push ecx                          &lt;--the filename
+
+
+
+* Reference To: KERNEL32.CreateFileA, Ord:0000h
+
+                                  |
+
+:0045C67C E8BBC30100              Call 00478A3C
+
+
+
+
+
+After we changed the opening-proc, we can proceed with the storing-proc.
+
+If you look above, you can see that Mr. Urbanik uses a very strange
+
+method to move his string in memory. We can do the same in a much easier 
+
+way, using less bytes.
+
+
+
+:0045C9F1 03CF            add ecx, edi
+
+:0045C9F3 56              push esi                          &lt;--push source
+
+:0045C9F4 51              push ecx                          &lt;--push destination
+
+:0045C9F5 E8EAA8B1BF      call BFF772E4                     &lt;--call lstrcpy
+
+:0045C9FA 33C0            xor eax, eax
+
+:0045C9FC 668B832B645400  mov ax, word ptr [ebx+0054642B]   &lt;--append a linefeed
+
+:0045CA03 890416          mov dword ptr [esi+edx], eax          to the string
+
+:0045CA06 8BC2            mov eax, edx
+
+:0045CA08 0502000000      add eax, 00000002
+
+:0045CA0D 50              push eax                          &lt;--push # of bytes
+
+:0045CA0E 56              push esi                          &lt;--push source-string
+
+:0045CA0F FFB3BF000000    push dword ptr [ebx+000000BF]     &lt;--push file-handle
+
+:0045CA15 E8CE03B4BF      call BFF9CDE8                     &lt;--call _hwrite
+
+:0045CA1A 2D02000000      sub eax, 00000002                 &lt;--|
+
+:0045CA1F 90              nop                                  |-- The number of 
+
+:0045CA20 90              nop                                  |   bytes must be 
+
+:0045CA21 01832EF00100    add dword ptr [ebx+0001F02E], eax &lt;--|   in eax !!!
+
+
+
+Let's explain the code above. First we store the string &quot;esi&quot; at &quot;ecx&quot;
+
+using lstrcpy instead of the ugly code. Then we append a linefeed (0D +
+
+0A) to our string, which we want to write to the file. 
+
+We have to increase &quot;eax&quot; by two because we want the two linefeed-bytes 
+
+written to disk too. 
+
+Now push all this cram and call _hwrite. In &quot;eax&quot; is the number of bytes 
+
+written to disk. At line &quot;0045ca21&quot; the length of the string is added to 
+
+the number of previously written/stored bytes. That means that we have
+
+to decrease &quot;eax&quot; by two. This saves two bytes of memory for each line.
+
+Two nops are making the patch perfect.
+
+
+
+But there is another position where the handle of the tmp-file is
+
+pushed. This one is only an example but the one that you will find must 
+
+look similar. This proc is used to store empty lines in memory. 
+
+In the tmp-file we do not need them but it is much easier to read if we 
+
+have them.
+
+
+
+:00415E04 FFB3BF000000            push dword ptr [ebx+000000BF]
+
+:00415E0A 53                      push ebx
+
+:00415E0B E8426C0400              call 0045CA52
+
+
+
+Hmm, strange... Only the handle and the memory - position are pushed.
+
+
+
+If we have deep look inside the procedure we find this code :
+
+
+
+:0045CAE5 8B9301505400      mov edx, [ebx+00545001]
+
+:0045CAEB 85D2              test edx, edx
+
+:0045CAED 7520              jne 0045CB0F             &lt;-- The god guy is allowed
+
+:0045CAEF 8B8B32F00100      mov ecx, [ebx+0001F032]     ;to jump to the WriteFile
+
+:0045CAF5 8B832EF00100      mov eax, [ebx+0001F02E]
+
+:0045CAFB 668B932B645400    mov dx, [ebx+0054642B]
+
+:0045CB02 66891401          mov [ecx + eax], dx
+
+:0045CB06 83832EF0010002    add dword ptr [ebx+0001F02E], 00000002
+
+:0045CB0D EB1D              jmp 0045CB2C             &lt;--The bad guy not !!!
+
+:0045CB0F 6A00              push 00000000
+
+:0045CB11 8D4DFC            lea ecx, [ebp-04]
+
+:0045CB14 51                push ecx
+
+:0045CB15 6A02              push 00000002
+
+:0045CB17 8D832B645400      lea eax, [ebx+0054642B]
+
+:0045CB1D 50                push eax
+
+:0045CB1E FF750C            push [ebp+0C]
+
+
+
+* Reference To: KERNEL32.WriteFile, Ord:0000h
+
+
+
+:0045CB21 E838BE0100              Call 0047895E
+
+:0045CB26 898307881100            mov [ebx+00118807], eax
+
+
+
+I don't know why, but here we got the possibility to re-use some code.
+
+If the &quot;jne&quot; is changed to a &quot;jmp&quot; the empty line is written to file.
+
+
+
+:0045CAE5 8B9301505400            mov edx, dword ptr [ebx+00545001]
+
+:0045CAEB 85D2                    test edx, edx
+
+:0045CAED EB20                    jmp 0045CB0F          &lt;--Yes, jump always
+
+
+
+
+
+Now we have changed all the important things. You can change the
+
+extension of the tmp-file from .tmp to .txt by searching for &quot;w32dsm&quot; 
+
+in the exe-file.
+
+
+
+The cracking of the counter is not as essential as the saving of
+
+the textfile. I tried the suggestion of Frog's Print. Maybe it worked. 
+
+But if not you can also use a good program, like UltraEdit32</PRE><FONT size="+2"> 
+
+(good program yet incredibly bigot programmer... read the funny history 
+
+of this god-blessed program at <A href="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#76 tppabs='" tppabs="http://fravia.org/tppmsgs/msgs0.htm#76 tppabs=" http://www.idmcomp.com/"/">http://www.idmcomp.com/</A>)</FONT><PRE> to browse through the textfile.
+
+
+
+That's all ...
+
+
+
+    TWD
+
+
+
+
+
+    <A href="mailto:twd.rulez@gmx.net">mailto:twd.rulez@gmx.net</A>
+
+
+
+(c) by TWD in 1997 
+
+</PRE>
+
+<FONT color="green">(c) TWD 1997. All rights reversed</FONT>
+
+<HR ALIGN="CENTER" WIDTH="100%" SIZE="3">
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</I></CENTER>
+
+<BR><CENTER>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="project0.htm" tppabs="http://www.anticrack.de/fravia/project0.htm">Back to Project 0</A> <HR width="33%">
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#84'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#84">homepage</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#73'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#73">links</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#82'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#82">students' essays</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut CGI-scripts</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering legal?</A></CENTER>
+
+<CENTER><HR ALIGN="CENTER" WIDTH="100%" SIZE="2"></CENTER>
+
+</BODY>
+
+</HTML>
+
+
+
+
+

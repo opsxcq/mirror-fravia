@@ -1,0 +1,1383 @@
+<HTML>
+
+<HEAD>
+
+<META Name="Voluntary Content Rating" content="great!">
+
+
+
+
+
+<TITLE>winasm_0.htm THE RESURRECTION OF ASSEMBLY PROGRAMMING</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR=#C0C0C0 TEXT=#001010 VLINK=#405040>
+
+<CENTER><A href="papers.htm" tppabs="http://www.anticrack.de/fravia/papers.htm"><IMG SRC="papers.gif" tppabs="http://www.anticrack.de/fravia/papers.gif" ALT="papers" ALIGN=BOTTOM WIDTH=114 
+
+EIGHT=43 BORDER=0 VSPACE=0 HSPACE=0></A><BR><FONT color=gray>+HCU papers</FONT>
+
+
+
+<HR>
+
+courtesy of fravia's page of reverse engineering<BR><BR><HR>
+
+<PRE><CENTER>
+
+THE RESURRECTION OF ASSEMBLY PROGRAMMING - 1<BR>
+
+(see preceding essay: <A href="winasm_0.htm" tppabs="http://www.anticrack.de/fravia/winasm_0.htm">winasm_O.htm</A>)<BR>
+
+</CENTER><PRE>
+
+                		   -          
+
+			  -----=========-----
+
+      -------==========================================----------
+
+---------===_masta_'s Tutorial on Win32 ASM Coding Part 1===----------
+
+      -------==========================================----------
+
+
+
+			     --==INTR0==--
+
+
+
+				-[Hi!]-
+
+
+
+After the part 0 I got some mail saying that it was a good idea to do 
+
+a windows-based revival of the "old art" of assembly language 
+
+programming. We all know that DOS is about to die (not many (if any) 
+
+of us are happy about that), but unfortunately we can't change this 
+
+fact.
+
+
+
+		        --==WHAT IS NEEDED?==--
+
+
+
+
+
+		1. Texteditor
+
+		2. TASM 5.0, complete with libs, etc.
+
+		3. Win32-API-Reference (Win32.HLP)
+
+
+
+I assume you have basic knowledge of assemly, althought most of the 
+
+stuff is easy to grasp.
+
+
+
+		     --==SENSE OF THIS PROJECT==--
+
+
+
+We want to code a "generic patcher" which is also known as a 
+
+"Search-and-Destroy-Patcher".
+
+Since many people may not know what to expect from a Generic-Patcher,
+
+I want to explain it shortly. It is a patcher, which is not only able 
+
+to patch a certain version of a program, but future versions also, if 
+
+they are nearly the same. This is done by searching for a certain 
+
+byte-pattern (and writing a new one) and not by patching some offset, 
+
+which makes this kind more universal to use.
+
+Since most likely the protection-scheme is not changed by the coder,
+
+this bytes of this routine may have another offset-address in the 
+
+newer (older) version, but the bytes will be the same. 
+
+That's the trick =).
+
+
+
+			   --==LET'S GO!==--
+
+
+
+
+
+OK, first we think about the main structure of our program, then we 
+
+think about which functions we use and last but not least, we write 
+
+the program.
+
+
+
+1. Intro           - Little intro, presented in a MessageBox
+
+2. Open File       - Set file-handle. If file not exist -> MessageBox
+
+3. Get Filesize
+
+4. Allocate memory - Allocate memory equal to the filesize. 
+
+		     If error -> MessageBox
+
+5. Read File       - copy complete file into allocated memory
+
+6. Search Bytes    - Determination of the offset of the bytepattern. 
+
+		     If errors -> MessageBox
+
+7. Set Filepointer
+
+   to offset
+
+8. Overwrite File  - Patch of the file. Success -> MessageBox
+
+   with new bytes
+
+9. Close File      - Cleanup!
+
+   Deallocate Mem
+
+   Quit
+
+
+
+			  --==API-FUNCTIONS==--
+
+
+
+
+
+- All messages will be presented by a messagebox, i.e. 'MessageBoxA'.
+
+
+
+- For opening the file we will use the 'CreateFileA'-function, which 
+
+  is more complex than the 'OpenFile, but also more flexible to use.
+
+
+
+- To close we will use 'CloseHandle'.
+
+
+
+- The filesize we get via 'GetFileSize'
+
+
+
+- We allocate the mem with the help of 'GlobalAlloc'; set it free 
+
+  again with 'GlobalFree'
+
+
+
+- Logically we read the file with 'ReadFile' and write it with 
+
+  'WriteFile'
+
+
+
+- The Filepointer can be set with 'SetFilePointer'
+
+
+
+- To quit we use 'ExitProcess'
+
+
+
+
+
+        		  --==THE BYTE SEARCH==--
+
+
+
+
+
+This is the heart of our patcher. With the help of this little routine
+
+the target-file is searched for a byte pattern, which will be changed 
+
+later. I will just explain it shortly, because the most you can get 
+
+out of the code.
+
+OK, we first load the size of the file (the alloc. memory) into ECX to
+
+set a value for the "REPNZ"-command; also the first byte of the search-
+
+pattern is written into AL and ESI is set to the address of the 
+
+original values.
+
+With 'REPNZ SCASB' the value of AL is compared to the value of the 
+
+memory address, which EDI points to (EDI is incremented by 1). The 
+
+'REPNZ'-command repeats the following 'SCASB' as long as either ECX=0 
+
+or the compared values are equal (FL Z=1).
+
+If the values are equal ECX is loaded with the length of the patch, 
+
+EDI is decremented by 1, because the 'SCASB' already counted one byte 
+
+ahead.
+
+The following 'REPZ CMPSB' repeats 'CMPSB' (compares the address of 
+
+[ESI] with the one of [EDI]) as long as either ECX=0 or the value 
+
+differs.
+
+
+
+
+
+			  --==THE PATCH ITSELF==--
+
+
+
+
+
+Now quickly some stuff about the patch routine itself.
+
+First the offset is calculated by incrementing ECX (byte-counter) by 1 
+
+and this value we subtract from the total filesize:
+
+
+
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+
+(FILESIZE) - (BYTES UNTIL THE END OF FILE) = ACTUAL OFFSET
+
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+
+
+This value is put on the stack, as well as the file-handle to later 
+
+CALL the function 'SetFilePointer' to set the filepointer to our offset.
+
+After that the buffer for the written bytes (bwrite), the length of the 
+
+patch, the offset of the new bytes and the file-handle is PUSHed and 
+
+the API-function 'WriteFile' is CALLed.
+
+
+
+			     --==THE SOURCE==--
+
+
+
+
+
+Maybe a bit complex, but I guess still easy to understand =) ...
+
+
+
+;-------------------------------===START===---------------------------
+
+		; set a couple of options for the assembler
+
+.386P
+
+Locals
+
+jumps
+
+
+
+.Model Flat ,StdCall
+
+mb_ok			equ 0
+
+hWnd			equ 0
+
+FILE_ATTRIBUTE_NORMAL	equ 080h
+
+OPEN_EXISTING		equ 3
+
+GENERIC_READ		equ 80000000h
+
+GENERIC_WRITE		equ 40000000h
+
+
+
+
+
+; --==declaration of all used API-functions==--
+
+
+
+extrn     ExitProcess      : PROC ;procedure to end the program
+
+extrn     MessageBoxA      : PROC ;procedure to show a MessageBox
+
+extrn     CreateFileA      : PROC ;   " ...  to open a file
+
+extrn	  ReadFile 	   : PROC ;read a block of a file
+
+extrn	  WriteFile	   : PROC ;write a block into a file 
+
+extrn	  CloseHandle	   : PROC ;close file
+
+extrn     GetFileSize	   : PROC ;get the filesize
+
+extrn	  GlobalAlloc	   : PROC ;allocate memory
+
+extrn	  GlobalFree	   : PROC ;set (free) memory
+
+extrn     SetFilePointer   : PROC ;set the filepointer
+
+
+
+; --==here begins our Data==--
+
+
+
+.Data
+
+
+
+caption  db "_masta_'s essay on Win32-ASM-Coding, part 1",0 
+
+	
+
+				   ;captionstring, 0-terminated
+
+
+
+text     db "Hi, nice to CU again",13,10 
+
+	 db "This tut will describe you how to make",13,10
+
+	 db "Win32-ASM Search and Destroy patchers",0
+
+                        	    
+
+				   ;introtext, 0-terminated
+
+
+
+err_cap  db "ERROR",0		   ;caption for errormessage
+
+
+
+openerr	 db "Error on opening File",0	    ;errortext opening file
+
+memerr	 db "Error on allocating memory",0  ;errortext alloc. memory
+
+byterr   db "File is here, but i can't find the original bytes",0
+
+					    
+
+					    ;error while bytesearch
+
+
+
+readycap db "Ready",0				;caption for 'done'
+
+
+
+readytxt db "Ok, file is patched",0		;text for 'done'
+
+
+
+file     db "make.old",0        ;what file we want to patch?
+
+org_val  db "Xmas'97"		;original values
+
+new_val  db "_masta_"		;new values
+
+len	 equ $-new_val		;how many values (length)
+
+				;org_val and new_val must be equal
+
+
+
+fhandle  dd  ?			;variable for the filehandle
+
+fsize	 dd  ?			;variable for the filesize
+
+memptr	 dd  ?			;pointer to allocated memory
+
+bread    dd  ?			;number of read bytes
+
+bwrite   dd  ?			;number of written bytes
+
+
+
+;--==and here we start with our code==--
+
+
+
+.Code
+
+Main:
+
+        push mb_ok              ;PUSH value for 'uType'
+
+        push offset caption     ;PUSH pointer to caption 
+
+        push offset text        ;PUSH pointer to Text
+
+        push hWnd               ;PUSH Masterhandle
+
+        call MessageBoxA        ;CALL MessageBoxA
+
+
+
+        push 0					;for Win95 always 0
+
+        push FILE_ATTRIBUTE_NORMAL		;standard Fileattributes
+
+        push OPEN_EXISTING			;open existing file
+
+        push 0					;no Security-attributes
+
+        push 0					;disable Share-Mode
+
+        push GENERIC_READ + GENERIC_WRITE	;read- and writeaccess
+
+        push offset file			;offset of the filename
+
+        Call CreateFileA			;open file
+
+	mov  fhandle,eax			;save filehandle
+
+	cmp  eax,0FFFFFFFFh			;if eax=FFFFFFFF then 
+
+						 error
+
+	jnz  file_is_here
+
+
+
+        push mb_ok              
+
+        push offset err_cap     
+
+        push offset openerr     
+
+        push hWnd               
+
+        call MessageBoxA        ; showerrormessage
+
+	jmp  end_		; jump to end
+
+
+
+file_is_here:			;file is there, so go on
+
+
+
+	push 0			;can be 0, if the filesize is less 
+
+			         then 4,3 GB :)
+
+	push fhandle		;PUSH filehandle
+
+	Call GetFileSize	;get the filesize
+
+	mov  fsize,eax		;save the filesize
+
+
+
+	push fsize		;PUSH filesize=size of the buffer
+
+	push 0			;0=GMEM_FIXED -> fixed memory-area
+
+	Call GlobalAlloc	;allocate as much as memory as filesize 
+
+	mov  memptr,eax		;save pointer to memory-area
+
+
+
+	cmp  eax,0		;if eax=0, then there were errors
+
+	jnz  mem_ok
+
+
+
+        push mb_ok              
+
+        push offset err_cap     
+
+        push offset memerr      
+
+        push hWnd               
+
+	call MessageBoxA
+
+        jmp  end_kill_handle	;end program, close file b4
+
+
+
+mem_ok:				;memory is allocated -> next step
+
+
+
+	push 0			;set to 0 in most cases
+
+	push offset bread	;pointer to number of read bytes
+
+	push fsize		;read how many bytes?, 
+
+				 fsize=whole file
+
+	push memptr		;save where? ->allocated memory
+
+	push fhandle		;filehandle
+
+	Call ReadFile		;read file!
+
+
+
+read_ok:
+
+
+
+        mov  edi,memptr		;set EDI to memory-area
+
+        mov  ecx,fsize		;set ECX (for repnz) to filesize
+
+        mov  esi,offset org_val ;set ESI to the string to find
+
+        mov  al, byte ptr [esi] ;load AL with the first byte
+
+
+
+loop_:
+
+        repnz scasb		;repeat until ECX=0 or AL equals
+
+				;the value of the byte [EDI], EDI is 
+
+				;incremented by 1 every run
+
+        cmp  ecx,0		;If ECX=0, nothing is found
+
+        jz   not_found
+
+       
+
+
+
+here_is_something:		;found matching byte
+
+
+
+        push ecx		;save register
+
+        push edi
+
+        push esi
+
+	dec  edi		;EDI-1, cos REPNZ SCASB is one step too far
+
+        mov  ecx,len		;ECX=length of the patch
+
+        repz cmpsb		;repeat until the values in the memory of 
+
+				;[EDI] and [ESI] are different,
+
+				;or ecx=0
+
+        cmp  ecx,0		;If ecx=0, then the org_val is in memory
+
+        jz   patch		;->jump to patcher
+
+
+
+not_that:			;it is not yet here
+
+
+
+        pop  esi		;POP ESI
+
+        pop  edi
+
+        pop  ecx
+
+        jmp  loop_		;search next byte
+
+
+
+patch:				;start of the patcher
+
+        pop  esi		;POP registers
+
+        pop  edi
+
+        pop  ecx
+
+        dec  edi		;EDI-1
+
+        inc  ecx		;ECX+1
+
+        mov  eax,fsize
+
+        sub  eax,ecx		;compute Offset
+
+        push 0			;offset from the beginning of the file
+
+        push 0			;is 0, if file <4,3GB
+
+        push eax		;offset
+
+        push fhandle		;filehandle
+
+        call SetFilePointer	;set FilePointer
+
+
+
+        push 0			;normally 0
+
+        push offset bwrite	;how many bytes where written?
+
+        push len		;length of the bytes to write
+
+        push offset new_val	;offset to new values
+
+        push fhandle		;filehandle
+
+        Call WriteFile		;write block to file
+
+
+
+        push mb_ok 
+
+        push offset readycap    
+
+        push offset readytxt    
+
+	push hwnd
+
+        call MessageBoxA        ;OK, patch is done!
+
+
+
+        jmp  end_kill_all	;END! Cleanup!
+
+
+
+not_found:
+
+
+
+        push mb_ok              
+
+        push offset err_cap     
+
+        push offset byterr      
+
+        push hWnd               
+
+        call MessageBoxA        ;the bytes where not in the file
+
+
+
+end_kill_all:
+
+
+
+	push memptr		;pointer to Memoryarea
+
+	call GlobalFree		;enable (free) memory
+
+
+
+end_kill_handle:
+
+
+
+	push fhandle		;PUSH filehandle
+
+	call CloseHandle	;CloseHandle
+
+
+
+
+
+end_:
+
+
+
+        CALL    ExitProcess     ;Quit program
+
+End Main                        ;end of code, JUMP-spot (main)
+
+
+
+;-----------------------==END OF SOURCE==----------------------------
+
+
+
+OK, done!
+
+To assemble it, just run the included 'make.bat' ...
+
+
+
+
+
+		    
+
+		      --==A LITTLE NOTICE==--
+
+
+
+	Until now I didn't see a reason to use include-files
+
+	And well, the INC-files coming with TASM are not very
+
+	complete, BUT if there is anybody out there possessing
+
+	complete *.incs then don't hesitate to send'em to me!
+
+
+
+			    --==END==--
+
+
+
+OK, I think this time we did something really useful, not just a MessageBox
+
+like in my first essay, but a real every-day-tool of a cracker.
+
+The source can be freely used naturally and maybe there are some things you
+
+can optimize, especially concerning the search-routine (Hi Fungus ;)), but
+
+I think for learning-purpose it is OK.
+
+For a little challenge: 
+
+
+
+--> You could search for the first 4 bytes from the start
+
+
+
+
+
+OK, I hope that my mailbox (masta_t@USA.NET) will explode soon 
+
+(CRITICS ARE WELCOME) and I will see ya all next time ... =)  
+
+By the way I am trying to establish an IRC-channel about these facts ...
+
+
+
+--> #win32asm
+
+
+
+I just hope there are enough people interested in this stuff and also in
+
+giving their knowledge to others.
+
+
+
+	   	           --==GREETINX==--
+
+
+
+	VucoeT (Translator and Designer(:])), scut (Idea is from your 
+
+	DSP), |caligo| (bad news about you :(), fravia+ (best on the 
+
+	web), +Aescalapius (nice Bytepatcher) not4you (we Ossis must 
+
+	stick together ;)), fungus (something to optimze), Quest, 
+
+	Silvio, TheDoctor, everyone on #LAC and #cracking4newbies 
+
+	and to every cracker around the world.
+
+
+
+
+
+
+
+	   	           --==WISE WORDS==--
+
+  -------====================--          --====================--------
+
+------======everybody was a lamer, before they become ELITE======-------
+
+  -------====================--          --====================--------
+
+                          -----==========-----
+
+</PRE>
+
+<HR><I><CENTER>
+
+here follows tut.asm</CENTER></I><HR>
+
+<XMP>
+
+		; set a couple of options for the assembler
+
+.386P
+
+Locals
+
+jumps
+
+
+
+.Model Flat ,StdCall
+
+mb_ok			equ 0
+
+hWnd			equ 0
+
+FILE_ATTRIBUTE_NORMAL	equ 080h
+
+OPEN_EXISTING		equ 3
+
+GENERIC_READ		equ 80000000h
+
+GENERIC_WRITE		equ 40000000h
+
+
+
+
+
+; --==declaration of all used API-functions==--
+
+
+
+extrn     ExitProcess      : PROC ;procedure to end the program
+
+extrn     MessageBoxA      : PROC ;procedure to show a MessageBox
+
+extrn     CreateFileA      : PROC ;   " ...  to open a file
+
+extrn	  ReadFile 	   : PROC ;read a block of a file
+
+extrn	  WriteFile	   : PROC ;write a block into a file 
+
+extrn	  CloseHandle	   : PROC ;close file
+
+extrn     GetFileSize	   : PROC ;get the filesize
+
+extrn	  GlobalAlloc	   : PROC ;allocate memory
+
+extrn	  GlobalFree	   : PROC ;set (free) memory
+
+extrn     SetFilePointer   : PROC ;set the filepointer
+
+
+
+; --==here begins our Data==--
+
+
+
+.Data
+
+
+
+caption  db "_masta_'s essay on Win32-ASM-Coding, part 1",0 
+
+	
+
+				   ;captionstring, 0-terminated
+
+
+
+text     db "Hi, nice to CU again",13,10 
+
+	 db "This tut will describe you how to make",13,10
+
+	 db "Win32-ASM Search and Destroy patchers",0
+
+                        	    
+
+				   ;introtext, 0-terminated
+
+
+
+err_cap  db "ERROR",0		   ;caption for errormessage
+
+
+
+openerr	 db "Error on opening File",0	    ;errortext opening file
+
+memerr	 db "Error on allocating memory",0  ;errortext alloc. memory
+
+byterr   db "File is here, but i can't find the original bytes",0
+
+					    
+
+					    ;error while bytesearch
+
+
+
+readycap db "Ready",0				;caption for 'done'
+
+
+
+readytxt db "Ok, file is patched",0		;text for 'done'
+
+
+
+file     db "make.old",0        ;what file we want to patch?
+
+org_val  db "Xmas'97"		;original values
+
+new_val  db "_masta_"		;new values
+
+len	 equ $-new_val		;how many values (length)
+
+				;org_val and new_val must be equal
+
+
+
+fhandle  dd  ?			;variable for the filehandle
+
+fsize	 dd  ?			;variable for the filesize
+
+memptr	 dd  ?			;pointer to allocated memory
+
+bread    dd  ?			;number of read bytes
+
+bwrite   dd  ?			;number of written bytes
+
+
+
+;--==and here we start with our code==--
+
+
+
+.Code
+
+Main:
+
+        push mb_ok              ;PUSH value for 'uType'
+
+        push offset caption     ;PUSH pointer to caption 
+
+        push offset text        ;PUSH pointer to Text
+
+        push hWnd               ;PUSH Masterhandle
+
+        call MessageBoxA        ;CALL MessageBoxA
+
+
+
+        push 0					;for Win95 always 0
+
+        push FILE_ATTRIBUTE_NORMAL		;standard Fileattributes
+
+        push OPEN_EXISTING			;open existing file
+
+        push 0					;no Security-attributes
+
+        push 0					;disable Share-Mode
+
+        push GENERIC_READ + GENERIC_WRITE	;read- and writeaccess
+
+        push offset file			;offset of the filename
+
+        Call CreateFileA			;open file
+
+	mov  fhandle,eax			;save filehandle
+
+	cmp  eax,0FFFFFFFFh			;if eax=FFFFFFFF then 
+
+						 error
+
+	jnz  file_is_here
+
+
+
+        push mb_ok              
+
+        push offset err_cap     
+
+        push offset openerr     
+
+        push hWnd               
+
+        call MessageBoxA        ; showerrormessage
+
+	jmp  end_		; jump to end
+
+
+
+file_is_here:			;file is there, so go on
+
+
+
+	push 0			;can be 0, if the filesize is less 
+
+			         then 4,3 GB :)
+
+	push fhandle		;PUSH filehandle
+
+	Call GetFileSize	;get the filesize
+
+	mov  fsize,eax		;save the filesize
+
+
+
+	push fsize		;PUSH filesize=size of the buffer
+
+	push 0			;0=GMEM_FIXED -> fixed memory-area
+
+	Call GlobalAlloc	;allocate as much as memory as filesize 
+
+	mov  memptr,eax		;save pointer to memory-area
+
+
+
+	cmp  eax,0		;if eax=0, then there were errors
+
+	jnz  mem_ok
+
+
+
+        push mb_ok              
+
+        push offset err_cap     
+
+        push offset memerr      
+
+        push hWnd               
+
+	call MessageBoxA
+
+        jmp  end_kill_handle	;end program, close file b4
+
+
+
+mem_ok:				;memory is allocated -> next step
+
+
+
+	push 0			;set to 0 in most cases
+
+	push offset bread	;pointer to number of read bytes
+
+	push fsize		;read how many bytes?, 
+
+				 fsize=whole file
+
+	push memptr		;save where? ->allocated memory
+
+	push fhandle		;filehandle
+
+	Call ReadFile		;read file!
+
+
+
+read_ok:
+
+
+
+        mov  edi,memptr		;set EDI to memory-area
+
+        mov  ecx,fsize		;set ECX (for repnz) to filesize
+
+        mov  esi,offset org_val ;set ESI to the string to find
+
+        mov  al, byte ptr [esi] ;load AL with the first byte
+
+
+
+loop_:
+
+        repnz scasb		;repeat until ECX=0 or AL equals
+
+				;the value of the byte [EDI], EDI is 
+
+				;incremented by 1 every run
+
+        cmp  ecx,0		;If ECX=0, nothing is found
+
+        jz   not_found
+
+       
+
+
+
+here_is_something:		;found matching byte
+
+
+
+        push ecx		;save register
+
+        push edi
+
+        push esi
+
+	dec  edi		;EDI-1, cos REPNZ SCASB is one step too far
+
+        mov  ecx,len		;ECX=length of the patch
+
+        repz cmpsb		;repeat until the values in the memory of 
+
+				;[EDI] and [ESI] are different,
+
+				;or ecx=0
+
+        cmp  ecx,0		;If ecx=0, then the org_val is in memory
+
+        jz   patch		;->jump to patcher
+
+
+
+not_that:			;it is not yet here
+
+
+
+        pop  esi		;POP ESI
+
+        pop  edi
+
+        pop  ecx
+
+        jmp  loop_		;search next byte
+
+
+
+patch:				;start of the patcher
+
+        pop  esi		;POP registers
+
+        pop  edi
+
+        pop  ecx
+
+        dec  edi		;EDI-1
+
+        inc  ecx		;ECX+1
+
+        mov  eax,fsize
+
+        sub  eax,ecx		;compute Offset
+
+        push 0			;offset from the beginning of the file
+
+        push 0			;is 0, if file <4,3GB
+
+        push eax		;offset
+
+        push fhandle		;filehandle
+
+        call SetFilePointer	;set FilePointer
+
+
+
+        push 0			;normally 0
+
+        push offset bwrite	;how many bytes where written?
+
+        push len		;length of the bytes to write
+
+        push offset new_val	;offset to new values
+
+        push fhandle		;filehandle
+
+        Call WriteFile		;write block to file
+
+
+
+        push mb_ok 
+
+        push offset readycap    
+
+        push offset readytxt    
+
+	push hwnd
+
+        call MessageBoxA        ;OK, patch is done!
+
+
+
+        jmp  end_kill_all	;END! Cleanup!
+
+
+
+not_found:
+
+
+
+        push mb_ok              
+
+        push offset err_cap     
+
+        push offset byterr      
+
+        push hWnd               
+
+        call MessageBoxA        ;the bytes where not in the file
+
+
+
+end_kill_all:
+
+
+
+	push memptr		;pointer to Memoryarea
+
+	call GlobalFree		;enable (free) memory
+
+
+
+end_kill_handle:
+
+
+
+	push fhandle		;PUSH filehandle
+
+	call CloseHandle	;CloseHandle
+
+
+
+
+
+end_:
+
+
+
+        CALL    ExitProcess     ;Quit program
+
+End Main                        ;end of code, JUMP-spot (main)
+
+</xmp><CENTER>
+
+<HR size=5>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0> 
+
+<A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links </A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0>
+
+<A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity </A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN=BOTTOM
+
+BORDER=0 VSPACE=0 HSPACE=0 width="13" height="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC </A>
+
+
+
+<IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays </A>
+
+
+
+<IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database </A>
+
+
+
+<IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="botstart.htm" tppabs="http://www.anticrack.de/fravia/botstart.htm">bots wars</A>
+
+
+
+<BR>
+
+<IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut </A>
+
+
+
+<IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 
+
+VSPACE=0 HSPACE=0><A
+
+HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13
+
+BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13
+
+BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="javascri.htm" tppabs="http://www.anticrack.de/fravia/javascri.htm">javascript wars </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia </A><BR>
+
+
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering illegal? </A></CENTER>
+
+<HR size=4></FONT></CENTER></CENTER>
+
+</BODY></HTML>

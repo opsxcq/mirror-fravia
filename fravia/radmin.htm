@@ -1,0 +1,1245 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>radmin.htm: Remote administrator viewer  v1.1.0.1 from http://www.mtu-net.ru/radmin/
+
+</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR=#C0C0C0 TEXT=#001010 ALINK=#405040 VLINK=#8850AA>
+
+
+
+<TABLE border="0" cellpadding="0" align="center">
+
+<TR><TD colspan=3><P align="center"><FONT size="+4">A paranoic protection: 
+
+Remote administrator viewer 
+
+</FONT></TD>
+
+<TR><TD colspan=3><PRE>  </PRE></TD></TR>
+
+</TR><TR>
+
+<TD  bgcolor="#FFFFEA"><P><FONT size="+2" color="#00254A"><CENTER> &nbsp;3 October 1999 </CENTER></FONT></TD>
+
+<TD  bgcolor="#FFFFEA"><P><FONT size="+2" color="#00254A"><CENTER>By Staier</CENTER></FONT></TD>
+
+<TD  bgcolor="#FFFFEA"><P><FONT size="+2" color="#00254A"><CENTER>http://staier.cjb.net -mainly russian site</CENTER></FONT></TD>
+
+</TR><TR>
+
+<TD><CENTER><A href="advanced.htm" tppabs="http://www.anticrack.de/fravia/advanced.htm"><IMG
+
+SRC="xtranio.gif" tppabs="http://www.anticrack.de/fravia/xtranio.gif" 
+
+ALT="advanced" ALIGN=CENTER WIDTH=114 HEIGHT=43
+
+BORDER=0 VSPACE=0 
+
+HSPACE=0></A><BR><FONT color=gray>Advanced</FONT>
+
+</CENTER></TD><TD><CENTER><FONT size=+2>tools used:</FONT></CENTER></TD>
+
+<TD><TABLE border="0" cellpadding="0" 
+
+cellspacing="0" align="Center">
+
+<TR>
+
+<TD>
+
+sice<BR>
+
+idaw<BR>
+
+custom program to dump memory locations(procdump of no use here)<BR>
+
+patch maker.<BR></TD>
+
+</TR></TABLE></TD>
+
+<TD><P>&nbsp;</TD>
+
+</TR><TR>
+
+<TD colspan=3 bgcolor="#FFFFEA"><CENTER>
+
+( )<B>Beginner</B> (X)<B>Intermediate</B> (X)<B>Advanced</B> ( 
+
+)<B>Expert</B></FONT>
+
+</CENTER></TD></TR><TR>
+
+<TD><P>&nbsp;</TD>
+
+<TD><P>Fravia's comment</TD>
+
+<TD><P>A very interesting listing programmed by staier, that will help all  
+
+readers that are tackling this kind of targets... AND will show "paranoid" protectors 
+
+the way to obfuscate even further their code, eheh. I have slightly edited 
+
+this essay, mainly directed to advanced IDA users.</TD>
+
+</TR><TR><TD BGCOLOR="898030" colspan=3><CENTER>Courtesy of Fravia's page
+
+of 
+
+reverse engineering</CENTER> 
+
+</CENTER></TD></TABLE>
+
+<PRE>
+
+ <CENTER> <FONT size=+2>Paranoic protection (expression by Marigold) of  Radmin</FONT></CENTER>
+
+<PRE>
+
+<FONT face="courier">
+
+Target : Remote administrator viewer  v1.1.0.1 from http://www.mtu-net.ru/radmin/
+
+
+
+
+
+	let us begin investigating.
+
+	first time after starting the program we can see a nag screen with 
+
+three buttons "ok","register",and "cancel",let us move our time a year ahead.
+
+and press "ok" button.Ups-messagebox with  message:
+
+
+
+'Evalution period is expired,enter the registration code to continue using the program.'
+
+
+
+so 
+
+>>bpx messageboxa and  try again 
+
+pop up in sice with address c797a8 (after F11)
+
+
+
+ok, let us disassemble the program. at first in wdasm, and what we see? nothing,
+
+no such addresses,and within the offset from base there is no such  instructions,
+
+and it means -  we have packed(or crypted ) target.
+
+let us start procdump to view what module is in the location  - :(  - NONE
+
+
+
+<FONT size=+3>NUTTING! A PARANOID PROTECTION!</FONT>
+
+ 
+
+so going to sice
+
+
+
+>>addr  radmin
+
+>>d  c97a8 
+
+and let us determine the bounds of  memory occupied by the strange code
+
+
+
+after some  
+
+>>d c90000
+
+>>d c80000
+
+...
+
+>>d cf0000
+
+>>d cd0000
+
+ ve can found that a module boundz with "MZ"...."PE" signatures at 
+
+c70000
+
+and un allocated memory at
+
+cf0000
+
+
+
+Ok.here we are ? let us dump the memory.
+
+as i sayed procdump is of no use in the case (and i think in most other - opinion
+
+from my experience - may be i am just not able to undestand it) and i have quickly 
+
+written a small program, with  CreateProcess and ReadProcessMemory and dumped the 
+
+memory to disk
+
+
+
+after this  i have loaded it into ida (great tool!) as binary file,setting the 
+
+load offset to c70000 
+
+and 
+
+do not create segments to on
+
+
+
+then, in ida, i have created a 32 bit segment, named code and started my work.
+
+
+
+first, let's
+
+
+
+>>G c71000 
+
+and press c
+
+so here is a code - it is clear
+
+some time after all i have pressed here and there some keys, defining what is 
+
+code, data and offsets  
+
+
+
+and, finally applyed a flirt signatures vcrtf32 3/4/5 and mfc 32 bit 
+
+
+
+then go to our messageboxa call at c97a8
+
+and see 
+
+such a code
+
+LISTING 1.
+
+<FONT color=blue>
+
+<HR>
+
+code:00C7974C                 test    eax, eax
+
+code:00C7974E*
+
+code:00C7974E*jmpok:                                  ; DATA XREF: code:00C7B553vw
+
+code:00C7974E*                jnz     short close_to_fin
+
+code:00C79750                 push    40h ; '@'
+
+code:00C79752                 push    offset aInformation ; "Information"
+
+code:00C79757                 push    offset aEvalutionPerio ; "Evalution period is expired,\nenter the "...
+
+code:00C7975C                 mov     ecx, [ebp+arg_0]
+
+code:00C7975F                 push    ecx
+
+<FONT color=red>code:00C79760</FONT>                 call    dword ptr ds:0C9721Ch
+
+code:00C79766                 xor     eax, eax
+
+code:00C79768
+
+code:00C79768 newend:
+
+code:00C79768                 jmp     return
+
+code:00C7976D ; ---------------------------------------------------------------------------
+
+code:00C7976D
+
+code:00C7976D close_to_fin:                           ; CODE XREF: nagproc+85E^j
+
+code:00C7976D                 cmp     [ebp+var_1B0], 14h
+
+code:00C79774*                jbe     short ok_proseed
+
+code:00C79776                 mov     edx, 1Eh
+
+code:00C7977B                 sub     edx, [ebp+var_1B0]
+
+code:00C79781                 push    edx
+
+code:00C79782                 push    offset aThisProgramIsS ; "%This program is shareware.\nYour 30-day"...
+
+code:00C79787                 lea     eax, [ebp+days_left]
+
+code:00C7978D                 push    eax
+
+code:00C7978E                 call    _sprintf
+
+code:00C79793                 add     esp, 0Ch
+
+code:00C79796                 push    40h ; '@'
+
+code:00C79798                 push    offset aInformation ; "Information"
+
+code:00C7979D                 lea     ecx, [ebp+days_left]
+
+code:00C797A3                 push    ecx
+
+code:00C797A4                 mov     edx, [ebp+arg_0]
+
+code:00C797A7                 push    edx
+
+<FONT color=red>code:00C797A8</FONT>                 call    dword ptr ds:0C9721Ch
+
+code:00C797AE
+
+code:00C797AE ok_proseed:                             ; CODE XREF: nagproc+84F^j
+
+code:00C797AE                                         ; nagproc+884^j
+
+<HR>
+
+</FONT>
+
+EOL listing 
+
+
+
+ 
+
+so going to 0c9721c we can see a table of addresses
+
+<FONT color=blue>
+
+<HR>
+
+...                                 
+
+code:00C97210                 dd 77E721DFh                            
+
+code:00C97214                 dd 77E72575h            ; DATA XREF: nagproc+730^r
+
+code:00C97214                                         ; nagproc+8E4^r
+
+code:00C97214                                         ; nagproc+91E^r
+
+code:00C97214                                         ; nagproc+945^r
+
+code:00C97214                                         ; main_prg+19A^r
+
+code:00C97214                                         ; main_prg+29F^r
+
+code:00C97218                 dd 77E71C61h            ; DATA XREF: nagproc+D79^r
+
+<FONT color=red>code:00C9721C  </FONT>               dd 77E8A590h            ; DATA XREF: nagproc+495^r
+
+code:00C9721C                                         ; nagproc+5D7^r
+
+code:00C9721C                                         ; nagproc+662^r
+
+code:00C9721C                                         ; nagproc+702^r
+
+code:00C9721C                                         ; nagproc+870^r
+
+code:00C9721C                                         ; nagproc+8B8^r
+
+code:00C9721C                                         ; main_prg+2BF^r
+
+code:00C9721C                                         ; code:00C7B677^r
+
+code:00C97220                 dd 77E71C53h            ; DATA XREF: nagproc+9AA^r
+
+code:00C97224                 dd 77E72567h            ; DATA XREF: nagproc+3FE^r
+
+code:00C97228                 dd 77E76D8Eh                            
+
+code:00C9722C                 dd 77E74841h                            
+
+code:00C97230                 dd 77EB0C3Eh            
+
+code:00C97234                 dd 77E73F14h            
+
+code:00C97238                 dd 77E72441h            
+
+code:00C9723C                 dd 77E75BF5h            
+
+...
+
+<HR>
+
+</FONT>
+
+it is clear that  it is a table of imported functions, but it seems to
+
+me that strings with names of the functions and modules are absent(or erased).
+
+here is the point to start learning ida C scripting.
+
+after some learning and RE of availiable IDCs i have written myself the 
+
+following script
+
+
+
+LISTING 2.
+
+<FONT color=blue>
+
+<HR> 
+
+#include &gt;idc.idc>
+
+/*
+
+********************************************************************************
+
+the script is intended to recover imported functions names from dumped files with 
+
+erased fuctions names i.e. only import table with function addreses present
+
+(c) staier from http://staier.cjb.net All rights reserved
+
+you can use & modify it freely as far as the above comment is NOT erased
+
+format  of *.exp file:
+
+----------------------
+
+gdi32.dll
+
+Number of Exported Functions = 0401 (decimal)
+
+ Addr:77EE9BB6 Ord:   1 (0001h) Name: AbortDoc
+
+ Addr:77EEA5A1 Ord:   2 (0002h) Name: AbortPath
+
+ Addr:77EDB23F Ord:   3 (0003h) Name: AddFontResourceA
+
+ Addr:77EE69BA Ord:   4 (0004h) Name: AddFontResourceTracking
+
+ Addr:77EE6C06 Ord:   5 (0005h) Name: AddFontResourceW
+
+...
+
+ Addr:77EE80AC Ord: 401 (0191h) Name: gdiPlaySpoolStream
+
+---------------
+
+taken from wdasm .alf file
+
+original file http://staier.cjb.net/fname.zip  contains kernel32.exp, advapi32.exp,gdi32.exp
+
+user32.exp
+
+********************************************************************************/ 
+
+static  getfuncnames()
+
+{
+
+auto c,c2,c3;
+
+auto hndl,start;
+
+hndl=fopen(AskFile(0,"*.exp","enter export file name"),"rt");
+
+Message("opening exports file ");
+
+ if (!hndl) {Message("opening exports file failed ");
+
+            Exit(1); 
+
+            };
+
+
+
+start=AskAddr( BADADDR,"enter start address");
+
+if (start == BADADDR)
+
+{Message(" can not obtain an address");
+
+            Exit(1); 
+
+            };
+
+c=readstr(hndl);
+
+Message("module export:%s ",c);
+
+c=readstr(hndl);
+
+Message("starting analyse from :%x \n",start);
+
+Message(c);
+
+
+
+while ((c=readstr(hndl))!=-1)
+
+{
+
+c2=start;
+
+Message(c);
+
+Message("address:%s,name:%s \n",substr(c,6,14),substr(c,38,strlen(c)));
+
+while (Dword(c2)!=0)  //end of table for a given imported module
+
+
+
+{// Message("address:%s,indisasm:%x \n",substr(c,6,14),Dword (c2)); -for debugging
+
+if (Dword (c2)==xtol(substr(c,6,14)))
+
+	{MakeName(c2,substr(c,38,strlen(c)-1));
+
+	 MakeComm(c2,"exported  function");
+
+	 Message("found function");
+
+	 break;
+
+	}
+
+  else c2=c2+4;
+
+};
+
+};
+
+fclose(hndl);
+
+}
+
+
+
+static main()
+
+{
+
+getfuncnames();
+
+}
+
+<HR>
+
+</FONT>
+
+EOL 2.
+
+so starting the script here and there we'v got:
+
+<FONT color=blue>
+
+
+
+<HR>
+
+code:00C97210 BeginPaint      dd 77E721DFh            ; exported  function
+
+code:00C97214 SendMessageA    dd 77E72575h            ; DATA XREF: nagproc+730^r
+
+code:00C97214                                         ; nagproc+8E4^r
+
+code:00C97214                                         ; nagproc+91E^r
+
+code:00C97214                                         ; nagproc+945^r
+
+code:00C97214                                         ; main_prg+19A^r
+
+code:00C97214                                         ; main_prg+29F^r
+
+code:00C97214                                         ; exported  function
+
+code:00C97218 ReleaseDC       dd 77E71C61h            ; DATA XREF: nagproc+D79^r
+
+code:00C97218                                         ; exported  function
+
+<FONT color=red>code:00C9721C MessageBoxA</FONT>     dd 77E8A590h            ; DATA XREF: nagproc+495^r
+
+code:00C9721C                                         ; nagproc+5D7^r
+
+code:00C9721C                                         ; nagproc+662^r
+
+code:00C9721C                                         ; nagproc+702^r
+
+code:00C9721C                                         ; nagproc+870^r
+
+code:00C9721C                                         ; nagproc+8B8^r
+
+code:00C9721C                                         ; main_prg+2BF^r
+
+code:00C9721C                                         ; code:00C7B677^r
+
+code:00C9721C                                         ; exported  function
+
+code:00C97220 GetDC           dd 77E71C53h            ; DATA XREF: nagproc+9AA^r
+
+code:00C97220                                         ; exported  function
+
+code:00C97224 InvalidateRect  dd 77E72567h            ; DATA XREF: nagproc+3FE^r
+
+code:00C97224                                         ; exported  function
+
+code:00C97228 SetScrollPos    dd 77E76D8Eh            ; exported  function
+
+code:00C9722C SetScrollRange  dd 77E74841h            ; exported  function
+
+code:00C97230 ShowScrollBar   dd 77EB0C3Eh            ; exported  function
+
+code:00C97234 SetWindowPos    dd 77E73F14h            ; exported  function
+
+code:00C97238 GetWindowRect   dd 77E72441h            ; exported  function
+
+code:00C9723C SetWindowLongA  dd 77E75BF5h            ; exported  function
+
+
+
+<HR>
+
+</FONT>
+
+
+
+and our code fragment is looking no like this
+
+LISTING 3.
+
+<FONT color =blue>
+
+<HR>
+
+code:00C7974C                 test    eax, eax
+
+code:00C7974E*
+
+code:00C7974E*jmpok:                                  ; DATA XREF: code:00C7B553vw
+
+code:00C7974E*                jnz     short close_to_fin
+
+code:00C79750                 push    40h ; '@'
+
+code:00C79752                 push    offset aInformation ; "Information"
+
+code:00C79757                 push    offset aEvalutionPerio ; "Evalution period is expired,\nenter the "...
+
+code:00C7975C                 mov     ecx, [ebp+arg_0]
+
+code:00C7975F                 push    ecx
+
+<FONT color=red>code:00C79760</FONT>                 call    ds:MessageBoxA
+
+code:00C79766                 xor     eax, eax
+
+code:00C79768
+
+code:00C79768 newend:
+
+code:00C79768                 jmp     return
+
+code:00C7976D ; ---------------------------------------------------------------------------
+
+code:00C7976D
+
+code:00C7976D close_to_fin:                           ; CODE XREF: nagproc+85E^j
+
+code:00C7976D                 cmp     [ebp+var_1B0], 14h
+
+code:00C79774*                jbe     short ok_proseed
+
+code:00C79776                 mov     edx, 1Eh
+
+code:00C7977B                 sub     edx, [ebp+var_1B0]
+
+code:00C79781                 push    edx
+
+code:00C79782                 push    offset aThisProgramIsS ; "%This program is shareware.\nYour 30-day"...
+
+code:00C79787                 lea     eax, [ebp+days_left]
+
+code:00C7978D                 push    eax
+
+code:00C7978E                 call    _sprintf
+
+code:00C79793                 add     esp, 0Ch
+
+code:00C79796                 push    40h ; '@'
+
+code:00C79798                 push    offset aInformation ; "Information"
+
+code:00C7979D                 lea     ecx, [ebp+days_left]
+
+code:00C797A3                 push    ecx
+
+code:00C797A4                 mov     edx, [ebp+arg_0]
+
+code:00C797A7                 push    edx
+
+<FONT color=red>code:00C797A8</FONT>                 call    ds:MessageBoxA
+
+code:00C797AE
+
+code:00C797AE ok_proseed:                             ; CODE XREF: nagproc+84F^j
+
+code:00C797AE                                         ; nagproc+884^j
+
+<HR>
+
+</FONT>
+
+EOL 3.
+
+here we are
+
+we can see that passing the jumps at  
+
+code:00C7974E and 
+
+code:00C79774* 
+
+we can pass the expiration routine right way
+
+let us therefore go to softice
+
+and 
+
+>>addr  radmin
+
+>>bpx  00C7974E
+
+
+
+ and let us gentle  cpass the gumps changing the flag register
+
+
+
+ok, me have passed , but after trying to connect to radmin server we are crashed
+
+ what is the hell?
+
+the answer is that there is a control sum check on the code of verification routine 
+
+and we can be aware of the fact by setting  
+
+bpm 00C7974E r
+
+it will be a pup up of sice in address 00009c... (another hidden module)
+
+the point is that sice bpx is an int 3 instruction embedded into the code 
+
+so  let us clear the bpx after passing the routine
+
+
+
+this time everything works fine.
+
+
+
+now it's time to write a path for the  program.
+
+we must perform 3 steps:
+
+	1.wait for code will be unpacked
+
+	2.change jump at 00C79760 to our code
+
+	3.restore virginity and jump to  00C797AE
+
+
+
+i have  used my favourite method of installing new thread into the code.
+
+me must first to chanje entrypoint and virtual size of .code cection of the program 
+
+200h would be fine and in hex editor fill the place of our code with nops and et the 
+
+end of it jmp to old entrypoin. (this is because of ida's behavour, that translates 
+
+unused bytes to ORG -org 400 in the case) and let us code our prog directly in ida.
+
+
+
+LISTING 4(from produced ASM file)
+
+<FONT color=blue>
+
+<HR>
+
+start:					; "KERNEL32.dll"
+
+		push	offset aKernel32_dll
+
+		call	cs:GetModuleHandleA
+
+		push	eax
+
+		push	44h
+
+		push	eax
+
+		call	cs:GetProcAddress
+
+		mov	CreateThread, eax
+
+		pop	eax
+
+		push	eax
+
+		push	6Dh
+
+		push	eax
+
+		call	cs:GetProcAddress
+
+		mov	ExitThread, eax
+
+		pop	eax
+
+		push	243h
+
+		push	eax
+
+		call	cs:GetProcAddress
+
+		mov	Sleep, eax
+
+		push	offset return
+
+		push	0
+
+		push	0
+
+		push	offset thr_fn
+
+		push	0
+
+		push	0
+
+		call	cs:CreateThread
+
+		jmp	entry		; _WinMainCRTStartup
+
+; ŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸ
+
+		db    1	;  
+
+		db    0	;  
+
+; ŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸ
+
+
+
+thr_fn:					; DATA XREF: .text:01409D99o
+
+		push	5DCh
+
+		call	cs:Sleep
+
+		mov	eax, base_of_1_9c000;address of dword, containing address of module ? wich unpacks module at c90000
+
+
+
+loc_0_1409DC1:
+
+		add	eax, 2FA18h
+
+		mov	ebx, [eax]
+
+		add	ebx, 272ECh
+
+
+
+loc_0_1409DCE:				; CODE XREF: .text:01409DD4j
+
+		cmp	dword ptr [ebx], 0
+
+		jz	short loc_0_1409DCE
+
+		sub	ebx, 272ECh
+
+		add	ebx, 974Eh
+
+		mov	byte ptr [ebx],	0E9h
+
+		mov	eax, 7906ADh
+
+		sub	eax, ebx
+
+		add	eax, 0C7974Eh
+
+		mov	[ebx+1], eax
+
+		push	0
+
+		call	ss:ExitThread
+
+		retn	4
+
+; ŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸ
+
+		mov	eax, base_of_1_9c000         ;jump from target code here
+
+		add	eax, 2FA18h
+
+		mov	eax, [eax]
+
+		add	eax, 974Eh
+
+		mov	byte ptr [eax],	75h           ;restore
+
+		mov	dword ptr [eax+1], 68406A1Dh  ;virginity
+
+		add	eax, 60h
+
+		push	eax
+
+		xor	eax, eax
+
+		retn	                              ;jump back to target code
+
+; ŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸ
+
+		xor	eax, eax
+
+		retn	
+
+; ŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸ
+
+		nop	
+
+		nop	
+
+		nop	
+
+		nop	
+
+		nop	
+
+		nop	
+
+		nop	
+
+		nop	
+
+		nop	
+
+		nop	
+
+		nop	
+
+		nop	
+
+		nop	
+
+		nop	
+
+		nop	
+
+		nop	
+
+		nop	
+
+		nop	
+
+		...
+
+<HR>
+
+</FONT>
+
+
+
+EOL 4.
+
+after writing,produce the DIFF file right from the Ida IDE and make patch. that's all.
+
+
+
+some notes
+
+
+
+1. i do not bother to show you all the right addreses, as we are reversers and we can 
+
+   find them easily. They can  be found by setting "bpm  ... w" to start addresses of 
+
+   hidden  modules.
+
+   Note that there are other modules.(dump them and disassemble them, using described 
+
+   techniques...)
+
+   by the way, i have spent about a week to handle the tasks (yeah - i'm not a reverser 
+
+   GOD).
+
+2. the patched program works only on nt 4.0 rus.(i think relocations problem is the 
+
+   point,but i have no other WIN32 OS for debugging.
+
+3. using of Sleep api sucks, i know and i know now how to do this right way.
+
+4. i  have not eliminated nagscreen .it is possible.
+
+5. my skills in writing assembler and writing in English suck... so what?
+
+6. The program  http://www.mtu-net.ru/radmin/ is great, netbus and BO is far behind 
+
+   it, it coasts only 25$ and it can be turned back online  by resetting clocks back.
+
+   (and must be by reinstalling).
+
+7. DMITRI ZNOSHKO is a good programmer: it is no doubt that reversing this program in order 
+
+   to use it was not worth  $25.
+
+8. thanks to fravia+, +ORC, and all other teachers and publishers who did show me the way to RE art. 
+
+<HR>
+
+(c) 1999 Staier from http://staier.cjb.net -mainly russian site
+
+<HR>   
+
+
+
+</FONT>
+
+</PRE>
+
+</PRE>
+
+<!-- OB DUH STARTS HERE -->
+
+<TABLE CELLPADDING="1" CELLSPACING="2" BORDER="1"
+
+WIDTH= "100%"  HEIGHT="22" >
+
+<TR><TD bgcolor="#C6E7C6"><CENTER><FONT size=+2><FONT
+
+color=blue>Ob Duh</FONT></FONT>
+
+</CENTER></TD></TR></TABLE><CENTER><I>I wont even
+
+bother explaining you 
+
+   that you should BUY programs if you
+
+intend to use them for a 
+
+   longer period than the allowed one. Should you want
+
+to STEAL  
+
+   software instead you don't need to
+
+crack protection schemes at all: 
+
+   you'll find everything on most Warez sites, complete and
+
+already regged, 
+
+   farewell, don't come back.</I></CENTER>
+
+
+
+<!-- WAY OUT STARTS HERE -->
+
+<HR><CENTER><I>You are deep inside fravia's pages of
+
+reverse engineering,  
+
+choose your way out:<BR><BR></I></CENTER>
+
+<BR><CENTER>
+
+<!-- EITHER A NICE GIF LIKE THIS -->
+
+<!-- 
+
+<a href="project3.htm" tppabs="http://www.anticrack.de/fravia/project3.htm"><IMG SRC="project3.gif" tppabs="http://www.anticrack.de/fravia/project3.gif" 
+
+ALT="projecT3" ALIGN=CENTER WIDTH=114 HEIGHT=43
+
+BORDER=0 VSPACE=0 HSPACE=0></a>
+
+<br>
+
+<font color=gray>Back to project 3</FonT>
+
+<br><bR>
+
+-->
+
+<!-- OR JUST A LINK LIKE THIS -->
+
+
+
+<!--
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="project1.htm" tppabs="http://www.anticrack.de/fravia/project1.htm">Back
+
+to Your_chosen_project</A> 
+
+<hr width=33%>
+
+-->
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html"
+
+>homepage</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="protec.htm" tppabs="http://www.anticrack.de/fravia/protec.htm">how to
+
+protect</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database</A>
+
+<BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="realicra.htm" tppabs="http://www.anticrack.de/fravia/realicra.htm">reality cracking</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="howtosea.htm" tppabs="http://www.anticrack.de/fravia/howtosea.htm">how
+
+to search</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="javascri.htm" tppabs="http://www.anticrack.de/fravia/javascri.htm">javascript wars</A>
+
+<BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity academy</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut CGI-scripts</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia+</A>
+
+<BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is
+
+reverse engineering legal?</A>
+
+</CENTER>
+
+<HR>
+
+<!-- THAT'S ALL, THANKS A LOT this will allow
+
+automated retrieval -->
+
+</BODY>
+
+</HTML>

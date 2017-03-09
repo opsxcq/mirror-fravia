@@ -1,0 +1,1331 @@
+<html>   <CENTER><H3>REVERSE ENGINEERING EXERCISES FOR THE MASSES (lesson 2)</H3><BR>
+
+     </CENTER>        <CENTER><H4>HOW TO DISASSEMBLE A WINDOWS PROGRAM<BR>
+
+            </CENTER> <CENTER>WINDOWS 3.1. - DISASSEMBLING TASKMAN<BR>
+
+              </H4>    </CENTER>   <CENTER>      <H5>by FraVia</H5></CENTER><BR>
+
+<BR>
+
+<HR>
+
+<PRE>
+
+  After we've found and analyzed WinMain() (-> lesson 1), the
+
+next places to inspect when you crack a program are the windows
+
+procedures and dialog procedures (this is true only for Windows
+
+*programs*; for DLL, on the countrary, the cracking procedures
+
+are different and the relvant techniques will be discussed in
+
+another lesson).
+
+  These WndProcs and DialogProcs are "callback" procedures: they
+
+are *exported* from Windows executables, almost as the program
+
+were a DLL, so that Windows can call them.
+
+  And -hear, hear!- beacuse they are exported these crucial
+
+procedures have *names* (almost always useful) that are
+
+accessible to any decent Windows disassembler. In Taskman.lst,
+
+for example, WCB clearly identifies TASKMANDLGPROC:
+
+
+
+Exported names by location:
+
+  1:007B     1 TASKMANDLGPROC      <IT's a DialogProc !
+
+
+
+  It works out well that the WndProcs and DialogProcs show up so
+
+nicely in the disassembled listings, because, as we know from
+
+Windows programming, these subroutines are "where the action is"
+
+in event driven Windows applications... or at least where the
+
+action begins.
+
+  Furthermore we know that these subroutines will be most likely
+
+little more than (possibly very large) message handling
+
+switch/case statements. These usually look something like this:
+
+
+
+long FAR PASCAL _export WndProc(HWND hWnd, WORD message, WORD
+
+wParam, LONG lPAram)
+
+ { ...
+
+     switch (message)
+
+      {
+
+          case WM_CREATE:
+
+            //... handle WM_CREATE message
+
+            break;
+
+          case WM_COMMAND:
+
+            //... handle WM_COMMAND message
+
+            break;
+
+          default:
+
+            return DefWindowProc(hwnd, message, wParam, lParam);
+
+      }
+
+  }
+
+  Wow! Yes! As you already guessed this means that... that we get
+
+immediately 4 parameters for EACH exported WndProc or DlgProc!
+
+  Actually there's no rule that states that a Windows WndProc or
+
+DlgProc has to look like this... it's just that they almost
+
+always do!
+
+ Here is how the parameters to the WndProc or DialogProc will
+
+appear in the assembly language listing (after the function
+
+prologue):
+
+   long FAR PASCAL _export WndOrDialogProc(HWND hwnd, WORD
+
+     message, WORD wParam, LONG lParam);
+
+   lParam = dword ptr [bp+6]
+
+   wParam = word ptr [bp+0Ah]
+
+   message = word ptr [bp+0Ch]
+
+   hWnd or hWndDlg = word ptr [bp+0Eh]
+
+ With this knowledge, we can replace an otherwise meaningless
+
+[bp+0Ch] with a label such as "message", a [bp+0Eh] with a "hwnd"
+
+or "hwndDlg", and so on in *ANY* DialogProc and WndProc in *ANY*
+
+Windows program.
+
+ The boilerplate nature of Windows programming greatly simplifies
+
+cracking. For example, here is part of our Taskman exported
+
+DialogProc: TASKMANDLGPROC:
+
+
+
+  1.007B                           ;  TASKMANDLGPROC
+
+  ... (function prologue)
+
+  1.008A  8B760E           mov     si,  hWndDlg   ;[bp+0E]
+
+  1.008D  56               push    si
+
+  1.008E  6A64             push    0064
+
+  1.0090  9AFFFF0000       call    USER.GETDLGITEM
+
+  1.0095  8BF8             mov     di, ax
+
+  1.0097  8B460C           mov     ax, message    ;[bp+0C]
+
+  1.009A  2D1C00           sub     ax, 001C
+
+  1.009D  7416             je      00B5
+
+  1.009F  2DF400           sub     ax, 00F4
+
+  1.00A2  7436             je      00DA
+
+  1.00A4  48               dec     ax
+
+  1.00A5  7503             jne     00AA
+
+  1.00A7  E98301           jmp     022D
+
+
+
+  1.00AA >2D5303           sub     ax, 0353
+
+  1.00AD  7503             jne     00B2
+
+  1.00AF  E9D602           jmp     0388
+
+
+
+  1.00B2 >E9C801           jmp     027D
+
+
+
+  1.00B5 >837E0A00         cmp     word ptr wParam, 0  ;[bp+0A]
+
+  1.00B9  7403             je      00BE
+
+  1.00BB  E9BF01           jmp     027D
+
+  ...
+
+
+
+ The problem here, of course, is what to make of all these magic
+
+numbers: 0064, OO1C, 00F4 and so on... how are we going to figure
+
+out what these mean?
+
+
+
+ When examined via disassembled listings, Windows programs tend
+
+to contain a lot of "magic numbers". Of course the actual source
+
+code would
+
+*    #include <WINDOWS.h>          and
+
+*    #define numeric constants for the various resources (menus,
+
+     strings, dialog controls, etc.) that it uses.
+
+ Given a disassembled listing, it should be possible to turn a
+
+lot of these seemingly senseless numbers back into something
+
+understandable.
+
+ Let's start with the number 001C in TaskManDlgProc():
+
+  1.0097  8B460C           mov     ax, message    ;[bp+0C]
+
+  1.009A  2D1C00           sub     ax, 001C
+
+  1.009D  7416             je      00B5
+
+ If AX holds the *message* parameter to TaskManDlgProc() (line
+
+1.0097)... then the value 001C must be a Windows WM_ message
+
+number (one of those you can breakpoint to with WINICE's BMSG
+
+command, by the way). Looking in WINDOWS.H, we find that 0x1C is
+
+WM_ACTIVATEAPP.
+
+ TaskManDlgProc() is subtracting this value from AX and then
+
+jumping somewhere (let's call it ON_ACTIVATEAPP) if the result
+
+is zero... i.e. if it is WM_ACTIVATEAPP.
+
+ This is an odd way to test whether (message == WM_ACTIVATEAPP):
+
+if the test fails, and we do not take the jump to ON_ACTIVATEAPP,
+
+the message number has 1C subtracted from it... and this value
+
+must be taken account of by the next switch statement:
+
+
+
+  1.009F  2DF400    sub    ax, 00F4 ;(+1C=110=WM_INITDIALOG)
+
+  1.00A2  7436      je     00DA     ;jump to ON_INITDIALOG
+
+  1.00A4  48        dec    ax       ;(110+1=111=WM_COMMAND)
+
+  1.00A5  7503      jne    00AA     ;no, go elsewhere
+
+  1.00A7  E98301    jmp    022D     ;yes, jump to ON_COMMAND
+
+ Other WndProcs & DialogProcs will contain straightforward tests,
+
+rather than testing via subtraction, is a matter of compiler
+
+choice. In any case, a WndProc or DialogProc generally contains
+
+a collection of handlers for different messages.
+
+ In the case of TaskManDlgProc(), we can see that's handling
+
+WM_ACTIVATEAPP, WM_INITDIALOG and WM_COMMAND. By itself, this
+
+information is rather boring... however, it tells us what is
+
+happening *elsewhere* in the function: 1.00B5 must be handling
+
+WM_ACTIVATEAPP messages (therefore let's call it ON_ACTIVATEAPP),
+
+1.00DA must be handling WM_INITDIALOG, and 1.022D must be
+
+handling WM_COMMAND messages.
+
+ Write it down! This same basic technique -find where the
+
+[bp+0Ch] "message" parameter to the WndProc or DialogProc is
+
+being rested, and from that identify the locations that handle
+
+various messages- can be used in *ANY* Windows program.
+
+ Because handling messages is mostly what Windows applications
+
+do, once we know where the message handling is, we pretty much
+
+can have our way with teh disassembled listing.
+
+ Let's look now at TaskManDlgProc():
+
+
+
+TASKMANDLGPROC proc far
+
+  ...
+
+ DISPATCH_ON_MSG:
+
+  1.0097  8B460C    mov  ax, message        ;[bp+0C]
+
+  1.009A  2D1C00    sub  ax, WM_ACTIVATEAPP ;001C
+
+  1.009D  7416      je   ON_ACTIVATEAPP
+
+  1.009F  2DF400    sub  ax, 00F4 ;(+1C=110=WM_INITDIALOG)
+
+  1.00A2  7436      je   ON_INITDIALOG
+
+  1.00A4  48        dec  ax       ;(110+1=111=WM_COMMAND)
+
+  1.00A5  7503      jne  DEFAULT
+
+  1.00A7  E98301    jmp  ON_COMMAND
+
+ DEFAULT:
+
+  1.00AA >2D5303    sub  ax, 0353 ;(111+353=464=WM_USER+64
+
+  1.00AD  7503      jne ON_PRIVATEMSG ;00B2= some private msg
+
+  1.00AF  E9D602    jmp  0388
+
+ ON_PRIVATEMSG:
+
+  1.00B2 >E9C801    jmp  027D
+
+ ON_ACTIVATEAPP:
+
+  1.00B5 >837E0A00  cmp     word ptr wParam, 0  ;[bp+0A]
+
+  ...               ; code to handle WM_ACTIVATEAPP
+
+ ON_INITDIALOG:
+
+  ...               ; code to handle WM_INITDIALOG
+
+ ON_COMMAND:
+
+  ...               ; code to handle WM_COMMAND
+
+  1.022D >8B460A        mov   ax, wParam  ;[bp+0A]
+
+  1.0230  3D6800        cmp   ax, 0068    ; ? What's this ?
+
+  1.0233  7503          jne   0238
+
+  1.0235  E93301        jmp   036B
+
+  ...
+
+ This is starting to look pretty reasonable. In particular, once
+
+we know where WM_COMMAND is being handled, we are well on the way
+
+to understand what the application does.
+
+ WM_COMMANd is *very* important for understanding an application
+
+behavior because the handler for WM_COMMAND is where it dals with
+
+user commands such as Menu selections and dialog push button
+
+clicks... a lot of what an application unique.
+
+ If you click on "Cascade" in Task manager, for instance, it
+
+comes as a WM_COMMAND, the same occurs if you click on "Tile" or
+
+"Switch To" or "End Task".
+
+ An application can tell which command a user has given it by
+
+looking in the wParam parameter to the WM_COMMAND message.
+
+ This is what we started to see at the ned of the
+
+TaskManDlgProc() exerpt:
+
+ON_COMMAND:
+
+  ; We are handling WM_COMMAND, therefore wParam is here idItem,
+
+  ; i.e. a control or menu item identifier
+
+1.022D >8B460A  mov  ax, wParam ;[bp+0A]
+
+1.0230  3D6800  cmp  ax, 0068   ;ID number for a dialog control
+
+1.0233  7503    jne   0238
+
+1.0235  E93301  jmp   036B
+
+
+
+1.0238 >7603    jbe   023D
+
+1.023A  E96001  jmp   039D
+
+
+
+1.023D >FEC8    dec   al        ;1
+
+1.023F  7420    je    0261      ;if wParam==1 goto 1.0261
+
+1.0241  FEC8    dec   al        ;1+1=2
+
+1.0243  7503    jne   0248
+
+1.0245  E94701  jmp   038F      ;if wParam==2 goto 1.038F
+
+
+
+1.0248 >2C62    sub   al, 62    ;2+62=64
+
+1.024A  742A    je    0276
+
+1.024C  FEC8    dec   al        ;64+1=65
+
+1.024E  7432    je    0282
+
+1.0250  2C01    sub   al, 01    ;65+1=66
+
+1.0252  7303    jnb   0257
+
+1.0254  E94601  jmp   039D
+
+
+
+1.0257 >2C01    sub   al, 01    ;66+1=67
+
+1.0259  7703    ja    025E
+
+1.025B  E9D200  jmp   0330
+
+
+
+ It's clear that wParam is being compared (in an odd subtraction
+
+way) to valus 1,2,65,66 and 67. What's going on?
+
+ The values 1 and 2 are standard dialog button IDs:
+
+ #define IDOK            1
+
+ #define IDCANCEL        2
+
+ Therefore we have here the two "classical" push buttons:
+
+1.023D >FEC8    dec   al        ;1 = OK
+
+1.023F  7420    je    ON_OK     ;If 1 goto 1.0261= ON_OK
+
+1.0241  FEC8    dec   al        ;1+1=2= CANCEL
+
+1.0243  7503    jne   NOPE      ;goto neither OK nor CANCEL
+
+1.0245  E94701  jmp   ON_CANCEL ;if 2 goto 1.038F= ON_CANCEL
+
+ The numbers 65, 66 etc are specific to TaskManager however, we
+
+will not find them inside WINDOWS.H... so there is no home to
+
+find the names of the commands to which these magic number
+
+correspond, unless we happen to have a debug version of the
+
+program true? NO! FALSE!
+
+ One of the notable things about Windows is that remarkably
+
+little information is lost or thrown away compiling the source
+
+code. These magic numbers seem to correspond in some way to the
+
+different Task Manager push buttons... it's pretty obvious that
+
+there must be a way of having applications tell Windows what
+
+wParam they want sent when one of their buttons is clicked or
+
+when one of their menu items is selected.
+
+  Applications almost always provide Windows with this
+
+information in their resources (they could actually define menus
+
+and controls dynamycally, on the fly, but few applications take
+
+advantage of this). These resources are part of the NE executable
+
+and are available for ur snooping around.
+
+  This inspections of the resources in an EXE file is carried out
+
+by means of special utilities, like RESDUMP, included with
+
+Windows source (-> see my tool page). For example (I am using
+
+"-verbose" mode):
+
+
+
+DIALOG              10   (0Ah), "Task List"       [30,22,160,107]
+
+FONT "Helv"
+
+    LISTBOX         100  (64h), ""                [3,3,154,63]
+
+    DEFPUSHBUTTON   1    (01h), "&Switch To"      [1,70,45,14]
+
+    PUSHBUTTON      101  (65h), "&End Task"       [52,70,45,14]
+
+    PUSHBUTTON      2    (02h), "Cancel"          [103,70,55,14]
+
+    STATIC          99   (63h), ""                [0,87,160,1]
+
+    PUSHBUTTON      102  (66h), "&Cascade"        [1,90,45,14]
+
+    PUSHBUTTON      103  (67h), "&Tile"           [52,90,45,14]
+
+    PUSHBUTTON      104  (68h), "&Arrange Icons"  [103,90,55,14]
+
+
+
+ YEAH! It's now apparent what the numbers 64h, 65h etc. mean.
+
+Imagine you would write Taskmanager yourself... you would write
+
+something on these lines:
+
+     #define   IDD_SWITCHTO        IDOK
+
+     #define   IDD_TASKLIST        0x64
+
+     #define   IDD_ENDTASK         0x65
+
+     #define   IDD_CASCADE         0x66
+
+     #define   IDD_TILE            0x67
+
+     #define   IDD_ARRANGEICONS    0x68
+
+ Let's look back at the last block of code... it makes now a lot
+
+more sense:
+
+
+
+ON_COMMAND:
+
+  ; We are handling WM_COMMAND, therefore wParam is here idItem,
+
+  ; i.e. a control or menu item identifier
+
+ 1.022D >8B460A  mov  ax, wParam   ;[bp+0A]
+
+ 1.0230  3D6800  cmp  ax, 0068     ;is it the ID 68h?
+
+ ...
+
+ 1.023D >FEC8    dec   al              ;1=IDOK=IDD_SWITCHTO
+
+ 1.023F  7420    je    ON_SWITCHTO ;0261
+
+ 1.0241  FEC8    dec   al          ;1+1=2=ID_CANCEL
+
+ 1.0243  7503    jne   neither_OK_nor_CANCEL          ;0248
+
+ 1.0245  E94701  jmp   ON_CANCEL   ;038F
+
+neither_OK_nor_CANCEL:
+
+ 1.0248 >2C62    sub   al, 62      ;2+62=64= IDD_TASKLIST
+
+ 1.024A  742A    je    ON_TASKLIST ;0276
+
+ 1.024C  FEC8    dec   al          ;64+1=65= IDD_ENDTASK
+
+ 1.024E  7432    je    ON_ENDTASK  ;0282
+
+ 1.0250  2C01    sub   al, 01      ;65+1=66= IDD_CASCADE
+
+ 1.0252  7303    jnb   check_for_TILE             ;0257
+
+ 1.0254  E94601  jmp   039D        ;something different
+
+check_for_TILE:
+
+ 1.0257 >2C01    sub   al, 01      ;66+1=67= IDD_TILE
+
+ 1.0259  7703    ja    025E        ;it's something else
+
+ 1.025B  E9D200  jmp   ON_TILE_or_CASCADE         ;0330
+
+
+
+ In this way we have identified location 0330 as the place where
+
+Taskman's "Cascade" and "Tile" buttons are handled... we have
+
+renaimed it ON_TILe_or_CASCADE... let's examine its code and
+
+ensure it makes sense:
+
+ON_TILE_or_CASCADE:
+
+ 1.0330 >56             push  hwndDlg          ;si
+
+ 1.0331  6A00           push  0000
+
+ 1.0333  9A6F030000     call  USER.SHOWWINDOW
+
+ 1.0338  9A74030000     call  USER.GETDESKTOPWINDOW
+
+ 1.033D  8BF8           mov   di, ax           ;hDesktopWnd
+
+ 1.033F  837E0A66       cmp   word ptr wParam, 0066 ;IDD_CASCADE
+
+ 1.0343  750A           jne   ON_TILE          ;034F
+
+ 1.0345  57             push  di               ;hDesktopWnd
+
+ 1.0346  6A00           push  0000
+
+ 1.0348  9AFFFF0000     call  USER.CASCADECHILDWINDOWS
+
+ 1.034D  EB2F           jmp   037E
+
+ON_TILE:
+
+ 1.034F >57             push  di
+
+ 1.0350  6A10           push  0010
+
+ 1.0352  9AFFFF0000     call  USER.GETKEYSTATE
+
+ 1.0357  3D0080         cmp   ax, 8000
+
+ 1.035A  7205           jb    0361
+
+ 1.035C  B80100         mov   ax, 0001 ;1= MDITILE_HORIZONTAL
+
+ 1.035F  EB02           jmp   0363
+
+
+
+ 1.0361 >2BC0           sub   ax, ax   ;0= MDITILE_VERTICAL
+
+
+
+ 1.0363 >50             push  ax
+
+ 1.0364  9AFFFF0000     call  USER.TILECHILDWINDOWS
+
+ 1.0369  EB13           jmp   037E
+
+
+
+ Yes, it makes a lot of sense: We have found that the "Cascade"
+
+option in Tile manager, after switching through the usual bunch
+
+of switch/case loops, finally ends up calling an undocumented
+
+Windows API function: CascadeChildWindows()... similarly, the
+
+"Tile" routine ends up calling TileChildWindow().
+
+ One thing screams for attention in the disassembled listing of
+
+ON_TILE: the call to GetKeyState().
+
+ As an example of the kind of information you should be able to
+
+gather for each of these functions, if you are serious about
+
+cracking, I'll give you now here, in extenso, the definition from
+
+H. Schildt's "General purpose API functions", Osborne's Windows
+
+Programming Series, Vol. 2, 1994 edition (I found both this
+
+valuable book and its companion: volume 3: "Special purpose API
+
+functions", in a second hand shop, in february 1996, costing the
+
+equivalent of a pizza and a beer!). Besides this function is also
+
+at times important for our cracking purposes, and represents
+
+therefore a good choice. Here the description from pag.385:
+
+ ---------------------------------------------------------
+
+  void GetKeyState(int iVirKey)
+
+
+
+Use GetKeyState() to determine the up, down or toggled status of
+
+the specified virtual key. iVirKey identifies the virtual key.
+
+To return the status of a standard alphanumeric character in the
+
+range A-Z, a-z or 0-9, iVirKey must be set equal to its ANSI
+
+ASCII value. All other key must use their related virtual key
+
+codes. The function returns a value indicating the status of the
+
+selected key. If the high-order bit of the byte entry is 1, the
+
+virtual key is pressed (down); otherwise it is up. If you examine
+
+a byte emlement's low-order bit and find it to be 1, the virtual
+
+key has been toggled. A low-order bit of 0 indicates that the key
+
+is untoggled.
+
+
+
+Under Windows NT/Win32, this function returns type SHORT.
+
+
+
+USAGE
+
+ If your application needs to distinguish wich ALT, CTRL, or
+
+SHIFT key (left or right) has been pressed, iVirKey can be set
+
+equal to one of the following:
+
+     VK_LMENU       VK_RMENU
+
+     VK_LCONTROL    VK_RCO?TROL
+
+     VK_LSHIFT VK_RSHIFT
+
+ Setting iVirKey equal to VK_MENU, VK_CONTROL or VK_SHIFT
+
+instructs GetKeyState() to ignore left and right, and only to
+
+report back the status of teh virtual key category. This ability
+
+to distinguish among virtual-key states is only available with
+
+GetKeyState() and the related functions listed below.
+
+ The following fragment obtains the state of the SHIFT key:
+
+     if(GetKeyState(VK_SHIFT) {
+
+                              ...
+
+                              }
+
+RELATED FUNCTIONS
+
+ GetAsyncKeyState()
+
+ GetKeyboardState()
+
+ MapVirtualKey()
+
+ SetKeyboardState()
+
+ ---------------------------------------------------------
+
+ Ok, let's go on... so we have in our code a "funny" call to
+
+GetKeyState(). Becaus ethe Windows USer's Guide says nothing
+
+about holding down a "state" (shift/ctrl/alt) key while selecting
+
+a button, this sounds like another undocumented "goodie" hidden
+
+inside TASKMAN.
+
+ Indeed, if you try it out on the 3.1 Taskman, you'll see that
+
+clicking on the Tile button arranges all the windows on the
+
+desktop side by side, but if you hold down the SHIFT key while
+
+clicking on the Tile button, the windows are arranged in a
+
+stacked formation.
+
+ To summarize, when the 3.1. Taskman Tile button is selected, the
+
+code that runs in response looks like this:
+
+
+
+Tile:
+
+     ShowWindow(hWndDlg, SW_HIDE);      // hide TASKMAN
+
+     hDesktopWnd = GetDesktopWindow();
+
+     if (GetKeyState(VK_SHIFT) == 0x8000)
+
+          TileChildWindows(hDesktopWnd, MDITILE_HORIZONTAL);
+
+     else
+
+          TileChildWindows(hDesktopWnd, MDITILE_VERTICAL);
+
+
+
+ Similarly, the CASCADE option in 3.1. TASKMAN runs the following
+
+code:
+
+
+
+Cascade:
+
+     ShowWindow(hWndDlg, SW_HIDE);      // hide TASKMAN
+
+     CAscadeChildWindows(GetDesktopWindow(), 0);
+
+
+
+ We can then proceed through each TASKMAN option like this,
+
+rendering the assembly language listing into more concise C.
+
+ The first field to examine in TASKMAN is the Task List itself:
+
+how is the "Task List" Listbox filled with the names of each
+
+running application?
+
+ What the List box clearly shows is a title bar for each visible
+
+top level window, and the title bar is undoubtedly supplied with
+
+a call to GetWindowText()... a function that obtains a copy of
+
+the specified window handle's title.
+
+ But how does TASKMAN enumerate all the top-level Windows?
+
+TAskman exports TASKMANDLGPROC, but does not export any
+
+enumeration procedure.
+
+ Most of the time Windows programs iterate through all existing
+
+windows by calling EnumWindows(). Usually they pass to this
+
+function a pointer to an application-supplied enumeration
+
+function, which therefore MUST be exported. This callback
+
+function must have following prototype:
+
+     BOOL CALLBACK EnumThreadCB(HWND hWnd, LPARAM lParam)
+
+ Of course, the name a programmer chooses for such an exported
+
+function is arbitrary. hWnd will receive the handle of each
+
+thread-associated window.lParam receives lAppData, a 32-bit user-
+
+defined value. This exported function must return non-zero to
+
+receive the next enumerated thread-based window, or zero to stop
+
+the process.
+
+ But here we DO NOT have something like TASKMANENUMPROC in the
+
+list of exported functions... what's going on? Well... for a
+
+start TASKMAN IS NOT calling EnumWindows()... Taskman uses a
+
+GetWindow() loop to fill the "Task List" list box, study
+
+following C muster, sipping a good cocktail and comparing it with
+
+the disassembled code you have printed:
+
+
+
+Task List:
+
+     listbox = GetDlgItem(hWndDlg, IDD_TASKLIST);
+
+     hwnd = GetWindow(hwndDlg, GW_HWNDFIRST);
+
+     while (hwnd)
+
+      {   if ((hwnd != hwndDlg) &&    //excludes self from list
+
+             IsWindowVisible(hwnd) &&
+
+             GetWindow(hwnd, GW_OWNER))
+
+          {    char buf[0x50];
+
+               GetWindowText(hwnd, buf, 0x50); // get titlebar
+
+               SendMessage(listbox, LB_SETITEMDATA,
+
+                    SendMessage(listbox, LB_ADDSTRING, 0, buf),
+
+                    hwnd);         // store hwnd as data to go
+
+          }                        // with the titlebar string
+
+          hwnd = GetWindow(hwnd, GW_HWNDNEXT);
+
+     }
+
+     SendMessage(lb, LB_SETCURSEL, 0, 0); // select first item
+
+
+
+ The "End Task" opton in Taskman just sends a WM_CLOSE message
+
+to the selected window, but only if it's not a DOS box. TASKMAN
+
+uses the undocumented IsWinOldApTask() function, in combination
+
+with the documented GetWindowTask() function, to determine if a
+
+given HWND corresponds to a DOS box:
+
+
+
+End Task:
+
+  ...          // boring details omitted
+
+  if(IsWinOldApTask(GetWindowTask(hwndTarget)))
+
+    MaybeSwitchToSelecetedWindow(hwndTarget);
+
+  if(IsWindow(hwndTarget) &&
+
+    (! (GetWindowLong(hwndTarget, GWL	5STYLE) & WS_DISABLED))
+
+  {
+
+     PostMessage(hwndTarget, WM_CLOSE, 0, 0);
+
+  }
+
+
+
+ The "Arrange Icons" option simply runs the documented
+
+ARrangeIconicWindows() function:
+
+
+
+Arrange Icons:
+
+  Showwindow(hWndDlg, SW_HIDE);
+
+  ArrangeIconiCWindows(GetDesktopWindow());
+
+
+
+ The "Switch To" option in TASKMAN is also interesting. Like
+
+"Tile" and "Cascade", this too it's just a user-interface
+
+covering an undocupented Windows API function, in this case
+
+SwitchToThisWindow().
+
+ Let's walk through the process of deciphering a COMPLETELY
+
+unlabelled Windows disassembly listing, that will be most of the
+
+time your starting situation when you crack, and let's turn it
+
+into a labelled C code.
+
+ By the way, there does exist an interesting school of research,
+
+that attempts to produce an "EXE_TO_C" automatical converter. The
+
+only cracked version of this program I am aware of is called
+
+E2C.EXE, is 198500 bytes long, has been developed in 1991 by "The
+
+Austin Code Works and Polyglot International" in Jerusalem (Scott
+
+Guthery: guthery@acw.com), and has been boldly brought to the
+
+cracking world by Mithrandir/AlPhA/MeRCeNarY. Try to get a copy
+
+of this tool... it can be rather interesting for our purposes ;-)
+
+ Here is the raw WCB disassembled code for a subroutine within
+
+TASKMAN, called from the IDD_SWITCHTO handling code in
+
+TaskManDlgProc():
+
+
+
+ 1.0010 >55             push    bp
+
+ 1.0011  8BEC           mov     bp, sp
+
+ 1.0013  57             push    di
+
+ 1.0014  56             push    si
+
+ 1.0015  FF7604         push    word ptr [bp+04]
+
+ 1.0018  681A04         push    041A
+
+ 1.001B  FF7604         push    word ptr [bp+04]
+
+ 1.001E  680904         push    0409
+
+ 1.0021  6A00           push    0000
+
+ 1.0023  6A00           push    0000
+
+ 1.0025  6A00           push    0000
+
+ 1.0027  9A32000000     call    USER.SENDMESSAGE
+
+ 1.002C  50             push    ax
+
+ 1.002D  6A00           push    0000
+
+ 1.002F  6A00           push    0000
+
+ 1.0031  9AEF010000     call    USER.SENDMESSAGE
+
+ 1.0036  8BF8           mov     di, ax
+
+ 1.0038  57             push    di
+
+ 1.0039  9A4C000000     call    USER.ISWINDOW
+
+ 1.003E  0BC0           or      ax, ax
+
+ 1.0040  742A           je      006C
+
+ 1.0042  57             push    di
+
+ 1.0043  9AFFFF0000     call    USER.GETLASTACTIVEPOPUP
+
+ 1.0048  8BF0           mov     si, ax
+
+ 1.004A  56             push    si
+
+ 1.004B  9AA4020000     call    USER.ISWINDOW
+
+ 1.0050  0BC0           or      ax, ax
+
+ 1.0052  7418           je      006C
+
+ 1.0054  56             push    si
+
+ 1.0055  6AF0           push    FFF0
+
+ 1.0057  9ACD020000     call    USER.GETWINDOWLONG
+
+ 1.005C  F7C20008       test    dx, 0800
+
+ 1.0060  750A           jne     006C
+
+ 1.0062  56             push    si
+
+ 1.0063  6A01           push    0001
+
+ 1.0065  9AFFFF0000     call    USER.SWITCHTOTHISWINDOW
+
+ 1.006A  EB07           jmp     0073
+
+
+
+ 1.006C >6A00           push    0000
+
+ 1.006E  9ABC020000     call    USER.MESSAGEBEEP
+
+
+
+ 1.0073 >5E             pop     si
+
+ 1.0074  5F             pop     di
+
+ 1.0075  8BE5           mov     sp, bp
+
+ 1.0077  5D             pop     bp
+
+ 1.0078  C20200         ret     0002
+
+
+
+ The RET 0002 at the end tells us that this is a near Pascal
+
+function thatexpects one WORd parameter, which appears as [bp+4]
+
+at the top of the code.
+
+ Because [bp+4] is being used as the first parameter to
+
+SendMessage(), it must be an HWND of some sort.
+
+ Here is the muster for SendMessage(): LRESULT SendMessage(HWND
+
+hWnd, UINT uMsg, WPARAM wMsgParam1, LPARAM lMsgParam2), where
+
+hWnd identifies the Window receiving the message, uMsg identifies
+
+the message being sent, wMsgParam1 & lMsgParam2 contain 16 bits
+
+and 32 bits of message-specific information.
+
+ Finally, we don't see anything being moved into AX or DX near
+
+the end of the function, so it looks as if this function has no
+
+return value:
+
+          void near pascal some_func(HWND hwnd)
+
+ Let's look once more at it... the function starts off with two
+
+nested calls to SendMessage(ý, using the message numbers 41Ah and
+
+409h. These numbers are greater than 400h, they must therefore
+
+be WM_USER+XX values. Windows controls such as edit, list and
+
+combo boxes all use WM_USER+XX notification codes.
+
+ The only appropriate control in TASKMAN is the list box, so we
+
+can just look at the list of LB_XXX codes in WINDOWS.H. 1Ah is
+
+26 decimal, therefore 41Ah is WM_USER+26, or LB_GETITEMDATA.
+
+Let's see what Osborne's "Special Purpose API functions" says
+
+about it (pag.752):
+
+ ------------------------------------------------------
+
+LB_GETITEMDATA
+
+ When sent: To return the value associated with a list-box item.
+
+ wParam:    Contains the index to the item in question
+
+ lParam:    Not used, must be 0
+
+ Returns:   The 32-bit value associated with the item
+
+ ------------------------------------------------------
+
+ Similarly,, 409h is WM_USER+9, which in the case of a list box
+
+means LB_GETCURSEL. We saw earlier that TASKMAN uses
+
+LB_SETITEMDATA to store each window title's associated HWND.
+
+LB_GETITEMDATA will now retrive this hwnd:
+
+
+
+  hwnd = SendMessage(listbox, LB_GETITEMDATA,
+
+     SendMessage(listbox, LB_GETCURSEL, 0, 0), 0);
+
+
+
+ Notice that now we are caling the parameter to some_func() a
+
+listbox, and that the return value from LB_GETITEMDATA is an
+
+HWND.
+
+ How would we know it's an hwnd without our references? We can
+
+see the LB_GETITEMDATA return value (in DI) immediatly being
+
+passed to IsWindow() at line 1.0039:
+
+ ; IsWindow(hwnd = SendMessage(...));
+
+1.0031 9AEF010000   call far ptr SENDMESSAGE
+
+1.0036 8BF8         mov  di, ax
+
+1.0038 57           push di
+
+1.0039 9A4C000000   call far ptr ISWINDOW
+
+ Next, the hwnd is passed to GetLastActivePopup(), and the HWND
+
+that GetLastActivePopup() returns is then checked with
+
+IsWindow()... IsWindow() returns non-zero if the specified hWnd
+
+is valid, and zero if it is invalid:
+
+ ; IsWindow(hwndPopup = GetLastActivePopup(hwnd));
+
+1.0042  57          push    di
+
+1.0043  9AFFFF0000  call    USER.GETLASTACTIVEPOPUP
+
+1.0048  8BF0        mov     si, ax      ; save hwndPopup in SI
+
+1.004A  56          push    si
+
+1.004B  9AA4020000  call    USER.ISWINDOW
+
+ Next, hwndPopup (in SI) is passed to GetWindowLong(), to get
+
+informations about this window. Here is time to lok at WINDOWS.H
+
+to figure out what 0FFF0h at line 1.055 and 800h at line 1.005C
+
+are supposed to mean:
+
+ ; GetWindowLong(hwndPopup, GWL_STYLE) & WS_DISABLED
+
+1.0054  56          push  si           ;hwndPopup
+
+1.0055  6AF0        push  GWL	5STYLE   ;0FFF0h = -16
+
+1.0057  9ACD020000  call  USER.GETWINDOWLONG
+
+1.005C  F7C20008    test  dx, 0800     ;DX:AX= 800:0= WS_DISABLED
+
+ Finally, as the whole point of this exercise, asuming this
+
+checked window passes all its tests, its last active popup is
+
+switched to:
+
+ ; SwitchToRhisWindow(hwndPopup, TRUE)
+
+1.0062  56         push  si             :hwndPopup
+
+1.0063  6A01       push  0001
+
+1.0065  9AFFFF0000 call  USER.SWITCHTOTHISWINDOW
+
+ It's here that all possible questions START: SwitchToThisWindow
+
+is not documented... therefore we do not know the purpose of its
+
+second parameter, apparently a BOOL. We cannot even tell why
+
+SwitchToThisWindow() is being used... when SetActiveWindow(),
+
+SetFocus() or BringWindowToTop() might do the trick. And why is
+
+the last active popup and not the window switched to?
+
+ But let's resume for now our unearthed mysterious function, taht
+
+will switch to the window selected in the Task List if the window
+
+meets all the function's many preconditions:
+
+void MaybeSwitchToSelecetedWindow(HWND listbox)
+
+{
+
+  HWND hwnd, hwndPopup;
+
+  // first figure out wich window was selected in the Task List
+
+  if (IsWindow(hwnd = SendMessage(listbox, LB_GETITEMDATA,
+
+      SendMessage(listbox, LB_GETCURSEL, 0, 0), 0)))
+
+   {
+
+    if (IsWindow(hwndPopup = GetLastActivePopup(hwnd)))
+
+    {
+
+     if (! (GetWindowLong(hwndPopup, GWL	5STYLE) & WS_DISABLED))
+
+     {
+
+        SwitchToThisWindow(hwndPopup, TRUE);
+
+        return;
+
+     }
+
+    }
+
+  MessageBeep(0);        //Still here... error!
+
+}
+
+
+
+Now we have a good idea of what TASKMAN does (it sure took a long
+
+time to understand thos 3K bytes of code!). In the next lessons
+
+we'll use what we have learned to crack together some common
+
+Windows programs.
+
+
+
+(->lesson 3) </PRE>

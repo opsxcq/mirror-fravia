@@ -1,0 +1,321 @@
+<HTML>
+
+<HEAD>
+
+  <TITLE>syncche.htm</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+<P><CENTER><FONT SIZE="+3">HyperChem 5.0  - 'Same old sauce'<BR>
+
+</FONT><FONT SIZE="+2">&quot;Don't lure us any more&quot;</FONT>
+
+</CENTER>
+
+
+
+<H4><CENTER><I>by +Sync</I><BR>   <BR>
+
+<A href="solution.htm" tppabs="http://www.anticrack.de/fravia/solution.htm"><IMG SRC="hcu1.gif" tppabs="http://www.anticrack.de/fravia/hcu1.gif" ALT="cracker" ALIGN="BOTTOM" WIDTH="114" HEIGHT="43" BORDER="0" VSPACE="0" HSPACE="0"></A><BR><BR>
+
+(28 October 1997)</CENTER></H4>
+
+
+
+<CENTER><HR><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"> Courtesy of fravia's page of reverse engineering<BR>
+
+</CENTER><BR><I>Well, +Sync (our &quot;tester maximo&quot;) worked on this essay as an answer 
+
+to an email that we 
+
+got some days ago. +Sync has accomplished a very &quot;altruistic&quot; task indeed: he 
+
+tested a protection scheme in order to see if it was relevant or not for 
+
+our studies. Unfortuntaley it was not.<BR>
+
+I believe we should all learn some lessons:<BR>
+
+1)		<FONT color="blue">Never ask for help when you have not &quot;done your math&quot; yourselves.<BR>
+
+</FONT>Admittely, it may be difficult at times to know if a &quot;new protection&quot; is 
+
+only an old known one in disguise, or if it is really new and daunting, yet 
+
+we'll never accept, from now on, requests regarding &quot;apparently new&quot; protection 
+
+schemes that are not accompanied by a THOROUGH first investigation by the 
+
+guy that asks for help. +Sync's time and capabilities (and +gthorne's and 
+
+mine, and of all other 'new' +HCUkers... not to speak of +ORC's ones) 
+
+are too precious to be wasted on such banalities).<BR>
+
+2)	<FONT color="blue">New and daunting protection schemes are indeed very rare.</FONT><BR>As soon as 
+
+one appears there are many chances that it will reveal itself as an 'old sauce', 
+
+like this one. It's a pity, but it is -alas- so (let's hope that clever programmers 
+
+will learn enough from our essays to provide us more tough challenges :-)<BR> 
+
+3)	<FONT color="blue">I hope that some funny faces are not mistaking the +HCU for a place 
+
+where you are allowed to hunt for ready made cracks.</FONT><BR>WE ARE NOT INTERESTED in the software 
+
+that we crack (with very few exceptions), as funny as it may seem to some, 
+
+we are interested (a lot) in 'pure' software reverse engineering activities,  
+
+it just happens that protection schemes constitute a nice challenge. Anyway we 
+
+will NEVER again publish any reverse engineering of a program if we may again 
+
+suspect, like we do in this case, that we have been lured to work on a 
+
+protection scheme only in order to crack a banal specific target. You need a 
+
+ready-made crack? Are you a &quot;me-too&quot; luser, incapable of reversing software yourself? Are 
+
+you too lazy or stupid to study the (aboundant) material provided all over the 
+
+net? Beggar off, there are plenty of self-appointed 
+
+crackers ready to futter you software in spades till you have slurped so much that you'll explode. 
+
+You are here at the wrong address.<BR><CENTER>
+
+And now, duly feeling guiltiness and remorse, enjoy this nice &quot;surgical&quot; clean cut essay by +Sync
+
+</CENTER>
+
+<HR size="6"></I><PRE><FONT size="+2">HyperChem 5.0  - 'Same old sauce'
+
+   </FONT>
+
+Well, this was sent to me through the +HCU as a possible new project. 
+
+I would have to say that not only does this not qualify as a new project, 
+
+it is simply the same thing that we have presented over and over again.  
+
+At most, this might qualify for the &quot;time protections&quot; section.  
+
+Anyway, here it is. 
+
+Available at <A href="javascript:if(confirm('http://www.hyper.com/  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.hyper.com/'" tppabs="http://www.hyper.com/">http://www.hyper.com</A> the program is called HyperChem, 
+
+which seems to be a very versatile use for you Chemical Engineers out 
+
+there.  
+
+First thing, as always, is to run the program.  
+
+It quickly tells you that you cannot run this version without an 
+
+&quot;authorization code&quot;.  You get this code from them, and enter it in
+
+HCLicense.EXE in order to run this program.  
+
+This is the very interesting part of this target's protection.  
+
+Enter any set of numbers as the Authorization Code and it will
+
+register almost every time.  
+
+It doesn't like alpha characters though. 
+
+Can it really be that easy?  Unfortunately not.  
+
+Try running the program again and nothing has changed.  
+
+So what the hell is HCLicense doing?  Well, check it out with WDASM or 
+
+Softice or IDA or any way you want, and it comes down to this:
+
+All it does is take the number you put in, and store it in a key in the
+
+registry.  
+
+The key is :
+
+HKEY_CURRENT_USER\Software\Hypercube\HyperChem\5.0\Registration\DemoKey
+
+Well, so now all we need to do is find out where in the program it
+
+checks this key.  So WDASM CHEM.EXE and look for 'DemoKey'.  
+
+Right below where you find it, you will find the following code
+
+
+
+* Reference To: ADVAPI32.RegQueryValueExA, Ord:0136h
+
+                                  |
+
+:0041B730 FF156CA65000      Call dword ptr [0050A66C]  ;get the key
+
+:0041B736 85C0              test eax, eax
+
+:0041B738 753E              jne 0041B778
+
+:0041B73A 8B9540FEFFFF      mov edx, dword ptr [ebp+FFFFFE40]
+
+:0041B740 899538FDFFFF      mov dword ptr [ebp+FFFFFD38], edx
+
+:0041B746 8B8538FDFFFF      mov eax, dword ptr [ebp+FFFFFD38]
+
+:0041B74C 8B08              mov ecx, dword ptr [eax]	;ecx holds code from HCLicense
+
+:0041B74E 898D34FDFFFF      mov dword ptr [ebp+FFFFFD34], ecx
+
+:0041B754 8B9534FDFFFF      mov edx, dword ptr [ebp+FFFFFD34] ;now in edx
+
+:0041B75A 3B9530FDFFFF      cmp edx, dword ptr [ebp+FFFFFD30] ;check if right
+
+:0041B760 7516              jne 0041B778     ;jmp if it's not right
+
+
+
+So, we need to prevent the jump at 41b760 from being made, as follows:
+
+:0041B760 7516              jne 0041B778        ;jmp if it's not right
+
+to
+
+:0041B760 4048              inc eax    dec eax  ; ie do nothing
+
+
+
+So now we will be able to run the program right?  Well, try it out.  
+
+It tells us that our evaluation has expired!  Before we even get to 
+
+run it once! What kind of shoddy programming is this?  
+
+Well, it's not hard to fix.  Look for an occurrence of GetLocalTime 
+
+(or BPX it in S-ICE) and you'll quickly find the code snippet below.
+
+
+
+* Reference To: KERNEL32.GetLocalTime, Ord:00F5h
+
+                                  |
+
+:0041A176 FF1514A95000            Call dword ptr [0050A914]
+
+:0041A17C 83EC10                  sub esp, 00000010
+
+:0041A17F 8BCC                    mov ecx, esp
+
+:0041A181 8B55F0                  mov edx, dword ptr [ebp-10]
+
+:0041A184 8911                    mov dword ptr [ecx], edx
+
+:0041A186 8B45F4                  mov eax, dword ptr [ebp-0C]
+
+:0041A189 894104                  mov dword ptr [ecx+04], eax
+
+:0041A18C 8B55F8                  mov edx, dword ptr [ebp-08]
+
+:0041A18F 895108                  mov dword ptr [ecx+08], edx
+
+:0041A192 8B45FC                  mov eax, dword ptr [ebp-04]
+
+:0041A195 89410C                  mov dword ptr [ecx+0C], eax
+
+:0041A198 E814160000              call 0041B7B1     ;check if expired yet
+
+:0041A19D 83C410                  add esp, 00000010
+
+:0041A1A0 85C0                    test eax, eax     ;are we?
+
+:0041A1A2 7504                    jne 0041A1A8      ;yes, jmp away
+
+:0041A1A4 33C0                    xor eax, eax      ;no, go on good guy
+
+:0041A1A6 EB31                    jmp 0041A1D9
+
+
+
+So again we need to force the jump not to be made
+
+:0041A1A2 7504                    jne 0041A1A8      ;yes, jmp away
+
+to
+
+:0041A1A2 4048                    inc eax   dec eax ;don't ever jump
+
+
+
+That's it, HyperChem 5.02 Evaluation version now runs as it would if you
+
+had entered a valid code, and were still in the evaluation period.  
+
+There is still a nag screen at startup, which I did not bother writing 
+
+details about (if you don't know how to remove it, you need to study a 
+
+little more).  
+
+I did begin to reverse the Authorization Code, it is created from the 
+
+name and organization you type in at install, however a patch was 
+
+necessary to clean up the expiration, so a keymaker would only do half 
+
+the job anyway.  
+
+Hope this helps someone.
+
++Sync  <A href="mailto:" sync1@iname.com">sync1@iname.com</a>
+
+
+
+</pre><font color="green">
+
+(c) +Sync, 1997. All rights reversed.</font>
+
+		<hr size="2">
+
+<center><i>You are deep inside fravia's page of reverse
+
+engineering, choose your way out:</i></center>
+
+
+
+
+
+<p><center>
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><a HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage </a>
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"> <a HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links
+
+</a><img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0" NATURALSIZEFLAG="0"> <a HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity
+
+</a><img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><a HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC </a><img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><a HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays </a><img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><a HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools
+
+</a><img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><a HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails </a><br>
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><a HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database </a>
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><a HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut </a><img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><a HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms </a><img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><a HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia
+
+</a><br>
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><a HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">is reverse engineering legal? </a></font></center></p>
+
+
+
+<p><center><font SIZE="-1"><hr></font></center>
+
+</body>
+
+</html>
+
+"

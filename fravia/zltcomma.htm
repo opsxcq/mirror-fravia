@@ -1,0 +1,645 @@
+<HTML>
+
+<HEAD>
+
+<META Name="Voluntary Content Rating" content="it's fravia's: great!">
+
+<TITLE>zltcomma.htm: How to defeat a cd-lock protection</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR=#C0C0C0 TEXT=#001010 ALINK=#405040 VLINK=#8850AA>
+
+<CENTER><B><FONT size=+3>How to defeat a cd-lock protection</FONT></B>
+
+
+
+<BR><FONT size=+2>by zoltan<BR></FONT>(24 September 1999)<BR><BR><A href="project4.htm" tppabs="http://www.anticrack.de/fravia/project4.htm"><IMG SRC="project4.gif" tppabs="http://www.anticrack.de/fravia/project4.gif" ALT="project4" ALIGN=BOTTOM WIDTH=114 
+
+HEIGHT=43 BORDER=0 VSPACE=0 HSPACE=0></A>
+
+<BR><FONT color=gray>CD-ROM faking</FONT><BR>
+
+<HR>
+
+Courtesy of fravia's pages of reverse engineering ~ slightly edited by fravia+
+
+<HR></CENTER></FONT>
+
+<PRE>
+
+
+
+HOW TO DEFEAT A CD-LOCK PROTECTION.
+
+written by (c) zoltan
+
+<HR>
+
+As example: COMMANDOS: Behind Enemy Lines
+
+<HR>
+
+ TOOLS REQUIRED:
+
+              -
+
+              SoftIce 4.0
+
+              W32Dasm, (if you want to follow)   
+
+              Hackers View 6.15    
+
+ TARGET:
+
+              Commandos: Behind Enemy Lines
+
+                - buy it or get the ripp + original exe.
+
+
+
+Visit the tools section of our web page: <A href="javascript:if(confirm('http://protools.cjb.net/  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://protools.cjb.net/'" tppabs="http://protools.cjb.net/">http://protools.cjb.net</A> a nice tool site...
+
+
+
+</PRE>
+
+ <HR>
+
+
+
+Briefing about cd-lock:
+
+<BR><BR>
+
+Today nearly all games that get published has a form of protection called iSO protection (in the scene). It is there to prevent
+
+end-users for pirating cd's by just copying them at home with cd-burners. Today im going to Teach you how to 
+
+reverse one of these
+
+protections called <U>CD-LOCK</U>. You check if the cd you have is protected by CD-LOCK: simply explore your cd-drive and look
+
+for  4 huge (.afp) files.
+
+<BR><BR>
+
+Introduction:
+
+<BR><BR>
+
+Another famous game: Commandos. This one was released to the public by CLASS PC on the 24th of June 1998. It's been
+
+availible for download on  the internet ever since.  Think i leeched it the same day, and got the original (protected) exe from
+
+some friends. I started cracking this (cd-check) like i thought it was, because i had never even heard of
+
+this cd-lock protection. Anyway i cracked it fairly easy, but i had to admit to myself 
+
+that this must have been one of the hardest
+
+(cd-check, like i thought) i  had ever done.<BR>
+
+Few months later i heard about the cd-lock protection schemes, and i was like "uhh ohh?
+
+that protection got it's own name, cool!" ;). I actually love cracking protections 
+
+that got their own name, like CD-lock, gives sorta feeling for the scheme...<BR>Anyways
+
+enough crap chat... let's begin.
+
+<BR><BR>Start off by deleting the commandos.exe witch is Class' intro, or simply copy it over to another dir, if you
+
+want to collect  that junk like i do. Now you may delete the betasux.exe, 
+
+because that is the cracked exe from Class, and we dont
+
+need  it, since  we are going to crack this game ourselfs. Run commandos.exe, 
+
+break on GetDriveTypea, press the "start a new
+
+game" option and you should be landing here:
+
+<PRE>
+
+
+
+* Referenced by a CALL at Address:0044CAFF      <WHERE this whole protections was
+
+|                                               \ called from ..
+
+:004949F0 83EC08                  sub esp, 00000008
+
+:004949F3 A1D0266000              mov eax, dword ptr [006026D0]
+
+:004949F8 89442400                mov dword ptr [esp], eax
+
+:004949FC 53                      push ebx
+
+:004949FD 56                      push esi
+
+:004949FE B341                    mov bl, 41
+
+:00494A00 57                      push edi
+
+
+
+* Reference To: KERNEL32.GetDriveTypeA, Ord:00CEh                  
+
+                                  |
+
+:00494A01 8B3514266600            mov esi, dword ptr [00662614]
+
+
+
+* Referenced by a Jump at Address:00494A8C(C)
+
+|
+
+:00494A07 8D44240C                lea eax, dword ptr [esp+0C]
+
+:00494A0B 885C240C                mov byte ptr [esp+0C], bl
+
+:00494A0F 50                      push eax
+
+:00494A10 FFD6                    call esi                  <- you are here.
+
+:00494A12 83F805                  cmp eax, 00000005         <- compare if drive is a cd-drive
+
+:00494A15 7570                    jne 00494A87              <- jump if not equal
+
+
+
+* Possible StringData Ref from Data Obj ->"rb"              <STRING that means READ
+
+                                  |
+
+:00494A17 68900F5F00              push 005F0F90
+
+:00494A1C 881D10266000            mov byte ptr [00602610], bl
+
+
+
+* Possible StringData Ref from Data Obj ->"d:\TBTP.AFP"          <OUR friend.
+
+                                  |
+
+:00494A22 6810266000              push 00602610                  <- cdletter:\TBTP.AFP
+
+:00494A27 881D20266000            mov byte ptr [00602620], bl    <- cdletter:\BBVN.AFP
+
+:00494A2D 881D30266000            mov byte ptr [00602630], bl    <- cdletter:\ETAO.AFP
+
+:00494A33 881D40266000            mov byte ptr [00602640], bl    <- cdletter:\BTBW.AFP
+
+:00494A39 E8D2A81300              call 005CF310                  <- check if they are there ..
+
+:00494A3E 83C408                  add esp, 8
+
+:00494A41 8BF8                    mov edi, eax         <- mov checksum result to edi
+
+:00494A43 85FF                    test edi, edi        <- if edi == 1
+
+:00494A45 750A                    jne 00494A51         <- the files exists! ..
+
+:00494A47 C744241000000000        mov [esp+10], 0      <- mov [esp+10], 0 = file doesnt exist
+
+:00494A4F EB2E                    jmp 00494A7F         <- jump and try again.
+
+
+
+* Referenced by a Jump at Address:00494A45(C)
+
+|
+
+:00494A51 6A00                    push 00000000
+
+:00494A53 6800A08329              push 2983A000
+
+:00494A58 57                      push edi
+
+:00494A59 E8C2AD1300              call 005CF820                  <- SetFilePointer
+
+:00494A5E 83C40C                  add esp, 0000000C
+
+:00494A61 57                      push edi
+
+:00494A62 E879AD1300              call 005CF7E0                  <- ReadFile
+
+:00494A67 83C404                  add esp, 00000004
+
+:00494A6A 33C9                    xor ecx, ecx
+
+:00494A6C 83F829                  cmp eax, 00000029              <- compare ...
+
+:00494A6F 0F94C1                  sete cl
+
+:00494A72 894C2410                mov dword ptr [esp+10], ecx
+
+:00494A76 57                      push edi
+
+:00494A77 E8F4A71300              call 005CF270
+
+:00494A7C 83C404                  add esp, 00000004
+
+
+
+* Referenced by a Jump at Address:00494A4F(U)
+
+|
+
+:00494A7F 8B442410        mov eax, dword ptr [esp+10]   <- if [esp+10] = 1 your good cracker.
+
+:00494A83 85C0            test eax, eax                 <- if eax == 1 then jump ..
+
+:00494A85 7514            jne 00494A9B                  <- continue with game ...
+
+
+
+* Referenced by a Jump at Address:00494A15(C)
+
+|
+
+:00494A87 FEC3            inc bl
+
+:00494A89 80FB5A          cmp bl, 5A                    <- compare bl, 5Ah
+
+:00494A8C 0F8E75FFFFFF    jle 00494A07                  <- jump and try again with next drive.
+
+:00494A92 33C0            xor eax, eax                  <- baad cracker.
+
+:00494A94 5F...           ...popout and ret
+
+
+
+
+
+* Referenced by a Jump at Address:00494A85(C)
+
+|
+
+:00494A9B B801000000      mov eax, 00000001             <-  good cracker.
+
+:00494AA0 5F...           ...popout and ret
+
+</pre>
+
+
+
+NOW. goto the code location where all this crap was called from, you should be here:
+
+<PRE>
+
+
+
+* Referenced by a CALL at Addresses:00447E9C, :00448015       <HERE are the 2 calls)
+
+|
+
+:0044CAF0 83EC0C                  sub esp, 0000000C
+
+:0044CAF3 A1980A5F00              mov eax, dword ptr [005F0A98]
+
+:0044CAF8 85C0                    test eax, eax
+
+:0044CAFA 90                      nop
+
+:0044CAFB 53                      push ebx
+
+:0044CAFC 56                      push esi
+
+:0044CAFD 7413                    je 0044CB12
+
+:0044CAFF E8EC7E0400              call 004949F0                  <- call check ..
+
+:0044CB04 85C0                    test eax, eax                  <- eax=1
+
+:0044CB06 740A                    je 0044CB12                    <- continue with game ..
+
+:0044CB08 C705980A5F0000000000    mov dword ptr [005F0A98], 00000000
+
+
+
+* Referenced by a Jump at Addresses:0044CAFD(C), :0044CB06(C)
+
+|
+
+* Possible StringData Ref from Data Obj ->"rb"
+
+                                  |
+
+:0044CB12 68900F5F00              push 005F0F90
+
+:0044CB17 BB00000000              mov ebx, 00000000
+
+
+
+* Possible StringData Ref from Data Obj ->"d:\TBTP.AFP"
+
+                                  |
+
+:0044CB1C 6810266000              push 00602610
+
+:0044CB21 E8EA271800              call 005CF310
+
+:0044CB26 83C408                  add esp, 00000008
+
+:0044CB29 8BF0                    mov esi, eax</PRE>
+
+more code, more code... but you don't need to care about it ...
+
+<BR><BR>
+
+
+
+The best and the simplest way to crack this protection is probably to 
+
+find where the protection was called
+
+from and then just simply cut isnide like this:
+
+<PRE>
+
+:00447E91 8883100D0000            mov byte ptr [ebx+00000D10], al
+
+:00447E97 E834321200              call 0056B0D0
+
+:00447E9C E84F4C0000              call 0044CAF0      <WHERE it was called from the first time.
+
+:00447EA1 85C0                    test eax, eax      <- eax=1: good cracker, eax=0: baad cracker
+
+:00447EA3 7418                    je 00447EBD        <- continue with game ..
+
+:00447EA5 8D442418                lea eax, dword ptr [esp+18]
+
+:00447EA9 8B4C2434                mov ecx, dword ptr [esp+34]
+
+
+
+Second Call:
+
+* Referenced by a Jump at Address:0044800C(U)
+
+|
+
+:00448015 E8D64A0000              call 0044CAF0      <- where it got called from the 2th time.
+
+:0044801A 85C0                    test eax, eax      <- same as above. 
+
+:0044801C 7418                    je 00448036        <- same as above..
+
+:0044801E 8D442418                lea eax, dword ptr [esp+18]
+
+</pre>
+
+
+
+
+
+You simply change both calls to mov eax, 1, and the game should run smooth. ;)
+
+<BR><BR>
+
+
+
+Special greets to: BMonkey, Carphatia, Fravia+, Neural_Noise ...
+
+</PRE></FONT>
+
+<HR>
+
+
+
+<BR><CENTER><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=88% HEIGHT=6 BORDER=0
+
+VSPACE=0 HSPACE=0><BR><BR><I>You'r deep inside fravia's pages of reverse engineering, choose your way out!</I><BR>
+
+<!-- Begin Javascript relocator <font color=gray><b>~</b></fonT> Javascript code by fravia+ -->
+
+<FORM name="FraviasForm">
+
+<SCRIPT LANGUAGE="javascript">
+
+<!--
+
+
+
+function FravPage(list) {
+
+	      location.href = list.options[list.selectedIndex].value
+
+}
+
+
+
+// -->
+
+</SCRIPT>
+
+<DIV align="center">
+
+<CENTER>
+
+<P center="&lt;center&gt;&lt;/center&gt;">&nbsp;<SELECT name="fraviale" size="1">
+
+
+
+<OPTION>Choose another page!</OPTION>
+
+<OPTION value="index.htm">Main page</OPTION>
+
+<OPTION value="academy.htm">Software reversing Lab</OPTION>
+
+<OPTION value="realicra.htm">Reality cracking Lab</OPTION>
+
+<OPTION value="noanon.htm">Anonymity Lab</OPTION>
+
+<OPTION value="ideale.htm">Site busting Lab</OPTION>
+
+<OPTION value="howtosea.htm">How to search Lab</OPTION>
+
+<OPTION value="sealight.htm">--Search engines (light)</OPTION>
+
+<OPTION value="searengi.htm">--Search engines (heavy)</OPTION>
+
+<OPTION value="links.htm">Links</OPTION>
+
+<OPTION value="tools.htm">Tools</OPTION>
+
+<OPTION value="javascri.htm">Javascript reversing</OPTION>
+
+<OPTION value="screamin.htm">Screaming truth</OPTION>
+
+<OPTION value="entran.htm">Main entrance</OPTION>
+
+<OPTION value="new_what.htm">What's new on fravia's</OPTION>
+
+<OPTION value="info.htm">Mail fravia+</OPTION>
+
+<OPTION value="http://greythorne.home.ml.org">+Greythorne's</OPTION>
+
+<OPTION value="http://www.InsideTheWeb.com/mbs.cgi/mb186724">Tools of our trade msgboard</OPTION>
+
+<OPTION value="http://www.InsideTheWeb.com/mbs.cgi/mb155985">Main msgboard</OPTION>
+
+</SELECT>
+
+
+
+<INPUT type="button" value="Let's go!" onclick="FravPage(this.form.elements[0])">
+
+<BR>
+
+</DIV>
+
+
+
+</FORM>
+
+<!-- end Javascript relocator -->
+
+<BR><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=88% HEIGHT=6 BORDER=0
+
+VSPACE=0 HSPACE=0><BR><BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0
+
+VSPACE=0 HSPACE=0><A
+
+HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0
+
+VSPACE=0 HSPACE=0>
+
+<A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links </A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0>
+
+<A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity </A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC </A>
+
+
+
+<IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays </A>
+
+
+
+<IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database </A>
+
+
+
+<IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="botstart.htm" tppabs="http://www.anticrack.de/fravia/botstart.htm">bots wars</A>
+
+
+
+<BR>
+
+<IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut </A>
+
+
+
+<IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 BORDER=0
+
+VSPACE=0 HSPACE=0><A
+
+HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13
+
+BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13
+
+BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="javascri.htm" tppabs="http://www.anticrack.de/fravia/javascri.htm">javascript wars </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0
+
+VSPACE=0 HSPACE=0><A
+
+HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0
+
+VSPACE=0 HSPACE=0><A
+
+HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia </A><BR>
+
+
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0
+
+VSPACE=0 HSPACE=0><A
+
+HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering illegal?
+
+</A></CENTER>
+
+
+
+</BODY>
+
+</HTML>

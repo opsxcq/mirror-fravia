@@ -1,0 +1,1000 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>spirit_1.htm: How to generate RealPlayer Plus 4.0 installation keys</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR=#C0C0C0 TEXT=#001010 VLINK=#405040>
+
+<CENTER><FONT size=+3>How to generate RealPlayer Plus 4.0 installation keys</FONT>
+
+<BR>(the "dummy code check" trick)
+
+<H2>by <FONT color=#5500AA>sPIRIT and HellRaiser</FONT></H2>
+
+(12 February 1998, slightly edited by fravia+)</H4>
+
+
+
+<A href="progcor.htm" tppabs="http://www.anticrack.de/fravia/progcor.htm"><IMG 
+
+    SRC="useful.gif" tppabs="http://www.anticrack.de/fravia/useful.gif"
+
+   ALT="student" ALIGN="CENTER" WIDTH="114"
+
+    HEIGHT="43" BORDER="0" VSPACE="0" HSPACE="0"></A> <BR>
+
+    <FONT color="gray">Programmers' corner</FONT> 
+
+
+
+<HR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALIGN=BOTTOM BORDER=0 VSPACE=0 HSPACE=0 width="13" height="13">Courtesy of fravia's page 
+
+of reverse engineering</CENTER><HR>       
+
+<CENTER>Well, I really wish my readers would use the <A href="formamus.htm" tppabs="http://www.anticrack.de/fravia/formamus.htm">formamus.htm</A> 
+
+model before sending me their essay! It's not just a matter of having less editing work 
+
+to do myself, wich should already be a good reason to do it :-)<BR>I'll repeat it once more: essays without model, like 
+
+this one, will NOT be automatically cataloged/retrieved in the (future) +HCU database.<BR>
+
+This said you have here a very intersting work, made in couple by sPIRIT and HellRaiser. 
+
+As anyone knows we are 
+
+not so much favourable to the publishing of key generators, why the hell 
+
+should we allow all lamers of the planet to use stolen software? Yet in this case there 
+
+is serious reversing work in play (the "dummy code check" trick, if better implemented 
+
+by a good protector, could really fence some intermediate cracker attacks). 
+
+Therefore it makes <FONT color=blue>good reading for intermediate crackers 
+
+and intermediate protectors alike</FONT>.<BR>
+
+Besides I think that the complete ASM code for the keygenerator that 
+
+sPIRIT and HellRaiser have included at the bottom can be useful for any 
+
+serious reverser: this kind of structure (mainloop-critter) could in fact be used 
+
+in order to reverse other ripped schemes...<BR>I like moreover the work approach that the 
+
+Authors have chosen: HellRaiser 
+
+explaining the cracking session <U>without code</U> and sPIRIT commenting for you the code <U>after</U> 
+
+you having read Hellraiser's overall intro... as you will 
+
+read, this results in a very sound essay. 
+
+Enjoy!
+
+</CENTER><HR size=6>
+
+<PRE>
+
+How to generate RealPlayer Plus 4.0 installation keys
+
+By sPIRIT - sOFTPROJECT 98, and HellRaiser
+
+
+
+Tools needed:
+
+SoftICE (Winsuxx 95 or NT version)
+
+Any ASM compiler (TASM 3.2 or greater will do)
+
+
+
+
+
+Hello World, this is HellRaiser writing!
+
+
+
+I've been searching for some time for a code/keygen for RealAudio Player Plus,
+
+but it looks like I couldn't find anything so far... so I decided to do it on
+
+my own :)
+
+Too bad I discovered AFTERWARDS that the record function does not convert
+
+audio streams to RA files, but only allows to save streams from netradios on
+
+the hard disk... bah, who cares, I did this and I'm going to tell you
+
+everything. Thanks to sPIRIT^SPJ who helped me a bit, expecially teaching SiCE
+
+commands, messing up the debug phase and writing this article.
+
+
+
+As a newbie to NT cracking (I just installed SoftIce/NT yesterday and never had
+
+experiences about NT cracking) I played around a lot... sorry if it doesn't sound
+
+clear O:) There has to be an easier way to crack this target, changing a flag in one
+
+memory location or such, but I thought a keygen was more userful and funnier.
+
+
+
+Okay, at first I expanded the installation package to my HDD and hooked the
+
+GetWindowTextA, which the installation program seems to use intensively. 
+
+Even if it calls it when you press a key, don't think about it, it's just 
+
+to write out the new code.
+
+The first thing that comes to mind is that just after you press "NEXT>" it
+
+reads the 3 codes, copies them to another memory area and then checks for some
+
+kind of flag (or at least I thought so) which will probably go wrong
+
+(CAC instead of CAB). Setting the register and/or the memory to CAB will not
+
+show the warning message, but it will also NOT install the target correcly. 
+
+Something better had to be done...
+
+
+
+BPM to the new-written memory area containing the codes (funny, it writes them
+
+in 3 different lines, with an offset of 10h between each beginning) and some
+
+skipping. It had to read them, or else they were useless... and indeed, SiCE
+
+soon told me that it was. Even more funnier, it was copying them to another
+
+memory area. New BPM to this new area (why was it coping them? not for fun, 
+
+of course :).
+
+When SiCE popped up again, the installation program was checking for the
+
+numbers to be digits. Some skip of these routines, then I came to some other
+
+call, which I traced... what a real mess!!! A lookup table, a lot of memory
+
+writes... ARGH... I'll tell you... this is probably the most messed up
+
+ASCIIZ -> BIN code snippet I've ever seen... they have for sure spent some 
+
+days rewriting this part in assembly ;))) After some like 1 hour trying to 
+
+understand it, it just returned a number in EAX, and it was what I wrote 
+
+sooner. 
+
+BPC, and BPX to next call, since it was pushing the code...
+
+
+
+The next call contained some interesting code like I've rarely seen
+
+elsewhere... it had to be the encrypt/test routine. It just checks for a
+
+number to be inserted (1000-00-1000, which I first thought was some magic
+
+register-all code, but instead it was the 'fake magic number' he was putting 
+
+in when the input code was wrong 8))), does some cripples with the codes 
+
+(the routine reads the 10 digits... I did not spend almost any time at 
+
+all understanding it, I didn't care at all). 
+
+A couple of lines below was the interesting part. Some codes were written
+
+in memory and especially in EAX there was some interesting code... the program
+
+was putting 2 different values from 2 quite different tables with values
+
+ranging from 0 to 8 with some checks for equality... this had to be the code
+
+check. It took just some patience to copy it down in a text file and make it
+
+callable via assembly :))) just a loop to check if the output from the routine
+
+(with 3 lines from the function which originally got original result) was
+
+0 or 1... at the 1st 1 (duh...) I found I tried the code... it worked, among
+
+with all other codes it said to be good 8)
+
+
+
+Now it's sPIRIT writing.
+
+
+
+I know that this program is rather old, but it's always interesting to see how
+
+a GOOD utility is protected, just for learning' sake.
+
+Here are some code snippets from the PNSETUP.EXE diassembled listing.
+
+Take a look at this code:
+
+
+
+* Referenced by a  Jump at Address:00404736(C)
+
+
+
+:004047AB 8D4C2410     lea ecx, dword ptr [esp+10] ;Here is our key
+
+:004047AF E8BCD4FFFF   call 00401C70               ;<FONT color=red>Let's check it</FONT>!!
+
+:004047B4 85C0         test eax, eax               ;Is EAX=00000001 ?
+
+:004047B6 7420         je 004047D8                 ;Too bad! It's a WRONG key
+
+:004047B8 8D4C2410     lea ecx, dword ptr [esp+10]
+
+:004047BC E89F430000   call 00408B60               ;Let's check it another time
+
+:004047C1 85C0         test eax, eax
+
+:004047C3 7513         jne 004047D8                ;Uhm... BAD key!
+
+:004047C5 8D4C2410     lea ecx, dword ptr [esp+10]
+
+:004047C9 E8D2000000   call 004048A0               ;Good key, you honest guy!
+
+:004047CE 33C0         xor eax, eax
+
+:004047D0 5E           pop esi
+
+:004047D1 81C45C010000 add esp, 0000015C
+
+:004047D7 C3           ret
+
+
+
+* Referenced by a  Jump at Addresses:004047B6(C), :004047C3(C)
+
+
+
+:004047D8 8D442434     lea eax, dword ptr [esp+34] ;Jumps here when a BAD key is
+
+:004047DC 682C010000   push 0000012C               ;entered
+
+:004047E1 50           push eax
+
+
+
+* Possible Reference to String Resource ID=03271: "Warning: This is an
+
+  invalid serial number! "
+
+
+
+And the program goes on asking for a new key, or installing the lite version.
+
+Now the question is, what does the "call 00401C70" do?
+
+
+
+* Referenced by a  Jump at Address:00401C65(U)
+
+
+
+:00401C70 E84B6E0000    call 00408AC0              ;ASCIIZ -> HEX conversion
+
+:00401C75 50            push eax                   ;the code now is in EAX
+
+:00401C76 E8656D0000    call 004089E0              ;Let's check it
+
+:00401C7B 83C404        add esp, 00000004
+
+:00401C7E C3            ret
+
+
+
+Here is the code that checks the keycode, as HellRaiser explained:
+
+
+
+* Referenced by a CALL at Addresses:004089E5   , :00408B71   
+
+
+
+:00408BA0 83EC14        sub esp, 00000014
+
+:00408BA3 53            push ebx
+
+:00408BA4 56            push esi
+
+:00408BA5 8B742420      mov esi, dword ptr [esp+20]
+
+:00408BA9 57            push edi
+
+:00408BAA 55            push ebp
+
+:00408BAB 81FEE8CD9A3B  cmp esi, 3B9ACDE8          ;This checks for a dummy code
+
+:00408BB1 750D          jne 00408BC0               ;(1000-00-1000)
+
+:00408BB3 B801000000    mov eax, 00000001
+
+:00408BB8 5D            pop ebp
+
+:00408BB9 5F            pop edi
+
+:00408BBA 5E            pop esi
+
+:00408BBB 5B            pop ebx
+
+:00408BBC 83C414        add esp, 00000014
+
+:00408BBF C3            ret
+
+
+
+The dummy code check was a bitch to understand. It sees that that key is
+
+something similar to a *magic* one, as it also sets the flag in eax (00000001),
+
+but the code that followed doesn't fill all the flags. In fact, a later call
+
+checks for HEXcode = 3B9ACDE8, and reports a BAD KEY status.
+
+Let's go on.
+
+
+
+* Referenced by a  Jump at Address:00408BB1(C)
+
+
+
+:00408BC0 85F6       test esi, esi     ;The key can't be all 0's
+
+:00408BC2 750A       jne 00408BCE      ;The key isn't all 0's: real check
+
+:00408BC4 33C0       xor eax, eax      ;or the fake "magic"
+
+:00408BC6 5D         pop ebp
+
+:00408BC7 5F         pop edi
+
+:00408BC8 5E         pop esi
+
+:00408BC9 5B         pop ebx
+
+:00408BCA 83C414     add esp, 00000014
+
+:00408BCD C3         ret
+
+
+
+The "jne 00408BCE" brings to the REAL key check, it begins this way:
+
+
+
+* Referenced by a  Jump at Address:00408BC2(C)
+
+
+
+:00408BCE 33C9          xor ecx, ecx
+
+:00408BD0 BF01000000    mov edi, 00000001
+
+...
+
+...
+
+:00408C7E 89442420      mov dword ptr [esp+20], eax
+
+
+
+EAX contains the flag, 00000000 if the key is not valid, 00000001 otherwise
+
+(as we want!)
+
+
+
+* Jump from Addresses:00408C08(C), :00408C68(C), :00408C6E(C), :00408C78(C)
+
+
+
+:00408C82 8B442420     mov eax, dword ptr [esp+20]
+
+:00408C86 5D           pop ebp
+
+:00408C87 5F           pop edi
+
+:00408C88 5E           pop esi
+
+:00408C89 5B           pop ebx
+
+:00408C8A 83C414       add esp, 00000014
+
+:00408C8D C3           ret
+
+
+
+Ok. This check is over, but later on, at :004047BC      call 00408B60, it
+
+checks the code another time, to see if the first time we entered the fake magic
+
+I mentioned above (in that case the flag in eax was set), and if it was done,
+
+fails the installation.
+
+
+
+Ok, the real key check was ripped, along with the two tables it used to check
+
+if the entered code was valid, located at 0040B5A8 and 0040B6C8. Simply
+
+take a look at the source code of the keygen to see how they are used.
+
+</PRE><XMP>
+
+----------------- CUT HERE -------------------------------------------------------------------
+
+
+
+; RealPlayer Plus 4.0 random installation key generator
+
+; By sPIRIT - sOFTPROJECT 98, and HellRaiser
+
+
+
+.model small
+
+.486p
+
+.stack 100h
+
+
+
+.data
+
+table1 label dword
+
+  dd 1,2,3,4
+
+  dd 5,6,7,8
+
+  dd 1,0,1,2
+
+  dd 3,4,5,6
+
+  dd 7,8,1,0
+
+  dd 1,2,3,4
+
+  dd 5,6,7,8
+
+  dd 1,0,1,2
+
+  dd 3,4,5,6
+
+  dd 7,8,1,0
+
+  dd 1,2,3,4
+
+  dd 5,6,7,8
+
+  dd 1,0,1,2
+
+  dd 3,4,5,6
+
+  dd 7,8,1,0
+
+  dd 1,2,3,4
+
+  dd 5,6,7,8
+
+  dd 1,0,1,2
+
+
+
+table2 label dword
+
+  dd 2,4,6,8
+
+  dd 0,1,3,5
+
+  dd 3,1,2,4
+
+  dd 6,8,0,1
+
+  dd 3,5,3,1
+
+  dd 2,4,6,8
+
+  dd 0,1,3,5
+
+  dd 3,1,2,4
+
+  dd 6,8,0,1
+
+  dd 3,5,3,1
+
+  dd 2,4,6,8
+
+  dd 0,1,3,5
+
+  dd 3,1,2,4
+
+  dd 6,8,0,1
+
+  dd 3,5,3,1
+
+  dd 2,4,6,8
+
+  dd 0,1,3,5
+
+  dd 3,1,2,4
+
+
+
+vstack dd 40 dup (?)
+
+
+
+header db "RealPlayer Plus v4.0 installation random key generator",13,10
+
+       db "By sPIRIT - sOFTPROJECT 98, and HellRaiser - 9th february,
+
+1998",10,10,13,"$"
+
+
+
+byebye db 13,10,10,"sOFTPROJECT 98",10,13
+
+       db "Mail us at: sPIRIT <IMMAGIKA@usa.net> and HellRaiser <L.raiser@deathsdoor.com>",10,13,"$"
+
+
+
+textbuffer db 13,"__________   <SPACE> for another code, any other key to quit$"
+
+
+
+.code
+
+
+
+  .startup
+
+
+
+  mov ax,@data
+
+  mov ds,ax
+
+
+
+  mov dx,offset header
+
+  mov ah,9h
+
+  int 21h
+
+
+
+  in al, 40h
+
+  shl ax, 8
+
+  in al, 40h
+
+  shl eax,8
+
+  in al, 40h
+
+  shl eax,8
+
+  in al, 40h
+
+  mov esi,eax     ;Random startup point for quite different codes in few time
+
+
+
+  mainloop:
+
+
+
+    push esi
+
+    call critter
+
+    pop  esi
+
+    or   eax, eax
+
+    jng  short l_notfound
+
+
+
+      mov  di, offset textbuffer + 10
+
+      mov  cx, 10
+
+      mov eax, esi
+
+      mov ebp, 10
+
+
+
+     itoa:
+
+      xor  dx, dx
+
+      div ebp
+
+      add  dl, 30h
+
+      mov [di], dl
+
+      dec  di
+
+      dec  cx
+
+      jnz  short itoa
+
+
+
+      mov  ah, 9
+
+      mov  dx, offset textbuffer
+
+      int 21h
+
+
+
+      xor  ax, ax
+
+      int 16h
+
+
+
+      cmp  al, ' '
+
+      je  short l_notfound
+
+
+
+      mov dx,offset byebye
+
+      mov ah,9h
+
+      int 21h
+
+
+
+      mov ax,4c00h
+
+      int 21h
+
+
+
+    l_notfound:
+
+
+
+  in al, 40h
+
+  shl ax, 8
+
+  in al, 40h
+
+  shl eax,8
+
+  in al, 40h
+
+  shl eax,8
+
+  in al, 40h
+
+  mov esi,eax     ;Random startup point for quite different codes in few time
+
+
+
+  jnz short mainloop
+
+
+
+;original code test routine from RealAudio Player Plus 4.0 setup (PNSETUP.EXE)
+
+;Requires (ASCIIZ -> HEX) code in ESI
+
+;Returns EAX = 1 if code is valid, 0 else
+
+
+
+critter proc
+
+  xor ecx,ecx
+
+  mov edi,1
+
+  mov eax,-1
+
+  lea ebx, [vstack+14h]
+
+  mov [vstack+20h], ecx
+
+  mov [vstack+10h], ecx
+
+  mov [vstack+1ch], ecx
+
+  mov [vstack+14h], eax
+
+  mov [vstack+18h], eax
+
+
+
+  lbf2:
+
+  mov ebp, 0ah
+
+  mov eax, esi
+
+  sub edx, edx
+
+  div ebp
+
+  cmp dl,06
+
+  jnz lc14
+
+  lea eax,[vstack+1ch]
+
+  cmp edx,eax
+
+  jae lc82
+
+  movsx eax,cl
+
+  mov [ebx],eax
+
+  add ebx,04
+
+  jmp lc2f
+
+
+
+  lc14:
+
+  movsx eax,dl
+
+  add [vstack+1ch],eax
+
+  cmp dl,6
+
+  jle lc22
+
+  dec dl
+
+
+
+  lc22:
+
+  movsx eax,dl
+
+  imul eax,edi
+
+  lea edi,[edi*8+edi]
+
+  add [vstack+10h],eax
+
+
+
+  lc2f:
+
+  mov ebp,0ah
+
+  mov eax,esi
+
+  sub edx,edx
+
+  inc cl
+
+  div ebp
+
+  mov esi,eax
+
+  cmp cl,0ah
+
+  jl lbf2
+
+
+
+  mov eax,[vstack+1ch]
+
+  shl eax,2
+
+  mov edx,[eax+table1]
+
+  mov eax,[eax+table2]
+
+  cmp eax,edx
+
+  mov ecx,eax
+
+  jg lc5e
+
+  mov ecx,edx
+
+
+
+  lc5e:
+
+  cmp eax,edx
+
+  jl lc64
+
+  mov eax,edx
+
+
+
+  lc64:
+
+  cmp eax,[vstack+14h]
+
+  jnz lc82
+
+  cmp ecx,[vstack+18h]
+
+  jnz lc82
+
+  cmp dword ptr [vstack+10h], 121eabfh  ; another fake magic???
+
+  ja lc82
+
+  mov eax,[vstack+10h]
+
+  mov [vstack+20h],eax
+
+
+
+  lc82:
+
+  mov eax,[vstack+20h]
+
+
+
+  cmp eax,1
+
+  sbb eax,eax
+
+  inc eax
+
+  ret
+
+critter endp
+
+
+
+END
+
+
+
+----------------- CUT HERE -------------------------------------------------------------------
+
+</XMP><PRE>
+
+Keep up the good work
+
+sPIRIT - sOFTPROJECT 98</PRE>
+
+
+
+<FONT color=green>(c) 1998 <FONT color=#5500AA>sPIRIT and HellRaiser</FONT> All rights reversed</FONT>
+
+<HR ALIGN=CENTER WIDTH=100% SIZE=3>
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</I></CENTER>
+
+<BR><CENTER>
+
+
+
+<A href="progcor.htm" tppabs="http://www.anticrack.de/fravia/progcor.htm"><IMG SRC="useful.gif" tppabs="http://www.anticrack.de/fravia/useful.gif" 
+
+ALT="advanced" ALIGN=BOTTOM WIDTH=114 HEIGHT=43 BORDER=0 
+
+VSPACE=0 HSPACE=0></A>
+
+<BR><FONT color= gray>Back to Programmer's corner</FONT>
+
+<BR><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 
+
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 
+
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 
+
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN=BOTTOM
+
+BORDER=0 VSPACE=0 HSPACE=0 width="13" height="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 
+
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 
+
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 
+
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 
+
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 
+
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A HREF="javascri.htm" tppabs="http://www.anticrack.de/fravia/javascri.htm">javascripts wars</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 
+
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A HREF="javascript:if(confirm('http://www.fravia.org/ideale.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.fravia.org/ideale.htm'" tppabs="http://www.fravia.org/ideale.htm">antismut CGI-scripts</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 
+
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 
+
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia+</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 
+
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering legal?</A></CENTER>
+
+<CENTER><HR ALIGN=CENTER WIDTH=100% SIZE=2></CENTER>
+
+</BODY>
+
+</HTML>
+
+
+

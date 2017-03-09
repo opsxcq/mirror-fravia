@@ -1,0 +1,1221 @@
+<HTML>
+
+<HEAD>
+
+<META Name="Voluntary Content Rating" content="it's
+
+fravia's: great!">
+
+
+
+<TITLE>fragas1.htm: WIN32 Api Hooks, The stub approach</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR=#C0C0C0 TEXT=#001010 ALINK=#405040
+
+VLINK=#8850AA><P><CENTER>
+
+<H1>WIN32 Api Hooks, The stub approach</H1>
+
+<CENTER><A href="advanced.htm" tppabs="http://www.anticrack.de/fravia/advanced.htm"><IMG SRC="xtranio.gif" tppabs="http://www.anticrack.de/fravia/xtranio.gif" ALT="advanced"
+
+ALIGN=CENTER WIDTH=114 HEIGHT=43 BORDER=0 VSPACE=0
+
+HSPACE=0></A>
+
+<BR>
+
+<FONT color=gray>Advanced reversing</FONT>
+
+</CENTER>
+
+<H3>by Lone Runner<BR>30 October 1998</H3><BR><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=600 HEIGHT=5 BORDER=0
+
+VSPACE=0 HSPACE=0><BR><BR>
+
+Well, well, well... another OUTSTANDING reverser comes out of the web-void and gives 
+
+us incredible reading material. I'm very happy to host this essay, a milestone on 
+
+the difficult path to reverse engineering wizardry. Read, re-read, understand, re-understand, 
+
+work on this, re-work on this... you get the pattern :-)<BR><BR>
+
+<BR><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=600 HEIGHT=5 BORDER=0
+
+VSPACE=0 HSPACE=0><BR></CENTER><CENTER>
+
+	WIN32 Api Hooks, The stub approach<BR>
+
+        ----------------------------------<BR>
+
+        (or How to change dinamically your Win32 system code)<BR>
+
+        (or also How to cook eggs on the back of your old grandma)<BR>
+
+<BR>
+
+	by Lone Runner/Aegis<BR></CENTER>
+
+<BR>
+
+ I. Opening the fridge<BR>
+
+ ---------------------<BR>
+
+<BR>
+
+Ok, it has now been a while since i read articles on Fravia, and
+
+specially what is bound with the
+
+win32 api, beeing a lot interested with undocumented functions and how
+
+to take full control over
+
+what happens inside the win32 black box. I've decided today that i
+
+could take some time to write
+
+an small article on how i achieved the goal of controlling the API.
+
+<BR><BR>
+
+Of course you have softice for that, you can trace out all what you
+
+want but if you need to insert your
+
+code in here, its not as easy as it was in the good old dos with an
+
+resident code in int 3...
+
+<BR><BR>
+
+What about forcing the win32 to report all what it does, and maybe
+
+decide to prevent any action from
+
+the system... that could be interesting... well, applications are
+
+numerous, so i won't make a list.
+
+<BR><BR>
+
+Be carefull, if you're not experienced with system win32 code, you'll
+
+have big problems to debug
+
+anything here, or even get a working system at all. Touch at your own
+
+risks. It works for me, but
+
+i know what i do, if you think you prefer not to temper with system
+
+files, go play the NOP game with
+
+softice.
+
+<BR><BR>
+
+If you feel the guts, then here we go.
+
+<BR><BR>
+
+ II. Finding eggs<BR>
+
+ ----------------<BR>
+
+<BR>
+
+One of the most known approach (microsoft gives an example to do this
+
+in the VisualC++ Cd) is to
+
+run the target process as a child, and then modify its function
+
+pointers to make them point to your
+
+code. Well that's a good approach but it has some drawbacks. For
+
+example you need to know the process
+
+id of the target process, for that you have to run the process as
+
+child. This can be a problem. Also
+
+you will only be able to intercept api for this child. But if this
+
+child has another child, he
+
+won't be hooked.
+
+<BR><BR>
+
+Our method, in contrast, will let all process run and go thru our own
+
+code (a bug here is deadly).<BR>
+
+Of course, this method has drawbacks also, for example you have to
+
+replace a system dll. But this has
+
+very good points. You do intercept everything everytime so you can
+
+prevent everything in the win32
+
+api to happen.
+
+<BR><BR>
+
+The base of the system is to make your own USER32.DLL to act as a stub
+
+for the real USER32.DLL which
+
+you renamed (for example to MSUS32.DLL), same goes with KERNEL32.DLL
+
+(-&gt; MSKERN32.DLL)
+
+<BR><BR>
+
+But its not as easy as that, we will have to be carefull about some
+
+details.
+
+<BR><BR>
+
+ III. Finding your grandma<BR>
+
+ -------------------------
+
+<BR><BR>
+
+My exemple will be on a project i had and then dropped. The aim of the
+
+game was to intercept the
+
+DefWindowProc function (quite often used) in all applications
+
+throughout the system. This was to change the
+
+default behaviour of windows (in my case, modify the window appearance
+
+by handling differently WM_NC*
+
+messages).
+
+<BR><BR>
+
+We will stub only USER32.DLL (where DefWindowProcA and DefWindowProcW
+
+reside). Our goal
+
+is to intercept only those two functions and make then chat using IPC
+
+with a user application to tell
+
+USER32.DLL to dynamically load (and unload) a DLL. This will be very
+
+usefull since once this is done
+
+and working, we'll be able not to reboot to change USER32.DLL between
+
+each compile (thanks!).
+
+<BR><BR>
+
+First, we must stub all functions of the original DLL, this means, all
+
+exported functions, not only
+
+documented ones, but all. For that, a nice MS utility called DUMPBIN
+
+will be perfect.
+
+<BR><BR>
+
+Here is the beginning of the output for user32.dll :
+
+<PRE>
+
+            ordinal hint   name
+
+
+
+                  1    0   ActivateKeyboardLayout  (00015F25)
+
+                  2    1   AdjustWindowRect  (0000ABC4)
+
+                  3    2   AdjustWindowRectEx  (0002AA7A)
+
+                  4    3   AnyPopup  (0003E44F)
+
+                  5    4   AppendMenuA  (0001080C)
+
+                  6    5   AppendMenuW  (00029A5A)
+
+                  7    6   ArrangeIconicWindows  (0002EE3D)
+
+                  8    7   AttachThreadInput  (000144FA)
+
+                  9    8   BeginDeferWindowPos  (0001067E)
+
+                 10    9   BeginPaint  (000023B4)
+
+                 11    A   BringWindowToTop  (0000A7DC)
+
+                 12    B   BroadcastSystemMessage  (0003F39D)</PRE>
+
+
+
+
+
+
+
+With this complete list, simply make a very basic C file :
+
+<PRE>
+
+//---------------------------------------------------------------------------
+
+// Function ActivateKeyboardLayout
+
+//---------------------------------------------------------------------------
+
+__declspec ( naked ) void _my_ActivateKeyboardLayout(void)
+
+{
+
+__asm jmp far dword ptr ActivateKeyboardLayout;
+
+}
+
+//---------------------------------------------------------------------------
+
+// Function AdjustWindowRect
+
+//---------------------------------------------------------------------------
+
+__declspec ( naked ) void _my_AdjustWindowRect(void)
+
+{
+
+__asm jmp far dword ptr AdjustWindowRect;
+
+}
+
+//---------------------------------------------------------------------------
+
+</PRE>
+
+
+
+etc...
+
+<BR><BR>
+
+a simple 4Dos script will be excellent for this task
+
+<BR><BR>
+
+The ( naked ) tag is VERY important. This will ensure that VC will not
+
+play with the stack nor
+
+with anything at the beginning and end of the function. Its kindof like
+
+the old __interrupt tag in
+
+BC/DOS.
+
+<BR><BR>
+
+We do this because we won't need to intercept most of the functions.
+
+Only DefWindowProc* will be
+
+declared with arguments. Others functions will only be passthrough so
+
+we avoid quite some work
+
+by not declaring arguments and using ( naked ), this ensure the stack
+
+is preserved and the original
+
+API function gets it right.
+
+<BR><BR>
+
+Then you need a .DEF file to create your DLL withe the right exports
+
+(we cannot name our functions
+
+the same as USER32.DLL since it's linked with our dll, but we can
+
+change export names). We'll get
+
+something like :
+
+<PRE>
+
+LIBRARY     USER33.DLL
+
+
+
+EXPORTS
+
+ActivateKeyboardLayout=_my_ActivateKeyboardLayout @1
+
+AdjustWindowRect=_my_AdjustWindowRect @2
+
+AdjustWindowRectEx=_my_AdjustWindowRectEx @3
+
+AnyPopup=_my_AnyPopup @4
+
+AppendMenuA=_my_AppendMenuA @5
+
+AppendMenuW=_my_AppendMenuW @6
+
+ArrangeIconicWindows=_my_ArrangeIconicWindows @7
+
+AttachThreadInput=_my_AttachThreadInput @8
+
+BeginDeferWindowPos=_my_BeginDeferWindowPos @9
+
+BeginPaint=_my_BeginPaint @10
+
+BringWindowToTop=_my_BringWindowToTop @11
+
+BroadcastSystemMessage=_my_BroadcastSystemMessage @12</PRE>
+
+
+
+
+
+Notice USER33.DLL. I urge you not to name your C file USER32.C or
+
+you're going into deep troubles with
+
+the linker =)
+
+<BR><BR>
+
+We should give it a dedicated loading address to be good boys, so we'll
+
+add /base:0x65E70000
+
+(for example) as parameter to the linker.
+
+<BR><BR>
+
+ IV. Convincing your grandma to cooperate<BR>
+
+ ----------------------------------------
+
+<BR><BR>
+
+The next problem is undocumented functions. imports for those functions
+
+do not exist in USER32.LIB
+
+so we'll have to either create a new LIB or load them with
+
+GetProcAddress. The first solution is of
+
+course the clean solution. But, who knows why, it did not work with me.<BR>
+
+I had a clean new USER32.LIB
+
+generated from exports in the DLL, but it would not link.
+
+<BR><BR>
+
+So i had to go for the second solution, include a DllMain function and
+
+load exports by hand.
+
+<PRE>
+
+
+
+(*CascadeChildWindows)();
+
+(*ClientThreadSetup)();
+
+(*CreateDialogIndirectParamAorW)();
+
+(*DdeGetQualityOfService)();
+
+(*DeregisterShellHookWindow)();
+
+(*DialogBoxIndirectParamAorW)();
+
+(*DrawCaptionTempA)();
+
+
+
+...
+
+...
+
+
+
+if (!UndocLoaded)
+
+   {
+
+    HInstance = hModule;
+
+    hInstUser32 = LoadLibrary("MSUS32.DLL");
+
+
+
+    (FARPROC)WCSToMBEx = GetProcAddress(hInstUser32, "WCSToMBEx");
+
+    (FARPROC)MBToWCSEx = GetProcAddress(hInstUser32, "MBToWCSEx");
+
+    (FARPROC)CascadeChildWindows = GetProcAddress(hInstUser32,
+
+"CascadeChildWindows");
+
+    (FARPROC)ClientThreadSetup = GetProcAddress(hInstUser32,
+
+"ClientThreadSetup");
+
+    (FARPROC)CreateDialogIndirectParamAorW =
+
+GetProcAddress(hInstUser32, "CreateDialogIndirectParamAorW"
+
+    (FARPROC)DdeGetQualityOfService = GetProcAddress(hInstUser32,
+
+"DdeGetQualityOfService");
+
+    (FARPROC)DeregisterShellHookWindow = GetProcAddress(hInstUser32,
+
+"DeregisterShellHookWindow");
+
+    (FARPROC)DialogBoxIndirectParamAorW = GetProcAddress(hInstUser32,
+
+"DialogBoxIndirectParamAorW");
+
+    (FARPROC)DrawCaptionTempA = GetProcAddress(hInstUser32,
+
+"DrawCaptionTempA");
+
+    (FARPROC)DrawCaptionTempW = GetProcAddress(hInstUser32,
+
+"DrawCaptionTempW");
+
+    ...
+
+    ...
+
+    UndocLoaded=-1;
+
+   }</PRE>
+
+
+
+Repeat that for all undocumented functions and you're done.
+
+<BR><BR>
+
+So what do we have now ? a DLL that acts as stub for user32 functions,
+
+barely, it does nothing else for
+
+now. But will it work ? No.
+
+<BR><BR>
+
+Because inside USER33.DLL the real USER32 imports are still here. So
+
+what do we have to do is :
+
+<BR><BR>
+
+- Patch USER33.DLL to replace any "USER32.DLL" string with "MSUS32.DLL"<BR>
+
+- Patch it again to replace "USER33.DLL" with "USER32.DLL"<BR>
+
+- Reboot to DOS<BR>
+
+- Rename USER32.DLL to MSUS32.DLL<BR>
+
+- Copy USER33.DLL as the new system USER32.DLL<BR>
+
+<BR>
+
+Thats all. Now we have a working stub.
+
+<BR><BR>
+
+ V. Boiling the water<BR>
+
+ --------------------
+
+<BR><BR>
+
+But it does nothing. Okay :-)
+
+<BR><BR>
+
+Lets make something usefull with it.
+
+<BR><BR>
+
+To avoid too many reboots, the right choice is to write a simple IPC
+
+api to change our system code
+
+dynamically. What we'll need is :
+
+<BR><BR>
+
+- Tell our USER32.DLL the name of the DLL it'll have to load<BR>
+
+- Tell our USER32.DLL to load the custom DLL and if successfull,
+
+redirect specified functions to our DLL code<BR>
+
+- Tell our USER32.DLL to release the DLL and stop hooking (acting as
+
+other passthru functions)
+
+<BR><BR>
+
+A very simple way to do that is to make the USER32.DLL create a window
+
+that will be used for IPC using
+
+messages. For an arbitrary application it's easy to find a window with
+
+a specified name so that'll be
+
+our starting point.
+
+<BR><BR>
+
+Here is a minimal but working implementation :
+
+<PRE>
+
+char *DLLName[DLLMAX];
+
+BOOL DWPHookOk=FALSE;
+
+//---------------------------------------------------------------------------
+
+LRESULT CALLBACK IPCWndProc(HWND hwnd, UINT message, WPARAM wParam,
+
+LPARAM lParam)
+
+{
+
+switch (message)
+
+       {
+
+       case WM_COMMAND:
+
+            switch (wParam)
+
+                   {
+
+                   case CMD_RESET_DLL_NAME:
+
+                        *DLLName = 0;
+
+                        break;
+
+                   case CMD_CAT_DLL_NAME:
+
+                        {
+
+                        char *p = DLLName;
+
+                        while (*p) p++;
+
+                        if (p &gt; DLLName + DLLMAX) break;
+
+                        *p++ = (unsigned char)lParam;
+
+                        *p = 0;
+
+                        break;
+
+                        }
+
+                   case CMD_LOAD_DLL:
+
+                        if (DWPHookOK)
+
+                           UnloadDLL();
+
+                        LoadDLL();
+
+                        break;
+
+                   case CMD_UNLOAD_DLL:
+
+                        if (DWPHookOK)
+
+                           UnloadDLL();
+
+                        break;
+
+                   }
+
+       }
+
+
+
+return DefWindowProc(hwnd, message, wParam, lParam);
+
+}
+
+
+
+//---------------------------------------------------------------------------
+
+void LoadDLL(void)
+
+{
+
+DLLInstance = LoadLibrary(DLLName);
+
+if (!DLLInstance) return;
+
+(FARPROC)MyDefWindowProcW = GetProcAddress(DLLInstance,
+
+"MyDefWindowProc");
+
+if (MyDefWindowProcW == NULL)
+
+   {
+
+   FreeLibrary(DLLInstance);
+
+   return;
+
+   }
+
+DWPHookOK = TRUE;
+
+}
+
+
+
+//---------------------------------------------------------------------------
+
+void UnloadDLL(void)
+
+{
+
+DWPHookOK=FALSE;
+
+FreeLibrary(DLLInstance);
+
+}
+
+
+
+DefWindowProc beeing split in two parts (A & W), we'll make a comon
+
+function for both: 
+
+
+
+//---------------------------------------------------------------------------
+
+// Function DefWindowProcW
+
+//---------------------------------------------------------------------------
+
+LRESULT
+
+WINAPI
+
+_my_DefWindowProcW(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
+
+{
+
+return CommonDefWindowProc(hWnd, Msg, wParam, lParam, 1);
+
+}
+
+
+
+//---------------------------------------------------------------------------
+
+// Function DefWindowProcA
+
+//---------------------------------------------------------------------------
+
+LRESULT
+
+WINAPI
+
+_my_DefWindowProcA(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
+
+{
+
+return CommonDefWindowProc(hWnd, Msg, wParam, lParam, 0);
+
+}</PRE>
+
+
+
+Note that these functions are not ( Naked ), because we retrieve
+
+parameters so we need a stack
+
+management.
+
+
+
+Here is the common code :
+
+<PRE>
+
+//---------------------------------------------------------------------------
+
+LRESULT WINAPI CommonDefWindowProc(HWND hWnd, UINT Msg, WPARAM wParam, 
+
+LPARAM lParam, int Wide)
+
+{
+
+
+
+if (DisableIPC) // DisableIPC is a security flag. If set, no more hook
+
+   return Wide ? DefWindowProcW(hWnd, Msg, wParam, lParam) :
+
+DefWindowProcA(hWnd, Msg, wParam, lParam);
+
+
+
+// If the IPC Window does not exists create it.
+
+
+
+if (!IPCWindow)
+
+   {
+
+   WNDCLASS wc;
+
+   
+
+   memset(&wc,0,sizeof(wc));
+
+   wc.lpfnWndProc = IPCWndProc;	
+
+   wc.hInstance = HInstance;
+
+   wc.lpszClassName = IPCWindowClass;
+
+   wc.style = 0;
+
+
+
+   RegisterClass(&wc);
+
+   
+
+   IPCWindow = CreateWindowEx(
+
+      0,
+
+      IPCWindowClass,
+
+      "",
+
+      WS_POPUP,
+
+      0, 0,
+
+      100,100,
+
+      NULL,
+
+      NULL,
+
+      HInstance,
+
+      NULL);
+
+   
+
+   // If failed, no need to retry, disable hooks
+
+   if (!IPCWindow)
+
+      {
+
+      DisableIPC=TRUE;
+
+      return DefWindowProcW(hWnd, Msg, wParam, lParam);
+
+      }
+
+   }
+
+
+
+// If a receiver IPC window is found, tell it we're here
+
+if (FirstCheck)
+
+   {
+
+   HWND MainIPC;
+
+   FirstCheck=FALSE;
+
+
+
+   MainIPC = FindWindow("EMainIPC", NULL);
+
+   if (MainIPC)
+
+      SendMessage(MainIPC, WM_COMMAND, CMD_IMHERE, 0);
+
+   }
+
+
+
+if (!DWPHookOK) // This flag is set once GetProcAddress is successfull,
+
+see above
+
+   return Wide ? DefWindowProcW(hWnd, Msg, wParam, lParam) :
+
+DefWindowProcA(hWnd, Msg, wParam, lParam);
+
+else
+
+   return MyDefWindowProcW(hWnd, Msg, wParam, lParam, Wide);
+
+}pre>
+
+
+
+ VI. Finding out if eggs (and grandma) are ready.<BR>
+
+ ------------------------------------------------
+
+<BR><BR>
+
+That's all, now our USER32.DLL with load its code and link dynamically
+
+to it at will. We just need to
+
+write a small application that will communication with it to tell it
+
+what to do:
+
+<PRE>
+
+#include &lt;windows.h&gt;
+
+
+
+char ClassName[255];
+
+char DllName[1024] = "C:\\DEV\\IPC2\\EFDll.DLL";
+
+
+
+//---------------------------------------------------------------------------
+
+// Tells an instance of USER32.DLL to load the DLL
+
+void SendLoadDll(HWND hwnd)
+
+{
+
+char *p=DllName;
+
+
+
+SendMessage(hwnd, WM_COMMAND, CMD_RESET_DLL_NAME, 0);
+
+while (*p)
+
+	{
+
+	SendMessage(hwnd, WM_COMMAND, CMD_CAT_DLL_NAME, (long)(*p));
+
+	p++;
+
+	}
+
+SendMessage(hwnd, WM_COMMAND, CMD_LOAD_DLL, 0);
+
+}
+
+
+
+//---------------------------------------------------------------------------
+
+// Enumerate all instances of USER32.DLL
+
+BOOL CALLBACK EnumWindowsProc(HWND hwnd, LPARAM lParam)
+
+{
+
+GetClassName(hwnd, ClassName, 254);
+
+
+
+if (!strcmpi(ClassName, IPCWindowClass))
+
+	lParam ? SendLoadDll(hwnd) : SendMessage(hwnd, WM_COMMAND,
+
+CMD_UNLOAD_DLL, 0);
+
+
+
+return TRUE;
+
+}
+
+
+
+
+
+//---------------------------------------------------------------------------
+
+int WINAPI WinMain(HINSTANCE hInstance,	HINSTANCE hPrevInstance, LPSTR
+
+lpCmdLine, int nCmdShow)
+
+{
+
+EnumWindows(EnumWindowsProc, 1);
+
+
+
+// Dll is loaded, your app is here
+
+
+
+//...
+
+//...
+
+
+
+// Your app has finished, unload the code now
+
+
+
+EnumWindows(EnumWindowsProc, 0);
+
+return 0;
+
+}<BR>
+
+
+
+ VII. Taste eggs and grandma<BR>
+
+ ---------------------------
+
+<BR><BR>
+
+Ok now you should know what's necessary to make your own dynamic stub
+
+to USER32.DLL or KERNEL32.DLL.
+
+I hope that it can be usefull to anybody. I had big fun making it, hope
+
+you can have as much i did.
+
+<BR><BR>
+
+I'll try to clean a bit my code and release it. Its fully working. That
+
+would be a little kick in
+
+the ass of those companies that tries to sell you a Win32hooks API for
+
+***ONLY $4999!*** =)
+
+<BR><BR>
+
+
+
+Peace, harmony.
+
+<BR><BR>
+
+Lone Runner/Aegis Corp
+
+Big hello to all the Fravias staff and gurus. You 0wn me
+
+</FONT>
+
+</PRE>
+
+
+
+<HR size=5>
+
+<CENTER><A href="advanced.htm" tppabs="http://www.anticrack.de/fravia/advanced.htm"><IMG SRC="xtranio.gif" tppabs="http://www.anticrack.de/fravia/xtranio.gif" ALT="advanced"
+
+ALIGN=CENTER WIDTH=114 HEIGHT=43 BORDER=0 VSPACE=0
+
+HSPACE=0></A>
+
+<BR>
+
+<FONT color=gray>Advanced reversing</FONT>
+
+<BR><BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0
+
+VSPACE=0 HSPACE=0><A
+
+HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0
+
+VSPACE=0 HSPACE=0>
+
+<A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links </A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0>
+
+<A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity </A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN=BOTTOM
+
+BORDER=0 VSPACE=0 HSPACE=0 width="13" height="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC </A>
+
+
+
+<IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays </A>
+
+
+
+<IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database </A>
+
+
+
+<IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="botstart.htm" tppabs="http://www.anticrack.de/fravia/botstart.htm">bots wars</A>
+
+
+
+<BR>
+
+<IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut </A>
+
+
+
+<IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 BORDER=0
+
+VSPACE=0 HSPACE=0><A
+
+HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13
+
+BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13
+
+BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="javascri.htm" tppabs="http://www.anticrack.de/fravia/javascri.htm">javascript wars </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0
+
+VSPACE=0 HSPACE=0><A
+
+HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0
+
+VSPACE=0 HSPACE=0><A
+
+HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia </A><BR>
+
+
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0
+
+VSPACE=0 HSPACE=0><A
+
+HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering illegal?
+
+</A></CENTER>
+
+
+
+<!-- End signet -->
+
+</BODY>
+
+</HTML>

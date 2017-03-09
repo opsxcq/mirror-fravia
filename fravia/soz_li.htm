@@ -1,0 +1,426 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>soz_li.htm sozni: Using LIC files</TITLE>
+
+</HEAD>
+
+
+
+<BODY BGCOLOR=#C0C0C0 TEXT=#001010 LINK=#990099 VLINK=#405040 ALINK=#FF0000>
+
+<CENTER>
+
+
+
+<!-- HEADING AND INDEX -->
+
+
+
+
+
+<H1><B>Using LIC files<BR>
+
+by .sozni</B></H1><BR>
+
+(Courtesy of fravia's pages of reverse engineering ~ December 1998)<BR><BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN=CENTER HEIGHT=5 WIDTH=413 
+
+ALT= red><BR><BR><I>
+
+Well, oh my... another great reverser steps out of the shadows of the web...  
+
+in fact .sozni seems to have gone a long way all on his own. Visit his very 
+
+good site at <A href="javascript:if(confirm('http://www.vnam.com/sozni/  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.vnam.com/sozni/'" tppabs="http://www.vnam.com/sozni/">http://www.vnam.com/sozni</A> 
+
+and you'll find a WEALTH of extremely interesting essays about OCX controls (but not only).<BR>
+
+I have decided to reproduce one of them, because I found it particularly interesting 
+
+and because 
+
+I'm sure that it will work as a 'portal' to .sozni's good site. If you are interested 
+
+in OCX cracking, you may find interesting also  Popjack's essay about <A href="popja_51.htm" tppabs="http://www.anticrack.de/fravia/popja_51.htm">OCX Control Highlights and 
+
+Licensing schemes</A>, other information may be found inside Dr Fuhrball's  essay
+
+<A href="fuhr_o1.htm" tppabs="http://www.anticrack.de/fravia/fuhr_o1.htm">A slightly different kind of dongle cracking</A>. 
+
+</I>
+
+<HR></CENTER>
+
+.
+
+<H2>Using .LIC files</H2>
+
+
+
+<P>Hopefully you are all by now seeing how weak ActiveX licensing really is. I have been
+
+focusing on Registry licenses up to this point but that's just one method. To protect
+
+ActiveX controls, the software will use one of these methods: 
+
+
+
+<OL>
+
+  <LI>Using the standard Microsoft registry licensing method </LI>
+
+  <LI>Using a custom registry licensing method </LI>
+
+  <LI>Using standard .Lic files </LI>
+
+  <LI>Using custom .Lic files </LI>
+
+  <LI>Compiling separate demo and real .OCX files </LI>
+
+</OL>
+
+
+
+<P>Note: Although the last one is a protection method, the real .OCX must use one of the
+
+other four methods. I have talked about these a little and will cover them more in the
+
+future. </P>
+
+
+
+<P>I have already explained how to crack method #1 in my previous messages I hope you have
+
+all tried doing this by now. If not, download the real version of Janus GridEx (not the
+
+demo) and try to create a .reg file for it. </P>
+
+
+
+<P>Methods #2 and #4 aren't unique to ActiveX controls. If a control uses one of these
+
+methods, you just have to crack them using your general cracking skills (that you can
+
+learn somewhere else). </P>
+
+
+
+<P>So that leaves method #3, using standard .Lic files. </P>
+
+
+
+<P>Remember that in order for an ActiveX control to be registered, it needs to be provided
+
+a license string. In the development environment (such as VB) an instance of the control
+
+is created but a null is passed instead of a license string. That tells the control that
+
+it needs to look on the developer's computer to find its own license string. Sometimes it
+
+looks at the registry and sometimes it looks for a .Lic file. </P>
+
+
+
+<P>Usually when I first try out a control, I have RegMon and FileMon running (filtered, of
+
+course). It is usually obvious which licensing method it is using. It is probably going to
+
+look at HKCR\Licenses in the registry or &lt;control&gt;.lic on disk. If I see no activity
+
+at all, then I assume I have a compiled demo and go back to their web site to find the
+
+real thing. </P>
+
+
+
+<P>If a control is looking for a .lic file, then it is usually using the standard .lic
+
+file licensing scheme. This is the method that has been most used in the past (starting
+
+with VBX's). Most often the control will just look at the first line of the .Lic file and
+
+return that as the license string. Sometimes it will look for some other string (such as a
+
+serial #) or check the length of the file. It is rare that a control will use a custom
+
+method (such as an encrypted .lic file). </P>
+
+
+
+<P>Often, a demo control will be distributed with a demo .lic file so the .lic file might
+
+already be there. FileMon will tell you if one was found or not. It is most likely located
+
+in the same directory as the .OCX file and uses that same name with a .lic extension. For
+
+example, dcube.ocx uses a file named dcube.lic. </P>
+
+
+
+<P>If you find a license file, open it up in a text editor and see what's there. Usually
+
+you will see a copyright string and then a paragraph on how it is bad to share these .lic
+
+files with your friends. If you open the file and get binary data, then you are looking at
+
+a custom .lic file and must use a different method than explained here to crack the
+
+control. </P>
+
+
+
+<P>If you can't find a .lic file, create one using Notepad and just put anything you want
+
+on the first line. Just make sure the file has the same name (except the extension) and is
+
+in the same place as the .OCX file. </P>
+
+
+
+<P>So right now if you create an instance of that control it will look at the .lic file,
+
+get the first line, compare that to another string, and since they don't match pop up a
+
+nag screen or something. </P>
+
+
+
+<P>All we have to do is make that first line in the .lic file contain the correct string
+
+and we have a registered control. </P>
+
+
+
+<P>So where do we get the correct string? There are many ways we can do that. Most
+
+controls are very easy but sometimes you have to fish a little. Here's how it's done: </P>
+
+
+
+<P><STRONG>USING PEEK OR HEX EDITOR</STRONG> - Most of the time the string is compiled
+
+right into the OCX as plaintext that is easily extracted using Peek or a Hex Editor. Peek
+
+sometimes cuts off part of the string so I prefer UtlraEdit. Depending on how the control
+
+was developed, the string will be found in different places. However, I have noticed that
+
+it is usually a Unicode string and it is usually a copyright notice. If I have trouble
+
+finding it, I use Peek to locate it and then UtlraEdit to verify it. </P>
+
+
+
+<P><STRONG>USING A DECOMPILER OR RESOURCE EDITOR</STRONG> - I rarely need to do this but
+
+sometimes it is hard to locate or there are lots of candidates and you need to find the
+
+correct one. Of course, if the string is encryted or created at runtime, then you will
+
+probably need this method to see what's going on. But you may be better off using a
+
+debugger. </P>
+
+
+
+<P><STRONG>USING SOFTICE - </STRONG>If the string isn't stored in plaintext in the OCX
+
+file, you will actually have to do some work. Softice works very well with ActiveX
+
+controls because there are a lot of triggers we can use. Here are some breakpoints (in
+
+order of preference) that usually work: lstrcmp lstrcmpi comparestring msvcrt!strcmp
+
+lstrcpy readfile lstrlen createdialog </P>
+
+
+
+<P>If you can't find the right one, look what functions the OCX file is importing. If you
+
+haven't found the string by now, you may have a compiled demo or they are not using a
+
+standard .lic file. </P>
+
+
+
+<P>By the way, PopJack has written a good essay on using SoftIce to crack OCX controls. </P>
+
+
+
+<P><STRONG>USING AN EXE</STRONG> - As I have explained before, the control's license
+
+string is compiled right into an executable. That way the executable can provide the
+
+string where a client doesn't have the .lic file. Just open the EXE in a Hex Editor and
+
+look for the control's class name. Right above the class name you will see the license
+
+string. Put that string into the .lic file and you are registered. Many times you can
+
+download a compiled (on their registered computers) demo EXE that can be used to extract
+
+license strings. </P>
+
+
+
+<P><STRONG>USING OTHER LICENSES </STRONG>- If you already have one registered control from
+
+a company, you can often rename that same license and use it with other controls they
+
+make. Most of the DameWare licenses I have created are just copies of the same .lic file.
+
+Just use the same name as the OCX and put it in the same location. </P>
+
+
+
+<P><STRONG>USING A SERIAL NUMBER </STRONG>- Sometimes you have a serial number you found
+
+on the net but it is registered to someone like &quot;^KiLLer^CraCKeR666!&quot; Now we
+
+don't want software registered to some 13-year-old and we certainly don't want this name
+
+appearing on our software prototypes (NOTE: I don't buy the control until a project is
+
+done and I know it doesn't suck). </P>
+
+
+
+<P>Or maybe your friend gave you his serial and you want to share it with others. But you
+
+don't want to get him in trouble because he already sent in his registration card with
+
+that number. </P>
+
+
+
+<P>So what we do is install the control using this serial number and let the software do
+
+its thing and create its license files. Then save the license file and uninstall the
+
+software. Put the license file back where it was then reinstall the software. This time it
+
+thinks it is an upgrade or reinstall and you can use your own name. And you can now give
+
+the .lic files to others to do the same. </P>
+
+
+
+<P><STRONG>WEB OR FTP</STRONG> - Although rare, every once in a while I can search the web
+
+and find a .lic file. And sometimes on the vendor's web site I come across something
+
+useful (more on this later). If all else fails, you can try this out. </P>
+
+
+
+<P>One notable experience I had was when cracking VB Advantage. Their .lic file was a
+
+binary file. After digging around a bit, I found that they used a commercial protection
+
+DLL. I went to this company's web site and found their help file, tech notes, and even a
+
+demo of their software (with a license editor!). </P>
+
+
+
+<P>And that's about it. For some reason very few people crack ActiveX controls. But as you
+
+can see, they are much easier and quicker to crack than most applications. If you want to
+
+play around with these concepts, try cracking controls from DameWare or DataDynamics. </P>
+
+<HR>
+
+<H5><FONT face="MS Sans Serif" size="1">Last changed: December 18, 1998 </FONT></H5>
+
+
+
+<P><FONT color="#000000" face="MS Sans Serif" size="1">Copyright ©1998 .sozni, all rights
+
+reserved.&nbsp; This information must not be duplicated or reproduced without express
+
+written permission by the operator of this web site. </FONT></P>
+
+
+
+<P><FONT color="#000000" face="MS Sans Serif" size="1">Disclaimer:&nbsp; This information
+
+must only be used for educational purposes.&nbsp;&nbsp; It must not be used to pirate
+
+software or encourage software piracy or to engage in any illegal activity. &nbsp; All
+
+instructions are provided as-is and are not supported by either the software producers or
+
+the owners or operators of this web site or really anyone at all. &nbsp; Before using any
+
+of these licensing techniques you must first get approval from the softare producer and/or
+
+have already purchased this software.&nbsp; Please refer to the <FONT color=blue><U>Terms of Use</U></FONT> for more
+
+information.</FONT></P>
+
+</PRE>
+
+<HR><CENTER>
+
+<I>You'r deep inside fravia's pages of reverse engineering, choose your way out</I><HR width=44%>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" ALT="red" WIDTH="13" HEIGHT="13" BORDER="0"
+
+VSPACE="0" HSPACE="0"><A HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage </A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALIGN="BOTTOM" ALT="red" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"> <A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links
+
+</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13"
+
+ALT="red" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0" NATURALSIZEFLAG="0"> <A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity
+
+</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" ALT="red" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A
+
+HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" ALT="red" WIDTH="13" HEIGHT="13" BORDER="0"
+
+VSPACE="0" HSPACE="0"><A HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays </A><IMG SRC=
+
+"bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" ALT="red" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools
+
+</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" ALT="red" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A
+
+HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails </A><BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" ALT="red" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A
+
+HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database </A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" ALT="red" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A
+
+HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER=
+
+"0" VSPACE="0" HSPACE="0" width="13" height="13"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms </A><IMG SRC=
+
+"bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" ALT="red" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia
+
+</A><BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" ALT="red" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A
+
+HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">is reverse engineering legal? </A></FONT></CENTER>
+
+<HR>
+
+</BODY>
+
+</HTML>
+
+
+
+
+
+
+

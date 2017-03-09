@@ -1,0 +1,514 @@
+<HTML><HEAD><!--  formamus.htm version 02 February 1998       INSTRUCTIONS FOR SUBMITTING: DO NOT USE HTML EDITORS!      SEARCH THIS TEXT FOR THE STRING "Your_"       AND REPLACE WITH WHATEVER YOU WANT TO PUBLISH!       THANKS A LOT: this will allow automat!
+
+ed retrieval --><TITLE>marigbox.htm Opening Vbox</TITLE></HEAD><BODY BGCOLOR=#C0C0C0 TEXT=#001010 VLINK=#405040>
+
+<TABLE CELLPADDING="1" CELLSPACING="2" BORDER="1" WIDTH= "100%  HEIGHT=" 22">
+
+<TR><td></td><td><!-- Choose  a TITLE probably wont be changed --><center><FONT SIZE="+2">Opening Vbox</fonT><br>        <FONT SIZE="+1">PreviewParadise lost</fonT></center></td><td><!-- Choose  a PROJECT GIF, leave this if unsure --><center><a href="timelock.htm" tppabs="http://www.anticrack.de/fravia/timelock.htm"><IMG SRC="timelock.gif" tppabs="http://www.anticrack.de/fravia/timelock.gif" ALT="timelock" ALIGN=CENTER WIDTH=114 
+
+ HEIGHT=43 BORDER=0 VSPACE=0 HSPACE=0></a><br><font color=gray>Timelock</FonT></center></td></tr><tR><td bgcolor="#FFFFEA"><center><FONT COLOR="890000"><!-- CHOOSE A DATE (will probably be changed) -->4 May 1998</FONT></center></td><td bgcolor="#FFFFEA"><center>by <font size=+3><!-- CHOOSE A HANDLE (wont be changed) -->Marigold</fonT></center></td><td VALIGN="center" bgcolor="#FFFFEA"><!--<a href="hcu98_3.htm" tppabs="http://www.anticrack.de/fravia/hcu98_3.htm"><IMG SRC="hcu1.gif" tppabs="http://www.anticrack.de/fravia/hcu1.gif" ALT="+cracker" ALIGN=BOTTOM WIDTH=114 HEIGHT=43 BORDER=0 VSPACE=0 HSPACE=0></a>-->
+
+</td></tr><TR><td><center><a href="index.html" tppabs="http://www.anticrack.de/fravia/index.html"><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" width="13" height="13"></a></center></td><TD BGCOLOR="898030"><center>Courtesy of Fravia's page of reverse engineering</center> </center></TD><td BGCOLOR="898030"><center></center></td></TR><!-- this is for the data.....fra_00xx....yymmdd....handle..beg+int...not ass... --><tr><td><font color="#C4C0CF">fra_00xx<bR>980504<br>Marigold<br>
+
+0010<br>TL<br>PC<br></fonT></td><td><i><center><!-- Your truly+ comments -->Well, once more a commercial protection 
+
+scheme bytes the dust, which is good. Marigold's work, here, and his 'reconstructive surgery' of 
+
+an encryption/packing protection scheme is in my opinion a very important 
+
+addition to our practical and theoretical knowledges: he'll show you exactly HOW the development 
+
+of timelock has been implemented, and how to understand (and defeat) this relatively new breed of 
+
+protection schemes. For advanced crackers and protectors only, no beginners. Enjoy!</i></center></td>
+
+<td><center><a href="advanced.htm" tppabs="http://www.anticrack.de/fravia/advanced.htm"><IMG SRC="xtranio.gif" tppabs="http://www.anticrack.de/fravia/xtranio.gif" ALT="projecT3" ALIGN=CENTER WIDTH=114 HEIGHT=43 BORDER=0 VSPACE=0 HSPACE=0></a><br><font color=gray>Advanced<bR>cracking</FonT></center></td></tr><TR><td></td><!-- Leonard Coehn's 
+
+old song, because we are poets, not only crackers --><TD BGCOLOR="898030"><center></i><b>There is a crack, a crack in everything That's how the light gets in</b></center><!-- Leonard Coehn's old song, because we are poets, not only crackers --></center></TD><td></td></TR><TR><td VALIGN= "MIDDLE" bgcolor="#C6E7C6"><font color=blue><center>Rating</FONT></FONT></center></TD><td VALIGN = "MIDDLE" bgcolor="#C6E7C6"><font color=blue><center><!-- CHOOSE A RATING (may be changed) -->( )<B>Beginner</B> ( )<B>Intermediate</B> (x)<B>Advanced</B> ( )<B>Expert</B></FONT></center></td><td bgcolor="#C6E7C6"><font color=red>NO</fonT> beginners</td></tr></table><!-- END HEAD  --><bR><!-- CORPUS  --><!-- CHOOSE A COMMENT (may be changed)  -->When I first heard about Vbox, I've thought that it is just another version of TimeLock. 
+
+To my surprise this turned out to be a rather tough protection scheme. Eventually I cracked it, but this essay is not a ready-made cracking solution -- rather an account on my explorations inside Vbox. You will see why. I rated this essay as "advanced" just 
+
+to avoid explaining trivia; it is messy enough in its present form.<br>
+
+Knowledge of PE-file structure at decent level is presumed.<hR><center>   <FONT SIZE="+2"><!-- CHOOSE A TITLE (wont probably be changed) -->Opening Vbox   </FONT><BR>   <FONT SIZE="+2"><!-- CHOOSE A SUBTITLE (wont proabbly be changed) -->PreviewParadise lost   </FONT><BR>   <FONT COLOR="0B7FC1"><!-- REPEAT YOUR CHOSEN HANDLE HERE -->Written by Marigold   </FONT></center><br><br><!-- INTRO STARTS HERE --><TABLE CELLPADDING="1" CELLSPACING="2" BORDER="1" WIDTH= "760"  HEIGHT="22" ><tr><td bgcolor="#C6E7C6">
+
+<center><font size=+2><font color=blue>Introduction</fonT></fonT></center></td></tr></table>
+
+I explained earlier my views on cracking: not satisfy but rather avoid protection's checks or, best of all, get rid of protection altogether. "Wrapping", "injection" and similar techniques provide a good opportunity for that. Cracking in this case usually 
+
+involves dumping of decrypted/unpacked code to a file. That's why I instantly appreciated <a href="javascript:if(confirm('http://www.anticrack.de/fravia/softdump.zip  \n\nThis file was not retrieved by Teleport Pro, because the server reports that this file cannot be found.  \n\nDo you want to open it from the server?'))window.location='http://www.anticrack.de/fravia/softdump.zip'" tppabs="http://www.anticrack.de/fravia/softdump.zip">SoftDump </a>by Quine. A very handy thing, which every cracker must have in his toolbox! JaZZ in his <a href="netscan3.htm" tppabs="http://www.anticrack.de/fravia/netscan3.htm">essay</a> devised a 
+
+smart trick, but SoftDump makes possible<i> defeating TimeLock 3.xx in just three moves: 1. In SoftIce step over the call to tl*inj.dll function and write down (by hand) eax - real Entry Point; 2. With SoftDump save in a file a big enough chunk of the code (
+
+never seen longer than 0x1E00, but one can save any length) starting from this point; 3. Patch this chunk into the .exe file and make all usual alterations in the header.</i> As you can see, this procedure does not rely on any brain activity - only finger 
+
+movements. With Vbox one has to employ similar methods, but some brain would be necessary. Another necessary thing - one has to have a sufficiently long trial period. Never mind. As with all Previewsoft products, anyone who knows how to use Regmon and 
+
+Filemon can easily find (and remove) the "secret" markings, which should (as they hope) prevent re-installation. <br> 
+
+We'll open Vbox for Doiley.exe. PreviewSoft distributes it as a demo of their protection. Thanx. As an app itself is almost of no importance for Vbox operation, it is a target as good as any other. In other words, procedure of V(irtual) box opening is indep
+
+endent of its contents.<br>
+
+<!-- PASTE HERE YOUR INTRODUCTION --><br><br><!-- TOOLS STARTS HERE --><TABLE CELLPADDING="1" CELLSPACING="2" BORDER="1" WIDTH= "100%"  HEIGHT="22" ><tr><td bgcolor="#C6E7C6"><center><font size=+2><font color=blue>Tools required</fonT></fonT></center></td>
+
+</tr></table>SoftIce <br>
+
+<a href="javascript:if(confirm('http://www.anticrack.de/fravia/softdump.zip  \n\nThis file was not retrieved by Teleport Pro, because the server reports that this file cannot be found.  \n\nDo you want to open it from the server?'))window.location='http://www.anticrack.de/fravia/softdump.zip'" tppabs="http://www.anticrack.de/fravia/softdump.zip">SoftDump </a>by Quine <br>
+
+Good hexeditor <br> <!-- PASTE HERE YOUR REQUIRED TOOLS --><br><br><!-- TARGET URL STARTS HERE --><TABLE CELLPADDING="1" CELLSPACING="2" BORDER="1" WIDTH= "100%"  HEIGHT="22" ><tr><td bgcolor="#C6E7C6"><center><font size=+2><font color=blue>Target's URL/FTP
+
+</fonT></fonT></center></td></tr></table><!-- DON'T FORGET TO PASTE HERE THE URL/FTP OF YOUR TARGET(S) -->HTTP:<a href="javascript:if(confirm('http://www.previewsoft.com/DoileyTrial.exe  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.previewsoft.com/DoileyTrial.exe'" tppabs="http://www.previewsoft.com/DoileyTrial.exe">DoileyTrial.exe</a><br>
+
+or<br>
+
+FTP:<a href="javascript:if(confirm('ftp://ftp.previewsoft.com/DoileyTrial.exe  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='ftp://ftp.previewsoft.com/DoileyTrial.exe'" tppabs="ftp://ftp.previewsoft.com/DoileyTrial.exe">DoileyTrial.exe</a><br><br><!-- PROGRAM HISTORY STARTS HERE --><TABLE CELLPADDING="1" CELLSPACING="2" BORDER="1" WIDTH= "100%"  HEIGHT="22" ><tr><td bgcolor="#C6E7C6"><center><font size=+2><font color=
+
+blue>Program History</fonT></fonT></center></td></tr></table><!-- PASTE HERE YOUR TARGET'S HISTORY (if any) -->TimeLock by PreviewSoft has long and glorious <a href="timelock.htm" tppabs="http://www.anticrack.de/fravia/timelock.htm"> history </a> (of its cracking). Vbox is "a new beginning" of a kind. It's different
+
+ from its predecessors almost to the loss of the ancestorial resemblance.<br><br><!-- REAL ESSAY  STARTS HERE --><TABLE CELLPADDING="1" CELLSPACING="2" BORDER="1" WIDTH="100%"  HEIGHT="22" ><tr><td bgcolor="#C6E7C6"><center><font size=+2><font color=blue>Essay</fonT></fonT></center></td></tr></table><!-- PASTE HERE THE TEXT OF YOUR ESSAY     THIS IS OF COURSE THE MOST IMPORTANT PART     PLEASE CHECK THE MARGINS WHEN YOU ARE FINISHED!      SHOULD NOT BLAST NETSCAPE MARGINS OUT! HAVE A LOOK INSIDE     YOUR OWN 
+
+BROWSER WHEN YOU HAVE FINISHED!  --><b>GENERAL</b><br>
+
+
+
+First I describe the general structure of Vbox protection. Vbox is applied to the ready application, which has no own protection. Protected program is .exe file with the same name as the original but very different structure.<br> 
+
+Apart from the usual .reloc and .rsrc, it has purely virtual PREVIEW section and WeijunLi section which contains several lines of code and packed data. Protection itself consists of three dll's:  vboxp40, vboxb40 and vboxt40; only the first of them is "normal", 
+
+the other two - packed in almost the same way as the target. When protected target runs, it, first of all, calls <b>vboxp40.PreviewExecGate_By_WeijunLi</b> function, which unpacks the image (section by section) of the original executable into PREVIEW section. 
+
+It also unpacks a small additional section containing a call to the only exported function of vboxb40.dll (upon loading this and the other packed dll invoke the same <b>vboxp40.PreviewExecGate_By_WeijunLi</b> to be unpacked and properly loaded), 
+
+which makes a call to <b>vboxt40.PreviewParadise_WJ</b>. (Certainly, they at PreviewSoft switched from cracker intimidation to self-advertisement. Yeah, Weijun Li well deserved it: he managed to perform "a big leap" from mediocrity of TL to one of the toughest
+
+ (commercial) protections (for Win32) I've ever seen.)<br>
+
+<br>
+
+<b>CRACKING</b><br>
+
+  
+
+At first glance, cracking seemed to be quite easy: just wait until Vbox made a sound part of its work, i.e. unpacking and decrypting the original program, save the image with SoftDump (each section separately), glue sections together and attach a self-made 
+
+PE-header. It prove to be correct except for one little point - as Vbox actually make the work of loader by itself, it must process .idata section: load modules, GetProcAddresses, etc. And here the real show began. Information on imported objects is preproc
+
+essed and stored in a separate file in strongly encrypted form. Only when one passed all checks, information is being processed and Import Address Table of .idata section is filled with addresses. So, the original contents of .idata section are never restor
+
+ed, and the initial plan of attack needs to be amended. <br>
+
+Here is the code in the protected target:<br>
+
+<pre>
+
+.0462000: FF74240C         push   d,[esp][0000C]
+
+.0462004: FF74240C         push   d,[esp][0000C]
+
+.0462008: FF74240C         push   d,[esp][0000C]
+
+.046200C: 68017E098D       push   08D097E01; XOR mask XOR 4 = 2BE;  | Sum of these values makes
+
+.0462011: 689E5C4F8D       push   08D4F5C9E; XOR mask XOR 3 = 462026| an address of packed data
+
+.0462016: 68417C098D       push   08D097C41
+
+.046201B: 68BB7C098D       push   08D097CBB; xor-mask
+
+.0462020: FF1550214600     call   [000462150] ; PreviewExecGate_By_WeijunLi
+
+.0462026: 68FFFFFFFF       push   0FFFFFFFF
+
+.046202B: FFD0             call   eax
+
+.046202D: C20C00           retn   0000C
+
+</pre>
+
+<br>
+
+Function called at 462020 unpacks sections of the original target (part of code remains encrypted) plus one small additional section. On return, eax contains 461000 -- address in this section. <br>
+
+<pre>
+
+0461000  PUSH    DWORD PTR [ESP+0C]
+
+0461004  PUSH    DWORD PTR [ESP+0C]
+
+0461008  PUSH    DWORD PTR [ESP+0C]
+
+046100C  PUSH    DD67AAA0
+
+0461011  PUSH    B55D2599
+
+0461016  PUSH    7578DDBA
+
+046101B  PUSH    4D081FE4
+
+0461020  CALL    [00461134] ;tboxb40.ExpFn#1
+
+0461026  PUSH    FFFFFFFF
+
+046102B  CALL    EAX
+
+0137:0046102D  RET     000C
+
+</pre>
+
+Function called at 461020 finishes the work of a loader for the original program. It decrypts the code and binds imported functions. Return value - eax - contains Entry Point of the original program (or of ExitProcess). At this point it's convenient to save 
+
+ sections to files.
+
+To save image one needs to know sections' sizes and RVAs. This information may be found in a packed section header. This is the beginning of packed data in Doiley.exe:<br>
+
+<br><pre>
+
+.000622E0:  xx xx xx xx-00 10 06 00-68 C1 02 00-35 91 01 00 
+
+.000622F0:  01 00 00 00-00 10 00 00-11 46 0F 4E-09 46 0F 4E 
+
+.00062300:  59 0D 58 04-00 DC 75 00-14 D7 0E 4E-54 87 0D 4E 
+
+.00062310:  2A F0 85 1F-7E FB 44 6D-E9 44 CC AC-AB 13 25 95 
+
+<br>
+
+Meaning is as follows: <br>
+
+<u>General information on packed data</u>
+
+622E4: 00100600 ; 61000h - Size of Image
+
+622E8: 68C10200 ; total length of packed data
+
+<u>Section information</u>
+
+622EC: 35910100 ; ((this-1)/4)*4 +10h = offset to the next section
+
+622F0: 01000000 ; 1 - marker
+
+622F4: 00010000 ; section RVA
+
+622F8: 11460F4E : (XORed) = 18 - marker 
+
+622FC: 09460F4E :  xor-mask 
+
+62300: 590D5804 : (XORed) = "PKWJ" -signature (again Weijun Li!)
+
+62304: 00DC7500 : ?
+
+62308: 14D70E4E : (XORed) = 1911D - packed length
+
+6230C: 54870D4E : (XORed) = 2C15D - physical size
+
+<br>
+
+Beginning of the next section is
+
+<br>
+
+.0007B430:  2B 22 00 00-01 00 00 00-00 E0 02 00-A6 1C AC 3D  
+
+.0007B440:  BE 1C AC 3D-EE 57 FB 77-00 DC 75 00-AD 3E AC 3D  
+
+.0007B450:  D6 9D AC 3D-18 F1 84 A2-E1 DA 34 9D-BC 0F E0 00  
+
+.0007B460:  C4 42 90 05-68 0A 8E 89-02 40 09 0D-20 01 11 00  
+
+</pre>
+
+i.e. RVA= 2E000, PhysSize = 8168, and so on. Valid sections are preceded by non-zero DWORD; otherwise it is data used for internal purposes. Alternatively, one can obtain all this information by setting a breakpoint at 5001AFD -- call to routine that unpacks 
+
+and writes sections -- and tracing into it. <br>
+
+<b>Note</b>: I use term "Physical Size" for value, which rather is Virtual Size. Of course, Physical Size is this value rounded to integer of File Alignment (usu. 200h). But Virtual Size may drastically differ from this value, as you'll see below.<br>
+
+Dumping of a section into a file is made with Sice command<br>
+
+<br><pre>
+
+m <u>section_VA</u>  L  <u>PhysSize</u>  <u>AddressOfMappedFile</u></pre><br>
+
+
+
+Length of file you create with SoftDump must be integer in File Alignment units.<br>
+
+
+
+If you collected information on sections from their headers you wouldn't fail to notice that packed length for one of them is very small. No wonder -- section is filled with zeros. Unmistakably, this is .idata. <br>
+
+Now we have to dig up information needed for reconstruction of this section, and for this purpose to look deeper into Vbox, namely into <b>vboxt40.PreviewParadise_WJ</b>, which is called at 60012F1. <br>
+
+At 700731A we have a call to routine, which creates MainDialog (all that "Try", "Quit", etc) and returns in eax pressed button number, but we do not stop here for I hope you managed to "prolong" you trial period. Somewhat further a code fragment goes that 
+
+writes into .text decrypted bytes (1E00h). No need to stop, we dumped this section in decrypted form already. A real interest for us is the following code snippet:<br>
+
+<pre>
+
+07007860  PUSH    0705EC38
+
+07007865  MOV     EAX,[0705A0BC]
+
+0700786A  ADD     EAX,44
+
+0700786D  PUSH    EAX
+
+0700786E  LEA     EAX,[EBP-0108]
+
+07007874  PUSH    EAX
+
+07007875  LEA     EAX,[EBP-00C0]
+
+0700787B  PUSH    EAX
+
+0700787C  MOV     EAX,[EBP+18]
+
+0700787F  PUSH    EAX
+
+07007880  CALL    07007F40
+
+07007885  ADD     ESP,20
+
+</pre>
+
+<br>
+
+In [EBP-108] we have a byte length of and in [EBP-104] a pointer to an array of zero-terminated strings, which are names of all imported modules and functions for the original program. Let's dump this array into a file. In [EBP-C0] we again have length of 
+
+and in [EBP-BC] a pointer to an array of 26-byte records with information on each imported function. The problem is that now this information is encrypted. To retrieve it we dive somewhat deeper -- into routine at 7007F40. <br>
+
+This routine makes important part of work of a custom loader, which Vbox really is. It GetHandle or, if necessary, LoadLibrary for each imported module and then GetProcAddresses, filling with them Import Address Table of .idata section. Final writing of 
+
+proc address is being made here: 
+
+<br><pre>
+
+0700817E  MOV     ECX,[EDI+16]
+
+07008181  MOV     EAX,[EBP+08]
+
+07008184  INC     DWORD PTR [EBP-1C]
+
+07008187  MOV     [EAX+ECX],EBX ; <u>here</u>
+
+0700818A  MOV     EDX,[EBP-1C]
+
+0700818D  CMP     [EBP-24],EDX
+
+07008190  JG      07007FE5
+
+</pre>
+
+But now let's look at this code snippet:<br>
+
+<pre>
+
+07007FE5  CMP     DWORD PTR [EBP-1C],00
+
+07007FE9  MOV     EAX,[EBP+24]
+
+07007FEC  PUSH    EAX
+
+07007FED  JNZ     07007FF6
+
+07007FEF  CALL    07023E00
+
+07007FF4  JMP     07007FFB
+
+07007FF6  CALL    07023F10
+
+07007FFB  ADD     ESP,04
+
+07007FFE  MOV     EDI,EAX
+
+</pre>
+
+Here the routine decrypts a record describing an imported function and places a pointer to this record into edi. But we are in PreviewParadise, not in the real one. Records are decrypted one at time, contents of the previous destroyed in the process. So, to 
+
+avoid saving them one by one manually, we need some automation. As one can easily see, processing is made in a loop 7007FE5..7008190. So, we first step to the beginning of the loop and insert, starting from 7007F90 (we'll never need again the original code 
+
+ here), a small procedure:<br> 
+
+<pre>
+
+000000: 56                    push   esi
+
+000001: 57                    push   edi
+
+000002: 51                    push   ecx
+
+000003: 8BF7                  mov    esi,edi
+
+000005: 81C7xxxxxxxx          add    edi,xxxxxxxxx
+
+00000B: B91A000000            mov    ecx,00000001A
+
+000010: F2A4                  repne  movsb
+
+000012: 59                    pop    ecx
+
+000013: 5F                    pop    edi
+
+000014: 5E                    pop    esi
+
+000015: C3                    retn
+
+</pre>
+
+xxxxxxxx stands for the difference between the address of the mapped file and the value of edi at start of the cycle (a pointer to the first record). And we'll call this procedure instead of writing to .idata section:<br>
+
+<pre>
+
+0700817E  INC     DWORD PTR [EBP-1C]
+
+07008181  MOV     EAX, 7007F90
+
+07008186  CALL    EAX
+
+07008188  NOP
+
+07008189  NOP
+
+0700818A  MOV     EDX,[EBP-1C]
+
+0700818D  CMP     [EBP-24],EDX
+
+07008190  JG      07007FE5
+
+</pre>
+
+Now we'll push F12 till we are at 461026. Here we must replace value in eax with address of ExitProcess (BFF8AECD in my case) to prevent crash. Clumsy, of course, but makes its job.
+
+With this operation we finished all Softicing (and Softdumping) and may start "reconstructive surgery" with limbs we collected.<br>
+
+26-byte record has the following structure:<br>
+
+<pre>
+
+Offset  Length  Meaning
+
+  0        4    Zero-based number of string in array with the name of a module
+
+                this function belong to.
+
+                -1 means "use previous".
+
+  4        8    Reserved? (all zeros)
+
+  C        4    Entry from Import Lookup Table. Contains an address of 
+
+                Hint/Name string for a function in the original .idata
+
+                Section or *(if 31-bit set) its ordinal number in module.
+
+ 10        4    Number of string in array with the name of the function.
+
+                *Meaningless
+
+ 14        2    Hint
+
+                * =1
+
+ 16        4    An address of the Import Address Table entry for the function.
+
+                (A field where a proc address is placed to by the loader 
+
+                 during binding.)
+
+* - function is identified by its ordinal number
+
+</pre>
+
+As one can see, the name array and the record array provide all the information for re-buildidng of .idata section. I made this with a simple program written in C. Note, that I mean REBUILDING and not RESTORING of the original .idata, which proved to be 
+
+more difficult.<br>
+
+(I am tired, aren't you?)<br>
+
+As I said before, now we'll glue all sections together and make up a header. Here we need some guesswork - we don't know names (and meanings) of the sections, without which we can't set proper value for section flags and make some other things. In typical 
+
+case, it's not difficult to make correct guesses. All other information we have ready at hand.<br>
+
+<br>
+
+In our case, final list of sections will look like that:<br>
+
+<br><pre>
+
+ Number  Name   VirtSize   RVA    PhysSize  Offset    Flag
+
+     1 .text    0002C15D 00001000 0002C200 00000400 60000020 
+
+     2 .rdata   00008168 0002E000 00008200 0002C600 40000040 
+
+     3 .data    00007000 00037000 00003000 00034800 C0000040 
+
+     4 .idata   000028DE 0003E000 00002A00 00037800 C0000040 
+
+     5 .rsrc    0001AE2C 00041000 0001B000 0003A200 40000040 
+
+     6 .reloc   000047C4 0005C000 00004800 00055200 42000040 
+
+</pre>
+
+As you can see, PhysSize is calculated as described above, VirtSize may coincide with a value from packed section header, but in case of .data it closer to RVAs difference. <br>
+
+<b>Note:</b> Doiley.exe, which we have reconstructed, is quite different in its build from the corresponding freeware available on the Net.<br>
+
+<br><b>SYNOPSIS</b><br>
+
+1. Find packed data in a protected target. Collect information on all sections.<br>
+
+2. Create with SoftDump a file to receive the section image. Go to SoftIce, step to a point where the section image is unpacked (decrypted) and dump it.<br>
+
+Repeat dumping for all sections, except for .idata.<br>
+
+3. Save the name array and the record array. (Find out their sizes beforehand.)<br>
+
+4. Reconstruct .idata section.<br>
+
+5. Glue all together, attach a header and try your luck by starting this contraption.<br>
+
+<br>
+
+As I stated already, I like to remove protection from the target to the maximum possible extent -- to the restoration of total <b>virginity.</b> But when you have put together a totally dismembered body, it is not a proper word.<br> 
+
+
+
+
+
+<br><br><!-- FINAL NOTES STARTS HERE --><TABLE CELLPADDING="1" CELLSPACING="2" BORDER="1" WIDTH= "100%"  HEIGHT="22" ><tr><td bgcolor="#C6E7C6"><center><font size=+2><font color=blue>Final Notes</fonT></fonT></center></td></tr></table>I apologize for the 
+
+cursory style of this essay. It would be simply impossible to describe all details (and how I arrived at them). This protection is considerably tougher than its nearest predecessor - TimeLock 3.1.  Hope, I didn't miss any really important landmark. <br>
+
+About protection itself. I reiterate my very high opinion of Vbox. Idea about protection based on imported data is a real gem.<br>
+
+Anybody knows about other Vboxed applications? Any other <a href="mailto:mari-g@usa.net">comments?</a> 
+
+<!-- PASTE HERE YOUR FINAL NOTES (if any) --><br><br><!-- OB DUH STARTS HERE --><TABLE CELLPADDING="1" CELLSPACING="2" BORDER="1" WIDTH= "100%"  HEIGHT="22" ><tr><td bgcolor="#C6E7C6"><center><font size=+2><font color=blue>Ob Duh</fonT></fonT></center></td>
+
+</tr></table> <center>   <i>I wont even bother explaining you    that you should BUY this target program if you intend to use it for a longer    period than the allowed one. Should you want    to STEAL this software instead, you don't need to crack its prot
+
+ection    scheme at all: you'll    find it on most Warez sites, complete and already regged, farewell.</i></center><!-- WAY OUT STARTS HERE --><hr><center><i>You are deep inside fravia's page of reverse engineering,  choose your way out:</i></center><br>
+
+<center><!-- EITHER A NICE GIF LIKE THIS -->
+
+<a href="advanced.htm" tppabs="http://www.anticrack.de/fravia/advanced.htm"><IMG SRC="xtranio.gif" tppabs="http://www.anticrack.de/fravia/xtranio.gif" ALT="projecT3" ALIGN=CENTER WIDTH=114 HEIGHT=43 BORDER=0 VSPACE=0 HSPACE=0></a><br><font color=gray>Back to advanced cracking</FonT><br><bR><!-- OR JUST A LINK LIKE THIS
+
+ --><!--<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A HREF="project1.htm" tppabs="http://www.anticrack.de/fravia/project1.htm">Back to Your_chosen_project</A> <hr width=33%>--><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 
+
+HSPACE=0><A HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links</A> <IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A 
+
+HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database</A><br><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPAC
+
+E=0><A HREF="realicra.htm" tppabs="http://www.anticrack.de/fravia/realicra.htm">reality cracking</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A HREF="howtosea.htm" tppabs="http://www.anticrack.de/fravia/howtosea.htm">how to search</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPA
+
+CE=0 HSPACE=0><A HREF="javascri.htm" tppabs="http://www.anticrack.de/fravia/javascri.htm">javascript wars</A><br><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VS
+
+PACE=0 HSPACE=0><A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity academy</A> <IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDE
+
+R=0 VSPACE=0 HSPACE=0><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut CGI-scripts</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia+</A><br><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BO
+
+TTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering legal?</A></CENTER><hr><!-- THAT'S ALL, THANKS A LOT this will allow automated retrieval --></BODY></HTML>
+

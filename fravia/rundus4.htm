@@ -1,0 +1,488 @@
+<html><TITLE>rundus4</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+<CENTER><FONT size="+3">ARJSHELL DISABLED SAVE FUNCTION</FONT><BR><BR>
+
+(&quot;A location helds the secret&quot;)<BR> <BR>
+
+<H4>by Rundus<BR>
+
+<BR>
+
+(26 September 1997)</H4>
+
+<HR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">Courtesy of fravia's page 
+
+of reverse engineering<BR><BR>
+
+<I>Well, an intersting little essay from Rundus, about a save disabled
+
+ target. Enjoy!</I></CENTER><HR size="6">
+
+                                       <PRE>
+
+		ARJSHELL DISABLED SAVE FUNCTION
+
+			  by Rundus	
+
+			(20 September 1997)
+
+
+
+To begin with I apologise to all my fellow crackers who might find
+
+that my tutorial is too simplified. But I like to use the management
+
+technique KISS ( Keep It Simple Stupid ).
+
+
+
+The program is Arjshell verion 1.2 and it can be found at 
+
+<A href="tppmsgs/msgs2.htm#230" tppabs="http://www.anticrack.de/fravia/tppmsgs/msgs2.htm#230">http://www.windows95.com</A>
+
+or 
+
+<A href="tppmsgs/msgs2.htm#231" tppabs="http://www.anticrack.de/fravia/tppmsgs/msgs2.htm#231">http://www.filez.com</A>  ( arjsh12.zip )
+
+
+
+The program is a front end for the popular arj.exe compression program.
+
+The help file states that the save project and dos-batch files function
+
+is disabled. Also the load project files function is disabled.
+
+
+
+So loading Arjshl32.exe into Wdasmv89 and opening STfn Ref we find this:
+
+
+
+&quot;Sorry, saving projects is possible in registered version only&quot;
+
+&quot;Sorry, saving Dos-batch is possible in registered version only&quot;
+
+&quot;Sorry, loading projects is possible in registered version only&quot;
+
+&quot;You are a registered user of Arjshell&quot;
+
+
+
+Double clicking on these and this is what we find:
+
+
+
+|:0042F693(C)
+
+|
+
+:0042F702 E87D450000              call 00433C84	:Here
+
+:0042F707 A2D3774300              mov byte ptr [004377D3], al ;Flag good
+
+:0042F70C 803DD377430000          cmp byte ptr [004377D3], 00 ;guy/badguy
+
+:0042F713 747F                    je 0042F794		      ;jump bad guy
+
+:0042F715 8D55FC                  lea edx, dword ptr [ebp-04]
+
+:0042F718 8B83B4010000            mov eax, dword ptr [ebx+000001B4]
+
+:0042F71E E8492CFEFF              call 0041236C
+
+:0042F723 8B45FC                  mov eax, dword ptr [ebp-04]
+
+:0042F726 50                      push eax
+
+:0042F727 33C9                    xor ecx, ecx
+
+
+
+* StringData Ref from Code Obj -&gt;&quot;ArjShell\UserName&quot;
+
+                                  |
+
+:0042F729 BA0CF84200              mov edx, 0042F80C
+
+:0042F72E B800000080              mov eax, 80000000
+
+:0042F733 E810BCFFFF              call 0042B348
+
+:0042F738 8D55FC                  lea edx, dword ptr [ebp-04]
+
+:0042F73B 8B83B8010000            mov eax, dword ptr [ebx+000001B8]
+
+:0042F741 E8262CFEFF              call 0041236C
+
+:0042F746 8B45FC                  mov eax, dword ptr [ebp-04]
+
+:0042F749 50                      push eax
+
+:0042F74A 33C9                    xor ecx, ecx
+
+
+
+* StringData Ref from Code Obj -&gt;&quot;ArjShell\UserID&quot;
+
+                                  |
+
+:0042F74C BA28F84200              mov edx, 0042F828
+
+:0042F751 B800000080              mov eax, 80000000
+
+:0042F756 E8EDBBFFFF              call 0042B348
+
+:0042F75B B8D0764300              mov eax, 004376D0
+
+
+
+* StringData Ref from Code Obj -&gt;&quot;You are a registered User of ArjShell &quot;
+
+                               -&gt;&quot;now !&quot;
+
+                                  |
+
+:0042F760 BA40F84200              mov edx, 0042F840
+
+:0042F765 E89E65FDFF              call 00405D08
+
+:0042F76A 6A40                    push 00000040
+
+
+
+* Reference To: user32.MessageBeep, Ord:0000h
+
+                                  |
+
+:0042F76C E83F56FDFF              Call 00404DB0
+
+:0042F771 6A40                    push 00000040
+
+
+
+* StringData Ref from Code Obj -&gt;&quot;Registering successful&quot;
+
+
+
+
+
+	ANOTHER SECTION OF CODE
+
+
+
+:00431F02 803DD377430000          cmp byte ptr [004377D3], 00
+
+:00431F09 751D                    jne 00431F28
+
+
+
+* StringData Ref from Code Obj -&gt;&quot;Sorry, saving DOS-Files is possible &quot;
+
+                               -&gt;&quot;in the&quot;
+
+                                  |
+
+:00431F0B 6848214300              push 00432148
+
+
+
+* StringData Ref from Code Obj -&gt;&quot;Warning&quot;
+
+
+
+
+
+	ANOTHER SECTION OF CODE
+
+
+
+:00432EF2 803DD377430000          cmp byte ptr [004377D3], 00
+
+:00432EF9 751D                    jne 00432F18
+
+
+
+* StringData Ref from Code Obj -&gt;&quot;Sorry, loading Projects is possible &quot;
+
+                               -&gt;&quot;in the&quot;
+
+                                  |
+
+:00432EFB 6804364300              push 00433604
+
+
+
+* Possible StringData Ref from Code Obj -&gt;&quot;Warning&quot;
+
+
+
+	ANOTHER SECTION OF CODE
+
+
+
+* Referenced by a Jump at Address:004322C2(C)
+
+|
+
+:00432338 803DD377430000          cmp byte ptr [004377D3], 00
+
+:0043233F 751D                    jne 0043235E
+
+
+
+* StringData Ref from Code Obj -&gt;&quot;Sorry, saving Projects is possible &quot;
+
+                               -&gt;&quot;in the&quot;
+
+                                  |
+
+:00432341 68EC2A4300              push 00432AEC
+
+
+
+* StringData Ref from Code Obj -&gt;&quot;Warning&quot;
+
+
+
+
+
+Well as you can see, everthing is controlled by the flag <FONT color="red">[004377D3]</FONT>
+
+and it is set by the value in AL. So lets have a look at what is inside
+
+call 00433C84
+
+Hmm, its quite long and too many other calls and jumps. So lets use
+
+softice.
+
+
+
+:0042F702 E87D450000              call 00433C84	;Here
+
+:0042F707 A2D3774300              mov byte ptr [004377D3], al
+
+:0042F70C 803DD377430000          cmp byte ptr [004377D3], 00
+
+
+
+(1) Run the program Arjshl32.exe and goto Preferences,then Register.
+
+(2) Enter in name and bogus serial number.
+
+(3) control D   ^D  inside softice v3
+
+(4) :bpx hmemcpy   ;set breakpoint on copying what we have entered in.
+
+(5) :bpm 004377D3 w ;breakpoint on memory location.
+
+(6) hit F5 key twice
+
+	
+
+Ok, we are now here.Your segment address might be different, but offset
+
+will be the same (????:0042F707).
+
+
+
+014F:0042F702         call 00433C84	
+
+014F:0042F707         mov byte ptr [004377D3], al
+
+014F:0042F70C         cmp byte ptr [004377D3], 00
+
+
+
+(7) :bc *	;clear all breakpoints
+
+(8) :bpx 014F:0042F702  ;breakpoint for call routine.
+
+(9) Hit F5 key,back to program and then Reregister.
+
+(10)Back inside softice, hit F8 key ;to trace inside call routine.
+
+(11)Hit F10 key ;until you come to this code (35 times in my case).
+
+
+
+:00433CF2 E931F3FCFF              jmp 00403028
+
+:00433CF7 EBEB                    jmp 00433CE4
+
+:00433CF9 8BC3                    mov eax, ebx
+
+:00433CFB 5F                      pop edi
+
+:00433CFC 5E                      pop esi
+
+:00433CFD 5B                      pop ebx
+
+:00433CFE 8BE5                    mov esp, ebp
+
+:00433D00 5D                      pop ebp
+
+:00433D01 C3                      ret
+
+
+
+I always set my code window for 7 lines  :wc 7
+
+
+
+At offset address :00433CF9 eax has 0000 moved into it.So we now need to
+
+change this instruction and we only have two bytes.
+
+Can't use mov eax,0001 (B801000000). Ok,change to mov al,01 (B001)
+
+
+
+For a manual on opcodes try the one at
+
+<A href="tppmsgs/msgs2.htm#232" tppabs="http://www.anticrack.de/fravia/tppmsgs/msgs2.htm#232">http://www/expage.com/page/w32dasm</A>
+
+
+
+The only thing to complete is to load Arjshl32.exe into your Hex Editor
+
+and make the changes. 
+
+
+
+Now the save and load functions will be enabled. But you will not be
+
+able to register because the register button is disabled.
+
+This doesn't matter because the username is not displayed anywhere and 
+
+the program still works after 30 days. 
+
+
+
+I have changed the value of ebx from 00000000 to 00000001 on the fly and
+
+the only other thing it seems to do is make two new keys UserName and
+
+UserID in the register at HKEY-LOCAL-MACHINE\Software\Classes\Arjshell
+
+The only thing I can think of is that the program uses the section of
+
+code, that contains the modified instruction to check if the program is
+
+registered. 
+
+Hmm... interesting! 
+
+Maybe I will look at it again, sometime in the future and 
+
+check to see where the register button is disabled.
+
+
+
+For those who dont know how to edit registers on the fly do the
+
+following:
+
+(1) Hit the F10 key until you are one instruction before the 
+
+    MOV EAX, EBX instruction
+
+(2) :r ebx	;to edit the register
+
+(3) Change 00000000 to 00000001
+
+(4) Hit Esc button
+
+
+
+Well, I am sure that one of my fellow crackers will be able to find 
+
+a better solution than mine... please be my guest!  
+
+(maybe Fravia will include it as a compare... I would welcome it :-) 
+
+
+
+That's all for now and I hope someone finds my tutorial useful.
+
+
+
+cheers Rundus   
+
+</PRE>                              
+
+<FONT color="green">(c) Rundus 1997. All rights reversed</FONT>
+
+   <HR size="6">
+
+
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</I></CENTER>
+
+<BR><CENTER>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="project6.htm" tppabs="http://www.anticrack.de/fravia/project6.htm">Back to project 6</A>
+
+<HR width="33%">
+
+
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#84'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#84">homepage</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#73'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#73">links</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#82'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#82">students' essays</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut CGI-scripts</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering legal?</A></CENTER>
+
+<CENTER><HR ALIGN="CENTER" WIDTH="100%" SIZE="2"></CENTER>
+
+</BODY>
+
+</HTML>
+

@@ -1,0 +1,873 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>crunchi3.htm: Little essay about the various methods and viewpoints of crunching</TITLE>
+
+</HEAD>
+
+
+
+<BODY BGCOLOR=#C0C0C0 TEXT=#001010 VLINK=#405040>
+
+<CENTER><CENTER><A href="papers.htm" tppabs="http://www.anticrack.de/fravia/papers.htm"><IMG SRC="papers.gif" tppabs="http://www.anticrack.de/fravia/papers.gif" ALT="papers" ALIGN=BOTTOM WIDTH=114 
+
+EIGHT=43 BORDER=0 VSPACE=0 HSPACE=0></A><BR><FONT color=gray>+HCU papers</FONT><BR><BR>
+
+<FONT size=+6><FONT color=blue>Little essay about the various methods and viewpoints of crunching</FONT></FONT>
+
+<BR>
+
+~ version June 1998 ~<BR>
+
+by Joa Part. III
+
+<BR>
+
+
+
+
+
+<HR>Courtesy of fravia's page of reverse engineering<BR>
+
+<HR></CENTER><P>
+
+<P>
+
+
+
+Well, Joa continues his fundamental paper on crunching, this is part III, enjoy!<P>
+
+<TABLE border=1>
+
+<TR><TD HEIGHT="33">05 June 98</TD><TD>
+
+Joa
+
+</TD><TD>~</TD><TD>
+
+<A href="crunchi1.htm" tppabs="http://www.anticrack.de/fravia/crunchi1.htm">crunchi1.htm</A>
+
+</TD><TD>Little essay about the various methods and viewpoints of crunching
+
+</TD><TD VALIGN="center" bgcolor="#E2A221"><A HREF="papers.htm" tppabs="http://www.anticrack.de/fravia/papers.htm">papers</A>
+
+</TD><TD>~</TD><TD>fra_0126</TD></TR>
+
+
+
+<TR><TD HEIGHT="33">10 June 98</TD><TD>
+
+Joa
+
+</TD><TD>~</TD><TD>
+
+<A href="crunchi2.htm" tppabs="http://www.anticrack.de/fravia/crunchi2.htm">crunchi2.htm</A>
+
+</TD><TD>Little essay about the various methods and viewpoints of crunching II
+
+</TD><TD VALIGN="center" bgcolor="#E2A221"><A HREF="papers.htm" tppabs="http://www.anticrack.de/fravia/papers.htm">papers</A>
+
+</TD><TD>~</TD><TD>fra_0129</TD></TR>
+
+
+
+<TR><TD HEIGHT="33">17 June 98</TD><TD>
+
+Joa
+
+</TD><TD>~</TD><TD>
+
+<A href="crunchi3.htm" tppabs="http://www.anticrack.de/fravia/crunchi3.htm">crunchi3.htm</A>
+
+</TD><TD>Little essay about the various methods and viewpoints of crunching III
+
+</TD><TD VALIGN="center" bgcolor="#E2A221"><A HREF="papers.htm" tppabs="http://www.anticrack.de/fravia/papers.htm">papers</A>
+
+</TD><TD>~</TD><TD>fra_012E</TD></TR>
+
+
+
+<TR><TD HEIGHT="33">17 June 98</TD><TD>
+
+Joa
+
+</TD><TD>~</TD><TD>
+
+<A href="crunchi4.htm" tppabs="http://www.anticrack.de/fravia/crunchi4.htm">crunchi4.htm</A>
+
+</TD><TD>Little essay about the various methods and viewpoints of crunching IV
+
+</TD><TD VALIGN="center" bgcolor="#E2A221"><A HREF="papers.htm" tppabs="http://www.anticrack.de/fravia/papers.htm">papers</A>
+
+</TD><TD>~</TD><TD>fra_012F</TD></TR>
+
+</TABLE>
+
+<HR><PRE>
+
+Little essay about the various methods and viewpoints of crunching.
+
+
+
+Part III: Adapting to the sources (Huffman revisited)
+
+
+
+
+
+
+
+By Joa Koester (JoKo2000@HotMail.Com) 
+
+This essay is free to be copied and read and spread as long as
+
+you are decent enough to leave my name in it. 
+
+If you have corrections, comments, better examples than the ones used 
+
+in this essay, etc. - drop me a line.
+
+
+
+
+
+OK, let's dive into the world of crunchers and munchers...
+
+
+
+In the last chapter Dr. Watson stumbled over the problem of big
+
+files with so many charakters in it that the frequency of all
+
+256 possible chars are -statisticalwise- nearly the same. 
+
+Running a Huffman-algorithm on such files leads to trees with
+
+8bits encoding for each char - thus giving us no crunching 
+
+efficiency.
+
+But on the other hand everyone with a hex-editor in his 
+
+toolbox has made the experience that files are 
+
+somehow seperated (chunked).
+
+Some areas seem to yield code, others appear as vast deserts of 
+
+zeros, and again others have up- and down-counting values.
+
+On the PC you have for example Code and Resource areas, which are
+
+seperately created and just linked together (hence the Borland
+
+Resource Workshop 4.5). 
+
+But how do we take advantage of this circumstance?
+
+
+
+Well, the key to our problem is the tree. Once it is created,
+
+we are doomed with it, unable to change it, only able to 
+
+encode our data with this static, inflexible tree, right?
+
+
+
+Not quite! If we could adjust our tree to the actual data somehow,
+
+we would be able to generate several trees in the runtime, each
+
+tree nearly optimized for the actual data coming up. But how do
+
+we adjust our tree? And what about the decoder? And how do we
+
+build up the first tree?
+
+
+
+Yes, the first tree. What about it? We are about to be flexible, right?
+
+Could we take the pain of the first data not perfectly encoded?
+
+What, if we could? What, if we would build up a tree with all
+
+frequencies set to one? Each symbol would be written with 8 bits.
+
+But the more we would read from the file, the more we would adapt
+
+to the data read and the more we could cope with sudden changes in
+
+the data flow.
+
+
+
+so the basic idea would be:
+
+
+
+Cruncher:
+
+initialize_tree_with_all_frequencies_to_1
+
+while not eof
+
+{
+
+    read char c
+
+    encode c, Output
+
+    frequencyarray[c]++
+
+    adapt tree, c
+
+}
+
+
+
+Decruncher:
+
+initialize_tree_with_all_frequencies_to_1
+
+Mychar = 0
+
+while Mychar != EOF
+
+{
+
+    Mychar = decode(Input) //read symbol to the next symbol
+
+    put Mychar, Output
+
+    frequencyarray[Mychar]++
+
+    adapt tree, Mychar
+
+}
+
+
+
+This would work and would be stable. Unfortunately, even programmed
+
+in Assembler we would have to wait to many hours to crunch a simple
+
+file. The resorting of the tree after each byte read/written eats up
+
+to many memory-read/writes. Imagine crunching a file like
+
+Winword '95 (Ver 7.0) with it's 3.845.120 bytes. Imagine a tree-struct
+
+having about 20 bytes in memory. Multiply that with 257 = 5140 bytes,
+
+not necessarily stored nearly together or array-like (so read-ahead
+
+memory chips can't outplay their abilities). Imagine this 
+
+5140 bytes getting sorted 3.845.120 times = 1.97639168exp10 bytes
+
+shifted thru your memory just for Micro$oft 
+
+(assumed you would have only 1 sorting step while building the tree)...
+
+
+
+
+
+There must be a better way, right?
+
+
+
+Yes, Watson, there is a better way. And it's not so difficult to implement
+
+it for our purposes.We have to implement a watcher!
+
+
+
+This watcher can be an intelligent algorithm or a not-so-intelligent counter
+
+with a conditional rebuild. Let's examine the latter method first:
+
+
+
+As long as normal files are not bigger than 4 GByte we can use a simple
+
+32bit-integer for our counter. Let's name it "Adjustcounter".
+
+
+
+This counter will be incremented and tested afterwards:
+
+
+
+Cruncher:
+
+initialize_tree_with_all_frequencies_to_1
+
+Adjustcounter = 0
+
+while not eof
+
+{
+
+    read char c
+
+    encode c, Output
+
+
+
+    frequencyarray[c]++
+
+
+
+    Adjustcounter = Adjustcounter + 1
+
+    if Adjustcounter > 4096
+
+        adapt tree
+
+        set all of frequencyarray[] to 1
+
+        Adjustcounter = 0
+
+    end if
+
+}
+
+
+
+Decruncher:
+
+initialize_tree_with_all_frequencies_to_1
+
+Mychar = 0
+
+Adjustcounter = 0
+
+while Mychar != EOF
+
+{
+
+    Mychar = decode(Input) //read symbol to the next symbol
+
+    put Mychar, Output
+
+
+
+    frequencyarray[c]++
+
+
+
+    Adjustcounter = Adjustcounter + 1
+
+    if Adjustcounter > 4096
+
+        adapt tree
+
+        set all of frequencyarray[] to 1
+
+        Adjustcounter = 0
+
+    end if
+
+}
+
+
+
+This will reduce our horror scenario from 1.97639168exp10 bytes
+
+down to 4.825.175 bytes swirled thru our memory. Where i got the
+
+4096 from, you ask? To be honest, i put it out of my hat. There is 
+
+no special reason for it - just a page size i encountered a lot, 
+
+that's all. If you experiment with this algorithm, try it with
+
+other sizes. Keep book about the kinds of data you crunch and
+
+which Re-Adjusting size gets you which results.
+
+
+
+
+
+The other way would be an intelligent algorithm watching the 
+
+input stream giving alarm, when the data, rendered in the tree,
+
+is outdated by the incoming new data. How could such an algorithm
+
+look like? Well, there are a lot of possibilities. One basic
+
+mechanism would be:
+
+- Have the 'best' few codes of our tree ready.
+
+- Check the incoming byte.
+
+- actualize a second statistic.
+
+- compare it with the 'best' codes of our tree
+
+  if the second statistic has no more 'best' bytes
+
+  with the tree 'best' bytes in common, then alarm and adapt.
+
+
+
+Let's examine the steps:
+
+- Have the 'best' few codes of our tree ready.
+
+That's easy: We just iterate thru our tree and keep book
+
+of the best, say, 10 codes in a little array.
+
+As we execute this routine only when we (re)build our tree, 
+
+it can be written a little bit more sloppy 
+
+(always remember: the most timeconsuming code (about 80% time) 
+
+is consumed in only 20% of the code. So don't optimize where
+
+it is not appropiate).
+
+
+
+-Check the incoming byte
+
+Well, that's easy, too. After we received the byte from
+
+the I/O-routine, we have it ready for dinner.
+
+
+
+-actualize a second statistic
+
+Hm, that's not so easy. I would advise a shuffle-algorithm.
+
+For this we initialize a 256-byte statistic array with
+
+the accompaning char-values (array[0] = 0x00; array[1] = 0x01 etc.)
+
+When the first byte is read, we localize it 
+
+in this array WITH A LOOP!!!
+
+Then we shuffle all bytes from the specific found-index 
+
+down to index 0 one position up and insert the byte at array[0].
+
+
+
+Here one example (array shortened to 4 entries):
+
+array[0] = 0x00
+
+array[1] = 0x01
+
+array[2] = 0x02
+
+array[3] = 0x03
+
+
+
+incoming data: 0x02. Now we look for the byte in our array, 
+
+fetching the INDEX. The char 0x02 is found at the position
+
+2 in the array. Now we shuffle all bytes below one position 
+
+up:
+
+array[0] = 0x00  &gt;- keeps it's value
+
+array[1] = 0x00  &gt;- gets overwritten
+
+array[2] = 0x01  &gt;- gets overwritten
+
+array[3] = 0x03
+
+
+
+Then we patch array-pos[0] with the char we wanted to find (0x02):
+
+array[0] = 0x02  &gt;- patched
+
+array[1] = 0x00
+
+array[2] = 0x01
+
+array[3] = 0x03
+
+
+
+
+
+Next byte could be a 0x02 again.
+
+We would find it on position 0. We would shuffle all bytes from
+
+position 0 till position 0 up by one (that is, im this case
+
+the loop terminates immediately, as the condition is flagged
+
+before the body of the loop could be executed) and we patch
+
+position 0 with the byte we wanted to find (the same byte).
+
+If you implement this algorithm this is a point where a 
+
+little if-clause could help saving CPU-time.
+
+
+
+
+
+Next byte could be a 0x03.
+
+We would find it on position 3. All bytes are shuffled one 
+
+position up from 3 till 0:
+
+array[0] = 0x02  &gt;- keeps it's value
+
+array[1] = 0x02  &gt;- gets overwritten
+
+array[2] = 0x00  &gt;- gets overwritten
+
+array[3] = 0x01  &gt;- gets overwritten
+
+
+
+Array-Pos 0 is patched with the byte we wanted to find (0x03):
+
+array[0] = 0x03  &gt;- patched
+
+array[1] = 0x02
+
+array[2] = 0x00
+
+array[3] = 0x01
+
+
+
+
+
+Next byte could be a 0x02 again.
+
+We would find it on position 1. All bytes are shuffled one 
+
+position up from 1 till 0:
+
+array[0] = 0x03  &gt;- keeps it's value
+
+array[1] = 0x03  &gt;- gets overwritten
+
+array[2] = 0x00  
+
+array[3] = 0x01  
+
+
+
+Array-Pos 0 is patched with the byte we wanted to find (0x02):
+
+array[0] = 0x02  &gt;- patched
+
+array[1] = 0x03
+
+array[2] = 0x00
+
+array[3] = 0x01
+
+
+
+etc.
+
+This algorithm guarantees that the most recently appeared bytes
+
+are in the first places of the array. With this we have our 
+
+second statistic acualized. Note that there is a lot of counting
+
+and memory reading going on here. This could easily lead to a
+
+new horror-scenario here. An intelligent MemCpy, taking the 
+
+adjacent bytes of the array into account, so copying first in
+
+longs, then in bytes would be appropiate here.
+
+
+
+
+
+- compare it with the 'best' codes of our tree
+
+  if the second statistic has no more 'best' bytes
+
+  with the tree 'best' bytes in common, then alarm and adapt.
+
+Now, that's easy again, after having our statistic actualized
+
+so eloquently. We just compare the first, say, each of the 10 entries of
+
+our second statistic with the best 10 tree-entries. If there is no
+
+more hit, we rebuild the tree anew and reset the tree-statistic.
+
+
+
+If we calculate what amount of bytes we read/write:
+
+3.845.120 times x adding one to a frequencyarray =     3.845.120 +
+
+
+
+3.845.120 times x searching in the 
+
+shufflearray  = (3.845.120 * 32). 32 because 
+
+the most recent bytes WILL be in the front of
+
+the array and therefore be found faster.         =   123.043.840 +
+
+
+
+3.845.120 times x shuffling the array 
+
+shufflearray  = (3.845.120 * 32*31).             = 3.814.359.040 +
+
+
+
+3.845.120 times x patching the first entry       =     3.845.120 +
+
+
+
+3.845.120 times x executing a 10*10 loop
+
+looking for one topmost byte in the 
+
+other topmost array (statistically leaving the
+
+loop after the half, only 50 steps instead of
+
+100).                                            =   192.256.000 +
+
+
+
+(plus the resorting of the arrays and the
+
+rebuilding of the tree. For the sake of the
+
+demonstration this is not calculated here)
+
+
+
+Makes =                                          ==4.137.349.120 
+
+
+
+That is not quite 4 Gigabyte memory reading and writing here. Is this
+
+worth the effort? You decide. I prefer the counter-method, but you'll
+
+notice that the shuffle-to-front-algorithm can be useful for more than
+
+this kind of work. Indeed we'll meet it again when we come to the
+
+burrows-wheeler compression. 
+
+
+
+
+
+I have a question.
+
+
+
+Yes, Watson?
+
+
+
+This adaptive technique - is it only used in combination with the
+
+Huffman algorithm?
+
+
+
+No, the principle of making a statistical algorithm more flexible 
+
+thru the adaptive approach is not limited to Huffman. When we come
+
+to the arithmetic crunching technique we'll come back to the
+
+adaptive approach again, believe me.
+
+
+
+
+
+
+
+But the next thing we will discuss are some non-statisticall things.
+
+
+
+Till then...happy cracking :-)
+
+
+
+
+
+
+
+I hope you enjoyed this chapter. 
+
+There will be more - i promise.
+
+Just have a little patience.
+
+
+
+Greetings from a programmer
+
+
+
+Joa
+
+
+
+</PRE><B>
+
+P.S.</B><BR>
+
+fravia+ enhanced my <A href="crunchi2.htm" tppabs="http://www.anticrack.de/fravia/crunchi2.htm">crunchi2.htm</A> part with some links to sources. If you have a C/C++ compiler - study them.
+
+Use the debugger wisely. Try the sources with EXTREMELY simple files. Don't use more than 5-6
+
+chars in your testfiles. That's more than enough to let the algs do their work. Use runs of 
+
+bytes ('aaaaaaaa') and sequences (abcd....abcd....abc...cd...). It's astounding how a simple
+
+file (aaaaaaaabbbbccdd) can reveal the idea of an algorithm.<BR>
+
+I will continue without referencing to those examples, but if you find some sources 
+
+in the net - fetch them. Analyse them. If you don't get behind the mechanism - wait till i 
+
+come to the point of explaining this algorithm :-)<BR>
+
+It's worth to notice that my implementations of those algs do differ a lot from the most
+
+'historical'/'educational' versions downloadable from the net. There is no 'right' implementation
+
+of a 'data compressing' algorithm. If it works and you have your own ideas - go for it.
+
+
+
+<BR>
+
+<CENTER>
+
+<HR size=3><A href="mailto:JoKo2000@hotmail.com">
+
+<IMG SRC="tellme.gif" tppabs="http://www.anticrack.de/fravia/tellme.gif" width="140" height="21"></A>
+
+<BR><BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links</A> 
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm"> anonymity</A> 
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC</A> 
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays</A> 
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database</A>
+
+ <BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="coumes.htm" tppabs="http://www.anticrack.de/fravia/coumes.htm">counter measures</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="botstart.htm" tppabs="http://www.anticrack.de/fravia/botstart.htm">bots wars</A> 
+
+ 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia</A>
+
+<BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering legal?</A>
+
+</CENTER></CENTER>
+
+<HR SIZE=2>
+
+
+
+</BODY>
+
+</HTML>

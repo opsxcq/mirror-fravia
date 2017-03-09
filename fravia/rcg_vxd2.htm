@@ -1,0 +1,692 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>rcg_vxd2.htm HOW TO PROTECT SOFTWARE BETTER - Part II</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+<CENTER><FONT size="+3">+HCU's special Project: 'Our protections'<BR>
+
+<A href="protecti.htm" tppabs="http://www.anticrack.de/fravia/protecti.htm"><IMG SRC="tough.gif" tppabs="http://www.anticrack.de/fravia/tough.gif" ALT="tough" ALIGN="BOTTOM" WIDTH="114" HEIGHT="43" BORDER="0" VSPACE="0" HSPACE="0"></A>
+
+<BR>
+
+<FONT color="blue">HOW TO PROTECT SOFTWARE BETTER - Part II</FONT>
+
+<BR></FONT>
+
+<BR>
+
+<FONT size="+2">
+
+by +RCG
+
+</FONT><BR>
+
+<A href="hcu98_3.htm" tppabs="http://www.anticrack.de/fravia/hcu98_3.htm"><IMG SRC="hcu1.gif" tppabs="http://www.anticrack.de/fravia/hcu1.gif" ALT="cracker" ALIGN="BOTTOM" WIDTH="114" HEIGHT="43" BORDER="0" VSPACE="0" HSPACE="0"></A>
+
+<BR><BR>
+
+(slightly edited by fravia+, 18 January 1998)
+
+<HR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">Courtesy of fravia's page 
+
+of reverse engineering<HR> 
+
+<I>The following essay by our +colleague and &quot;Uberprotector&quot; +RCG is VERY 
+
+interesting for many aspects, it deals for instance with the 
+
+&quot;delayed&quot; protection scheme, that 
+
+we have already discussed in the <A href="progcor.htm" tppabs="http://www.anticrack.de/fravia/progcor.htm">&quot;programmer 
+
+corner&quot;</A> section, a &quot;delayed&quot; revenge which is already implemented in some very recent 
+
+protection schemes, but I'm sure that the whole part about &quot;How to take Softice 
+
+on a boat ride&quot; will indeed prove to be a very interesting reversing reading 
+
+for all our protectors and crackers friends.<BR>In fact the idea of COUPLING 
+
+softice detection and self-patching promises to deliver us very ineteresting 
+
+challenges in the future :-)</I></CENTER><HR size="6">
+
+
+
+<PRE><CENTER>
+
+HOW TO PROTECT BETTER ~ Part II
+
+
+
+Purpose of the &quot;Our protection&quot; section
+
+The &quot;delayed&quot; protection scheme of the future
+
+The Port 70/71 trick
+
+How to take Softice on a boat ride
+
+Softice breakpoint magic explained and defeated
+
+
+
+by +RCG
+
+
+
+18 January 1998</CENTER>
+
+<HR>
+
+Hi all!!!! I see that my &quot;heavy&quot; protection has 
+
+been severely criticised... I know that an 
+
+encrpytion xoring values is pretty stupid... but 
+
+in my opinion the idea behind this section
+
+is to introduce and implement new ideas, and not 
+
+really to create a whole uncrackable program, which 
+
+as we all know is impossible anyway. 
+
+I believe that we will very soon be confronted 
+
+with much tougher protection schemes, because 
+
+the programmers and the protectionists ARE learning 
+
+assembly, notwithstanding the widespread belief 
+
+of the countrary.
+
+
+
+I have been thinking about all this and I have 
+
+concluded that the best solution is to use the 
+
+VxD to perform <FONT color="blue">only critical actions</FONT>.
+
+
+
+That is, let the program, usually written in an 
+
+&quot;higher&quot; language create the more or less complex
+
+encription algorithms that you need in order to 
+
+protect and THEN use the VxD to move the decripted 
+
+function to its place. Do you agree with me that 
+
+this would be a much better solution?
+
+
+
+Yes, my previous protections have been quickly 
+
+defeated, yet you must think that these programs 
+
+of mine are only &quot;probes&quot;: they are very very
+
+short programs, and their protection schemes are 
+
+not hidden at all, quite the contrary actually: they 
+
+are in front of you.
+
+Actually you should only examine <U>the idea</U> that
+
+I have implemented and find solutions or problems for
+
+the scheme. 
+
+
+
+I'm sure that the perfect protection doesn't exist, 
+
+it's like the final weapon... a very clever protection 
+
+to-day will be very easy to defeat to-morrow. But we 
+
+can do nevertheless our best: we can for instance use 
+
+two or three protection schemes <U>at the same time</U>, for 
+
+example, 1) encryption with 2) antiSoftice tricks, and 
+
+3) some other things we have already seen on this page. 
+
+
+
+Imagine all these schemes bundled together with a little 
+
+intelligence into an ovebloated multimega huge program! 
+
+That will cause an headache to most crackers, even if it 
+
+will be -maybe- easily solved, by real &quot;zen&quot; +crackers.
+
+
+
+Indeed, most of today &quot;key&quot; protection schemes are 
+
+very easy to crack because the programmer thinks
+
+that a simple check is more that enough, which is 
+
+stupid to say the least.
+
+
+
+Think for example that mostly we only have to patch
+
+a conditional jne with a 'compelled' jmp, and the 
+
+program thinks that it is registered. 
+
+
+
+Moment: thinks that it is registered... or let us think
+
+that he thinks that it is registered? :-)
+
+
+
+Yes! Now suppose you are using your &quot;cracked&quot; program 
+
+and suddenly it crashes, or does not let you make 
+
+something... say a couple of days AFTER your supposedly 
+
+easy crack...
+
+
+
+It's very difficult follow this kind of &quot;delayed&quot; protection 
+
+tracing or dead listing your target. Where, inside the 
+
+whole program is this kind of protection implemented? 
+
+
+
+Think: imagine that somewhere in the middle of the normal 
+
+execution code the target performs a check. You don't perceive 
+
+it at all, because there is NO NEED to alert the user about 
+
+this verifying. And then, imagine, the target patches some 
+
+code on the fly or checks for code modifications... man, I 
+
+understand now what +ORC always teached us with his &quot;be 
+
+careful not to nop with nops&quot; doctrine... he foresaw the 
+
+development of our protections TWO YEARS ago... but the 
+
+protectionists probably never read his tutorial and I have 
+
+until now still to see a target checking for our nops 
+
+instead of having a simple CRC-type check :-(
+
+
+
+But you get the idea, don't you? You will never understand 
+
+what happened because that code, patched by the target can 
+
+be itself encrypted.
+
+
+
+I don't agree with colleagues that say that this
+
+protection way is just like all the others. This kind of 
+
+tricks, if implemented, would let us make much more other 
+
+things, and at the very least would for sure prevent the 
+
+&quot;30 seconds&quot; cracking.
+
+
+
+<FONT size="+2">
+
+OUR VXD. LETS BEGIN AGAIN
+
+</FONT>
+
+Basical Functions.
+
+
+
+1. Blitter (block memory transfer)
+
+2. Port IO
+
+3. SoftIce remover
+
+4. Device_Service_Hooker
+
+5. Int_Hooker
+
+6. Api_Hooker
+
+7. GP_hooker (General Protection Exception)
+
+and more...
+
+
+
+Comments about the implementation of these functions.
+
+
+
+<HR>
+
+1. Blitter (block memory transfer).
+
+
+
+Not much to speak about. Very easy to program.
+
+<HR>
+
+2. Port IO
+
+
+
+Yes, no more GetLocalTime function, now we can 
+
+use Ports 70h and 71h. Cinderella-type protections
+
+will be not stupid and easy to defeat as they are now.
+
+SoftIce bpio has no effect wjatsoever if we read 
+
+directly the port.
+
+<HR>
+
+3. SoftIce remover
+
+
+
+I will show you a little trick to remove SoftIce
+
+from memory or to let it 'out of the game' during the
+
+execution of our program.
+
+
+
+How does Ice pops up?
+
+Either by a breakpoint or by Ctrl+D. (This is top secret info :-)
+
+
+
+If you dead list  winice.exe, searching for the string 
+
+&quot;breakpoint&quot; you will find the string <FONT color="blue">'No more breakpoint 
+
+available'</FONT>. 
+
+Let's have a look at the surrounding code:
+
+
+
+:2E258   push ebx
+
+:2E259   push ecx
+
+:2E25A   mov ecx, 000000FF	;256 breakps. max.
+
+:2E25F   mov eax, 00000000
+
+:2E264   cmp byte ptr [eax+4], 00
+
+:2E26B   je 0002E277
+
+:2E26D   add eax, 00000183	;Every bp block is 183h bytes.
+
+:2E272   loop 0002E264	;try next
+
+:2E274   stc		;Ret Error
+
+:2E275   jmp 0002E29F	;'No more breakps. aval.'
+
+:2E277   lea ebx, dword ptr [eax+0] 	;ebx = 1st byte of block			  		
+
+:2E27D   call 0002E237	<== Is block corrupted? :2E282 jb 0002E29F <="=" Error return :2E284 push eax <="=" Next breakp. free pointer :2E285 push edi :2E286 mov ecx, 00000183 <="=" Clear 183h bytes area :2E28B sub ecx, 00000004 <="=" But no the 'TDJF' :2E28E sub ecx, 00000004 <="=" But no the 'TDJF' :2E291 lea edi, dword ptr [ebx+04] :2E294 xor al, al :2E296 repz :2E297 stosb :2E298 pop edi :2E299 pop eax :2E29A mov [ebx+05], 01 :2E29E clc <="=" Ret Success :2E29F pop ecx :2E2A0 pop ebx :2E2A1 ret Most rewarding and interesting! Every breakpoint block has a "structure" in order to check the conditions or the kind of breakpoint. Every block is a 183h byte structure like this: 0123456789ABCDEF TDJF???????????? . . .??????????????T DJF The 4th byte is the breakpoint type: 0>Free	(this is the trick)
+
+1=&gt;bpint
+
+2=&gt;bpio
+
+3=&gt;bpm
+
+4=&gt;bpr
+
+5=&gt;bpx
+
+6=&gt;bmsg
+
+
+
+That's enough, as you'll see, to nuke the breakpoints,
+
+and now, lets snap (and shut) the Ctrl+D entrance too
+
+
+
+SoftIce sets its default Ctrl+D hotkey using
+
+the keyboard service Define_Hot_Key
+
+
+
+	mov     al, ScanCode
+
+	mov     ah, type
+
+	mov     ebx, ShiftState
+
+	mov     cl, flag
+
+	mov     esi, OFFSET32 HotKeyProc
+
+	mov     edx, OFFSET32 refdata
+
+	mov     edi, max_delay
+
+	VxDcall VKD_Define_Hot_Key
+
+	jc      errorhandler
+
+
+
+BTW, if you try to define the same hotkey you will see 
+
+that it has no effect (because softice prevents it).
+
+
+
+And the HotKeyProc is:
+
+
+
+                        
+
+3392  mov     ds:byte_66CD, 0	;Active flag
+
+3399  mov     esi, offset loc_66CF+1	;Offset of scancodes
+
+339E  mov     eax, 400h
+
+33A3  cmp     ds:byte_66CE, 1Dh		;keyboard type
+
+33AA  jz      short loc_33B6	
+
+33AC  mov     esi, offset loc_66D1+1	;Offset of scancodes
+
+33B1  mov     eax, 800h
+
+33B6  test    eax, ecx
+
+33B8  mov     ecx, 1		;1 scancode
+
+33BD  jz      short loc_33C3
+
+33BF  inc     ecx		;2 scancodes
+
+33C0  dec     esi
+
+33C1  jmp     short $+2
+
+33C3  VxDcall VKD_Force_Keys
+
+
+
+
+
+VxDcall VKD_Force_Key
+
+	mov     esi, OFFSET32 ScanCodes
+
+	mov     ecx, num_ScanCodes
+
+	VxDcall VKD_Force_Keys
+
+	jc      errorhandler
+
+
+
+If you write on the memory any value over &quot;1D&quot; and if you 
+
+also remove all the breakpoints by putting zero on the
+
+4th block byte (=free breakpoint), SoftIce will not pop up 
+
+(unless a GPF happens).
+
+
+
+1D identifies the keyboard type, and the scancodes needed
+
+to pop up, you also can modify the code in order to force 
+
+other scancodes that will left the stupid cracker without 
+
+its Ctrl+D (most stupid crackers wont even understand why
+
+softice doesn't snap any more.
+
+
+
+
+
+Notice that if your program detects
+
+1) the presence of a softice session
+
+and
+
+2) some modifications of its own code
+
+you can be 99% sure that you are running inside 
+
+a cracker's machine :-)
+
+
+
+This may give some 'revenge' idea to the clever 
+
+protectionists :-) 
+
+<HR>
+
+4. Device_Service_Hooker
+
+
+
+You can find the complete Service ID on the VxDMon
+
+file. When programming at Hook_Service the following 
+
+is pretty important:
+
+
+
+
+
+;Data area
+
+
+
+Real_Proc	dd 0
+
+
+
+;Code Area
+
+
+
+Public VXD_Device_Exit
+
+BeginProc VXD_Device_Exit
+
+        mov     eax,Service
+
+        mov     esi,offset32 OurServiceFunct
+
+        VMMcall Unhook_Device_Service
+
+	clc
+
+	ret
+
+EndProc VXD_Device_Exit
+
+
+
+
+
+BeginProc OurServiceFunct, Hook_Proc Real_Proc <== Don't forget that this is necesary to remove the hook on exit. Do something jmp dword ptr [Real_Proc] EndProc OurServiceFunct VXD_LOCKED_CODE_ENDS VXD_ICODE_SEG BeginProc VXD_Device_Init mov eax,Service mov esi,offset32 OurServiceFunct VMMcall Hook_Device_Service jc not_installed mov [Real_Proc],esi clc ret not_installed: stc ret EndProc VXD_Device_Init <hr>
+
+5. Int_Hooker
+
+6. Api_Hooker
+
+
+
+For points 5 and 6, please see my other examples 
+
+<HR>
+
+7. GP_hooker (General Protection Exception)
+
+
+
+Another +Hcuker is working on it (Good Luck _m)
+
+<HR>
+
+rcg__@latinmail.com
+
+
+
++rcg</PRE>
+
+<FONT color="green">(c) <FONT color="#5500AA"> +RCG </FONT> All rights reserved</FONT>
+
+<HR ALIGN="CENTER" WIDTH="100%" SIZE="3">
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</I></CENTER>
+
+<BR><CENTER><TABLE>
+
+<TR>
+
+<TD><CENTER>
+
+<A href="protecti.htm" tppabs="http://www.anticrack.de/fravia/protecti.htm"><IMG SRC="tough.gif" tppabs="http://www.anticrack.de/fravia/tough.gif" ALT="our protections" ALIGN="BOTTOM" WIDTH="114" HEIGHT="43" BORDER="0" VSPACE="0" HSPACE="0"></A>
+
+<BR><FONT color="gray">Our protections</FONT></CENTER>
+
+</TD>
+
+<TD><CENTER>
+
+<A href="ourtool.htm" tppabs="http://www.anticrack.de/fravia/ourtool.htm"><IMG SRC="ourtools.gif" tppabs="http://www.anticrack.de/fravia/ourtools.gif" ALT="Our tools" ALIGN="BOTTOM" WIDTH="114" HEIGHT="43" BORDER="0" VSPACE="0" HSPACE="0"></A>
+
+<BR><FONT color="gray">Our own tools</FONT></CENTER>
+
+</TD>
+
+<TD><CENTER>
+
+<A href="progcor.htm" tppabs="http://www.anticrack.de/fravia/progcor.htm"><IMG SRC="useful.gif" tppabs="http://www.anticrack.de/fravia/useful.gif" ALT="programmer's corner" ALIGN="BOTTOM" WIDTH="114" HEIGHT="43" BORDER="0" VSPACE="0" HSPACE="0"></A>
+
+<BR><FONT color="gray">Programmer's corner</FONT></CENTER>
+
+</TD>
+
+
+
+</TR>
+
+</TABLE>
+
+
+
+
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="javascri.htm" tppabs="http://www.anticrack.de/fravia/javascri.htm">javascripts</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut CGI-scripts</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering legal?</A></CENTER>
+
+<CENTER><HR ALIGN="CENTER" WIDTH="100%" SIZE="2"></CENTER>
+
+</BODY>
+
+</HTML>
+
+
+

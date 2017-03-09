@@ -1,0 +1,4894 @@
+<html>  <HTML>  
+
+<HEAD>  
+
+<TITLE>rcgcd</TITLE>  
+
+</HEAD> 
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">  
+
+<CENTER>
+
+<FONT size="+4">
+
++HCU<BR></FONT><FONT size="+3">Project 4: CD-ROM related reverse engineering        
+
+
+
+</FONT><HR>
+
+<FONT size="+2">CD ROM from top to down<BR></FONT>
+
+ <BR>
+
+(MSCDEX, reversing drivers and CR-ROM related interrupts)  
+
+<BR>
+
+<H4>by +RCG<BR>  
+
+<BR> 
+
+(13 October 1997)</H4>  
+
+<HR>  
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">Courtesy of Fravia's page  
+
+of reverse engineering<BR><BR><I>
+
+Well, a welcome &quot;basic&quot; addition by +Rcg, who clear things a little out on 
+
+such important matters like accessing the CD-ROM through the MSCDEX driver.
+
+
+
+</I></CENTER><HR><PRE>
+
+ 	CD-ROM REVERSE ENGINEERING
+
+
+
+Well under this generic title, I hope we will be able to 
+
+develop a good project, just like +HCU's Project 2 (Softice).
+
+If you have read <A href="project2.htm" tppabs="http://www.anticrack.de/fravia/project2.htm">Project 2</A>, you could see how many
+
+different subjects are dealed there: Vxd, NT, CheckSums and
+
+many others, would our objective only have been 'Crack', our
+
+Project would have finished with Part 1 or 2. 
+
+Yet no! We want to learn as much as possible, so that when everyone of 
+
+us put his 'grain of sand', the result is a great project.
+
+So thi is my own 'grain of sand' for project 4, and I wish we will have 
+
+a desert soon.
+
+<HR>
+
+
+
+CD-ROM FROM TOP TO DOWN.
+
+
+
+You know CD-ROM is a relatively 'new' hardware device, and it 
+
+has special characteristics that old MS-DOS can't use directly.
+
+So, we need under MS-DOS a driver and a program called 
+
+MSCDEX (MS-CD-Extension). 
+
+For programmers, the CD drive is just like all the others drives
+
+(this is the advantadges of a well designed OS, to isolate the
+
+hard from de soft.
+
+CD-ROM has another problem, it is a drive, so it must be
+
+treated as a 'block device driver' but due to its capacity,
+
+and the form it stores the information, it can't be
+
+considered as a 'standart block device driver', so MS solved
+
+this using MSCDEX, this program is a pseudoblockdevicedriver
+
+that assings a 'letter' to the 'characther device driver', 
+
+to perform this action MSCDEX 'tells' MS-DOS CD-ROM it is a
+
+net device, so MS-DOS accepts and gives it a 'letter'.
+
+ 
+
+So we have two 'layers' between the hardware and the user:
+
+
+
+
+
+		     net           net
+
+		 redirector		   call						
+
+Programm ----&gt; DOS  ----&gt; MSCDEX -----&gt; REDIRECTOR
+
+Aplication    KERNEL	    |
+
+    		^	    |
+
+		|	    |
+
+		| 	    V	
+
+Commands -------          CD-DRIVER
+
+			    |
+
+			    |
+
+			    V
+
+			  CD-UNIT	
+
+
+
+
+
+
+
+MSCDEX is independent of the Hard, so the Device Driver must
+
+be a standart IO device.
+
+If we want to permorm an action on a CD-ROM we can do
+
+it by diferents ways, using:
+
+	
+
+	 0) DOS FUNCTIONS or MSCDEX
+
+	 1) DIRECTLY TO THE DRIVER
+
+	 2) ACCESING DIRECTLY TO THE CD-ROM UNIT.
+
+
+
+<HR>
+
+0) MSCDEX
+
+
+
+MS-DOS and MSCDEX functions can be reversed and thus be
+
+intercepted easily, just read Part 1 of this Project and
+
+use the next information to develop our own protections/
+
+cracks.
+
+ 
+
+
+
+Extracted from Ralf Brown Interrupt List, thanks Ralf.
+
+
+
+
+
+--------d-2F1500BX0000-----------------------
+
+INT 2F - CD-ROM - INSTALLATION CHECK
+
+	AX = 1500h
+
+	BX = 0000h
+
+Return: BX = number of CD-ROM drive letters used
+
+	CX = starting drive letter (0=A:)
+
+Notes:	this installation check DOES NOT follow the format
+
+ 	used by other software
+
+	this installation check conflicts with the DOS 4.00
+
+	GRAPHICS.COM installation check
+
+BUG:	this function may return an incorrect starting drive
+
+	letter when INTERLNK is installed
+
+
+
+--------d-2F1501-----------------------------
+
+INT 2F - CD-ROM - GET DRIVE DEVICE LIST
+
+	AX = 1501h
+
+	ES:BX -&gt; buffer to hold drive letter list (5 bytes
+
+	per drive letter)
+
+Return: buffer filled, for each drive letter
+
+	  BYTE	subunit number in driver
+
+	  DWORD address of device driver header (see #1298)
+
+Note:	reportedly returns AX=0000h and an invalid address
+
+	under Windows95
+
+SeeAlso: AX=1510h
+
+
+
+--------d-2F1502-----------------------------
+
+INT 2F - CD-ROM - GET COPYRIGHT FILE NAME
+
+	AX = 1502h
+
+	ES:BX -&gt; 38-byte buffer for name of copyright file
+
+	CX = drive number (0=A:)
+
+Return: CF set if drive is not a CD-ROM drive
+
+	    AX = 000Fh (invalid drive)
+
+	CF clear if successful
+
+SeeAlso: AX=1503h
+
+
+
+--------d-2F1503-----------------------------
+
+INT 2F - CD-ROM - GET ABSTRACT FILE NAME
+
+	AX = 1503h
+
+	ES:BX -&gt; 38-byte buffer for name of abstract file
+
+	CX = drive number (0=A:)
+
+Return: CF set if drive is not a CD-ROM drive
+
+	    AX = 000Fh (invalid drive)
+
+	CF clear if successful
+
+SeeAlso: AX=1502h,AX=1504h
+
+
+
+--------d-2F1504-----------------------------
+
+INT 2F - CD-ROM - GET BIBLIOGRAPHIC DOC FILE NAME
+
+	AX = 1504h
+
+	ES:BX -&gt; 38-byte buffer for name of bibliographic
+
+	documentation file
+
+	CX = drive number (0=A:)
+
+Return: CF set if drive is not a CD-ROM drive
+
+	    AX = 000Fh (invalid drive)
+
+	CF clear if successful
+
+SeeAlso: AX=1502h,AX=1503h
+
+
+
+--------d-2F1505-----------------------------
+
+INT 2F - CD-ROM - READ VTOC
+
+	AX = 1505h
+
+	ES:BX -&gt; 2048-byte buffer
+
+	CX = drive number (0=A:)
+
+	DX = sector index (0=first volume descriptor,
+
+	     1=second,...)
+
+Return: CF set on error
+
+	    AX = error code (15=invalid drive,21=not ready)
+
+	CF clear if successful
+
+	    AX = volume descriptor type (1=standard,
+
+		 FFh=terminator,0=other)
+
+Note:	This function was not supported by Novell DOS 7
+
+	NWCDEX prior to the 08/16/94 update
+
+
+
+--------d-2F1506-----------------------------
+
+INT 2F - CD-ROM - TURN DEBUGGING ON
+
+	AX = 1506h
+
+	BX = debugging function to enable
+
+Note:	reserved for development
+
+SeeAlso: AX=1507h
+
+
+
+--------d-2F1507-----------------------------
+
+INT 2F - CD-ROM - TURN DEBUGGING OFF
+
+	AX = 1507h
+
+	BX = debugging function to disable
+
+Note:	reserved for development
+
+SeeAlso: AX=1506h
+
+
+
+--------d-2F1508-----------------------------
+
+INT 2F - CD-ROM - ABSOLUTE DISK READ
+
+	AX = 1508h
+
+	ES:BX -&gt; buffer
+
+	CX = drive number (0=A:)
+
+	SI:DI = starting sector number
+
+	DX = number of sectors to read
+
+Return: CF set on error
+
+	    AL = error code(0Fh invalid drive,15h not ready)
+
+	CF clear if successful
+
+Note:	reportedly returns error 15h (not ready) under
+
+	Windows95
+
+SeeAlso: AX=1509h
+
+
+
+--------d-2F1509-----------------------------
+
+INT 2F - CD-ROM - ABSOLUTE DISK WRITE
+
+	AX = 1509h
+
+	ES:BX -&gt; buffer
+
+	CX = drive number (0=A:)
+
+	SI:DI = starting sector number
+
+	DX = number of sectors to write
+
+Note:	corresponds to INT 26h and is currently reserved
+
+	and nonfunctional
+
+SeeAlso: AX=1508h
+
+
+
+--------d-2F150A-----------------------------
+
+INT 2F - CD-ROM - RESERVED
+
+	AX = 150Ah
+
+
+
+--------d-2F150B-----------------------------
+
+INT 2F - CD-ROM v2.00+ - DRIVE CHECK
+
+	AX = 150Bh
+
+	CX = drive number (0=A:)
+
+Return: BX = ADADh if MSCDEX.EXE installed
+
+	    AX = support status
+
+		0000h if drive not supported
+
+		nonzero if supported
+
+SeeAlso: AX=150Dh
+
+
+
+--------d-2F150C-----------------------------
+
+INT 2F - CD-ROM v2.00+ -GET MSCDEX.EXE VERSION (GET VERSION)
+
+	AX = 150Ch
+
+Return: BH = major version
+
+	BL = minor version
+
+Notes:	MSCDEX.EXE versions prior to 2.00 return BX=0000h
+
+	Corel's CORELCDX.COM v1.01d returns 2.20 
+
+			     v1.12a returns 2.21
+
+	Meridian Data's CDNETEX.EXE returns its own version
+
+	Windows95 returns v2.95
+
+SeeAlso: AX=1500h&quot;CD-ROM&quot;
+
+
+
+--------d-2F150D-----------------------------
+
+INT 2F - CD-ROM v2.00+ - GET CD-ROM DRIVE LETTERS
+
+	AX = 150Dh
+
+	ES:BX -&gt; buffer for drive letter list
+
+		(1 byte per drive)
+
+Return: buffer filled with drive numbers (0=A:).
+
+	Each byte corresponds to the drive in the same
+
+        position for function 1501h
+
+SeeAlso: AX=150Bh
+
+
+
+--------d-2F150E-----------------------------
+
+INT 2F - CD-ROM v2.00+ -GET/SET VOLUME DESCRIPTOR PREFERENCE
+
+	AX = 150Eh
+
+	BX = subfunction
+
+	    00h get preference
+
+		DX = 0000h
+
+		Return: DX = preference settings
+
+	    01h set preference
+
+		DH = volume descriptor preference
+
+		    01h = primary volume descriptor
+
+		    02h = supplementary volume descriptor
+
+		DL = supplementary volume descriptor prefer.
+
+		    01h = shift-Kanji
+
+	CX = drive number (0=A:)
+
+Return: CF set on error
+
+	AX = error code(15=invalid drive,1=invalid function)
+
+	CF clear if successful
+
+
+
+--------d-2F150F-----------------------------
+
+INT 2F - CD-ROM v2.00+ - GET DIRECTORY ENTRY
+
+	AX = 150Fh
+
+	CL = drive number (0=A:)
+
+	CH bit 0 = copy flag
+
+		clear if direct copy
+
+		set if copy to structure which removes
+
+		ISO/High Sierra diffs
+
+	ES:BX -&gt; ASCIZ path name
+
+	SI:DI -&gt; buffer for directory entry 
+
+		 minimum 255 bytes for direct copy
+
+Return: CF set on error
+
+	    AX = error code
+
+	CF clear if successful
+
+	    AX = disk format (0=High Sierra,1=ISO 9660)
+
+Note:	this function was not supported by Novell
+
+ 	DOS 7 NWCDEX prior to the 08/16/94 update
+
+
+
+
+
+Format of CD-ROM directory entry (direct copy):
+
+Offset	Size	Description	
+
+ 00h	BYTE	length of directory entry
+
+ 01h	BYTE	length of XAR in Logical Block Numbers
+
+ 02h	DWORD	LBN of data, Intel (little-endian) format
+
+ 06h	DWORD	LBN of data, Motorola (big-endian) format
+
+ 0Ah	DWORD	length of file, Intel format
+
+ 0Eh	DWORD	length of file, Motorola format
+
+---High Sierra---
+
+ 12h  6 BYTEs	date and time
+
+ 18h	BYTE	bit flags
+
+ 19h	BYTE	reserved
+
+---ISO 9660---
+
+ 12h  7 BYTEs	date and time
+
+		(seventh byte is offset from GMT in
+
+ 		 15-minute increments)
+
+ 19h	BYTE	bit flags
+
+---both formats---
+
+ 1Ah	BYTE	interleave size
+
+ 1Bh	BYTE	interleave skip factor
+
+ 1Ch	WORD	volume set sequence number, Intel format
+
+ 1Eh	WORD	volume set sequence number, Motorola format
+
+ 20h	BYTE	length of file name
+
+ 21h  N BYTEs	file name
+
+	BYTE	(optional) padding if filename is odd length
+
+      N BYTEs	system data
+
+
+
+Format of CD-ROM directory entry (canonicalized):
+
+Offset	Size	Description	
+
+ 00h	BYTE	length of XAR in Logical Block Numbers
+
+ 01h	DWORD	Logical Block Number of file start
+
+ 05h	WORD	size of disk in logical blocks
+
+ 07h	DWORD	file length in bytes
+
+ 0Bh  7 BYTEs	date and time
+
+ 12h	BYTE	bit flags
+
+ 13h	BYTE	interleave size
+
+ 14h	BYTE	interleave skip factor
+
+ 15h	WORD	volume set sequence number
+
+ 17h	BYTE	length of file name
+
+ 18h 38 BYTEs	ASCIZ filename
+
+ 3Eh	WORD	file version number
+
+ 40h	BYTE	number of bytes of system use data
+
+ 41h 220 BYTEs	system use data
+
+
+
+
+
+--------d-2F1510-----------------------------
+
+INT 2F - CD-ROM v2.10+ - SEND DEVICE DRIVER REQUEST
+
+	AX = 1510h
+
+	CX = CD-ROM drive letter (0 = A, 1 = B, etc)
+
+	ES:BX -&gt; CD-ROM device driver request header
+
+	         (see #2251 at AX=0802h)
+
+Note:	MSCDEX initializes the device driver request
+
+	header's subunit field based on the drive number
+
+	specified in CX
+
+BUG:	Novell DOS 7 NWCDEX prior to the 12/13/94 update did
+
+	not initialize the subunit field
+
+SeeAlso: AX=0802h
+
+
+
+--------d-2F15FFBX0000-----------------------
+
+INT 2F - CD-ROM - CORELCDX - INSTALLATION CHECK
+
+	AX = 15FFh
+
+	BX = 0000h
+
+Return: BX = ABCDh if CORELCDX loaded
+
+Note:	Corel's CORELCDX.COM is a replacement for MSCDEX.EXE
+
+	it also supports the standard MSCDEX installation
+
+	check calls AX=1500h and AX=150Ch
+
+SeeAlso: AX=1500h&quot;CD-ROM&quot;,AX=150Ch
+
+
+
+
+
+<HR 2>
+
+1) CD-ROM DEVICE DRIVER
+
+
+
+
+
+
+
+Values for device driver command code:
+
+ 00h	INIT
+
+ 01h	MEDIA CHECK (block devices)
+
+ 02h	BUILD BPB (block devices)
+
+ 03h	IOCTL INPUT
+
+ 04h	INPUT
+
+ 05h	NONDESTRUCTIVE INPUT, NO WAIT (character devices)
+
+ 06h	INPUT STATUS (character devices)
+
+ 07h	INPUT FLUSH (character devices)
+
+ 08h	OUTPUT
+
+ 09h	OUTPUT WITH VERIFY
+
+ 0Ah	OUTPUT STATUS (character devices)
+
+ 0Bh	OUTPUT FLUSH (character devices)
+
+ 0Ch	IOCTL OUTPUT
+
+ 0Dh	(DOS 3.0+) DEVICE OPEN
+
+ 0Eh	(DOS 3.0+) DEVICE CLOSE
+
+ 0Fh	(DOS 3.0+) REMOVABLE MEDIA (block devices)
+
+ 10h	(DOS 3.0+) OUTPUT UNTIL BUSY (character devices)
+
+ 11h	(European MS-DOS 4.0) STOP OUTPUT 
+
+ 12h	(European MS-DOS 4.0) RESTART OUTPUT
+
+ 13h	(DOS 3.2+) GENERIC IOCTL
+
+ 14h	unused
+
+ 15h	(European MS-DOS 4.0) RESET UNCERTAIN MEDIA FLAG
+
+ 16h	unused
+
+ 17h	(DOS 3.2+) GET LOGICAL DEVICE
+
+ 18h	(DOS 3.2+) SET LOGICAL DEVICE
+
+ 19h	(DOS 5.0+) CHECK GENERIC IOCTL SUPPORT
+
+ 80h	(CD-ROM) READ LONG
+
+ 81h	(CD-ROM) reserved
+
+ 82h	(CD-ROM) READ LONG PREFETCH
+
+ 83h	(CD-ROM) SEEK
+
+ 84h	(CD-ROM) PLAY AUDIO
+
+ 85h	(CD-ROM) STOP AUDIO
+
+ 86h	(CD-ROM) WRITE LONG
+
+ 87h	(CD-ROM) WRITE LONG VERIFY
+
+ 88h	(CD-ROM) RESUME AUDIO
+
+
+
+
+
+Bitfields for device request status:
+
+Bit(s)	Description	
+
+ 15	error
+
+ 14-11	reserved
+
+ 10	??? set by DOS kernel on entry to some driver calls
+
+ 9	busy
+
+ 8	done (may be clear on return under Eur. MS-DOS 4.0)
+
+ 7-0	error code if bit 15 set 
+
+
+
+
+
+Values for device driver error code:
+
+ 00h	write-protect violation
+
+ 01h	unknown unit
+
+ 02h	drive not ready
+
+ 03h	unknown command
+
+ 04h	CRC error
+
+ 05h	bad drive request structure length
+
+ 06h	seek error
+
+ 07h	unknown media
+
+ 08h	sector not found
+
+ 09h	printer out of paper
+
+ 0Ah	write fault
+
+ 0Bh	read fault
+
+ 0Ch	general failure
+
+ 0Dh	reserved
+
+ 0Eh	(CD-ROM) media unavailable
+
+ 0Fh	invalid disk change
+
+
+
+
+
+
+
+
+
+
+
+Format of device driver request header:
+
+Offset	Size	Description	(Table 2251)
+
+ 00h	BYTE	length of request header
+
+ 01h	BYTE	subunit within device driver
+
+ 02h	BYTE	command code 
+
+ 03h	WORD	status (filled in by device driver) 
+
+ 05h  4 BYTEs	reserved (unused in DOS 2.x and 3.x)
+
+ 09h	DWORD	(European MS-DOS 4.0 only) pointer to next
+
+		request header in device's request queue
+
+		(other versions) reserved
+
+		(unused in DOS 2.x and 3.x)
+
+
+
+---command code 00h---
+
+ 0Dh	BYTE	(ret) number of units
+
+ 0Eh	DWORD	(call) pointer to DOS device helper function
+
+		       (European MS-DOS 4.0 only)
+
+		(call) pointer past end of memory available
+
+		       to driver (DOS 5+)
+
+		(ret) address of first free byte following
+
+		      driver
+
+ 12h	DWORD	(call) pointer to commandline arguments
+
+		(ret) pointer to BPB array (block drivers)
+
+		 or 0000h:0000h (character drivers)
+
+ 16h	BYTE	(DOS 3.0+) drive number for first unit of
+
+		block driver (0=A)
+
+   ---European MS-DOS 4.0---
+
+ 17h	DWORD	pointer to function to save regs. on stack
+
+   ---DOS 5+ ---
+
+ 17h	WORD	(ret) error-message flag
+
+		0001h MS-DOS should display error msg on
+
+		init failure
+
+
+
+---command code 01h---
+
+ 0Dh	BYTE	media descriptor
+
+ 0Eh	BYTE	(ret) media status
+
+		00h don't know
+
+		01h media has not changed
+
+		FFh media has been changed
+
+ 0Fh	DWORD	(ret, DOS 3.0+) pointer to previous volume
+
+		ID if the OPEN/CLOSE/RM bit in device header
+
+		is set and disk changed
+
+
+
+---command code 02h---
+
+ 0Dh	BYTE	media descriptor
+
+ 0Eh	DWORD	transfer address
+
+		-&gt; scratch sector if NON-IBM FORMAT bit in
+
+		   device header set
+
+		-&gt; first FAT sector otherwise
+
+ 12h	DWORD	pointer to BPB (set by driver)
+
+
+
+---command codes 03h,0Ch---
+
+ 0Dh	BYTE	media descriptor (block devices only)
+
+ 0Eh	DWORD	transfer address
+
+ 12h	WORD	(call) number of bytes to read/write
+
+		(ret) actual number of bytes read or written
+
+
+
+---command codes 04h,08h,09h ---
+
+ 0Dh	BYTE	media descriptor (block devices only)
+
+ 0Eh	DWORD	transfer address
+
+ 12h	WORD	byte count (character devices) or sector
+
+ 		count (block devices)
+
+ 14h	WORD	starting sector number (block devices only)
+
+ 16h	DWORD	(DOS 3.0+) pointer to volume ID if error 0Fh
+
+		returned
+
+ 1Ah	DWORD	(DOS 4.0+) 32-bit starting sector number
+
+		(block devices with device attribute word
+
+		bit 1 set only) if starting sector number
+
+		above is FFFFh. 
+
+
+
+---command code 05h---
+
+ 0Dh	BYTE	byte read from device if BUSY bit clear
+
+		on return
+
+
+
+---command codes 06h,07h,0Ah,0Bh,0Dh,0Eh,0Fh---
+
+ no further fields
+
+
+
+---command code 10h---
+
+ 0Dh	BYTE	unused
+
+ 0Eh	DWORD	transfer address
+
+ 12h	WORD	(call) number of bytes to write
+
+		(ret) actual number of bytes written
+
+
+
+---command codes 11h,12h---
+
+ 0Dh	BYTE	reserved
+
+
+
+---command code 15h---
+
+ no further fields
+
+
+
+---command codes 13h,19h---
+
+ 0Dh	BYTE	category code
+
+		00h unknown
+
+		01h COMn:
+
+		03h CON
+
+		05h LPTn:
+
+		07h mouse (European MS-DOS 4.0)
+
+		08h disk
+
+ 0Fh	WORD	copy of DS at time of IOCTL call
+
+		(apparently unused in DOS 3.3)
+
+		SI contents (European MS-DOS 4.0)
+
+ 11h	WORD	offset of device driver header 
+
+		DI contents (European MS-DOS 4.0)
+
+ 13h	DWORD	pointer to parameter block from 
+
+		INT 21/AX=440Ch or AX=440Dh
+
+
+
+---command codes 80h,82h---
+
+ 0Dh	BYTE	addressing mode
+
+		00h HSG (default)
+
+		01h Phillips/Sony Red Book
+
+ 0Eh	DWORD	transfer address (ignored for command 82h)
+
+ 12h	WORD	number of sectors to read
+
+		(if 0 for command 82h, request is an
+
+		advisory seek)
+
+ 14h	DWORD	starting sector number
+
+		logical sector number in HSG mode
+
+		frame/second/minute/unused in Red Book mode
+
+		(HSG sector = minute * 4500 + second * 75 +
+
+		+ frame - 150)
+
+ 18h	BYTE	data read mode
+
+		00h cooked (2048 bytes per frame)
+
+		01h raw (2352 bytes per frame, 
+
+		including EDC/ECC)
+
+ 19h	BYTE	interleave size (number of sectors stored
+
+		consecutively)
+
+ 1Ah	BYTE	interleave skip factor
+
+		(number of sectors between consecutive
+
+		 portions)
+
+
+
+---command code 83h---
+
+ 0Dh	BYTE	addressing mode
+
+		00h HSG (default)
+
+		01h Phillips/Sony Red Book
+
+ 0Eh	DWORD	transfer address (ignored)
+
+ 12h	WORD	number of sectors to read (ignored)
+
+ 14h	DWORD	starting sector number (see also above)
+
+
+
+---command code 84h---
+
+ 0Dh	BYTE	addressing mode
+
+		00h HSG (default)
+
+		01h Phillips/Sony Red Book
+
+ 0Eh	DWORD	starting sector number (see also above)
+
+ 12h	DWORD	number of sectors to play
+
+
+
+---command codes 85h,88h---
+
+ no further fields
+
+
+
+---command codes 86h,87h---
+
+ 0Dh	BYTE	addressing mode
+
+		00h HSG (default)
+
+		01h Phillips/Sony Red Book
+
+ 0Eh	DWORD	transfer address (ignored in write mode 0)
+
+ 12h	WORD	number of sectors to write
+
+ 14h	DWORD	starting sector number (also see above)
+
+ 18h	BYTE	write mode
+
+		00h mode 0 (write all zeros)
+
+		01h mode 1 (default) (2048 bytes per sector)
+
+		02h mode 2 form 1 (2048 bytes per sector)
+
+		03h mode 2 form 2 (2336 bytes per sector)
+
+ 19h	BYTE	interleave size (number of sectors stored
+
+		consecutively)
+
+ 1Ah	BYTE	interleave skip factor
+
+		(number of sectors between consecutive
+
+		 portions)
+
+
+
+
+
+
+
+Now, we have information enough to write a programm that
+
+opens the CD-ROM (or closes it).
+
+<FONT color="purple">
+
+
+
+.model large
+
+.stack 100h
+
+
+
+blocks  struc
+
+        lenght_block    db 1Dh
+
+        disp_num        db 0
+
+        funct_num       db ?
+
+        status_word     dw 0000
+
+        reserv          db 8 dup ('?') 
+
+        media_desc      db 0
+
+        buffer_off      dw 0
+
+        buffer_seg      dw ?
+
+        sec_num         dw ?
+
+        first_sec       dw ?
+
+        dummy           db 8 dup ('?')  
+
+blocks  ends
+
+
+
+.data
+
+
+
+block   blocks <MORE_Info_Block  db 0,0,0,0,0,0,0,0
+
+		 db 0,0,0,0,0,0,0,0
+
+
+
+
+
+Buffer	db 4096 dup ('?')	
+
+
+
+est_rout dw 0   ;off
+
+         dw 0   ;seg
+
+int_rout dw 0   ;off
+
+         dw 0   ;seg
+
+
+
+num_cd   dw 0   
+
+err_code dd 0
+
+text_code dd 0
+
+
+
+text    db '$'
+
+        db 'CD tester program',13,10,'$'
+
+        db 'CD was opened, now closing it',10,13,'$'
+
+        db 'CD was closed, now openning it',10,13,'$'
+
+
+
+error   db '$'
+
+        db 'Cannot allocate memory',10,13,'$'
+
+        db 'MSCDEX is not installed.',10,13,'$'
+
+        db 'You need MSCDEX 2.0 or greater',10,13,'$'
+
+        db 'No CD-ROM unit found.',13,10,'$'
+
+        db 'Function not sopported.',10,13,'$'
+
+
+
+
+
+.code
+
+.486				
+
+
+
+START:
+
+        pusha
+
+        mov     ax,@DATA
+
+        mov     ds,ax
+
+
+
+        mov     text_code,1
+
+        call    Show_Text
+
+
+
+        call    Get_Mem
+
+        jc      Show_Error
+
+
+
+        call    Init_MSCDEX
+
+        jc      Show_Error
+
+
+
+        call    Get_Driver_Far_Calls
+
+        call    Set_More_Info_Block
+
+
+
+        call    Get_CD_Status 
+
+	;call	Read_Sector
+
+	;jmp	finish	
+
+
+
+        mov     al,[More_Info_Block+1]  ;Status returned
+
+        and     al,1			;in dword at 
+
+        test    al,al			;offset+1
+
+        jne     @@1			;(lower bytes first)
+
+
+
+        mov     text_code,3
+
+        call    Show_Text
+
+        call    Open_CD
+
+        jmp     @@2
+
+
+
+@@1:    mov     text_code,2
+
+        call    Show_Text
+
+        call    Close_CD
+
+@@2:    jmp     finish
+
+
+
+
+
+finish:
+
+	;call	Free_Mem	
+
+	popa
+
+        mov     ax,4C00h        ;Back to DOS.
+
+        int     21h
+
+
+
+
+
+;*************************************************
+
+;******          Procedures                 ******
+
+;*************************************************
+
+
+
+
+
+Init_MSCDEX:
+
+        mov     ax,1500h        ;Is MDCDEX installed?
+
+        xor     bx,bx           ;First unit
+
+        int     2Fh
+
+		
+
+        cmp     bx,1            
+
+        jae     @1              ;MSCDEX to installed
+
+        mov     num_cd,bx       ;Stores gestioned CD_NUM
+
+        mov     err_code,2      ;Mscdex not installed.
+
+        stc                     ;Set Error flag
+
+        ret
+
+                
+
+@1:     mov     ax,150Ch        ;Get Version
+
+        xor     bx,bx
+
+        int     2Fh
+
+		
+
+        test    bh,bh
+
+        jne     @2
+
+        mov     err_code,3      ;Version lower than 2.0
+
+        stc
+
+        ret
+
+
+
+@2:     mov     es,[block.buffer_seg]
+
+        xor     bx,bx
+
+        mov     ax,150Dh        ;Get unit letter.
+
+        int     2Fh
+
+
+
+        mov     al,es:[bx]      ;Store first unit
+
+                
+
+        xor     cx,cx
+
+        mov     cl,al
+
+        mov     ax,150Bh        ;Is a CD-ROM unit?
+
+        int     2Fh
+
+
+
+        cmp     bx,0ADADh
+
+        jne     @3
+
+        test    ax,ax
+
+        jne     @4              ;Is a CD-ROM
+
+@3:     mov     err_code,4
+
+        stc
+
+        ret
+
+
+
+@4:     clc                     ;No errors
+
+        ret
+
+
+
+
+
+Get_Mem:
+
+        
+
+	mov	ax,@data
+
+	mov	[block.buffer_seg],ax
+
+	lea	si,Buffer
+
+	mov	[block.buffer_off],si
+
+	ret
+
+
+
+;	Could someone tell me why I can't allocate memory
+
+;	using the function 48h????
+
+
+
+	
+
+;	mov     ah,48h
+
+;       mov     bx,100h         ;Allocate 4 Kb
+
+;       int     21h             
+
+;       jc      @5
+
+;       mov     [block.buffer_seg],ax ;Stores alloc. segment
+
+;       clc
+
+;	ret
+
+;@5:     mov     err_code,1
+
+;        stc
+
+;        ret
+
+
+
+
+
+	
+
+
+
+
+
+
+
+;Free_Mem:
+
+
+
+;	mov	ah,49h
+
+;	mov	es,[block.buffer_seg]
+
+;	int	21h
+
+;	jc	@5
+
+;	clc
+
+;	ret
+
+
+
+
+
+Get_Driver_Far_Calls:
+
+        
+
+        les     bx,dword ptr [block.buffer_off]
+
+        mov     ax,1501h
+
+        int     2Fh
+
+
+
+        mov     ax,es:[bx+3]    ;Get Device Driver Segment
+
+        mov     int_rout+2,ax          
+
+        mov     est_rout+2,ax            
+
+        mov     es,ax
+
+        mov     ax,es:[8]     ;Get Interrupt Routine offset
+
+        mov     int_rout,ax           
+
+        mov     ax,es:[6]     ;Get Estrategic Routine offset
+
+        mov     est_rout,ax           
+
+
+
+        ret
+
+        
+
+Set_More_Info_Block:
+
+
+
+        mov     ax,@data
+
+        mov     [block.buffer_seg],ax
+
+        lea     di,More_Info_Block
+
+        mov     [block.buffer_off],di
+
+        ret
+
+
+
+
+
+Open_CD:
+
+
+
+        mov     [block.funct_num],0Ch
+
+        mov     ax,0   ;Open
+
+        mov     [More_Info_Block],al
+
+        mov     [More_Info_Block+1],ah
+
+        jmp     Execute_Command
+
+
+
+
+
+Close_CD:
+
+
+
+        mov     [block.funct_num],0Ch
+
+        mov     ax,5   ;Close
+
+        mov     [More_Info_Block],al
+
+        mov     [More_Info_Block+1],ah
+
+        jmp     Execute_Command
+
+        
+
+
+
+
+
+Read_Sector:
+
+
+
+       mov      [block.funct_num],80h
+
+       mov      [block.media_desc],1   ;Red book
+
+       mov      [block.sec_num],1      ;Read 1 sector
+
+       mov	[block.first_sec],20h  ;First sector is 20h	
+
+       mov      [block.dummy+2],0      ;Cooked (2048 bytes)
+
+       jmp      Execute_Command
+
+
+
+
+
+
+
+Get_CD_Status:
+
+
+
+        mov     [block.funct_num],03h
+
+        mov     ax,6    ;Get CD Status
+
+        mov     [More_Info_Block],al
+
+        mov     [More_Info_Block+1],ah
+
+        jmp     Execute_Command
+
+
+
+
+
+
+
+Execute_Command:
+
+
+
+        lea     bx,block
+
+        mov     ax,@data
+
+        mov     es,ax
+
+        call    dword ptr [est_rout]
+
+        call    dword ptr [int_rout]
+
+        ret
+
+
+
+
+
+Show_Error:
+
+        mov     ax,@data
+
+        mov     ds,ax
+
+        lea     esi,error
+
+        mov     ecx,err_code
+
+        cld
+
+        mov     al,'$'
+
+@6:     mov     ah,[esi]
+
+        inc     esi
+
+        cmp     ah,al
+
+        jne     @6
+
+        loop    @6
+
+        mov     edx,esi
+
+        mov     ah,9
+
+        int     21h     ;Show error text
+
+        jmp     finish
+
+
+
+
+
+Show_Text:
+
+        mov     ax,@data
+
+        mov     ds,ax
+
+        lea     esi,text
+
+        mov     ecx,text_code
+
+        cld
+
+        mov     al,'$'
+
+@7:     mov     ah,[esi]
+
+        inc     esi
+
+        cmp     ah,al
+
+        jne     @7
+
+        loop    @7
+
+        mov     edx,esi
+
+        mov     ah,9
+
+        int     21h     ;Show text
+
+        ret
+
+
+
+
+
+END     START
+
+
+
+</font>
+
+
+
+
+
+Only one commentary about this program because we will use
+
+this info in the next section.
+
+
+
+When you call the function 01h of MSCDEX, we get a struct
+
+with the information about our CD driver this info is the
+
+next (every 5 bytes):
+
+
+
+	offset		meanning
+
+	00h		Subunit number
+
+	01h-05h		Far ptr to driver
+
+	..
+
+	..
+
+
+
+Now, if we know that a MS-DEVICE-DRIVER has always a 00
+
+offset, we can read the header info on the driver and get
+
+the both FAR_CALLs, just like you can see in the routine
+
+GET_FAR_CALLS.
+
+
+
+	Driver Header Struct
+
+
+
+
+
+	+00	Far Ptr to next device driver    1 ptr
+
+	+04	Device Attribute		 1 word
+
+	+06   	Offset of Strategic Routine	 1 word
+
+	+08 	Offset of Intrrupt Routine	 1 word
+
+	+0A	Device Driver Name		 8 byte
+
+	+12	Reserver			 1 word
+
+	+14	First letter assigned		 1 byte
+
+	+15	Num. of cd-rom unit gestioned	 1 byte
+
+
+
+
+
+This info is used later to 'create' our driver.
+
+
+
+<HR>
+
+
+
+2) REVERSING OUR DEVICE DRIVER
+
+
+
+This part can be only aplied enterely to the 
+
+'CREATIVE CD_ROM UNIT 2x' whose driver is <A href="javascript:if(confirm('http://fravia.org/sbide.zip  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/sbide.zip'" tppabs="http://fravia.org/sbide.zip">SBIDE.SYS</A>, but you
+
+can extract ideas and then use them on your own drivers.
+
+We will try to find out how our hardware works and how our
+
+controller gets or sends info to the CD_UNIT.
+
+I though (what a stupid idea for my part) that visiting
+
+the Panasonic Web I would obtain technical info about their
+
+products, but no only info about their x24 CD-ROM and some
+
+other things that zoombies search for on the web pages, so
+
+I though that our Linux friends could give us more info, so
+
+I searched for <A href="javascript:if(confirm('http://fravia.org/atapi.zip  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/atapi.zip'" tppabs="http://fravia.org/atapi.zip">ATAPI.H</A> and <A href="javascript:if(confirm('http://fravia.org/sbpcd.zip  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/sbpcd.zip'" tppabs="http://fravia.org/sbpcd.zip">SBPCD.H</A> files and I found an important
+
+info for our purposes (thanks friends) 
+
+
+
+
+
+I will first introduce you some aspects of the PIC, BIOS
+
+parameters and ATAPI definitions.
+
+
+
+
+
+----------P0020003F--------------------------
+
+PORT 0020-003F - PIC 1 - PROGRAMMABLE INTERRUPT CONTROLLER
+
+			 (8259A)
+
+
+
+0020  -W  PIC initialization command word ICW1 
+
+0020  -W  PIC output control word OCW2 
+
+0020  -W  PIC output control word OCW3 
+
+0020  R-  PIC interrupt request/in-service registers
+
+	      after OCW3
+
+		request register:
+
+		 bit 7-0 = 0  no active request for the
+
+			      corresponding int. line
+
+			 = 1  active request for 
+
+			      corresponding interrupt line
+
+		in-service register:
+
+		 bit 7-0 = 0  corresponding line not
+
+			      currently being serviced
+
+			 = 1  corresponding int. line
+
+			      currently being serviced
+
+
+
+0021  -W  PIC ICW2,ICW3,ICW4 immed after ICW1 to 0020 
+
+0021  RW  PIC master interrupt mask register OCW1 
+
+
+
+Bitfields for PIC initialization command word ICW1:
+
+Bit(s)	Description	
+
+ 7-5	0 (only used in 8080/8085 mode)
+
+ 4	ICW1 is being issued
+
+ 3	(LTIM)
+
+	=0  edge triggered mode
+
+	=1  level triggered mode
+
+ 2	interrupt vector size
+
+	=0 successive interrupt vectors use 8 bytes (8080/5)
+
+	=1 successive interrupt vectors use 4 bytes (80x86)
+
+ 1	(SNGL)
+
+	=0  cascade mode
+
+	=1  single mode, no ICW3 needed
+
+ 0	ICW4 needed
+
+
+
+Bitfields for PIC initialization command word ICW2:
+
+Bit(s)	Description	
+
+ 7-3	address lines A0-A3 of base vector address for PIC
+
+ 2-0	reserved
+
+
+
+Bitfields for PIC initialization command word ICW3:
+
+Bit(s)	Description	
+
+ 7-0	=0 slave controller not attached to corresponding
+
+	   interrupt pin
+
+	=1 slave controller attached to corresponding
+
+	   interrupt pin
+
+
+
+Bitfields for PIC initialization command word ICW4:
+
+Bit(s)	Description	
+
+ 7-5	reserved (0)
+
+ 4	running in special fully-nested mode
+
+ 3-2	mode
+
+	0x nonbuffered mode
+
+	10 buffered mode/slave
+
+	11 buffered mode/master
+
+ 1	Auto EOI
+
+ 0	=0  8085 mode
+
+	=1  8086/8088 mode
+
+
+
+Bitfields for PIC output control word OCW1:
+
+Bit(s)	Description	
+
+ 7	disable IRQ7 (parallel printer interrupt)
+
+ 6	disable IRQ6 (diskette interrupt)
+
+ 5	disable IRQ5 (fixed disk interrupt)
+
+ 4	disable IRQ4 (serial port 1 interrupt)
+
+ 3	disable IRQ3 (serial port 2 interrupt)
+
+ 2	disable IRQ2 (video interrupt)
+
+ 1	disable IRQ1 (keyboard, mouse, RTC interrupt)
+
+ 0	disable IRQ0 (timer interrupt)
+
+
+
+Bitfields for PIC output control word OCW2:
+
+Bit(s)	Description	
+
+ 7-5	operation
+
+	000 rotate in auto EOI mode (clear)
+
+	001 (WORD_A) nonspecific EOI
+
+	010 (WORD_H) no operation
+
+	011 (WORD_B) specific EOI
+
+	100 (WORD_F) rotate in auto EOI mode (set)
+
+	101 (WORD_C) rotate on nonspecific EOI command
+
+	110 (WORD_E) set priority command
+
+	111 (WORD_D) rotate on specific EOI command
+
+ 4-3	reserved (00 - signals OCW2)
+
+ 2-0	interrupt request to which the command applies
+
+	(only used by WORD_B, WORD_D, and WORD_E)
+
+
+
+Bitfields for PIC output control word OCW3:
+
+Bit(s)	Description	
+
+ 7	reserved (0)
+
+ 6-5	special mask
+
+	0x  no operation
+
+	10  reset special mask
+
+	11  set special mask mode
+
+ 4-3	reserved (01 - signals OCW3)
+
+ 2	poll command
+
+ 1-0	function
+
+	0x  no operation
+
+	10  read interrupt request register on next read
+
+	    from PORT 0020h
+
+	11  read interrupt in-service register on next read
+
+	    from PORT 0020h
+
+Note:	the special mask mode permits all other interrupts
+
+	(even those with lower priority) to be processed
+
+	while an interrupt is already in service, but will
+
+	not reissue an interrupt for a particular IRQ while
+
+	it remains in service
+
+
+
+
+
+----------P00A000AF--------------------------
+
+PORT 00A0-00AF - PIC 2 - PROGRAMMABLE INTERRUPT CONTROLLER
+
+			 (8259A)
+
+
+
+00A0  RW  NMI mask register (XT)
+
+		 bit 7 = 0 disabled
+
+		       = 1 enabled
+
+00A0  RW  PIC 2	 same as 0020 for PIC 1
+
+00A1  RW  PIC 2	 same as 0021 for PIC 1 except for OCW1
+
+
+
+Bitfields for PIC2 output control word OCW2:
+
+Bit(s)	Description	
+
+ 7	disable IRQ15 (reserved)
+
+ 6	disable IRQ14 (fixed disk interrupt)
+
+ 5	disable IRQ13 (coprocessor exception interrupt)
+
+ 4	disable IRQ12 (mouse interrupt)
+
+ 3	disable IRQ11 (reserved)
+
+ 2	disable IRQ10 (reserved)
+
+ 1	disable IRQ9  (redirect cascade)
+
+ 0	disable IRQ8  (real-time clock interrupt)
+
+
+
+
+
+
+
+----------M0040006C--------------------------
+
+MEM 0040h:006Ch - TIMER TICKS SINCE MIDNIGHT
+
+Size:	DWORD
+
+
+
+----------M00400070--------------------------
+
+MEM 0040h:0070h - TIMER OVERFLOW
+
+Size:	BYTE
+
+Desc:	non-zero if timer has counted past midnight since
+
+	last call to INT 1A/AH=00h
+
+Note:	the original IBM BIOS, and thus most other BIOSes,
+
+	sets this byte to 01h at midnight; a few (such as
+
+	the Eagle PC-2) increment it each time midnight is
+
+	passed.  The former behavior results in lost days
+
+	if multiple midnights pass between &quot;get-time&quot; calls
+
+	while the machine is powered up.
+
+ 
+
+
+
+--------B-M0040008E--------------------------
+
+MEM 0040h:008Eh - FIXED DISK - INTERRUPT CONTROL [not XT]
+
+Size:	BYTE
+
+Note:	cleared to 00h at start of disk operation, set to
+
+	FFh by IRQ14 handler when hard disk controller
+
+	completes command
+
+
+
+
+
+
+
+
+
+
+
+This is our Linux developers friends help.
+
+
+
+/*
+
+ * Device-independent level for ATAPI drivers.
+
+ *
+
+ * Copyright (C) 1995 Cronyx Ltd.
+
+ * Author Serge Vakulenko, <VAK@cronyx.ru>
+
+ *
+
+ * This software is distributed with NO WARRANTIES, not even
+
+ * the implied warranties for MERCHANTABILITY or FITNESS FOR
+
+ * A PARTICULAR PURPOSE.
+
+ *
+
+ * Authors grant any other persons or organizations
+
+ * permission to use or modify this software as long as this
+
+ * message is kept with the software, all derivative works
+
+ * or modified versions.
+
+ *
+
+ * Version 1.9, Thu Oct 12 15:53:50 MSK 1995
+
+ */
+
+
+
+/*
+
+ * Disk Controller ATAPI register definitions.
+
+ */
+
+
+
+AR_DATA         0x0  /* RW - data register (16 bits) */
+
+AR_ERROR        0x1  /*  R - error register */
+
+AR_FEATURES     0x1  /*  W - features */
+
+AR_IREASON      0x2  /* RW - interrupt reason */
+
+AR_TAG          0x3  /*    - reserved for SAM TAG byte */
+
+AR_CNTLO        0x4  /* RW - byte count, low byte */
+
+AR_CNTHI        0x5  /* RW - byte count, high byte */
+
+AR_DRIVE        0x6  /* RW - drive select */
+
+AR_COMMAND      0x7  /*  W - command register */
+
+AR_STATUS       0x7  /*  R - immediate status */
+
+
+
+/*
+
+ * Status register bits
+
+ */
+
+ARS_CHECK       0x01 /* error occured, see sense key/code */
+
+		     /* bit 0x02 reserved */
+
+ARS_CORR        0x04 /* correctable error occured */
+
+ARS_DRQ         0x08 /* data request / ireason valid */
+
+ARS_DSC         0x10 /* immediate operation completed */
+
+ARS_DF          0x20 /* drive fault */
+
+ARS_DRDY        0x40 /* ready to get command */
+
+ARS_BSY         0x80 /* registers busy */
+
+		     /* for overlap mode only: */
+
+ARS_SERVICE     0x10 /* service is requested */
+
+ARS_DMARDY      0x20 /* ready to start a DMA transfer */
+
+ARS_BITS &quot;\20\010busy\7ready\6fault\5opdone\4drq\3corr\
+
+	  1check&quot;
+
+
+
+/*
+
+ * Error register bits
+
+ */
+
+AER_ILI         0x01            /* illegal length indication */
+
+AER_EOM         0x02            /* end of media detected */
+
+AER_ABRT        0x04            /* command aborted */
+
+AER_MCR         0x08            /* media change requested */
+
+AER_SKEY        0xf0            /* sense key mask */
+
+AER_SK_NO_SENSE         0x00    /* no specific sense key info */
+
+AER_SK_RECOVERED_ERROR  0x10    /* command succeeded, data recovered */
+
+AER_SK_NOT_READY        0x20    /* no access to drive */
+
+AER_SK_MEDIUM_ERROR     0x30    /* non-recovered data error */
+
+AER_SK_HARDWARE_ERROR   0x40    /* non-recoverable hardware failure */
+
+AER_SK_ILLEGAL_REQUEST  0x50    /* invalid command parameter(s) */
+
+AER_SK_UNIT_ATTENTION   0x60    /* media changed */
+
+AER_SK_DATA_PROTECT     0x70    /* reading read-protected sector */
+
+AER_SK_ABORTED_COMMAND  0xb0    /* command aborted, try again */
+
+AER_SK_MISCOMPARE       0xe0    /* data did not match the medium */
+
+AER_BITS        &quot;\20\4mchg\3abort\2eom\1ili&quot;
+
+
+
+/*
+
+ * Feature register bits
+
+ */
+
+ARF_DMA         0x01  /* transfer data via DMA */
+
+ARF_OVERLAP     0x02  /* release the bus until completion */
+
+
+
+/*
+
+ * Interrupt reason register bits
+
+ */
+
+ARI_CMD         0x01 /* command(1) or data(0) */
+
+ARI_IN          0x02 /* transfer to(1) or from(0) the host */
+
+ARI_RELEASE     0x04 /* bus released until completion */
+
+
+
+/*
+
+ * Drive register values
+
+ */
+
+ARD_DRIVE0      0xa0            /* drive 0 selected */
+
+ARD_DRIVE1      0xb0            /* drive 1 selected */
+
+
+
+/*
+
+ * ATA commands
+
+ */
+
+ATAPIC_IDENTIFY         0xa1    /* get drive parameters */
+
+ATAPIC_PACKET           0xa0    /* execute packet command */
+
+
+
+/*
+
+ * Mandatory packet commands
+
+ */
+
+ATAPI_TEST_UNIT_READY   0x00    /* check if the device is ready */
+
+ATAPI_REQUEST_SENSE     0x03    /* get sense data */
+
+ATAPI_START_STOP        0x1b    /* start/stop the media */
+
+ATAPI_PREVENT_ALLOW     0x1e    /* prevent/allow media removal */
+
+ATAPI_READ_CAPACITY     0x25    /* get volume capacity */
+
+ATAPI_READ_BIG          0x28    /* read data */
+
+ATAPI_READ_TOC          0x43    /* get table of contents */
+
+ATAPI_READ_SUBCHANNEL   0x42    /* get subchannel info */
+
+ATAPI_MODE_SELECT_BIG   0x55    /* set device parameters */
+
+ATAPI_MODE_SENSE        0x5a    /* get device parameters */
+
+ATAPI_PLAY_CD           0xb4    /* universal play command */
+
+
+
+/*
+
+ * Optional packet commands
+
+ */
+
+ATAPI_PLAY_MSF          0x47    /* play by MSF address */
+
+ATAPI_PAUSE             0x4b    /* stop/start audio operation */
+
+
+
+/*
+
+ * Nonstandard packet commands
+
+ */
+
+ATAPI_PLAY_TRACK        0x48    /* play by track number */
+
+ATAPI_PLAY_BIG          0xa5    /* play by logical block address */
+
+
+
+
+
+And here more help of out friends:
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+And now, lets disasembler my SBIDE.SYS file and follow the
+
+code when Function 3 and subfunction 6 is called 
+
+(Get CD_Status):
+
+
+
+
+
+0000 FFFFFFFF               BYTE  4 DUP(0ffh)
+
+			;Here DOS will put the next driver
+
+			;memory location.
+
+
+
+0004 00C8                   add al , cl 
+
+0006 C700D200               mov word ptr [bx+si], 00D2
+
+			;C700 is the Est. Routine offset
+
+			;D200 is the Int. Routine offset			
+
+
+
+000A 3132                   xor [bp+si], si
+
+000C 3334                   xor si, [si]
+
+000E 353637                 xor ax, 3736
+
+0011 3800                   cmp [bx+si], al 
+
+0013 0000                   add [bx+si], al 
+
+0015 0100                   add [bx+si], ax
+
+0017 000000                 BYTE  3 DUP(0)
+
+
+
+001A B704                   mov bh, 04	;Jump table
+
+001C B704                   mov bh, 04
+
+001E B704                   mov bh, 04
+
+0020 6802B7                 push B702   ;This is jmp for 
+
+					;function 3. (0268h)	
+
+0023 04B7                   add al, B7
+
+0025 04B7                   add al, B7
+
+0027 048F                   add al, 8F
+
+0029 04B7                   add al, B7
+
+002B 04B7                   add al, B7
+
+002D 04B7                   add al, B7
+
+002F 04B7                   add al, B7
+
+0031 0488                   add al, 88
+
+0033 029904A8               add bl , [bx+di+A804]
+
+0037 04B7                   add al, B7
+
+0039 04B7                   add al, B7
+
+003B 041B                   add al, 1B
+
+003D 01B7042F               add [bx+2F04], si
+
+0041 013D                   add [di], di
+
+0043 016C01                 add [si+01], bp
+
+0046 DE01                   fiadd word ptr [bx+di]
+
+0048 B704                   mov bh, 04
+
+004A B704                   mov bh, 04
+
+004C 40                     inc ax
+
+004D 029802A3               add bl , [bx+si+A302]
+
+0051 02B704B7               add dh, [bx+B704]
+
+0055 04C9                   add al, C9
+
+0057 02CE                   add cl , dh
+
+
+
+0059 02D3                   add dl, bl 	;jmp subfunction 6
+
+005B 020E03EB               add cl , [EB03] ; (02D3h)
+
+
+
+005F 0229                   add ch, [bx+di]
+
+0061 036203                 add sp, [bp+si+03]
+
+0064 6D                     insw
+
+0065 037803                 add di, [bx+si+03]
+
+0068 83038E                 add word ptr [bp+di], FF8E
+
+006B 0399030B               add bx, [bx+di+0B03]
+
+006F 0439                   add al, 39
+
+0071 044D                   add al, 4D
+
+0073 0462                   add al, 62
+
+0075 047B                   add al, 7B
+
+0077 0485                   add al, 85
+
+0079 0400                   add al, 00
+
+007B 00000000000000000000   BYTE 10 DUP(0)
+
+0085 00000000000000000000   BYTE 10 DUP(0)
+
+008F 00000000000000000000   BYTE 10 DUP(0)
+
+0099 00000000000000000000   BYTE 10 DUP(0)
+
+00A3 00000000000000000000   BYTE 10 DUP(0)
+
+00AD 00000000000000000000   BYTE 10 DUP(0)
+
+00B7 00000000000000000000   BYTE 10 DUP(0)
+
+00C1 000000000000           BYTE  6 DUP(0)
+
+
+
+
+
+
+
+
+
+00C7 2E891E1600             mov cs:[0016], bx ;Strat. Rout.	
+
+00CC 2E8C061800             mov cs:[0018], es 
+
+00D1 CB                     retf	      
+
+
+
+00D2 50                     push ax	;Interrupt Routine
+
+00D3 53                     push bx	
+
+00D4 51                     push cx	
+
+00D5 52                     push dx
+
+00D6 56                     push si
+
+00D7 57                     push di
+
+00D8 55                     push bp
+
+00D9 1E                     push ds
+
+00DA 06                     push es
+
+00DB 2EC51E1600             lds bx, cs:[0016]
+
+00E0 8A4701                 mov al, [bx+01] ;Subunit number
+
+00E3 98                     cbw
+
+00E4 2EA37C00               mov word ptr cs:[007C],ax 
+
+						;Subunit
+
+00E8 BE1A00                 mov si, 001A     ;Init table jmp	
+
+00EB 8A4702                 mov al , [bx+02] ;Funct. number
+
+00EE 3C10                   cmp al, 10   
+
+00F0 760D                   jbe 00FF
+
+00F2 3C80                   cmp al, 80
+
+00F4 7206                   jb 00FC
+
+00F6 2C6F                   sub al, 6F
+
+00F8 3C19                   cmp al, 19
+
+00FA 7603                   jbe 00FF
+
+00FC E9B803                 jmp 04B7    
+
+
+
+00FF 98                     cbw		;Functions 0-10h
+
+0100 D1E0                   shl ax, 01	; ax=3*2=6h
+
+0102 03F0                   add si, ax  ;si=1A+6=20h
+
+0104 0BC0                   or ax, ax   ;is ax=0?
+
+0106 7403                   je 010B     ;yes jmp init
+
+0108 2EFF24                 jmp word ptr cs:[si] ;jmp 0268
+
+010B B001                   mov al, 01
+
+010D 2E86067E00             xchg cs:[007E], al 
+
+0112 0AC0                   or al , al 
+
+0114 75F2                   jne 0108
+
+0116 EA0B060000             jmp 0000:060B
+
+
+
+
+
+011B E8BD03                 call 04DB	
+
+011E 0BC9                   or cx, cx
+
+0120 7502                   jne 0124
+
+0122 EB05                   jmp 0129
+
+.
+
+.
+
+.
+
+0268 BE4E00                 mov si, 004E	;jmp base
+
+026B B20F                   mov dl, 0F
+
+026D C47F0E                 les di, [bx+0E] ;More_Info_Block
+
+0270 268A05                 mov al , es:[di] ;Subfunction 6
+
+0273 47                     inc di
+
+0274 38D0                   cmp al , dl
+
+0276 7603                   jbe 027B
+
+0278 E93C02                 jmp 04B7
+
+
+
+
+
+027B 98                     cbw  
+
+027C D1E0                   shl ax, 01  ax=6*2=0Ch
+
+027E 03F0                   add si, ax  si=4E+0C=5Ah
+
+0280 2E8B1E7C00             mov bx, cs:[007C] ;Subunit
+
+0285 2EFF24                 jmp word ptr cs:[si] ;jmp 2D3h
+
+
+
+0288 BE6E00                 mov si, 006E
+
+028B B205                   mov dl, 05
+
+028D EBDE                   jmp 026D
+
+028F B80003                 mov ax, 0300     
+
+0292 E8C302                 call 0558        
+
+0295 E92902                 jmp 04C1      
+
+.
+
+.
+
+.
+
+02D3 06                     push es
+
+02D4 57                     push di
+
+02D5 E8B129                 call 2C89	
+
+02D8 5F                     pop di
+
+02D9 07                     pop es
+
+02DA 7209                   jb 02E5
+
+02DC 268905                 mov es:[di], ax
+
+02DF 26895502               mov es:[di+02], dx
+
+02E3 EBAA                   jmp 028F
+
+02E5 B80281                 mov ax, 8102
+
+02E8 E9D901                 jmp 04C4
+
+.
+
+.
+
+.
+
+2C89 06                     push es
+
+2C8A 33C9                   xor cx, cx
+
+2C8C 0E                     push cs
+
+2C8D 07                     pop es
+
+2C8E 53                     push bx
+
+2C8F 51                     push cx
+
+
+
+2C90 B02A                   mov al, 2A
+
+2C92 2E80BFFA0700           cmp byte ptr cs:[bx+07FA], 00
+
+2C98 7402                   je 2C9C  ;if subunit=0 =&gt;al=2Ah
+
+2C9A B00F                   mov al, 0F ;else al=&gt;0Fh
+
+
+
+2C9C B420                   mov ah, 20	  ;Set this values
+
+2C9E BB2829                 mov bx, 2928  ;always
+
+2CA1 B91800                 mov cx, 0018  ;why???
+
+
+
+2CA4 9A20060000             call 0000:0620 
+
+		;(at cs:620 we have a jmp 085E ==&gt;
+
+				Get_CD_Status PROC??)
+
+		
+
+2CA9 59                     pop cx
+
+2CAA 5B                     pop bx
+
+2CAB 7303                   jnb 2CB0 ;any error?
+
+2CAD E9E100                 jmp 2D91 ;yes
+
+2CB0 2E80BFFA0700           cmp byte ptr cs:[bx+07FA], 00
+
+2CB6 7502                   jne 2CBA
+
+2CB8 EB65                   jmp 2D1F
+
+
+
+		;This part sets the CD_Status bits
+
+		;according to the standart order.
+
+
+
+2CBA 2EA02A29               mov al, cs:[292A]
+
+2CBE 3C70                   cmp al, 70
+
+2CC0 7504                   jne 2CC6
+
+2CC2 81C90008               or cx, 0800
+
+2CC6 3C71                   cmp al, 71
+
+2CC8 7504                   jne 2CCE
+
+2CCA 81C90108               or cx, 0801
+
+2CCE 2EA03429               mov al, cs:[2934]
+
+2CD2 81C90010               or cx, 1000
+
+2CD6 A810                   test al, 10
+
+2CD8 7504                   jne 2CDE
+
+2CDA 81E1FFEF               and cx, EFFF
+
+2CDE 81C90004               or cx, 0400
+
+2CE2 A802                   test al, 02
+
+2CE4 7504                   jne 2CEA
+
+2CE6 81E1FFFB               and cx, FBFF
+
+2CEA 83C910                 or cx, 0010
+
+2CED A801                   test al, 01
+
+2CEF 7503                   jne 2CF4
+
+2CF1 83E1EF                 and cx, FFEF
+
+2CF4 2EA03529               mov al, cs:[2935]
+
+2CF8 81C90001               or cx, 0100
+
+2CFC A818                   test al, 18
+
+2CFE 7504                   jne 2D04
+
+2D00 81E1FFFE               and cx, FEFF
+
+2D04 83C902                 or cx, 0002
+
+2D07 2EF606342980           test byte ptr cs:[2934], 80
+
+2D0D 741C                   je 2D2B
+
+2D0F 83E1FD                 and cx, FFFD
+
+2D12 2EF606362902           test byte ptr cs:[2936], 02
+
+2D18 7511                   jne 2D2B
+
+2D1A 83C902                 or cx, 0002
+
+2D1D EB67                   jmp 2D86
+
+2D1F 2EA02A29               mov al, cs:[292A]
+
+2D23 3C70                   cmp al, 70
+
+2D25 7504                   jne 2D2B
+
+2D27 81C90008               or cx, 0800
+
+2D2B 3C71                   cmp al, 71
+
+2D2D 7504                   jne 2D33
+
+2D2F 81C90108               or cx, 0801
+
+2D33 2EA03529               mov al, cs:[2935]
+
+2D37 81C90010               or cx, 1000
+
+2D3B A804                   test al, 04
+
+2D3D 7504                   jne 2D43
+
+2D3F 81E1FFEF               and cx, EFFF
+
+2D43 2EA03429               mov al, cs:[2934]
+
+2D47 81C90004               or cx, 0400
+
+2D4B A810                   test al, 10
+
+2D4D 7504                   jne 2D53
+
+2D4F 81E1FFFB               and cx, FBFF
+
+2D53 83C910                 or cx, 0010
+
+2D56 A801                   test al, 01
+
+2D58 7503                   jne 2D5D
+
+2D5A 83E1EF                 and cx, FFEF
+
+2D5D 2EA03729               mov al, cs:[2937]
+
+2D61 81C90001               or cx, 0100
+
+2D65 A803                   test al, 03
+
+2D67 7504                   jne 2D6D
+
+2D69 81E1FFFE               and cx, FEFF
+
+2D6D 83C902                 or cx, 0002
+
+2D70 2EF606362901           test byte ptr cs:[2936], 01
+
+2D76 740E                   je 2D86
+
+2D78 83E1FD                 and cx, FFFD
+
+2D7B 2EF606362902           test byte ptr cs:[2936], 02
+
+2D81 7503                   jne 2D86
+
+2D83 83C902                 or cx, 0002
+
+2D86 81C98402               or cx, 0284
+
+2D8A 8BC1                   mov ax, cx	;ax=cd_status word
+
+2D8C 33D2                   xor dx, dx
+
+2D8E F8                     clc
+
+2D8F 07                     pop es
+
+2D90 C3                     ret
+
+
+
+
+
+
+
+
+
+
+
+Let's put a bpx at call interrupt_routine of our program,
+
+Sice must stop at 0001:00D2 (we are executing a get 
+
+cd_status command) and stepping a little through the code we
+
+will arrive at the beginning of these function:
+
+
+
+
+
+<FONT color="green">
+
+Get_CD_Status Proc ??? (Later we will see this is a common
+
+		        procedure that uses the registers
+
+		        to perform different operations) </FONT>
+
+
+
+085E FC			    cld
+
+085F 1E                     push ds
+
+0860 06                     push es
+
+0861 55                     push bp
+
+0862 53                     push bx
+
+0863 51                     push cx
+
+0864 52                     push dx
+
+0865 57                     push di
+
+0866 56                     push si
+
+0867 0E                     push cs
+
+0868 1F                     pop ds
+
+0869 E8410E                 call 16AD ;Save Registers
+
+086C E86E10                 call 18DD ;EOI if posible
+
+086F 1E                     push ds
+
+0870 B84000                 mov ax, 0040
+
+0873 8ED8                   mov ds, ax
+
+0875 BB8E00                 mov bx, 008E
+
+0878 80277F                 and byte ptr [bx], 7F ;Clears
+
+					          ;byte #7
+
+087B 1F                     pop ds
+
+087C C606EC0700             mov byte ptr [07EC], 00
+
+0881 C606ED0701             mov byte ptr [07ED], 01 ;Driver
+
+						    ;in use
+
+0886 E87110                 call 18FA   ;Store IRQ Mask 
+
+0889 E8DD0F                 call 1869   ;Enable CD IRQ
+
+088C C706E8070000           mov word ptr [07E8], 0000
+
+0892 C606C30600             mov byte ptr [06C3], 00
+
+0897 1E                     push ds
+
+0898 07                     pop es
+
+
+
+0899 FC                     cld		   ;Clears buffer
+
+089A B90C00                 mov cx, 000C   ;where CD will
+
+089D BF3C06                 mov di, 063C   ;store it status
+
+08A0 B000                   mov al, 00    
+
+08A2 F3AA                   repz stosb
+
+
+
+08A4 8B1E7C00               mov bx, [007C]
+
+08A8 D1E3                   shl bx, 01
+
+08AA 8B974C07               mov dx, [bx+074C] ;Get IO base
+
+					      ;(3F6h) 
+
+08AE B008                   mov al, 08
+
+08B0 EE                     out dx, al	;  ????
+
+	
+
+08B1 8B972C07               mov dx, [bx+072C] ;Get IO base
+
+					      ;(1F6h)
+
+08B5 8A879407               mov al, [bx+0794] ;Get drive
+
+					      ;(B0h)=&gt;1
+
+08B9 EE                     out dx, al	;  Select drive 1 
+
+
+
+08BA A02706                 mov al, [0627] ;Get initial al
+
+					  (see call 16AD)
+
+08BD D0E0                   shl al, 01     ;Function*2
+
+					   ;20h*2=40h
+
+08BF 8D3E1208               lea di, [0812] ;Get Jmp base
+
+08C3 32E4                   xor ah, ah     ;ah=0
+
+08C5 03F8                   add di, ax	   ;Get Jmp address
+
+					   ;40h+812h=852h
+
+
+
+08C7 FF25                   jmp word ptr [di] ;Jump 1383h
+
+				;this is the point where 
+
+				;different tasks are done.
+
+08C9 32E4                   xor ah, ah
+
+08CB F8                     clc
+
+08CC 9C                     pushf
+
+08CD 50                     push ax
+
+08CE E83C10                 call 190D  ;Restore Old IRQ Mask
+
+08D1 58                     pop ax
+
+08D2 9D                     popf
+
+08D3 2EC606ED0700           mov byte ptr cs:[07ED],00;Driver
+
+						     ;Free	
+
+08D9 FB                     sti
+
+08DA 5E                     pop si
+
+08DB 5F                     pop di
+
+08DC 5A                     pop dx
+
+08DD 59                     pop cx
+
+08DE 5B                     pop bx
+
+08DF 5D                     pop bp
+
+08E0 07                     pop es
+
+08E1 1F                     pop ds
+
+08E2 CB                     retf	
+
+
+
+
+
+
+
+0842 	81 0F E3 08 80 0B E3 08 E3 08 72 13 22 0E 6F 0F              
+
+0852 	83 13 37 14 77 10 13 15 5A 15 BE 15 FC
+
+	^^^^^
+
+<FONT color="green">                
+
+Get_CD_Status ENDP ???</FONT>
+
+
+
+
+
+
+
+Now, we must try to discover what does mean every byte and
+
+what action performs every call, and then, following the 
+
+Fravia's advices we will use our Word Processor and we will
+
+replace numbers with letters.
+
+
+
+<FONT color="cyan">call 16AD ===&gt; Save Registers</FONT>
+
+
+
+16AD 88262706               mov [0627], ah
+
+16B1 A22806                 mov byte ptr [0628], al
+
+16B4 882E2906               mov [0629], ch
+
+16B8 880E2A06               mov [062A], cl 
+
+16BC 88362B06               mov [062B], dh
+
+16C0 88162C06               mov [062C], dl
+
+16C4 891E2306               mov [0623], bx
+
+16C8 8C062506               mov [0625], es
+
+16CC 893E2F06               mov [062F], di
+
+16D0 89362D06               mov [062D], si
+
+16D4 C3                     ret
+
+
+
+
+
+<FONT color="cyan">call 18DD ==&gt; Get PIC Interrupt Service Register</FONT>
+
+
+
+18DD FA                     cli
+
+18DE 50                     push ax
+
+18DF B00B                   mov al, 0B
+
+18E1 E6A0                   out A0, al   ;Next read
+
+				         ;give me the
+
+				         ;ISR register
+
+18E3 EB00                   jmp 18E5     ;Give time
+
+18E5 EB00                   jmp 18E7     ;to PIC	
+
+18E7 E4A0                   in al, A0    ;Get ISR 
+
+18E9 A810                   test al, 10  ;Is IRQ. 
+
+				         ;in service (CD)
+
+18EB 740A                   je 18F7     ;Yes, do nothing	
+
+18ED B020                   mov al, 20  ;EOI
+
+18EF E6A0                   out A0, al  ;
+
+18F1 EB00                   jmp 18F3    ;Give time
+
+18F3 EB00                   jmp 18F5    ;to PIC
+
+18F5 E620                   out 20, al  ;EOI				      
+
+18F7 58                     pop ax
+
+18F8 FB                     sti
+
+18F9 C3                     ret
+
+
+
+
+
+Bitfields for PIC output control word OCW3:
+
+Bit(s)	Description	
+
+ 7	reserved (0)
+
+ 6-5	special mask
+
+	0x  no operation
+
+	10  reset special mask
+
+	11  set special mask mode
+
+ 4-3	reserved (01 - signals OCW3)
+
+ 2	poll command
+
+ 1-0	function
+
+	0x  no operation
+
+	10  read interrupt request register on next read
+
+	    from PORT 0020h
+
+	11  read interrupt in-service register on next read
+
+	    from PORT 0020h
+
+
+
+Remember that 0Bh=00001011b =&gt; 0 00 01 0 11
+
+
+
+	0=Reserved
+
+	00=no operation			
+
+	01=OCW3
+
+	0=no polling command
+
+	11=read interrupt in service register on next read
+
+	   of port A0h or 20h.
+
+
+
+
+
+#10h=00010000==&gt; CD-ROM
+
+
+
+		Master		Slave
+
+
+
+bit #0		Timer		Real Time Clock
+
+bit #1		Keyboard	Free
+
+bit #2		Real Time Clock Free
+
+bit #3		2nd Serial Port Free (usually SB or CD)
+
+bit #4		1st Serial Port Free (usually SB or CD)
+
+bit #5		2nd Paral. Port Math Coprocessor
+
+bit #6		Floppy disk	Hard disk
+
+bit #7		1st Paral. Port Free
+
+
+
+
+
+
+
+Bitfields for PIC output control word OCW2:
+
+Bit(s)	Description	
+
+ 7-5	operation
+
+	000 rotate in auto EOI mode (clear)
+
+	001 (WORD_A) nonspecific EOI
+
+	010 (WORD_H) no operation
+
+	011 (WORD_B) specific EOI
+
+	100 (WORD_F) rotate in auto EOI mode (set)
+
+	101 (WORD_C) rotate on nonspecific EOI command
+
+	110 (WORD_E) set priority command
+
+	111 (WORD_D) rotate on specific EOI command
+
+ 4-3	reserved (00 - signals OCW2)
+
+ 2-0	interrupt request to which the command applies
+
+	(only used by WORD_B, WORD_D, and WORD_E)
+
+
+
+
+
+
+
+And 20h=00100000 ==&gt; 001 00 000
+
+
+
+	001=nonspecific EOI (end of interruption)
+
+	00=OCW2
+
+	000=Not used here
+
+ 
+
+
+
+<FONT color="cyan">
+
+call 18FA ==&gt; Get master and slave interrupt mask and stores
+
+	      them at [6C9] and [6CA]</FONT>	
+
+
+
+18FA FA                     cli
+
+18FB 50                     push ax
+
+18FC E421                   in al, 21 ;Get Master I.M.
+
+18FE 2EA2C906               mov byte ptr cs:[06C9], al
+
+1902 EB00                   jmp 1904	;Timing
+
+1904 E4A1                   in al, A1 ;Get Slave I.M.
+
+1906 2EA2CA06               mov byte ptr cs:[06CA], al
+
+190A 58                     pop ax
+
+190B FB                     sti
+
+190C C3                     ret
+
+
+
+
+
+<FONT color="cyan">
+
+call 1869 ==&gt; Enable CD interrupts</FONT>
+
+
+
+1869 50                     push ax
+
+186A 53                     push bx
+
+186B 51                     push cx
+
+186C 52                     push dx
+
+186D FA                     cli
+
+186E E4A1                   in al, A1	;Get slave I.M.
+
+1870 8AE0                   mov ah, al 
+
+1872 EB00                   jmp 1874    
+
+1874 E421                   in al, 21   ;Get master I.M.
+
+1876 2E8B1E7C00             mov bx, cs:[007C] ;Get Subunit 
+
+187B D1E3                   shl bx, 01   ;Subunit*2
+
+187D 2E8B97CC06             mov dx,cs:[bx+06CC] ;Get IO base
+
+					        ;for this
+
+						;subunit
+
+						;stored at
+
+						;init fase
+
+1882 E81000                 call 1895	;Get CD IRQ
+
+1885 0BC1                   or ax, cx   ;and enable it
+
+1887 E621                   out 21, al  ;Set Master IRQ
+
+1889 86E0                   xchg al , ah
+
+188B EB00                   jmp 188D
+
+188D E6A1                   out A1, al  ;Set Slave IRQ
+
+188F FB                     sti
+
+1890 5A                     pop dx
+
+1891 59                     pop cx
+
+1892 5B                     pop bx
+
+1893 58                     pop ax
+
+1894 C3                     ret
+
+
+
+<FONT color="cyan">
+
+call 1895 ==&gt; Get CD Interrupt </FONT>
+
+
+
+1895 56                     push si
+
+1896 B90400                 mov cx, 0004
+
+1899 BEC407                 mov si, 07C4
+
+189C 2E3B14                 cmp dx, cs:[si] ;dx=1F0h
+
+189F 7408                   je 18A9	;Are equal?
+
+18A1 83C605                 add si, 0005 ;No, next posible
+
+					 ;IO base and Int.
+
+18A4 E2F6                   loop 189C
+
+18A6 5E                     pop si
+
+18A7 F9                     stc
+
+18A8 C3                     ret
+
+18A9 2E8B4C03               mov cx, cs:[si+03] ;Store IRQ
+
+					       ;for CD
+
+18AD 5E                     pop si
+
+18AE F8                     clc
+
+18AF C3                     ret
+
+
+
+
+
+
+
+And these are the bytes stored in the file:
+
+
+
+(Buffer where the driver will store some important
+
+values).
+
+
+
+
+
+0623    00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+
+0633    00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+
+0643    00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+
+0653    00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+
+0663    00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+
+0673    00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+
+0683    00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+
+0693    00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+
+06A3    00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+
+06B3    00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+
+06C3    00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+
+0691    00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+
+069B    00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+
+06C3    00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+
+0691    00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+
+069B    00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+
+.
+
+.
+
+07C4    F0 01 0E 00 40 70 01 0F 00 80 E8 01 0B 00 08 68   
+
+07D4    01 0A 00 04 00 00 00 00 00 00 00 00 00 00 00 00   
+
+07E4    00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00   
+
+  
+
+0812    0D 0B E3 08 A9 0D E3 08 E3 08 E3 08 81 0C E3 08
+
+0822    34 0E 93 0F 7E 10 9A 10 E8 10 E3 08 E3 08 03 11       
+
+
+
+
+
+
+
+<FONT color="cyan">
+
+call 1895 ==&gt; Restore Old IRQ Mask (see Call 18FA)</FONT>
+
+
+
+
+
+190D FA                     cli
+
+190E 50                     push ax
+
+190F 2EA0C906               mov al, cs:[06C9]	
+
+1913 E621                   out 21, al
+
+1915 EB00                   jmp 1917
+
+1917 2EA0CA06               mov al, cs:[06CA]
+
+191B E6A1                   out A1, al
+
+191D 58                     pop ax
+
+191E FB                     sti
+
+191F C3                     ret
+
+
+
+
+
+
+
+<FONT color="cyan">
+
+Jmp 1383 ==&gt; Get_Device_Parameters 
+
+		(action is defined in registers at entry
+
+		 at address 85Eh)</FONT>
+
+
+
+
+
+1383 C706E8070000           mov word ptr [07E8], 0000
+
+					;# bytes??
+
+1389 C6063C065A             mov byte ptr [063C], 5A 
+
+				    ;Mandatory packet
+
+				    ;get device parameters.
+
+
+
+138E A02806                 mov al, [0628]
+
+1391 A23E06                 mov byte ptr [063E], al
+
+1394 A02906                 mov al, [0629]
+
+1397 A24306                 mov byte ptr [0643], al
+
+139A A02A06                 mov al, [062A]
+
+139D A24406                 mov byte ptr [0644], al
+
+13A0 8A262906               mov ah, [0629]
+
+13A4 A02A06                 mov al, [062A]
+
+13A7 A3E607                 mov word ptr [07E6], ax
+
+13AA E86204                 call 180F ;Create mandatory
+
+				      ;packet command
+
+
+
+13AD E82503                 call 16D5 ;Send mandatory packet
+
+
+
+13B0 727A                   jb 142C
+
+13B2 8B3E2306               mov di, [0623]
+
+13B6 8E062506               mov es, [0625]
+
+13BA E8B603                 call 1773 ;Is command finished?
+
+13BD 7275                   jb 1434
+
+
+
+13BF 8B97EC06               mov dx, [bx+06EC] ;dx=1F2h
+
+13C3 EC                     in al, dx ;Get Int. reason
+
+13C4 3C02                   cmp al, 02 ;Was int. caused by
+
+					; a transfer?
+
+13C6 7403                   je 13CB
+
+13C8 E98AF6                 jmp 0A55
+
+
+
+13CB 8B973C07               mov dx, [bx+073C] ;dx=1F7h
+
+13CF EC                     in al, dx
+
+13D0 A801                   test al, 01 ;Any error?
+
+13D2 7403                   je 13D7
+
+13D4 E929F5                 jmp 0900
+
+
+
+13D7 8B971C07               mov dx, [bx+071C] ;dx=1F5h
+
+13DB EC                     in al, dx ;Get #bytes to receive
+
+13DC 8AE0                   mov ah, al 
+
+13DE 4A                     dec dx
+
+13DF EC                     in al, dx
+
+13E0 8BC8                   mov cx, ax
+
+13E2 010EE807               add [07E8], cx
+
+
+
+13E6 FC                     cld
+
+13E7 D1E9                   shr cx, 01 ;bytes-&gt;words
+
+13E9 8B97CC06               mov dx, [bx+06CC] ;Get base 3F7h
+
+13ED F36D                   repz insw ;Get CD_Status bytes
+
+
+
+13EF A1E807                 mov ax, word ptr [07E8]
+
+13F2 3906E607               cmp [07E6], ax ;correct #bytes
+
+					   ;received?
+
+13F6 75C2                   jne 13BA
+
+13F8 E87803                 call 1773 ;Dis/Enable CD irq
+
+13FB 7237                   jb 1434
+
+13FD 53                     push bx
+
+13FE D1EB                   shr bx, 01
+
+1400 80BFFA0700             cmp byte ptr [bx+07FA], 00
+
+1405 5B                     pop bx
+
+1406 740C                   je 1414
+
+1408 8B973C07               mov dx, [bx+073C]
+
+140C EC                     in al, dx
+
+140D A808                   test al, 08
+
+140F 740F                   je 1420
+
+1411 E941F6                 jmp 0A55
+
+
+
+
+
+1414 8B97EC06               mov dx, [bx+06EC]
+
+1418 EC                     in al, dx
+
+1419 3C03                   cmp al, 03
+
+141B 7403                   je 1420
+
+141D E935F6                 jmp 0A55
+
+
+
+1420 8B973C07               mov dx, [bx+073C]
+
+1424 EC                     in al, dx
+
+1425 A801                   test al, 01
+
+1427 7408                   je 1431
+
+1429 E9D4F4                 jmp 0900
+
+
+
+142C 7406                   je 1434
+
+142E E9BAF4                 jmp 08EB
+
+
+
+1431 E995F4                 jmp 08C9
+
+1434 E9BCF4                 jmp 08F3
+
+
+
+
+
+<FONT color="cyan">
+
+call 180F ==&gt; Create a mandatory packet command (M.P.C.) and
+
+	      store it at 648h.</FONT>
+
+
+
+180F FC                     cld
+
+1810 BF4806                 mov di, 0648 ;M.P.C. 
+
+1813 0E                     push cs
+
+1814 07                     pop es
+
+1815 B000                   mov al, 00
+
+1817 AA                     stosb
+
+1818 B000                   mov al, 00
+
+181A AA                     stosb
+
+181B AA                     stosb
+
+181C A1E607                 mov ax, word ptr [07E6]
+
+181F AA                     stosb
+
+1820 86E0                   xchg al , ah
+
+1822 AA                     stosb
+
+1823 8A879407               mov al ,[bx+0794] ;Drive (B0h=1)
+
+1827 AA                     stosb
+
+1828 B0A0                   mov al, A0 ;Command (A0h=execute 
+
+				       ;M.P.C.)
+
+182A AA                     stosb
+
+182B C3                     ret
+
+
+
+
+
+The result of this action is:
+
+
+
+0648	00 00 00 ?? ?? B0 A0 
+
+
+
+where ???? is stored at [7E6] and you could see how [7E6] is
+
+a copy of the memory location word [629]==&gt; CX at entry (see
+
+call 16AD).
+
+
+
+
+
+<FONT color="cyan">
+
+call 16D5 ==&gt; Send Mandatory packet</FONT>
+
+
+
+16D5 8B1E7C00               mov bx, [007C];get subunit
+
+16D9 D1E3                   shl bx, 01
+
+16DB E8DD00                 call 17BB ;Is drive busy?
+
+16DE 7244                   jb 1724 ;Any Error?
+
+
+
+16E0 E84901                 call 182C ;Initialize driver and
+
+				    ;prepare it to receive
+
+				    ;the M.P.C.
+
+
+
+16E3 80BFA40700             cmp byte ptr [bx+07A4], 00
+
+16E8 7502                   jne 16EC
+
+16EA EB19                   jmp 1705
+
+
+
+16EC E88400                 call 1773 ;Is command finished?
+
+16EF 7233                   jb 1724
+
+16F1 8B97EC06               mov dx, [bx+06EC]
+
+16F5 EC                     in al, dx
+
+16F6 3C01                   cmp al, 01
+
+16F8 752E                   jne 1728
+
+16FA 8B973C07               mov dx, [bx+073C]
+
+16FE EC                     in al, dx
+
+16FF A808                   test al, 08
+
+1701 7425                   je 1728
+
+1703 EB05                   jmp 170A
+
+
+
+1705 E82400                 call 172C ;Prepared to data 
+
+				      ;request?
+
+1708 721A                   jb 1724
+
+170A 8B973C07               mov dx, [bx+073C]
+
+170E EC                     in al, dx
+
+170F A880                   test al, 80  ;Is busy?
+
+1711 7402                   je 1715   ;No, send
+
+1713 EBF5                   jmp 170A  ;Yes, try again
+
+
+
+1715 FC                     cld
+
+1716 BE3C06                 mov si, 063C ;M.P.C. add.
+
+1719 B90600                 mov cx, 0006 ;Send 0Ch 
+
+					;bytes
+
+					;(63Ch-647h)
+
+171C 8B97CC06               mov dx, [bx+06CC];dx=1F0h
+
+1720 F3                     repz
+
+1721 6F                     outsw
+
+1722 F8                     clc
+
+1723 C3                     ret
+
+
+
+1724 32E4                   xor ah, ah
+
+1726 F9                     stc  ;Return with error
+
+1727 C3                     ret
+
+
+
+1728 0BD2                   or dx, dx
+
+172A F9                     stc
+
+172B C3                     ret
+
+
+
+
+
+<FONT color="cyan">
+
+call 17BB ==&gt; Is drive busy?</FONT>
+
+
+
+17BB C706C4060200           mov word ptr [06C4], 0002
+
+17C1 2E803ECB0688           cmp byte ptr cs:[06CB], 88
+
+			;at init fase, we can set the drq
+
+			;type, on depending of this we set
+
+			;different timeouts values (I need
+
+			;more info of this phase)
+
+			
+
+17C7 7406                   je 17CF
+
+
+
+17C9 C706C406B400           mov word ptr [06C4],00B4 ;timeout
+
+						     ;value
+
+17CF E8F101                 call 19C3 ;Set timeout
+
+17D2 E81202                 call 19E7 ;Is timeout finished?
+
+17D5 740B                   je 17E2 ;Yes, return with error
+
+				    ;we are tired of waiting
+
+
+
+17D7 8B973C07               mov dx, [bx+073C] ;Get inmediate
+
+17DB EC                     in al, dx 	      ;status
+
+17DC A880                   test al, 80 ;Is busy?
+
+17DE 75F2                   jne 17D2 ;Yes, give it more time
+
+17E0 F8                     clc 
+
+17E1 C3                     ret
+
+
+
+17E2 F9                     stc
+
+17E3 C3                     ret
+
+
+
+
+
+
+
+<FONT color="cyan">
+
+call 19C3 ==&gt; Set Timeout (get bios ticks counter, adds
+
+			the timeout value and stores it at
+
+			[6C4])</FONT>
+
+
+
+19C3 9C                     pushf
+
+19C4 50                     push ax
+
+19C5 53                     push bx
+
+19C6 1E                     push ds
+
+19C7 BB4000                 mov bx, 0040
+
+19CA 8EDB                   mov ds, bx
+
+19CC BB6C00                 mov bx, 006C ;Bios ticks
+
+					;count
+
+19CF 8B07                   mov ax, [bx]
+
+19D1 8B5F02                 mov bx, [bx+02]
+
+19D4 1F                     pop ds
+
+19D5 891EC606               mov [06C6], bx 
+
+19D9 0106C406               add [06C4], ax 
+
+19DD 7304                   jnb 19E3
+
+19DF FF06C606               inc word ptr [06C6]
+
+19E3 5B                     pop bx
+
+19E4 58                     pop ax
+
+19E5 9D                     popf
+
+19E6 C3                     ret
+
+
+
+<FONT color="cyan">
+
+call 19E7 ==&gt; Is timeout finished? (compare Bios ticks
+
+		counter with previously stored value)</FONT>
+
+
+
+19E7 50                     push ax
+
+19E8 53                     push bx
+
+19E9 1E                     push ds
+
+19EA B84000                 mov ax, 0040
+
+19ED 8ED8                   mov ds, ax
+
+19EF BB6C00                 mov bx, 006C
+
+19F2 8B07                   mov ax, [bx]
+
+19F4 8B5F02                 mov bx, [bx+02]
+
+19F7 1F                     pop ds
+
+19F8 3B1EC606               cmp bx, [06C6]
+
+19FC 7208                   jb 1A06
+
+19FE 3B06C406               cmp ax, [06C4]
+
+1A02 7202                   jb 1A06 
+
+1A04 33C0                   xor ax, ax ;Time finished
+
+1A06 5B                     pop bx
+
+1A07 58                     pop ax
+
+1A08 C3                     ret
+
+
+
+<FONT color="cyan">
+
+call 1773 ==&gt; Is command finished?</FONT>
+
+
+
+
+
+1773 53                     push bx
+
+1774 E8C600                 call 183D ;Disable CD irq
+
+1777 C706C406B400           mov word ptr [06C4], 00B4
+
+177D E84302                 call 19C3 ;Set timeout
+
+1780 E86402                 call 19E7 ;Is timeout finished?
+
+1783 7430                   je 17B5
+
+1785 F606EC0701             test byte ptr [07EC], 01
+
+178A 751E                   jne 17AA
+
+178C E82101                 call 18B0 ;Get CD irq number
+
+178F 3C0E                   cmp al, 0E ;Is 0Eh?
+
+1791 75ED                   jne 1780
+
+
+
+1793 1E                     push ds
+
+1794 B84000                 mov ax, 0040
+
+1797 8ED8                   mov ds, ax
+
+1799 BB8E00                 mov bx, 008E
+
+179C F60780                 test byte ptr [bx], 80
+
+				;irq sets this bit when the
+
+				;command is finished
+
+179F 7406                   je 17A7
+
+17A1 80277F                 and byte ptr [bx], 7F ;Clear it
+
+					;for future uses.
+
+				
+
+17A4 1F                     pop ds
+
+17A5 EB03                   jmp 17AA
+
+17A7 1F                     pop ds
+
+17A8 EBD6                   jmp 1780    ;Give it more time
+
+					;to end the command
+
+
+
+17AA C606EC0700             mov byte ptr [07EC], 00
+
+17AF E8B700                 call 1869 ;Enable CD irq
+
+17B2 5B                     pop bx
+
+17B3 F8                     clc ;No error returned
+
+17B4 C3                     ret
+
+
+
+17B5 E8B100                 call 1869 ;Enable CD irq
+
+17B8 5B                     pop bx
+
+17B9 F9                     stc ;Error returned
+
+17BA C3                     ret
+
+                          
+
+
+
+<FONT color="cyan">
+
+call 183D ==&gt; Disable CD irq</FONT>
+
+
+
+
+
+183D 50                     push ax
+
+183E 53                     push bx
+
+183F 51                     push cx
+
+1840 52                     push dx
+
+1841 FA                     cli
+
+
+
+1842 E4A1                   in al, A1
+
+1844 8AE0                   mov ah, al 
+
+1846 EB00                   jmp 1848
+
+1848 E421                   in al, 21
+
+
+
+184A 8B1E7C00               mov bx, [007C] ;subunit
+
+184E D1E3                   shl bx, 01
+
+1850 8B97CC06               mov dx, [bx+06CC]
+
+1854 E83E00                 call 1895  ;Get CD irq
+
+
+
+1857 F7D1                   not cx  
+
+1859 23C1                   and ax, cx ;and clear it
+
+185B E621                   out 21, al ;send irq mask 
+
+185D 86E0                   xchg al , ah
+
+185F EB00                   jmp 1861
+
+1861 E6A1                   out A1, al
+
+1863 FB                     sti
+
+1864 5A                     pop dx
+
+1865 59                     pop cx
+
+1866 5B                     pop bx
+
+1867 58                     pop ax
+
+1868 C3                     ret
+
+
+
+
+
+
+
+<FONT color="cyan">
+
+call 18D0 ==&gt; Get CD irq number</FONT>
+
+
+
+18B0 56                     push si
+
+18B1 53                     push bx
+
+18B2 51                     push cx
+
+18B3 52                     push dx
+
+18B4 2E8B1E7C00             mov bx, cs:[007C] ;Subunit
+
+18B9 D1E3                   shl bx, 01
+
+18BB 2E8B97CC06             mov dx, cs:[bx+06CC]
+
+18C0 B90400                 mov cx, 0004
+
+18C3 BEC407                 mov si, 07C4
+
+18C6 2E3B14                 cmp dx, cs:[si]
+
+18C9 7408                   je 18D3
+
+18CB 83C605                 add si, 0005
+
+18CE E2F6                   loop 18C6
+
+18D0 F9                     stc
+
+18D1 EB05                   jmp 18D8
+
+18D3 2E8A4402               mov al , cs:[si+02] ;return irq
+
+						;number
+
+18D7 F8                     clc
+
+18D8 5A                     pop dx
+
+18D9 59                     pop cx
+
+18DA 5B                     pop bx
+
+18DB 5E                     pop si
+
+18DC C3                     ret
+
+
+
+
+
+<FONT color="cyan">
+
+call 182C ==&gt; Prepare drive to receive the M.P.C.</FONT>
+
+
+
+182C FC                     cld
+
+182D BE4806                 mov si, 0648
+
+1830 8B97DC06               mov dx, [bx+06DC]
+
+1834 B90700                 mov cx, 0007
+
+1837 AC                     lodsb
+
+1838 EE                     out dx, al
+
+1839 42                     inc dx
+
+183A E2FB                   loop 1837
+
+183C C3                     ret
+
+
+
+
+
+<FONT color="cyan">
+
+call 172Ch ==&gt; Prepared to data request?</FONT>
+
+
+
+172C 803E3C0612             cmp byte ptr [063C], 12
+
+				;Was command 12h? 
+
+				;What is this command????
+
+1731 750E                   jne 1741
+
+1733 C706C4060200           mov word ptr [06C4], 0002
+
+1739 E88702                 call 19C3
+
+173C E8A802                 call 19E7
+
+173F 75FB                   jne 173C
+
+
+
+1741 8B974C07               mov dx, [bx+074C]
+
+1745 E87300                 call 17BB  ;Is drive busy?  
+
+1748 7225                   jb 176F
+
+
+
+174A C706C4060200           mov word ptr [06C4], 0002
+
+1750 2E803ECB0688           cmp byte ptr cs:[06CB], 88
+
+1756 7406                   je 175E
+
+1758 C706C406B400           mov word ptr [06C4], 00B4
+
+175E E86202                 call 19C3 ;Set timeout
+
+1761 E88302                 call 19E7 ;Is timeout finished?
+
+1764 7409                   je 176F 
+
+
+
+1766 EC                     in al, dx ;Get inmediate status
+
+1767 2488                   and al, 88
+
+1769 3C08                   cmp al, 08 ;Prepared for data
+
+					;request?
+
+
+
+176B 7404                   je 1771
+
+176D EBF2                   jmp 1761
+
+
+
+176F F9                     stc
+
+1770 C3                     ret
+
+
+
+1771 F8                     clc
+
+1772 C3                     ret
+
+
+
+<HR>
+
+Well, sorry I know this doc is very disordered, but you can
+
+print it and so it will be easier to understand.
+
+
+
+The conclusions we can extract of this is how a CD_UNIT,
+
+works and we can find some M.P.C. we can use either under
+
+W95 (this will be the next step of this project).
+
+
+
+The execution flow is:
+
+
+
+	*Get function to perform.
+
+	*Prepare drive to send M.P.C.
+
+	*Create the M.P.C. for this function 
+
+	*Send M.P.C.
+
+	*Get Data sent by the drive.
+
+
+
+Obviously we must check the drive status between steps,
+
+to be sure we can send/receive correctly the data.
+
+
+
+So we will try to find out all the M.P.C., and here we have
+
+again the invaluable help of Linux developers.
+
+
+
+
+
+This is part of the sbpcd.h file.
+
+
+
+
+
+all numbers (lba, msf-bin, msf-bcd, counts) to transfer high byte first
+
+
+
+mnemo     7-byte command        #bytes response (r0...rn)
+
+________ ____________________  ____ 
+
+
+
+Read Status:
+
+status:  81.                    (1)  one-byte command, gives the main
+
+                                                          status byte
+
+Read Error:
+
+check1:  82 00 00 00 00 00 00.  (6)  r1: audio status
+
+
+
+Read Packet:
+
+check2:  8e xx 00 00 00 00 00. (xx)  gets xx bytes response, relating
+
+                                        to commands 01 04 05 07 08 09
+
+
+
+Play Audio:
+
+play:    0a ll-bb-aa nn-nn-nn.  (0)  play audio, ll-bb-aa: starting block (lba),
+
+                                                 nn-nn-nn: #blocks
+
+Play Audio MSF:
+
+         0b mm-ss-ff mm-ss-ff   (0)  play audio from/to
+
+
+
+Play Audio Track/Index:
+
+         0c ...
+
+
+
+Pause/Resume:
+
+pause:   8d pr 00 00 00 00 00.  (0)  pause (pr=00) 
+
+                                     resume (pr=80) audio playing
+
+
+
+Mode Select:
+
+         84 00 nn-nn ??-?? 00   (0)  nn-nn: 2048 or 2340
+
+                                     possibly defines transfer size
+
+
+
+set_vol: 84 83 00 00 sw le 00.  (0)  sw(itch): lrxxxxxx (off=1)
+
+                                     le(vel): min=0, max=FF, else half
+
+				     (firmware 2.11)
+
+
+
+Mode Sense:
+
+get_vol: 85 03 00 00 00 00 00.  (2)  tell current audio volume setting
+
+
+
+Read Disc Information:
+
+tocdesc: 8b 00 00 00 00 00 00.  (6)  read the toc descriptor (&quot;msf-bin&quot;-format)
+
+
+
+Read TOC:
+
+tocent:  8c fl nn 00 00 00 00.  (8)  read toc entry #nn
+
+                                       (fl=0:&quot;lba&quot;-, =2:&quot;msf-bin&quot;-format)
+
+
+
+Read Capacity:
+
+capacit: 88 00 00 00 00 00 00.  (5)  &quot;read CD-ROM capacity&quot;
+
+
+
+
+
+Read Path Check:
+
+ping:    00 00 00 00 00 00 00.  (2)  r0=AA, r1=55
+
+                                     (&quot;ping&quot; if the drive is connected)
+
+
+
+Read Drive Version:
+
+ident:   83 00 00 00 00 00 00. (12)  gives &quot;MATSHITAn.nn&quot; 
+
+                                     (n.nn = 2.01, 2.11., 3.00, ...)
+
+
+
+Seek:
+
+seek:    01 00 ll-bb-aa 00 00.  (0)  
+
+seek:    01 02 mm-ss-ff 00 00.  (0)  
+
+
+
+Read Data:
+
+read:    02 xx-xx-xx nn-nn fl. (??)  read nn-nn blocks of 2048 bytes,
+
+                                     starting at block xx-xx-xx  
+
+                                     fl=0: &quot;lba&quot;-, =2:&quot;msf-bcd&quot;-coded xx-xx-xx
+
+
+
+Read XA-Data:
+
+read:    03 xx-xx-xx nn-nn fl. (??)  read nn-nn blocks of 2340 bytes, 
+
+                                     starting at block xx-xx-xx
+
+                                     fl=0: &quot;lba&quot;-, =2:&quot;msf-bcd&quot;-coded xx-xx-xx
+
+
+
+Read SUB_Q:
+
+         89 fl 00 00 00 00 00. (13)  r0: audio status, r4-r7: lba/msf, 
+
+                                       fl=0: &quot;lba&quot;, fl=2: &quot;msf&quot;
+
+
+
+Read Disc Code:
+
+         8a 00 00 00 00 00 00. (14)  possibly extended &quot;check condition&quot;-info
+
+
+
+Read Header:
+
+         04 00 ll-bb-aa 00 00.  (0)   4 bytes response with &quot;check2&quot;
+
+         04 02 mm-ss-ff 00 00.  (0)   4 bytes response with &quot;check2&quot;
+
+
+
+Spin Up:
+
+         05 00 ll-bb-aa 00 00.  (0)  possibly implies a &quot;seek&quot;
+
+
+
+Spin Down:
+
+         06 ...
+
+
+
+Diagnostic:
+
+         07 00 ll-bb-aa 00 00.  (2)   2 bytes response with &quot;check2&quot;
+
+         07 02 mm-ss-ff 00 00.  (2)   2 bytes response with &quot;check2&quot;
+
+
+
+Read UPC:
+
+         08 00 ll-bb-aa 00 00. (16)  
+
+         08 02 mm-ss-ff 00 00. (16)  
+
+
+
+Read ISRC:
+
+         09 00 ll-bb-aa 00 00. (15)  15 bytes response with &quot;check2&quot;
+
+         09 02 mm-ss-ff 00 00. (15)  15 bytes response with &quot;check2&quot;
+
+
+
+Set XA Parameter:
+
+         86 ...
+
+
+
+Read XA Parameter:
+
+         87 ...
+
+
+
+==============================================================================
+
+============================================================================*/
+
+
+
+/*
+
+ * commands
+
+ *
+
+ * CR-52x:      CMD0_
+
+ * CR-56x:      CMD1_
+
+ * CD200:       CMD2_   <== This is my CD model. * LCS-7260: CMDL_ * TEAC CD-55A: CMDT_ * ECS-AT: CMDV_ */ #define CMD1_RESET 0x0a #define CMD2_RESET 0x01 #define CMDT_RESET 0xc0 #define CMD1_LOCK_CTL 0x0c #define CMD2_LOCK_CTL 0x1e #define CMDT_LOCK_CTL CMD2_LOCK_CTL #define CMDL_LOCK_CTL 0x0e #define CMDV_LOCK_CTL CMDL_LOCK_CTL #define CMD1_TRAY_CTL 0x07 #define CMD2_TRAY_CTL 0x1b #define CMDT_TRAY_CTL CMD2_TRAY_CTL #define CMDL_TRAY_CTL 0x0d #define CMDV_TRAY_CTL CMDL_TRAY_CTL #define CMD1_MULTISESS 0x8d #define CMDL_MULTISESS 0x8c #define CMDV_MULTISESS CMDL_MULTISESS #define CMD1_SUBCHANINF 0x11 #define CMD2_SUBCHANINF 0x?? #define CMD1_ABORT 0x08 #define CMD2_ABORT 0x08 #define CMDT_ABORT 0x08 #define CMD2_x02 0x02 #define CMD2_SETSPEED 0xda #define CMD0_PATH_CHECK 0x00 #define CMD1_PATH_CHECK 0x??? #define CMD2_PATH_CHECK 0x??? #define CMDT_PATH_CHECK 0x??? #define CMDL_PATH_CHECK CMD0_PATH_CHECK #define CMDV_PATH_CHECK CMD0_PATH_CHECK #define CMD0_SEEK 0x01 #define CMD1_SEEK CMD0_SEEK #define CMD2_SEEK 0x2b #define CMDT_SEEK CMD2_SEEK #define CMDL_SEEK CMD0_SEEK #define CMDV_SEEK CMD0_SEEK #define CMD0_READ 0x02 #define CMD1_READ 0x10 #define CMD2_READ 0x28 #define CMDT_READ CMD2_READ #define CMDL_READ CMD0_READ #define CMDV_READ CMD0_READ #define CMD0_READ_XA 0x03 #define CMD2_READ_XA 0xd4 #define CMD2_READ_XA2 0xd5 #define CMDL_READ_XA CMD0_READ_XA /* really ?? */ #define CMDV_READ_XA CMD0_READ_XA #define CMD0_READ_HEAD 0x04 #define CMD0_SPINUP 0x05 #define CMD1_SPINUP 0x02 #define CMD2_SPINUP CMD2_TRAY_CTL #define CMDL_SPINUP CMD0_SPINUP #define CMDV_SPINUP CMD0_SPINUP #define CMD0_SPINDOWN 0x06 /* really??? */ #define CMD1_SPINDOWN 0x06 #define CMD2_SPINDOWN CMD2_TRAY_CTL #define CMDL_SPINDOWN 0x0d #define CMDV_SPINDOWN CMD0_SPINDOWN #define CMD0_DIAG 0x07 #define CMD0_READ_UPC 0x08 #define CMD1_READ_UPC 0x88 #define CMD2_READ_UPC 0x??? #define CMDL_READ_UPC CMD0_READ_UPC #define CMDV_READ_UPC 0x8f #define CMD0_READ_ISRC 0x09 #define CMD0_PLAY 0x0a #define CMD1_PLAY 0x??? #define CMD2_PLAY 0x??? #define CMDL_PLAY CMD0_PLAY #define CMDV_PLAY CMD0_PLAY #define CMD0_PLAY_MSF 0x0b #define CMD1_PLAY_MSF 0x0e #define CMD2_PLAY_MSF 0x47 #define CMDT_PLAY_MSF CMD2_PLAY_MSF #define CMDL_PLAY_MSF 0x??? #define CMD0_PLAY_TI 0x0c #define CMD1_PLAY_TI 0x0f #define CMD0_STATUS 0x81 #define CMD1_STATUS 0x05 #define CMD2_STATUS 0x00 #define CMDT_STATUS CMD2_STATUS #define CMDL_STATUS CMD0_STATUS #define CMDV_STATUS CMD0_STATUS #define CMD2_SEEK_LEADIN 0x00 #define CMD0_READ_ERR 0x82 #define CMD1_READ_ERR CMD0_READ_ERR #define CMD2_READ_ERR 0x03 #define CMDT_READ_ERR CMD2_READ_ERR /* get audio status */ #define CMDL_READ_ERR CMD0_READ_ERR #define CMDV_READ_ERR CMD0_READ_ERR #define CMD0_READ_VER 0x83 #define CMD1_READ_VER CMD0_READ_VER #define CMD2_READ_VER 0x12 #define CMDT_READ_VER CMD2_READ_VER /* really ?? */ #define CMDL_READ_VER CMD0_READ_VER #define CMDV_READ_VER CMD0_READ_VER #define CMD0_SETMODE 0x84 #define CMD1_SETMODE 0x09 #define CMD2_SETMODE 0x55 #define CMDT_SETMODE CMD2_SETMODE #define CMDL_SETMODE CMD0_SETMODE #define CMD0_GETMODE 0x85 #define CMD1_GETMODE 0x84 #define CMD2_GETMODE 0x5a #define CMDT_GETMODE CMD2_GETMODE #define CMDL_GETMODE CMD0_GETMODE #define CMD0_SET_XA 0x86 #define CMD0_GET_XA 0x87 #define CMD0_CAPACITY 0x88 #define CMD1_CAPACITY 0x85 #define CMD2_CAPACITY 0x25 #define CMDL_CAPACITY CMD0_CAPACITY /* missing in some firmware versions */ #define CMD0_READSUBQ 0x89 #define CMD1_READSUBQ 0x87 #define CMD2_READSUBQ 0x42 #define CMDT_READSUBQ CMD2_READSUBQ #define CMDL_READSUBQ CMD0_READSUBQ #define CMDV_READSUBQ CMD0_READSUBQ #define CMD0_DISKCODE 0x8a #define CMD0_DISKINFO 0x8b #define CMD1_DISKINFO CMD0_DISKINFO #define CMD2_DISKINFO 0x43 #define CMDT_DISKINFO CMD2_DISKINFO #define CMDL_DISKINFO CMD0_DISKINFO #define CMDV_DISKINFO CMD0_DISKINFO #define CMD0_READTOC 0x8c #define CMD1_READTOC CMD0_READTOC #define CMD2_READTOC 0x??? #define CMDL_READTOC CMD0_READTOC #define CMDV_READTOC CMD0_READTOC #define CMD0_PAU_RES 0x8d #define CMD1_PAU_RES 0x0d #define CMD2_PAU_RES 0x4b #define CMDT_PAUSE CMD2_PAU_RES #define CMDL_PAU_RES CMD0_PAU_RES #define CMDV_PAUSE CMD0_PAU_RES #define CMD0_PACKET 0x8e #define CMD1_PACKET CMD0_PACKET #define CMD2_PACKET 0x??? #define CMDL_PACKET CMD0_PACKET #define CMDV_PACKET 0x??? And more defines: /* * bits of flags_cmd_out: */ #define f_respo3 0x100 #define f_putcmd 0x80 #define f_respo2 0x40 #define f_lopsta 0x20 #define f_getsta 0x10 #define f_ResponseStatus 0x08 #define f_obey_p_check 0x04 #define f_bit1 0x02 #define f_wait_if_busy 0x01 /* * diskstate_flags: */ #define x80_bit 0x80 #define upc_bit 0x40 #define volume_bit 0x20 #define toc_bit 0x10 #define multisession_bit 0x08 #define cd_size_bit 0x04 #define subq_bit 0x02 #define frame_size_bit 0x01 /* * the status_bits variable */ #define p_success 0x100 #define p_door_closed 0x80 #define p_caddy_in 0x40 #define p_spinning 0x20 #define p_check 0x10 #define p_busy_new 0x08 #define p_door_locked 0x04 #define p_disk_ok 0x01 With this info, we can work developing our own driver, with it we can control all, even we can create a virtual CD on any directory of your hard disk, simply returning the info that the program demands. W95 is the same, go to the iosubsys directory and find the vxd file that handles the CD (I'm working on it at this time). Comments, addings and corrections are welcomed (and needed) +Rcg 1997 </prE><FONT color="green">
+
+(c) +Rcg, 1997. All rights reversed.</FONT>
+
+	
+
+<HR ALIGN="CENTER" WIDTH="100%" SIZE="3">  
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,    
+
+choose your way out:</I></CENTER>  
+
+<BR><CENTER>  
+
+  
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">  
+
+<A HREF="project4.htm" tppabs="http://www.anticrack.de/fravia/project4.htm">Back to Project 4</A><HR width="33%">  
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">  
+
+<A HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage </A>  
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">   
+
+<A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links </A>   
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0">  
+
+<A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity </A>   
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC </A>  
+
+  
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays </A>  
+
+  
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database </A><BR>  
+
+  
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools </A>  
+
+  
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails </A>  
+
+  
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut CGI-scripts </A>  
+
+  
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms </A>  
+
+  
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia </A><BR>  
+
+  
+
+  
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering illegal? </A></CENTER>  
+
+<CENTER><HR ALIGN="CENTER" WIDTH="100%" SIZE="2"></CENTER>  
+
+</BODY>  
+
+</HTML> 
+

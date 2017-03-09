@@ -1,0 +1,760 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>xavax1.htm: Cracking the ShareLock Protection System (SHRLK20.DLL)</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR=#C0C0C0 TEXT=#001010 VLINK=#405040>
+
+<CENTER><FONT size=+3>Cracking the ShareLock Protection System (SHRLK20.DLL)</FONT>
+
+<BR>(A tale of hours of tracing with a surprising ending)
+
+<H2>by <FONT color=#5500AA>XaVaX</FONT></H2>
+
+(11 February 1997)</H4>
+
+
+
+<A href="progcor.htm" tppabs="http://www.anticrack.de/fravia/progcor.htm"><IMG SRC="useful.gif" tppabs="http://www.anticrack.de/fravia/useful.gif" 
+
+ALT="reality cracking" ALIGN=BOTTOM WIDTH=114 HEIGHT=43 BORDER=0 
+
+VSPACE=0 HSPACE=0></A>
+
+<BR><FONT color= gray>Programmer's corner</FONT>
+
+
+
+<HR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALIGN=BOTTOM BORDER=0 VSPACE=0 HSPACE=0 width="13" height="13">Courtesy of fravia's page 
+
+of reverse engineering</CENTER><HR>       
+
+<CENTER>Well, <FONT color=blue>A tale of hours of tracing with a surprising ending</FONT> 
+
+describes well this very interesting essay by XaVaX: a new contributor and yet an old 
+
+cracker, as he wrote to me:</CENTER><PRE>
+
+BTW I'm not new to reversing, just new to writing about
+
+it - I've been reversing hardware & software for
+
+several decades (usually in order to repair or improve
+
+undocumented designs)</PRE><CENTER>This target has a pretty strong protection scheme, 
+
+yet it could well win a prize for 
+
+the most stupid "demo release". Enjoy! (and please, please, please spare me work and use 
+
+the formamus.htm model when you send your essays! :-(</CENTER><HR size=6>
+
+
+
+<FONT size=+2><CENTER>
+
+Cracking the ShareLock Protection System (SHRLK20.DLL)<BR>
+
+(A lot of light can get into this scheme)</FONT><BR>
+
+by XaVaX (A middle aged Anglo-Saxon cracker)</CENTER><BR>
+
+<PRE>
+
+I used WEBZIP.EXE as a target for this study and, by
+
+the way, found it to be a very useful utility.  My
+
+attack is on the protection scheme only - WEBZIP is an
+
+innocent bystander.
+
+
+
+Target	WEBZIP13.EXE  928Kb  6/1/98 
+
+Tools	WinIce
+
+	W32DSM89
+
+	Hex Workshop (any version)
+
+	Persistence
+
+
+
+You may be thinking 'yet another serial number
+
+treatise' but bear with me here - there is an
+
+interesting point to this adventure
+
+Read on
+
+
+
+This protection does not use standard Windoze routines
+
+for retrieving dialog box text entries etc (debugger
+
+hostile?) - we'll see
+
+
+
+Disassemble WEBZIP.EXE with W32DSM89
+
+In the disassembly header you'll find the sharelock
+
+entry:
+
+
+
+   Import Module 020: SHRLK20.DLL
+
+
+
+ Addr:000D9BDE hint(0000) Name: ShowAboutDialog
+
+ Addr:000D9BF0 hint(0000) Name: PassHandle
+
+ Addr:000D9BFE hint(0000) Name: InputUnlockCode  &lt;** note this
+
+ Addr:000D9C10 hint(0000) Name: GetTryNumber
+
+ Addr:000D9C20 hint(0000) Name: GetTrialPeriodRemaining
+
+ Addr:000D9C3A hint(0000) Name: CheckProtectionDLL &lt;** & this
+
+
+
+Load process & search for 'SHRLK20.'
+
+Set breakpoints on all occurrences
+
+Check 'Stop Auto on API' & all API documentation options
+
+Hit F8 (step over) until we arrive here....
+
+This call looks interesting - note Arg01's text reference
+
+Is this a taunt for crackers? we'll see later!
+
+
+
+:004B96FF E8CC0FF5FF              call 0040A6D0
+
+
+
+API NODOC Arg00 =
+
+Local_Function(Arg01,Arg02,Arg03,Arg04,Arg05,Arg06,Arg07,Arg08)
+
+API Address=004B96FF, API Return Address=004B9704
+
+  Arg01 = 00b21b48 ->(LPDWORD)57595542 or (LPSTR)"BUYWEBZIPNOWDUDESBUYWEBZIPNOWDUDES"
+
+  Arg02 = 0000001c
+
+  Arg03 = 00000000
+
+  Arg04 = 00000005
+
+  Arg05 = 00000000
+
+  Arg06 = 00000000
+
+  Arg07 = 007cfc70 ->(LPDWORD)007cfcbc or (LPSTR)"º¸|"
+
+  Arg08 = 004b9760 ->(LPDWORD)f49f0be9 or (LPSTR)"ÈüÙ<Y]ˆ"
+
+
+
+It comes up again at:
+
+
+
+:004B9713 E89009F5FF              call 0040A0A8
+
+
+
+API NODOC Arg00 =
+
+Local_Function(Arg01,Arg02,Arg03,Arg04,Arg05,Arg06,Arg07,Arg08)
+
+API Address=004B9713, API Return Address=004B9718
+
+  Arg01 = 00000000
+
+  Arg02 = 40e161e0 ->(LPDWORD)00c90f9e or (LPSTR)""
+
+  Arg03 = 00b21b48 ->(LPDWORD)57595542 or (LPSTR)"BUYWEBZIPNOWDUDESBUYWEBZIPNOWDUDES"
+
+  Arg04 = 0000001c
+
+  Arg05 = 00000000
+
+  Arg06 = 00000005
+
+  Arg07 = 00000000
+
+  Arg08 = 00000000
+
+
+
+and at:
+
+
+
+:004B971B E870A9F4FF              call 00404090
+
+:004B9724 E867A9F4FF              call 00404090
+
+:004B972D E85EA9F4FF              call 00404090
+
+:004B9736 E855A9F4FF              call 00404090
+
+:004B973F E84CA9F4FF              call 00404090
+
+
+
+and finally at:
+
+
+
+* Reference To: SHRLK20.CheckProtectionDLL, Ord:0000h
+
+                                  |
+
+:004B9745 E87EF9FFFF              Call 004B90C8
+
+
+
+API NODOC Arg00 =
+
+Local_Function(Arg01,Arg02,Arg03,Arg04,Arg05,Arg06,Arg07,Arg08)
+
+API Address=004B9745, API Return Address=004B974A
+
+  Arg01 = 00b21b10 ->(LPDWORD)59454b48 or 
+
+(LPSTR)"HKEY_CURRENT_USER\Software\Microsoft\IFind"
+
+  Arg02 = 00b27f14 ->(LPDWORD)59454b48 or
+
+(LPSTR)"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\Metrics"
+
+  Arg03 = 00b29b08 ->(LPDWORD)5a626557 or (LPSTR)"WebZIP"
+
+  Arg04 = 00b21af0 ->(LPDWORD)64697053 or (LPSTR)"Spidersoft"
+
+  Arg05 = 00b3d854 ->(LPDWORD)38312f36 or (LPSTR)"6/18/1997"
+
+  Arg06 = 00b21b48 ->(LPDWORD)57595542 or (LPSTR)"BUYWEBZIPNOWDUDESBUYWEBZIPNOWDUDES"
+
+  Arg07 = 0000001c
+
+  Arg08 = 00000000
+
+
+
+Note Arg01 - this is where the encrypted key is stored
+
+in the registry and Arg06 is beginning to nag us to
+
+death by now.
+
+Remember this structure - it will be useful later
+
+(The key will contain registration info including
+
+install and expiry date)
+
+I followed the encryption method and its a simple
+
+rolling byte technique which, as we'll see later, does
+
+not require any reversing to beat this scheme.
+
+
+
+OK - now it's time for WinIce
+
+Edit WINICE.DAT and include the following line under:
+
+; ***** Examples of export symbols that can be included for Windows 95 *****
+
+
+
+EXP=c:\windows\system\shrlk20.dll
+
+(Lets us break on all exported functions by name)
+
+
+
+Restart with winice and set breakpoints on the shrlk20.dll export:
+
+bpx shrlk20!InputUnlockCode
+
+
+
+Now we're ready - get your Wodka(s) and/or cigarette(s)
+
+close at hand
+
+Fire up WEBZIP.EXE
+
+Enter any name & number and hit OK - we'll break at:
+
+(addresses will be offset by ~+160000h from the ones
+
+I've shown as the snippets are copied directly from
+
+W32DSM89)
+
+
+
+Exported fn(): InputUnlockCode - Ord:000Bh
+
+:00429C38 55                      push ebp
+
+:00429C39 8BEC                    mov ebp, esp
+
+:00429C3B 6A00                    push 00000000
+
+:00429C3D 6A00                    push 00000000
+
+:00429C3F 6A00                    push 00000000
+
+:00429C41 53                      push ebx
+
+:00429C42 56                      push esi
+
+:00429C43 57                      push edi
+
+:00429C44 33C0                    xor eax, eax
+
+:00429C46 55                      push ebp
+
+:00429C47 68A09C4200              push 00429CA0		&lt;** initializing
+
+:00429C4C 64FF30                  push dword ptr fs:[eax]
+
+:00429C4F 648920                  mov dword ptr fs:[eax], esp
+
+:00429C52 8D45FC                  lea eax, dword ptr [ebp-04]
+
+:00429C55 8B5510                  mov edx, dword ptr [ebp+10]
+
+:00429C58 E80397FDFF              call 00403360		&lt;** initializing
+
+:00429C5D 8B45FC                  mov eax, dword ptr [ebp-04]
+
+:00429C60 50                      push eax
+
+:00429C61 8D45F8                  lea eax, dword ptr [ebp-08]
+
+:00429C64 8B550C                  mov edx, dword ptr [ebp+0C]
+
+:00429C67 E8F496FDFF              call 00403360		&lt;** initializing
+
+:00429C6C 8B45F8                  mov eax, dword ptr [ebp-08]
+
+:00429C6F 50                      push eax
+
+:00429C70 8D45F4                  lea eax, dword ptr [ebp-0C]
+
+:00429C73 8B5508                  mov edx, dword ptr [ebp+08]
+
+:00429C76 E8E596FDFF              call 00403360		&lt;** initializing
+
+:00429C7B 8B45F4                  mov eax, dword ptr [ebp-0C]
+
+:00429C7E 5A                      pop edx
+
+:00429C7F 59                      pop ecx
+
+:00429C80 E8B7D7FFFF              call 0042743C		&lt;** TRACE THIS CALL
+
+:00429C85 33C0                    xor eax, eax
+
+:00429C87 5A                      pop edx
+
+:00429C88 59                      pop ecx
+
+:00429C89 59                      pop ecx
+
+:00429C8A 648910                  mov dword ptr fs:[eax], edx
+
+:00429C8D 68A79C4200              push 00429CA7
+
+:00429C92 8D45F4                  lea eax, dword ptr [ebp-0C]
+
+:00429C95 BA03000000              mov edx, 00000003
+
+:00429C9A E8B595FDFF              call 00403254
+
+:00429C9F C3                      ret
+
+:00429CA0 E9E791FDFF              jmp 00402E8C
+
+:00429CA5 EBEB                    jmp 00429C92
+
+:00429CA7 5F                      pop edi
+
+:00429CA8 5E                      pop esi
+
+:00429CA9 5B                      pop ebx
+
+:00429CAA 8BE5                    mov esp, ebp
+
+:00429CAC 5D                      pop ebp
+
+:00429CAD C20C00                  ret 000C
+
+
+
+The calls to 403360 perform checks on the input strings
+
+(length etc)
+
+Note: this code is very messy as it performs no calls
+
+to the standard Windoze API functions (eg getdlgitemtext etc)
+
+
+
+The call to 0042743C does all the manipulation and
+
+comparison with many movements of the strings,
+
+converting to upper case etc
+
+Breakpoint all copy ranges and keep tracing until we
+
+end up here:
+
+
+
+:004274B0 E88B2F0000       call 0042A440
+
+:004274B5 8BD0             mov edx, eax
+
+:004274B7 83EAFF           sub edx, -01		&lt;** increment edx
+
+:004274BA 7410             je 004274CC		&lt;** bad jump if 0
+
+:004274BC 4A               dec edx		&lt;** -1
+
+:004274BD 7426             je 004274E5		&lt;** bad jump if 0	
+
+:004274BF 4A               dec edx		&lt;** -1
+
+:004274C0 81EA6D010000     sub edx, 0000016D	&lt;** -16d
+
+:004274C6 720A             jb 004274D2		&lt;** bad jump if -ve
+
+:004274C8 7411             je 004274DB		&lt;** looks good
+
+:004274CA EB15             jmp 004274E1		&lt;** else bad
+
+
+
+The only jump on an exact match is je 4274DB, this
+
+'feels' like a possibility so change the 1st jump at
+
+4274BA to a JMP 4274DB to bypass the other tests ie:
+
+
+
+:004274B0 E88B2F0000       call 0042A440
+
+:004274B5 8BD0             mov edx, eax
+
+:004274B7 83EAFF           sub edx, -01		
+
+:004274BA EB1F             jmp 004274DB		&lt;** always a good jump
+
+:004274BC 4A               dec edx
+
+
+
+We could also have modified the code to force eax to
+
+the correct value in the call to 42A440 ie 0000016E but
+
+this is not required here (luck!)
+
+
+
+OK - one test down and hours out of the way - let's go
+
+on
+
+
+
+After much, much more fiddling of the strings in every
+
+imaginable way we arrive at the following test:
+
+
+
+:004034E1 8B0E          mov ecx, dword ptr [esi] &lt;** our (modified) number
+
+:004034E3 8B1F          mov ebx, dword ptr [edi] &lt;** what's this?
+
+:004034E5 39D9          cmp ecx, ebx		 &lt;** same ?
+
+:004034E7 7558          jne 00403541		 &lt;** TEST FAILED!
+
+:004034E9 4A            dec edx		         &lt;** counter
+
+:004034EA 7415          je 00403501		 &lt;** done if 0
+
+:004034EC 8B4E04        mov ecx, dword ptr [esi+04]
+
+:004034EF 8B5F04        mov ebx, dword ptr [edi+04]
+
+:004034F2 39D9          cmp ecx, ebx		 &lt;** test next 4
+
+:004034F4 754B          jne 00403541		 &lt;** TEST FAILED!
+
+:004034F6 83C608        add esi, 00000008	 &lt;** adjust pointers
+
+:004034F9 83C708        add edi, 00000008
+
+:004034FC 4A            dec edx
+
+:004034FD 75E2          jne 004034E1		 &lt;**loop till edx=0
+
+:004034FF EB06          jmp 00403507		 &lt;** ALL PASSED		
+
+
+
+This test may be circumvented by nopping the two jne
+
+403541's (or equivalent 'nothing' opcodes) ie the test 
+
+never fails. 
+
+By the way, the 'good' string at [edi] is not the 
+
+full correct string - it has 3 characters missing
+
+We may be concerned at this point that the
+
+'CheckProtectionDLL' routine will 'spit the dummy' with
+
+the above patches if it performs a checksum test on the
+
+DLL code but this is not the case.
+
+At this point, make a backup of SHRLK20.DLL
+
+Anyway, apply the patches using the offsets supplied by
+
+W32DSM89 with a hex editor and run WEBZIP.EXE again
+
+(disable breakpoints 1st)
+
+The 'Time Expired - Register' dialog comes up as usual
+
+but any name/number combination is accepted as valid
+
+now, only problem is that this is required every time
+
+the prog is run - could we possibly make a key
+
+generator to permanently register it? well possibly.
+
+
+
+At this point I started investigating the ShareLock
+
+system further and downloaded a 'demo' SHRLK201.ZIP for
+
+this purpose.
+
+<font size=+2>
+
+The "demo" kit includes a KEY GENERATOR!!</fonT>
+
+
+
+Surely this 'demo' model is not compatible with the
+
+full version?
+
+
+
+Believe it or not, IT IS!
+
+
+
+Remember that nag string
+
+'BUYWEBZIPNOWDUDESBUYWEBZIPNOWDUDES'?
+
+We've seen quite a lot of it by now
+
+This is the key for the key generator which, when
+
+processed with the entered name, creates the correct
+
+unlock code - try it!.
+
+
+
+So our long cracking session was NOT NECESSARY!
+
+
+
+We can now delete our painfully patched and crippled
+
+SHRLK20.DLL and restore the original, plus any software
+
+protected by this system can be fully registered in
+
+about 5 minutes.  Its a shame really to see this
+
+reasonably well crafted protection undone by the eternal 
+
+quest for the almighty dollar - it happens so often.
+
+
+
+The programmers who have invested in this protection
+
+system should be more than a little upset with this
+
+situation where the protection vendor is giving away
+
+the keys freely - I don't expect to see it for much
+
+longer.
+
+
+
+As always, if the software performs adequately the task
+
+you intended and you use it regularly, it is worth the
+
+price being asked (quite reasonable in this case for a
+
+good net utility). I certainly would not part with any
+
+cash for the 'protection' of ShareLock.
+
+
+
+All credit goes to the +HCU for inspiration
+
+
+
+</prE>
+
+
+
+<font color=green>(c) 1998 <font color=#5500AA>XaVaX</font> All rights reversed</FonT>
+
+<HR ALIGN=CENTER WIDTH=100% SIZE=3>
+
+<center><i>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</i></center>
+
+<br><center>
+
+
+
+<a href="progcor.htm" tppabs="http://www.anticrack.de/fravia/progcor.htm"><IMG SRC="useful.gif" tppabs="http://www.anticrack.de/fravia/useful.gif" 
+
+ALT="reality cracking" ALIGN=BOTTOM WIDTH=114 HEIGHT=43 BORDER=0 
+
+VSPACE=0 HSPACE=0></a>
+
+<br><Font color= gray>Back to Programmer's corner</fonT>
+
+<br><bR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 
+
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 
+
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 
+
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN=BOTTOM
+
+BORDER=0 VSPACE=0 HSPACE=0 width="13" height="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 
+
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 
+
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database</A><br>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 
+
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 
+
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 
+
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A HREF="javascri.htm" tppabs="http://www.anticrack.de/fravia/javascri.htm">javascripts wars</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 
+
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A HREF="javascript:if(confirm('http://www.fravia.org/ideale.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.fravia.org/ideale.htm'" tppabs="http://www.fravia.org/ideale.htm">antismut CGI-scripts</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 
+
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 
+
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia+</A><br>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 
+
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering legal?</A></CENTER>
+
+<CENTER><HR ALIGN=CENTER WIDTH=100% SIZE=2></CENTER>
+
+</body>
+
+</HTML>
+

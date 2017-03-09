@@ -1,0 +1,1221 @@
+<html>  <CENTER><H3>REVERSE ENGINEERING EXERCISES FOR THE MASSES (lesson 1)</H3><BR>
+
+     </CENTER>        <CENTER><H4>HOW TO DISASSEMBLE A WINDOWS PROGRAM<BR>
+
+            </CENTER> <CENTER>WINDOWS 3.1. - DISASSEMBLING TASKMAN<BR>
+
+              </H4>    </CENTER>   <CENTER>      <H5>by FraVia</H5></CENTER><BR>
+
+<BR>
+
+<HR>
+
+<PRE>
+
+  I think this small exercise (shamelessly abducted from
+
+Schulman's book -> see  bibliography) could be very helpful for
+
+all the future crackers trying to get some bearings during their
+
+difficult disassembly of Windows programs.
+
+  One of the problems in reverse engineering, is that nobody
+
+teaches you how to do it, and you have mostly to learn alone the
+
+relevant techniques, loosing an enormous amount of time.
+
+  Disassembling Windows with a reverse engineering approach is
+
+*very* useful for actual cracking purposes, and it's time to form
+
+a new generation of Windows crackers, since the ghastly Microsoft
+
+domination will not easily be crushed without many more good
+
+crackers to help us. What +ORC writes and teaches in his lessons
+
+is fundamental, but unfortunately he does not teach the
+
+"elementary" side of cracking Windows (for DOS cracking, on the
+
+contrary, the Crackbook of Uncle Joe is a good primer for
+
+beginners and intermediate alike), so I'll try to help here to
+
+form a strong generation of little strong crackers... as +ORC
+
+wrote to me: "we are all throwing seeds in the air, some of them
+
+will land astray, but some of them will grow".
+
+  Remember that cracking Windows is *very* different, in approach
+
+and in techniques, from cracking DOS. The older ones (that I
+
+unconditionally respect) do not seem to grab it totally... they
+
+are probably so experienced that they can use more or less the
+
+same techniques in cracking all OSs... but in my (humble)
+
+opinion, that's not necessarily the best approach... you see,
+
+cracking Windows is "puzzle solving", cracking DOS is "playing
+
+chess"... you'll understand what I mean if you read what follows.
+
+  Please do excuse my shortcomings both in the techniques I teach
+
+(I am an autodidact) and in the language I use.
+
+  If at any time you feel you should need more references, check
+
+the Windows 3.1. SDK Programmer's Reference, Volume 1: Overview,
+
+Chapter 22, Windows Application Startup.
+
+  A little knowledge of the C language is required in order to
+
+understand a part of the following (you better understand it
+
+right now: the only existing programming language is C, most
+
+applications are written in C, "real" programmers use C... you
+
+may dislike it, but that's the reality, so you better get a
+
+little knowledge of C programming as soon as you can, if you want
+
+to crack more effectively... you'll find enough C tutorials on
+
+the net). This said, most of the following can be used even if
+
+you do not know C.
+
+  As example for this introduction, I have chosen Taskman.exe,
+
+the small program you'll find inside your C:\WINDOWS directory...
+
+you can invoke it anytime typing CTRL+ESC in Windows 3.1.
+
+  I have done it because Schulman has already (very well) worked
+
+on it, and therefore he spares me a lot of work, and also because
+
+I agree totally with him in his choice: Taskman it's a very good
+
+example for all newbys to Windows cracking. Actually it's a pity
+
+that you cannot žyet) find Schulman's books on the net... I
+
+believe they should be indisputably there! (Anybody with a good
+
+scanner reading this?).
+
+  Let's start from the beginning... by looking at TASKMAN's
+
+startup code. Taskman is a very small win 3.1 program, but it's
+
+rich in surprises, as you'll see. After you disassembly
+
+taskman.exe with WCB (see below) and *after* you have printed the
+
+listing, you may use the "Loader" utility to pop out inside
+
+winice at the beginning of Taskman:
+
+
+
+start:
+
+1FBF:4B9 33ED              XOR     BP,BP     ;begins
+
+1FBF:4BB 55                PUSH    BP        ;save BP
+
+1FBF:4BC 9A8D262701        CALL    KERNEL!INITTASK
+
+...
+
+
+
+  So we are set for snooping around "live", but first (and that's
+
+very important for Windows programs) we have to prepare a good
+
+disassembled listing of our target. You see, in DOS such a work
+
+does not make much sense, because the disassembled listing would
+
+not differ much from what you get on screen through softice, but
+
+in Windows, on the contrary, we can get quite a lot more out of
+
+all the information that is already present inside our target.
+
+The following explains this point:
+
+You can use any good disassembler (like Winsourcer, from V
+
+communication, a good version, cracked by the ubiquitous Marquis
+
+de Soiree, is available on the web) but i'll use the disassembled
+
+listing of WCB (Windows CodeBack -> download version 1.5. from
+
+my "tools" page:
+
+     http://ourworld.compuserve.com/homepages/FraVia/tools.htm).
+
+ WCB is a very good Win 3.1. disassembler, created by the
+
+ungarian codemaster Leslie Pusztai (pusztail@tigris.klte.hu),
+
+and, in my modest opinion, it's far better than sourcer. If you
+
+use it, remember that it works from DOS: the main rule is to
+
+create first of all the *.EXL files for the necessary
+
+"mysterious" *.dll with the command
+
+    wcb -x [mysterious.dll]
+
+and you'll be able, afterwards, to disassemble the *.exe that
+
+called them.
+
+   But all this is not necessary for humble Taskman.exe, where
+
+we get following header information:
+
+
+
+Filename:            TASKMAN.EXE
+
+Type:                Segmented executable
+
+Module description:  Windows Task Manager 3.1
+
+Module name:         TASKMAN
+
+Imported modules:
+
+  1: KERNEL
+
+  2: USER
+
+Exported names by location:
+
+  1:007B     1 TASKMANDLGPROC
+
+Program entry point:   1:04B9
+
+WinMain:               1:03AE
+
+and we can get straight the entry point code:
+
+  1.04B9                           ;  Program_entry_point
+
+  1.04B9 >33ED                     xor     bp, bp
+
+  1.04BB  55                       push    bp
+
+  1.04BC  9AFFFF0000               call    KERNEL.INITTASK
+
+  1.04C1  0BC0                     or      ax, ax
+
+  1.04C3  744E                     je      0513
+
+  1.04C5  81C10001                 add     cx, 0100
+
+  1.04C9  7248                     jb      0513
+
+  1.04CB  890E3000                 mov     [0030], cx
+
+  1.04CF  89363200                 mov     [0032], si
+
+  1.04D3  893E3400                 mov     [0034], di
+
+  1.04D7  891E3600                 mov     [0036], bx
+
+  1.04DB  8C063800                 mov     [0038], es
+
+  1.04DF  89163A00                 mov     [003A], dx
+
+  1.04E3  33C0                     xor     ax, ax
+
+  1.04E5  50                       push    ax
+
+  1.04E6  9AFFFF0000               call    KERNEL.WAITEVENT
+
+  1.04EB  FF363400                 push    word ptr [0034]
+
+  1.04EF  9AFFFF0000               call    USER.INITAPP
+
+  1.04F4  0BC0                     or      ax, ax
+
+  1.04F6  741B                     je      0513
+
+  1.04F8  FF363400                 push    word ptr [0034]
+
+  1.04FC  FF363200                 push    word ptr [0032]
+
+  1.0500  FF363800                 push    word ptr [0038]
+
+  1.0504  FF363600                 push    word ptr [0036]
+
+  1.0508  FF363A00                 push    word ptr [003A]
+
+  1.050C  E89FFE                   call    WinMain
+
+  1.050F  50                       push    ax
+
+  1.0510  E890FF                   call    04A3
+
+
+
+  This is similar to the standard startup code that you'll find
+
+in nearly *every* Windows program. It calls three functions:
+
+InitTask(), WaitEvent(), and InitApp().
+
+  We know jolly well about InitTask(), but let's imagine that we
+
+would have here a more mysterious routine than these, and that
+
+we would like to know what for items are hold in the CX, SI etc.
+
+register on return from InitTask() without disassembling
+
+everything everywhere... how should we proceed?
+
+  First of all let's see if the locations [0030] - [003A] are
+
+used elsewhere in our program... this is typical when you work
+
+with disassembled listings: to find out what one block of code
+
+means, you need most of the time to look first at some other
+
+block of code. Let's see.. well, yes! Most of the locations are
+
+used again a few lines down (1.04F8 to 1.0508).
+
+  Five words are being pushed on the stack as parameters to
+
+WinMain(). If only we knew what those enigmatic parameter were...
+
+but wait: we do actually know what those parameters are!
+
+WinMain(), the function being called from this code, always looks
+
+like:
+
+     int  PASCAL WinMain(WORD hInstance, WORD hPrevInstance,
+
+          LPSTR lpCmdLine, int nCmdShow);
+
+  And we (should) know that in the Pascal calling convention,
+
+which is used extensively in Windows because it produces smaller
+
+code than the cdecl calling convention, arguments are pushed on
+
+the stack in the same order as they appear inside the function
+
+declaration. That's a good new for all little crackers!
+
+  Thus, in our example, [0034] must be hInstance, [0032] must be
+
+hPrevinstance, [0038]:[0036] are segment and offset of lpcmdline
+
+and [003A] must be nCmdshow.
+
+  What makes this important is that we can now go and replace
+
+*every* occurrence of [0034] by a more useful name such as
+
+hInstance, every occurrence of [0032] by hPrevInstance and so on.
+
+This clarify not just this section of the listing, but every
+
+section of the listing that refers to these variables. Such
+
+global substitutions of useful names for placeholder names or
+
+addresses is indispensable when working with a disassembled
+
+listing. After applying these changes to the fragment shown
+
+earlier, we end up with something more understandable:
+
+
+
+  1.04CB  890E3000                 mov     [0030], cx
+
+  1.04CF  89363200                 mov     hPrevInstance, si
+
+  1.04D3  893E3400                 mov     hInstance, di
+
+  1.04D7  891E3600                 mov     lpCmdLine+2, bx
+
+  1.04DB  8C063800                 mov     lpCmdLine, es
+
+  1.04DF  89163A00                 mov     nCmdShow, dx
+
+  1.04E3  33C0                     xor     ax, ax
+
+  1.04E5  50                       push    ax
+
+  1.04E6  9AFFFF0000               call    KERNEL.WAITEVENT
+
+  1.04EB  FF363400                 push    word ptr hInstance
+
+  1.04EF  9AFFFF0000               call    USER.INITAPP
+
+  1.04F4  0BC0                     or      ax, ax
+
+  1.04F6  741B                     je      0513
+
+  1.04F8  FF363400                 push    word ptr hInstance
+
+  1.04FC  FF363200                 push    word ptr hPrevInstance
+
+  1.0500  FF363800                 push    word ptr lpCmdLine
+
+  1.0504  FF363600                 push    word ptr lpCmdLine+2
+
+  1.0508  FF363A00                 push    word ptr nCmdShow
+
+  1.050C  E89FFE                   call    WinMain
+
+
+
+  Thus if we didn't already know what InitTask() returns in
+
+various register (our Taskman here is only an example for your
+
+later work on much more mysterious target programs), we could
+
+find it out right now, by working backwards from the parameters
+
+to WinMain().
+
+Windows disassembling (and cracking) is like puzzle solving: the
+
+more little pieces fall into place, the more you get the global
+
+picture. Trying to disassemble Windows programs without this aid
+
+would be unhealthy: you would soon delve inside *hundreds* of
+
+irrelevant calls, only because you did not do your disassemble
+
+homework in the first place.
+
+  It was useful to look at the startup code because it
+
+illustrated the general principle of trying to substitute useful
+
+names such as hPrevInstance for useless labels such as [0034].
+
+But, generally, the first place we'll look examining a Windows
+
+program is WinMain(). Here the code from WCB:
+
+
+
+  1.03AE                           ;  WinMain
+
+  1.03AE >55                       push    bp
+
+  1.03AF  8BEC                     mov     bp, sp
+
+  1.03B1  83EC12                   sub     sp, 0012
+
+  1.03B4  57                       push    di
+
+  1.03B5  56                       push    si
+
+  1.03B6  2BFF                     sub     di, di
+
+  1.03B8  397E0A                   cmp     [bp+0A], di
+
+  1.03BB  7405                     je      03C2
+
+  1.03BD  2BC0                     sub     ax, ax
+
+  1.03BF  E9CC00                   jmp     048E
+
+
+
+  1.03C2 >C47606                   les     si, [bp+06]
+
+  1.03C5  26803C00                 cmp     byte ptr es:[si], 00
+
+  1.03C9  7453                     je      041E
+
+  1.03CB  897EF2                   mov     [bp-0E], di
+
+  1.03CE  EB1E                     jmp     03EE
+
+
+
+  1.03D0 >26803C20                 cmp     byte ptr es:[si], 20
+
+  1.03D4  741E                     je      03F4
+
+  1.03D6  B80A00                   mov     ax, 000A
+
+  1.03D9  F72E1000                 imul    word ptr [0010]
+
+  1.03DD  A31000                   mov     [0010], ax
+
+  1.03E0  8BDE                     mov     bx, si
+
+  1.03E2  46                       inc     si
+
+  1.03E3  268A07                   mov     al, byte ptr es:[bx]
+
+  1.03E6  98                       cbw
+
+  1.03E7  2D3000                   sub     ax, 0030
+
+  1.03EA  01061000                 add     [0010], ax
+
+
+
+  1.03EE >26803C00                 cmp     byte ptr es:[si], 00
+
+  1.03F2  75DC                     jne     03D0
+
+
+
+  1.03F4 >26803C00                 cmp     byte ptr es:[si], 00
+
+  1.03F8  741B                     je      0415
+
+  1.03FA  46                       inc     si
+
+  1.03FB  EB18                     jmp     0415
+
+
+
+  1.03FD >B80A00                   mov     ax, 000A
+
+  1.0400  F72E1200                 imul    word ptr [0012]
+
+  1.0404  A31200                   mov     [0012], ax
+
+  1.0407  8BDE                     mov     bx, si
+
+  1.0409  46                       inc     si
+
+  1.040A  268A07                   mov     al, byte ptr es:[bx]
+
+  1.040D  98                       cbw
+
+  1.040E  2D3000                   sub     ax, 0030
+
+  1.0411  01061200                 add     [0012], ax
+
+
+
+  1.0415 >26803C00                 cmp     byte ptr es:[si], 00
+
+  1.0419  75E2                     jne     03FD
+
+  1.041B  8B7EF2                   mov     di, [bp-0E]
+
+
+
+  1.041E >6A29                     push    0029
+
+  1.0420  9AF9000000               call    USER.GETSYSTEMMETRICS
+
+  1.0425  50                       push    ax
+
+  1.0426  1E                       push    ds
+
+  1.0427  681600                   push    0016
+
+  1.042A  9AFFFF0000               call    KERNEL.GETPROCADDRESS
+
+  1.042F  8946F4                   mov     [bp-0C], ax
+
+  1.0432  8956F6                   mov     [bp-0A], dx
+
+  1.0435  0BD0                     or      dx, ax
+
+  1.0437  7407                     je      0440
+
+  1.0439  6A01                     push    0001
+
+  1.043B  6A01                     push    0001
+
+  1.043D  FF5EF4                   call    far ptr [bp-0C]
+
+
+
+  1.0440 >68FFFF                   push    selector 1:0000
+
+  1.0443  687B00                   push    007B
+
+  1.0446  FF760C                   push    word ptr [bp+0C]
+
+  1.0449  9AFFFF0000               call   KERNEL.MAKEPROCINSTANCE
+
+  1.044E  8BF0                     mov     si, ax
+
+  1.0450  8956FA                   mov     [bp-06], dx
+
+  1.0453  0BD0                     or      dx, ax
+
+  1.0455  7426                     je      047D
+
+  1.0457  FF760C                   push    word ptr [bp+0C]
+
+  1.045A  6A00                     push    0000
+
+  1.045C  6A0A                     push    000A
+
+  1.045E  6A00                     push    0000
+
+  1.0460  8B46FA                   mov     ax, [bp-06]
+
+  1.0463  50                       push    ax
+
+  1.0464  56                       push    si
+
+  1.0465  8976EE                   mov     [bp-12], si
+
+  1.0468  8946F0                   mov     [bp-10], ax
+
+  1.046B  9AFFFF0000               call    USER.DIALOGBOX
+
+  1.0470  8BF8                     mov     di, ax
+
+  1.0472  FF76F0                   push    word ptr [bp-10]
+
+  1.0475  FF76EE                   push    word ptr [bp-12]
+
+  1.0478  9AFFFF0000               call   KERNEL.FREEPROCINSTANCE
+
+
+
+  1.047D >8B46F6                   mov     ax, [bp-0A]
+
+  1.0480  0B46F4                   or      ax, [bp-0C]
+
+  1.0483  7407                     je      048C
+
+  1.0485  6A01                     push    0001
+
+  1.0487  6A00                     push    0000
+
+  1.0489  FF5EF4                   call    far ptr [bp-0C]
+
+
+
+  1.048C >8BC7                     mov     ax, di
+
+
+
+  1.048E >5E                       pop     si
+
+  1.048F  5F                       pop     di
+
+  1.0490  8BE5                     mov     sp, bp
+
+  1.0492  5D                       pop     bp
+
+  1.0493  C20A00                   ret     000A
+
+
+
+  Let's begin from the last line: ret 000A. In the Pascal calling
+
+convention, the callee is responsible for clearing its arguments
+
+off the stack; this explains the RET A return. In this particular
+
+case, WinMain() is being invoked with a NEAR call. As we saw in
+
+the startup code, with the Pascal calling convention, arguments
+
+are pushed in "forward" order. Thus, from the prospective of the
+
+called function, the last argument always has the *lowest*
+
+positive offset from BP (BP+6 in a FAR call and BP+4 in a NEAR
+
+call, assuming the standard PUSH BP -> MOV BP,SP function
+
+prologue, like at the beginning of this WinMain().
+
+  Now write the following in your cracking notes (the ones you
+
+really keep on your desk when you work... close to your cocktail
+
+glass): function parameters have *positive* offsets from BP,
+
+local variables have *negative* offsets from BP.
+
+  What does all this mean... I hear some among you screaming...
+
+well, in the case of WinMain(), and in a small-model program like
+
+Taskman, which starts from BP+4, you'll have:
+
+     int  PASCAL WinMain(HANDLE hInstance, HANDLE hPrevInstance,
+
+          LPSTR lpCmdLine, int nCmdShow);
+
+nCmdShow       =         word ptr [bp+4]
+
+lpCmdLine      =         dword ptr [bp+6]
+
+hPrevInstance  =         word ptr [bp+0Ah]
+
+hInstance      =         word ptr [bp+0Ch]
+
+
+
+  Yeah... let's rewrite it:
+
+
+
+  1.03B6  2BFF                 sub     di, di
+
+  1.03B8  397E0A               cmp     hPrevInstance, di
+
+  1.03BB  7405                 je      03C2
+
+  1.03BD  2BC0                 sub     ax, ax
+
+  1.03BF  E9CC00               jmp     048E
+
+
+
+  1.03C2 >C47606               les     si, dword ptr lpCmdLine
+
+  1.03C5  26803C00             cmp     byte ptr es:[si], 00
+
+
+
+  We can now see, for example, that WinMain() checks if
+
+hPrevInstance is zero (sub di,di); if it isn't, it immediately
+
+jump to the pops and exits (jmp 048E).
+
+  Look at the code of WinMain() once more... notice that our good
+
+Taskman appears to be inspecting its command line... funny: the
+
+Windows documentation says nothing about command line arguments
+
+to Taskman... Look around location 1.03D0 above, you'll see that
+
+Taskman appears to be looking for a space (20h), getting a
+
+character from the command line, multiplying it by 10 (0Ah),
+
+subtracting the character zero (30h) and doing other things that
+
+seem to indicate that it's looking for one or more *numbers*. The
+
+code line 1.03E7 SUB ax,30h it's a typical code line inside many
+
+routines checking for numbers. The hex ascii code for numbers is
+
+30 for 0 to 39 for 9, therefore the transmutation of an ascii
+
+code in hex *number* is pretty easy: mov al, your_number and sub
+
+ax,30... you'll find it very often.
+
+  Rather than delve further into the code, it next makes sense
+
+to *run* taskman, feeding it different numbers on the command
+
+line, and seeing what it does (it's surprising how few crackers
+
+think of actually going in and *running* a program before
+
+spending much time looking at its code).
+
+  Normally Taskman runs when you type CTRL+ESC in Windows, but
+
+its just a regular program, that can be run with a command line,
+
+like any other program.
+
+  Indeed, running "TASKMAN 1" behaves differently from just
+
+running "TASKMAN": it positions the Task List in the upper-left
+
+corner of the screen, instead of in the middle. "TASKMAN 666 666"
+
+(the number of the beast?) seems to position it in the lower
+
+right corner.
+
+  Basically, the command line numeric arguments seem to represent
+
+an (x,y) position for our target, to override its default
+
+position in the middle of the screen.
+
+  So you see, there are hidden 'goodies' and hidden 'secrets'
+
+even behind really trivial little programs like Taskman (and
+
+believe me: being able to identify this command line checking
+
+will be very useful ;-) when you'll crack applications and/or
+
+games that *always* have backdoors and hidden goodies).
+
+  Back to the code (sip your favourite cocktail during your
+
+scrutinies... may I suggest a Traitor? -> see the legendary
+
+FraVia's cocktail page at, http://ourworld.compuserve.com
+
+/homepages/FraVia/cocktail.htm)... you can see that the variables
+
+[0010] and [0012] are being manipulated. What are these for?
+
+  The answer is *not* to stare good and hard at this code until
+
+it makes sense, but to leave this area and see how the variables
+
+are used elsewhere in the program... maybe the code elsewhere
+
+will be easier to understand (for bigger applications you could
+
+in this case use a Winice breakpoint on memory range, but we'll
+
+remain with our WCB disassembly listing).
+
+  In fact, if we search for data [0010] and [0012] we find them
+
+used as arguments to a Windows API function:
+
+
+
+  1.018B >A31200           mov     [0012], ax
+
+  1.018E  FF760E           push    word ptr [bp+0E]
+
+  1.0191  FF361000         push    word ptr [0010]
+
+  1.0195  50               push    ax
+
+  1.0196  56               push    si
+
+  1.0197  57               push    di
+
+  1.0198  6A00             push    0000
+
+  1.019A  9AFFFF0000       call    USER.MOVEWINDOW
+
+
+
+This shows us *immediately* what [0010] and [0012] are.
+
+MoveWindows() is a documented function, whose prototype is:
+
+  void FAR PASCAL MoveWindow(HWND hwnd, int nLeft, int nTop, int
+
+nWidth, int nHeight, BOOL fRepaint);
+
+
+
+  1.018B >A31200          mov     [0012], ax
+
+  1.018E  FF760E          push    word ptr [bp+0E] ;hwnd
+
+  1.0191  FF361000        push    word ptr [0010]  ;nLeft
+
+  1.0195  50              push    ax                ;nTop
+
+  1.0196  56              push    si                ;nWidth
+
+  1.0197  57              push    di                ;nHeight
+
+  1.0198  6A00            push    0000              ;fRepaint
+
+  1.019A  9AFFFF0000      call    USER.MOVEWINDOW
+
+
+
+  In other words, [0010] has to be nLeft and [0012] (whose
+
+contents have been set from AX) has to be nTop.
+
+  Now you'll do another global search and replace on your WCB
+
+disassembly, changing every [0010] in the program (not just the
+
+one here) to nLeft, and every [0012] to nTop.
+
+  A lot of Windows cracking is this easy: all Windows programs
+
+seem to do is call API functions, most of these functions are
+
+documented and you can use the documentation to label all
+
+arguments to the function. You then transfer these labels upward
+
+to other, possibly quite distant parts of the program.
+
+  In the case of nLeft [0010] and nTop [0012], suddenly the code
+
+in WinMain() makes much more sense:
+
+
+
+1.03C2 >C47606      les     si, dword ptr lpCmdLine
+
+1.03C5  26803C00    cmp     byte ptr es:[si], 00 ; no cmd line?
+
+1.03C9  7453        je      041E        ; go elsewhere
+
+1.03CB  897EF2      mov     [bp-0E], di
+
+1.03CE  EB1E        jmp     03EE
+
+
+
+1.03D0 >26803C20    cmp     byte ptr es:[si], 20 ; if space
+
+1.03D4  741E        je      03F4        ; go elsewhere
+
+1.03D6  B80A00      mov     ax, 000A
+
+1.03D9  F72E1000    imul    nLeft       ;nleft *= 10
+
+1.03DD  A31000      mov     nLeft, ax
+
+1.03E0  8BDE        mov     bx, si
+
+1.03E2  46          inc     si
+
+1.03E3  268A07      mov     al, es:[bx]
+
+1.03E6  98          cbw                 ; ax = char
+
+1.03E7  2D3000      sub     ax, 0030    ; ax='0' (char-> number)
+
+1.03EA  01061000    add     nLeft, ax   ; nleft += number
+
+
+
+1.03EE >26803C00    cmp     byte ptr es:[si], 00 ;NotEndOfString
+
+1.03F2  75DC        jne     03D0        ;next char
+
+...
+
+ In essence, Taskman is performing the following operation here:
+
+   static int nLeft, nTop;
+
+     //...
+
+     if (*lpCmdLine !=0)
+
+     sscanf(lpCmdLine, "%u %u, &nLeft, &nTop);
+
+ Should you want 3.1. Taskman to appear in the upper left of your
+
+screen, you could place the following line in the [boot] section
+
+of SYSTEM.INI:
+
+     taskman.exe=taskman.exe 1 1
+
+ In addition, doubleclicking anywhere on the Windows desktop will
+
+bring up Taskman with the (x,y) coordinates for the double click
+
+passed to Taskman on its command line.
+
+ The USER!WM_SYSCOMMAND handler is responsible for invoking
+
+Taskman, via WinExec() whenever you press CTRL+ESC or double
+
+click the desktop.
+
+ What else is going on in WinMain()? Let's look at the following
+
+block of code:
+
+
+
+1.041E >6A29         push    0029
+
+1.0420  9AF9000000   call    USER.GETSYSTEMMETRICS
+
+1.0425  50           push    ax
+
+1.0426  1E           push    ds
+
+1.0427  681600       push    0016
+
+1.042A  9AFFFF0000   call    KERNEL.GETPROCADDRESS
+
+1.042F  8946F4       mov     [bp-0C], ax
+
+1.0432  8956F6       mov     [bp-0A], dx
+
+1.0435  0BD0         or      dx, ax
+
+1.0437  7407         je      0440
+
+1.0439  6A01         push    0001
+
+1.043B  6A01         push    0001
+
+1.043D  FF5EF4       call    far ptr [bp-0C] ;*1 entry
+
+
+
+ The lines push 29h & CALL GETSYSTEMMETRICS are simply the
+
+assembly language form of GetSystemMetrics(0x29). 0x29 turns out
+
+to be SM_PENWINDOWS (look in WINDOWS.H for SM_).
+
+ Thus, we now have GetSystemMetrics(SM_PENWINDOWS). If we read
+
+the documentation, it says that this returns a handle to the Pen
+
+Windows DLL if Pen Windows is installed. Remember that 16-bit
+
+return values *always* appear in the AX register.
+
+ Next we can see that AX, which must be either 0 or a Pen Window
+
+module handle, is pushed on the stack, along with ds:16h.
+
+ Let's immediately look at the data segment, offset 16h:
+
+
+
+2.0010  0000000000005265  db  00,00,00,00,00,00,52,65 ; ......Re
+
+2.0018  6769737465725065  db  67,69,73,74,65,72,50,65 ; gisterPe
+
+2.0020  6E41707000000000  db  6E,41,70,70,00,00,00,00 ; nApp....
+
+
+
+Therefore:
+
+2.0016  db 'RegisterPenApp',0
+
+
+
+Thus, here is what we have so far:
+
+     GetProcAddress(
+
+          GetSystemMetrics(SM_PENWINDOWS),
+
+          "RegisterPenApp")
+
+
+
+  GetProcAddress() returns a 4 bytes far function pointer (or
+
+NULL) in DX:AX. In the code from WinMain() we can see this being
+
+moved into the DWORD at [bp+0Ch] (this is 16-bit code, so moving
+
+a 32-bit value requires two operations).
+
+  It would be nice to know what the DWORD at [bp-0Ch] is. But,
+
+hey! We *do* know it already: it's a copy of the return value
+
+from GetProcAddress(GetSystemMetrics(SM_PENWINDOWS),
+
+"RegisterPenApp)! In other words, is a far pointer to the
+
+RegisterPenApp() function, or NULL if Pen Windows is not
+
+installed. We can now replace all references to [bp-0Ch] with
+
+references to something like fpRegisterPenApp.
+
+ Remember another advantage of this "dead" Windows disassembling
+
+vis-a-vis of the Winice approach "on live": here you can choose,
+
+picking *meaningful* references for your search and replace
+
+operations, like "mingling_bastard_value" or "hidden_and_-
+
+forbidden_door". The final disassembled code my become a work of
+
+art and inspiration if the cracker is good! Besides, *written*
+
+investigations will remain documented for your next cracking
+
+session, whereby with winice, if you do not write everything down
+
+immediately, you loose lots of your past work (it's incredible
+
+how much place and importance retains paper in our lives).
+
+ After our search and replaces, this is what we get for this last
+
+block of code:
+
+     FARPROC fpRegisterPenAPP;
+
+     fpRegisterPenApp = GetProcAddress(
+
+          GetSystemMetrics(SM_PENWINDOWS),
+
+          "RegisterPenApp");
+
+
+
+Next we see  [or dx, ax] being used to test the GetProcAddress()
+
+return value for NULL. If non-NULL, the code twice pushes 1 on
+
+the stack (note the PUSH IMMEDIATE here... Windows applications
+
+only run on 80386 or higher processors... there is no need to
+
+place the value in a register first and then push that register)
+
+and then calls through the fpRegisterPenApp function pointer:
+
+
+
+1.0435  0BD0         or      dx, ax
+
+1.0437  7407         je      0440
+
+1.0439  6A01         push    0001
+
+1.043B  6A01         push    0001
+
+1.043D  FF5EF4       call    dword ptr fpRegisterPenApp
+
+
+
+  Let's have a look at the Pen Windows SDK doucmentation (and
+
+PENWIN.H):
+
+     #define RPA_DEAFULT
+
+void FAR PASCAL RegisterPenApp(UINT wFlags, BOOL fRegister);
+
+
+
+Simply by looking up API calls in the Windows documentation (get
+
+it, you'll need it continuously to crack successfully), we can
+
+turn the whole block of assembly language code into this:
+
+
+
+void (FAR PASCAL *RegisterPenApp) (UINT,BOOL);
+
+RegisterPenApp = GetProcAddress(
+
+   GetSystemMetrics(SM_PENWINDOWS),
+
+   "RegisterPenApp");
+
+ if (RegisterPenApp != 0)
+
+     (*RegisterPenApp) (RPA_DEFAULT, TRUE);
+
+
+
+ We can continue in this way with all of WinMain(). When we are
+
+done, the 100 lines of assembly language for WinMain() boild own
+
+to the following 35 lines of C code:
+
+
+
+// nLeft, nTop used in calls to MoveWindow() in TaskManDlgProc()
+
+ static WORD nLeft=0, nTop=0;
+
+   BOOL FAR PASCAL TaskManDlgProc(HWND hWndDlg, UINT msg, WPARAM
+
+    wParam, LPARAM lParam);
+
+   int PASCAL WinMain(HANDLE hInstance, HANDLE hPrevInstance,
+
+    LPSTR lpCmdLine, int nCmdShow)
+
+ {
+
+  void (FAR PASCAL *RegisterPenApp) (UINT,BOOL);
+
+  FARPROC fpDlgProc;
+
+  if (hPrevhInstance != 0)
+
+     return 0;
+
+  if (*lpCmdLine !=0 )
+
+     _fsscanf(lpCmdLine, "%u %u, &nLeft, &nTop); // pseudocode
+
+ RegisterPenApp = GetProcAddress(GetSystemMetrics(SM_PENWINDOWS),
+
+  "RegisterPenApp");
+
+ if (RegisterPenApp != 0)
+
+     (*RegisterPenApp) (RPA_DEFAULT, TRUE);
+
+ if (fpDlgProc = MakeProchInstance(TaskManDlgProc, hInstance))
+
+  {
+
+     DialogBox(hInstance, MAKEINTRESOURCE(10), 0, fpDlgProc);
+
+     FrreProcHInstance(fpDlgProc);
+
+  }
+
+ if (RegisterPenApp != 0)
+
+     (*RegisterPenApp) (RPA_DEFAULT, FALSE);
+
+   return 0;
+
+ }
+
+In this lesson we had a look at WinMain()... pretty interesting,
+
+isn't it? We are not done with TASKMAN yet, though... we'll see
+
+in the next lessons wich windows and dialog procedures TASKMAN
+
+calls.
+
+
+
+(-> lesson 2)
+
+</PRE>

@@ -1,0 +1,514 @@
+<HTML>
+
+<HEAD>
+
+  <TITLE>syncche.htm</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+<P><CENTER><FONT SIZE="+3">Norton Speed Disk Trial for Windoze NT4 (II)<BR>
+
+</FONT><FONT SIZE="+2">An Addendum to the no more mysterious IRATRIAL.DLL</FONT>
+
+</CENTER>
+
+
+
+<H4><CENTER><I>by FootSteps</I><BR>
+
+(28 October 1997)</CENTER></H4>
+
+
+
+<CENTER><HR><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"> Courtesy of fravia's page of reverse engineering<BR>
+
+<BR><I>Well, just read it. You'll find FootSteps' original 
+
+IRATRIAL.DLL essay <A href="footste.htm" tppabs="http://www.anticrack.de/fravia/footste.htm">here</A>.<BR>
+
+BTW, since blackboard's announcement seems to interest many of you 
+
+ (there is  
+
+a new one right now!) please remember that you must TELL ME whenever 
+
+you see a &quot;cheap magazine cover&quot; CD-ROM with important tools of the 
+
+trade (of course not yet cracked) that we may find useful: I'm 
+
+checking quite a lot of them, yet I cannot cover the whole planet alone :-(</I></CENTER><HR size="6"><PRE>
+
+
+
+Addendum to :
+
+=============
+
+
+
+Norton Speed Disk Trial for Windoze NT4.
+
+IRATRIAL.DLL, or the mysterious called DLL.
+
+(which is not mysterious more now, see below)
+
+
+
+Here's the explanation of why this DLL isn't in the exports of SD32.EXE.
+
+
+
+I think it was a good essay of the Symantec's guys to hide the protection
+
+scheme, but... they forget the +HCU band!
+
+
+
+I wouldn't have worked again on this crack if I haven't seen, yesterday,
+
+the Fravia's Blackboard. Hey, look! PCMAG HS23, with a lot of great 
+
+programming stuff. That's very, very interesting.
+
+Well, I ran buy this magazine, ran away at home, red the magazine in 10
+
+seconds then looked at the CD with more interest. Mmm, the famous Borland
+
+C++ builder. I've already got the C++ 5 of them, let's install this new one.
+
+Pretty interface. I compiled a example. Well, seems the code's a little big.
+
+Then I compiled a C program of mine, which was 48ko ultra-optimized.
+
+When I saw the size of the compiled new code, I didn't believe my eyes. But
+
+I haven't used the optimization. I used it, and for the same program, I obtain
+
+no less than a monstruous 138Ko. I ask again myself what for are these 90Ko
+
+more. To justify the RAM we pay? To make a competition with Micro$oft
+
+products?
+
+:-) Nevertheless, that's seems to be a nice RAD tool.
+
+
+
+What was interessting was when I looked in the Help Files that came with
+
+this tool. Plenty of useful documentation I haven't and we all need :
+
+the Isapi reference, Tapi, RPC, Win32 SDK, et caetera, et caetera...
+
+And look : the OLE reference. I thought immediately to the IRATRIAL.DLL essay
+
+I wrote, cause if you remember, I wasn't able to explain the following code
+
+of the main executable SD32.EXE :
+
+
+
+* Reference To: ole32.CoInitialize, Ord:0025h
+
+                                  |
+
+:0040D483 FF15ACE14100            Call dword ptr [0041E1AC]      ; ???
+
+:0040D489 8D45FC                  lea eax, dword ptr [ebp-04]
+
+:0040D48C 50                      push eax
+
+:0040D48D 68606C4100              push 00416C60
+
+:0040D492 56                      push esi
+
+:0040D493 57                      push edi
+
+:0040D494 68706C4100              push 00416C70
+
+
+
+* Reference To: ole32.CoCreateInstance, Ord:000Bh  ; You land in IRATRIAL.DLL
+
+                                  |
+
+:0040D499 FF15B0E14100            Call dword ptr [0041E1B0]
+
+:0040D49F 85C0                    test eax, eax
+
+:0040D4A1 7C3A                    jl 0040D4DD
+
+:0040D4A3 57                      push edi
+
+:0040D4A4 8B45FC                  mov eax, dword ptr [ebp-04]
+
+:0040D4A7 56                      push esi
+
+
+
+* Possible StringData Ref from Data Obj -&gt;&quot;Norton Speed Disk Trial&quot;
+
+                                  |
+
+:0040D4A8 6874B84100              push 0041B874
+
+
+
+* Possible StringData Ref from Data Obj -&gt;&quot;Symantec&quot;
+
+                                  |
+
+:0040D4AD 6868B84100              push 0041B868
+
+:0040D4B2 8B00                    mov eax, dword ptr [eax]
+
+:0040D4B4 FF75FC                  push [ebp-04]
+
+:0040D4B7 FF500C                  call [eax+0C]    ; You land in IRATRIAL.DLL
+
+:0040D4BA 85C0                    test eax, eax
+
+:0040D4BC 7C14                    jl 0040D4D2
+
+:0040D4BE 57                      push edi
+
+:0040D4BF 8B45FC                  mov eax, dword ptr [ebp-04]
+
+:0040D4C2 57                      push edi
+
+:0040D4C3 57                      push edi
+
+:0040D4C4 8B00                    mov eax, dword ptr [eax]
+
+:0040D4C6 FF75FC                  push [ebp-04]
+
+:0040D4C9 FF5014                  call [eax+14]    ; You land in IRATRIAL.DLL
+
+
+
+I __CallBack to you that this library, IRATRIAL.DLL, was nowhere to be
+
+found inside the exports of SD32.EXE. Then, how could it be called? 
+
+I couldn't explain this curious function, call Ole32.CoCreateInstance.
+
+
+
+But now, with the help of Fravia's Blackboard, PCMAG and Borland, I can!
+
+Thanks to the three of you!
+
+
+
+First, look at this function, call Ole32.CoInitialize. And look at the OLE
+
+help file that comes with the complete C++ Builder version (and many more 
+
+goodies) for only 38 FF (8 dollars).
+
+&quot;The CoInitialize function initializes the <FONT color="blue">Component Object Model</FONT> (COM)
+
+library&quot;
+
+Well, Is it that? The IRATRIAL.DLL is then a 'COM' object? Well, that was the
+
+problem : in my old Win32 SDK, I did not have any documentation on these 'COM'.
+
+Not my fault if Micro$oft is full of imagination and invent every month a
+
+new word, like COM. I let you read this COM chapter in the help file.
+
+
+
+Anyway, IRATRIAL.DLL is a COM file, yes, but it is a library like the others
+
+librarys. And what it puts me wrong was that it wasn't called by the classic
+
+LoadLibrary function.
+
+No, the CoInitialize prepares place for the object; for us, the library.
+
+And then, comes the interessting function I've noted above : CoCreateInstance.
+
+Look in the Help file :
+
+CoCreateInstance :
+
+&quot;Create a single uninitialized object of the class associated with a 
+
+specified CLSID&quot;
+
+When I saw 'CLSID', I ran (remark I ran a lot and often) and searched my 
+
+books on the registry base.
+
+
+
+If you look in your registry, at the branch HKEY_CLASSES_ROOT\CLSID\,
+
+you'll remark a lot of &quot;enormous&quot; following numbers. These are the CLSIDs 
+
+of all your programs supporting OLE exchanges.
+
+One entry interest us. This is when the setup program of Norton Speed Disk
+
+Trial installed all the programs and modified the registry base, in this 
+
+way :
+
+
+
+[HKEY_CLASSES_ROOT\CLSID\{2832E101-2360-11D0-B6CF-000000000000}\InprocServer 32]
+
+Default=&quot;D:\\PROGRA~1\\Symantec\\IRATRIAL.DLL&quot;
+
+&quot;ThreadingModel&quot;=&quot;Apartment&quot;
+
+
+
+The big hexadecimal number will of course be different on your machine. If you
+
+don't know why, run yourself to read a good book about registry :-)
+
+The subkey &quot;InProcServer32&quot; means that IRATRIAL.DLL does an In-Process-Server
+
+for an object group... not explicit? I agree: I did not invent that! But the
+
+micro$oft documentation do it! ::-)
+
+
+
+Well, what's really interesting here is that IRATRIAL.DLL is rattached with
+
+this CLSID number : 2832E101-2360-11D0-B6CF-000000000000.
+
+
+
+Now, fire Winnie. Do a breakpoint on :
+
+BPX OLE32.COINITIALIZE
+
+Fire SD32.EXE (Norton Speed Disk Trial).
+
+Well, you'll land in OLE32, hit
+
+F12
+
+to go back in SD32.EXE.
+
+We pass this memory preparation that ole32.CoInitialize has done, and we step 
+
+into the following instructions :
+
+
+
+* Reference To: ole32.CoInitialize, Ord:0025h
+
+                                  |
+
+:0040D483 FF15ACE14100   Call dword ptr [0041E1AC]   ; where the breakpoint land
+
+:0040D489 8D45FC         lea eax, dword ptr [ebp-04]
+
+:0040D48C 50             push eax
+
+:0040D48D 68606C4100     push 00416C60
+
+:0040D492 56             push esi
+
+:0040D493 57             push edi
+
+:0040D494 68706C4100     <FONT color="red">push 00416C70</FONT>               ; Ha ha!
+
+
+
+* Reference To: ole32.CoCreateInstance, Ord:000Bh
+
+                                  |
+
+:0040D499 FF15B0E14100   Call dword ptr [0041E1B0]  
+
+
+
+Ha ha! Look at all this PUSH instructions before the Call
+
+ole32.CoCreateInstance.
+
+And look in the OLE help file what this function means :
+
+<FONT color="purple">
+
+STDAPI CoCreateInstance(
+
+
+
+    REFCLSID rclsid,	//Class identifier (CLSID) of the object
+
+    LPUNKNOWN pUnkOuter,//Pointer to whether object is or isn't part of an aggregate 
+
+    DWORD dwClsContext,	//Context for running executable code
+
+    REFIID riid,	//Reference to the identifier of the interface
+
+    LPVOID * ppv	//Indirect pointer to requested interface
+
+   );</FONT>
+
+
+
+Now, look closer at the instruction just before the call :
+
+:0040D494 68706C4100     <FONT color="red">push 00416C70</FONT>
+
+
+
+And remember that all the PUSH instructions are reversed regarding the
+
+C function calling convention.
+
+Therefore this last push before the call is the <U>first</U> parameter :  
+
+<FONT color="purple">
+
+REFCLSID rclsid,	//Class identifier (CLSID) of the object
+
+                       </FONT>
+
+Hey, the CLSID!
+
+To verify, ask Winnie to do a:
+
+DD 416C70 (Assuring your memory range is at DS=ES=SS)
+
+And look!
+
+
+
+-----SD32!.rdata+1C60--------------------------------
+
+0023:00416C70  2832E101  11D02360  0000CFB6  00000000   ; looks familiar, isn't it?
+
+                                                                              
+
+All right! What was the CLSID of IRATRIAL.DLL in my registry? Remember :
+
+2832E101-2360-11D0-B6CF-000000000000.
+
+
+
+This is the way this curious DLL is called by the program.
+
+Forget LoadLibrary. Because we know now we must care of the hideous
+
+ole32CoCreateInstance, A DLL could be a 'COM' program, and therefore NOT 
+
+listed in the exports!
+
+
+
+Well, this protection could have be good if :
+
+- The name of the libray wasn't iraTRIAL.dll
+
+- there would have been no usual MSVCRT!TIME calls.
+
+- no time values would have been set in the registry.
+
+
+
+Without the three blunders above, i would have traced a little more...
+
+
+
+If you get from the web a registered copy of the Norton Utilities (where 
+
+Norton Speed Disk stand), you'll remark that, in the exports of the 
+
+executable SD32.EXE, there are no more the three following functions, like 
+
+in the &quot;trial&quot; one:
+
+CoInitialize, CoCreateInstance, and CoUninitalize.
+
+These functions are used only for the trial version. 
+
+The file IRALTRIAL.DLL is of course missing too.
+
+
+
+Oops, if you clock back your system before running the patche I've done
+
+in the previous essay, it won't work. 
+
+This is due to two registry checks I'had negliged. 
+
+Here they are :
+
+Offset        : AFD
+
+Find          : 0F850A020000
+
+Replace with  : 404840484048
+
+Offset        : B5C
+
+Find          : 0F842E000000
+
+Replace with  : 404840484048
+
+
+
+Good Idea, this '<A href="blackbo.htm" tppabs="http://www.anticrack.de/fravia/blackbo.htm">Blackboard</A>'! Without it... :-)
+
+
+
+--FootSteps (We create cracks!)   
+
+
+
+
+
+</PRE><FONT color="green">
+
+(c) FootSteps, 1997. All rights reversed.</FONT>
+
+		<HR size="2">
+
+<CENTER><I>You are deep inside fravia's page of reverse
+
+engineering, choose your way out:</I></CENTER>
+
+
+
+
+
+<P><CENTER>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage </A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"> <A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links
+
+</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0" NATURALSIZEFLAG="0"> <A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity
+
+</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools
+
+</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails </A><BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database </A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia
+
+</A><BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">is reverse engineering legal? </A></FONT></CENTER></P>
+
+
+
+<P><CENTER><FONT SIZE="-1"><HR></FONT></CENTER>
+
+
+
+
+

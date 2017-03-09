@@ -1,0 +1,700 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>pna2</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+<CENTER><FONT size="+3">W32Dasm Version 8.0 Save re-enabling</FONT>
+
+<BR>(How to get our dialogs and our routines inside our targets)<BR>
+
+  <BR>
+
+
+
+<H4>by PNA<BR>
+
+<BR>
+
+(31 August 1997)</H4>
+
+<HR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">Courtesy of fravia's page 
+
+of reverse engineering<BR><BR>
+
+<I>Well, I'm impressed by this essay... I believe that we are now 
+
+leaving the realm of &quot;simple&quot; reverse engineering and finally entering 
+
+the &quot;advanced&quot; field of software &quot;reconstruction&quot;. It suits us perfectly 
+
+that PNA's essay targets wdasm, since this target is an old &quot;friend&quot; that 
+
+all old and new hands know perfectly well inside.<BR><BR>
+
+PNA explains the patching techniques that are important 
+
+for the &quot;crippleware&quot; +HCU's project (project 6). The little &quot;tricks&quot; 
+
+he shows (for instance using Borland's copyright strings as location for  
+
+ &quot;our&quot; strings) are well worth heading. Needless to say, the 
+
+techniques you'll learn here can be immediately applied to the many 
+
+&quot;crippled&quot; targets that proliferate on the Web.
+
+</I></CENTER><HR size="7">
+
+<PRE>
+
+Target:  W32Dasm Version 8.0 - I got mine through ftp-search (w32dasm8.zip)
+
+Protection:  Save-disabled (among other protections)
+
+
+
+This essay will show you how to integrate a save-function to W32Dasm
+
+including a save-dialog.
+
+
+
+Studying the following articles will be helpful (or essential):
+
+
+
+ +HCU's <A href="project0.htm" tppabs="http://www.anticrack.de/fravia/project0.htm">Project0</A>: W32Dasm Cracking (look at the &quot;w32dsm00.tmp&quot;-file stuff)
+
+ +HCU's <A href="project6.htm" tppabs="http://www.anticrack.de/fravia/project6.htm">Project6</A>: Crippleware Cracking (razzia's tutorial (!!!) including
+
+                  the information about the PE-file structure !)
+
+
+
+
+
+Tools used:
+
+ - SoftIce 3.01  (everywhere regged, else trial at <A href="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#85'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#85">http://www.nu-mega.com</A>)
+
+ - UltraEdit-32 (?, search for uedit32.zip)
+
+ - quickview.exe (in your windows\system\viewers directory)
+
+ - the target itself
+
+
+
+Please have a look at these Win32 API-functions/structs in your Help:
+
+
+
+KERNEL32:
+
+ - CreateFile
+
+ - GetTempPath
+
+ - GetModuleHandle
+
+ - GetProcAdress
+
+ - CopyFile
+
+
+
+COMDLG32:
+
+ - GetOpenFileName
+
+ - OPENFILENAME (struct)
+
+
+
+
+
+Please Note: All disassembly listings assume 0x00400000 as the
+
+ImageBase.
+
+
+
+
+
+General Approach:
+
+
+
+ 1. Bypass the &quot;Save disabled&quot;-message box ...
+
+ 2. ... with your code that brings up the save-dialog ...
+
+ 3. ... and copies the &quot;W32dsm00.tmp&quot;-file with the name and in the
+
+       directory you chose
+
+
+
+1. Bypass the &quot;Save disabled&quot;-message box:
+
+ The fastest way to find that code is to &quot;BPX MessageBeep&quot; in SoftIce.
+
+ Run the target, load something and press the save-button.
+
+ When SoftIce comes up press F12 and you land at 445485.
+
+
+
+:445477 55                      push ebp
+
+:445478 8BEC                    mov ebp, esp
+
+:44547A 53                      push ebx
+
+:44547B 8B5D08             <FONT color="red">**</FONT>mov ebx, [ebp+08]  ; will be changed to a jump to our bypass
+
+:44547E 6AFF                    push FFFFFFFF     
+
+:445480 E8F38E0300              Call 0047E378      ;USER32.MessageBeep
+
+:445485 8B8391585400            mov eax, [ebx+00545891]
+
+:44548B 6A40                    push 00000040
+
+:44548D 6822EA4800              push 0048EA22     ;-&gt;&quot;Demo Version Message&quot;
+
+:445492 686AE94800              push 0048E96A     ;-&gt;&quot;Save to Text File 
+
+                                                  ;   Function is Disabled
+
+:445497 FF700C                  push [eax+0C]
+
+:44549A FF7068                  push [eax+68]
+
+:44549D E816940300              Call 0047E8B8     ;OWL50f.TApplication::MessageBox(...)
+
+:4454A2 83C414                  add esp, 00000014
+
+:4454A5 5B                 <FONT color="red">**</FONT>pop ebx           ;reentry from bypass
+
+:4454A6 5D                      pop ebp
+
+:4454A7 C3                      ret
+
+
+
+
+
+ Now we know where to place the jmp to our bypass-routine. But where
+
+ will the jmp point to? Let's check the PE-header of our target...
+
+
+
+
+
+2. Integrate Code for the save-dialog
+
+
+
+ As we want to integrate code in the first place, we check the CODE-
+
+ section (usually called .text) in the target's PE-dump (with
+
+ quickview):
+
+
+
+ Section Name:  CODE
+
+ Virtual Size:  0007e000
+
+ Virtual Addres:  00001000
+
+ Size of raw data: 0007da00 ;<FONT color="red">*</FONT>
+
+ Pointer to raw data: 00000600
+
+ ...
+
+
+
+ Note that <FONT color="red">*</FONT> fits exactly the file alignment specified in the Image
+
+ Optional Header (not shown here). As the probability that in the code-section 
+
+ no bytes have been wasted is 1 to 512, we better check the data using UEdit.
+
+ Once we do, as assumed, we discover that this value was rounded to the 
+
+ next alignment by the linker. 
+
+ This becomes obvious when you look at 0007e000 (0007da00+0600)
+
+ in the target-file and scroll back a few lines. All zeros. The very
+
+ last instruction is a jmp at 0007dee2 which gives us nice free code space
+
+ from 0007dee8 to 0007dfff, enough for our purpose.
+
+ The jmp at 0007dee2 is the last entry in a jump-table of all imported
+
+ functions. As I did all coding with SoftIce, I had to do a call to
+
+ an entry of this table to use an imported function. SoftIce creates
+
+ the wrong code if you type e.g &quot;call GetModuleHandle&quot;. You have to
+
+ search for &quot;jmp [KERNEL32!GetModuleHandleA]&quot; in that table (I simply
+
+ scrolled through the code window) and use its address.
+
+ By the way, we have a nice Copyright message from Borland at 0007e000
+
+ (beginning of DATA-section... check the PE-header!). This will be used to
+
+ store some strings needed in part 3. Thanks Borland.
+
+
+
+ Now we know the entry-point of our bypass-routine and we can put a
+
+ jmp 0047e8e8 (virtual address of 0007dee8) at 0044547b back in SoftIce.
+
+
+
+ I will now show you the first part of the added code which brings
+
+ up the save-dialog (actually it is an open-dialog from the COMDLG32
+
+ library, because it does the same job and was already imported by
+
+ the target):
+
+
+
+:47E8E8 55                    push ebp            ;create stackframe
+
+:47E8E9 8BEC                  mov ebp, esp        ;for local vars,
+
+:47E8EB 33C0                  xor eax, eax        ;buffers, structs
+
+:47E8ED 81ECF0010000          sub esp, 000001F0   ;...
+
+:47E8F3 B9F0010000            mov ecx, 000001F0   ;fill it with 0s
+
+:47E8F8 8BFC                  mov edi, esp        ;...
+
+:47E8FA F3                    repz                ;...
+
+:47E8FB AA                    stosb               ;...
+
+:47E8FC C78514FFFFFF4C000000  mov dword ptr [ebp-EC], 4C   ;insert our values
+
+:47E906 8D4580                lea eax, [ebp-80]            ;for the OPENFILENAME
+
+:47E909 898530FFFFFF          mov [ebp-D0], eax            ;struct starting at
+
+:47E90F C78534FFFFFF70000000  mov dword ptr [ebp-CC], 70   ;[ebp-ec]
+
+:47E919 C78548FFFFFF04000000  mov dword ptr [ebp-B8], 4    ;...
+
+:47E923 8D8514FFFFFF          lea eax, [ebp-EC]   ;offset of OPENFILENAME struct
+
+:47E929 50                    push eax            ;given to GetOpenFileNameA
+
+:47E92A E863FBFFFF            Call 0047E492       ;call jmp-table-entry (COMDLG32.GetOpenFileNameA)
+
+:47E92F 85C0                  test eax, eax       ;anything wrong?
+
+:47E931 0F8469000000          je 0047E9A0         ;yes, jmp to end of routine
+
+
+
+ Remarks: First we create a stack frame to store some data in. Its
+
+ size and the location of the OPENFILENAME struct at [esp-EC] are
+
+ more or less arbitrary and my choice is not very efficient due to
+
+ historical reasons. The fields I filled in the OPENFILENAME struct are:
+
+
+
+
+
+ - DWORD  lStructSize; size of struct, always 0x4c.
+
+ - LPTSTR lpstrFile; points to the buffer which contains the
+
+          initial filename and receives the full
+
+          pathname of the selected file.
+
+ - DWORD  nMaxFile; length of lpstrFile buffer (should be at
+
+          least 260 characters long, I know, I know)
+
+ - DWORD  Flags;  I used OFN_HIDEREADONLY only. Value for
+
+          OFN_OVERWRITEPROMPT is 2 if you want to use that instead.
+
+
+
+ After the call you will see the common windoze dialog for opening
+
+ files. Don't blame me for this as the whole crack doesn't require
+
+ a single change of the PE-header, which keeps it simpler.
+
+
+
+ Before we proceed with our code we have to get rid of the problem
+
+ which occurs when we try to copy an opened file (see project0-
+
+ essays). Remember that we planned to copy the w32dsm00.tmp file.
+
+ My approach is to change the dwShareMode upon its creation. (I
+
+ didn't read all essays, so please be indulgent if I repeat
+
+ something here).
+
+ This is the part which creates w32dsm00.tmp:
+
+
+
+:464F0C 6A00                    push 00000000
+
+:464F0E 6802010000              push 00000102
+
+:464F13 6A02                    push 00000002
+
+:464F15 8D93604D4900            lea edx, [ebx+00494D60]
+
+:464F1B 52                      push edx
+
+:464F1C 6A00                   <FONT color="red">**</FONT>push 00000000   ;put a 0x01 in this push
+
+:464F1E 68000000C0              push C0000000   ;instead and dwShareMode will
+
+:464F23 8D8BE0504900            lea ecx, [ebx+004950E0] ;be set to FILE_SHARE_READ
+
+:464F29 51                      push ecx
+
+
+
+* Reference To: KERNEL32.CreateFileA
+
+                                  |
+
+:464F2A E8E7920100              Call 0047E216
+
+
+
+ Now the file is readable for Windows.
+
+
+
+
+
+3. Copy the file to our destination
+
+
+
+ The last problem we encounter is the missing CopyFile function
+
+ in the target's import table. But as we all know, GetModuleHandle
+
+ and GetProcAddress solve this problem. We can highly assume
+
+ that both are imported (at least GetModuleHandle) and we are
+
+ lucky. Both show up in the import table. This was the last
+
+ obstacle.
+
+ Do you remember the nice guys at Borland's? They provided us with
+
+ a little DATA space at 0047f000 (virtual address). We can put two
+
+ strings there. &quot;KERNEL32&quot; followed by null (0007e000, raw) and
+
+ &quot;CopyFileA&quot; followed by null (0007e009, raw). For educational
+
+ pourpose OF COURSE, I implemented two ways of dealing with constants:
+
+ One is to include them in your code (0047e955-0047e962), the other
+
+ one is to store them in a DATA section (vital if you need many).
+
+ The latter method requires a little stack trick to retrieve the actual
+
+ ImageBase probably known to most programmers from the old days.
+
+ Others may refer to razzias excellent tutorial in project 6.
+
+ Now enjoy the rest of the crack's implementation:
+
+
+
+* Reference To: COMDLG32.GetOpenFileNameA
+
+                                  |
+
+:47E92A E863FBFFFF         Call 0047E492        ;see part 1 of listing
+
+:47E92F 85C0               test eax, eax        ;...
+
+:47E931 0F8469000000       je 0047E9A0          ;...
+
+:47E937 8D8514FEFFFF       lea eax, [ebp-01EC]  ;points to buffer in stackframe
+
+:47E93D 50                 push eax             ;push it
+
+:47E93E 6A80               push 80              ;push max length of buffer
+
+
+
+* Reference To: KERNEL32.GetTempPathA
+
+                                  |
+
+:47E940 E879F9FFFF         Call 0047E2BE        ;get Windows Temp Path
+
+
+
+:47E945 85C0               test eax, eax        ;OK?
+
+:47E947 0F8453000000       je 0047E9A0          ;no, jump to end of routine
+
+:47E94D 8D9D14FEFFFF       lea ebx, [ebp-01EC]  ;ebx now points to Temp Path
+
+:47E953 03D8               add ebx, eax         ;add (returned) stringlength
+
+:47E955 C70377333264       mov dword ptr [ebx], 64323377 ;append &quot;w32d&quot;
+
+:47E95B C74304736D3030     mov [ebx+04], 30306D73 ;append &quot;sm00&quot;
+
+:47E962 C743082E746D70     mov [ebx+08], 706D742E ;append &quot;.tmp&quot;
+
+:47E969 E800000000         call 0047E96E        ;call next instruction
+
+:47E96E 5B                 pop ebx   ;get eip(=0047E96E here) in ebx
+
+:47E96F 81EB6EE90700       sub ebx, 0007E96E  ;sub offset of call destination
+
+:47E975 81C300F00700       add ebx, 0007F000  ;add offset of DATA-section
+
+:47E97B 53                 push ebx           ;not necessary
+
+:47E97C 53                 push ebx           ;ebx points to &quot;KERNEL32&quot;
+
+
+
+* Reference To: KERNEL32.GetModuleHandleA
+
+                                  |
+
+:47E97D E82AF9FFFF         Call 0047E2AC   ;get handle
+
+:47E982 5B                 pop ebx         ;restores ebx (not necessary)
+
+:47E983 85C0               test eax, eax   ;valid handle?
+
+:47E985 7419               je 0047E9A0     ;no, jump to end of routine
+
+:47E987 83C309             add ebx, 00000009  ;ebx now points to &quot;CopyFileA&quot;
+
+:47E98A 53                 push ebx        ;push it hard, babe
+
+:47E98B 50                 push eax        ;push handle
+
+
+
+* Reference To: KERNEL32.GetProcAddress
+
+                                  |
+
+:47E98C E843F8FFFF         Call 0047E1D4   ;get our func. address in eax
+
+:47E991 8D9D14FEFFFF       lea ebx, [ebp-01EC]  ;ebx now points to sourcepath
+
+:47E997 8D4D80             lea ecx, [ebp-80]    ;ecx now points to dest.-path
+
+:47E99A 6A00               push 00000000   ;overwrite existing file
+
+:47E99C 51                 push ecx        ;push it twice, babe
+
+:47E99D 53                 push ebx        ;...
+
+:47E99E FFD0               call eax        ;final call to CopyFileA
+
+
+
+* Referenced by Jump at Addresses:47E931(C), :47E947(C), :47E985(C)
+
+|
+
+:47E9A0 8BE5               mov esp, ebp   ;clean up the whole mess
+
+:47E9A2 5D                 pop ebp        ;(stackframe)
+
+:47E9A3 E9FD6AFCFF         jmp 004454A5   ;close bypass (see part 1)
+
+
+
+ I know myself that the code isn't very clean or elegant but
+
+ it works transparent for the user and that's enough for me
+
+ for now.
+
+ To get the full pathname of the &quot;w32dsm00.tmp&quot;-file we simply
+
+ copy the way our target does it. After GetTempPath returns
+
+ the length of the path string in eax, we add it to the pointer
+
+ of that path-buffer and append &quot;w32dsm00.tmp&quot; to the string
+
+ using the first of the above methods.
+
+ The rest should become obvious with help of the Win32 API-
+
+ reference.
+
+
+
+
+
+Last Words
+
+
+
+ I hope you enjoyed this essay and as this crack helps improving
+
+ one of the most valuable tools it could even be useful for some,
+
+ although THIS IS MEANT FOR EDUCATIONAL AND ENTERTAINMENT PURPOSES,
+
+ and I am not kidding (it's no fun to follow crack instructions
+
+ and if you use this program so much, consider rewarding the one
+
+ who really deserves it !!!).
+
+
+
+This is it!
+
+
+
+Keep this great page alive and contribute !!!
+
+
+
+Greetings to FOSSTAVOCHT !
+
+
+
+PNA</PRE>  <HR>                         <CENTER>
+
+<I>A small addition, by PNA</I></CENTER><PRE>
+
+I didn't do my homework. This crack only works for the
+
+first instance of w32dasm. Please add a note somewhere
+
+if you decide to publish it. Actually it is quite easy to retrieve
+
+the correct filename of the tmp-file. One method is to code
+
+another bypass-routine just before the creation of the file to get its
+
+name and store it in the DATA section (there is still enough space
+
+in that copyright-message.
+
+You can leave it as a practice for others.
+
+Bye...
+
+
+
+PNA
+
+  </PRE>
+
+<FONT color="green">(c) PNA 1997. All rights reversed</FONT>
+
+<HR ALIGN="CENTER" WIDTH="100%" SIZE="3">
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</I></CENTER>
+
+<BR><CENTER>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="project0.htm" tppabs="http://www.anticrack.de/fravia/project0.htm">Back to Project 0</A> (&quot;Wdasm reversing&quot;) 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="project6.htm" tppabs="http://www.anticrack.de/fravia/project6.htm">Back to Project 6</A> (&quot;crippledwarez&quot;)<BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#84'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#84">homepage</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#73'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#73">links</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#82'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#82">students' essays</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut CGI-scripts</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering legal?</A></CENTER>
+
+<CENTER><HR ALIGN="CENTER" WIDTH="100%" SIZE="2"></CENTER>
+
+</BODY>
+
+</HTML>
+

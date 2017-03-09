@@ -1,0 +1,428 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>zeropdf</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+<CENTER><FONT size="+3">PDF: Quick starting notes<BR> and pdf again<BR></FONT><FONT size="+2">
+
+(A short comment, snatched by fravia+ and a 'deeper' essay :-)<BR>
+
+</H4>
+
+
+
+<H4>by Zer0+<BR> 
+
+<A href="solution.htm" tppabs="http://www.anticrack.de/fravia/solution.htm"><IMG SRC="hcu1.gif" tppabs="http://www.anticrack.de/fravia/hcu1.gif" ALT="+cracker" ALIGN="BOTTOM" WIDTH="114" HEIGHT="43" BORDER="0" VSPACE="0" HSPACE="0" NATURALSIZEFLAG="0"></A><BR>
+
+<BR>
+
+The Quick starting notes have been snatched on 1 November 1997 and have been 
+
+left here because they may be useful as well, yet you'll find       
+
+below the 'real' <A href="#anchorzerofin">+Zer0+'s final essay</A> (12 November 1997)</FONT>
+
+
+
+<HR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">Courtesy of Fravia's page 
+
+of reverse engineering<BR><BR><I>Well, I have snatched this without 
+
+Zer0+'s authorization, because I believe that it can be helpful for 
+
+many more people than he thought :-)<BR>This was of course only a 'place holder' 
+
+until Zer0+ sand his real essay ('pdf again')</I></CENTER><HR size="6"><PRE>
+
+I have started to work on the pdf crack +ORC asked us. I downloaded
+
+http://www.adobe.com/supportservice/devrelations/PDFS/TN/PDFSPEC.PDF
+
+file which is a detailed description of the pdf format, so not much
+
+cracking on that. (Some of us might start to write the txt -&gt; pdf 
+
+converter based on the specs.)
+
+After reading the security specs I got the next preliminary
+
+conclusions:
+
+
+
+Whether the menubar, toolbar of the reader is present when you open
+
+a document is not connected to the security, its controlled by  
+
+boolean variables HideMenuBar, HideToolBar in the Viewer Preferences 
+
+section of the file. You can change the true settings to false and
+
+they appear when you open the file. Be careful though not to change
+
+the lenght of the file when you change the text (you have enough space
+
+there fortunatelly), because the file lenght is linked to the security 
+
+heavily.
+
+
+
+The restrictions what can be done with a file is contained in the P 
+
+variable of the Filter section. Its an unsigned word value certain
+
+bits representing the writing, copying printing permissions of the
+
+user. You can not change this value to eliminate the restrictions
+
+because all text and picture data of the file (but not the file
+
+itself) is encoded by the RSA algorithm using a key provided by
+
+a hash function from a random file ID, the userkey, the permission
+
+value etc. This means that if we change permission value the text
+
+and data cannot be decoded correctly. (The reader complains of
+
+corrupted file, tries to fix it etc.) Therefore, we must let the
+
+program to decode the text with the original permission value
+
+and patch the program to set itself up with a &quot;let him do everything&quot;
+
+value later on.
+
+
+
+I got all this info only by reading the specs and setting values in
+
+the pdf files. Now I try to find the part of the program where he sets
+
+itself up according to the permission value. BTW the acrobat reader 
+
+(being only a reader) does not allow modifying a document 
+
+independently of the permission value which means this restriction
+
+is logically hard coded in it.
+
+
+
+I wrote this to inform you in which direction I am going with this 
+
+project and to facilitate quick exchange of information to spare
+
+some work for all of us.
+
+
+
+bye
+
+Zer0+ 
+
+<HR size="6">      
+
+</PRE>
+
+<A name="anchorzerofin"></A>
+
+<FONT size="+2">pdf again</FONT><HR size="6">
+
+<I>Well, +zer0+ has worked quite a lot on the 
+
+pdf-project, and I find VERY interesting the comparison with 
+
+the recent essay by SiuL+Hacky on LINUX Acrobat  reversing, that 
+
+you can find <A href="linux2.htm" tppabs="http://www.anticrack.de/fravia/linux2.htm">here</A>. I too believe that the 
+
+idea of writing a small 
+
+utility to get the user and owner password of a pdf document, is a very good one.
+
+As so often happens in life, excessive (and as we all know totally unjustified) belief in 
+
+the strength of software protections can be turned by any reverse engineer in a 
+
+catastrophe for the very people that wanted 
+
+to protect themselves.</I></CENTER><HR size="6"> 
+
+<FONT size="+2">pdf again</FONT><BR>by +Zer0
+
+<PRE>Here I send, as promised, a polished version of the Acrobat reader
+
+patch which enables to select and copy parts of a document
+
+independently of Adobe security settings.
+
+I do not want to repeat here how the whole encryption is working
+
+in  a PDF document (you can find that in the PDF specs from
+
+Adobe or understand it reading the many essays inside +HCU's 
+
+<A href="pdffing.htm" tppabs="http://www.anticrack.de/fravia/pdffing.htm">pdf-project</A>), so I just point out the most important things.
+
+
+
+- If a PDF document is encrypted by using the Standard security
+
+handler the P key containes the permissions which are granted
+
+when the document is opened with the user password. Its a word
+
+value, FFFC meaning you are allowed to do everything, FFC0 means
+
+you can=B4t touch the document.
+
+
+
+- You can't just rewrite this value in the document because it
+
+is used for generating the key which is used to encrypt the
+
+document (check the specs for details.)
+
+
+
+- However, here is a note from the PDF specs:
+
+<FONT color="purple">
+
+&quot;Despite the specification of document permissions in a PDF file,
+
+PDF cannot enforce the restrictions specified. It is up to the
+
+implementors of PDF viewers to respect the intent of the document
+
+creator by limiting access to an encrypted PDF file according to
+
+the permissions and passwords contained in the file.&quot;
+
+</FONT>
+
+This means that a reader can ignore the permission settings.
+
+Unfortunately, this nice feature is missing from Acrobat Reader
+
+so we have to work a bit.
+
+
+
+Target: Adobe Acrobat Reader 3.00   2 263 552 bytes
+
+
+
+Our main aim is to find the place of the program where the
+
+permission value can be modified to let us do everything without
+
+affecting the decryption of the document.
+
+
+
+What I did was: set a break point on kernel _lread to monitor
+
+the file access, if the P value was read into memory breakpoint
+
+set break point on its memory position and see where the program
+
+touches it. This way I got to code at 47D50D where the program
+
+starts to parse it, at 4CDF3D it converts the string to word
+
+value and later puts it at the 26C position of a structure
+
+at 442844 MOV [ECX+0000026C], EAX. This was an effective, but
+
+long and boring way to find this position. Now looking back
+
+I could have found it by searching the dead listing for the
+
+value FFFC (remember this is the let everything to do value
+
+which is used when there is no protection) the program sure
+
+moves it into [ECX+0000026C] a few times. Well, this means
+
+I am still quite a way from being a ZEN cracker :( and once
+
+again proves the words of the great Dave Mustaine &quot;Hindsight
+
+is always 20-20&quot; :)
+
+
+
+Now that we have this position we can see what the program
+
+is doing with it. It takes the value at 442CB8 for generating
+
+the decryption key and at 4430E5 it copies it to position
+
+20C and used for setting the permissions. I wanted to fiddle
+
+with the permission settings as far as possible from the
+
+decryption part so I followed it till 480A62 where it moved
+
+to [esi+78] position. Actually the value has been transformed
+
+a bit high order byte to 7F and low order byte incremented
+
+by 1 so the desired value at this position is 7FFD instead
+
+of FFFC. It seems the program is not moving it any further
+
+so we have to patch here to move 7FFD into [esi+78].
+
+
+
+This enables selecting text and pictures from any document
+
+and printing it. If you check the security settings menu
+
+point you will see the original settings because the
+
+program reads the 26C position which we have not changed
+
+to present the settings. If you want to change that you
+
+can fiddle with one of the few instructions which reads
+
+[reg+0000026C], but I actually forgot which one. I myself
+
+prefer not to change it, this way I can check what kind of
+
+permissions the author originally set for us :)
+
+
+
+One last thing: the author of the pdf document can set
+
+whether the menubar toolbar and windowUI is displayed
+
+when a document is opened. This is controlled by the
+
+HideToolBar, HideMenuBar and HideWindowUI flags in the
+
+ViewerPreferences dictionary. We of course want to have
+
+these goodies always on (which is the default value) so
+
+can destroy the reference to these flags so the program
+
+cannot recognise them. Therefore search these strings in
+
+the reader exe file and change one letter in them. <FONT color="blue">Now the
+
+program cannot parse these settings in the PDF file 'correctly' 
+
+anymore so we always have the goodies on</FONT>.
+
+
+
+PS: I think now I'll move on to a deeper analyse of the 
+
+pdf standard encryption handler and I will write a small 
+
+utility to get the user and owner password of a document 
+
+(if I can). 
+
+I am just curious what could be the owner password of the 
+
+Ghiribizzo files :)
+
+
+
+Zer0+</PRE>   
+
+ <FONT color="green">(c) Zer0+ 1997. All rights reserved</FONT>
+
+<HR ALIGN="CENTER" WIDTH="100%" SIZE="3">
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</I></CENTER>
+
+<BR><CENTER>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="pdffing.htm" tppabs="http://www.anticrack.de/fravia/pdffing.htm">Back to the PDF-Project </A> 
+
+ 
+
+<HR width="33%">
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">
+
+<A HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage </A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"> 
+
+<A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links </A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0">
+
+<A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity </A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">Academy database </A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut CGI-scripts </A>
+
+
+
+
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_Fravia </A><BR>
+
+
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering illegal? </A></CENTER>
+
+<CENTER><HR ALIGN="CENTER" WIDTH="100%" SIZE="2"></CENTER>
+
+</BODY>
+
+</HTML> 
+
+
+

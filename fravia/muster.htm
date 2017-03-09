@@ -1,0 +1,499 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>muster.htm</TITLE>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+<CENTER>
+
+<H2>CRACKING MUSTER BYTES</H2>
+
+<B>
+
+
+
+Program logic for crackers<BR>~<BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" HEIGHT="13" WIDTH="13" ALT="red">Courtesy of Fravia's page of reverse engineering<BR>
+
+~<BR>
+
+<PRE>&quot;Preparing +crackers for the next millennium&quot;</PRE>
+
+<!--<center><hr size=2><table boredr=4><tr><td><applet codebase="../tppjava" tppabs="http://www.anticrack.de/fravia/" ARCHIVE="fravia/Counter.zip" tppabs="http://www.anticrack.de/fravia/Counter.zip" xcodbase=c:\page CODE="Counter.class" tppabs="http://fravia.org/Counter.class" WIDTH=75 HEIGHT=20><param name=URL value="http://207.30.50.126/fravia/fravia.htm"><param name=img value=http://www.local.com/counter/default.gif></applet></td></tr></table><hr size=2></center>-->
+
+</B>
+
+<HR size="2">
+
+(examples taken from PsP 41)
+
+
+
+</CENTER>
+
+
+
+<PRE>
+
+<B>Inconditionals jumps</B>
+
+
+
+:00410310 EB10           jmp 00410322 ;Ebcb jump short
+
+:004130E0 E92B010000     jmp 00413210 ;E9cw jump near
+
+:00401D82 FF248DD8204000 jmp dword ptr [4*ecx + 004020D8]
+
+                  ;jump near indirect
+
+:0043133C EA114300F11143 jmp 4311:F1004311 
+
+                  ;jump intersegment, 4-byte immediate
+
+                  ;jump to call gate, ame privilege
+
+                  ;jump via task state segment
+
+                  ;jump via task gate
+
+
+
+conditional jumps, special
+
+	    E3CB	jcxz (rel8)	Jump short if CX (or ecx) = 0
+
+:00423C64 E331    jcxz 00423C97
+
+
+
+conditional short jumps, the '7' serie
+
+          70nn   jo                (OF=1)
+
+          71nnn  jno               (OF=0)
+
+:00402FB3 7212   jb 00402FC7       (or jc or jnae) (CF=1)
+
+          73nn   jnb               (or jnc or jae) (CF=0)
+
+:0041321C 745B   je 00413279       (or jz)   (ZF=1)
+
+:0041322C 7519   jne 00413247      (or jnz)  (ZF=0)
+
+:0041323A 7604   jbe 00413240      (or jna)  (CF=1 or ZF=1)
+
+:00410437 7702   ja 0041043B       (or jnbe) (CF=0 and ZF=0)
+
+          78nn   js                (SF=1)
+
+          79nn   jns               (SF=0)
+
+          7Ann   jpe               (or jp)
+
+          7Bnn   jpo               (or jnp)
+
+          7Cnn   jl                (or jnge) (SF <> OF)
+
+:00413450 7D2E   jge 00413480      (or jnl)  (SF = OF)
+
+:00413619 7E07   jle 00413622      (or jng)  (ZF=1 and SF <> OF)
+
+:0040435E 7F0C   jg 0040436C       (or jnle) (ZF=0 and SF = 0F)
+
+
+
+
+
+conditional near jumps, the '0F' serie
+
+
+
+
+
+:0041030A 0F8038FFFFFF  jo 004103D8     (OF=1)
+
+:0040FFF2 0F81BA070000  jno 004107B2    (OF=0)
+
+:004100C0 0F8295000000  jb 0041015B (or jc or jnae) (CF=1)
+
+:004100CA 0F838B000000  jae 0041015B (or jnc or jnb) (CF=0)
+
+:0041000C 0F84A0070000  jz 004107B2 (or je) (ZF=1)
+
+:0041030A 0F8538FFFFFF  jnz 004103D8 (or jne) (ZF=0)
+
+:0041030A 0F8638FFFFFF  jna 004103D8 (or jbe)(ZF=1 or CF=1)
+
+:0040FFF2 0F87BA070000  ja 004107B2 (ZF=0 and CF=0)
+
+:0041030A 0F8838FFFFFF  js 004103D8(SF=1)
+
+:0041030A 0F8938FFFFFF  jns 004103D8 (SF=0)
+
+:0041030A 0F8A38FFFFFF  jp 004103D8 (PF=1)
+
+:0041030A 0F8B38FFFFFF  jnp 004103D8 (PF=0)
+
+:004100C0 0F8C95000000  jl 0041015B (SF <> OF)
+
+:004100CA 0F8D8B000000  jnl 0041015B (SF=OF)
+
+:0041000C 0F8EA0070000  jle 004107B2 (or jng)(ZF=1 or SF <>OF)
+
+:0041001E 0F8F55010000  jg 00410179 (ZF=0 and SF=OF)
+
+
+
+NOTE:
+
+Conditional jumps (except JCZX/JECXZ) test the flags which have 
+
+been set by a previous instruction. The conditions for each mnemonic 
+
+are given in parentheses after each description above. The terms 
+
+&quot;less&quot; and &quot;greater&quot; are used for comparison of signed integers;
+
+&quot;above&quot; and &quot;below&quot; are used for unsigned integers.
+
+
+
+If the given condition is true, a jump is made to the location 
+
+provided as the operand. instruction coding is most efficient
+
+when the target for the conditional jump is in the current code
+
+segment and within -128 to +127 bytes of the <B>next instruction's 
+
+first byte</B>. The jump can also target -32768 through +32767 
+
+(segment size attribute 16) or -2 to the 31st power to +2 to the
+
+31st power -1 (segment size attribute 32) relative to the <B>next 
+
+instruction's first byte</B>. 
+
+
+
+TYPICAL CONFIGURATIONS &amp; HABITATS
+
+When the target of the jump is in another segment, the
+
+protectionist uses the opposite case of the jump instruction
+
+(i.e. JE and JNE) and then access the target with an
+
+unconditional far jump to the other segment.
+
+JZ FarAway    will be therefore coded        JNZ BeyondFar
+
+                                             JMP FarAway
+
+                                             :BeyondFar
+
+
+
+
+
+
+
+
+
+JUMP BELOW OR EQUAL with cx comparison
+
+:00413236 6683F908                cmp cx, 0008
+
+:0041323A 7604                    jbe 00413240
+
+:0041323C 33C0                    xor eax, eax
+
+:0041323E EB0A                    jmp 0041324A
+
+:00413240 B801000000              mov eax, 00000001
+
+
+
+
+
+JUMP GREATER with ax testing
+
+:00413445 6A10                    push 00000010
+
+
+
+* Reference To: GetKeyState, Ord:00F9h in USER32.dll
+
+                                  |
+
+:00413447 FF153C024C00            call dword ptr [004C023C]
+
+:0041344D 6685C0                  test ax, ax
+
+:00413450 7D2E                    jge 00413480
+
+
+
+JUMP GREATER with ax/dx comparison
+
+:00413814 668B90F4000000          mov dx, [eax-000000F4]
+
+:0041381B 8D4301                  lea eax, [ebx+01]
+
+:0041381E 3BD0                    cmp edx, eax
+
+:00413820 7F14                    jg 00413836
+
+
+
+JUMP LOWER EQUAL WITH cx testing
+
+:00413616 6685C9                  test cx, cx
+
+:00413619 7E07                    jle 00413622
+
+
+
+JUMP ABOVE after comparison ax/si
+
+:00402007 663BF0                  cmp si, ax
+
+:0040200A 668BF8                  mov di, ax
+
+:0040200D 772A                    ja 00402039
+
+
+
+A SHORT EXPLANATION OF JUMPS
+
+Remember that for unsigned data (where all bits are treated as
+
+data bits) a jump is equal, above or below, and for signed data
+
+(where the leftmost bit is a sign) a jump is equal, grater or
+
+less. JAE and JGE, although apparently similar, do not test the
+
+same flags. The jumps for testing the carry, overflow and parity
+
+flags have unique purposes.
+
+
+
+ 
+
+JA   JUMP ABOVE  (or JNBE JUMP IF NOT BELOW/EQUAL)
+
+Used after a test of unsigned data. If the CF flag is 0 (no
+
+carry) and the ZF flag is zero (nonzero) it adds the operand
+
+offset to the IP and performs the jump.
+
+
+
+77             01110111
+
+
+
+JAE JUMP ABOVE/EQUAL  (or JNB JUMP IF NOT BELOW)
+
+Used after a test of unsigned data. If the CF flag is 0 (no
+
+carry) it adds the operand offset to the IP and performs the
+
+jump.
+
+
+
+73             01110011
+
+
+
+A SHORT EXPLANATION OF FLAGS
+
+The SCAS (scan string), CMPS (compare string) and LOOP
+
+instructions use ZF to signale that their operations are
+
+complete.
+
+CF (Carry Flag)     Contains carries (0 or 1) from the high order
+
+bit following arithmetic operations and some shift and rotate
+
+operations.
+
+
+
+PF (Parity Flag)    A check of the low-oder eight bits of data
+
+operations. An odd number of data bits sets the flag to zero and
+
+an even number to 1. Seldom used for protection schemes (seldom
+
+used for conventional programming). Do not confond with the
+
+parity bit!
+
+
+
+AF (Auxiliary Carry Flag)     Set to 1 if arithmetic causes a
+
+carry out of bit 3 (fourth from the right) of a register one-byte
+
+operation. This flag is concerned wity arithmetic on ASCII and
+
+packed decimal fields.
+
+
+
+ZF (Zero Flag) Set as a result of arithmetic or compare
+
+operations. Unexpectedely, a nonzero result sets it to ZERO and
+
+a zero result set it to 1 wich is not apparently correct but
+
+logically correct: zero means NO (THE RESULT IS NOT ZERO) and one
+
+means YES (THE RESULT IS ZERO). JE and JZ test this flag.
+
+
+
+SF (Sign Flag) Set according to the sign (high order or leftmost
+
+bit) after an arithmetic operation: positive sets to zero and
+
+negative sets to 1. JG and JL test this flag.
+
+
+
+TF (Trap Flag) You have already set this flag entering the t
+
+command in debug. When set, the trap flag causes the processor
+
+to execute in single step mode, that is, one instruction at a
+
+time under cracker control.
+
+
+
+IF (Interrupt Flag) When 0 all interrupts are disabled, and when
+
+1 all interrupts are enabled.
+
+
+
+DF (Direction Flag) Used by string operations to determine the
+
+direction of data transfer. When 0 the operation increments the
+
+SI and DI registers, causing left to roght data transfer; when
+
+1 the operation decrements the SI and DI causing right to left
+
+data transfer.
+
+
+
+OF (Overflow Flag)  Indicates a carry into and out of the high
+
+order (leftmost) sign bit following a signed arithmetic
+
+operation.
+
+The flags register in the 80386 and upwards is a 32 bit register
+
+named EFLAGS. We have status flags, control flags and system
+
+flags. The low order 16 bits of EFLAGS is called FLAGS and can
+
+be trated as an unit, because is identical to the FLAGS register
+
+of the 8086 and 80286.
+
+<HR size="2">
+
+<B>The CMP instructions</B>
+
+3Cib		CMP AL,imm8		Compare immediate byte to AL
+
+3Diw		CMP AX,imm16	Compare immediate word from AX
+
+3Did		CMP EAX,imm32	Compare immediate dword to EAX
+
+
+
+80 /7 ib	CMP r/m8,imm8	Compare immediate byte to r/m byte
+
+81 /7 iw	CMP r/m16,imm16	Compare immediate word to r/m word
+
+81 /7 id	CMP r/m32,imm32	Compare immediate dword to r/m dword
+
+83 /7 ib	CMP r/m16,imm8	Compare sign extended immediate byte to r/m word
+
+83 /7 ib	CMP r/m32,imm8	Compare sign extended immediate byte to r/m dword
+
+
+
+CMP subtracts the secodn operand from the first, but, unlike the SUB
+
+instruction, does not store the result; only the flags are changed.
+
+If an operand greater than one byte is compared to an immediate byte,
+
+the byte value is first sign-extended.
+
+
+
+</PRE>
+
+<HR size="2">
+
+<!-- Begin mover -->
+
+<CENTER>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" HEIGHT="13" WIDTH="13" ALT="red"></A><A HREF="tppmsgs/msgs0.htm#84" tppabs="http://www.anticrack.de/fravia/tppmsgs/msgs0.htm#84">homepage</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" HEIGHT="13" WIDTH="13" ALT="red"></A><A HREF="tppmsgs/msgs0.htm#73" tppabs="http://www.anticrack.de/fravia/tppmsgs/msgs0.htm#73">links</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" HEIGHT="13" WIDTH="13" ALT="red"></A><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" HEIGHT="13" WIDTH="13" ALT="red"></A><A HREF="tppmsgs/msgs0.htm#82" tppabs="http://www.anticrack.de/fravia/tppmsgs/msgs0.htm#82">students' essays</A><BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" HEIGHT="13" WIDTH="13" ALT="red"></A><A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" HEIGHT="13" WIDTH="13" ALT="red"></A><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" HEIGHT="13" WIDTH="13" ALT="red"></A><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" HEIGHT="13" WIDTH="13" ALT="red"></A><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" HEIGHT="13" WIDTH="13" ALT="red"></A><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">MailFravia</A><BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" HEIGHT="13" WIDTH="13" ALT="red"></A><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering legal?</A>
+
+</CENTER>
+
+<!-- End mover -->
+
+<HR size="3">
+
+<! Begin signet -->
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" WIDTH="13" HEIGHT="13"></A>FraVia 27 May 97
+
+<! End signet >
+
+<HR size="3">
+
+
+
+</BODY>
+
+</HTML>

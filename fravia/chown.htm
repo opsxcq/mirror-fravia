@@ -1,0 +1,1052 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>chown</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+<CENTER><FONT size="+3">Cracking OpenNT 2.0 - object oriented cracking<BR></FONT><FONT size="+2">
+
+(The temporary DLL trick)</FONT> <BR>
+
+<A href="advanced.htm" tppabs="http://www.anticrack.de/fravia/advanced.htm"><IMG SRC="xtranio.gif" tppabs="http://www.anticrack.de/fravia/xtranio.gif" ALT="advanced" ALIGN="BOTTOM" WIDTH="114" HEIGHT="43" BORDER="0" VSPACE="0" HSPACE="0" NATURALSIZEFLAG="0"></A><BR>Advanced cracking series
+
+
+
+<H4>by chown<BR>
+
+<BR>
+
+(1 November 1997)</H4>
+
+<HR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">Courtesy of Fravia's page 
+
+of reverse engineering<BR><BR><I>Well, a VERY interesting Unix-school essay, that 
+
+I'm happy to host on my site. Object oriented cracking! A very nice definition indeed! 
+
+I have included this essay in the advanced section because I believe it well 
+
+deserves a place there. You'll notice that there is a lot to learn for any 
+
+reverser inside this... 
+
+even if this (good) author seems to be only at his 'first steps' in windows programming... yet, 
+
+this notwithstanding, this is NOT for newbyes. Newbyes should pheraphs have first a look 
+
+at <A href="javascript:if(confirm('http://207.30.50.126/gthorne/  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://207.30.50.126/gthorne/'" tppabs="http://207.30.50.126/gthorne/">+gthorne</A>'s OTHER +HCU page first.
+
+<BR>I find the part where chown describes is first programming experiences with 
+
+windows programming particularly amusing... in fact I believe that any good cracker 
+
+can indeed often program better than a 'real' programmer because he can CRACK the compiler 
+
+into doing whatever he fancies if needs be!
+
+Enjoy!</I></CENTER>
+
+<HR size="6"><PRE>
+
+                        Cracking OpenNT 2.0
+
+                        ===================
+
+                        ==== by chown =====
+
+
+
+
+
+target :        OpenNT 2.0, by Softway Systems
+
+link :          http://www.softway.com
+
+protection :    generic serial numbers
+
+method :        brute force
+
+tools :         SoftICE NT, disassembler, C++ compiler (Win32)
+
+needed :        average cracking skills, knowledge of C/C++
+
+
+
+About
+
+-----
+
+If like Unix and you haven't got Linux, then OpenNT is probably the 
+
+next-best thing. 
+
+Unlike most Unix-like environments available today, this one doesn't 
+
+emulate the programs; instead they run on their own POSIX subsystem 
+
+(POSIX is an interface just like Win32 or OS/2).  
+
+Besides this enhanced subsystem, you'll get bunch of Unix 
+
+utilities, the KornShell &amp; C shell, Perl, sed, awk ...; support for 
+
+sockets, memory mapped files, hard links...; an SDK, X11R6 windowing, 
+
+Motif window manager, etc...
+
+All these little wonders, nicely packed on a CD-ROM, shipped to your 
+
+font door for free...
+
+You're probably thinking : sounds too good to be true, and you're right. 
+
+-&gt; when you receive the CD-ROM, you get 2 keys which will only 
+
+   unlock some components of OpenNT; and to make things even worse, those 
+
+   components have &quot;best before dates&quot; (also known as 'drop dead dates' i.e. 
+
+   they stop working on a fixed date, no matter when you start using them)
+
+-&gt; the other components can only be bought (you'll then get &quot;everlasting&quot; 
+
+   keys) 
+
+ 
+
+To sum things up, here's the whole list of available components : 
+
+   OpenNT Workstation Lite  (pay for key)
+
+   OpenNT Workstation       (best before date OR pay for &quot;everlasting&quot; key)
+
+   OpenNT Server            (pay for key)
+
+   OpenNT X11R6 Server      (best before date OR pay for &quot;everlasting&quot; key)
+
+   OpenNT SDK               (best before date OR pay for &quot;everlasting&quot; key)
+
+   OpenNT OpenNTiF          (pay for key)
+
+   OpenNT OpenNTiF SDK      (pay for key)
+
+
+
+(Note : when reading the essay, don't forget that the &quot;Lite&quot; version of 
+
+the Workstation is NOT the version you can install with the best before 
+
+key !! You need to pay for the Lite version!)
+
+
+
+So let's get started!   
+
+<HR>
+
+When you run the installation, the second screen prompts you for the 
+
+serial numbers. 
+
+As a cracker, you would normally have 2 options: 
+
+(a) you fill in the keys you received, and later you simply disable the 
+
+best before dates; the problem here is that you'll eventually have to 
+
+rerun and crack the setup program if you want to install the other 
+
+components. 
+
+(b) you immediately crack the setup program in order to install whatever 
+
+component you want; the problem with this option is that after you've 
+
+cracked the installation, you'll need to crack the installed programs, 
+
+because they too will look for the &quot;everlasting&quot; keys (in the registry). 
+
+None of these 2 options are very difficult, in fact I'm sure most of you 
+
+could easily crack it either way.  The purpose of this essay however, 
+
+is to show you yet another approach. 
+
+
+
+Let's start by sniffing around a little to see what the setup program 
+
+(InstallShield) is really up to. You'll quickly find out that it has 
+
+created a directory (called &quot;_ISTMP0.DIR&quot;) in your TEMP directory.  
+
+So what's in _ISTMP0.DIR 
+
+? 
+
+   9/16/94  14:00          25,088  CTL3D32.DLL
+
+   9/16/94  14:00          26,112  CTL3D32S.DLL
+
+   5/08/97   3:31          19,456  e3e9c.DLL
+
+   1/22/96  20:59          90,112  e3e92.DLL
+
+   5/05/97  16:03           5,776  LICENSE.TXT
+
+   5/08/97   3:31          46,080  MYDLL.dll
+
+   2/28/97  21:11          20,784  opennt.bmp
+
+   4/11/97   9:24          75,466  setup.bmp
+
+   5/21/97  12:05          88,574  _SETUP.LIB
+
+
+
+Let's see... CTL3*.DLL are the 3D-controls the setup program needs, 
+
+LICENSE.TXT is the license info nobody ever reads, *.bmp are bitmaps, 
+
+and _SETUP.LIB is a compressed file (see note [1]) that contains the 
+
+other 8 files in this directory. 
+
+So this leaves us with the 3 DLLs; two of them have pseudo-random 
+
+names (every installation will name these files differently), the 
+
+other DLL has a strange name. 
+
+     [1] you could check this if you have a nice little program called 
+
+&quot;compress&quot; (which is from the company that makes InstallShield); you can 
+
+use this program to unpack all compressed file of InstallShield.
+
+So let's start with MYDLL.DLL (the programmer who wrote this library 
+
+must have been a hell of a creative guy, and quite possessive too!). 
+
+Time for some disassembly... 
+
+(Note : you'll have to copy these files to another directory BEFORE you 
+
+quit setup, because they will get deleted upon exit.)
+
+
+
+After WDasm has done its job, we first check the string references for 
+
+anything suspicious. We find strings like &quot;sdk&quot;, &quot;sdk_demo&quot;, &quot;xs&quot;, 
+
+&quot;xs_demo&quot;.... hmmm, interesting, but since we're dealing with a DLL, 
+
+let's take a look at the exports... 
+
+... Bingo!! Look at names of some of these exported functions : 
+
+        isDemoKey
+
+        whatIsThis
+
+        verifyKey
+
+Now, how many times does Fravia+ and all other +HCUkers have to repeat 
+
+themselves ?!!! 
+
+When will the programmers finally get the message? These names are like 
+
+a path of oasis inside a desert, they are like flashing neon lights in 
+
+the dark alleys of disassembly. 
+
+So, once more for the record 
+
+-&gt; ATTENTION TO ALL PROTECTIONISTS: DON'T CLUTTER YOUR PROGRAMS WITH 
+
+TELLTALE NAMES ! 
+
+
+
+Back to MYDLL.DLL. Let's check each of these suspicious functions : 
+
+
+
+_____________________________isDemoKey____________________________
+
+
+
+
+
+Exported fn(): isDemoKey - Ord:000Ah
+
+//...
+
+:100031D4   test eax, eax
+
+:100031D6   je 100031E8
+
+:100031DC   xor eax, eax
+
+:100031DE   jmp 100031F2
+
+:100031E3   jmp 100031F2
+
+:100031E8   mov eax, 00000001
+
+:100031ED   jmp 100031F2
+
+:100031F2   pop edi
+
+:100031F3   pop esi
+
+:100031F4   pop ebx
+
+:100031F5   leave
+
+:100031F6   ret 0004
+
+
+
+I've left most of the code out because it really doesn't matter how 
+
+&quot;isDemoKey&quot; is implemented. The only thing we're interested in, 
+
+is its interface (don't forget that these are *exported* functions 
+
+- try to think of this as object oriented cracking :-). 
+
+So these few lines of assembly tell us enough: isDemoKey either 
+
+returns 0 or 1 in EAX. 
+
+(1 in EAX most likely means the key is a 'drop dead' key, 0 means 
+
+you paid for the key; we'll check this later in SoftICE)
+
+
+
+__________________________whatIsThis_____________________________
+
+
+
+
+
+Exported fn(): whatIsThis - Ord:000Eh
+
+//...
+
+:10003211 C745FC2D010000          mov [ebp-04], 0000012D
+
+:10003218 E990000000              jmp 100032AD
+
+:1000321D C745FC2E010000          mov [ebp-04], 0000012E
+
+:10003224 E984000000              jmp 100032AD
+
+:10003229 C745FC2F010000          mov [ebp-04], 0000012F
+
+:10003230 E978000000              jmp 100032AD
+
+:10003235 C745FC31010000          mov [ebp-04], 00000131
+
+:1000323C E96C000000              jmp 100032AD
+
+:10003241 C745FC32010000          mov [ebp-04], 00000132
+
+:10003248 E960000000              jmp 100032AD
+
+:1000324D C745FC33010000          mov [ebp-04], 00000133
+
+:10003254 E954000000              jmp 100032AD
+
+:10003259 C745FC30010000          mov [ebp-04], 00000130
+
+:10003260 E948000000              jmp 100032AD
+
+:10003265 C745FC00000000          mov [ebp-04], 00000000
+
+:1000326C E93C000000              jmp 100032AD
+
+//...
+
+:100032AD 8B45FC                  mov eax, dword ptr [ebp-04]
+
+:100032B0 E900000000              jmp 100032B5
+
+:100032B5 5F                      pop edi
+
+:100032B6 5E                      pop esi
+
+:100032B7 5B                      pop ebx
+
+:100032B8 C9                      leave
+
+:100032B9 C20400                  ret 0004
+
+
+
+Again, most of the code is left out. We see that &quot;whatIsThis&quot; returns 
+
+one of the following in EAX : 12D, 12E, 12F, 131, 132, 133, 130 or 0. 
+
+What do these numbers stand for, you ask?? Patience, first verifyKey... 
+
+
+
+--------------------------intermezzo-------------------------------
+
+Quoting Larry Wall (father of the Perl language) :
+
+&quot;the three great virtues of a programmer: laziness, impatience, and 
+
+hubris.&quot; Well, these three &quot;virtues&quot; are, in fortiori, applicable to 
+
+crackers (IMO). 
+
+But think about it: the latter is a consequence of the former, because 
+
+IF the protectionists were to put more work protecting their software, 
+
+we would HAVE TO do the same for our cracks! 
+
+But that ... is a BIG, VERY BIG IF.
+
+The only way out of this vicious circle is to crack ALL programs to 
+
+pieces, in order to force the protectionist to take more care &amp; pride 
+
+in their work.
+
+
+
+The Perl language, by the way, is included on this CDROM and is a very 
+
+nice &amp; practical language indeed. The quote is from Larry Wall's very 
+
+funny &amp; good book &quot;Programming Perl&quot;. There used to be a complete online 
+
+version of the book available 
+
+at <A href="javascript:if(confirm('http://online-books.oreilly.com/books/webref/perl/index.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://online-books.oreilly.com/books/webref/perl/index.htm'" tppabs="http://online-books.oreilly.com/books/webref/perl/index.htm">http://online-books.oreilly.com/books/webref/perl/index.htm</A>, 
+
+maybe it's still there...
+
+--------------------------------------------------------------------------
+
+
+
+____________________________verifyKey_____________________________
+
+
+
+Exported fn(): verifyKey - Ord:0009h
+
+//...
+
+:10002349 E815000000              call 10002363
+
+:1000234E 83C408                  add esp, 00000008
+
+:10002351 8945FC                  mov dword ptr [ebp-04], eax
+
+:10002354 8B45FC                  mov eax, dword ptr [ebp-04]
+
+:10002357 E900000000              jmp 1000235C
+
+:1000235C 5F                      pop edi
+
+:1000235D 5E                      pop esi
+
+:1000235E 5B                      pop ebx
+
+:1000235F C9                      leave
+
+:10002360 C20400                  ret 0004
+
+
+
+Conclusion : verifyKey return its result in eax.
+
+
+
+__________________________________________________________________________________
+
+
+
+Now, to be sure these functions really do what we hope they do, we 
+
+need SoftICE. 
+
+But before we do that we need to get a feel of out target, so we 
+
+start setup.exe, we then fill in some bogus keys to see what happens... 
+
+Well, we get a little messagebox saying that the keys are invalid. 
+
+Now we fill in the 'drop dead' keys we received with the package, 
+
+press &quot;next&quot; and... we simply get the next screen. 
+
+OK, now press 'back' or 'cancel' to return to the first screen.
+
+Fire up SoftICE and let the SoftICE Symbol Loader load the exports of 
+
+MYDLL.DLL.  
+
+We then set execution breakpoints on each of these functions 
+
+(BPX verifyKey; 
+
+ BPX whatIsThis; 
+
+ BPX isDemoKey). 
+
+Again, we enter the 2 keys we received from Softway. Press the &quot;OK&quot; 
+
+button... SoftICE immediately pops up at verifyKey. 
+
+All we need to know about verifyKey, is what kind of result it returns 
+
+in EAX; so we simply enter &quot;G @SS:ESP&quot; in SoftICE (or press F11) to 
+
+return to the calling function, and we see there that EAX = 0. 
+
+We press F5 to continue... SoftICE pops up at whatIsThis, press 
+
+F11 to return... EAX = 12E. 
+
+We take note and continue with F5. 
+
+It's now isDemoKey's turn to pop up, again F11... EAX = 1... F5...
+
+Now SoftICE pops at verifyKey for the second time. Well, this is 
+
+MYDLL.DLL checking the second key. The second time around we have :
+
+     verifyKey   -&gt; EAX = 0
+
+     whatIsThis  -&gt; EAX = 131
+
+     isDemoKey   -&gt; EAX = 1
+
+We could already try to draw some conclusions here, but let's try the 
+
+same routine with some *bogus* keys. If you would do this, you'd get 
+
+twice (for 2 keys) :
+
+     verifyKey   -&gt; EAX = 1
+
+     whatIsThis  -&gt; EAX = 0
+
+     isDemoKey   -&gt; doesn't get called
+
+You should be getting the picture by now : 
+
+     verifyKey   -&gt; returns 0 if the key was valid, 1 if invalid
+
+     whatIsThis  -&gt; returns 0 if invalid key, another value 
+
+                    (see note [2]) if valid
+
+     isDemoKey   -&gt; returns 1 if the key was a demo key, 0 if key 
+
+                    was paid for
+
+
+
+    [2] for the &quot;other&quot; value we have so far :
+
+        12E -&gt; iff the valid key was for the Workstation option
+
+        131 -&gt; iff the valid key was for the SDK option
+
+    
+
+Let's try the other return values to see what they mean. This is a 
+
+typical and VERY important reversing approach. 
+
+Therefore we need to enter some bogus key, and upon return from 
+
+verifyKey, we change the value in EAX from 1 to 0. We change the
+
+ return value of whatIsThis from 0 to (12D | 12F | 130 | 132 | 133), 
+
+and we also make sure isDemoKey returns 0 (=full version).
+
+Doing this, the setup program will reveal which versions match which 
+
+keys. 
+
+Don't forget that, using this method, you COULD trick the setup program 
+
+to install whatever version you want, BUT (a) this is not the point 
+
+of the essay, and 
+
+(b) you'll need to crack the program a 2nd time after installation 
+
+(and the 2nd crack is not as trivial as this one).
+
+
+
+So, after having tried all combination we get the following list :
+
+    12D = Workstation Lite
+
+    12E = Workstation
+
+    12F = Server
+
+    130 = Bad key
+
+    131 = X11R6 Server
+
+    132 = SDK
+
+
+
+Up to now everything we've done has been pretty elementary, but did you 
+
+know that that was the hardest part of this crack? We are now simply going 
+
+to use these three functions to generate valid serial numbers for us!!
+
+How ? Well, since the functions are exported, we'll just write a program 
+
+that *imports* these functions. We will repeatedly call the three functions 
+
+and test their results until we have correct keys!
+
+
+
+Here's the idea in pseudo-code :
+
+
+
+    WHILE (we haven't found enough keys yet) DO
+
+        generate a key to test (see note [3])
+
+        test key in verifyKey
+
+        test key in whatIsThis
+
+        test key in isDemo
+
+        IF (the key is good) THEN
+
+            print the key
+
+			print what kind of key it is
+
+        ELSE
+
+            simply try another key
+
+        END
+
+    END	
+
+		
+
+    [3] We are going to loop over all possible keys that	
+
+        have the same form as the keys we received from Softway. 
+
+        The keys you'll receive will look something like &quot;fSu,0qw?eSK&quot;, 
+
+        so this means all keys of length 11 (eleven) that are a 
+
+        combination of all possible letters, all possible digits, 
+
+        and all possible punctuation symbols will be tried).
+
+        In the code of my program, however, you'll see that I only 
+
+        try combinations in the following subset 
+
+
+
+&quot;ABCDEFGH=JKLMN*PQRSTUVWXYZabcdefghijk?mnopqrstuvwxyz()23456789+/&quot; , 
+
+
+
+        this is because I had a quick look at what the program 
+
+        compares the input key to. But even if hadn't done that, the 
+
+        program would still find the good keys, it would only take a 
+
+        little longer.
+
+	    
+
+First a note : I'm a real newbie at Windows programming, in fact the 
+
+following code is the second Windows program I've ever made (the first 
+
+one, 2 weeks ago, was a program that simply displayed a message box :-), 
+
+so bear with me if I've made some stupid mistake(s). 
+
+But it does compile and work!
+
+
+
+For those of you who know even less of Windows programming than I do :
+
+I chose to dynamically load the DLL, which you should do like this (I 
+
+think)
+
+    -&gt; define a global handle : HMODULE hlib
+
+    -&gt; load MYDLL.DLL like : HMODULE LoadLibrary(&quot;MYDLL.DLL&quot;)
+
+    -&gt; declare the imported function
+
+    -&gt; get a pointer to the function like: 
+
+       FARPROC GetProcAddress(hlib,&quot;verifyKey&quot;);
+
+    -&gt; call the function
+
+    -&gt; free the DLL like : FreeLibrary()
+
+	
+
+Now, how on earth are we going to declare a function if we don't really 
+
+know its signature (all we do know is that it returns &quot;something&quot; in EAX)?
+
+Well, you simply call it with whatever parameters you chose, and then 
+
+when you try to compile it, the compiler will do the rest for us by 
+
+flagging an error AND giving the real signature of the function.
+
+For instance, when I declared the function verifyKey with :
+
+    int verifyKey(char*);
+
+the compiler told me that it really should be :
+
+    void cdecl (*verifyKey)(void*, long);
+
+
+
+That told me all I needed, except that I had no clue whatsoever what the 
+
+hell &quot;cdecl&quot; meant! So I looked it up, and found out that it's some special 
+
+calling convention where the function the *caller* of a function cleans 
+
+up the stack....
+
+I didn't really figure out what that all meant for me, so I tried a few 
+
+things (using SoftICE as a true debugger, finally!! :-), and ended up 
+
+with a solution only a cracker could have come up with : inline assembly 
+
+to get the stack pointer to point to what it should be pointing to!
+
+
+
+Anyway, here's the code : </PRE>
+
+<XMP>
+
+_________________________________OpenNT.cpp______________________________________
+
+/*
+
+ * This program generates serial numbers for OpenNT 2.0
+
+ * After a couple of minutes, valid keys should start to appear on the 
+
+ * screen.
+
+ * The program imports MYDLL.DLL, so make sure that in your PATH
+
+ *
+
+ * I managed to compile it with VC++ 5 (choose &quot;console, Win32 app&quot;) 
+
+ * using its
+
+ * DEFAULT configuration. If turn on optimizations, the program will 
+
+ * probably crash!
+
+ * (just type &quot;cl OpenNT.cpp&quot; at the command prompt)
+
+ *
+
+ * Also BC++ 5 managed to spit out some executable, again using the 
+
+ * default 
+
+ * configuration.
+
+ * (just type &quot;bcc32 OpenNT.cpp&quot; at the command prompt)
+
+ */
+
+
+
+#include <WINDOWS.h>
+
+#include <STRING.h>
+
+#include <IOSTREAM.h>
+
+
+
+HMODULE hlib;
+
+
+
+void checkIt(char* key)	{
+
+    int result;
+
+    bool goodKey = true;
+
+	
+
+    void cdecl (*isWhat)(void*, long);
+
+    isWhat = (void cdecl(*)(void*, long)) GetProcAddress(hlib, 
+
+&quot;whatIsThis&quot;);
+
+
+
+    (*isWhat)(key, 0);          // the first parameter is a pointer to 
+
+our key;
+
+                                // the second parameter doesn't seem to 
+
+be used,
+
+                                // so I simply chose 0
+
+
+
+    _asm mov [result], eax      // inline assembly to get to the value 
+
+in EAX
+
+
+
+    char version[32];
+
+    switch(result)	{
+
+        case 0x012D : strcpy(version, &quot;WorkStation Lite&quot;);  break;
+
+        case 0x012E	: strcpy(version, &quot;WorkStation&quot;);       break;
+
+        case 0x012F : strcpy(version, &quot;Server&quot;);            break;
+
+        case 0x0131 : strcpy(version, &quot;SDK&quot;);               break;
+
+        default	    : goodKey = false;
+
+    }
+
+
+
+    if (goodKey)    {
+
+        void cdecl (*isDemo)(void*, long);
+
+        isDemo = (void cdecl(*)(void*, long)) GetProcAddress(hlib, 
+
+&quot;isDemoKey&quot;);
+
+        (*isDemo)(key, 0);                      // call isDemoKey
+
+        _asm mov [result], eax                  // get result in EAX
+
+
+
+        cout <KEY << ">   &quot; << version; if (result) cout << " Demo version."; cout << endl; } } int main() { cout << "Press Control+C when you've seen enough..." << endl; char key[12]="ABCDEFGH=JK" ; const char symbol[]="ABCDEFGH=JKLMN*PQRSTUVWXYZabcdefghijk?mnopqrstuvwxyz()23456789+/" ; // these are the 64 symbols we'll use make our key int result="1;" hlib="LoadLibrary(&quot;MYDLL.DLL&quot;);" void cdecl (*verKey)(void*, long); verKey="(void" cdecl(*)(void*, long)) GetProcAddress(hlib, "verifyKey"); // this is the loop over all possible combinations for key of length 11 for (int i="0" ; i < 64 ; i++) { key[0]="symbol[i];" for (int j="0" ; j < 64 ; j++) { key[1]="symbol[j];" for (int k="0" ; k < 64 ; k++) { key[2]="symbol[k];" for (int l="0" ; l < 64 ; l++) { key[3]="symbol[l];" for (int m="0" ; m < 64 ; m++) { key[4]="symbol[m];" for (int n="0" ; n < 64 ; n++) { key[5]="symbol[n];" for (int o="0" ; o < 64 ; o++) { key[6]="symbol[o];" for (int p="0" ; p < 64 ; p++) { key[7]="symbol[p];" for (int q="0" ; q < 64 ; q++) { key[8]="symbol[q];" for (int r="0" ; r < 64 ; r++) { key[9]="symbol[r];" for (int s="0" ; s < 64 ; s++) { key[10]="symbol[s];" (*verKey)(key, 0); // call MYDLL's verifyKey _asm sub esp, 4 // change the stack pointer _asm mov [result], eax // get value in EAX if (!result) // does verifyKey say it's good? checkIt(key); // then send it to whatIsThis } } } } } } } } } } } BOOL ret="FreeLibrary(hlib);" return 0; } </xmp><pre>
+
+____________________________________________________________________________________
+
+
+
+The program starts the loop with the key &quot;AAAAAAAAAAA&quot;, then it checks 
+
+&quot;AAAAAAAAAAB&quot;, 
+
+and so on...
+
+The output will be of the form :
+
+    AJKDS9)fdoe  -&gt;  Server
+
+    lkjsdfhuyee  -&gt;  WorkStation
+
+    67e4dsfew78  -&gt;  SDK
+
+   ....
+
+(these keys are false of course!!)
+
+
+
+
+
+The OpenNTif component of OpenNT isn't covered here because it's a 
+
+different installation all together. I've cracked that the 
+
+&quot;conventional&quot; way myself, but I'm not going to bother you with that, 
+
+because you could probably crack it blindfolded! ( -&gt; a simple 
+
+&quot;jmp goodguy / jmp badguy&quot; inside the file &quot;PINSTALL&quot;, and once 
+
+it's installed, there are no further checks) 
+
+-&gt; you see, I even left you a piece of the cake ;-)
+
+
+
+
+
+That's all for now,
+
+
+
+    chown   <chown__@hotmail.com>
+
+
+
+    
+
+--------
+
+ADDENDUM
+
+--------
+
+I've just checked everything again, and it seems that the executables 
+
+created by VC++ 5 and BC++ 5 work differently !
+
+The executable created by BC++ 5 doesn't find as many valid keys as the 
+
+one compiled by VC++; it just seems to skip many valid keys!
+
+It doesn't really matter, because they both generate enough valid keys 
+
+anyway, but I just thought I'd let you know...
+
+Another point to remember is that with &quot;default configuration&quot; I meant 
+
+that VC++ MUST compile the code *with debug* information (which is the 
+
+default setting if I'm not mistaken). If you compile it without, the 
+
+executable will crash (on my machine anyway). 
+
+The executable of BC++ will run with or without debug info.         
+
+
+
+</pre>   
+
+ <font color="green">(c) Chown 1997. All rights reserved</font>
+
+<hr ALIGN="CENTER" WIDTH="100%" SIZE="3">
+
+<center><i>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</i></center>
+
+<br><center>
+
+
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><a HREF="advanced.htm" tppabs="http://www.anticrack.de/fravia/advanced.htm">Back to Advanced Cracking </a> 
+
+ 
+
+<hr width="33%">
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">
+
+<a HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage </a>
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"> 
+
+<a HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links </a> 
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0">
+
+<a HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity </a> 
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><a HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC </a>
+
+
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><a HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays </a>
+
+
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><a HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">Academy database </a><br>
+
+
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><a HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools </a>
+
+
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><a HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails </a>
+
+
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><a HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut CGI-scripts </a>
+
+
+
+
+
+
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><a HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms </a>
+
+
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><a HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_Fravia </a><br>
+
+
+
+
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><a HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering illegal? </a></center>
+
+<center><hr ALIGN="CENTER" WIDTH="100%" SIZE="2"></center>
+
+</body>
+
+</html> 
+
+
+

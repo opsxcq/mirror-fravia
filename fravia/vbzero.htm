@@ -1,0 +1,393 @@
+<html><HEAD>
+
+<TITLE>vbzero</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+<CENTER><H2>Cracking visual basic, a lesson for the programmers</H2><H4><I>by Zero</I><BR>
+
+
+
+<BR>(14 July 1997, slightly edited by Fravia+)</H4>
+
+<HR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">Courtesy of Fravia's page of reverse engineering
+
+<BR><BR><I>Well, Visual Basic cracking can always come at hand... here is another essay 
+
+by Zero, master of the &quot;save disabled&quot; protections</I></CENTER>
+
+<BR>
+
+<HR size="2">
+
+<PRE><FONT size="+2">
+
+Cracking a Visual Basic program with a decompiler
+
+</FONT><FONT size="+1">
+
+Cracking Plasmid Toolkit 1.3
+
+</FONT>
+
+Plasmid Toolkit version 1.3 (1996) from Microbe Software can be found at
+
+<A href="javascript:if(confirm('http://129.105.116.5/fravia/ptk-demo.exe  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://129.105.116.5/fravia/ptk-demo.exe'" tppabs="http://129.105.116.5/fravia/ptk-demo.exe">ftp.sunet.se/pub/molbio/ibmpc/ptk-demo.exe</A>.
+
+The main exe file is PTK13.EXE (1 040 448 bytes).
+
+
+
+ This program is pretty useless, even for a DNA hacker like me, but I
+
+decided to crack it, because the authors of this program were too pushy
+
+asking for my money and I don't like that. As it turned out, this program is
+
+also good candidate for the most stupid protection award (IMHO).
+
+ To make it clear: I can understand if a programmer implements a simple
+
+protection scheme knowing that it will protect against average users, (even 
+
+if the more complicated ones will be useless against dedicated crackers :-)
+
+ What I can't understand is, why they put two locks on the front door and
+
+let the back door wide open. As you will see, in this case it probably took the
+
+programmer more time to code and debug the protection routine than us to
+
+crack it. 
+
+
+
+Let's see the target:
+
+ During installation, we observe that the program installs vbrun300.dll,
+
+so we have another Visual Basic &quot;toy application&quot;, on our hands. After 
+
+starting it, the first thing we get is a registration form (nice welcome!) 
+
+with Name, Company and Licence info required. Pressing the Cancel button
+
+takes us through a nag screen (which reminds us about the unregistered
+
+status of the program) to the working area. We load up a sample map and
+
+quickly discover that the export and save functions have been disabled and 
+
+that in the middle of our plasmid graphic sits a &quot;unregistered version&quot; sign.
+
+Upon leaving the program we get another nag screen, reminding us to register
+
+in order &quot;to enable all functions&quot;.
+
+ Well, we have here an arsenal of nag functions (and a licence agreement
+
+that even Micro$oft could envy), all these problems can be cured entering 
+
+a correct licence number.
+
+
+
+Let's crack:
+
+ This program, written in Visual Basic, means that WDASM is no good, and 
+
+that debugging with Softice will not be a great fun, either. 
+
+You could crack the registration as written in the fine essay by Razzia, 
+
+of course... yet let's see if there is another... a more &quot;relaxed&quot; way. 
+
+Let's try first of all DoDi's excellent VBdecompiler, an obvious choice. 
+
+You can get the demo version from his homepage at 
+
+<A href="tppmsgs/msgs2.htm#241" tppabs="http://www.anticrack.de/fravia/tppmsgs/msgs2.htm#241">http://ourworld.compuserve.com/homepages/DoDi/</A> but it 
+
+can't decompile large files like ptk13.exe, so I suggest to get the registered
+
+version of this nice decompiler, somehow :-)
+
+
+
+ Let the decompiler operate on the PTK13.EXE file. Surprise! It works nicely
+
+and we practically have the VB source code in our hands (what a shame!).
+
+The meaningful variable names are gone, but that's really no problem 
+
+for us.
+
+After a little searching, we find the interesting REGFORM.BAS module.
+
+Ok, let's peek into it! All right, the code deals with the registration,
+
+and the most interesting part is this:
+
+
+
+Sub OKButton_Click () 
+
+Dim l005A As Integer <FONT color="purple">&lt;-Flag</FONT>
+
+Dim l005C As String
+
+Dim l0060 As Integer
+
+l005A% = fn6338(rname, rlicence) <FONT color="purple">&lt;-Flag set here</FONT>
+
+If  (l005A% = 1) Then  
+
+  gv0668 = Trim$(rlicence.Text) <FONT color="purple">&lt;-Good guy goes here</FONT>
+
+  gv0664 = Trim$(rname.Text)
+
+  gv066C = Trim$(rcomp.Text)
+
+  l005C$ = gv0464 &amp; &quot;ptk.ini&quot;
+
+  l0060% = extfn1050(&quot;Registration&quot;, &quot;Registered User&quot;, gv0664, l005C$)
+
+  l0060% = extfn1050(&quot;Registration&quot;, &quot;Company&quot;, gv066C, l005C$)
+
+  l0060% = extfn1050(&quot;Registration&quot;, &quot;Licence Number&quot;, gv0668, l005C$)
+
+  PFWmenu.Export.Enabled = True <FONT color="purple">&lt;-Let's enable everything for good guy</FONT>
+
+  PFWmenu.save.Enabled = True
+
+  PFWmenu.save_as.Enabled = True
+
+  PFWmenu.SaveButton.Enabled = True
+
+  Unload RegForm
+
+Else 
+
+  gv0668 = &quot;&quot; <FONT color="purple">&lt;-Bad guy goes here</FONT>
+
+  rlicence.Text = &quot;&quot;
+
+  MsgBox &quot;Invalid Licence Number&quot;, 48, &quot;Registration Failure&quot;
+
+  Exit Sub
+
+End If
+
+End Sub
+
+
+
+Function fn6338 (p0068, p006C As Variant) As Integer <FONT color="purple">&lt;-This sets the flag</FONT>
+
+Dim l0072 As String
+
+If  (Len(Trim$(p006C)) &lt;&gt; 16 Or Mid$(Trim$(p006C), 6, 1) &lt;&gt; &quot;-&quot;) Then
+
+  fn6338 = 0 	
+
+  Exit Function			
+
+End If
+
+l0072$ = fn2030(p0068) <FONT color="purple">&lt;- Last ten char of the licence is calculated</FONT>
+
+If  (UCase$(Mid$(Trim$(p006C), 7, 10)) = l0072$) Then	
+
+  fn6338 = 1			
+
+Else
+
+  fn6338 = 0
+
+End If
+
+End Function
+
+
+
+ Well, the above snippet talks for itself. The licence code is checked
+
+with the fn6338 function which gets the name and registration code as 
+
+input. The code must be 16 char long with the 6th char being a dash.
+
+ The last ten character of the code are created by the fn2030 function
+
+which gets the name string as input. Ok, let's search for the fn2030
+
+function in the decompiled modules. We find it in MODULE5.BAS:
+
+
+
+Function fn2030 (p000A As Variant) As String
+
+Dim l000E As String
+
+Dim l0010 As String
+
+Dim l0012 As Integer
+
+Dim l0014 As String
+
+Dim l0016 As Integer
+
+Dim l0018 As String
+
+Dim l001A As Integer
+
+Dim l001C As Integer
+
+Dim l001E As Integer
+
+l000E$ = Trim$(p000A)
+
+l000E$ = LCase$(l000E$)
+
+l0010$ = &quot;&quot;
+
+For l0012% = 1 To Len(l000E$) <FONT color="purple">&lt;-Removing spaces</FONT>
+
+  l0014$ = Mid$(l000E$, l0012%, 1)
+
+  If  (l0014$ &lt;&gt; &quot; &quot;) Then
+
+    l0010$ = l0010$ + l0014$
+
+  End If
+
+Next l0012%
+
+l0016% = Len(l0010$)
+
+l0018$ = &quot;&quot;
+
+If  (l0016% &lt;= 10) Then <FONT color="purple">&lt;-Adjusting the lenght to 10 char</FONT>
+
+  l0010$ = &quot;bibblefnord&quot; + l0010$
+
+  l0010$ = Right$(l0010$, 10)
+
+End If
+
+For l0012% = 10 To 1 Step -1 <FONT color="purple">&lt;-Calculation of code</FONT>
+
+  l0014$ = Mid$(l0010$, l0012%, 1)
+
+  For l001A% = l0012% - 1 To 2 Step -1
+
+    l001C% = Asc(l0014$) Xor Asc(Mid$(l0010$, l001A%, 1))
+
+  Next l001A%
+
+  If  (l001C% &gt; 90 Or l001C% <48) Then l001E%="l001C%" Mod 42 l001E%="l001E%" + 48 If (l001E% &gt; 57 And l001E% < 65) Then l001E%="l001E%" 7 End If l0014$="Chr$(l001E%)" End If l0018$="l0018$" + l0014$ Next l0012% fn2030="l0018$" End Function Finally, here it is, the heart of the code "generator..class" tppabs="http://fravia.org/generator..class" We can see the adjustment of the name string with "<Font color="purple">bibblefnord</font>&quot;, some XORing, etc., but
+
+in fact we do not need to understand the precise mechanism of the code
+
+generation to get a good code. We can rip out this function and modify it
+
+a bit, to get the name input (p000A) from the keyboard and print the result
+
+to the screen (actually, the &quot;12345-&quot;+result string, keeping in mind what
+
+the fn6338 function does) and we get a perfect code generator in basic!
+
+(Before you run the code you might have to tailor it a bit to your basic
+
+interpreter, like with MS QBasic trim$ must be replaced by consecutive
+
+Ltrim$ and Rtrim$ functions, etc).
+
+ I did not write here any valid licence code, because the purpose of this
+
+essay is not to distribute a crack for this useless program, but to show:
+
+
+
+1) The beginner crackers that they can spare a lot of work by trying a VB
+
+decompiler, before attacking with Softice.
+
+
+
+2) The shareware VB programmers that it is useless to implement &quot;tricky&quot;
+
+code generators, if they don't protect against decompilation. Not even
+
+mentioning that they show their &quot;source code&quot; to the whole world. 
+
+(&quot;Antidecompiler&quot; tools can be found on Dodi's homepage).
+
+
+
+Finally, I would like to thank +ORC and his' students for the fine essays
+
+and Fravia+ for his amazing WEB site. 
+
+
+
+Written by ZER0
+
+
+
+</pre>
+
+<br>
+
+<hr ALIGN="CENTER" WIDTH="100%" SIZE="3">
+
+<center><i>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</i></center>
+
+<br><center>
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><a HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#84'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#84"> homepage</a><img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"> 
+
+<a HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#73'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#73"> links</a> 
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0">
+
+<a HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm"> anonymity</a> 
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><a HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm"> +ORC</a>
+
+
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><a HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#82'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#82"> students' essays</a>
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><a HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm"> tools</a><img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><a HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm"> cocktails</a><br>
+
+
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><a HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm"> search_forms</a>
+
+
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><a HREF="corporate.htm" tppabs="http://www.anticrack.de/fravia/corporate.htm"> corporate</a>
+
+
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><a HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm"> mailFraVia</a><br>
+
+
+
+
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><a HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm"> Is reverse engineering legal?</a></center>
+
+<center><hr ALIGN="CENTER" WIDTH="100%" SIZE="2"></center>
+
+
+
+</body>
+
+</html>

@@ -1,0 +1,1202 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>footste.htm</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+<CENTER><FONT size="+3">NORTON SPEED DISK TRIAL 1.0<BR>for Windoze NT4</FONT>
+
+<BR>(The mysterious IRATRIAL.DLL and the &quot;vectoring breakpoint&quot; trick)<BR>
+
+  <BR>
+
+<H4>by FootSteps<BR><BR>
+
+(21 October 1997, slightly edited by fravia)</H4>
+
+<HR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">Courtesy of fravia's page 
+
+of reverse engineering<BR>
+
+<BR><I>Well, here is what FootSteps  wrote to me (among other things... he seems to have  waited 15 years long the moment to start cracking :-)</CENTER></I><PRE>
+
+Hi Fravia,
+
+my essay it's about a time crack with WindozeNT4 inside a *very* curiously 
+
+called DLL.
+
+
+
+It's very difficult to be on the other side of the mirror : Me, writing an
+
+essay. I still cannot believe it... I'll try to be the less hopeless and 
+
+boring as possible!</PRE><I><CENTER>
+
+Well I don't find this essay boring at all... in fact the style that FootSteps uses 
+
+is quite humorous... well I must confess that I like essays where INTUITION is given 
+
+the merits and the role that &quot;zen&quot; deserves... I like a lot the <FONT color="blue">&quot;vectoring breakpoint&quot;</FONT> technique that FootSteps describes... when your target let's a breakpoint you need snap much too much, you use ANOTHER breakpoint to be transported in the correct part of the code AND THEN you
+
+set your &quot;correct&quot; breakpoint and gather the code snippet you were looking for!<BR> At the bottom you'll find quite a lot of (may be too many) &quot;requests&quot;
+
+</CENTER></I>
+
+<HR size="6"><PRE>
+
+NORTON SPEED DISK TRIAL 1.0 for Windoze NT4 or
+
+The mysterious dynamic link library : IRATRIAL.DLL
+
+==================================================
+
+
+
+When I reverse I should confess that I do not like much the 
+
+&quot;dead listing&quot; way.
+
+Recently, I recognised a little of myself inside <A href="a65pp1.htm" tppabs="http://www.anticrack.de/fravia/a65pp1.htm">As65pp</A>'s essay. 
+
+He wrote :<FONT color="purple">
+
+  &gt; I'm not that excited about staring at huge code-listings 
+
+  &gt; for hours on end</FONT>
+
+Yeah, that's me !
+
+<FONT color="purple">
+
+  &gt; To be honest, I wasn't any good at maths in school either :(</FONT>
+
+Err... I think I wasn't too...
+
+<FONT color="purple">
+
+  &gt; Nevertheless I was able to crack some programs by using a bit 
+
+  &gt; of common-sense and imagination</FONT>
+
+
+
+So do I (And a big part of the cracking scene too, I suppose).
+
+Sure we must always learn (it was a thing +ORC was right).
+
+But the simpler world of yesterday was a little easier for our 
+
+poor brains: my old 8bits computers weren't too much difficult to 
+
+program in assembler, and a 64ko disassembled file was just right to 
+
+manage entirely.
+
+Today it's just a little too hard to have knowledge of thousands
+
+of API, to switch continuously from W95 to WNT4, sometimes from 
+
+Dos to Unix...
+
+I will try to imagine the blackboard on fravia+'s site in just 
+
+10 years:
+
+<FONT color="purple">
+
+&quot;Hi, I know a little Kernel, but I lack knowledge about the
+
+GDI. A friend of mine could help: he knows the USER pretty well. 
+
+Perhaps someone else could help, we have been cracking for 20 years, 
+
+but we need advices about the last LineTo() API, which is a little 
+
+too complex for us. We are reverse-engineering the new Notepad.exe 
+
+for SuperWindowsJaved 2003, (Notepad_SWJ_2003.exe, 30.000.000.000 
+
+bytes&quot; :----)</FONT>
+
+
+
+Well, I remember the title of a lesson which +ORC never released. 
+
+It was : &quot;Intuition &amp; Luck&quot;.
+
+These are the two things I use.
+
+
+
+
+
+NORTON SPEED DISK TRIAL 30 Days 1.0 for Windoze NT4
+
+by SYMANTEC, *** <A href="tppmsgs/msgs2.htm#245" tppabs="http://www.anticrack.de/fravia/tppmsgs/msgs2.htm#245">http://www.symantec.com</A> ***
+
+
+
+Tools you need :
+
+SoftIce 3.2 or 3.01 for NT4 (everywhere)
+
+WDasm89 (regged) or 8.5 or 8.7 (cracked)
+
+WindozeNT4 itself
+
+
+
+I was gently installing my NT4 service pack 3, when I thought: 
+
+Hey, it's just two months I'm using this OS, I know it's watching 
+
+his file system itself, yet I would like to clean my hard drive. 
+
+Hmm... Well, Start Button, Accessories, system tools and... what? 
+
+No ScanDisk? No Defrag? 
+
+Well, a click on the HD properties, tools, and look: 
+
+&quot;No defragmentation tool is currently installed&quot;
+
+(And you can search, but there's none coming with NT)
+
+Hey, that's nevertheless a good thing : a society different than 
+
+Micro$oft can offer a tool for this system.
+
+OK, I Heard that this good Pete made his utilities for NT, too. 
+
+(And it was a good idea, because of the As65pp1 essay on the other NT
+
+disk defragmenter, DiskKeeper). 
+
+And obviously, none of my friends has a copy of these Utilities, all 
+
+of them stupidly using only Windoze95
+
+(I must confess I'm a stupid guy too, using this OS to play games, a
+
+little too much... Yet only good games).
+
+Well, fired Netscape, visit Symantec, got the speed disk trial file.
+
+Installed it. Well, works nice. I was in a hurry to see his 
+
+protection instead of using it... guess this happens to all reverser...
+
+
+
+Well, let's go to work... less funny, but useful:
+
+
+
+Install Speed Disk trial. You must reboot, so reboot. Hope you've got
+
+a speed machine. I do not. I can assure you that debugging with NT4 is
+
+boring, coz you reboot often; and always the same soap: &quot;please wait
+
+while OS write info to disk&quot; and rebooting: &quot;OS loader...&quot; seems
+
+to last ages and ages... Sure Micro$oft got a deal with many cigarettes 
+
+and cafeine vendors in regard of the time you spend waiting along...
+
+Play a little with sd32 (speeddisk), see how it works, etc, etc.
+
+Note a nagscreen before the application.
+
+Profite to optimize your HD if you have never made it, since you loaded 
+
+this app!
+
+OK, let's pass to serious reversing: clock a month later. Fire Speed Disk.
+
+Oh, no! a silly nag : <FONT color="purple">&quot;This product trial period has expired...&quot;</FONT>
+
+No more defragmenting...
+
+This could have been very sad, but you know the right Web Sites, like 
+
+the one where you are reading this, and where you learn to laugh about 
+
+sad nagscreen protection schemes.
+
+Like usual, we clock back to the right month.
+
+Oh, no! a second nag : <FONT color="purple">&quot;Cannot locate a valid evaluation section in
+
+your registry...&quot;</FONT>
+
+
+
+We must know who's owner of the nag. Is it the executable, SD32 ? 
+
+Or is it one of the DLL installed with it ?
+
+Fire SoftIce. CTRL+D.
+
+TASK. This give &quot;No LDT&quot;. Hey, what's that ?
+
+HWND. This give &quot;Unable to find a desktop window&quot;.
+
+Hmm... What's up with Winnie ? When I use it with Windoze95, I...
+
+I ran to read the SoftIce manual. If you haven't understand run too!
+
+Everything is normal.
+
+We are not in the habitual W95, then type: PROC
+
+And you remark, between all the procs running on your system: SD32
+
+Interesting. This should say that this nag belong to SD32.EXE.
+
+This is true.
+
+But this is a little false as well: if you search the executable 
+
+SD32.EXE for words of nag-strings we have seen, like &quot;trial period 
+
+has expired&quot; or &quot;valid evaluation section&quot;, you won't find them...
+
+You'll find them in a very interesting file, if you search for these 
+
+last words inside <U>your whole HD</U> (or if you have sniffed the 
+
+installation of Speed Disk Trial), IRATRIAL.DLL, located in your hard
+
+disk at c:\Program Files\Symantec.
+
+
+
+Let's examine this curious DLL.
+
+Hmm, this name recalls all by itself its purpose! (Names ARE important 
+
+indeed): ira &quot;TRIAL&quot; !
+
+Let's disassemble it with W32Dasm.
+
+Your eyes should twinkle in front of the following imported function :
+
+MSVCRT.time. 
+
+Double-click on it. Yeah, just one reference in this file.
+
+With this, you must smell that the protection dwells here...
+
+
+
+But wait. One thing made me doubt. 
+
+Looking the exports of SD32.EXE, I didn't see any import 
+
+from IRATRIAL.DLL.
+
+This is a point I like someone to explain me. 
+
+How does the executable SD32.EXE know it calls the library 
+
+IRATRIAL.DLL (coz in fact, it use it ; see below).
+
+If you like tracing with Winnie, like me, you'll notice that you land
+
+inside the code of IRATRIAL.DLL from the code of SD32.EXE, here :
+
+
+
+* Reference To: ole32.CoInitialize, Ord:0025h
+
+                                  |
+
+:0040D483 FF15ACE14100            Call dword ptr [0041E1AC]
+
+:0040D489 8D45FC                  lea eax, dword ptr [ebp-04]
+
+:0040D48C 50                      push eax
+
+:0040D48D 68606C4100              push 00416C60
+
+:0040D492 56                      push esi
+
+:0040D493 57                      push edi
+
+:0040D494 68706C4100              push 00416C70
+
+
+
+* Reference To: ole32.CoCreateInstance, Ord:000Bh
+
+                                  |
+
+:0040D499 FF15B0E14100            Call dword ptr [0041E1B0] ;You land
+
+                                                            ;in IRATRIAL.DLL
+
+:0040D49F 85C0                    test eax, eax
+
+:0040D4A1 7C3A                    jl 0040D4DD
+
+:0040D4A3 57                      push edi
+
+:0040D4A4 8B45FC                  mov eax, dword ptr [ebp-04]
+
+:0040D4A7 56                      push esi
+
+
+
+* Possible StringData Ref from Data Obj -&gt;&quot;Norton Speed Disk Trial&quot;
+
+                                  |
+
+:0040D4A8 6874B84100              push 0041B874
+
+
+
+* Possible StringData Ref from Data Obj -&gt;&quot;Symantec&quot;
+
+                                  |
+
+:0040D4AD 6868B84100              push 0041B868
+
+:0040D4B2 8B00                    mov eax, dword ptr [eax]
+
+:0040D4B4 FF75FC                  push [ebp-04]
+
+:0040D4B7 FF500C                  call [eax+0C]                    ;You land in
+
+                                                                   ;IRATRIAL.DLL
+
+:0040D4BA 85C0                    test eax, eax
+
+:0040D4BC 7C14                    jl 0040D4D2
+
+:0040D4BE 57                      push edi
+
+:0040D4BF 8B45FC                  mov eax, dword ptr [ebp-04]
+
+:0040D4C2 57                      push edi
+
+:0040D4C3 57                      push edi
+
+:0040D4C4 8B00                    mov eax, dword ptr [eax]
+
+:0040D4C6 FF75FC                  push [ebp-04]
+
+:0040D4C9 FF5014                  call [eax+14]                    ;You land in
+
+                                                                   ;IRATRIAL.DLL
+
+And a lot of others connections...
+
+Remark that from the first call I noted above, Callole32.CoCreateInstance,
+
+you land in ole32 <U>before</U> landing in IRATRIAL.DLL.
+
+I can't explain The smart TRICK THAT this DLL uses to go into 
+
+memory.
+
+Try stepping over this Call (ole32.CoCreateInstance) with Winnie. 
+
+You'll see, in the code window the following report:
+
+
+
+NTICE: Load32 START=1180000 SIZE=9000 KPEB=80644020 MOD=IRATRIAL
+
+LDR: Automatic DLL relocation in sd32.exe
+
+LDR: Dll IRATRIAL.DLL base 10000000 relocated due to collision with
+
+                 D:\ProgramFiles\Norton\Speed Disk Trial\MFCEXT.DLL
+
+
+
+Uh? What's that? a collision with the Micro$oft MFC library? Are there 
+
+any wounded codesnippets around?
+
+Where is this curious process allowing the SD32.EXE file calling this
+
+unlisted DLL?
+
+I think I lack something...
+
+
+
+But I was sure (you know, luck &amp; intuition!) that all came from 
+
+this DLL, coz of his name. They could also have called it
+
+IRA30DAYSTRIALPROTECTIONLOOKHERE.DLL, this would have been the same 
+
+for me!
+
+
+
+Then, look with W32Dasm the imports of this curious library.
+
+Hey! You should jump seeing : MSVCRT.time !
+
+And another one: MSVCRT.locatime.
+
+And, if you are as much silly as me, you fire Winnie, make a :
+
+BPX MSVCRT!TIME (Assuring you've loaded all the exports in winice.dat)
+
+and you trace.
+
+And you trace.
+
+And you trace. And you trace again. Again.
+
+Well, I can assure you'll trace for a long time... and you will 
+
+eventually find, but this will happen ages later... Because the 
+
+comparison is far, far away...
+
+
+
+That's not zen at all.
+
+And I was not mad (not yet again).
+
+Then, I've stop tracing, took a sit and started thinking.
+
+Mmm... I was first thinking about these type of time-crippled software
+
+Often, this kind of reversing is very easy. The comparison between 
+
+installation date and current date is usually not very far away.
+
+But sometimes... Well, just one trial time soft I couldn't crack :
+
+this was (and still is) CorelDraw7 30 days Trial. I've never seen 
+
+a crack for this one (a good crack). A great protection, apparently. 
+
+Someone taking this gauntlet? What are all the +HCUkers doing? 
+
+I was hoping this one wasn't a hard type, like Corel, when I 
+
+remembered I did not have a look at the Registry Base.
+
+It was coz I haven't TechFacts for NT4. This program is indeed a 
+
+great tool</PRE><I><CENTER>Indeed! just try the orphan dll 
+
+function on your own hard disk (curiously called &quot;search for dll&quot;) and 
+
+you'll see wich TREASURES are inside <A href="javascript:if(confirm('http://fravia.org/tekfct95.zip  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tekfct95.zip'" tppabs="http://fravia.org/tekfct95.zip">techfakt</A></I> :-)</CENTER>
+
+<PRE>and I lack it with WindozeNT.
+
+
+
+I installed again Speed Disk, after a good cleanup of HD and registry,
+
+I started it again - It works fine - and
+
+I looked the modification in my HD and inside my registry myself, 
+
+comparing my old registry (always backup your registry before 
+
+installing and reversing!).
+
+I compared them too before and after the launch of Speed Disk.
+
+Then I did the same before and after clocking away and back a month.
+
+And I sniffed an interesting fact:
+
+
+
+My registry was altered this way, in the registry :
+
+[HKEY_CURRENT_USER\Software\Symantec\Norton Speed Disk Trial\1.0]
+
+this key: &quot;Evaluation&quot;
+
+contained following bytes :
+
+=hex:ed,27,31,d1,6e,66,0f,51,a4,7e,d8,ef,53,70,65,65,64,20,71,0c,\
+
+     56,6b,74,31,57,69,7f,6c,5c,53,86,92,9e,91,74,65,63,00
+
+
+
+Well, examining what's happening before and after launching Speed
+
+Disk, two bytes were each time changed :
+
+the first one , here &quot;ED&quot;, and the 27th one, here &quot;74&quot;, 
+
+were changed with other values.
+
+
+
+Then, I tried to change myself these bytes to some fake value, 
+
+such  as &quot;FF&quot; for the first one and &quot;00&quot; for the other one, and 
+
+then fired Speed Disk once more.
+
+Immediately, the nag &quot;Cannot locate a valid evaluation section in 
+
+your registry...&quot; nagging us like when we clocked back, remember?
+
+
+
+All right. All was sure, now. Each time SpeedDisk was fired, these 
+
+two values were changed, and they regard the time. 
+
+Time was out, bad value were in the key of the registry.
+
+Another look in the IRATRIAL.DLL and I point a finger, slowly on the
+
+following imported function : ADVAPI32.RegQueryValueExa
+
+There's only one place in the code where this DLL uses it.
+
+The DLL should know the registry key in order to place the string
+
+&quot;Cannot locate a valid evaluation&quot; which it contains and obviously 
+
+uses ADVAPI32.RegQueryValueExa as API.
+
+
+
+If you BPX MSVCRT!REGQUERYVALUEEXA you will break much too much before 
+
+the good snippet.
+
+No, we need a &quot;vectoring breakpoint&quot;, i.e. a breakpoint that brings us 
+
+in a part of the code where we'll be able to use the &quot;correct&quot; breakpoint 
+
+(in this case MSVCRT!REGQUERYVALUEEXA) without interferences.
+
+Therefore we'll use now as vectoring breakpoint BPX MSVCRT!TIME, for the 
+
+reasons that we have seen above.
+
+Hit F12 to return from MSVCRT, and you will land in IRATRIAL.DLL
+
+then, disable this vectoring breakpoint, and use <U>now</U>
+
+BPX MSVCRT!REGQUERYVALUEEXA.
+
+And you will land in the good portion of code:
+
+
+
+* Reference To: ADVAPI32.RegQueryValueExA, Ord:0136h
+
+                                  |
+
+:02C50 FF15A4610010            Call dword ptr [100061A4]		;HERE
+
+:02C56 8945F8                  mov dword ptr [ebp-08], eax
+
+:02C59 8B45F8                  mov eax, dword ptr [ebp-08]
+
+:02C5C E900000000              jmp 2C61				; curious jmp
+
+
+
+* Referenced by a Jump at Addresses:02C35(U), :02C5C(U)
+
+|
+
+:02C61 5F                      pop edi
+
+:02C62 5E                      pop esi
+
+:02C63 5B                      pop ebx
+
+:02C64 C9                      leave
+
+:02C65 C20C00                  ret 000C
+
+
+
+Remark this &quot;curious jmp&quot;, at offset 10002C5C : this jumps to the 
+
+offset just following, 2C61. The DLL is full of such boring 
+
+short-jumps. Works like an anti-debugging &quot;nagging&quot; for two reasons:
+
+- It's unpleasant when you trace : you think always, seeing a jmp:
+
+&quot;My, where the hell in the code we'll we land now ?&quot; And you go 
+
+right after it interrupting your thoughts...
+
+- It's really boring when you read the dead listing, coz you look at
+
+all the locations and you think always this is a important reference 
+
+to look for and in fact it's just a silly do-nothing jmp !
+
+
+
+Well, you make the ADVAPI32.RegQueryValueExA call, storing your
+
+&quot;evaluation&quot; key in memory (keep an eye on it), and from the 
+
+10002C65 location, we far RET 000C and land here :
+
+
+
+:016F6 E81F150000       call 10002C1A			; call ADVAPI32.RegQueryValueExA
+
+:016FB 85C0             test eax, eax			; is there a key ?
+
+:016FD 0F850A020000     jne 1000190D			; yes, no jmp
+
+:01703 C745D400000000   mov [ebp-2C], 00000000
+
+:0170A 8B4D08           mov ecx, dword ptr [ebp+08]
+
+:0170D 83C109           add ecx, 00000009
+
+:01710 E863180000       call 10002F78	               ; make checksum with
+
+                                                     ; the time and key
+
+:01715 50               push eax
+
+:01716 8B4D08           mov ecx, dword ptr [ebp+08]
+
+:01719 83C109           add ecx, 00000009
+
+:0171C E8141A0000       call 10003135			; make checksum with
+
+                                                     ; the time and key
+
+:01721 50               push eax
+
+:01722 6A26             push 00000026
+
+:01724 8B4508           mov eax, dword ptr [ebp+08]
+
+:01727 83C031           add eax, 00000031
+
+:0172A 50               push eax
+
+:0172B 8B4D08           mov ecx, dword ptr [ebp+08]
+
+:0172E E891030000       call 10001AC4			; make checksum with
+
+                                                     ; the time and key
+
+:01733 8B4D08           mov ecx, dword ptr [ebp+08]
+
+:01736 83C131           add ecx, 00000031
+
+:01739 E86F020000       call 100019AD
+
+:0173E 85C0             test eax, eax			
+
+:01740 0F844A000000     je 10001790			; no jmp and no interest
+
+:01746 6890400010       push 10004090
+
+:0174B 8B4508           mov eax, dword ptr [ebp+08]
+
+:0174E 83C033           add eax, 00000033
+
+:01751 50               push eax
+
+:01752 E8F1010000       call 10001948			; make checksum with
+
+							; the time and key
+
+:01757 83C408           add esp, 00000008
+
+:0175A 85C0             test eax, eax	
+
+:0175C 0F842E000000     je 10001790			; no jmp and no
+
+interest
+
+:01762 8B4D08           mov ecx, dword ptr [ebp+08]
+
+:01765 83C157           add ecx, 00000057
+
+:01768 E8BCFEFFFF       call 10001629			; make checksum with
+
+                                                     ; the time and key
+
+:0176D 8B4D08           mov ecx, dword ptr [ebp+08]
+
+:01770 3B4143           cmp eax, dword ptr [ecx+43]
+
+:01773 0F8217000000     jb 10001790			; NO! else &quot;Cannot locate...&quot;
+
+:01779 8B4D08            mov ecx, dword ptr [ebp+08]
+
+:0177C 83C157            add ecx, 00000057
+
+:0177F E8A5FEFFFF        call 10001629
+
+:01784 8B4D08            mov ecx, dword ptr [ebp+08]
+
+:01787 3B4147            cmp eax, dword ptr [ecx+47]
+
+:0178A 0F8336000000      jnb 100017C6			; JUMP! else &quot;Cannot locate...&quot;
+
+
+
+* Referenced by a Jump at Addresses:01740(C), :0175C(C), :01773(C)
+
+|
+
+:01790 837D1000                cmp dword ptr [ebp+10], 00000000
+
+:01794 0F8520000000            jne 100017BA
+
+:0179A 6A00                    push 00000000
+
+:0179C 6A30                    push 00000030
+
+:0179E FF750C                  push [ebp+0C]
+
+
+
+* String Resource ID=00102: &quot;Cannot locate a valid Evaluation 
+
+				section in your registry&quot;                                  |
+
+:017A1 6A66                    push 00000066
+
+
+
+I pass the checksum manipulating, we're not here to make 
+
+a time-key-generator... we are here to reverse and understand some 
+
+alien code... so we don't care at all about the call to &quot;make checksum 
+
+with the time and key&quot; I noted, nor about the tests &quot;no jmp and no 
+
+interest&quot; too, which verify if in fact, there is or not a key (then don't 
+
+erase yours in the registry!)
+
+
+
+The jb 10001790 is much more interesting, and happens when you clock 
+
+back: you land in the nag &quot;Cannot locate a valid Evaluation&quot;.
+
+So we patch it with three 
+
+&quot;inc eax; dec eax&quot; (6 bytes)
+
+40 48 40 48 40 48
+
+
+
+Look at the jnb 100017C6: if there's no jmp here, you land too in
+
+the nag &quot;Cannot locate a valid Evaluation&quot;.
+
+We patch it, obviously, with &quot;jmp 100017C6&quot; : EB 3A
+
+Only two bytes instead of six, just patch the following 4 to 
+
+40 48 40 48 even if we'll never land there (one never knows how the 
+
+many Intel processors may interpret code ahead :-)
+
+
+
+Then, let's go to this 100017C6 location we must jump :
+
+
+
+* Referenced by a Jump at Address:0178A(C)
+
+|
+
+:017C6 8B4D08                  mov ecx, dword ptr [ebp+08]
+
+:017C9 83C157                  add ecx, 00000057
+
+:017CC E858FEFFFF              call 1629
+
+:017D1 8B4D08                  mov ecx, dword ptr [ebp+08]
+
+:017D4 3B414F                  cmp eax, dword ptr [ecx+4F]
+
+:017D7 0F871D000000            ja 17FA			; NO! else &quot;This
+
+                                                            ; product's trial...&quot;
+
+:017DD 8B4D08                  mov ecx, dword ptr [ebp+08]
+
+:017E0 83C157                  add ecx, 00000057
+
+:017E3 E841FEFFFF              call 1629
+
+:017E8 8B4D08                  mov ecx, dword ptr [ebp+08]
+
+:017EB 2B4143                  sub eax, dword ptr [ecx+43]
+
+:017EE 8B4D08                  mov ecx, dword ptr [ebp+08]
+
+:017F1 3B414B                  cmp eax, dword ptr [ecx+4B]
+
+:017F4 0F8631000000            jbe 182B			; JMP! else &quot;This
+
+                                                            ; product's trial...&quot;
+
+
+
+* Referenced by a Jump at Address:017D7(C)
+
+|
+
+:017FA 837D1000                cmp dword ptr [ebp+10], 00000000
+
+:017FE 0F8520000000            jne 1824			; we don't care
+
+:01804 6A00                    push 00000000
+
+:01806 6A30                    push 00000030
+
+:01808 FF750C                  push [ebp+0C]
+
+
+
+* String Resource ID=00103: &quot;This product's trial period has 
+
+                              expired. Please contact your&quot;
+
+                                  |
+
+:0180B 6A67                    push 00000067
+
+
+
+You see we must avoid that ja 100017FA, which lands in the 
+
+preparation of the &quot;Trial expiration&quot; string. Well, the same 
+
+as above, replace with three &quot;inc eax; dec eax&quot; (nopping 6 bytes)
+
+
+
+We'll never land in the :017FE location, so we don't care 
+
+about this jump.
+
+Why? Coz we gonna patch the first verification, jbe 182B.
+
+We must jump, avoiding the following (frightening) location: 
+
+&quot;Trial Expiration&quot;
+
+Then we patch with :
+
+jmp 1000182B (EB 35)
+
+
+
+Now you fire your Speed Disk.
+
+Yep! It works! You gonna defragment your NT4 for ages and ages 
+
+till the cows come home!
+
+Even your little-little kids will use it in twenty years!
+
+Alleluia!
+
+
+
+The patch :
+
+===========
+
+Offset : B73
+
+Find         : 0F8217000000
+
+Replace with : 404840484048
+
+
+
+Offset : B8A
+
+Find         : 0F8336000000
+
+Replace with : EB3A40484048
+
+
+
+Offset : BD7
+
+Find         : 0F871D000000
+
+Replace with : 404840484048
+
+
+
+Offset : BF4
+
+Find         : 0F8631000000
+
+Replace with : EB3540484840
+
+
+
+(C)1997 --FootSteps (We create cracks!)
+
+
+
+<B><FONT size="+2">End of FootSteps' ESSAY</FONT></B>
+
+<HR><B><FONT size="+2">FootSteps' REQUESTS</FONT>
+
+
+
+About the checksum with Windoze NT4:</B>
+
+To all of you working in the WinIce NT essay part, the sympathic 
+
+&quot;project2&quot; company: BOZO, Birdy Harry and ViceVersa+ :
+
+I don't work on the checksum of this  IRATRIAL.DLL coz I know 
+
+much too few of WindozeNT.
+
+Is the checksum verification of this OS activated somewhere?
+
+Is this only with a NTFS partition?
+
+Is this verificated with drivers only?
+
+Then, why not with the EXE and the DLL?
+
+Thanx for an answer.
+
+<HR><B><FONT size="+2">FootSteps' REQUESTS (more)</FONT></B>
+
+I'd like to thank everybody on this site about teaching me the little
+
+knowledge I got by now.
+
+Few years ago, I was still looking everywhere in the newsgroups for a
+
+new crack I needed, you know, one of those &quot;me too&quot; guys. 
+
+And now, most of the time, It takes me just a few hours of interesting 
+
+amazing work to reverse my software. And to give too: I've now got some
+
+requests by friends of mine!
+
+The world is reverse-engeenering itself, isnt'it? :-)
+
+I don't totally agree with the whole &quot;ideology&quot; of +ORC, but I must
+
+admit: His tutorial was good indeed, and it was not boring to read at
+
+all.
+
+One maxim was really true : &quot;Give a man a crack... Teach him...&quot;!!!
+
+Thanx +ORC! I will never be hungry again :-)
+
+
+
+Razzia, you impressed me with your &quot;function disabled&quot; essay. 
+
+This is much more than simple cracking; thanks to have given me to 
+
+follow you on this way and learn from you.
+
+This remember me about a fact that happened last week. 
+
+I was looking the &quot;big&quot; computer of a friend of mine, who plays 
+
+some (marvellous) 3DFX games. 
+
+Then he showed me a SNES emulator.
+
+I saw him playing a copy of Donkey Kong with it. 
+
+I didn't believe my eyes :
+
+I forgot immediately about the pretty 3dfx game in itself, and 
+
+thought about this guy who reversed the SUPER FAMICOM alone, and 
+
+made this emulator! 
+
+Well done, man.
+
+We got still a very long way in reversing and learning...
+
+
+
+About cracking 3DFX games, I got a little problem. 
+
+I can only use the dead listing method. 
+
+Because when you start a 3DFX game, the video is switched to 
+
+the 3DFX board, and Softice breakpoints inside a blackscreen 
+
+where you cannot see anything at all... Someone's got a idea?
+
+
+
+Can someone explain me why Softice 3.21 works very well with
+
+this new (and windowed) video driver under Windoze95, and it 
+
+does not work with  my version of Softice 3.2 for WindozeNT4? 
+
+I got the same video switch as with the old 3.01...
+
+Numega's support cannot help me unfortunately :-)
+
+(Yet I love those guys... the BEST by far (very far) programmers 
+
+and reversers of the whole universe. I would never have been able 
+
+to write this without you, men!)
+
+<HR><B><FONT size="+2">FootSteps' REQUESTS(even more)</FONT></B>
+
+Could someone explain the CoreDraw7 Trial 30 days protection...Thanx.
+
+I will not tell you how many hours I spent on this without result...
+
+A lot! :-) &amp; :-(. 
+
+Only thing I understood is that it is protected by a DLL type of
+
+timelock. 
+
+This protection is named Sentinel.
+
+
+
+I liked your reverse essay on Filemon, fravia+, and the great
+
+introduction to VxD by +Rcg. Can you teach us more about these 
+
+VxDs? 
+
+Cause we continuously need to make some kind of old DOS TSR, and 
+
+these new VxD that are poorly documented on the whole Web.
+
+
+
+Thx to all of you, from the authors of the &quot;Most stupid protection&quot; 
+
+essays to the &quot;Toughest&quot; one's.
+
+
+
+Note that I've never employed the words &quot;by the way&quot; nor the &quot;BTW&quot;
+
+abbreviation, which seems to be present mostly on most pages of 
+
+this site... Sometimes, I think that searching for &quot;reverse 
+
+engeenering&quot; or &quot;by the way&quot; on any search engine will land  you 
+
+to the same site : this one! :--------------)<BR>
+
+<B><FONT size="+2">End of FootSteps' REQUESTS (was about time)</FONT></B>
+
+<HR>
+
+(C)1997 --FootSteps (We create cracks!)
+
+
+
+
+
+</PRE>
+
+<FONT color="green">(c)  FootSteps 1997. All rights reversed</FONT>
+
+<HR ALIGN="CENTER" WIDTH="100%" SIZE="3">
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</I></CENTER>
+
+<BR><CENTER>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#84'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#84">homepage</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#73'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#73">links</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#82'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#82">students' essays</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut CGI-scripts</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering legal?</A></CENTER>
+
+<CENTER><HR ALIGN="CENTER" WIDTH="100%" SIZE="2"></CENTER>
+
+</BODY>
+
+</HTML>
+
+
+

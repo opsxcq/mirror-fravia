@@ -1,0 +1,570 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>Cracking +RCG's Example 4 (Self32.exe)</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+<CENTER><FONT size="+3">Cracking +RCG's Example 4 (Self32.exe)</FONT>
+
+<BR>(short keys are not long enough)<BR>
+
+
+
+
+
+<A href="protecti.htm" tppabs="http://www.anticrack.de/fravia/protecti.htm"><IMG SRC="tough.gif" tppabs="http://www.anticrack.de/fravia/tough.gif" ALT="tough" ALIGN="BOTTOM" WIDTH="114" HEIGHT="43" BORDER="0" VSPACE="0" HSPACE="0"></A>
+
+<BR>
+
+
+
+
+
+
+
+<H2><B>by Zer0+</B></H2>
+
+<A href="solution.htm" tppabs="http://www.anticrack.de/fravia/solution.htm"><IMG SRC="hcu1.gif" tppabs="http://www.anticrack.de/fravia/hcu1.gif" ALT="real +cracker" ALIGN="BOTTOM" WIDTH="114" HEIGHT="43" BORDER="0" VSPACE="0" HSPACE="0"></A>
+
+<BR><FONT color="gray">Keeper of the lists</FONT>
+
+<H4>(26 December 1997, very slightly edited by fravia+)</H4>
+
+
+
+<HR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">Courtesy of fravia's page 
+
+of reverse engineering<HR>       
+
+<I>Well, I'm happy to publish this essay by Zer0+, which should actually 
+
+be classified among the 'advanced' cracking serie... it's not stuff for newbyes 
+
+at all. But since the whole 'our protection' project is quite 'tough', I assume 
+
+that people reading this knows already our trade enough. If not, study more!</I>
+
+</CENTER><HR size="6"><PRE>
+
+Sender: zer0degree(at)hotmail(point)com
+
+<CENTER><FONT size="+2">
+
+Cracking +RCG's Example 4 (Self32.exe)
+
+</CENTER></FONT>
+
+First of all I would like to thank +RCG for having written 
+
+this exerc-ice (sic! :) it was a nice christmas present for
+
+me to work on.
+
+I have cracked it at christmas' eve in about 5 hours,
+
+which might suggest you that the protection scheme he used
+
+was weak. Deadly wrong! This type of protection is very
+
+strong and I could tackle it only because +RCG used a
+
+short key (I am sure he wanted it to be crackable) and
+
+a few month ago I was also playing with the idea to write
+
+a protection like this... and at that time I spent a lot of
+
+time to figure out the possible attacks against this
+
+type of protections.
+
+
+
+Ok, lets see our target Self32.exe (8192 bytes) is a
+
+crippleware (the open and save functions disabled) plus a
+
+nagscreen, but no registration dialog. It comes with a
+
+94 bytes long icname.dat file.
+
+First, I fired up Filemon and run Self32 to see what it
+
+is doing with icname.dat. Well, it did not touch it (yet).
+
+Instead it worked a lot on windows winsock and url dlls
+
+(+RCG might explain me what it was doing with them :),
+
+what I did not take seriously, specially because it run
+
+without problems when I nuked these windows files.
+
+I noticed however that the program looks for a file
+
+called USER.DAT. I made a small 20 byte file for him and
+
+run it again. Well, it read 16 bytes from it then went on
+
+to look for another file called CODE.DAT. Ok, lets make
+
+it for him, too. It reads another 16 bytes from this file
+
+and surprisingly, the initial nagscreen is gone. Lets see
+
+the missing functions, Open, BIG CRASH!
+
+
+
+BINGO!! This was the moment I realised that the protection
+
+is exactly what I was thinking some time ago. The code of
+
+the missing functions are encrypted and the two 16 bytes
+
+read from the files are used to decrypt it, obviously
+
+producing garbage code in this case, which leads to a
+
+program crash when the program tries to execute it.
+
+
+
+Ok, its time to use Windasm. In the disassembled list the
+
+first thing which caught my eye was a long list of NOPs.
+
+AHA, the decrypted code comes here!
+
+I pinpointed the places where the program opens and reads
+
+the USER.DAT and CODE.DAT files. Wrote them down, and
+
+decided to trace the decryption process with Softice.
+
+ 
+
+After setting BPX breakpoints at 4013D8 and 401442
+
+where the program starts to work on USER.DAT and CODE.DAT
+
+respectively, I run the program. It breaks at 4013D8,
+
+opens the USER.DAT file, reads 16 bytes , closes it,
+
+and sums up the first 10 bytes in AX and finally stores
+
+the result at [0040215C]. (instruction 40143C) 
+
+
+
+After the program does exactly the same thing with the
+
+CODE.DAT file and finally the result ANDed with the stored
+
+value at [0040215C].
+
+
+
+:0040148F mov esi, 00402008         ;pointer to the read string
+
+:00401494 xor eax, eax
+
+:00401496 mov ecx, 00000009
+
+:0040149B add ax, word ptr [esi]    ;summing up a word
+
+:0040149E inc esi                   ;shifting one byte
+
+:0040149F loop 0040149B
+
+:004014A1 and eax, 0000FFFF       
+
+:004014A6 and dword ptr [0040<FONT color="red">215C</FONT>], eax  ;stored here!
+
+:004014AC jmp 004014B6
+
+:004014AE nop
+
+:004014AF nop
+
+:004014B0 nop
+
+
+
+So, finally we have an interesting value at 40215C, let's
+
+see what it is used for (bpmw 40215C r). If we choose the
+
+Open function we break at 4013CB. Here our magic value is
+
+used to XOR a set of bytes which are starting with E6,57
+
+71,43...values. AH, this is the encoded instructions of
+
+the missing function. Indeed, if we trace on further the
+
+XORed bytes are copied by a write file function to the
+
+place of the NOPs starting at 4014D7 . (+RCG might tell us
+
+how exactly this is done). Then the execution is passed
+
+to 4014D7 and soon big crash is comming :). The picture
+
+is exactly the same if we try the Save function, so the
+
+same encrypted code containes both functions.
+
+After a short search we discover that the encrypted code
+
+is stored in the icname.dat file (lenght, code bytes).
+
+So, to summerise we have a 59 byte long encryted machine
+
+code plus a two byte long key to XOR it with to get a
+
+meaningful function.
+
+
+
+Some time ago, when I was thinking about how to crack this
+
+type of protections my main conclusion was that the shorter
+
+the key the more sensitive the protection to the known
+
+plain text attack. Here we have a two byte long key so
+
+it worth to check out the encoded text, I might pick up
+
+some pattern by just looking at it. (If not then I can
+
+write a small program to try every possible keys.)
+
+
+
+I was looking for two bytes which are repeated several
+
+times. I have quickly found that 59,62 occures two times
+
+in the first few bytes, so lets work on this. What are
+
+these bytes can be after decoding? I supposed that the
+
+function refers to some addresses in the program all
+
+looking like 0004xxxx, which are xxxx4000 in the code,
+
+so lets suppose 59,62 is encoded 40,00. We need to xor
+
+59 by 19 to get 40 and 62 by 62 to get 0. So the bytes
+
+of our key will be 19 and 62. At this point I looked
+
+again at the encoded bytes and realized that 62 and 19
+
+occures frequently among them, even right after each
+
+which means 0000 after decoding, which is an other
+
+common two bytes in meaningful 32 bit machine code.
+
+At this point I was almost completely sure I have 
+
+found the key. (I was lucky to get it right at the
+
+first try!) So in Softice I patched the program to
+
+use 6219 for decryption and checked the decoded
+
+function at 4014D7.
+
+<FONT color="blue">
+
+PUSH DWORD PTR [00402168]
+
+CALL KERNEL!CloseHandle
+
+PUSH 30
+
+PUSH 004021EF
+
+PUSH 004014FE
+
+PUSH DWORD PTR [00402148]
+
+CALL USER!MessageBoxA
+
+JMP  004011D5
+
+</FONT>
+
+Well, it looks good for me :) and sure enough I got the
+
+congratulation message after running it.
+
+
+
+The crack: First, I thought I will write my name in the
+
+USER.DAT file and calculate a regcode for the CODE.DAT
+
+and the two will give the correct 6219 key. However, I
+
+realized that the values from the two file are ANDed
+
+together and there is no correct regcode which turns
+
+the value obtained from my name to 6219 (mistake??).
+
+At this point I decided that I keep my name in the
+
+USER.DAT file (at least 16 bytes long), supply a
+
+bogus 16 byte string in the CODE.DAT file (this way
+
+the nag screen is eliminated) and patch the program
+
+at 4014A6 MOV WORD PTR [0040215C], 6219 to always
+
+use the correct key. (Conveniently, we have three
+
+NOPs there to allow enough space for the patch :)
+
+
+
+Final thoughts for shareware programmers:
+
+
+
+- The only reason I could crack this program was
+
+the fact that +RCG used (I am sure intentionally)
+
+a two byte long key. If the key is,  let's say,
+
+16 byte long the recogniseable patterns of the
+
+encoded functions disappear, and the long key
+
+makes the brute force trying impossible, too.
+
+A long key IMHO makes the protection practically
+
+equivalent to really leaving out the functions,
+
+but with the ability to unlock them with a regkey.
+
+Very appealing to shareware programmers, I guess.
+
+
+
+- +RCG filled the place of the missing function
+
+with NOPs and let the program run through them.
+
+Another approach can be that the place is filled
+
+with junk code and a jump at the begining used to
+
+avoid it. When the real code is filled in, the
+
+jump is removed. Having big amount of junk code
+
+there at the first place really confuses disassemblers
+
+and makes the code more problematic to follow.
+
+
+
+- Some thoughts on how to implement a protection
+
+like this. (Warning, I have never tested them in
+
+practice :) I don't know whether +RCG used assembler
+
+or not to code this protection ( I suspect he used
+
+extensively), but it might be coded mainly in high
+
+level language. The main problem to find the begining
+
+and the end of the code we want to replace. This can
+
+be done by including marker assembler instructions
+
+in the code. (in c and c++ by using asm directive)
+
+This instructions should do nothing and be easily
+
+distinguishable from compiler generated code.
+
+For example:
+
+<FONT color="purple">
+
+void protectedfunction (int x) {
+
+
+
+	int y;
+
+
+
+	asm {			//begining marker instructions
+
+		INC EAX,
+
+		INC EAX,
+
+		DEC EAX,
+
+		DEC EAX,
+
+		...etc
+
+	}
+
+
+
+	y = x+2;		//real code
+
+	...etc
+
+
+
+	asm {			//end marking instructions
+
+		DEC ECX,
+
+		DEC ECX,
+
+		NOP,
+
+		INC ECX,
+
+		INC ECX,
+
+	}
+
+	
+
+	return;
+
+}
+
+</FONT>
+
+If a function is written like above, it's easy to
+
+pinpoint the beginning and end of the code we want to
+
+remove and replace some of the begining marking
+
+instructions with a calculated jump to the return.
+
+All the stripping out of the code and putting it later
+
+back can be done with a small utility which works
+
+on the exe file. (BTW, <U>+RCG patched in the correct
+
+function on the fly</U>, a remarkable achivement, but
+
+I guess difficult to manage only in c or pascal).
+
+
+
+Well, I think it's enough for now. 
+
+Some time ago the topic - how to twist even more a
+
+protection like this - was on the +HCU maillists (that 
+
+I'm proud to manage :), so curious people could check 
+
+the maillists out for more suggestions. 
+
+
+
+
+
+Greetings to +RCG and all other +HCUkers
+
+
+
+Zer0+</PRE>
+
+<FONT color="green">(c) <FONT color="#5500AA">Zer0+</FONT> All rights reversed</FONT>
+
+<HR ALIGN="CENTER" WIDTH="100%" SIZE="3">
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</I></CENTER>
+
+<BR><CENTER>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="protecti.htm" tppabs="http://www.anticrack.de/fravia/protecti.htm">Back to 'Our protections'</A> 
+
+           <HR width="33%">
+
+
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut CGI-scripts</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering legal?</A></CENTER>
+
+<CENTER><HR ALIGN="CENTER" WIDTH="100%" SIZE="2"></CENTER>
+
+</BODY>
+
+</HTML>
+

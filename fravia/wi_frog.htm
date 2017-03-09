@@ -1,0 +1,484 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>wi_frog</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+
+
+
+
+
+
+<CENTER>
+
+
+
+
+
+<H1>+HCU 1997, Project2: Winice cracking<BR>Phase 1<BR></H1>
+
+Courtesy of Fravia's page of reverse engineering
+
+</CENTER>
+
+	  <PRE>
+
+How To Crack Soft-Ice 3.01 Win95 (Part 1: Cracking Loader32/NmTrans.dll) 
+
+
+
+
+
+- by Frog's Print
+
+
+
+
+
+Numega's peoples are quite nice: they offer us the possibility to download Soft-Ice 3.01
+
+(as well as the full documentation in Acrobat Reader format!!). Of course, it is 
+
+fully functional but....will only work for 14 days. Ain't that beautiful: we can crack 
+
+our beloved, amazing tool, one of the best or may be THE best program we little 
+
+-crackers or +crackers use and cheer every day. That's really great. Thank you so 
+
+much Numega.
+
+
+
+WE ARE NOT GOING TO CRACK IT ALL (yet), just -for now- the loader (Loader32.exe) and 
+
+the main DLL (Nmtrans.dll). 
+
+
+
+Let's go.
+
+
+
+First, get yourself a copy of WinIce Win95 at Numega's site (Http://www.numega.com).
+
+So, now, what can I expect?
+
+
+
+1/ One of the most difficult protection scheme I ever cracked?
+
+2/ Something I will not be able to crack?
+
+3/ Will my brand new Notebook Pentium 133, 16Mb/1,35Gb  blow up in my face if I 
+
+only change one single byte inside Winnie?
+
+
+
+Let's see.
+
+
+
+The first thing to do is to have a look a the WinIce.dat file as I want to 
+
+personalize it for my cracking purposes. 
+
+And look! Check the last line:
+
+
+
+; Eval expiration date - DO NOT REMOVE!
+
+DATE=413477b9 39533730
+
+
+
+Is it a joke or are they serious? I can't believe it to see this written in upper 
+
+case letters... are they &quot;teasing&quot; all crackers? Are they just plain stupid? Did 
+
+they hyde inside this program another protection? 
+
+
+
+Of course I remove immediatly the line above (after having, of course, 
+
+backed up the file before) and reboot. Let'see what's going to happen.
+
+
+
+Back to Windows everything seems to be fine except that when pressing CTRL-D 
+
+I can't get into Soft-Ice as usual. Loader32.exe works fine.
+
+
+
+I reinstall WinIce.dat,once more, with the expiration comments inside winice.dat
+
+and reboot again.
+
+
+
+Now I change the date (1 month ahead) and run Loader32.exe: It says that I have 
+
+0 days left AND that Soft-Ice isn't active (though it is if I press CTRL-D).
+
+I restore the date and try again: it works fine!
+
+
+
+Let's disassemble it with W32Dasm8.
+
+
+
+Checking the Imports Functions I find a &quot;NMTRANS.NmGetNumDaysLeft&quot;!!!
+
+Again, I can't believe it: what a name! This routine, located inside Nmtrans.dll, 
+
+is used to check how many days you have left before Soft-Ice stop working.
+
+
+
+Of course, I used the &quot;Live approach&quot; to understand the codes (and after having
+
+added NmTrans.dll *INSIDE* my Wince.dat in order to be able to BPX it's functions) 
+
+Here is now the listing of NMTRANS.NmGetNumDaysLeft and the calls to it
+
+inside Loader32.exe, listing provided by W32Dasm8, so it will be easier for you 
+
+to understand what's going on:
+
+
+
+1/ From the file Nmtrans.dll (which is located inside your Winice directory):
+
+
+
+ Exported fn(): NmGetNumDaysLeft - Ord:000Dh
+
+ :100263F0 83EC20             sub esp, 00000020
+
+ :100263F3 8D442404           lea eax, [esp + 04]
+
+ ...
+
+ ...
+
+(* The program check the installation date *)
+
+ ...
+
+ ...
+
+ * Reference To: KERNEL32.GetSystemTime, Ord:0134h
+
+ :10026476 FF1538421C10       Call dword ptr [101C4238]
+
+ :1002647C 8B742420           mov esi, [esp + 20]
+
+ ...
+
+(* Now, gets the actual date *)
+
+ ...
+
+ ...
+
+ ...
+
+(* And now....: *)
+
+
+
+ :10026549 2BCA               sub ecx, edx ;ECX-EDX:=Days_Used
+
+ * Referenced by a Jump at Address:10026547(C)
+
+ :1002654B B800000000         mov eax, 0    ;EAX:=0
+
+ :10026550 83F90E             cmp ecx, E    ;Compare Days_Used with 14_Days_Allowed
+
+ :10026553 7307               jnb 1002655C  ;Outta_Here_If_Above_Or_Equal!
+
+ :10026555 B80E000000         mov eax, E    ;Good_!Go_Head, EAX:=14_Days_Allowed
+
+ :1002655A 2BC1               sub eax, ecx  ;14_Days_Allowed - Days_Used := Days_Left
+
+
+
+ * Referenced by a Jump at Address :10026553(C)
+
+:1002655C 5D           pop ebp
+
+:1002655D A3DC201C10   mov [101C20DC], eax  ;Store Days_Left
+
+:10026562 5F           pop edi
+
+:10026563 5E           pop esi
+
+:10026564 5B           pop ebx
+
+:10026565 83C420       add esp, 00000020
+
+:10026568 C3           ret                  ;Back to Loader32.exe
+
+
+
+
+
+2/ Now, back to Loader32.exe
+
+
+
+ * Reference To: NMTRANS.NmGetNumDaysLeft, Ord:0000h
+
+:0043A261 E8CE9EFFFF         Call 00434134      ;That's the CALL we come from
+
+:0043A266 898560FFFFFF       mov [ebp+FFFFFF60], eax         ;Store Days_Left
+
+:0043A26C C68564FFFFFF00     mov byte ptr [ebp+FFFFFF64], 00
+
+:0043A273 8D9560FFFFFF       lea edx, [ebp+FFFFFF60]         ;EDX:= Days_Left
+
+:0043A279 33C9               xor ecx, ecx
+
+
+
+ * Possible StringData Ref from Code Obj -&gt;&quot;**** Evaluation version. Valid &quot;
+
+                                         -&gt;&quot;for %d days. ****&quot;
+
+:0043A27B B890A44300         mov eax, 0043A490               ;&quot;...Valid for&quot;
+
+:0043A280 E86FBFFCFF         call 004061F4                   ;Days_Left &quot;days.&quot;
+
+:0043A285 6A00               push 00000000
+
+:0043A287 8B45FC             mov eax, [ebp-04]
+
+:0043A28A E82D93FCFF         call 004035BC
+
+:0043A28F 8BD0               mov edx, eax
+
+
+
+ * Possible StringData Ref from Code Obj -&gt;&quot;Symbol Loader&quot;
+
+:0043A291 B970A54300         mov ecx, 0043A570        ; Title of the Message Box
+
+:0043A296 A124C64300         mov eax, [0043C624]
+
+:0043A29B E838A1FEFF         call 004243D8            ;Call to MessageBoxA...
+
+:0043A2A0 A124C64300         mov eax, [0043C624]
+
+:0043A2A5 8998A8000000       mov [eax+000000A8], ebx
+
+ ...
+
+ ...
+
+
+
+How do we crack this?
+
+
+
+1/ Nmtrans.dll:
+
+We had:
+
+:1002654B B800000000         mov eax, 0    ;
+
+We change to:
+
+:1002654B B900000000         mov ecx, 0    ;
+
+
+
+Seems right, yet now, if you run Loader.exe, you will notice that it gives you 
+
+the following message: &quot;Sof-Ice not Loaded!&quot;.
+
+
+
+So let's go back to Nmtrans.dll to see how it checks if Soft-Ice is loaded or not.
+
+We find a function called &quot;NmSymIsSoftICELoaded&quot;.
+
+
+
+ Exported fn(): NmSymIsSoftICELoaded - Ord:0016h
+
+ * Reference To: nmtrans.DevIO_ConnectToSoftICE
+
+:10027A30 E82B72FEFF           call 1000EC60     
+
+:10027A35 83F8FF               cmp eax, FFFFFFFF
+
+:10027A38 740D                 je 10027A47
+
+:10027A3A 50                   push eax
+
+...
+
+
+
+Let's have a look at Call 1000EC60:
+
+Exported fn(): DevIO_ConnectToSoftICE - Ord:0002h
+
+:1000EC60 83EC20                  sub esp, 00000020
+
+:1000EC63 53                      push ebx
+
+:1000EC64 56                      push esi
+
+:1000EC65 57                      push edi
+
+ ...
+
+and we land here again: GetSysTemTime!
+
+* Reference To: KERNEL32.GetSystemTime, Ord:0134h
+
+:1000ED3D FF1538421C10 Call dword ptr [101C4238]
+
+:1000ED43 8B442418     mov eax, [esp + 18]
+
+ ...
+
+:1000EE12 3BD1         cmp edx, ecx       ;Check Days_Left
+
+:1000EE14 7202         jb 1000EE18        ;Take care: this little user may have 
+
+                                          ;set the date back to previous months..
+
+:1000EE16 2BD1         sub edx, ecx       ;EDX:= Days_Left;
+
+
+
+* Referenced by a Jump at Address:1000EE14(C)
+
+:1000EE18 83FA0E                cmp edx, E   ;Compare Days_Left // 14_Days_Allowed
+
+:1000EE1B 720F                  jb 1000EE2C  ;Good!_Go_Head_If_Below
+
+:1000EE1D C7051CEE1B1000000000  mov dword ptr[101BEE1C],0000  ;Sorry....Bye_Bye
+
+:1000EE27 83EE02                sub esi, 00000002
+
+:1000EE2A EB10                  jmp 1000EE3C
+
+...
+
+In fact, Loader32 will tell you that Soft-Ic ISN'T loaded though it IS just 
+
+because your trial period has expired.
+
+Let's crack it too.
+
+
+
+We had:
+
+:1000EE12 3BD1                  cmp edx, ecx
+
+:1000EE14 7202                  jb 1000EE18
+
+:1000EE16 2BD1                  sub edx, ecx
+
+
+
+* Referenced by a Jump at Address:1000EE14(C)
+
+:1000EE18 83FA0E                cmp edx, E    ;once more, checking 14
+
+:1000EE1B 720F                  jb 1000EE2C
+
+:1000EE1D C7051CEE1B1000000000  mov dword ptr[101BEE1C],0000
+
+
+
+We change to:
+
+:1000EE12 3BD2                  cmp edx, edx  ;<=**here** :1000EE14 7202 jb 1000EE18 :1000EE16 2BD2 sub edx, edx ;<="**AND" HERE TOO** * Referenced by a Jump at Address:1000EE14(C) :1000EE18 83FA0E cmp edx, E ;once more, checking 14 :1000EE1B 720F jb 1000EE2C :1000EE1D C7051CEE1B1000000000 mov dword ptr[101BEE1C],0000 Now, we will always have 14 days left. As there is a nagscreen remainding it, and as we definitely do not like nagscreen, let's crack the nagscreen too: We had: :0043A291 B970A54300 mov ecx, 0043A570 ;prepare nag :0043A296 A124C64300 mov eax, [0043C624] ;and then :0043A29B E838A1FEFF call 004243D8 ;call MessageBoxA... Change to: :0043A291 B970A54300 mov ecx, 0043A570 :0043A296 A124C64300 mov eax, [0043C624] :0043A29B 4048904048 inc ax,dec ax,nop,inc ax,dec ax ;<="**HERE**" Now, after doing those changes, reboot and check what's going on: 1/ Soft-Ice is loaded. 2/ Loader32.exe works quite well. 3/ ...but you CANNOT reach Soft-Ice's screen as the CTRL-D keys don't work! (but it IS active, I checked with my own little program) 4/ Here we are for now!! I stopped here and let you think about it. Sure someone will work onwards with this target even if I don't. Two more things: If you delete the line 'INIT="X' from WinIce.dat and reboot, this will allow 
+
+you to pop into Soft-Ice screen even before Windows95 starts. So, you could trace, 
+
+BPX...
+
+
+
+-Don't forget the line " Eval expiration date DO NOT REMOVE! DATE="XXXXXXXX" XXXXXXX" in WinIce.dat as when it is removed, you can't reach Soft-Ice screen. To explore... Happy cracking, Frog's Print </Pre>
+
+
+
+<hr size="2">
+
+
+
+<center><i>You are deep inside fravia's page of reverse engineering, 
+
+choose your way out:</i></center>
+
+
+
+<br><center>
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><a HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#84'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#84"> homepage</a><img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"> 
+
+<a HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#73'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#73"> links</a> 
+
+
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0">
+
+<a HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm"> anonymity</a> 
+
+
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><a HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm"> +ORC</a>
+
+
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><a HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#82'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#82"> students' essays</a>
+
+
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">
+
+<a HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm"> tools</a>
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><a HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm"> cocktails</a><br>
+
+
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><a HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm"> antismut CGI-tricks</a>
+
+
+
+
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><a HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm"> search_forms</a>
+
+
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><a HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm"> mailFraVia</a><br>
+
+
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><a HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm"> Is software reverse engineering legal?</a></center>
+
+
+
+</center>
+
+<center><hr ALIGN="CENTER" WIDTH="100%" SIZE="2"></center>
+

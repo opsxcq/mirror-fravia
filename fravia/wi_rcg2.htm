@@ -1,0 +1,730 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>wi_rcg2</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+
+
+
+
+
+
+<CENTER>
+
+
+
+
+
+<H1>+HCU 1997, Project2: Winice cracking<BR>Phase 5<BR></H1>
+
+Courtesy of Fravia's page of reverse engineering
+
+</CENTER>
+
+
+
+<H2>Phase 5</H2>By +RCG - 
+
+
+
+
+
+01 July 1997<BR></CENTER>
+
+
+
+
+
+<PRE>
+
+
+
+
+
+                    How to crack WinIce Version 3.10 for Windows95
+
+
+
+                      An introduction to virtual devices cracking
+
+
+
+
+
+by +RCG, June 1997
+
+<HR size="2" width="55%">
+
+
+
+	WinIce95 is already cracked through various approaches (see 
+
+all the other essays on this very &quot;project2&quot; page), yet I continued 
+
+to work on it: I was worried about the caller for this routine.
+
+
+
+	Following the code, I reached this caller:
+
+
+
+:000004BA 83EC6C                  sub esp, 0000006C
+
+:000004BD 57                      push edi
+
+:000004BE 8D7C2404                lea edi, [esp + 04]
+
+:000004C2 CD20             ***    int 20		;VmmCall Save_Client_State
+
+:000004C4 8D00                    lea eax, [eax]
+
+:000004C6 0100                    add [eax], eax
+
+:000004C8 5F                      pop edi
+
+:000004C9 CD20             ***    int 20		;VmmCall Begin_Nested_Exec
+
+:000004CB 830001                  add dword ptr [eax], 00000001
+
+:000004CE 0066C7                  add [esi-39], ah
+
+:000004D1 45                      inc ebp
+
+:000004D2 1C00                    sbb al, 00
+
+:000004D4 2AB821000000            sub bh, [eax+00000021]  ;Mov ax,21
+
+:000004DA CD20             ***    int 20		; VmmCall Exec_Int 
+
+:000004DC 8400                    test [eax], al 
+
+:000004DE 0100                    add [eax], eax
+
+:000004E0 51                      push ecx
+
+:000004E1 52                      push edx
+
+:000004E2 0FB74518                movzx word ptr eax, [ebp+18]	;Year
+
+:000004E6 50                      push eax
+
+:000004E7 0FB64514                movzx byte ptr eax, [ebp+14]	;Month
+
+:000004EB 50                      push eax
+
+:000004EC 0FB64515                movzx byte ptr eax, [ebp+15]	;Day
+
+:000004F0 50                      push eax
+
+:000004F1 E88A440500              call 00054980		;This is the caller
+
+:000004F6 5A                      pop edx
+
+:000004F7 59                      pop ecx
+
+:000004F8 83E803                  sub eax, 00000003	
+
+:000004FB 7407                    je 00000504
+
+:000004FD C605FA88060059          mov byte ptr [000688FA], 59	;This flag could be
+
+									;interesting....
+
+:00000504 CD20             ***    int 20		; VmmCall End_Nested_Exec	
+
+:00000506 8600                    xchg [eax], al 
+
+:00000508 0100                    add [eax], eax
+
+:0000050A 56                      push esi
+
+:0000050B 8D742404                lea esi, [esp + 04]
+
+:0000050F CD20             ***    int 20		; VmmCall Restore_Client_State
+
+:00000511 8E00                    mov es, [eax]
+
+:00000513 0100                    add [eax], eax
+
+:00000515 5E                      pop esi
+
+:00000516 83C46C                  add esp, 0000006C
+
+:00000519 C3                      ret
+
+
+
+
+
+
+
+but in the last weeks I have been trying to understand VXD and now I understand 
+
+it a little more.
+
+
+
+The 4 bytes following the int 20 opcode are the VmmCall
+
+codification, so don't worry about these stupid &quot;nonsense&quot; instructions. 
+
+
+
+A Vxd can call an old interrupt service in real mode or better 
+
+in V86 mode, to do this, it uses first the Begin_Nested_Exec, this prepare 
+
+the OS and the CPU to execute it, when returning the Vxd restore the parameters
+
+and continue with the PM program.
+
+
+
+I hope that in a few weeks I'll be able to write a short tutorial about 
+
+Vxd design.
+
+
+
+The idea is, Does Winice use the old DOS 2Ah service to get the system
+
+date? and, Does it W95 too?
+
+
+
+To answer this question I wrote the following small TSR program:
+
+
+
+ODIGO SEGMENT
+
+ASSUME CS:CODIGO
+
+.486
+
+	 ORG 100h
+
+
+
+INICIO:         mov     ah,35h
+
+                mov     al,21h                  ;get int. vector
+
+                int     21h                     ;returned in es:bx
+
+                lea     esi,Noth1
+
+                mov     ax,esi
+
+                mov     [esi+2],ax
+
+                mov     [esi],bx
+
+                push      ds
+
+                xor     ax,ax
+
+                mov     ds,ax                   ;ds=0000
+
+                push    cs                      ;ax=cs
+
+                pop     ax
+
+                mov     ds:86h,ax
+
+                lea     ax,New_Int21
+
+                mov     ds:84h,ax
+
+                pop     ds
+
+                jmp     final                   
+
+
+
+New_Int21:      cli
+
+                cmp     ax,2A00h
+
+                jne     Noth
+
+                mov     edx,[esp+4]
+
+                test    edx,edx              ;SoftIce call?.
+
+                jne     Noth                 ;No 
+
+                                             ;Put here your install date							 
+
+				mov     al,1                 ;Install day of week
+
+                mov     cx,1997              ;Install year
+
+                mov     dh,6                 ;Install month
+
+                mov     dl,23                ;Install day
+
+                sti
+
+                iret
+
+                                
+
+Noth:           sti
+
+                jmp     dword ptr cs:[Noth1]
+
+
+
+
+
+Noth1:          dw      00,00
+
+
+
+final:          mov     ax,3100h
+
+                mov     edx,offset final
+
+                shr     edx,1
+
+                shr     edx,1
+
+                shr     edx,1
+
+                shr     edx,1
+
+                inc     edx
+
+                int     21h				;TSR
+
+
+
+ENDS CODIGO
+
+END     INICIO
+
+
+
+	Now, once it is compiled, add to your autoexec.bat file, just before the
+
+winice line, so you will have it permanently loaded.
+
+	I changed a little this program and forced it to give always the same date,
+
+and after loading Windoze95, I changed the system date, but it has no effect, always
+
+the same date! Our Windoze95 OS and its &quot;32 bits preemptive multitasking kernel&quot; use 
+
+the old DOS services to get the system date!!!!
+
+
+
+	Could you imagine how many uses we can give to this fact?
+
+	As first application of what we learned, let's crack our beloved 
+
+Numega's Winie... I noticed that only Winie's call has a zero in the [esp+4] 
+
+address, lets use this as a way to check if Winie is the real caller, just 
+
+like I did.
+
+
+
+	You can work on it... using Winie, write:
+
+
+
+		e $0:84
+
+	now, you can see where in memory our TSR program is stored.
+
+
+
+0000:00000084 2C 01 BC 09 F7 2F ........
+
+		\___/ \___/
+
+		Offset Segment
+
+	
+
+	and:
+
+		u $9BC:12C or bpx $9BC:12C
+
+
+
+Note: Compile this program using the option:  	
+
+	Tasm winiecrk.asm
+
+	Tlink /t /3 winiecrk.obj
+
+
+
+Part 2: 
+
+	The same, using VxD plus a self-modifiable code:
+
+       .386p
+
+	   .xlist
+
+
+
+	include vmm.inc
+
+	.list
+
+
+
+;******************************************************************************
+
+; declare virtual device
+
+;==============================================================================
+
+
+
+Declare_Virtual_Device VicecrkD, 3, 0ah, VicecrkD_Control, Undefined_Device_ID, \
+
+		       Undefined_Init_Order,,
+
+
+
+Hooked_Int                  equ      21h  ; This is the interrupt we want
+
+                                          ; to hook.
+
+;******************************************************************************
+
+; Initialization Code
+
+;==============================================================================
+
+
+
+VXD_ICODE_SEG
+
+BeginProc VicecrkD_Sys_Crit_Init
+
+   	mov     eax, Hooked_Int
+
+   	mov     esi, OFFSET32 VicecrkD_V86_Int_Handler
+
+   	VMMCall Hook_V86_Int_Chain
+
+    clc
+
+    ret
+
+
+
+EndProc VicecrkD_Sys_Crit_Init
+
+VXD_ICODE_ENDS
+
+;******************************************************************************
+
+; Code
+
+;------------------------------------------------------------------------------
+
+
+
+VXD_CODE_SEG
+
+
+
+;******************************************************************************
+
+; Control dispatch proc
+
+;==============================================================================
+
+
+
+BeginProc VicecrkD_Control
+
+   	Control_Dispatch Sys_Critical_Init, VicecrkD_Sys_Crit_Init
+
+   	clc
+
+   	ret
+
+
+
+EndProc VicecrkD_Control
+
+
+
+;--------------------------------------------------------------------
+
+; VicecrkD_V86_Int_Handler
+
+;--------------------------------------------------------------------
+
+
+
+BeginProc VicecrkD_V86_Int_Handler
+
+    pushad
+
+
+
+NOPS:   jmp     short Go_Ahead    ;We will nop this to avoid the check
+
+        jmp     short No_Winie_Time_Request
+
+
+
+Go_Ahead:
+
+        mov     eax,[ebp.Client_EAX]
+
+        cmp     ax,2A00h
+
+        jne     short No_Winie_Time_Request     
+
+        mov     eax,[ebp.Client_EBX]
+
+        test    eax,eax
+
+        jne     short No_Winie_Time_Request
+
+        mov     eax,[ebp.Client_EDI]
+
+        test    eax,eax
+
+        jne     short No_Winie_Time_Request
+
+        mov     eax,[ebp.Client_ESI]
+
+        test    eax,eax
+
+        jne     short No_Winie_Time_Request
+
+
+
+        ;Now we will disable the Vxd and give Sice a &quot;good
+
+        ;guy&quot; date once for all
+
+
+
+        mov     esi,offset32 NOPS
+
+        mov     word ptr [esi],9090h   ;NOPS
+
+        mov     [ebp.Client_AX],1      ;Day of week
+
+        mov     [ebp.Client_CX],1997   ;Year
+
+        mov     [ebp.Client_DX],0617h  ;6 =&gt; Month   17=&gt; Day 
+
+
+
+    popad
+
+        clc     ;consume the interrupt
+
+        ret
+
+
+
+No_Winie_Time_Request:
+
+    popad
+
+   	stc   ; don't consume the interrupt
+
+   	ret
+
+
+
+EndProc VicecrkD_V86_Int_Handler
+
+
+
+;==============================================================================
+
+VXD_CODE_ENDS
+
+   	END
+
+
+
+
+
+		To compile this you will need some include and exe files, you may 
+
+try to fetch them here:
+
+
+
+		<A href="tppmsgs/msgs1.htm#187" tppabs="http://www.anticrack.de/fravia/tppmsgs/msgs1.htm#187">ftp.ttt.bme.hu/pub/winddk/386/</A>
+
+
+
+	This Vxd is based on VHook86D sample you can find in these ftp.
+
+
+
+	Sorry if this document is a little unclear/rough, but unfortunately 
+
+my free time is scarce in these days. Work on it yourself, I will re-publish 
+
+a more 'decent' essay in two weeks time.
+
+
+
+Good Luck
+
++RCG 1997
+
+
+
+
+
+Post Scriptum: 
+
+
+
+Here the DO.BAT file:
+
+
+
+********************************************************************
+
+masm5 -p -w2 -Mx vhook86d;
+
+link386 /NOI /NOD /NOP /MAP vhook86d,vhook86d.vxd,,,vhook86d.def
+
+addhdr vhook86d.vxd
+
+move vhook86d.vxd c:\windows\system\vmm32
+
+@echo Now add this line to your system.ini
+
+@echo [386Enh]
+
+@echo .
+
+@echo .
+
+@echo .
+
+@echo device=*vhook86d
+
+********************************************************************
+
+
+
+Here the vhook86d.def file:
+
+********************************************************************
+
+LIBRARY  VHook86D
+
+
+
+DESCRIPTION 'VHOOK86D Sample VxD for Microsoft Windows'
+
+EXETYPE  DEV386
+
+SEGMENTS
+
+	     _LTEXT PRELOAD NONDISCARDABLE
+
+	     _LDATA PRELOAD NONDISCARDABLE
+
+	     _ITEXT CLASS 'ICODE' DISCARDABLE
+
+	     _TEXT  CLASS 'PCODE' NONDISCARDABLE
+
+	     _DATA  CLASS 'PCODE' NONDISCARDABLE
+
+
+
+EXPORTS
+
+	     VHook86D_DDB  @1
+
+********************************************************************
+
+
+
+</PRE>
+
+
+
+<HR size="2">
+
+
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering, 
+
+choose your way out:</I></CENTER>
+
+
+
+<BR><CENTER>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#84'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#84"> homepage</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"> 
+
+<A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#73'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#73"> links</A> 
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0">
+
+<A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm"> anonymity</A> 
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm"> +ORC</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#82'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#82"> students' essays</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">
+
+<A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm"> tools</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm"> cocktails</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm"> antismut CGI-tricks</A>
+
+
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm"> search_forms</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm"> mailFraVia</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm"> Is software reverse engineering legal?</A></CENTER>
+
+
+
+</CENTER>
+
+<CENTER><HR ALIGN="CENTER" WIDTH="100%" SIZE="2"></CENTER>
+

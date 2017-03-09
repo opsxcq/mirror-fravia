@@ -1,0 +1,838 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>kovi1</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+<CENTER><H2>WDASM 8.0 ANOTHER APPROACH <BR>
+
+(API-call crackig galore)</H2><H4><I>by Wuzat</I></H4>
+
+<H4>(with a correction to the &quot;font&quot; problem)<I> by +Jed</I></H2>
+
+<BR>
+
+
+
+<HR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">Courtesy of Fravia's page of reverse engineering<BR>
+
+~
+
+<BR><I>Wuzat's esssay is VERY interesting: the API-call relocation trick is clever, useful
+
+ and well explained using as example wdasm32 version 8, a program that you'll find everywhere 
+
+(and a most useful program as well as you all already know), enjoy!<BR>~<BR>+Jed (probably the more 
+
+&quot;+orcish&quot; of all +crackers :-), corrects the &quot;fonts&quot; problem that many of you have  
+
+experienced with recent copies of wdasm8! 12 May 1997<FONT COLOR="#FF0000">__NEW!__</FONT>
+
+</I><BR></CENTER><HR size="2">
+
+<PRE>
+
+
+
+ 
+
+                             WDASM 8.0 ANOTHER APPROACH BY WuZat   
+
+					  (API-call crackig galore)      
+
+ 
+
+ 
+
+Wow ! Kovi made it faster than me !!
+
+So THIS will only be an add-on to his cracking of wdasm80 and does not include 
+
+the Counter-crack. This is my own contribution to our common &quot;quest&quot;.
+
+
+
+The problem: I cant even imagine to search w32dsm00?.tmp inside c:\windows\tmp 
+
+every craking session. (maybe I'm too lazy ?)
+
+ 
+
+The solution (well in fact two solutions): at first, I imagined to get the file 
+
+inside my w32dsm8 directory (and I found a solution for this as well), but finally, 
+
+I found it more convenient to get it inside the target file's directory (kind of 
+
+a multi-cracking environnement). I did'nt remove the first cracking solution from 
+
+this file, even if the second one is more convenient, because I think it could
+
+represent a nice trick that you could eventually use in another context.
+
+
+
+OK, now, let's zen-crack a bit ;-)
+
+ 
+
+Searching for API calls to Createfile(), whe find some locations... only one is 
+
+preceded by &quot;\w32dsm%02d.tmp&quot; (in fact we could have directly searched this very
+
+string !)
+
+ 
+
+Heres the incrimined (commented) code section
+
+ 
+
+:00464E9D 8D95D8FEFFFF            lea edx, [ebp+FFFFFED8]
+
+:00464EA3 52                      push edx
+
+:00464EA4 6804010000              push 00000104
+
+ 
+
+* Reference To: KERNEL32.GetTempPathA, Ord:0000h   ; First call to get temp path
+
+                                  |
+
+:00464EA9 E810940100              Call 0047E2BE
+
+:00464EAE 8D8DD8FEFFFF            lea ecx, [ebp+FFFFFED8]  ; destination string 
+
+:00464EB4 51                      push ecx                 ; for GetTempPath
+
+:00464EB5 6804010000              push 00000104
+
+ 
+
+* Reference To: KERNEL32.GetTempPathA, Ord:0000h    ; Second call to GetTempPath
+
+                                  |                 ; temp dir now in [ebp+FFFFFED8]
+
+:00464EBA E8FF930100              Call 0047E2BE
+
+:00464EBF 0FBE9405D7FEFFFF        movsx byte ptr edx, [ebp + eax - 129]
+
+:00464EC7 83FA5C                  cmp edx, 0000005C
+
+:00464ECA 7508                    jne 00464ED4
+
+:00464ECC C68405D7FEFFFF00        mov byte ptr [ebp + eax - 129], 00
+
+ 
+
+* Referenced by a Jump at Address: |:00464ECA(C)
+
+|
+
+:00464ED4 8BC6                    mov eax, esi
+
+:00464ED6 46                      inc esi
+
+:00464ED7 50                      push eax
+
+ 
+
+* Possible StringData Ref from Data Obj -&gt;&quot;\w32dsm%02d.tmp&quot;
+
+                                  |
+
+:00464ED8 6838584900              push 00495838      ; load file name template
+
+:00464EDD 8D4DDC                  lea ecx, [ebp-24]  
+
+:00464EE0 51                      push ecx           ; destination string is [ebp-24]
+
+ 
+
+* Reference To: USER32.wsprintfA, Ord:0000h
+
+                                  |
+
+:00464EE1 E83A950100              Call 0047E420      ; &quot;build&quot; file name (now w32dsmXX.tmp)
+
+:00464EE6 83C40C                  add esp, 0000000C
+
+:00464EE9 8D45DC                  lea eax, [ebp-24]  ; load file name
+
+:00464EEC 50                      push eax           ; parameter 2
+
+:00464EED 8D95D8FEFFFF            lea edx, [ebp+FFFFFED8] ; load tempdir
+
+:00464EF3 52                      push edx           ; parameter 1
+
+ 
+
+* Reference To: KERNEL32.lstrcatA, Ord:0000h         
+
+                                  |
+
+:00464EF4 E8A1930100              Call 0047E29A      ; concat tempdir + file name
+
+:00464EF9 8D8DD8FEFFFF            lea ecx, [ebp+FFFFFED8] ; result in [ebp+FFFFFED8]
+
+:00464EFF 51                      push ecx           ; push it
+
+:00464F00 8D83E0504900            lea eax, [ebx+004950E0] ; adress of destination
+
+:00464F06 50                      push eax
+
+ 
+
+* Reference To: KERNEL32.lstrcpyA, Ord:0000h
+
+                                  |
+
+:00464F07 E816930100              Call 0047E222      ; Copy tempdirfile in [ebx+004950e0]
+
+:00464F0C 6A00                    push 00000000
+
+:00464F0E 6802010000              push 00000102
+
+:00464F13 6A02                    push 00000002
+
+:00464F15 8D93604D4900            lea edx, [ebx+00494D60]
+
+:00464F1B 52                      push edx
+
+:00464F1C 6A00                    push 00000000
+
+:00464F1E 68000000C0              push C0000000
+
+:00464F23 8D8BE0504900            lea ecx, [ebx+004950E0] ; tempdirfile used to create file                                           =20
+
+:00464F29 51                      push ecx          
+
+ 
+
+* Reference To: KERNEL32.CreateFileA, Ord:0000h
+
+                                  |
+
+:00464F2A E8E7920100              Call 0047E216
+
+:00464F2F 83F8FF                  cmp eax, FFFFFFFF
+
+:00464F32 750B                    jne 00464F3F
+
+:00464F34 83FE19                  cmp esi, 00000019
+
+:00464F37 0F8660FFFFFF            jbe 00464E9D
+
+:00464F3D 33C0                    xor eax, eax
+
+ 
+
+APICallCracking, First solution
+
+1 . First Solution (not the one I prefer, but a nice trick though): as everyone could 
+
+see, our dear Urbanik uses the GetTempPath() function to fetch the temporary directory. 
+
+Here is the function header :
+
+            DWORD GetTempPath(
+
+               DWORD nBufferLength,    // size, in characters, of the buffer
+
+               LPTSTR lpBuffer         // address of buffer for temp. path
+
+                   );
+
+this function returns the temporary directory in lpBuffer.
+
+ 
+
+Now, you see, there is another API function that returns the CURRENT directory of the 
+
+current process, and uses EXACTLY the same parameters than GetTempPath():
+
+ 
+
+           DWORD GetCurrentDirectory(
+
+               DWORD nBufferLength,    // size, in characters, of directory buffer
+
+               LPTSTR lpBuffer         // address of buffer for current directory
+
+                   );
+
+        AND THIS FUNCTION IS IN THE IMPORT SECTION OF THE MODULE!!!
+
+
+
+All we have to do now is to replace the call to 
+
+				GetTempPath 
+
+by a call to 
+
+				GetCurrentDirectory
+
+
+
+and here is the &quot;trick&quot;: calls are RELATIVES as we can see above: we have there 
+
+two subsequent calls to GetTempPath, with different values:
+
+ 
+
+  LineA :00464EA9 E810940100  Call 0047E2BE  // First Call
+
+                    ^^^^^^^^------00019410 is the RELATIVE Adress (name it CallA)
+
+  LineB :00464EBA E8FF930100  Call 0047E2BE  // Second Call
+
+                    ^^^^^^^^------000193FF is the RELATIVE Adress (name it CallB)
+
+now, look closely!:  00464eba(LineB) - 00464ea9(LineA) = 11 (hexa)           
+
+                     00019410(CallA) - 000193FF(CallB) = 11 (hexa)
+
+ 
+
+Therefore, we CAN deduct the relative adress we should use in order to call from 
+
+ANOTHER call, the one we choose to use in order to call-crack this protection scheme:
+
+let's search somewhere in the dead listing a call to GetCurrentDirectory(). 
+
+We Find it at 00465070, here it is:
+
+
+
+        * Reference To: KERNEL32.GetCurrentDirectoryA, Ord:0000h
+
+                                          |
+
+        :00465070 E819920100              Call 0047E28E
+
+                LineC = 465070
+
+                CallC = 00019219
+
+ 
+
+Well, you already understand, don't you... now simply replace the two calls to 
+
+GettempPath by two calls to GetCurrentDirectory, deducting the new adress to call:
+
+        First call :
+
+     LineC-LineA =3D 465070 - 464ea9 = 1C7
+
+     NewCallA - CallC = 1C7  &gt; NewCallA = CallC + 1C7 = 00019219 + 1C7 = 193e0
+
+And therefore, here is the newlineA : E8E0930100 
+
+ 
+
+        Second Call :
+
+                LineC-LineB = 465070 - 464eba = 1B6
+
+                NewCallB = CallC + 1B6 = 193CF
+
+And therefore, here is the newlineB : E8CF930100
+
+ 
+
+        Finally this is the patch for the Solution 1
+
+        ////////////////////////////////////////////
+
+        search   8D95D8FEFFFF5268040100006804010000E810940100   (or less ! :)
+
+        replace by                                 E8E0930100
+
+
+
+        search   8D8DD8FEFFFF5168040100006804010000E8FF930100
+
+        replace by                                 E8CF930100
+
+        ////////////////////////////////////////////
+
+ 
+
+ 
+
+ 2 . Second Solution, new crack approach (Far Better IMHO)
+
+This time, the idea is to Remove the directory information, thus enforcing 
+
+wdasm to create the file in the TARGET directory :
+
+
+
+We simply exchange the adress of the string passed to CreateFile (wich 
+
+actually is what I called &quot;tempdirfile&quot;) with the &quot;nude&quot; file name at [ebp-24], 
+
+and use &quot;la bonne vieille technique&quot; of +ORC to fill the three spaces 
+
+unused 
+
+:00464F23 8D8BE0504900 ****lea ecx, [ebx+004950E0]  ; 8D4DDC   lea ecx, [ebp-24]
+
+                                                    ; 904840   NOP, inc ax, dec ax
+
+:00464F29 51                      push ecx           
+
+        
+
+and we get the job done! 
+
+Besides, there is a side effect in using this method: you do not need anymore to 
+
+block the deletion of the file, because the API deletefile uses the file name, not 
+
+the Handle returned by CreateFile to delete a file and guess what? For Old good 
+
+Urbanik the temporary file is still &quot;tempdirfile&quot; !! 
+
+Therefore DeleteFile simply returns 0.
+
+ 
+
+Oups, I almost forgot: to get the job done, replace \w32dsm%02d.tmp (at offset 0x94838)  
+
+par w32dasm%02d.txt if you dont want the file to be created in the root of your HD. 
+
+And it's safer to let the format parameter.
+
+
+
+        this is the patch for the Solution 2
+
+        /////////////////////////////////////////////////////
+
+        // patch provided by WuZat for WDasm8.0   May 1997 //
+
+        Search       6A0068000000C08D8BE050490051
+
+        Replace by                   8D4DDC904840
+
+ 
+
+        Search       5C77333264736D
+
+        Replace by     7733326431    (or anything that pleases you)
+
+        /////////////////////////////////////////////////////
+
+ 
+
+                        THANKS TO +ORC AND HIS STUDENTS
+
+                      pour savoir apaiser notre soif de connaissance
+
+
+
+(c) Wuzat, May 1997
+
+ 
+
+ </PRE>
+
+<HR size="2"><B>
+
+<I><CENTER>And here is +Jed's &quot;font problem&quot; correction! Enjoy!
+
+</I></CENTER></B>
+
+<HR size="2">
+
+<PRE>
+
+Ok little dudes, this is a small touch by +JED.
+
+
+
+Those fonts look jerky ehm? It would be nice to get the clear listing on
+
+the screen.  Let's look for &quot;font&quot;. We get several TFont constructors,
+
+but only ONE CreateFont! Why the programmer should use the nice and huge
+
+C++ interface of OWL (version 5, by the way... always check what they have
+
+used :-) all the time except for this little direct call to the kernel? 
+
+It's saying: come and look at me! 
+
+And this is what I'll do:
+
+
+
+:00464858 8D830DE30100            lea eax, [ebx+0001E30D]
+
+:0046485E 50                      push eax
+
+:0046485F 33D2                    xor edx, edx
+
+:00464861 8A930CE30100            mov dl, [ebx+0001E30C]
+
+:00464867 52                      push edx
+
+:00464868 33C9                    xor ecx, ecx
+
+:0046486A 8A8B0BE30100            mov cl , [ebx+0001E30B]
+
+:00464870 51                      push ecx
+
+:00464871 33C0                    xor eax, eax
+
+:00464873 8A830AE30100            mov al , [ebx+0001E30A]
+
+:00464879 50                      push eax
+
+:0046487A 33D2                    xor edx, edx
+
+:0046487C 8A9309E30100            mov dl, [ebx+0001E309]
+
+:00464882 52                      push edx
+
+:00464883 33C9                    xor ecx, ecx
+
+:00464885 8A8B08E30100            mov cl , [ebx+0001E308]
+
+:0046488B 51                      push ecx
+
+:0046488C 33C0                    xor eax, eax
+
+:0046488E 8A8307E30100            mov al , [ebx+0001E307]
+
+:00464894 50                      push eax
+
+:00464895 33D2                    xor edx, edx
+
+:00464897 8A9306E30100            mov dl, [ebx+0001E306]
+
+:0046489D 52                      push edx
+
+:0046489E 33C9                    xor ecx, ecx
+
+:004648A0 8A8B05E30100            mov cl , [ebx+0001E305]
+
+:004648A6 51                      push ecx
+
+:004648A7 FFB301E30100            push dword ptr [ebx+0001E301]
+
+:004648AD FFB3FDE20100            push dword ptr [ebx+0001E2FD]
+
+:004648B3 FFB3F9E20100            push dword ptr [ebx+0001E2F9]
+
+:004648B9 FFB3F5E20100            push dword ptr [ebx+0001E2F5]
+
+:004648BF FFB3F1E20100            push dword ptr [ebx+0001E2F1]
+
+
+
+* Reference To: GDI32.CreateFontA, Ord:0000h
+
+                                  |
+
+:004648C5 E8429A0100              Call 0047E30C
+
+
+
+And immediately after, we can see:
+
+
+
+:004648CA 898355595400            mov [ebx+00545955], eax
+
+:004648D0 8B8355595400            mov eax, [ebx+00545955]
+
+:004648D6 85C0                    test eax, eax
+
+:004648D8 7433                    je 0046490D
+
+:004648DA FFB355595400            push dword ptr [ebx+00545955]
+
+:004648E0 FFB359595400            push dword ptr [ebx+00545959]
+
+
+
+* Reference To: GDI32.SelectObject, Ord:0000h
+
+                                  |
+
+:004648E6 E8699A0100              Call 0047E354
+
+:004648EB 89830BA54500            mov [ebx+0045A50B], eax
+
+:004648F1 8B930BA54500            mov edx, [ebx+0045A50B]
+
+:004648F7 85D2                    test edx, edx
+
+:004648F9 740B                    je 00464906
+
+:004648FB 8B8B0BA54500            mov ecx, [ebx+0045A50B]
+
+:00464901 83F9FF                  cmp ecx, FFFFFFFF
+
+:00464904 7507                    jne 0046490D
+
+
+
+* Referenced by a Jump at Address:004648F9(C)
+
+|
+
+:00464906 6AFF                    push FFFFFFFF
+
+
+
+* Reference To: USER32.MessageBeep, Ord:0000h
+
+                                  |
+
+:00464908 E86B9A0100              Call 0047E378
+
+
+
+* Referenced by a Jump at Addresses:004648D8(C), :00464904(C)
+
+|
+
+:0046490D 6A00                    push 00000000
+
+:0046490F FFB359595400            push dword ptr [ebx+00545959]
+
+
+
+* Reference To: GDI32.SetTextColor, Ord:0000h
+
+                                  |
+
+:00464915 E8109A0100              Call 0047E32A
+
+
+
+So what, we have a font creation and right after a selection (this is
+
+how windows works).  Where's that function called? Two places, let's
+
+see...(you do it)...It seems that every time a KERNEL.UpdateWindow
+
+function is called, this one is called also: CAN YOU FEEL IT? So how to
+
+crack? We could just change the je to jne at 4648d8. This would do it
+
+(try it for yourself). But it's a very ugly crack and the boss would
+
+not like it (I think it's even worse than nopping).
+
+
+
+Go back to CreateFont. We'd rather create a GOOD font intead of that
+
+ODD one and then let the program use it. There's a push of the typeface
+
+name.  It says &quot;MS LineDraw&quot; (green light). LineDraw is not a nice font
+
+for displaying texts, is it?  How bad, we'll change it to a good old
+
+&quot;Courier New&quot;. It fits perfectly in it's place...(uhm, I don't feel
+
+comfortable with this crack....) I start the babe again and Gosh! It's
+
+the same old font. Is my &quot;zen&quot; not working? I step back and sip a good
+
+Martini-vodka (remember only Moskovskaya), and meditate...
+
+
+
+Let's see the code again:
+
+
+
+:00464858 8D830DE30100            lea eax, [ebx+0001E30D]
+
+:0046485E 50                      push eax
+
+:0046485F 33D2                    xor edx, edx
+
+:00464861 8A930CE30100            mov dl, [ebx+0001E30C]
+
+:00464867 52                      push edx
+
+:00464868 33C9                    xor ecx, ecx
+
+:0046486A 8A8B0BE30100            mov cl , [ebx+0001E30B]
+
+:00464870 51                      push ecx
+
+:00464871 33C0                    xor eax, eax
+
+:00464873 8A830AE30100            mov al , [ebx+0001E30A]
+
+:00464879 50                      push eax
+
+:0046487A 33D2                    xor edx, edx
+
+:0046487C 8A9309E30100            mov dl, [ebx+0001E309]
+
+:00464882 52                      push edx
+
+:00464883 33C9                    xor ecx, ecx
+
+:00464885 8A8B08E30100            mov cl , [ebx+0001E308]
+
+:0046488B 51                      push ecx
+
+:0046488C 33C0                    xor eax, eax
+
+:0046488E 8A8307E30100            mov al , [ebx+0001E307]
+
+:00464894 50                      push eax
+
+:00464895 33D2                    xor edx, edx
+
+:00464897 8A9306E30100            mov dl, [ebx+0001E306]
+
+:0046489D 52                      push edx
+
+:0046489E 33C9                    xor ecx, ecx
+
+:004648A0 8A8B05E30100            mov cl , [ebx+0001E305]
+
+:004648A6 51                      push ecx
+
+:004648A7 FFB301E30100            push dword ptr [ebx+0001E301]
+
+:004648AD FFB3FDE20100            push dword ptr [ebx+0001E2FD]
+
+:004648B3 FFB3F9E20100            push dword ptr [ebx+0001E2F9]
+
+:004648B9 FFB3F5E20100            push dword ptr [ebx+0001E2F5]
+
+:004648BF FFB3F1E20100            push dword ptr [ebx+0001E2F1]
+
+
+
+* Reference To: GDI32.CreateFontA, Ord:0000h
+
+                                  |
+
+:004648C5 E8429A0100              Call 0047E30C
+
+
+
+No, my feeling is right, but there's something else: What? Let's check
+
+the parameters to CreateFont: It takes an fdwCharSet which is (Godot..)
+
+2!!! This is defined as SYMBOL_FONT. Bingo! Now how would you crack it?
+
+Replace the whole
+
+
+
+:00464883 33C9                xor ecx, ecx               Zero ecx
+
+:00464885 8A8B08E30100        mov cl , [ebx+0001E308]    Get SYMBOL
+
+:0046488B 51                  push ecx                   Push
+
+
+
+with some mov ecx, 1 or inc ecx + nops???? Nah! Bad guy. Let's see who
+
+writes 2 at ebx+1e308 and change there....Here:
+
+
+
+:0044198B 888307E30100            mov [ebx+0001E307], al
+
+
+
+* Possible StringData Ref from Data Obj -&gt;&quot;w32demo7.ini&quot;
+
+                                  |
+
+:00441991 68B5E24800          push 0048E2B5
+
+:00441996 6A02                push 00000002
+
+:00441998 68B2E24800          push 0048E2B2  Data Obj -&gt;&quot;F9&quot;
+
+:0044199D 68A5E24800          push 0048E2A5  Data Obj -&gt;&quot;DEFAULT FONT&quot;
+
+* Reference To: KERNEL32.GetPrivateProfileIntA, Ord:0000h
+
+                                  |
+
+:004419A2 E80FC80300              Call 0047E1B6
+
+:004419A7 888308E30100            mov [ebx+0001E308], al   ; HERE!!!
+
+
+
+It's the only place where it's written. Hey that push 2 looks ODD. It
+
+seems saying &quot;it's me!&quot; &quot;it's me!&quot;. A quick look at the docs (you must 
+
+study and know how to get information if you want to crack!) and yep, 
+
+that's the default return value if the key is not found. We could either 
+
+put a &quot;F9=1&quot; in the w32demo7.ini, under [DEFAULT FONT] or replace the 
+
+push 2 with a push 1, which is a much better crack.
+
+
+
+That's all folks
+
++Jed
+
+</PRE>
+
+
+
+<BR>
+
+<CENTER><HR ALIGN="CENTER" WIDTH="100%" SIZE="3">
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</I></CENTER>
+
+<BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#84'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#84"> homepage</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"> 
+
+<A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#73'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#73"> links</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0">
+
+<A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm"> anonymity</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm"> +ORC</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#82'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#82"> students' essays</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm"> tools</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm"> cocktails</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm"> search_forms</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm"> mailFraVia</A></CENTER>
+
+<CENTER><HR ALIGN="CENTER" WIDTH="100%" SIZE="2"></CENTER>
+

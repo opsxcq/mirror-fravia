@@ -1,0 +1,533 @@
+<HTML>
+
+<PRE>
+
+                        CDROM check protection
+
+
+
+
+
+I'm writing you this tutorial, to share my first cracking experience with you,
+
+to reveal the cracking from the perspective of a newbye.
+
+This tut deals with cracking a "CDROM check" type protection, in wich the
+
+program searches for a particular data on the original CD. This type of
+
+protection you'll encounter in many today's games which are distributed on CD.
+
+
+
+After you complete this tutorial you'll know how to:
+
+
+
+-deal with a DOS4GW program
+
+-tackle a CD check type protection
+
+
+
+You probably won't know how to crack any CD check protection, but, at least,
+
+you'll know how to start with it.
+
+
+
+To better follow this tut you'll need:
+
+
+
+- the game "Silent Hunter", a wonderful WW II submarine simulator, a must
+
+  have for the strategy freaks. I worked on a Razor distribution, and I think
+
+  you'll find it on the web. It's a CD ripped version, and it's just what we
+
+  need, with animation files removed.
+
+
+
+- a patch for Silent Hunter, from version 1.0 to version 1.11. You can download
+
+  it from SSI web site. This version is protected, so it won't work. It must be
+
+  cracked.
+
+
+
+- some tools. I recommend: SoftIce for Win95 (DOS version is useless with all
+
+  new programs), KGB ( the best spy I found, and it's with source code so you
+
+  can modify it), DOS Navigator (for editing large files, and for many more...)
+
+  and much patience :-)
+
+
+
+Now let's get to work. I'll describe my approach. I'm quite lazy so I always
+
+try to find the easiest way in doing something. This is how we'll do it:
+
+
+
+1. When you run the program it asks you to put the original CD in drive. What do
+
+   you do now? Well, I don't know, but my first try is to run a fakeCD utility
+
+   (a little TSR wich emulates a CDROM drive on your hard disk)
+
+   Doesn't work.
+
+
+
+2. What next? I'll install KGB.exe and run the game again. This TSR will log some
+
+   DOS INT 21h file access functions to a file. Now sit down and study the log.
+
+   Here is an extras from the log file:
+
+
+
+        OpenFile-R  : ART\GUI_1.FNT
+
+        OpenFile-R  : ART\FONT1.FNT
+
+        OpenFile-R  : ART\FONT1.FNT
+
+        OpenFile-R  : BUD\10.SMK
+
+        OpenFile-R  : BUD\10.SMK
+
+        OpenFile-R  : BUD\10.SMK
+
+
+
+   As you can see the program tries to open BUD\10.smk and, since it can't find
+
+   it, assumes it doesn't have the right CD in drive. This is an animation file
+
+   quite big, probably, to be sure it is left apart when the program is ripped
+
+   from CD.
+
+
+
+3. As I told you, I want to do it the easy (but the right) way. I don't want
+
+   to step through code. At least not until I use all other means.
+
+   So I make a file 10.smk, and put some crap in it. Run again the program.
+
+   Doesn't work again! How stupid I can be!
+
+
+
+4. Well, maybe it needs a valid smk file. OK. Let's give it one. I take a smk
+
+   file from another game (smk files are quite standard for animation in games),
+
+   and rename  it 10.smk. Run SH again. No change. Still asks for CD.
+
+
+
+5. Now, I think it's time to do it the hard way.It's time for little assembler
+
+   and crackin'.
+
+   I modify KGB to log all DOS functions (not only Open, Close,  Execute File)
+
+   and dump registers for each function (how cool was the guy who wrote
+
+   the program, cause he gave the source code too).
+
+   Launch (Yamato)KGB then run SH.EXE. Then you'll have a trace of all DOS
+
+   functions called by program.
+
+
+
+6. Now it's time to remember about what +ORC has taught us. It's time to use
+
+   his best advice:
+
+   Take a cool Martini Vodka, sit down, and meditate. (I don't use Martini Vodka
+
+   due to reasons I cannot tell you. I drink only mineral water or orange juice.
+
+   But remember! Only pure, sparkling mineral water from Carpatian mountains
+
+   will do)
+
+
+
+   Well, the log looks like this (I'll show you only AX register, here):
+
+
+
+   any other file than "10.smk"
+
+    ax=3d00, bx=...    open file
+
+    ax=4400, bx=...    get device info          (why?)
+
+    ax=4201, bx=...    seek current
+
+    ax=4202, bx=...    seek end                 (check length?)
+
+    ax=4200, bx=...    seek start
+
+    ax=3e05, bx=...    close handle
+
+    ax=3d00, bx=...    reopen file
+
+    ax=4400, bx=...    get device info
+
+    ax=3f00, bx=...    read data
+
+    ax=3f00, bx=...
+
+    ax=3e05, bx=...    close for good
+
+
+
+   the 10.smk file access looks different
+
+    ah=2a  wow! this is weird (get current date of system, maybe for a
+
+                                future compare?!)
+
+    ax=3d00 ...        open
+
+    ax=4400 ...        get device info
+
+    ax=4400 ...        again (?)
+
+    ax=5700 ...        get time stamp (REALLY WEIRD!!!!)
+
+
+
+   As you can see, the program checks the time stamp of the original file, and
+
+   probably it compares it with a built in value. This must be the protection.
+
+   But how can we crack it??????
+
+   Well, load the exe in your favourite hex editor (mine is DOS Navigator) and
+
+   search the string 57,CD,21.(mov ah,57; int 21)
+
+   And, bingo, only one occurrence. Now write down on a paper some bytes from
+
+   that address. This will be the signature of our timestamp function.
+
+
+
+6. Now it's time to use our programming experience. As you know probably, today's
+
+   games are written in C/C++ with some few parts in assembler (for optimizing).
+
+   The most used compiler for DOS games is Watcom C/C++. It cames with support
+
+   libraries and debugger for DOS4GW extender.
+
+   So. A typical today's game is a program written in C, compiled with Watcom
+
+   and linked with Watcom 32 bit libraries. You can verify this. Just run your
+
+   favourite game and you'll see a message like:
+
+   "Rational DOS4GW Runtime System v1.97...."
+
+   (A little parenthesis: it seems that more and more games are written to work
+
+   in Windows95 with DirectX. Maybe it's easier for the guys who program the game
+
+   but for us, the users, this is shit. I used to play my favourite DOS game,
+
+   with 8Megs of RAM, a 486 DX2 66 processor, and it works very well. It loads
+
+   in a few seconds. But now, to play a game I must have a Pentium processor
+
+   16 Megs of RAM, and to tweak my Win95, and only to load the game I need 40 seconds.
+
+   And why all this? Because Micro$oft wants to sell its fat operating systems,
+
+   Intel to sell its processors. But we don't want that. Who cares?
+
+   This stinks! >:-P . Sorry, but I'm pissed)
+
+   Well, back to cracking. A DOS program with DOS extender(like DOS4GW) consists
+
+   of 3 parts:
+
+   -an initialisation code, which puts the processor in protected mode
+
+   -the main program (written by programmer; this is the most important part)
+
+   -some exit code which puts processor back in real mode.
+
+
+
+   Parts 1 and 3, usually doesn't interest us, but we have to find a method to
+
+   skip it in our stepping through program, and find the real entry point, in
+
+   the main() function (that main() from C language)
+
+
+
+   Now remember what +ORC thaught us in lesson 6.1:
+
+   "...search for INT 21, AH=4c.It should be after the call to main function".
+
+   All right! Let's search! But ... :-( , what a disappointement;
+
+   too much INTs 21,4c.
+
+   I got to find another method to reach the main function ('cause I'm lazy)
+
+
+
+   Let's search for the string "WATCOM"... and... toward the end of file
+
+   I find "Watcom c/c++32 runtime system". Great , this must be the runtime
+
+   library, linked with the main program. And just before this string is a
+
+   "EB 76" relative jump. Search again for "int 21, ah=4c" from here. ONE
+
+   occurence. Yeah. This must be the int21 +ORC talked about. But if I am wrong?
+
+   Check another DOS4GW program (Warcraft2 for example). Same "watcom c/c++32"
+
+   string and same EB 76. Great.
+
+
+
+   Try to replace EB 76 with CD 03 (int 3) and run program. SoftIce pops up
+
+   (assumed you set I3HERE on) and finnaly you're in protected mode code.
+
+   Put back EB 74, and see what happens.
+
+   The prog reads the environment, the command line and then, calls main().
+
+
+
+7. Search the signature you wrote on paper :"57 CD 21...". Found.
+
+   BPX on the entry point in routine (you'll find the entry point looking up
+
+   in the code till you encounter some PUSH instructions or ENTER.
+
+   Here you'll find both)
+
+   When BPX is toggled, fetch the calling address from the stack.
+
+   In SH the at the calling address you find:
+
+
+
+   E84D030A00   call get_time_stamp
+
+
+
+   Now find the entry point of this routine too and BPX on the entry point.
+
+   The call to protection routine looks like this:
+
+
+
+   E8760B0000   call protection
+
+
+
+   Then sit down, take a cool mineral water (remember, only sparkling
+
+   mineral water from Carpatians will do :-) ) and watch the program running.
+
+
+
+   After some observation you'll notice that the protection routine is called
+
+   only for the "10.smk" file. Till then, no call.
+
+   So, if the call isn't made, it's a chance the protection to be removed.
+
+   Well, let's try to deactivate the call protection instruction, and see if
+
+   it works.
+
+   Replace E8760B0000 with 5033C05890 i.e
+
+
+
+        push eax
+
+        xor eax,eax
+
+        pop eax
+
+        nop
+
+
+
+   As +ORC told us, always try to avoid using too much NOP's! Newer protection
+
+   schemes smell NOP patches. Here we used only one NOP. And maybe there is a
+
+   solution with no nop. But I dunno all opcodes.
+
+
+
+8. Now it's a good chance that the program checks for CD several times, not
+
+   just once. If this is the case, our disable trick won't work. To see if
+
+   this is the case, set a breakpoint on memory range over the two routines,
+
+   to see if there is some access on them across the game.
+
+   And, incredible there is no other access.
+
+
+
+   The game runs smooth, never checks the file on CD, and the player is happy.
+
+
+
+9. Here is the complete code for the protection routine. It's pretty well explained:
+
+
+
+  000857A2: C9                           leave
+
+  000857A3: 5E                           pop    edx
+
+ð 000857A5: 59                           pop    ecx
+
+ð 000857A6: 5B                           pop    ebx
+
+ð 000857A7: C3                           retn
+
+.
+
+.
+
+.
+
+ð 00086151: 53              push   ebx              ; entry point
+
+ð 00086152: 51              push   ecx
+
+ð 00086153: 52              push   edx
+
+ð 00086154: 56              push   esi
+
+ð 00086155: C8480000        enter  0048,00
+
+ð 00086159: 31F6            xor    esi,esi
+
+ð 0008615B: 85F6            test   esi,esi
+
+ð 0008615D: 0F853FF6FFFF    jnz    000857A2         ;if esi not 0 goto leave...
+
+ð 00086163: 6A0A            push   0A
+
+ð 00086165: 68543A0100      push   000013A54
+
+ð 0008616A: 6875010000      push   000000175
+
+ð 0008616F: 68B48C0200      push   000028CB4
+
+ð 00086174: E885000A00      call   001261FE
+
+ð 00086179: 83C410          add    esp,010
+
+ð 0008617C: 6800020000      push   000000200
+
+ð 00086181: 68B48C0200      push   000028CB4
+
+ð 00086186: BE01000000      mov    esi,000000001
+
+ð 0008618B: E815010A00      call   001262A5         ;try to open 10.smk
+
+ð 00086190: 83C408          add    esp,008
+
+ð 00086193: 89C3            mov    ebx,eax          ;eax=handle of opened file
+
+ð 00086195: 83F8FF          cmp    eax,-001         ;or -1 if file not found
+
+ð 00086198: 7504            jne    0008619E         ;jmp if opened OK
+
+ð 0008619A: 31F6            xor    esi,esi
+
+ð 0008619C: EB1F            jmps   000861BD
+
+ð 0008619E: 8D55B8          lea    edx,[ebp][-0048]
+
+ð 000861A1: E84D030A00      call   001264F3         ;GET TIME STAMP
+
+ð 000861A6: 83F8FF          cmp    eax,-001
+
+ð 000861A9: 7409            je     000861B4
+
+ð 000861AB: 817DCEA4D60301  cmp    dword [ebp][-0032],00103D6A4   ;!!!!compare timestamp
+
+ð 000861B2: 7402            je     000861B6
+
+ð 000861B4: 31F6            xor    esi,esi
+
+ð 000861B6: 89D8            mov    eax,ebx
+
+ð 000861B8: E824040A00      call   001265E1         ;close handle
+
+ð 000861BD: 85F6            test   esi,esi
+
+ð 000861BF: 759A            jne    0008615B
+
+ð 000861C1: 687E010000      push   00000017E
+
+ð 000861C6: B985010000      mov    ecx,000000185
+
+ð 000861CB: BB88010000      mov    ebx,000000188
+
+ð 000861D0: BA9E010000      mov    edx,00000019E
+
+ð 000861D5: B8C0010000      mov    eax,0000001C0
+
+ð 000861DA: E8278F0300      call   000BF106         ;put nag screen
+
+ð 000861DF: 83F8FE          cmp    eax,-002         ;eax = user input (retry,cancel)
+
+ð 000861E2: 0F8573FFFFFF    jne    0008615B         ;if retry goto ^ test esi,esi
+
+ð 000861E8: 31D2            xor    edx,edx
+
+ð 000861EA: 31C0            xor    eax,eax
+
+ð 000861EC: E8C7590200      call   000ABBB8
+
+ð 000861F1: E965FFFFFF      jmp    0008615B         ;goto ^test esi,esi and leave
+
+ð 000861F6: 0000            add    [eax],al         ;never reach this address???
+
+ð 000861F8: C3              retn
+
+
+
+Well that's all. So I cracked my first program. Now, when I'm looking back it seems
+
+easy, but it took me one week of full work to crack it. And it was a simple call.
+
+I wonder if there was multiple CD checks across the game, how long would have taken?
+
+
+
+</PRE>
+
+</HTML>

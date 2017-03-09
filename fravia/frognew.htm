@@ -1,0 +1,178 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>frognew.htm</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+<CENTER><H2>How to crack W32dasm Version 8.5<BR>
+
+(Improved protection cracking)</H2><H4><I>by +Frog's Print</I></H4>
+
+<BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">Courtesy of Fravia's page of reverse engineering</CENTER>
+
+<CENTER>~<BR><I>
+
+Well, Frog's print seems to be even quicker than any other of us... as soon as 
+
+Peter brings out a new version of wdasm (which seems to happen a little too oft, btw) Frog cracks it stright away. Good work, as usual.<BR>(BTW: Hey, Peter, what about 
+
+leaving the debugging 
+
+stuff to Numega and 
+
+concentrating a little more on disassembling? Somehow a shame that old WCB 
+
+still beats Wdasm at times, isn't it? :-)
+
+</I></CENTER>
+
+<HR size="2">
+
+<PRE>
+
+Cracking W32Dasm v8.5 (*NEW protection scheme!*) - by Frog's Print -
+
+
+
+
+
+Right after downloading this brand new version of W32Dasm (&quot;MMX Compatible&quot;!) I just
+
+thought that I would crack it as usual but wait....what a surprise:
+
+-No more 'DeletefileA'!
+
+-No more 'dec dword ptr[ebx+xxxxxxx]!
+
+
+
+I run it, load a file and run the good old PS.COM and...nothing! The W32DSMxx.TMP file
+
+has been deleted!
+
+
+
+Another (good) surprise is that now, we can select the fonts. This option was disable in
+
+the previous versions (a lot of people seemed to have problems with the default one).
+
+
+
+Anyway, let's have a deeper look and crack it:
+
+
+
+
+
+1/ The counter
+
+
+
+I cracked versions 6, 7 and 8, therefore I know that the counter's setup occurs 
+
+between the following 2 calls:
+
+-OWL50f.TFindReplaceDialog
+
+-KERNEL32.GlobalAlloc
+
+
+
+In W32Dasm80 (i.e. previous version 8.0) we had:
+
+
+
+* Reference To: OWL50f.TFindReplaceDialog::TData::TData(ulong,int), Ord:0000h
+
+:0044110B E830D70300              Call 0047E840
+
+:00441110 83C40C                  add esp, 0000000C
+
+:00441113 C7837958540001000000    mov dword ptr [ebx+00545879], 00000001
+
+:0044111D C783364C540054010000    mov dword ptr [ebx+00544C36], 00000154   ; <HERE! :00441127 68F4010000 push 000001F4 :0044112C 6A40 push 00000040 * Reference To: KERNEL32.GlobalAlloc, Ord:0000h :0044112E E855D10300 Call 0047E288 So, let's have a look in W32Dasm85 at the OWL50f.TFindReplaceDialog: * Reference To: OWL50f.TFindReplaceDialog::TData::TData(ulong,int), Ord:0000h :00438F98 E889E00300 Call 00477026 :00438F9D 83C40C add esp, 0000000C * Possible StringData Ref from Data Obj>&quot;\W32DEMO8.HLP&quot;
+
+:00438FA0 BE4B474800              mov esi, 0048474B
+
+:00438FA5 8DBBE0605400            lea edi, dword ptr [ebx+60E0]          ; <00438FAB 8D839E5D5400 lea eax, dword ptr [ebx+5D9E] ; < ??? :00438FB1 8983584D4900 mov dword ptr [ebx+4D58], eax ; < ??? :00438FB7 C7831959540001000000 mov dword ptr [ebx+00545919], 00000001 :00438FC1 68F4010000 push 000001F4 :00438FC6 6A40 push 00000040 * Reference To: KERNEL32.GlobalAlloc, Ord:0000h :00438FC8 E8D7DA0300 Call 00476AA4 We found 3 new instructions instead of the usual mov dword ptr [ebx+xxxxxxxx],xxxxxxxx. What's going on? Let's see... With Soft Ice, load W32Dasm85 and bpx the OWL50f.@TFindReplaceDialog (don't forget to add it inside your WinIce.dat otherwise you'll get nothing). When SoftIce breaks into this function, press F11 and then put 3 Breakpoints on memory access as per follow: :BPM ebx+60E0 RW :BPM ebx+5D9E RW :BPM ebx+4D58 RW ***<WARNING>***
+
+BEFORE pressing CTRL-D to let W32Dasm running DISABLE them (':bd *') otherwise 
+
+you will lock-up your PC.
+
+***</WARNING>***
+
+
+
+Open a file &quot;to disassemble&quot; inside wdasm and then enable the three breakpoints (':be *').
+
+
+
+SoftIce pops out here :
+
+
+
+:0043ADF4 55                      push ebp
+
+:0043ADF5 8BEC                    mov ebp, esp
+
+:0043ADF7 8B550C                  mov edx, dword ptr [ebp+0C]
+
+:0043ADFA 8B4508                  mov eax, dword ptr [ebp+08]
+
+:0043ADFD 33C9                    xor ecx, ecx
+
+:0043ADFF 89880B625400            mov dword ptr [eax+620B], ecx
+
+:0043AE05 8B88584D4900            mov ecx, dword ptr [eax+4D58]
+
+:0043AE0B 0FB68900040000          movzx ecx, byte ptr [ecx+00000400] ; <HERE! :0043AE12 83C1D3 add ecx, FFFFFFD3 :0043AE15 81F99B000000 cmp ecx, 0000009B :0043AE1B 7D0C jge 0043AE29 :0043AE1D 6A00 push 00000000 :0043AE1F 52 push edx :0043AE20 8B02 mov eax, dword ptr [edx] :0043AE22 FF10 call dword ptr [eax] :0043AE24 83C408 add esp, 00000008 :0043AE27 5D pop ebp :0043AE28 C3 ret BPMB #013F:00C7D188 RW Let's see what means the "movzx ecx, byte ptr [ecx+00000400]" instruction, which caused the break: :d ecx+00000400 And you'll fetch its value in the data window: FF (Hex) The address is CS:00D2E5CE. Right below we have a "cmp ecx, 0000009B". If you didn't press any keys under W32DASM yet, when typing ':? ECX-9B' in SoftIce you'll get : 55 (Dec). That's it! This version of W32Dasm allows you up to 55 operations. Payload number one :-) Now clear all breakpoints and BPM at CS:00D2E5CE (Read AND Write): Each time you'll press CTRL-D SoftIce will pop up again and again. There no way you can leave it. This means that our target is PERMANENTLY checking how many operations left we have. Let's now disable the Breakpoint (in order to be able to go back to W32Dasm). Then press once any key (in the target's ToolBar) to decrement the counter. Back to SofIce, enable your Breakpoint again: You'll get another break and at offset CS:00D2E5CE you'll see: FE (Hex). So, here it is! This is our counter, no doubts about that! FF-1 is FE! The break occurred here (it may differ in your case, as there are many checking): :0043E9BE 33D2 xor edx, edx :0043E9C0 8A939E615400 mov dl, byte ptr [ebx+0054619E] ; < Read counter :0043E9C6 83C2D9 add edx, FFFFFFD9 :0043E9C9 81FAA1000000 cmp edx, 000000A1 ; < Enough credits left? :0043E9CF 7D0C jge 0043E9DD :0043E9D1 6A00 push 00000000 :0043E9D3 57 push edi :0043E9D4 8B0F mov ecx, dword ptr [edi] :0043E9D6 FF11 call dword ptr [ecx] :0043E9D8 83C408 add esp, 00000008 :0043E9DB EB7F jmp 0043EA5C Pressing CTRL-D again now we land here: :004514CD 55 push ebp :004514CE 8BEC mov ebp, esp :004514D0 53 push ebx :004514D1 56 push esi :004514D2 8B750C mov esi, dword ptr [ebp+0C] :004514D5 8B5D08 mov ebx, dword ptr [ebp+08] :004514D8 33C0 xor eax, eax :004514DA 8A839E615400 mov al, byte ptr [ebx+0054619E] ; < Read Counter :004514E0 83C0EE add eax, FFFFFFEE :004514E3 3DB6000000 cmp eax, 000000B6 ; < Enough credits left? :004514E8 7D0C jge 004514F6 :004514EA 6A00 push 00000000 :004514EC 56 push esi :004514ED 8B16 mov edx, dword ptr [esi] :004514EF FF12 call dword ptr [edx] :004514F1 83C408 add esp, 00000008 :004514F4 EB37 jmp 0045152D And so on and so on.... You'll land in +/- 20 similar pieces of code. Most of them are identical but I found out some others that are checked using different 'tips'. In fact, W32dasm will check the counter exactly at 32 locations and, as said above, continuously. But look how the comparison occurs each time, using my last Break: :004514DA 8A839E615400 mov al, byte ptr [ebx+0054619E] ; < Store Counter in AL :004514E0 83C0EE add eax, FFFFFFEE :004514E3 3DB6000000 cmp eax, 000000B6 ; < Enough credits left? :004514E8 7D0C jge 004514F6 Peter Urbanik seems to have learned a lot from our essays! Remember the followjng (you may find useful to check the cracks for the previous versions... the HISTORY of a protection scheme is always very useful for our purposes): With the previous versions of W32Dasm, we had a counter setup using a "mov dword ptr' instructions (in W32DASM8: mov dword ptr [ebx+00544C36], 00000154) which was subsequently decremented each time we pressed a key. We used to change it to "mov dword ptr [ebx+xxxxxxxx], 0000FFFF" so that we had a total amount of 65535 operations allowed (a little less in fact). But here, there's no way for us to do the same, that's Urbanik "counter_measure": :004514DA 8A839E615400 mov al, byte ptr [ebx+0054619E] As you can see, 'al' will contain the counter's value. A low register is only a byte, unfortunately, therefore its maximum value cannot be higher than FF (255 Dec)... and something more! It has ALREADY been set to FF at the beginning! So we cannot enlarge our total amount of operations left. I noticed that this occurs nearly all the time: this value is at times stored in AL, sometimes in BL or DL. Well, well, clever trick! Anyway...let's crack it: First of all, let's check again our last break: :004514CD 55 push ebp :004514CE 8BEC mov ebp, esp :004514D0 53 push ebx :004514D1 56 push esi :004514D2 8B750C mov esi, dword ptr [ebp+0C] :004514D5 8B5D08 mov ebx, dword ptr [ebp+08] :004514D8 33C0 xor eax, eax :004514DA 8A839E615400 mov al, byte ptr [ebx+0054619E] ; < Read Counter :004514E0 83C0EE add eax, FFFFFFEE :004514E3 3DB6000000 cmp eax, 000000B6 ; < Enough credits left? :004514E8 7D0C jge 004514F6 :004514EA 6A00 push 00000000 :004514EC 56 push esi :004514ED 8B16 mov edx, dword ptr [esi] :004514EF FF12 call dword ptr [edx] :004514F1 83C408 add esp, 00000008 :004514F4 EB37 jmp 0045152D In order to see if I'm right, with SoftIce I will modify: :004514E3 3DB6000000 cmp eax, 000000B6 and change it to: :004514E3 3DB6000000 cmp eax, 000000B7 Now, we should only have 54 operations allowed. Disable all Breakpoints and then BPX at :004514EA (after the JGE). As the program is checking 32 different locations I want to be sure my crack will work. Back to W32DASM press the 'Goto Start' boutton 53 times (53 because we have already pressed it once:=")" and... softIce pops after the 53th time! So now we can crack: We had: :004514DA 8A839E615400 mov al, byte ptr [ebx+0054619E] ; < Read Counter :004514E0 83C0EE add eax, FFFFFFEE :004514E3 3DB6000000 cmp eax, 000000B6 ; < No more than 55? :004514E8 7D0C jge 004514F6 ; < Jump if <="55" else... :004514EA 6A00 push 00000000 ; < ...sorry boy... :004514EC 56 push esi ; < ... :004514ED 8B16 mov edx, dword ptr [esi] ; < ... :004514EF FF12 call dword ptr [edx] ; < ... :004514F1 83C408 add esp, 00000008 ; < ... :004514F4 EB37 jmp 0045152D ; < ...bye bye. We change it to: :004514DA 8A839E615400 mov al, byte ptr [ebx+0054619E] ; < Read Counter :004514E0 83C0EE add eax, FFFFFFEE :004514E3 3DB7000000 cmp eax, 000000B7 ; <*No more than 54!!! :004514E8 7D0C jge 004514F6 ; < Jump if <="54" else... :004514EA 66C7839E615400FF00 mov word ptr[ebx+0054619E],00FF ; <* ..give us full credits :004514F3 90 nop ; <* again! :00050AF4 EB00 jmp 004514F6 ; <* Go ahead boy... So, each time we will have only 1 operation left, the counter will be set back to its maximum value (we could crack anywhere else within the 32 similar comparisons and would get the same result:=")." ****************************************************************** Note about the counter: 1/ If you put a breakpoint on ebx+0054619E (BPM at CS:00D2E5CE *Write ONLY*), go back to W32Dasm here are the locations where the counter's pointer will be decremented each time you press a key: (offsets show the locations where the breaks occured under SoftIce) Goto Start :4515AC Hex Data :43CD43 Goto Code :43B61C Search :43D685 Goto PEP :45169F Goto Page :43AFB3 Jump :43C559 Ret Jmp none Call :43C751 Ret Call none Imp.funct. none Clicking in the list: 45EA91 Exp.funct. none Clicking in the list: 45EA91 Code Hex :43CA8B Menu Ref none Clicking in the list: 45EA91 Dlg Ref none Clicking in the list: 45EA91 Str Ref none Clicking in the list: 45EA91 Here is how the code at CS:00D2E5CE is decremented each time the 'Goto Start' button is pressed: * Reference To: USER32.InvalidateRect, Ord:0000h :0045159E E803560200 Call 00476BA6 :004515A3 80C3B1 add bl, B1 :004515A6 33C9 xor ecx, ecx :004515A8 8ACB mov cl, bl :004515AA 890F mov dword ptr [edi], ecx :004515AC 885E63 mov byte ptr [esi+63], bl ;< Store operations left :004515AF 5F pop edi ; in CS:00D2E5CE :004515B0 5E pop esi :004515B1 5B pop ebx :004515B2 5D pop ebp :004515B3 C3 ret 2/ I read several times about a flag which is set to '1' when you have reached the total of operations allowed. Yes, there is one. In W32Dasm85 it is 'ebx+0001E441' (it was the same in W32Dasm8): :0043CAAA 8B8341E40100 mov eax, dword ptr [ebx+E441] ; < HERE :0043CAB0 85C0 test eax, eax ; < Are there any :0043CAB2 7471 je 0043CB25 ; operation left. :0043CAB4 6AFF push FFFFFFFF ; < No... * Reference To: USER32.MessageBeep, Ord:0000h ; < ..so get the message box :0043CAB6 E839A10300 Call 00476BF4 When set to '1' it will display the message box with: "The Demo limits the total of operations per session." But we DO NOT have to crack it as it is ONLY use to display this message. Like the counter, it is permanetly checked by W32Dasm. 3/ It seems to me that this crack may not work (??) with W32Dsm85's debugger in some rare situations (depending on which key is pressed...) though I didn't get into trouble while using it. If you meet such a problem, try to change the "cmp eax, 000000B6" to "cmp eax, 000000B8" or "cmp eax, 000000B9"... instead of "cmp eax, 000000B7". Anyway, W32DASM's debugging feature is useless and amazingly slow (who would use it to crack??) so I'm not really bothered about that! ******************************************************************** The counter is cracked and now... 2/ The file deletion As there's no call to DeleteFileA, let's see how W32DSMxx.TMP is created. :BPX GetTempPathA Load any file and SoftIce pops here: * Reference To: KERNEL32.GetTempPathA, Ord:0000h ; < Check Temp directory :0045D63E E855940100 Call 00476A98 :0045D643 0FBE8C05D7FEFFFF movsx ecx, byte ptr [ebp + eax 00000129] :0045D64B 83F95C cmp ecx, 0000005C :0045D64E 7508 jne 0045D658 :0045D650 C68405D7FEFFFF00 mov byte ptr [ebp + eax 00000129], 00 * Referenced by a Jump at Address:0045D64E(C) :0045D658 8BC6 mov eax, esi :0045D65A 46 inc esi :0045D65B 50 push eax * Possible StringData Ref from Data Obj>&quot;\w32dsm%02d.tmp&quot;  ; <w32dsmxx.tmp :0045D65C 68C6C34800 push 0048C3C6 :0045D661 8D55DC lea edx, dword ptr [ebp-24] :0045D664 52 push edx * Reference To: USER32.wsprintfA, Ord:0000h :0045D665 E8A2950100 Call 00476C0C :0045D66A 83C40C add esp, 0000000C :0045D66D 8D4DDC lea ecx, dword ptr [ebp-24] :0045D670 51 push ecx :0045D671 8D85D8FEFFFF lea eax, dword ptr [ebp+FED8] :0045D677 50 push eax * Reference To: KERNEL32.lstrcatA, Ord:0000h :0045D678 E891930100 Call 00476A0E :0045D67D 8D95D8FEFFFF lea edx, dword ptr [ebp+FED8] :0045D683 52 push edx :0045D684 8D8B74514900 lea ecx, dword ptr [ebx+5174] :0045D68A 51 push ecx * Reference To: KERNEL32.lstrcpyA, Ord:0000h :0045D68B E8DE930100 Call 00476A6E :0045D690 6A00 push 00000000 :0045D692 57 push edi ; < ?? :0045D693 6A02 push 00000002 ; < Delete if it exists :0045D695 8D83F44D4900 lea eax, dword ptr [ebx+4DF4] :0045D69B 50 push eax :0045D69C 6A00 push 00000000 :0045D69E 68000000C0 push C0000000 :0045D6A3 8D9374514900 lea edx, dword ptr [ebx+5174] :0045D6A9 52 push edx * Reference To: KERNEL32.CreateFileA, Ord:0000h ; < Create it :0045D6AA E8F9920100 Call 004769A8 :0045D6AF 83F8FF cmp eax, FFFFFFFF :0045D6B2 750B jne 0045D6BF :0045D6B4 83FE19 cmp esi, 00000019 :0045D6B7 0F8675FFFFFF jbe 0045D632 :0045D6BD 33C0 xor eax, eax OK, we see that the "push 00000002" will erase any similar file existing in your Temporary directory. But what could be the "PUSH EDI" right above? Searching back for it we find it here: :0045D5EB BF02010004 mov edi, 04000102 ; < HA HA! Here it is. The '04' is (was) our problem. Ain't that a "FILE_FLAG_DELETE_ON_CLOSE" (parameter passes to the CreateFileA function)which means that the file will be deleted when the handles it uses are closed? With this, no more DeleteFileA are needed to erase the file. Clever again... a good try, Peter! Now we can crack. We had: :0045D5EB BF02010004 mov edi, 04000102 We change it to: :0045D5EB BF80000000 mov edi, 00000080 With this change, a call to DeleteFileA would be necessary to delete the file. Our file will not be hidden anymore either. As we do not want W32Dasm to erase any W32DSMxx.TMP file if one already exists in our temporary directory: We had :0045D693 6A02 push 00000002 We change it to: :0045D693 6A01 push 00000001 Having the W32DsmXX.tmp in the same directory of the file I am disassembling would be far much better than having it in my C:\windows\temp directory. I did read Wuzat's essay, and liked his trick to change the call to GetTempPathA with a call to GetCurrentDirectoryA... therefore: We had: :0045D63E E855940100 Call KERNEL32.GetTempPathA We change it to: :0045D63E E801A1B1BF Call KERNEL32.GetCurrentDirectoryA And finally, you can rename "W32DSMxx.TMP" to "W32DSMxx.TXT" or whatever as long as you only modify the 6 first characters and the extension. ************************************************************************************ What should we think about this new version of Wdasm's protection? 1/ The 'good' things (from "our" point): I think that this new protection is far more clever than the one used in the previous version of W32Dasm (though, unfortunately, it still doesn't take too much time to crack, c'mon Peter, you can protect better than that :=")." In fact, due to this scheme, I had to delve deeper inside W32Dasm's code "in.class" tppabs="http://fravia.org/in.class" order to solve it, therefore this should indeed alienate the wannaby cracker... on the other side, this allowed me to understand far better how this target works, allowing me to perform a better crack than for the past versions. That's good! 2/ The 'bad' things: The counter is checked so many times that it is hard NOT to find it... may be it is NOT a good idea to check so oft... It seems to me that as long as W32Dasm will use any "ordinary" temporary file to store the listing, we will always be able to crack it quickly... yet there are MANY other possibilities dear Peter (memory files, faked files, leeched files, infected files just to name the most obvious ones :-) That's all for now. Frog's Print, 20 June 1997 frog_s_print@thepentagon.com </pre>
+
+<br>
+
+
+
+<br>
+
+<center><hr ALIGN="CENTER" WIDTH="100%" SIZE="3">
+
+<center><i>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</i></center>
+
+<br>
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><a HREF="tppmsgs/msgs0.htm#84" tppabs="http://www.anticrack.de/fravia/tppmsgs/msgs0.htm#84"> homepage</a><img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"> 
+
+<a HREF="tppmsgs/msgs0.htm#73" tppabs="http://www.anticrack.de/fravia/tppmsgs/msgs0.htm#73"> links</a> 
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0">
+
+<a HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm"> anonymity</a> 
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><a HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm"> +ORC</a>
+
+
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><a HREF="tppmsgs/msgs0.htm#82" tppabs="http://www.anticrack.de/fravia/tppmsgs/msgs0.htm#82"> students' essays</a>
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><a HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm"> tools</a><img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><a HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm"> cocktails</a><br>
+
+
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><a HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm"> search_forms</a><img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><a HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm"> mailFraVia</a></center>
+
+<center><hr ALIGN="CENTER" WIDTH="100%" SIZE="2"></center>
+
+
+
+</body>
+
+</html>
+

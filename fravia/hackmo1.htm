@@ -1,0 +1,1562 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>hackmo1</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+<CENTER><FONT size="+3">Cracking DNS WORKSHOP<BR></FONT><BR>
+
+<FONT size="+2">Teaching a decryption process step by step</FONT><BR>
+
+<H4>by Hackmore Readrite<BR>
+
+<BR>
+
+(27 August 1997)</H4>
+
+<HR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">Courtesy of fravia's page 
+
+of reverse engineering<BR><BR><I>Well, a thorough work of reverse engineering, 
+
+Hackmore analyses deeply a decryption scheme, which jumps around quite a 
+
+lot in order to &quot;confuse&quot; the wannabyes</I></CENTER><HR size="7">
+
+<PRE>
+
+                           Cracking DNS WORKSHOP
+
+
+
+                            By Hackmore Readrite
+
+                               DataMiners Inc.
+
+
+
+----------------------------------------------------------------------------
+
+Program: DNSWorkShop.exe (no version info)
+
+Size:    324,096 Bytes
+
+From:    http://www.evolve.co.uk
+
+Price:   Around $40.00 U.S.
+
+----------------------------------------------------------------------------
+
+
+
+   FIRST, A NOTE FROM HACKMORE:
+
+
+
+</PRE>   In my humble opinion, this is a totaly useless program with a totaly
+
+useless, but extremely interesting, de-cryption scheme. It uses the
+
+&quot;Cinderella&quot; time protection scheme, 30 days, but it's the registration
+
+process that got me interested in it.<BR><BR>
+
+
+
+   August arrived with the promise of help in my &quot;real life&quot; job, which
+
+left
+
+me with extra time on my hands, something I'm unaccustomed to. So with
+
+an
+
+active mind, and time to spare, I began looking through the lessons
+
++FRAVIA
+
+has so kindly posted on his web pages. Eventualy, I drew two
+
+conclusions:								 <BR><BR>
+
+
+
+   1) A lot of these lessons deal primarily with how &quot;I&quot; cracked this
+
+      program, instead of how &quot;TO&quot; crack this program. To achieve &quot;ZEN&quot;,
+
+we
+
+      must &quot;feel&quot; whats happening in a program. To do this, we must
+
+      instictively &quot;know&quot; whats going on in the program. We need to
+
+teach
+
+      WHAT a program is DOING, NOT which bytes should be modified to
+
+crack
+
+      the program.									 <BR><BR>
+
+
+
+   2) It's been a VERY long time since we heard from our teacher. (+ORC
+
+sent
+
+      lesson 4.2 last April.) So I figured somebody should assume the
+
+role
+
+      to teach us something new.							 <BR><BR>
+
+
+
+   With these points in mind, I began preparing a lesson on de-cryption
+
+techniques. My idea was to extract ALL of the code which processes the
+
+registration code you enter when registering DNSWorkShop, explain whats
+
+happening at EACH instruction, remove confusing line numbers and replace
+
+them with informative labels, and nest the sub-processes so you could
+
+see
+
+just where you were at any given point in the process.<BR><BR>
+
+
+
+   The idea was intended to &quot;teach&quot; new comers how the de-cryption
+
+process
+
+works, step by step, NOT how to reverse the process. Most of MY lessons
+
+deal
+
+with very little code, I prefer instead to explain the process so I
+
+don't
+
+&quot;scare&quot; new comers away from cracking. But the lesson I was preparing
+
+was
+
+nearly all, very well documented, code.	<BR><BR>
+
+
+
+   Needless to say, as I was almost finished, fravia+ asked that we keep
+
+the
+
+code in our lessons to a minimum, and +ORC re-surfaced!<BR><BR>
+
+
+
+   Although my hard work was wasted, and this program is so easily
+
+cracked,
+
+I still think I should explain the de-cryption process to anyone
+
+interested
+
+because the scheme is so elaborate. The author does just about anything
+
+he
+
+can to keep the potential cracker so busy and confused, the cracker will
+
+finaly just give up. Yet this beautiful scheme was wasted in a program
+
+that
+
+can be cracked by changing only 1 byte!						   <BR><BR>
+
+
+
+   At the end of this lesson, I'll show you a &quot;temporary&quot; crack as well
+
+as a
+
+&quot;permanent&quot; crack. Neither crack has anything to do with this
+
+de-cryption
+
+method. If you use my crack, you wont even have to register! So if
+
+you're
+
+not here to learn, you might as well jump to the goodies you're after.
+
+But
+
+you'll miss all the fun stuff if you do.<BR><BR>
+
+
+
+   You'll probably find this lesson will be much easier to understand if
+
+you
+
+will get the program, dis-assemble it with WDASM, and study the code as
+
+I
+
+describe what the code is doing. This program can be easily cracked
+
+using
+
+only a dead listing, so give it a try.<BR><BR>
+
+<HR>
+
+   Enough digression, let's get to work. I'll assume at this point
+
+you've
+
+downloaded and installed the program, used it a bit, and are ready to
+
+get
+
+yourself a good working copy.
+
+	<BR><BR>
+
+   With SoftIce running, we'll load the program. Locate the &quot;register&quot;
+
+button
+
+and press it, and a little box pops up asking for your registration
+
+code.
+
+At this point, you have no idea if you should enter numbers or letters
+
+or
+
+both, so you can just type in your name. You might notice alot of extra
+
+room
+
+in the box, because it can take up to 26 characters.
+
+			<BR><BR>
+
+   Press F5 or <CTRL-d> to enter SoftIce, and do a search for the
+
+information
+
+you entered...		
+
+          <PRE>s ds:0 lffffffff &quot;string you entered&quot;</PRE>
+
+
+
+   Now you've found it, so you place a breakpoint on it...<BR><BR>
+
+
+
+        bpr ds:&quot;start of string&quot; ds:&quot;end of string&quot; rw <BR><BR>
+
+
+
+   And F5, let the program run. SoftIce breaks back in when the string
+
+you
+
+entered is being copied to a new location. Now you place a new
+
+breakpoint,
+
+just like you did above, and press F5 again to return to the program.
+
+The
+
+program runs its course, without ever breaking on your string again!
+
+															   <BR><BR>
+
+   What happened?! You were in a Windows module. When you wern't
+
+looking, the
+
+main program returned, so your breakpoint was invalid. Just re-load the
+
+program, do the steps above again, and when you get to the second
+
+address of
+
+your string, hold down the F8 (trace) button for a few seconds to let
+
+the
+
+program re-gain control. Now do a new search for your string again, set
+
+a
+
+breakpoint on it, and get ready for the fun stuff!<PRE>
+
+
+
+              ***   :0043BE63 8A00   mov al , [eax]   ***
+
+													   </PRE>
+
+   SoftIce will kick back in at the address CS:0043BE63, where you'll be
+
+retrieving the first byte of your input string, and placing it into EAX
+
+for
+
+processing. Now would be a good time to shut down SoftIce, and load
+
+DNSWorkShop into WDASM for dis-assembly. We used SoftIce to quickly find
+
+where this program begins working on our input string, and it's a good
+
+thing
+
+we did because we got to this sub-routine by an indirect call, which
+
+makes
+
+finding this location in a dead listing very tedious. <BR><BR>
+
+
+
+   But now that we know where to start, a dead listing will work just
+
+fine
+
+for the rest of this lesson. If you'll follow this through, using either
+
+SoftIce or a dead listing, here's what you will find...
+
+  <BR><BR>
+
+   Eax is cleared, leaving only the first byte from your string. This
+
+byte is
+
+copied to ECX, then checked to see if it's a number, a letter, or a
+
+symbol.	 <BR>
+
+If your character is not one of the above, (if it's a graphics or
+
+control	  
+
+character) you get kicked out. If your character is a letter, it's
+
+checked
+
+again to see if it's an upper case letter or a lower case letter.
+
+		  <PRE>
+
+   If it's a...             Do this...
+
+   ------------------------------------------
+
+   Upper case letter        subtract 37
+
+   lower case letter        subtract 3D
+
+   number                   subtract 30
+
+   symbol                   change to 3F
+
+   control character        change to 3E
+
+			   </PRE>
+
+   Now save the result in memory (at [00440030]) for later, get the next
+
+byte in the string, and process it the same way. We'll save the result
+
+of
+
+this second byte as the value of EDI, because we're not using EDI for
+
+anything else right now, and our memory location already has the first
+
+byte
+
+stored in it, and we're about to do some math which will require EAX.
+
+Here's
+
+an exerpt from the original lesson I told you about earlier in this
+
+lesson...			 <BR><BR>
+
+<PRE>
+
+MAIN
+
+   mov edi, eax              ;store result for use after MULTIPLY
+
+   mov eax, 00000040         ;the number to multiply by
+
+   call MULTIPLY
+
+
+
+   MULTIPLY
+
+      imul edx, [00440030], 08088405  ;EAX * EDX * &quot;KEY&quot; * 08088405
+
+      inc edx                         ;add &quot;1&quot; just for fun
+
+      mov [00440030], edx             ;save as next &quot;KEY&quot;
+
+      mul edx                         ;EAX * EDX (low bytes * high bytes)
+
+      mov eax, edx                    ;save the high order double word
+
+      ret                             ;to MAIN
+
+
+
+MAIN
+
+   xor edi, eax                       ;finish de-crypting the first byte
+
+   mov eax, edi                       ;save the result
+
+</PRE><HR>
+
+   Here, we do a signed multiplication. If SBR is your Second Byte
+
+Result,
+
+and FBR is your First byte result, the equation would look like this:
+
+		  <PRE>
+
+                     IMUL   40 * SBR * FBR * 08088405
+
+			   </PRE>
+
+   Just in case our result was too small to get a number into EDX, we'll
+
+add a &quot;1&quot; to EDX to be sure we'll have a &quot;key&quot; to use on the next byte.
+
+Then
+
+save this &quot;high order byte + 1&quot; to use as the next &quot;key&quot; value.
+
+					 <BR><BR>
+
+   The result of our IMUL leaves the result in EDX:EAX, meaning the
+
+biggest
+
+part of the number is in EDX, and the lesser numbers are placed in EAX.
+
+So
+
+the next step multiplies the large part of the number by the low part of
+
+the number. To put this all in perspective, lets say the result of the
+
+IMUL
+
+instruction turned out to be 3031323334 in hex:
+
+							 <PRE>
+
+              EDX would equal 30        <THEN we add "1" to it) EAX would equal 31323334 </prE>
+
+   So the next step would multiply 31 * 31323334, which, again, leaves
+
+the
+
+result in EDX:EAX. The low order bits (in EAX) are thrown away as we
+
+move
+
+the high order bits (in EDX) into EAX. Anyone concerned with reversing
+
+this
+
+process might find it difficult without the bytes we throw away.
+
+										<BR><BR>
+
+   We now XOR the result of this process against the result we got when
+
+we
+
+processed the second byte of our input registration code. Remember, we
+
+saved
+
+that result in EDI just before we started multiplying.
+
+												<BR><BR>
+
+   We'll take the result from above and &quot;fix&quot; it depending on it's value
+
+using the same formula from above, but this time ADDING 30, 37, or 3D to
+
+obtain a number, upper case letter, or lower case letter. (Remember, we
+
+subtracted these same values when we began this process) We also get the
+
+options of comming up equal to 3D, or 3E, (which will pass the &quot;ok&quot;
+
+range
+
+of characters), or getting kicked out if we end up with an invalid
+
+character.
+
+If you had entered a bunch of random characters into the input box, AND
+
+if
+
+you got REAL lucky, the character you MIGHT end up with at this point
+
+MIGHT
+
+be the first letter of your name, which is what we would LIKE to see
+
+here!													<BR><BR>
+
+
+
+   If we've made it this far, we get a chance to store our first
+
+de-crypted
+
+byte for future use. Again, here's an excerpt from my original lesson...
+
+<HR>
+
+STORAGE PROCESS<BR>
+
+   The de-cryption process is now completed for this byte of our
+
+   registration code. The storage process takes the byte we have placed
+
+   on the stack, and checks for any errors we may have encountered,such
+
+as
+
+   an &quot;out of range&quot; byte, etc. If an error is found, a flag is set and 
+
+   we're sent to the function which processes error codes and, of
+
+course, 
+
+   get kicked out of the program.
+
+				   <BR><BR>
+
+   If all goes well, we get an address to store this byte in memory,
+
+   then store this byte. If you follow each byte through it's storage
+
+   process, you will notice there are many different places in memory
+
+   where these bytes are stored, in a seemingly random pattern. Only 
+
+   one byte of de-crypted code will be stored at each location, but it 
+
+   will be stored as a double-word. (Each place in memory will have the 
+
+   bytes &quot;00 00 00 10&quot; when we arive, and we'll replace the &quot;10&quot; with
+
+our 
+
+   de-crypted byte, so it might look like &quot;00 00 00 41&quot; if our input 
+
+   character de-crypted to the letter &quot;A&quot;.) This address MIGHT get used 
+
+   again, overwriting the byte we store there with a new byte, or it
+
+MIGHT 
+
+   NOT. This is important to note for cracking purposes!
+
+						   <BR><BR>
+
+   When we get a few bytes packed away in memory, we set up a new
+
+   address where we'll create a (doubleword sized) partial string,
+
+   adding de-crypted bytes as we get them. We will attatch ONLY the
+
+   bytes just de-crypted in the steps above, to the end of this partial
+
+   string, so our partial string might look like &quot;Hack&quot; in memory when
+
+   we're through with it. Once again, if you follow the process through,
+
+   you will find these &quot;partial strings&quot; get copied a few times too. The
+
+   &quot;partial string&quot; we leave behind MIGHT get over-written, or it MIGHT
+
+be 
+
+   left alone for processing later.<BR><BR>
+
+
+
+   Eventualy, we'll get an address where we'll place the entire
+
+   de-crypted registration string, which will be used to determine 
+
+   wether or not we've registered properly. If you view the memory 
+
+   location, it might look like &quot;Hackmore Readrite - 1234&quot;, The string
+
+YOU 
+
+   get will, of course, depend on the input you provide. If you entered 
+
+   your name as I suggested above, you'll probably end up with a garbled 
+
+   string of numbers, letters, and symbols.
+
+										   <BR><BR>
+
+   The storage addresses selected change with the length of the
+
+   registration code you type in. If your string is too long, you'll
+
+   get to see your de-crypted string stored in memory right below the
+
+   original string you typed in. This may be handy for anyone who might
+
+   want to compare strings.						   <BR><BR>
+
+
+
+   After storing this single byte, we get a chance to spend alot of
+
+   frustrating time looking up addresses and anything else the author
+
+   of this program could think of to slow us down. This takes us through
+
+   all kinds of code to NOT check our string against what has been saved
+
+   in the registry. It's a very long process dealing with setting up 
+
+   addresses, checking string length and values, and setting &quot;switch&quot;
+
+   values to determine wether or not the machine should enter the
+
+registry 
+
+   yet. (Has the entire string been processed?, Is the string length 
+
+   correct?, etc.) Since we're not already registered, a switch will
+
+always
+
+   tell the program not to enter the registry yet. This process was 
+
+   probably placed here to frustrate the average cracker, by making the 
+
+   process so long you just give up. And remember, it's repeated after
+
+   EACH byte we'll de-crypt, and MANY times later as you'll see!
+
+														   <BR><HR>
+
+   The next two processes are rather boring. The first checks each byte
+
+in
+
+the de-crypted string, and if it is an asterix &quot;*&quot; it will be passed
+
+into
+
+the second process, which will convert it to a space &quot; &quot; character. This
+
+will
+
+check, and repair if nessesary, each byte of the de-crypted string.	<BR>
+
+																   <BR>
+
+   Yet another chance to check our de-crypted code against whats stored
+
+in the registry, (remember, we're still UNREGISTERED so there's nothing
+
+to
+
+check against!) along with the normal error checks and clean-up to
+
+finish
+
+up these sub-routines. As usual, if an error is found, we'll be kicked
+
+out of
+
+the program. If everything looks good, we'll set a bunch of bytes in
+
+memory
+
+to tell the program it's alright to go on to the next process. Since
+
+we're
+
+not already registered, a switch will tell the program not to open the
+
+registry yet, but we still have to cruise through all the code
+
+pertaining
+
+to opening, reading, and closing the registry each time we come through
+
+this
+
+&quot;registry check&quot; crap. Basicaly, this is just one more attempt to slow
+
+down
+
+the average cracker, although this time, some of what is done IS
+
+important,
+
+like cleaning up after the sub routine, and setting bytes in memory to
+
+tell
+
+the program it's ok to proceed.
+
+	  <BR><BR>
+
+   This is the point where we learn that our input string should have
+
+been
+
+24 characters long. So do the steps above 23 more times, and you will
+
+have
+
+de-crypted the entire string. But we're not even close to being done
+
+yet,
+
+unless you just came for the de-cryption lesson. What will we do with
+
+this
+
+de-crypted string in order to determine if you've registered properly?
+
+Read
+
+on to learn more.
+
+			  <PRE>
+
+              ***   :0043BEB5 E88AFEFFFF   call 0043BD44   ***
+
+				   </PRE>
+
+   Now it's time to DO something with this string we've de-crypted so
+
+nicely.
+
+We'll start at the end, rather than the beginning, because (if you saw
+
+the
+
+MULTIPLY code earlier) the end of the string is where we would be MOST
+
+likely
+
+NOT to succeed. An error EARLY in the process would have a &quot;snowball&quot;
+
+effect
+
+right on down the line, getting larger, and larger as we de-crypted each
+
+byte, because the result of one pass through the MULTIPLY sub-routine
+
+sets
+
+the &quot;key&quot; for the next pass.
+
+						 <BR><BR>
+
+   Do the math if you are inclined, but to put it simply, from an
+
+incredibly
+
+large number of possible combinations of characters, we only have ten
+
+choices
+
+for the end of our string. The last four characters MUST be NUMBERS (0 -
+
+9)
+
+or we get kicked out of the program.
+
+								 <BR><BR>
+
+   Assuming YOU were lucky enough to end up with four numbers at the end
+
+of
+
+your de-crypted string, (I sure wasn't), the program copies the last
+
+doubleword of your de-crypted string to a new location in memory. Pour
+
+yourself a tall one for this process because you'll also get to NOT
+
+enter
+
+the registry FOUR more times durring this process, complete with error
+
+checking, address look-ups, etc.		 <BR><BR>
+
+
+
+   With our doubleword in hand, we'll strip away the first byte, convert
+
+it
+
+to decimal (subtract 30), multiply the &quot;talley&quot; (which is &quot;0&quot; for the
+
+first
+
+character), double the result, and add our decimal number to it. Then do
+
+the same for the remaining three bytes. For an example of this, read
+
+just a
+
+bit further. We'll have to do this one more time, so I've included the
+
+code
+
+and an explanation when we reach that point in this de-cryption scheme.
+
+												 <BR><BR>
+
+   Just in case we wandered in here with something other than numbers in
+
+our
+
+de-crypted doubleword, we get all kinds of chances to get kicked out of
+
+the
+
+program. And they'll all send us away thinking we've done a good thing,
+
+until much later when the error flag gets tested. Then it's good bye bad
+
+cracker! If we've done a good job, we'll sail through all that registry
+
+crap
+
+again, complete with all the frills, about three more times.
+
+														 <BR><BR>
+
+   If nothing has gone wrong, we move the result from this last process
+
+back
+
+onto the stack, determine the length of our de-crypted string WITHOUT
+
+the
+
+last four bytes which we just processed above, determine an address to
+
+copy
+
+the shortened de-crypted string to, (without the last four bytes),
+
+determine
+
+if a registration string exists in the registry yet, (only reading it if
+
+it
+
+IS there), or if you have only just typed it in, and finaly, we'll move
+
+the
+
+shortened de-cryped string to a new address, without the last four
+
+bytes. The
+
+original string and the original de-crypted string will remain where
+
+they
+
+have been placed in memory. They will each contain thier entire 18h (24
+
+dec)
+
+bytes of input code, or de-crypted code respectively.<PRE>
+
+
+
+              ***   :0043BF54 E89B77FCFF   call 004036F4   ***
+
+														  </PRE>
+
+   And, after a bit of setup, (getting addresses and updating counters)
+
+we're
+
+ready for the next step, a very simple process of adding each byte of
+
+the
+
+shortened de-crypted string together, to get a sum of the hex values of
+
+each
+
+de-crypted byte. ((H=48) + (a=61) = A9 + (c=63) = 10C +  (k=6B) = 177...
+
+etc.
+
+Until we've added all of the remaining 20 bytes, spaces are skipped
+
+though.)										 <BR><BR>
+
+
+
+   After this 20 byte de-crypted string is tallied, it's added to &quot;3&quot;
+
+just
+
+for kicks, and this doubleword result is saved for a CMP instruction
+
+later.													 <BR><BR>
+
+
+
+   Ahh... My ears are ringing with the sound of all those happy crackers
+
+out
+
+there thinking &quot;JUST FIX THE CMP INSTRUCTION!&quot; If you've read this far,
+
+you
+
+will know that this program has MANY error checks! One slip and you WILL
+
+get
+
+kicked out.														 <BR><BR>
+
+
+
+   When registered, this program stores the string you entered into the
+
+registry under:
+
+ <PRE>
+
+    \HKEY_CURRENT_USER\Software\Info Evolution\DNS WorkShop\Registration
+
+	  </PRE>
+
+   And when it goes there to check up on you, you'll get kicked out
+
+before
+
+you ever reach that CMP instruction. The string is stored in the
+
+registry
+
+exactly as you typed it in, so each time the program is run, the string
+
+goes through this same process again. Fixing the CMP instruction WILL
+
+get
+
+you &quot;registered&quot;, and you'll get to see your de-crypted input string in
+
+the
+
+cute little box that say's &quot;Successfuly registered to...&quot;, but when you
+
+re-open the program, your &quot;saved&quot; input string will pass through this
+
+same
+
+process again, and you will be UN-registered. There's no &quot;zen&quot; in that!
+
+			<BR><BR>
+
+   Now that we have all the work done on our input string and the
+
+resulting
+
+de-crypted string, it's time to check access rights. This is a VERY long
+
+process that jumps to places all over the program just to completely
+
+confuse anyone who has made it this far. All it does is check a two
+
+character string to determine if this is a (%d) demo version, or a (%u)
+
+user
+
+version. Anything other than a &quot;d&quot; or a &quot;u&quot; will get you kicked out of
+
+the
+
+program. Again, the author lets you &quot;play around&quot; awhile before he lets
+
+you
+
+get kicked out. So you'll get to do alot of jumps from a jump table, and
+
+a
+
+lot of checks for &quot;$&quot;, &quot; &quot;, &quot;-&quot;, &quot;+&quot;, &quot;*&quot;, etc. You'll also get to check
+
+for
+
+numbers, and capitalize lower case letters. Anything and everything to
+
+confuse the &quot;wanna-be&quot; cracker.
+
+					<BR><BR>
+
+   And, just for fun, when we're done with the distraction above, the
+
+author
+
+was kind enough to throw in a few more trips past the registry, with all
+
+the
+
+frills as usual. What a nice guy!
+
+							<BR><BR>
+
+   But finaly we return to the task at hand. Just a bit more code to
+
+help
+
+me explain this step. This is the code, and explanation of it, that I
+
+promised you when we were working with the last four bytes of the
+
+de-crypted input string. Here we're working with the doubleword result
+
+derived from adding the first 20 bytes of our de-crypted string. This is
+
+another snippet of code from my original lesson...
+
+									<BR>
+
+<HR><PRE>
+
+NEXT_BYTE
+
+   test bl , bl            ;do we have a byte to process?
+
+   je EXIT                 ;leave if we don't
+
+   sub bl, 30              ;convert to a decimal number
+
+   cmp bl, 09              ;is it a number?
+
+   ja EXIT                 ;leave if it's not
+
+   cmp eax, edi            ;make sure our number hasn't grown too large
+
+                           ;(we put &quot;0CCCCCCC&quot; in EDI earlier in this proc)
+
+   ja EXIT                 ;leave if we got too big
+
+   lea eax, [eax + 4*eax]  ;use an address as our tally
+
+   add eax, eax            ;EAX = &quot;0&quot;, but it grows as we calculate.
+
+   add eax, ebx            ;now, add our byte from the doubleword
+
+   mov bl , [esi]          ;get the next byte
+
+   inc esi                 ;set the byte pointer for the next byte
+
+   test bl , bl            ;do we have anything?
+
+   jne NEXT_BYTE           ;if yes, go back to process it
+
+   dec ch                  ;if not, set the flag to leave
+
+   je FLAG_CHECK           ;then go check it, this is a &quot;3-way&quot; flag
+
+                           ;it can be a good &quot;FF&quot; as we've recieved here
+
+                           ;or a bad &quot;00&quot; or &quot;01&quot; which we would pick up
+
+                           ;if this process fails (if we have a letter
+
+                           ;instead of a number, for instance.)</PRE>
+
+<HR>
+
+   I'll use 1, 2, 3, &amp; 4 as an example of whats going on here for the
+
+benifit of all those &quot;wanna-be's&quot; who don't quite understand the math.
+
+	<PRE>
+
+      EAX + (4 * EAX)           EAX + EAX             EAX + EBX
+
+      --------------------------------------------------------------
+
+       0 + (4 *  0) =   0  --&gt;    0 +   0 =   0  --&gt;    0 + 1 =   1
+
+
+
+       1 + (4 *  1) =   5  --&gt;    5 +   5 =  0A  --&gt;   0A + 2 =   C
+
+
+
+       C + (4 *  C) =  3C  --&gt;   3C +  3C =  78  --&gt;   78 + 3 =  7B
+
+
+
+      7B + (4 * 7B) = 267  --&gt;  267 + 267 = 4CE  --&gt;  4CE + 4 = 4D2
+
+		 </PRE>
+
+<HR> 
+
+As you can see, the end result adds up quickly. And this time, we end
+
+up with four different values describing the first 20 bytes (or last 4
+
+bytes if you've skipped here from above) of our input string... 
+
+<PRE>
+
+   Our input         = XXXXXXXXXXXXXXXXXXXX
+
+   De-crypted        = Hackmore Readrite - 
+
+   Sum of Hex values = 1234
+
+   Re-calculated     = 04D2
+
+	 </PRE>
+
+   We are finaly done with all this crap, so now we can return to the
+
+main
+
+program to use that CMP instruction I spoke of earlier. Of course we
+
+must
+
+do that registry thing several more times first, just because we've come
+
+this far! And as usual we make all three passes (open, read, and close)
+
+and
+
+do all kinds of error checking and clean-up.
+
+		   <BR><BR>
+
+   So far we've typed in an input string, de-crypted it, stripped off
+
+the
+
+last four bytes and checked to be sure they were numbers, re-calculated
+
+the result to get yet another number, checked the access rights, added
+
+up
+
+the hex values of the first 20 bytes of our string, and re-calculated
+
+that
+
+result to get yet another value. And at last we've reached that
+
+&quot;critical&quot;
+
+instruction which will let you use this program only once if you care to
+
+adjust the values. <PRE>
+
+
+
+              ***   :0043BF8E 3BD8   cmp ebx, eax   ***
+
+						</PRE>
+
+   This also brings us to the end of my lesson on this de-cryption
+
+technique. Now I will show you two different ways to crack this program.
+
+<HR>
+
+   Using a dead listing and a bit of &quot;zen&quot;, it was obvious that the data
+
+address DS:[00440030] was being used for more reasons than just the IMUL
+
+instruction listed earlier in this lesson. It did not take long to
+
+figure
+
+out why after firing up SoftIce.
+
+	<BR><BR>
+
+   Load the UNREGISTERED copy of this program into SoftIce, and place a
+
+breakpoint on the memory doubleword used in the multiplication
+
+sub-routine
+
+used for the de-cryption process.
+
+			<PRE>
+
+                        BPMD DS:00440030 RW
+
+				 </PRE>
+
+   Then press F5 (ctrl-d) to return to the program. You will pop back
+
+into
+
+SoftIce very quickly. Press F5 again, and when SoftIce returns dump
+
+DS:ESI.
+
+Hold the &quot;ALT&quot; key down, while pressing the &quot;down&quot; arrow key 14 times.
+
+Here
+
+you will see the following encrypted string...
+
+					   <PRE>
+
+                    Tgq'bxGrrsaiper,Ieuutvm+3
+
+							</PRE>
+
+   After you have registered your program, your registration input
+
+string
+
+will show up here, and the encrypted string above will be gone. You can
+
+follow this through the de-cryption process, (it's a VERY simple
+
+process),
+
+or you can just take my word for it, but either way, it de-crypts to the
+
+following string...				  <PRE>
+
+
+
+                    ObjectContainer.Network.1
+
+									   </PRE>
+
+   Sorry, lamers, the de-cryption process used to de-crypt this string
+
+WILL
+
+NOT de-crypt a registration input string! But it WILL give you the name 
+
+above, which is the &quot;key&quot; to search for in your registry. Once you've
+
+found
+
+the &quot;key&quot;, simply delete it for another FREE 30 DAY TRIAL. This &quot;key&quot;
+
+holds
+
+the information to tell the program how long you've been using it. It
+
+will be
+
+replaced the next time you use the program, so you'll have to delete it
+
+every thirty days.	 <BR><BR>
+
+
+
+   That's enough &quot;lamer&quot; training, now I'll show you professionals how
+
+to
+
+REALY crack the program.	 <BR>
+
+<HR>
+
+   After dis-assembling the file DNSWorkShop.exe using Wdasm, one of the
+
+first things you'll notice is the message &quot;No Dialog resources in this
+
+aplication.&quot; Yet, scanning the dead listing, you'll find several
+
+references
+
+to &quot;string data reference to code object&quot; within the program. So a
+
+simple
+
+search for the string &quot;registered&quot; leads us to...
+
+								 <PRE>
+
+               &quot;Successfuly registered to&quot; at CS:0043C7E3
+
+									  
+
+                                  AND
+
+
+
+             &quot;This product is registered to&quot; at CS:0043D377
+
+									   </PRE>
+
+   Our good friend SoftIce was kind enough to show us the exact point
+
+where the de-cryption process began. With a little back-tracking from
+
+that point, (that's back-TRACKING, not back-TRACING) through the dead
+
+listing, we find that the sub-routine containing the address CS:0043BE63
+
+begins at CS:0043BE30, which is called from CS:0043BF30. A bit more
+
+back-tracking shows the sub-routine containing the address CS:0043BF30
+
+actualy begins at CS:0043BEE4, which is called from CS:0043C1A0. One
+
+more
+
+time, we back-track to find the sub-routine containing the address
+
+CS:0043C1A0 begins at CS:0043C16C, which is accessed by an indirect call
+
+from somewhere.								 <BR><BR>
+
+
+
+   Logic, or &quot;zen&quot; would dictate that this is probably the &quot;true&quot;
+
+begining
+
+of the registration process. (Because it's CALLer is a mystery, and it
+
+leads
+
+us right to the de-cryption process) A quick scan of this small
+
+sub-routine
+
+shows us that it happily returns to its caller when finished. As you can
+
+see
+
+by the addresses I've listed above, or better yet by viewing your own
+
+dead
+
+listing, the code below this sub-routine contains all kinds of &quot;string
+
+data&quot;
+
+references, including the ones we are after.
+
+<BR><BR>
+
+   But look closely at the sub-routine itself! Right before your very
+
+eyes,
+
+only four instructions before you call the other sub-routines to get and 
+
+de-crypt your registration input string, THERE IT IS! THE switch which
+
+determines if you are registered, or just a bum using this program for
+
+free.
+
+<PRE>
+
+   :0043C195 B301            mov bl, 01         <RIGHT HERE! :0043C197 8D4DF8 lea ecx, [ebp-08] :0043C19A 8B5604 mov edx, [esi+04] :0043C19D 8B45FC mov eax, [ebp-04] :0043C1A0 E83FFDFFFF call 0043BEE4 <---get & de-crypt input </prE>
+
+   Simply changing the &quot;01&quot; to a &quot;00&quot; will crack this program, the &quot;key&quot;
+
+in
+
+your registry called &quot;ObjectContainer.Network.1&quot; will be permantly
+
+removed
+
+from your computers registry, and the registration input string you
+
+typed
+
+will be placed in the &quot;registration&quot; key in your computers registry.
+
+	  <BR><BR>
+
+   I must confess at this point, I have NOT figured out a way to reverse
+
+the
+
+math used in the de-cryption process. I know what my name is, so there's
+
+no
+
+need for me to see it in print. I'm sure the math COULD be reversed
+
+though.
+
+So when you press the &quot;About this Software&quot; tab, you'll see the message
+
+&quot;This product is registered to&quot;, but, unfortunately, your name will not
+
+be
+
+there. If you dis-like this software as much as I do, you'll just throw
+
+it
+
+away as soon as you're finished learning from it anyway.
+
+			  <BR><BR>
+
+   I hope you have learned something from this lesson. I've tried to
+
+show
+
+you that de-crypting is not that difficult, and also the many &quot;traps&quot; a
+
+programer might set to slow down and frustrate a potential cracker.
+
+					  <BR><BR>
+
+   There are several REALY GOOD crackers in the +HCU, maybe someday we'll
+
+all
+
+get to be as good as they are. I'm working on it, and YOU should be too!
+
+But
+
+don't let the programers &quot;trick&quot; you into giving up by using methods
+
+like
+
+the ones I've shown you here.
+
+										   <BR><BR>
+
+   Welcome back +ORC. Thanks to you, fravia+, and all the rest, for your
+
+fine works. We are all islands in a sea of greed, but together we can
+
+form a
+
+continent. Legend has it that intellegent life first apeared on dry
+
+land.
+
+												   <PRE>
+
+                                                   Hackmore Readrite
+
+                                                   DataMiners Inc.
+
+													</PRE>
+
+
+
+			 <FONT color="green">(c) Hackmore Readrite 1997. All rights reserved</FONT>
+
+<HR ALIGN="CENTER" WIDTH="100%" SIZE="3">
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</I></CENTER>
+
+<BR><CENTER>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">
+
+<A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#79'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#79">homepage</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"> 
+
+<A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#53'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#53">links</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0">
+
+<A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#78'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#78">students' essays</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut CGI-scripts</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering illegal?</A></CENTER>
+
+<CENTER><HR ALIGN="CENTER" WIDTH="100%" SIZE="2"></CENTER>
+
+</BODY>
+
+</HTML>
+
+
+
+
+

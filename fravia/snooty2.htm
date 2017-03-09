@@ -1,0 +1,812 @@
+<html>
+
+<HTML>
+
+<HEAD>
+
+<TITLE>snooty2.htm:  Unprotecting unprotectors ; or how AccessData failed itself by relying on StopCopy</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR=#C0C0C0 TEXT=#001010 VLINK=#405040>
+
+<CENTER><I>
+
+Courtesy of fravia's pages of reverse engineering
+
+</I><BR>~<BR>15 July 1998</CENTER>
+
+ <HR size=1><PRE><CENTER>Unprotecting unprotectors
+
+or 
+
+how AccessData failed itself by relying on StopCopy
+
+by Snooty, July 1998</CENTER>
+
+
+
+Tools Needed
+
+Filemon
+
+Regmon
+
+Winasm89
+
+Hex Editor (I like Hexpert)
+
+
+
+This is a lesson on fear and learning not to feel it (when it comes 
+
+to hacking, that is.  You've got a Doberman behind you, run for your 
+
+life!)  This is a story of how an average cracker took on the big 
+
+boys and won.  It is also the story of how a company that created 
+
+some good DOS-based protection schemes relied on some expensive 
+
+third-party protection software and died trying.
+
+
+
+Accessdata is a company out of Orem, Utah which specializes in 
+
+password cracking for many popular applications - Word, Excel, 
+
+WordPerfect, Paradox, Lotus, etc.  They have been around since 1985 
+
+or so, and their stuff works well.  You can reach them at 
+
+www.accessdata.com to pick up their most recent Win32 'demo'.  This 
+
+is a fantastic piece of work (hereafter referred to as 'the target') 
+
+that has crackers for over 18 different applications with over 45 
+
+versions supported in all.  It is the latest and greatest in 
+
+deprotection.  Licenses are available for different 'modules' that 
+
+allow the user to crack  specific applications.  Note that this demo 
+
+is the second demo that Accessdata has distributed.  The first one 
+
+was written completely for DOS, and was much harder to crack.  It is 
+
+a great testpiece for crackers to sharpen their skills.
+
+
+
+The primary protection on this proggie is a third-party wrapper 
+
+written by StopCopy, a commercial vendor.  It uses a 'key disk' to 
+
+store license data and other random, secret files to lock the 
+
+original application.  As we will see, there are some other 
+
+subroutines that test for code tampering, date changing, and license 
+
+altering.  You can find out a lot about the program at 
+
+<A href="javascript:if(confirm('http://www.bbics.com/q&a.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.bbics.com/q&a.htm'" tppabs="http://www.bbics.com/q&a.htm" target=_blank>http://www.bbics.com/q&a.htm</A>.  Here are some intimidating quotes from 
+
+the page:
+
+<FONT color=purple>
+
+StopCopy is an easy to use, extremely powerful software protection 
+
+package which can effectively protect anyone's valuable software 
+
+investments. It remains virtually transparent to the honest end-user, 
+
+and is loaded with options.  PC versions of StopCopy can reliably 
+
+defeat all SOFTWARE copiers executing on an IBM/Compatible computer.  
+
+Macintosh versions of StopCopy can reliably defeat all SOFTWARE 
+
+copiers executing on a Macintosh computer.  It is the program of 
+
+choice for developers wishing to defeat all software copiers for a 
+
+very low price.
+
+
+
+Q.    What stops a hacker from simply removing the protection code?
+
+A.    All StopCopy Products employ extensive encryption and    
+
+      checksumming routines. (Mommy!) Also, the developer can choose 
+
+      to use multiple layering (???) , which will afford him even more 
+
+      protection.
+
+</FONT>
+
+Ok, lets crack this nooge (pronounced knew-j as in 'jerk')
+
+
+
+You start this proggie up and you get a splash screen, saying 
+
+"Verifying License Data".  It obviously can't, then a second box 
+
+comes up demanding that you insert your license diskette.  But, I 
+
+donít have one!  So I must hit Cancel and go into demo mode. A third 
+
+box pops up saying that I can try it ,etc.,etc. but it will only 
+
+recover passwords of 10 characters. OK.
+
+
+
+Now a thought for a long time.  Was this nooge complete?  That is, 
+
+was this proggie distributed in its entirety by a greedy software 
+
+vendor (with dollar signs for eyes), or were there subroutines on 
+
+this license diskette that were vital to the proper operation of the 
+
+program.  Was StopCopy providing vital services, vital code I would 
+
+need to have, or was the key disk some kind of bullshit  'check for 
+
+good guy and his license files' crapola?
+
+
+
+Run Filemon and Regmon.  We see some files being accessed but they 
+
+look like the latter - some extremely complicated license files in 
+
+some 5000-bit encryption key that no one will ever break.  BUT,  no 
+
+access of vital .dlls or .exes of something like that.  This nooge 
+
+was complete - how else could it recover the passwords except by 
+
+scanning all of them?  I felt it at a deep level that I had it by the 
+
+balls.
+
+
+
+Fire up Winasm8.9
+
+
+
+Search through the strings embedded in the prog - we see such 
+
+interesting bits as "Law Enforcement Version","Your time has 
+
+Come","Operating in Demo Mode" (boo,hiss), and "This Program has been 
+
+Corrupted".  OK,  Let start with the last one, and use a regimented 
+
+approach to cracking the schemes one by one.   Again, some thought.  
+
+Obviously we will need to fix the checksumming routine first, or all 
+
+of our efforts will be in vain.  Start by finding the string "This 
+
+Program has been Corrupted"
+
+
+
+This is the relevant code:
+
+
+
+:00401D97 A154C05800		mov eax, dword ptr [0058C054]
+
+:00401D9C E8F7570600		call 00467598
+
+:00401DA1 E87AFEFFFF        	call 00401C20
+
+:00401DA6 E895FDFFFF        	call 00401B40
+
+:00401DAB 803D20B9500000 	cmp byte ptr [0050B920], 00
+
+:00401DB2 7527 			jne 00401DDB  &lt; ---- check is here!
+
+:00401DB4 6A30 			push 00000030
+
+
+
+* Possible StringData Ref from Data Obj -&gt;"Corrupted Executable"
+
+                               
+
+:00401DB6 B9E1044F00 		mov ecx, 004F04E1
+
+
+
+* Possible StringData Ref from Data Obj -&gt;"This program has been 
+
+corrupted."
+
+                                  |
+
+:00401DBB BA9F044F0		mov edx, 004F049F
+
+:00401DC0 A108215900		mov eax, dword ptr [00592108]
+
+:00401DC5 E8E6B50900 		call 0049D3B0
+
+:00401DCA 33C0 			xor eax, eax
+
+
+
+
+
+Change the 75 to 74 at 00401DB2.  Incredibly, that one byte kills off 
+
+the so-called 'extensive' checksumming routines.
+
+
+
+Phase 2 - Lets kill off the time check by the numbers.  Search for 
+
+the string "Your Time was Come".  Youll find it along with a long 
+
+harangue about expiration, order the target, etc.etc,etc.  Heres the 
+
+snippet:
+
+
+
+Referenced by a Jump at Address:004056DC(C)
+
+
+
+:00405A94 E82A650900 		call 0049BFC3
+
+:00405A99 DD9D60FFFFFF		fstp qword ptr [ebp+FFFFFF60]
+
+:00405A9F 8D8560FFFFFF 		lea eax, dword ptr [ebp+FFFFFF60]
+
+:00405AA5 E836360000 		call 004090E0
+
+:00405AAA 3B056CB55200 		cmp eax, dword ptr [0052B56C]
+
+:00405AB0 7435 			jle 00405AE7 &lt;  ---- check is here!
+
+:00405AB2 6A41  		push 00000041
+
+
+
+* Possible StringData Ref from Data Obj -&gt;"Your Time Has Come"
+
+                                
+
+:00405AB4 B9B34D4F00  		 mov ecx, 004F4DB3
+
+
+
+* Possible StringData Ref from Data Obj -&gt;"This program has expired.  You "
+
+-&gt;"may click 'Cancel' to attempt "
+
+-&gt;"to run it with a license diskette "
+
+-&gt;"if you have received one.  Otherwise, "
+
+-&gt;"click 'OK' to exit the program. "
+
+-&gt;" Contact AccessData for details."
+
+
+
+Change the 7E to EB and thats the end of the 'extensive' time expiry 
+
+protection!
+
+
+
+Phase 3 - Lets kill off the demo nag screen by the numbers.  Search 
+
+the String refs for 'You are About to enter Demo Mode".
+
+
+
+* Referenced by a Jump at Addresses:00405B1A(C), :00405BF0(U), :00405C40(U), 
+
+:00405D11(C), :00405D44(U) :00405D73(U)
+
+:00405DA2 E82E160200 	call 004273D5 &lt;   ---- and a suspicious little bastard here!
+
+:00405DA7 84C0  		test al, al
+
+:00405DA9 7422  		je 00405DCD
+
+:00405DAB 8B0D08215900   	mov ecx, dword ptr [00592108]
+
+:00405DB1 80797C00  		cmp byte ptr [ecx+7C], 00
+
+:00405DB5 7516  		jne 00405DCD &lt;  ---- Demo Nag Screen here!
+
+:00405DB7 6A00   		push 00000000
+
+
+
+* Possible StringData Ref from Data Obj -&gt;"You are about to enter Demo Mode."
+
+
+
+:00405DB9 B9B2524F00 		mov ecx, 004F52B2
+
+
+
+* Possible StringData Ref from Data Obj -&gt;"The Password Recovery Toolkit "
+
+-&gt;"demo can recover passwords created "
+
+-&gt;"in applications such as WordPerfect"
+
+
+
+:00405DBE BA9E4F4F00   		mov edx, 004F4F9E
+
+:00405DC3 A108215900  		mov eax, dword ptr [00592108]
+
+:00405DC8 E8E3750900   		call 0049D3B0
+
+
+
+
+
+By this time I was breathing pretty easy - StopCopy is a fucking 
+
+Joke! Also I thought I had finally split this nooge with one final  
+
+edit   - after all, it jumps the demo mode. So I Change the 74 to EB 
+
+- and nothing happens.  A dark pall was cast onto the scene - I felt 
+
+a nameless presence, and I knew its name was "Multiple Checks"  This 
+
+snippet of code was referenced by six different other calls, and I 
+
+knew that tracing them down would be a hassle, a snarly maze of irets 
+
+and calls twisting in and back on themselves.  Long thinky.
+
+
+
+I was at the starting point, and I knew the finish too - it was after 
+
+the window opened up and everything was loaded, waiting for the user 
+
+to do something.  I figured that all the security choices would have 
+
+already been made by this point, so the solution lay in finding a 
+
+reference point in the middle to guide by.  Perhaps by working from a 
+
+known middle location I could connect the dots and find the path.  
+
+Search through the string refs, always the string refs, until I find 
+
+one that I like - "Law Enforcement Version".  This I like - this must 
+
+be on the right path.  Lets look at it:
+
+
+
+* Possible StringData Ref from Data Obj -&gt;"C:\"
+
+
+
+:00407B39 BA8F534F00              mov edx, 004F538F
+
+:00407B3E 8D45FC                  lea eax, dword ptr [ebp-04]
+
+:00407B41 E81A670600              call 0046E260
+
+:00407B46 FF45D8                  inc [ebp-28]
+
+:00407B49 8B10                    mov edx, dword ptr [eax]
+
+:00407B4B 8B4DB8                  mov ecx, dword ptr [ebp-48]
+
+:00407B4E 8B819C020000            mov eax, dword ptr [ecx+0000029C]
+
+:00407B54 E8C7860D00              call 004E0220
+
+:00407B59 FF4DD8                  dec [ebp-28]
+
+:00407B5C 8D45FC                  lea eax, dword ptr [ebp-04]
+
+:00407B5F BA02000000              mov edx, 00000002
+
+:00407B64 E857690600              call 0046E4C0
+
+:00407B69 E802DBFFFF              call 00405670
+
+:00407B6E A154C05800              mov eax, dword ptr [0058C054]
+
+:00407B73 E8E0020700              call 00477E58
+
+:00407B78 8B1554C05800            mov edx, dword ptr [0058C054]
+
+:00407B7E 8955F8                  mov dword ptr [ebp-08], edx
+
+:00407B81 837DF800                cmp dword ptr [ebp-08], 00000000
+
+:00407B85 7419                    je 00407BA0
+
+:00407B87 66C745CC2000            mov [ebp-34], 0020
+
+:00407B8D BA03000000              mov edx, 00000003
+
+:00407B92 8B45F8                  mov eax, dword ptr [ebp-08]
+
+:00407B95 8B08                    mov ecx, dword ptr [eax]
+
+:00407B97 FF51FC                  call [ecx-04]
+
+:00407B9A 66C745CC1400            mov [ebp-34], 0014
+
+
+
+* Referenced by a Jump at Address: 00407B85(U)
+
+|
+
+:00407BA0 803DF88A580000          cmp byte ptr [00588AF8], 00
+
+:00407BA7 0F8482000000            je 00407C2F
+
+:00407BAD 66C745CC2C00            mov [ebp-34], 002C
+
+:00407BB3 8D45F4                  lea eax, dword ptr [ebp-0C]
+
+:00407BB6 E8E5A9FFFF              call 004025A0
+
+:00407BBB 8BD0                    mov edx, eax
+
+:00407BBD FF45D8                  inc [ebp-28]
+
+:00407BC0 8B45B8                  mov eax, dword ptr [ebp-48]
+
+:00407BC3 E89CF50500              call 00467164
+
+:00407BC8 8D55F4                  lea edx, dword ptr [ebp-0C]
+
+:00407BCB 52                      push edx
+
+:00407BCC 8D45EC                  lea eax, dword ptr [ebp-14]
+
+:00407BCF E8CCA9FFFF              call 004025A0
+
+:00407BD4 50                      push eax
+
+:00407BD5 FF45D8                  inc [ebp-28]
+
+
+
+* Possible StringData Ref from Data Obj -&gt;" - Law Enforcement Version"
+
+                                  |
+
+:00407BD8 BA93534F00              mov edx, 004F5393
+
+:00407BDD 8D45F0                  lea eax, dword ptr [ebp-10]
+
+:00407BE0 E87B660600              call 0046E260
+
+:00407BE5 FF45D8                  inc [ebp-28]
+
+:00407BE8 8D55F0                  lea edx, dword ptr [ebp-10]
+
+:00407BEB 59                      pop ecx
+
+:00407BEC 58                      pop eax
+
+:00407BED E825690600              call 0046E517
+
+:00407BF2 8D55EC                  lea edx, dword ptr [ebp-14]
+
+:00407BF5 8B12                    mov edx, dword ptr [edx]
+
+:00407BF7 8B45B8                  mov eax, dword ptr [ebp-48]
+
+:00407BFA E895F50500              call 00467194
+
+:00407BFF FF4DD8                  dec [ebp-28]
+
+:00407C02 8D45EC                  lea eax, dword ptr [ebp-14]
+
+:00407C05 BA02000000              mov edx, 00000002
+
+:00407C0A E8B1680600              call 0046E4C0
+
+:00407C0F FF4DD8                  dec [ebp-28]
+
+:00407C12 8D45F0                  lea eax, dword ptr [ebp-10]
+
+:00407C15 BA02000000              mov edx, 00000002
+
+:00407C1A E8A1680600              call 0046E4C0
+
+:00407C1F FF4DD8                  dec [ebp-28]
+
+:00407C22 8D45F4                  lea eax, dword ptr [ebp-0C]
+
+:00407C25 BA02000000              mov edx, 00000002
+
+:00407C2A E891680600              call 0046E4C0
+
+
+
+
+
+Scanning upwards from the string ref, we see an unconditional call 
+
+from 00407B85, And the best part of all is itís the only one.  So 
+
+change the 74 to EB at 00407B85.  Now at 00407BA7, we have another 
+
+conditonal - lets change that one too (from 84 to 85) to streamline 
+
+this baby right into the Law Enforcement Version string.  I try it 
+
+again and it still is not fully functional, although it does say Law 
+
+Enforcement Version now.  But it still only cracks ten character 
+
+passwords.  I take a gamble - I know 10 is 0xA and this is a 32-bit 
+
+app (the dlls scream it at you), so a stupid protectionist will 
+
+compare the password to 0000000A.  I search the file and there are 
+
+about twenty of them, but one lets off a stinky aroma:
+
+
+
+:00430D44 50                      push eax
+
+:00430D45 E87759FFFF              call 004266C1
+
+:00430D4A 59                      pop ecx
+
+:00430D4B 84C0                    test al, al
+
+:00430D4D 0F8552010000            jne 00430EA5
+
+:00430D53 837D840A                cmp dword ptr [ebp-7C], 0000000A &lt;--- Stinky!
+
+:00430D57 0F8448010000            je 00430EA5
+
+:00430D5D FF7580                  push [ebp-80]
+
+:00430D60 8B5508                  mov edx, dword ptr [ebp+08]
+
+:00430D63 FFB23C020000            push dword ptr [edx+0000023C]
+
+:00430D69 E85256FEFF              call 004163C0
+
+:00430D6E 83C408                  add esp, 00000008
+
+:00430D71 0FBEC8                  movsx ecx, al
+
+:00430D74 83F94E                  cmp ecx, 0000004E
+
+:00430D77 7536                    jne 00430DAF
+
+:00430D79 66C745984400            mov [ebp-68], 0044
+
+
+
+* Possible StringData Ref from Data Obj -&gt;"&lt;No Password&gt;"
+
+                                  |
+
+:00430D7F BAE5245200              mov edx, 005224E5
+
+:00430D84 8D45E8                  lea eax, dword ptr [ebp-18]
+
+:00430D87 E8D4D40300              call 0046E260
+
+:00430D8C FF45A4                  inc [ebp-5C]
+
+
+
+
+
+Here we have a compare sandwiched between to calls to the bugger off 
+
+routine, right it the middle of the password verification algorithm.  
+
+I start (and finish) with this one - change the top jump from 85 to 
+
+84.
+
+
+
+
+
+Now it works!
+
+
+
+
+
+Several final points:
+
+1.  I was intimidated by this program because it had professional 
+
+protection.  There was no need to be.  On the contrary, the original 
+
+schemes written by Accessdata is DOS took me about one week each to 
+
+crack the proggies one by one.  
+
+
+
+2.  There are of course several types of protection in this scheme - 
+
+checksumming, time expiry, the stopcopy stuff, and the ten-character 
+
+password check.  None of these were hard to beat, but they required a 
+
+regimented approach to beat the entire system.  By concentrating on a 
+
+single step, the journey was finally completed, but none of the steps 
+
+were hard.
+
+
+
+Finally, I had to change my style three times.  I started out 
+
+following string references to kill of the checksumming and time 
+
+expiry.  Then I worked from the middle, transposing from the string 
+
+references to call tracing.  Finally, I used a little Zen to find the 
+
+0000000A connection.  As Lee said, be like the water.
+
+
+
+Snooty
+
+</FONT></PRE>
+
+<CENTER>
+
+<HR size=5>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0> 
+
+<A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links </A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0>
+
+<A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity </A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN=BOTTOM
+
+BORDER=0 VSPACE=0 HSPACE=0 width="13" height="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC </A>
+
+
+
+<IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays </A>
+
+
+
+<IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database </A>
+
+
+
+<IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="botstart.htm" tppabs="http://www.anticrack.de/fravia/botstart.htm">bots wars</A>
+
+
+
+<BR>
+
+<IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut </A>
+
+
+
+<IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 
+
+VSPACE=0 HSPACE=0><A
+
+HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13
+
+BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13
+
+BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="javascri.htm" tppabs="http://www.anticrack.de/fravia/javascri.htm">javascript wars </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia </A><BR>
+
+
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering illegal? </A></CENTER>
+
+<HR size=4></FONT></CENTER></CENTER>
+
+
+
+</BODY>
+
+</HTML>
+
+
+
+</BODY>
+
+</HTML>
+
+
+
+
+

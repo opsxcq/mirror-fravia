@@ -1,0 +1,1332 @@
+<HTML>
+
+<HEAD>
+
+
+
+<TITLE>iceman1.htm: WIN32 - Inside Debug API</TITLE>
+
+</HEAD>
+
+
+
+<BODY BGCOLOR=#C0C0C0 TEXT=#001010 VLINK=#405040>
+
+
+
+
+
+<CENTER><A href="papers.htm" tppabs="http://www.anticrack.de/fravia/papers.htm"><IMG SRC="papers.gif" tppabs="http://www.anticrack.de/fravia/papers.gif" ALT="papers" ALIGN=BOTTOM WIDTH=114 
+
+EIGHT=43 BORDER=0 VSPACE=0 HSPACE=0></A><BR><FONT color=gray>Back to the HCU Papers</FONT></CENTER><HR>
+
+<PRE>
+
+				WIN32 - Inside Debug API
+
+				------------------------
+
+		(Things you need to know: the mysterious CONTEXT structure) 
+
+					
+
+							by Iceman, 20 March 1998
+
+
+
+	I'm very proud that my previous work "Tweaking with memory in Windows 95" was good
+
+enough to open a new section ,"+HCU's PAPERS", at Fravia's.That's very stimulating ,so I'm
+
+back! I hope that will be many other contributors to this section.Let's bring light in the
+
+shadows!
+
+	BTW, Fravia ,I really like the picture for your new section.I'm with you boys,now
+
+and forever!And one more thing:for  now one I will send you my essays in .htm format.No more
+
+plain text files!
+
+	In this document I will focus on Debug API functions.I think that it is an 
+
+interesting chapter,who worth a closer lock.
+
+	Note:In order to use those functions in Windows NT your user must have debug 
+
+privileges access right granted.I don't know for sure but it seems that NT does not grant
+
+this for default to administrators.
+
+	I have started to work on part two of "Tweaking with memory in Windows 95" this
+
+time I want to present a VxD aprroach.It's nice to write self-modifying code using the linker
+
+trick(Make code section read-write at link time).But wouldn't be nicer to relay only on VxD calls
+
+to tweak with memory leaving that damned section write protected and without ANY high-level
+
+calls to functions like VirtualProtect? The target will be this time the virtual memory manger 
+
+itself.Anyone out there who could HELP?.
+
+ 
+
+	The document has the following structure:
+
+
+
+	Chapter1:Functions and structures.
+
+	Chapter2:Debug events.
+
+	Chapter3:Creating or attaching a process for being debugged.
+
+	Chapter4:The main loop: WaitForDebugEvent - ContinueDebugEvent.
+
+	Chapter5.Handling debug events.
+
+	Chapter6:GetThreadContext & Set ThreadContext(Advanced stuff)
+
+		 6.1 Thread Contexts explained
+
+		 6.2 Injecting code in another process.
+
+	Chapter7:Notes
+
+	
+
+===============================================================================================
+
+
+
+
+
+	Chapter1:Functions and structures
+
+	----------------------------------
+
+	
+
+	A good WIN32 API reference for future reference is OK.I don't explain here all
+
+the parameters those functions take, nor all structures.But for now,let's see the API:
+
+
+
+
+
+	ContinueDebugEvent
+
+	DebugActiveProcess
+
+	DebugBreak
+
+	FatalExit
+
+	FlushInstructionCache
+
+	GetThreadContext
+
+	GetThreadSelectorEntry
+
+	IsDebuggerPresent 
+
+	OutputDebugString
+
+	ReadProcessMemory
+
+	IsDebuggerPresent 
+
+	SetThreadContext
+
+	WaitForDebugEvent
+
+	WriteProcessMemory 
+
+
+
+	As we can see , two old friends:WriteProcessMemory & ReadProcessMemory.We all know
+
+them very well,so let's go further.
+
+	FlushInstructionCache ,IsDebuggerPresent,OutputDebugString? Self-explanatory.
+
+
+
+	DebugActiveProcess 
+
+	------------------
+
+
+
+		This function allows a debugger to attach to an active process.
+
+
+
+		BOOL DebugActiveProcess(
+
+					DWORD dwProcessId 	  
+
+   					);
+
+		Parameters:
+
+	 
+
+			   DWORD dwProcessId: PID of process to attach	
+
+
+
+	WaitForDebugEvent
+
+	-----------------
+
+		
+
+		This function allow the debugger to wait until a debug event heapens
+
+	in target process.
+
+
+
+		BOOL WaitForDebugEvent(
+
+				       LPDEBUG_EVENT lpDebugEvent,
+
+				       DWORD dwMilliseconds 
+
+   				       );
+
+		Parameters:	
+
+ 			  LPDEBUG_EVENT lpDebugEvent: Pointer to a  DEBUG_EVENT type structure.
+
+						      This struct will receive info about the
+
+						      debug event trapped. 		
+
+			  DWORD dwMilliseconds:       Number of ms. to wait.Could be INFINITE.
+
+					  	      If it is INFINITE WaitForDebugEvent does
+
+						      not return until a debug event occurs.		
+
+	ContinueDebugEvent
+
+	------------------
+
+
+
+		This function allow the debugger to resume a thread that previously raised a 
+
+	debug event.
+
+	
+
+		BOOL ContinueDebugEvent(
+
+					 DWORD dwProcessId,	 
+
+	              			 DWORD dwThreadId,	
+
+				         DWORD dwContinueStatus 	
+
+  					 );
+
+		Parameters:
+
+			   
+
+			 DWORD dwProcessId:       PID of process beeing debugged 	 
+
+            		 DWORD dwThreadId:        TID of thread to be resumed	
+
+		         DWORD dwContinueStatus : DWORD that specify how the thread will 
+
+						  continue.Two values defined:
+
+						  DBG_CONTINUE  & DBG_EXCEPTION_NOT_HANDLED.
+
+	 	
+
+	Debug Break
+
+	----------
+
+	        This function causes a breakpoint in current process.
+
+
+
+		VOID DebugBreak(VOID);
+
+
+
+				
+
+	FatalExit
+
+	---------
+
+		This function force the exit of caller process,transferring execution to debugger
+
+
+
+		VOID FatalExit(
+
+			      int ExitCode 
+
+			      );
+
+		Parameters:
+
+			  int ExitCode : Exit code 
+
+
+
+	
+
+	GetThreadContext & Set Thread context
+
+	------------------------------------- 
+
+		Those functions are used to retrieve & set the context of a thread.See chapter 6.
+
+
+
+		BOOL GetThreadContext(
+
+				      HANDLE hThread,	
+
+			              LPCONTEXT lpContext 	
+
+				      );
+
+		
+
+		BOOL SetThreadContext(    
+
+				      HANDLE hThread,	
+
+				      CONST CONTEXT *lpContext 	 
+
+				      );
+
+		Parameters:
+
+			HANDLE hThread:      A handle to thread whose context is being read 
+
+					     or set.
+
+		 	LPCONTEXT lpContext: Pointer to a CONTEXT structure to receive /set
+
+					     context info.  	
+
+					
+
+	GetThreadSelectorEntry
+
+	----------------------
+
+		The GetThreadSelectorEntry function retrieves a descriptor table entry for
+
+	the specified selector and thread.
+
+ 
+
+		BOOL GetThreadSelectorEntry(
+
+					    HANDLE hThread,	
+
+					    DWORD dwSelector,	
+
+					    LPLDT_ENTRY lpSelectorEntry 
+
+					    );
+
+		Parameters:
+
+			HANDLE hThread: 	      A handle to thread containing specified 
+
+						      selector.
+
+		        DWORD dwSelector: 	      Selector Number	
+
+	                LPLDT_ENTRY lpSelectorEntry   Pointer to a structure that receive
+
+						      descriptor table.		
+
+
+
+================================================================================================
+
+
+
+
+
+	Chapter2:Debug events.
+
+	----------------------
+
+
+
+
+
+	From Debug API functions point of view a debug events is an object used to communicate
+
+with the debugger.When a debug event occurs in target process the OS inform the debugger about
+
+this.The debugger use WaitForDebugEvent to retrieve info about the event that occurred in target
+
+process(See chapter 5).Following debug events exists:
+
+	1.CREATE_PROCESS_DEBUG_EVENT & EXIT_PROCESS_DEBUG_EVENT raised every time than a new
+
+process is created/destroyd by the process being debugged.
+
+	2.CREATE_THREAD_DEBUG_EVENT & EXIT_CREATE_THREAD_DEBUG_EVENT raised whenever a new
+
+thread object is created/destroyed by the process being debugged.
+
+	3.LOAD_DLL_DEBUG_EVENT & UNLOAD_DLL_DEBUG_EVENT generated whenever the target loads/
+
+unloads a dll.
+
+	4.OUTPUT_DEBUG_STRING_EVENT generated than target calls OutputDebugString.
+
+	5.EXCEPTION_DEBUG_EVENT generated when an exception occurs in target process.This
+
+include breakpoint instructions such INT 3 , DivideOverflow .....
+
+	6.RIP_DEBUG_EVENT generated when a RIP exception occurs.
+
+	WaitForDebugEvent receives the debug event and returns information about the event
+
+in a DEBUG_EVENT structure.This structure is defined as below in WIN32 AP:
+
+
+
+	typedef struct _DEBUG_EVENT {  
+
+				    DWORD dwDebugEventCode; 
+
+				    DWORD dwProcessId; 
+
+				    DWORD dwThreadId; 
+
+				    union { 
+
+				          EXCEPTION_DEBUG_INFO Exception; 
+
+				          CREATE_THREAD_DEBUG_INFO CreateThread; 
+
+				          CREATE_PROCESS_DEBUG_INFO CreateProcessInfo; 
+
+				          EXIT_THREAD_DEBUG_INFO ExitThread; 
+
+				          EXIT_PROCESS_DEBUG_INFO ExitProcess; 
+
+				          LOAD_DLL_DEBUG_INFO LoadDll; 
+
+				          UNLOAD_DLL_DEBUG_INFO UnloadDll; 
+
+				          OUTPUT_DEBUG_STRING_INFO DebugString;         
+
+					  RIP_INFO RipInfo; 
+
+    					  } u; 
+
+				      } DEBUG_EVENT; 
+
+	The member dwDebugEventCode contains a value indicating which kind of debug  events
+
+was ocureed.The dwProcessId member contain the PID of process in which the debug event occurred.
+
+The union u member is a classic C/C++ union.It is reflected in a structure whose type is 
+
+determined by DWORD dwDebugEventCode.This structure contains extended information about the
+
+event that ocurred.I don't list all of them here because it's pointless.
+
+	Also note that a CREATE_PROCESS_DEBUG_EVENT is generated than a debugger attach to a 
+
+target process.
+
+	
+
+================================================================================================
+
+
+
+
+
+	Chapter3:Creating or attaching a process for being debugged
+
+	------------------------------------------------------------
+
+
+
+	In this short chapter I present you how to create a process for being debugged,or
+
+how to attach to an already running process.
+
+
+
+	3.1:Creating a process for being debugged
+
+		Use CreateProcess to create the process being debugged.Call this function
+
+	   with dwCreationFlags parameter with one of following values DEBUG_PROCESS or
+
+	   DEBUG_ONLY_THIS_PROCESS.If target process is created with DEBUG_PROCESS creation
+
+	   flag than the debugger will receive events from all processes crated by target
+
+	   process.If dwCreationFlags=DEBUG_ONLY_THIS_PROCESS than the debugger will receive
+
+	   debug events only from target process ignoring child processes.As usually you
+
+	   can use PROCESS_INFORMATION structure to ret rive handles to both the created 
+
+	   process and it's primary thread as well as the PID an TID(for primary thread).
+
+
+
+	3.2:Attaching to an already running process
+
+		Use DebugActiveProcess function.If this function returns successfully you
+
+	    are attached to target as if you called CreateProcess with DEBUG_ONLY_THIS_PROCESS
+
+	    flag.
+
+
+
+	Note that in WindowsNT DebugActiveProcess can easily fail if we try to attach to a 
+
+process that was created with a security descriptor that denies requested access.In WIN95
+
+the only thing you have to worry	is to pas a valid PID to DebugActiveProcess.That's it man!
+
+NT has better security.
+
+	Attaching to a process is an elegant method but sometimes the loader method is the
+
+only solution.It's up to you what method to use.For a simple game trainer it's OK to attach
+
+but if you really want to do cool things...,better use the loader method.It gives you full
+
+control over the target process and it's threads.
+
+
+
+================================================================================================
+
+	
+
+	
+
+	Chapter4:The main loop: WaitForDebugEvent - ContinueDebugEvent
+
+	--------------------------------------------------------------
+
+	 
+
+
+
+	A minimum skeleton for using Debug API function is easy to implement.All you have to
+
+do is to create a process for being debugged and the implement code to watch for debug events.
+
+I call the part responsible with watching debug events "The Main Loop".Why?Because is very
+
+simple to implement as a While loop.The functions you have to use for this are 
+
+WaitForDebugEvent - ContinueDebugEvent. As we have seen before WaitForDebugEvent waits for a
+
+certain amount of time for a debug event to occur in target process.If a debug event does not
+
+occur in this time the function times-out and return FALSE. If a debug events occurs than
+
+this function return TRUE,fill a  DEBUG_EVENT type structure with info about event type and 
+
+freeze the thread in witch the debug event ocurred.The programmer is responsible to perform
+
+event type checking and take appropriate meassures.After the specific code for handling debug
+
+event is executed we have to use ContinueDebugEvent to resume thread execution and wait for
+
+other events to occure.Another thing to worry: the only thread witch is allowed to call
+
+WaitForDebugEvent is the thread who created or attached to target process.So let's see some
+
+code:
+
+
+
+	PROCESS_INFORMATION pi;
+
+	STARTUP_INFO        si;
+
+	DEBUG_EVENT	    devent;
+
+	if(CreateProcess( 0 , "target.exe"	, 0 , 0 ,FALSE ,DEBUG_ONLY_THIS_PROCESS , 0 ,0 ,
+
+			&si , &pi))
+
+	while(TRUE)
+
+	  {
+
+		{
+
+		if (WaitForDebugEvent( &devent , 150)) // wait 150 ms for debug event
+
+			{
+
+			switch(devent.dwDebugEventCode)
+
+			      {
+
+			       case CREATE_PROCESS_DEBUG_EVENT:
+
+				// your handler here
+
+			       break;		
+
+			       case EXIT_PROCESS_DEBUG_EVENT:
+
+				// your handler here
+
+				break;
+
+			       case EXCEPTION_DEBUG_EVENT:		 	
+
+				// your handler here
+
+				break;
+
+
+
+			      }	
+
+			ContinueDebugEvent(devent.dwProcessId , devent.dwThreadId , DBG_CONTINUE);
+
+	
+
+			}
+
+
+
+		else
+
+			{
+
+		         // other operations
+
+			}
+
+
+
+		}
+
+	  }  // while end here 
+
+	else 
+
+		{
+
+		MessageBox(0,"Unexpected load error","Fatal Error" ,MB_OK);	
+
+		}
+
+
+
+
+
+=================================================================================================
+
+			
+
+
+
+	Chapter5.Handling debug events
+
+	-------------------------------
+
+
+
+	In previous example we can see that how we can trap debug events and take appropriate
+
+actions using case/switch C /C++ statements.Each debug event has a personal handler who
+
+gets executed when corresponding debug event occurs.More information about the debug event
+
+can be found in union u member of DEBUG_EVENT.As a example let's the structure corresponding
+
+to EXCEPTION_DEBUG_EVENT.I choose this because encountering breakpoints and tracing through 
+
+code generates an exception debug event.See a API reference for other events. 
+
+
+
+	typedef struct _EXCEPTION_DEBUG_INFO 
+
+			   { 
+
+			    EXCEPTION_RECORD ExceptionRecord; 
+
+			    DWORD dwFirstChance; 
+
+		           } EXCEPTION_DEBUG_INFO; 
+
+
+
+	In this case we have to retrieve data we need from another structure,member of
+
+ EXCEPTION_DEBUG_INFO structure.This is EXCEPTION_RECORD structure in which , finally ,
+
+we can find all data we need about trapped exception.Let's see:
+
+
+
+							
+
+	typedef struct _EXCEPTION_RECORD 
+
+			{ 
+
+		        DWORD ExceptionCode; 
+
+                        DWORD ExceptionFlags; 
+
+                        struct _EXCEPTION_RECORD *ExceptionRecord; 
+
+                        PVOID ExceptionAddress; 
+
+                        DWORD NumberParameters; 
+
+                        DWORD ExceptionInformation[EXCEPTION_MAXIMUM_PARAMETERS]; 
+
+                        } EXCEPTION_RECORD; 
+
+	
+
+
+
+	DWORD ExceptionCode:    Specifyes the type of exception 
+
+	ExceptionFlags     :    0 if exception is a continuable exception
+
+			        EXCEPTION_NONCONTINUABLE if exception is not continuable.
+
+	ExceptionRecord    :    Pointer to  an associated EXCEPTION_RECORD structure
+
+        PVOID ExceptionAddress: Pointer to the address where exception occurred
+
+	DWORD NumberParameters: Number of parameters defined in ExceptionInformation
+
+	ExceptionInformation:   Additional 32 bit array.For most exception is undefined.
+
+
+
+	Using the information from those structures we can find all we need.We can retrieve
+
+the thread there exception occurred , type of exception , if we can continue execution or not,
+
+the address where exception occurred  and others.
+
+	Note that trying to continue a EXCEPTION_NONCONTINUABLE exception type will
+
+generate a EXCEPTION_NONCONTINUABLE_EXCEPTION exception.
+
+	Currently used exceptions are EXCEPTION_BREAKPOINT and EXCEPTION_SINGLE_STEP.The
+
+first exception is raised on a breakpoint hit, the seconds signalizes that trace trap
+
+signals that one instruction has been executed.
+
+	Using a similar mechanism you can gather information about threads , dll's used
+
+by running process and other things.
+
+
+
+===============================================================================================
+
+
+
+
+
+	Chapter6:GetThreadContext & Set ThreadContext(Advanced stuff)
+
+	-------------------------------------------------------------
+
+
+
+
+
+	6.1 Thread Contexts explained
+
+	-----------------------------
+
+
+
+	I really enjoyed writing this chapter.All others are things easy to figure out.Don't
+
+scare it not really difficult to understand what's going on in this chapter.Before to present
+
+those two functions and their use I want to remember some basic things about processes and 
+
+threads.
+
+	In WIN32 philosophy a process is a object who has an private address space , code ,
+
+data , and a primary thread.Each process has at the very beginning only one thread.From the
+
+primary thread we can later create other threads which run in the same address space.Contrary
+
+to the popularly belief a process does NOT execute any kind of code.The threads are the objects
+
+who executes the code.The thread objects share the same address space and resources but they
+
+have individual contexts.What means that? Windows95 and WindowsNT are multitasking AND 
+
+multithread operating systems.The OS seems to run all threads in the same time , but this is 
+
+not true. Every individual thread is scheduled for execution for a short time , and the the
+
+OS save the thread state in a structure called CONTEXT structure and goes for the next thread.
+
+The information saved in this structure represents the thread context and is formed by:
+
+	- threads machine registers (CPU registers)
+
+	- the kernel stack and the user stack address
+
+	- thread environment block address.
+
+	The the OS encounter again our thread it restores it's context info from associated
+
+structures and resume execution like nothing happened.
+
+	Ok,so let's see the CONTEXT structure.Unfortunately seems that Microsoft does not
+
+include info about this structure API help files. The structure is documented at minimum
+
+in winnt.h header file in Watcom compilers(can be elsewhere in others.Keep looking).Keep in 
+
+mind that this structure is hardware dependent so expect different implementations for 
+
+x86 , Alpha...
+
+
+
+typedef struct _CONTEXT {
+
+    DWORD ContextFlags;	
+
+    DWORD   Dr0;
+
+    DWORD   Dr1;
+
+    DWORD   Dr2;
+
+    DWORD   Dr3;
+
+    DWORD   Dr6;
+
+    DWORD   Dr7;
+
+    FLOATING_SAVE_AREA FloatSave;
+
+    DWORD   SegGs;
+
+    DWORD   SegFs;
+
+    DWORD   SegEs;
+
+    DWORD   SegDs;
+
+    DWORD   Edi;
+
+    DWORD   Esi;
+
+    DWORD   Ebx;
+
+    DWORD   Edx;
+
+    DWORD   Ecx;
+
+    DWORD   Eax;
+
+    DWORD   Ebp;
+
+    DWORD   Eip;
+
+    DWORD   SegCs;              
+
+    DWORD   EFlags;             
+
+    DWORD   Esp;
+
+    DWORD   SegSs;
+
+
+
+} CONTEXT;
+
+
+
+typedef struct _FLOATING_SAVE_AREA {
+
+    DWORD   ControlWord;
+
+    DWORD   StatusWord;
+
+    DWORD   TagWord;
+
+    DWORD   ErrorOffset;
+
+    DWORD   ErrorSelector;
+
+    DWORD   DataOffset;
+
+    DWORD   DataSelector;
+
+    BYTE    RegisterArea[SIZE_OF_80387_REGISTERS];
+
+    DWORD   Cr0NpxState;
+
+} FLOATING_SAVE_AREA;
+
+
+
+typedef FLOATING_SAVE_AREA *PFLOATING_SAVE_AREA;
+
+
+
+
+
+   DWORD ContextFlags: the folowing values are defined:
+
+	
+
+		 CONTEXT_CONTROL          // SS:SP, CS:IP, FLAGS, BP
+
+		 CONTEXT_INTEGER          // AX, BX, CX, DX, SI, DI
+
+		 CONTEXT_SEGMENTS         // DS, ES, FS, GS
+
+		 CONTEXT_FLOATING_POINT   // 387 state
+
+		 CONTEXT_DEBUG_REGISTERS  // DB 0-3,6,7
+
+
+
+		 CONTEXT_FULL=(CONTEXT_CONTROL | CONTEXT_INTEGER > CONTEXT_SEGMENTS)
+
+
+
+	Watch out CONTEXT_FULL does not include CONTEXT_DEBUG_REGISTERS and 
+
+CONTEXT_FLOATING_POINT.You must specify them independently.It's huge and ugly, isn't it?
+
+	Ok we know now how a CONTEX structure is looking.Now let's see what can we do with 
+
+this monster.First let's talk a little about GetThreadContext & SetThreadContext.
+
+	The function GetThreadContext is used to get a thread context.
+
+	BOOL GetThreadContext(
+
+			   HANDLE hThread,
+
+			   LPCONTEXT lpContext 	
+
+   			     );	
+
+  	hThread is the handle of thread whose context is to be retrieved.
+
+	LPCONTEXT lpContext is a pointer to a CONTEXT structure.
+
+
+
+	PRIOR TO USE GetThreadContext you MUST initialize  ContextFlags member with
+
+the appropriate flag.Use This to set the amount of info to retrieve.For example if
+
+you specify CONTEXT_CONTROL value  for ContextFlags only SS:SP, CS:IP, FLAGS, BP
+
+will be saved.
+
+	The function SetThreadContext is used to set the thread context.
+
+	BOOL SetThreadContext(
+
+			 HANDLE hThread,	
+
+		         CONST CONTEXT *lpContext 
+
+			     );	
+
+ 	Like before hThread is a handle to destination thread and  CONST CONTEXT 
+
+*lpContext is a pointer to a CONTEXT structure.The amount of information restored
+
+is determined by ContextFlags member.
+
+	You may want to consider another thing.NEVER try to set a thread context
+
+while the thread is running.I consider this "one way ticket to the hell".Use
+
+SuspendThread to stop a running thread.Later after you set the context you
+
+can use ResumeThread function.Warning: using ResumeThread does not guarantee
+
+that the target thread will indeed resume executions.Why?Every thread have an
+
+thread suspend count.When the thread is running the counter is 0.Every time when 
+
+we use SuspendThread this counter is incremented by one.So we call SuspendThread.
+
+The counter will be updated to 1.But W_95 and W_NT are multithread enviroments
+
+so another thread can call too SuspendThread on our thread.Now the counter 
+
+is 2.Calling ResumeThread once will have only one effect.The counter is again 1.
+
+Thread execution is not resumed until the thread suspend count is 0.(ResumeThread function 
+
+decrements the suspend counter ).So how can we be sure that the thread resumed execution?
+
+Simple.Examine the return value. If it's 0 then the thread  was not suspended.If it's
+
+1 the thread was suspended but resumed execution.If it's greater than 1 the thread suspend 
+
+counter was decremented but the thread was not resumed.A value of 0xffffffff means that
+
+ResumeThread failed.
+
+
+
+	6.2 Injecting code in another process.
+
+	--------------------------------------
+
+
+
+
+
+	Now let's take a deep breath.We are almost through.As usually I want to present
+
+you an interesting trick.Let's inject some code into another process address space.We know
+
+how,but first let's talk about a little impediment.We need some committed memory to store
+
+our brand new code.A VirtualAllocEx function was not provided in WIN95 API.It seems that
+
+this one along with it's companion VirtualFreeEx exists under NT.
+
+If our code is very little we can use the space provided by our compilers: The MS-DOS stub of 
+
+the PE files,copyright strings or even unnecessary data strings(I dont care too much if in Help
+
+About the program says that it was developed by "!^$##@*^$f76").Another method is to
+
+save a code page of target process , overwrite with new code , execute new code , restore
+
+code page.Let's see this step by step.
+
+
+
+	1. Use CreateProcess to create a process for being debugged.
+
+	2. Build the "Main Loop" WaitForDebugEvent - ContinueDebugEvent
+
+	3. Stop the target thread. Use SuspendThread.
+
+	4. Use VirtualProtectEx to set a read-write permission to target page
+
+	5. Use ReadProcessMemory to save the target page.
+
+	6. Use GetThreadContext to save the thread context.
+
+	7. Use WriteProcessMemory to write new code page.
+
+	8  Make sure that the last instruction in the new code is a INT 3.We need this to
+
+	   take control when our code finished.The INT 3 will be trapped by our little
+
+	   debugger-like application EXCEPTION_DEBUG_EVENT.Make sure that is a 
+
+	   EXCEPTION_BREAKPOINT  and has occurred at the address there our INT 3 resides.
+
+	9. Make a temporary copy of saved CONTEXT structure.
+
+       10. Set the new eip in the temporary CONTEXT structure (You now what is eip , didn't
+
+	   you?
+
+       11.Resume execution of the thread.Watch it executing our new code.When INT 3 gets
+
+	  executed our little loader will trap it.The target thread is stopped.
+
+       12.Restore the original code page using WriteProcessMemory.
+
+       13.Restore the protection attributes on target page.
+
+       14.Use SetThreadContext to set thread context from the first CONTEXT structure.
+
+       15.Resume thread.
+
+ 
+
+      If we need that our resides in target process address space at the same time with the
+
+original code,and our code is BIG we have to commit some memory in the target process address
+
+space.The code to call VirtuallAlloc is very small,so use previous method to call VirtualAlloc
+
+in the context of the target process.This will commit memory in target's address space and
+
+return a pointer to it.Several kb should be more than enough,so don't be a fool and start
+
+to commit cosmic values like 10 Mb.I wonder if there is another method to implement a 
+
+VirtualAllocEx under WIN95.I keep looking.Anyone now if VirtualAllocEx is implemented
+
+in Memphis(future Windows 98)?.
+
+      If you ever need to convert a segment relative address in linear virtual address you
+
+can use GetThreadSelectorEntry.	
+
+      Final words: !!WATCH!! the stack.DON'T mess IT.If you do , you will be sorry.
+
+
+
+================================================================================================	
+
+	
+
+	   Chapter7.Notes
+
+	   --------------
+
+
+
+	1.Any corrections and additions are wellcomed.Please append them at the end of this 
+
+document and also include your name (or your nickname ).Slightly editing minor mistakes and 
+
+typos is admitted in-place and without notice.
+
+		
+
+						
+
+     	
+
+</PRE>
+
+
+
+<!-- WAY OUT STARTS HERE -->
+
+<HR>
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</I></CENTER>
+
+<BR><CENTER>
+
+<!-- EITHER A NICE GIF LIKE THIS -->
+
+
+
+<CENTER><A href="papers.htm" tppabs="http://www.anticrack.de/fravia/papers.htm"><IMG SRC="papers.gif" tppabs="http://www.anticrack.de/fravia/papers.gif" ALT="papers" ALIGN=BOTTOM WIDTH=114 
+
+EIGHT=43 BORDER=0 VSPACE=0 HSPACE=0></A><BR><FONT color=gray>Back to the HCU Papers</FONT></CENTER><HR>
+
+<BR><BR>
+
+
+
+
+
+<!-- OR JUST A LINK LIKE THIS -->
+
+
+
+<!--
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="project1.htm" tppabs="http://www.anticrack.de/fravia/project1.htm">Back to Your_chosen_project</A> 
+
+<hr width=33%>
+
+-->
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database</A>
+
+<BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="realicra.htm" tppabs="http://www.anticrack.de/fravia/realicra.htm">reality cracking</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="howtosea.htm" tppabs="http://www.anticrack.de/fravia/howtosea.htm">how to search</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="javascri.htm" tppabs="http://www.anticrack.de/fravia/javascri.htm">javascript wars</A>
+
+<BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity academy</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut CGI-scripts</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia+</A>
+
+<BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering legal?</A>
+
+</CENTER>
+
+<HR>
+
+<!-- THAT'S ALL, THANKS A LOT this will allow automated retrieval -->
+
+</BODY>
+
+</HTML>
+
+	
+
+
+
+
+
+
+
+			  			 
+
+		  
+
+			
+
+			   
+
+			   	 
+
+				
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+		
+
+
+
+				
+

@@ -1,0 +1,883 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>conseal.htm: How to crack Conseal PC Firewall in an 'unusual' way: Hooking 
+
+API calls via IAT</TITLE>
+
+
+
+</HEAD>
+
+<BODY BGCOLOR=#C0C0C0 TEXT=#001010 ALINK=#405040 VLINK=#8850AA>
+
+
+
+<TABLE border="0" cellpadding="0" width="100%" align="center">
+
+<TR>
+
+
+
+<TD colspan=3><P align="center"><FONT size="6">How to crack 
+
+Conseal PC Firewall in an 'unusual' way<BR>(Hooking API calls via IAT)</FONT></TD>
+
+<TR><TD colspan=3><PRE>  </PRE></TD></TR>
+
+</TR><TR>
+
+<TD width="22%" bgcolor="#FFFFEA"><P><FONT size="4" color="#00254A"><CENTER>18 September 1999</CENTER></FONT></TD>
+
+<TD width="56%" bgcolor="#FFFFEA"><P><FONT size="4" color="#00254A"><CENTER>By NeuRaL_NoiSE</CENTER></FONT></TD>
+
+<TD width="22%" bgcolor="#FFFFEA"><P><FONT size="4" color="#00254A"><CENTER>a 1999 RingZ3r0 production</CENTER></FONT></TD>
+
+</TR><TR>
+
+<TD><CENTER><A href="advanced.htm" tppabs="http://www.anticrack.de/fravia/advanced.htm"><IMG
+
+SRC="xtranio.gif" tppabs="http://www.anticrack.de/fravia/xtranio.gif" 
+
+ALT="advanced" ALIGN=CENTER WIDTH=114 HEIGHT=43
+
+BORDER=0 VSPACE=0 
+
+HSPACE=0></A><BR><FONT color=gray>Advanced</FONT>
+
+</CENTER></TD><TD><CENTER><FONT size=+3>tools used:</FONT></CENTER></TD>
+
+<TD width="56%"><TABLE border="0" cellpadding="0" 
+
+cellspacing="0" width="100%" align="Center">
+
+<TR>
+
+
+
+<TD><UL type="disc">
+
+<LI><B>SoftIce v4.00</B> 
+
+<LI><B>BoundsChecker v6.01</B> 
+
+<LI><B>Hacker's View v6.15</B> 
+
+<LI><B>Procdump v1.5</B> 
+
+<LI><B>OpGen v1.0b</B> 
+
+<LI><B>Tasm v4.1</B> 
+
+</UL></TD>
+
+</TR></TABLE></TD>
+
+<TD width="22%"><P>&nbsp;</TD>
+
+</TR><TR>
+
+<TD colspan=3 bgcolor="#FFFFEA"><CENTER>
+
+( )<B>Beginner</B> (X)<B>Intermediate</B> (X)<B>Advanced</B> ( 
+
+)<B>Expert</B></FONT>
+
+</CENTER></TD></TR><TR>
+
+<TD width="22%"><P>&nbsp;</TD>
+
+<TD width="56%"><P>&nbsp;</TD>
+
+<TD width="22%"><P>&nbsp;</TD>
+
+</TR><TD BGCOLOR="898030" colspan=3><CENTER>Courtesy of Fravia's page
+
+of 
+
+reverse engineering</CENTER> 
+
+</CENTER></TD></TABLE>
+
+<PRE>lo fravia,
+
+
+
+i'm aware of your (correct imho) criteria of "non-targeted" essays...i find
+
+it stupid that STILL now there are essays that won't teach you anything new,
+
+and most of the tutorial writers cant come up with brand new ideas or
+
+such...but, in this case i chose to write something target-related as this
+
+conseal pc firewall tutorial just because...well, just because i followed a
+
+non-usual approach, which is always a good thing...i implemented an IAT hook
+
+trying to explain the basics of it, exploited a mempatcher to patch the hook
+
+inside the import table, injected the hooking routine code in 00-byte caves
+
+between the object table and the first section's raw data in order to avoid
+
+an obvious decryption-due code modification, without actually adding a
+
+bloated 200 bytes raw section...i mean, i think i came up with something
+
+new...a more 'funny' way of cracking stuff...a 'reversive' approach that
+
+hopefully will open most young reversers minds...woah,
+
+well i'm floating a bit too high there, better to get down again ;)
+
+anyway you get the drift: no matter which target it is, the important is
+
+what i did here... <FONT color=blue>if only 2 more persons tomorrow will be aware that you CAN
+
+hook api calls inside a pe file via IAT hooking thanks to this modest
+
+writing, that would make me the happiest person on earth</FONT>.
+
+
+
+laters,
+
+nN.
+
+</PRE><CENTER>
+
+<I>A great essay by a fine reverser! Italian crackers sublimissimi and machiavellici!<BR>Note how good reversers don't simply breakpoint everything in 
+
+sight to patch a target, but actually STUDY its less common features 
+
+in order to understand deeper truths! Wanna start to understand 
+
+what's like to 
+
+reverse as it should be? Read this. Enjoy!<BR>Of course, as you all (should) 
+
+know, once you master such kind of 
+
+import address table reversing you will <U>also</U> be able to work for 
+
+your favourite "dll taming" projects... eheh... ad astra per aspera!</I></CENTER><BR><BR>
+
+<TABLE border="0" cellpadding="0" cellspacing="0" width="90%" align="center">
+
+<TR>
+
+<TD align="center" bgcolor="#FFFFEA"><P><FONT size="5" color="#00254A"><B>Part 1: Intro</B></FONT></TD>
+
+</TR></TABLE>
+
+<P><BR>
+
+<TABLE border="0" cellpadding="0" cellspacing="0" width="100%" align="center">
+
+<TR>
+
+<TD><P><FONT face="Courier New" size="2"><B>Hi everyone...</B></FONT></P>
+
+<P><FONT face="Courier New" size="2"><B>What does it mean &quot;in an unusual way&quot; ? If u're wondering about it, after reading the title, 
+
+here is the explanation... it's quite some time that i don't crack anymore, like my friends 
+
+know, and i prefer to dedicate to the (imho) much richest, more interesting and intriguing 
+
+Reverse Engineering scenario... meanwhile, tho, among a chat and a nuke to a friend i 
+
+happened to notice that my precious firewall (Conseal PC Firewall, i think it's one of the 
+
+best ones even if i know shit about that) goes down... license has expired ?? ohh SHIT, my 
+
+license has expired! =)</B></FONT></P>
+
+<P><FONT face="Courier New" size="2"><B>Typical background for a common quick crack (i haven't been settling for long cracking 
+
+sessions for quite a while...), neverthless i soon realized that there were some good aspects 
+
+that led to something nicer than a plain serial or a jz/jnz check...</B></FONT></P>
+
+<P><FONT face="Courier New" size="2"><B>Let me just say that this tute will be as short as possible (not for the fact that it's 
+
+4.30am here and i'm quite tired, but because i don't really want to flood you with tons of 
+
+text....let's try =)</B></FONT></P>
+
+<P>&nbsp; 
+
+<TABLE border="0" cellpadding="0" cellspacing="0" width="90%" align="center">
+
+<TR>
+
+<TD align="center" bgcolor="#FFFFEA"><P><FONT size="5" color="#00254A"><B>Part 2 : Da Crack.</B></FONT></TD>
+
+</TR></TABLE>
+
+<P><BR></P>
+
+<P><FONT face="Courier New" size="2"><B>Ok, this is the story.</B></FONT></P>
+
+<P><FONT face="Courier New" size="2"><B>The program, once expired, and once ran, doesn't make you suspect anything, when, after like 
+
+2/3 seconds, voila' a msgbox that tells us that we have finished our time =/... Oh btw i use 
+
+version 1.37. As i was saying, there's a msgbox, but we won't break on messageboxa, we said 
+
+we wanna have fun, no usual stuff. So let's open boundschecker and launch frw.exe, being 
+
+careful to all the api's used... if u are careful enough and u collapse every thread created 
+
+at the start of the program, u'll notice 6 initial threads and, right before the nag pops, 
+
+the creation of a seventh thread. Interesting, let's take a look at this 7th thread... u'll 
+
+notice an overwhelming amount of registry poking, quering and so on, well nothing strange, 
+
+nothing changed, as bob marley put it... But let's take a look at the values being checked... 
+
+uhm, u'll notice a certain repetition of LicenseInfo, LicenseID etc... let's open regedit for 
+
+a second and look for LicenseID... deh, a nice trio of interesting keys... LicenseCode 
+
+contains probably the encrypted version of the installation date + other various rubbish, 
+
+LicenseID has a default string for our universal license, LicenseInfo with various 
+
+unidentified trash... uhm, what are we gonna do ? a coupla bpm's, looking for the decrypting 
+
+routine, and we write our l33t crack ? NO :)</B></FONT></P>
+
+<P><FONT face="Courier New" size="2"><B>We said in an unusual way... so let's close regedit (dunno about you, but i'll reserve the 
+
+decrypting routine for the next time, might be an interesting algo)... anyway, as we were 
+
+saying, let's come back to our 7th thread, re-popping boundschecker again. Browsing a bit 
+
+downwards among the api calls, we'll reach a zone where a heap gets allocated+freed, then OH! 
+
+what's that GetLocalTime =) yup, it's this easy... GetLocalTime gets the current date and 
+
+hour... then it's obvious that the program decrypts the LicenseCode key, gets the 
+
+installation date, and then makes his calculations... What are we gonna do ? we could patch 
+
+the checks in a quick and dirty way, but we talked about having fun, no?? So... let's close 
+
+boundschecker after a quick look at the rest of the (useless) api calls... open the file with 
+
+Hiew... wow a little surprise for us, there's a .WWP32 section... the file is packed with 
+
+wwpack 32... procdump unpacks it i think... but we are hard headed... we want the packed 
+
+file, wich is cooler and less space-consuming ;) at this point a little pervert thought 
+
+crossed my mind... let's see... GetLocalTime. Gets year, month and day... I installed Conseal 
+
+the 17th of July 1999... if i make him believe that it's always the 18th of July 1999 we'll 
+
+all live in peace... it would be interesting, but how to do it ? uhm, the solution is easy... 
+
+a IAT hook that intercepts every GetLocalTime call and that fakes the result... easy to do, 
+
+just that the file is packed, so the problems are basically 2: one, how to install the hook, 
+
+and two, WHERE to inject the hooking routine... well, installing the hook is as easy as 
+
+smoking a cigarette, neverthless the situation was interesting and i thought i'd keep walking 
+
+this path :)</B></FONT></P>
+
+<P><FONT face="Courier New" size="2"><B>IAT hooking is basically, really, really easy in the concept. I assume that the reader has a 
+
+medium knowledge of the PE structure, and that he/she knows what an Import Table is... if 
+
+not, may i suggest you to read some good doc, the best ones are imo Pietrek's and 
+
+Luevelsmeyer's (whose famous <A href="javascript:if(confirm('http://129.105.116.5/fravia/pe.txt  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://129.105.116.5/fravia/pe.txt'" tppabs="http://129.105.116.5/fravia/pe.txt">pe.txt</A> i included)... Now, we know that in the 
+
+Import Table there's an array called FirstThunk, which gets patched at runtime with the 
+
+addresses of the functions that the program imports... the concept of IAT hooking is based on 
+
+this: you retrieve the spot that concerns the function we want to hook, and you patch the VA 
+
+of our hooking routine inside it. This done, when the program will call the function (and 
+
+thus will pass for the deviation inside the Import Address Table (aka FirstThunk array)), 
+
+instead of running straight towards the kernel woods, it'll run towards our injected 
+
+routine's lair... at that point we'll quietly examine the passed params, we forward them to 
+
+the kernel, or we keep them, or we reset the system, or we make a window pop up saying 
+
+&quot;Moonshadow is gay =)&quot; or whatever else pleases us ;) (jk mun:P)... well, u got it. 
+
+Obviously, we can as well fake the result of a call, in our case GetLocalTime, returning to 
+
+our dear friend frw.exe the perpetual date of 18th July 1999 :)</B></FONT></P>
+
+<P><FONT face="Courier New" size="2"><B>There's a problem anyway. The file is packed... how and where to inject a hooking routine ? 
+
+Well, the first idea that popped in my mind was writing a small hooker .exe, then, from 
+
+within a memory patcher (unavoidable as we'll see) mapping it into memory and access to it 
+
+from the unpacked process... easy to do since MMF's are mapped in the shared region of the 
+
+linear address space, thus we wouldn't need any additional context switching routine etc... 
+
+but then i thought, is it really worth it ? let's make something quicker =)... i wanted to 
+
+physically patch the routine inside frw.exe, and there was only one place safe from the fury 
+
+of the storm caused by a decrypting stub that devastates the initial image of the file with 
+
+his mathematcally cold decompression/patching... i'm talking about the so called caves... 
+
+this term is particularly familiar to virii writers... caves are those empty spaces (in 
+
+reality filled with 00-bytes) inside a PE file, in other words 'dead' spaces you can use for 
+
+any code injection purpose... in our case, not viral code but a nice hooking routine :)</B></FONT></P>
+
+<P><FONT face="Courier New" size="2"><B>Which cave are we gonna use ?? well, i'd say that the one between the Object Table and the 
+
+first section's raw data will do fine... open the file with Hiew, just to make an idea... 
+
+after the stub (this proggie can't be run in dos mode) and the PE,0,0 signature we get the 
+
+first file header data, then the optional header etc... browsing downwards we find the object 
+
+table (.text with the relative data, .rdata with its data etc...) ... then we have a 
+
+succession of zero bytes (our cave) starting from offset 268h and finally we get to .text 
+
+section at offset 1000h... all this space isn't used/relocated/modified at all, by wwpack32's 
+
+loader... now you have an idea of what we're gonna do... you choose wether to keep reading or 
+
+to destroy this htm file ;)</B></FONT></P>
+
+<P><FONT face="Courier New" size="2"><B>So..so... what do we need now ? Well, considered that we have to install a IAT hook, we need 
+
+the decrypted image of the file.. in reality we have a 'notionistic' need of a coupla virtual 
+
+addresses, that we'll be able to stick as patchspots from a memory patcher, even if the file 
+
+we'll use will always be the packed one... so we open procdump, and we start conseal... as 
+
+soon as the process has been fired, press the right button inside procdump's tasklist and 
+
+select Refresh list... here comes a new process, frw.exe... Quickly, right button on the 
+
+taskname and then &quot;Dump (Full)&quot;... save the dump in a file, and close frw and procdump. That 
+
+file contains the image of frw.exe exactly as it appears once mapped+decrypted... now the 
+
+problem is climbing to the import table, and then dwelling inside it until finding the 
+
+FirstThunk array's dword realtive to GetLocalTime's address... and this implies a DAMN BORING 
+
+(at least for me) search... so what do we do ? well, some time ago i got really sick of this 
+
+situation (i had to face it every time i wanted to patch an api call inside a process... 
+
+which is a rather common thing when u reverse programs, and i had to manually look for the 
+
+spot in the IAT), and i decided to write a small tool, that i called <A href="javascript:if(confirm('http://129.105.116.5/fravia/opgen.zip  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://129.105.116.5/fravia/opgen.zip'" tppabs="http://129.105.116.5/fravia/opgen.zip">OpGen</A>, which contains 
+
+another quite useful function too, it pratically generates opcodes for patching far jumps, 
+
+only given the starting and the destination VA/RVA (hiew sux when it comes to far jumps)... 
+
+but we're not interested in such feature, neverthless the little IT scanner that i put into 
+
+it is useful here, it gives you the patchspot for every function in a snap... seen that i 
+
+included it in conseal.zip, open it and choose Lookup Imports for patching... select our 
+
+dumped file and what u'll get (among other things) will be this:</B></FONT></P>
+
+<P>GetLocalTime == call dword ptr [46459C]</P>
+
+<P><FONT face="Courier New" size="2"><B>Oh, interesting :) that ([46459c]) is the place where we'll stick the address of our hooking 
+
+routine... Here we are at the point where we face the need of a memory patcher. Having to 
+
+patch the hook inside the decrypted image of the file, let's open our dear Ultraedit with 
+
+Tasm support (tm;) and let's begin writing down some code...</B></FONT></P>
+
+<P>&nbsp;</P>
+
+<P><FONT size="2" color="blue">.386p<BR>
+
+.model flat, stdcall</FONT></P>
+
+<P><FONT size="2" color="blue">extrn&nbsp;&nbsp;&nbsp;ReadProcessMemory&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:PROC<BR>
+
+extrn&nbsp;&nbsp;&nbsp;WriteProcessMemory&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:PROC</FONT></P>
+
+<P><FONT size="2" color="blue">UNICODE = 0<BR>
+
+include winsux.inc</FONT></P>
+
+<P>&nbsp;</P>
+
+<P><FONT size="2" color="blue"><BR>
+
+.DATA</FONT></P>
+
+<P><FONT size="2" color="blue">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;exe_name&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;DB&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&quot;frw.exe&quot;,0</FONT></P>
+
+<P><FONT size="2" color="blue">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;processInfo &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PROCESS_INFORMATION &nbsp;&nbsp;&nbsp;&nbsp;&lt;&gt;<BR>
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ini_info &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;STARTUPINFO &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;&gt; </FONT></P>
+
+<P><FONT size="2" color="blue">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;iat_hooking_routine&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;DD&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;04002A0h&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;; VA OF THE HOOKING ROUTINE (IN THE CAVE BETWEEN THE OBJECT TABLE AND 
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;; THE .TEXT SECTION)<BR>
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;funct_va&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;DD&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;0<BR>
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;dummybuffer&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;DB&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;0</FONT></P>
+
+<P>&nbsp;</P>
+
+<P><FONT size="2" color="blue"><BR>
+
+.CODE</FONT></P>
+
+<P><FONT size="2" color="blue">start:</FONT></P>
+
+<P><FONT size="2" color="blue">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;call&nbsp;&nbsp;&nbsp;&nbsp;CreateProcessA, OFFSET exe_name, 0, 0, 0, 0, NORMAL_PRIORITY_CLASS,0 ,0 ,OFFSET ini_info,OFFSET processInfo<BR>
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;test&nbsp;&nbsp;&nbsp;&nbsp;eax, eax<BR>
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;jz&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;@@end</FONT></P>
+
+<P><FONT size="2" color="blue">; we'll wait for frw.exe to be loaded and unpacked with a little loop (even if we're not able to hook every GetLocalTime there's no problem, the 
+
+; ones we effectively need are the ones in the 7th thread, remember)</FONT></P>
+
+<P><FONT size="2" color="blue">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;mov&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ecx, 100000000<BR>
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<BR>
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.WHILE&nbsp;&nbsp;ecx != 0<BR>
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;dec&nbsp;&nbsp;&nbsp;ecx<BR>
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.ENDW</FONT></P>
+
+<P><FONT size="2" color="blue">; we retrieve the effective address of GetLocalTime in the kernel directly from the IAT of the unpacked process<BR>
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;call&nbsp;&nbsp;&nbsp;&nbsp;ReadProcessMemory, [processInfo].pi_hProcess, 046459Ch, OFFSET funct_va, 4, OFFSET dummybuffer</FONT></P>
+
+<P><FONT size="2" color="blue">; now we patch this address in a dword (@ 4002dd) that we'll call from the hooking routine when we wanna call GetLocalTime<BR>
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;call&nbsp;&nbsp;&nbsp;&nbsp;WriteProcessMemory, [processInfo].pi_hProcess, 04002DDh, OFFSET funct_va, 4, OFFSET dummybuffer</FONT></P>
+
+<P><FONT size="2" color="blue">; and finally we'll effectively install the hook in the FirstThunk array, modifying the address that the program will call inside the IAT<BR>
+
+; with the address of our function (in the iat_hooking_routine dword)<BR>
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;call&nbsp;&nbsp;&nbsp;&nbsp;WriteProcessMemory, [processInfo].pi_hProcess, 046459Ch, OFFSET iat_hooking_routine, 4, OFFSET dummybuffer</FONT></P>
+
+<P><FONT size="2" color="blue">@@end:<BR>
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;call&nbsp;&nbsp;&nbsp;&nbsp;ExitProcess, 0 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;; our job is done... now everything is in the hooking routine's hands (bytes:) </FONT></P>
+
+<P>&nbsp;</P>
+
+<P><FONT size="2" color="blue">end&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;start</FONT></P>
+
+<P>&nbsp;</P>
+
+<P><FONT face="Courier New" size="2"><B>very good.</B></FONT></P>
+
+<P><FONT face="Courier New" size="2"><B>At this point, once we compiled the program we'll have our mem patcher that creates the 
+
+process, waits a bit, then retrieves GetLocalTime's address from the IAT, then patches it 
+
+inside the hooking routine, and in the end installs the IAT hook in the decrypted image of 
+
+the program.</B></FONT></P>
+
+<P><FONT face="Courier New" size="2"><B>now we only have the problem of the hooking routine. What do we need to put inside of it ?</B></FONT></P>
+
+<P><FONT face="Courier New" size="2"><B>enter Softice and put a bpx getlocaltime... start conseal pc firewall, and press f12 at the 
+
+first pop. Write DD and then D ESP-4. This will show you the address that has been pushed on 
+
+the stack before the call GetLocalTime (you can also find it by tracing thru kernel until 
+
+that &quot;mov ecx, esp-c&quot; (the fifth codeline in the function) where u'll find, in ecx, the same 
+
+address. Anyway, as i was saying, type &quot;d address&quot; and u'll get the dump of the SYSTEMTIME 
+
+structure, that gets filled with data concerning current time and date. Let's take a look at 
+
+it's definition:</B></FONT></P>
+
+<P>typedef struct _SYSTEMTIME { &nbsp;// st &nbsp;<BR>
+
+&nbsp;&nbsp;&nbsp;&nbsp;WORD wYear; <BR>
+
+&nbsp;&nbsp;&nbsp;&nbsp;WORD wMonth; <BR>
+
+&nbsp;&nbsp;&nbsp;&nbsp;WORD wDayOfWeek; <BR>
+
+&nbsp;&nbsp;&nbsp;&nbsp;WORD wDay; <BR>
+
+&nbsp;&nbsp;&nbsp;&nbsp;WORD wHour; <BR>
+
+&nbsp;&nbsp;&nbsp;&nbsp;WORD wMinute; <BR>
+
+&nbsp;&nbsp;&nbsp;&nbsp;WORD wSecond; <BR>
+
+&nbsp;&nbsp;&nbsp;&nbsp;WORD wMilliseconds; <BR>
+
+} SYSTEMTIME; </P>
+
+<P><FONT face="Courier New" size="2"><B>uhm, uhm... remember that we have to make the proggie believe that it's always the 18th of 
+
+July 1999, in other words we have to modify the first, second and fourth Word in the 
+
+structure... making them respectively 7CFh (1999 dec), 7, and 12h (18 dec)... if u wanna get 
+
+a close look at the struct, give a DW and then analize it... u'll see how easy this concept 
+
+is.</B></FONT></P>
+
+<P><FONT face="Courier New" size="2"><B>So, let's make a lil summary. What will happen is this: the program will call the IAT 
+
+thinking that it's calling GetLocalTime, while the control will be passed to our hook routine 
+
+(at 04002A0h)... at that point our situation will be this: we'll save EAX pushing it and then 
+
+[ESP+4] will hold the return address for the program's code, and we'll save it in a physical 
+
+dword to call afterwards for the return (the same thing we did from the mempatcher for 
+
+GetLocalTime's address)... then we'll pop EAX and we'll increase the stack pointer of 4 
+
+bytes... at that point [ESP] will point to the SYSTEMTIME structure... so we'll effectively 
+
+call GetLocalTime... at the return, we'll have, in [ESP-4], the address of the SYSTEMTIME 
+
+structure, and we'll start modifying it... but first we'll save the value of EAX in a third 
+
+physical dword (we can't push it because often, if you analize the code flow with softice, 
+
+the VA of the structure is dangerously close to the stack pointer, so a badly placed push 
+
+could ruin the struct and crash the program) and we'll stick the VA of the struct inside 
+
+it... at this point, we'll modify the words relative to year, month and day, then we restore 
+
+EAX and we jump to the return address, that we saved at the beginning of the routine...</B></FONT></P>
+
+<P><FONT face="Courier New" size="2"><B>now let's write the code... open hiew and go to offset 2A0h (that'll become 4002A0h as soon 
+
+as the file gets mapped and the imagebase gets added), and inject our hooking routine:</B></FONT></P>
+
+<P><FONT color="blue">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;push&nbsp;&nbsp;&nbsp;&nbsp;eax &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;; save EAX<BR>
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;mov&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;eax, [esp+4]&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;; return VA in EAX<BR>
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;mov&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[4002E3h], eax&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;; we save it in a variable X<BR>
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;pop&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;eax &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;; restore EAX<BR>
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;add&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;esp, 4&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;; [ESP] points to the SYSTEMTIME structure<BR>
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;call&nbsp;&nbsp;&nbsp;&nbsp;dword [4002DDh]&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;; == call GetLocalTime (dword patched from the Mem Patcher)<BR>
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;mov&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[4002E9h], eax&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;; save EAX in a variable Y<BR>
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;mov&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;eax, [esp-4]&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;; EAX holds a pointer to the structure<BR>
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;mov&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;word [eax], 07CFh &nbsp;&nbsp;; WORD wYear<BR>
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;mov&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;word [eax+2], 07h &nbsp;&nbsp;&nbsp;; WORD wMonth<BR>
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;mov&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;word [eax+6], 012h &nbsp;; WORD wDay<BR>
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;mov&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;eax, [4002E9h]&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;; restore EAX from variable Y<BR>
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;jmp&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;dword [4002E3h] &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;; back to .text via the variable X</FONT></P>
+
+<P><FONT face="Courier New" size="2"><B>gone :)</B></FONT></P>
+
+<P><FONT face="Courier New" size="2"><B>for those among you not very familiar with Hiew and its barbarian way of handling byte, word 
+
+and dword ptr, you must know that they are respectively B,[blabla] &nbsp;&nbsp;, &nbsp;&nbsp;W,[blabla] &nbsp;&nbsp;and 
+
+&nbsp;&nbsp;D,[blabla].</B></FONT></P>
+
+<P><FONT face="Courier New" size="2"><B>once u did this, you can run our mempatcher, and everything will work perfectly... your 
+
+Conseal PC firewall will never expire again, and we made something unusual for sure... i had 
+
+some fun, what about u ?? ;)</B></FONT></P>
+
+<P>&nbsp; 
+
+<TABLE border="0" cellpadding="0" cellspacing="0" width="90%" align="center">
+
+<TR>
+
+<TD align="center" bgcolor="#FFFFEA"><P><FONT size="5" color="#00254A"><B>Part 3: Shout Outz</B></FONT></TD>
+
+</TR></TABLE>
+
+<P><BR></P>
+
+<I>Greetings logorrhea shortened by fravia+, maybe not enough :-)</I>
+
+<P><FONT face="Courier New" size="2"><B>For any question, comment, add-on, polemic etc etc my email is </B></FONT><FONT face="Courier New" size="2"><B><A href="mailto:neural@cryogen.com">neural@cryogen.com</A></B></FONT></P>
+
+<P><FONT face="Courier New" size="2"><B>my nickname on IRC ~ #cracking4newbies (EFNet) or #crack-it (IRCNet) ~ is nuural_en.</B></FONT></P>
+
+<P><FONT face="Courier New" size="2"><B>other stuff written by me can be found at </B></FONT><FONT face="Courier New" size="2"><B><A href="javascript:if(confirm('http://neudump.cjb.net/  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://neudump.cjb.net/'" tppabs="http://neudump.cjb.net/">http://neudump.cjb.net</A></B></FONT></P>
+
+<P><FONT face="Courier New" size="2"><B>my preferred italian reverse engineering group's page is at </B></FONT><FONT face="Courier New" size="2"><B><A href="javascript:if(confirm('http://ringzer0.cjb.net/  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://ringzer0.cjb.net/'" tppabs="http://ringzer0.cjb.net/">http://ringzer0.cjb.net</A></B></FONT></P>
+
+<P><FONT face="Courier New" size="2"><B>and my preferred international reversing group's page is </B></FONT><FONT face="Courier New" size="2"><B><A href="javascript:if(confirm('http://dread99.cjb.net/  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://dread99.cjb.net/'" tppabs="http://dread99.cjb.net/">http://dread99.cjb.net</A></B></FONT></P>
+
+<P>&nbsp;</P>
+
+<P><FONT face="Courier New" size="2"><B>'till next time,</B></FONT></P>
+
+<P><FONT face="Courier New" size="2"><B>NeuRaL_NoiSE 1999 for RingZ3r0 and DREAD.</B></FONT></P>
+
+<P>&nbsp;</TD>
+
+</TR></TABLE>
+
+
+
+<!-- OB DUH STARTS HERE -->
+
+<TABLE CELLPADDING="1" CELLSPACING="2" BORDER="1"
+
+WIDTH= "100%"  HEIGHT="22" >
+
+<TR><TD bgcolor="#C6E7C6"><CENTER><FONT size=+2><FONT
+
+color=blue>Ob Duh</FONT></FONT>
+
+</CENTER></TD></TR></TABLE><CENTER><I>I wont even
+
+bother explaining you 
+
+   that you should BUY programs if you
+
+intend to use them for a 
+
+   longer period than the allowed one. Should you want
+
+to STEAL  
+
+   software instead (unlikely in this case :-) you don't need to
+
+crack protection schemes at all: 
+
+   you'll find everything on most Warez sites, complete and
+
+already regged, 
+
+   farewell, don't come back.</I></CENTER>
+
+
+
+<!-- WAY OUT STARTS HERE -->
+
+<HR><CENTER><I>You are deep inside fravia's page of
+
+reverse engineering,  
+
+choose your way out:<BR><BR></I></CENTER>
+
+<BR><CENTER>
+
+<!-- EITHER A NICE GIF LIKE THIS -->
+
+<!-- 
+
+<a href="project3.htm" tppabs="http://www.anticrack.de/fravia/project3.htm"><IMG SRC="project3.gif" tppabs="http://www.anticrack.de/fravia/project3.gif" 
+
+ALT="projecT3" ALIGN=CENTER WIDTH=114 HEIGHT=43
+
+BORDER=0 VSPACE=0 HSPACE=0></a>
+
+<br>
+
+<font color=gray>Back to project 3</FonT>
+
+<br><bR>
+
+-->
+
+<!-- OR JUST A LINK LIKE THIS -->
+
+
+
+<!--
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="project1.htm" tppabs="http://www.anticrack.de/fravia/project1.htm">Back
+
+to Your_chosen_project</A> 
+
+<hr width=33%>
+
+-->
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html"
+
+>homepage</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="protec.htm" tppabs="http://www.anticrack.de/fravia/protec.htm">how to
+
+protect</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database</A>
+
+<BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="realicra.htm" tppabs="http://www.anticrack.de/fravia/realicra.htm">reality cracking</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="howtosea.htm" tppabs="http://www.anticrack.de/fravia/howtosea.htm">how
+
+to search</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="javascri.htm" tppabs="http://www.anticrack.de/fravia/javascri.htm">javascript wars</A>
+
+<BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity academy</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut CGI-scripts</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia+</A>
+
+<BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is
+
+reverse engineering legal?</A>
+
+</CENTER>
+
+<HR>
+
+<!-- THAT'S ALL, THANKS A LOT this will allow
+
+automated retrieval -->
+
+</BODY>
+
+</HTML>

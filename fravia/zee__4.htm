@@ -1,0 +1,828 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>Zen and the Art of Dongle Cracking</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+<CENTER><FONT size="+3">Zen and the Art of Dongle Cracking</FONT>
+
+<BR>(A somehow 'general' essay about dongles)<BR>
+
+
+
+<A href="project3.htm" tppabs="http://www.anticrack.de/fravia/project3.htm"><IMG SRC="project3.gif" tppabs="http://www.anticrack.de/fravia/project3.gif" ALT="project3" ALIGN="BOTTOM" WIDTH="114" HEIGHT="43" BORDER="0" VSPACE="0" HSPACE="0"></A>
+
+<BR>
+
+<!--<a href="protecti.htm" tppabs="http://www.anticrack.de/fravia/protecti.htm"><IMG SRC="tough.gif" tppabs="http://www.anticrack.de/fravia/tough.gif" ALT="tough" ALIGN=BOTTOM WIDTH=114 HEIGHT=43 BORDER=0 VSPACE=0 HSPACE=0></a><br>-->
+
+
+
+
+
+<H2><B>by zeezee</B></H2>
+
+<H4>(24 December 1997, slightly edited by fravia+)</H4>
+
+
+
+<HR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">Courtesy of fravia's page 
+
+of reverse engineering<HR>       
+
+<I>Well, our dongle cracking project was being a little neglected... which is not nice, 
+
+yet somehow <U>understandable</U>... 
+
+huge economic interests are in play here, and many 'lower' crackers prefer to find an 
+
+'economic' arrangement with the dongle producers instead of publishing their (simple) cracks... (which is 
+
+something that real +crackers should never do!)<BR>And we have unfortunately had other delays as well: Marta never sent 
+
+his contributions (we all know how lazy these spanish friends are :-) and 
+
+we are all still awaiting Quine's promised HASP tutorial (should be there soon, 
+
+be prepared!)<BR>Luckyly we have 
+
+zeezee working hard on this as well! This is what zeezee wrote me:</I></CENTER><PRE><FONT color="purple">
+
+hi fravia+
+
+
+
+This time comes a little more 'general' essay about dongle cracking.
+
+After winning with 4 dongles and loosing with one I can draw some general
+
+conclusions which may help all will-be dongle crackers</FONT></PRE><I><CENTER>
+
+Now read and enjoy... +HCU's dongle cracking 
+
+is gaining 'momentum' (was about time... this 
+
+crap 'faked hardware' solution was gaining too much place (and easy money) on the 
+
+protection scene... funny! As if a good logic analyzer would not be enough to crack any stupid 
+
+dongle black and blue!<BR><BR>I'll tell you what I like about this essay: zeezee DOES NOT 
+
+gives us here <U>any specific target</U>! In fact to know which target a cracker is 
+
+working on is mostly utterly unimportant... the important thing 
+
+for us is to learn HOW to reverse this kind of code, not to learn how to crack a 
+
+specific program... Hey! You better learn it right now in 1997 (you have still a week 
+
+before 1998), should you never 
+
+have understood 
+
+it until now: there are BILLIONS software programs out there... well, most are crap, 
+
+yet say 
+
+there are <U>hundred thousands</U> good software programs you could eventually 
+
+enjoy 
+
+out there... what's the point of giving any luser a 'specific' crack? (besides... 
+
+most of the time it's much more fun cracking such software than using it :-)<BR>
+
+You dig it? A 'specific' target 
+
+crack (with few exceptions) has therefore -mostly- NO interest whatsoever for us... 
+
+what we want is to understand 
+
+how another fellow +cracker tackled HIS target in order to tackle OUR (completely 
+
+different) ones with this knowledge somewhere in our 'collective memory'... therefore
+
+zeezee's approach is VERY GOOD. You won't learn here how to deprotect a specific 
+
+dongle target, you will -eventually- learn how to crack your own dongle protected crap next 
+
+year! (Let's hope you'll write an essay on your approach :-)<BR>
+
+Have a happy new 1998!</I></CENTER>
+
+<HR size="6"><PRE>
+
+                     Zen and the Art of Dongle Cracking
+
+                     ------------------------------
+
+                               by zeezee
+
+
+
+
+
+Disclaimer:
+
+I don't publish here any dongle-protected program names since it's not my goal
+
+to make battles with lawyers, you see only relevant code snippets. This
+
+tutorial is not about one specified software or dongle. The example given is
+
+from a real program not widely available. The program itself isn't important.
+
+
+
+So, let's start with blah-blah, sorry, with basics.
+
+
+
+Dongles are small boxes connected to the LPT port (or sometimes to COM port) of
+
+your computer. They should be (in fact they are in 99%) invisible to printer
+
+connected to this port. There are variants of dongles mounted inside computer
+
+but for us, the exact appearance of the dongle isn't important.
+
+
+
+Inside of the dongle is an EEPROM or ASIC or maybe a dead fly. For us this is
+
+only a black box which receives / sends data from our application via piece of
+
+software (dongle API) which is sold with the dongle to app developers.
+
+The app writers call the API and check values returned to make good/bad guy
+
+jumps.
+
+
+
+Most popular dongles are:
+
+- Sentinel (big family) from Rainbow Technologies (USA)
+
+- Hasp (not bad) from Aladin (Israel)
+
+- Fest (if I recall made in Germany)
+
+- Actikey (France)
+
+and tens of others... See your favourite Dr Dobb's page.
+
+
+
+Tools needed are usual: IDA, SoftICE, HIEW. And of course our application.
+
+No logic analyzer, oscilloscope, maybe LED monitor if you really want it.
+
+
+
+So, dear cracker, first step in our tutorial is:
+
+
+
+*1* Identify the dongle you are dealing with.
+
+
+
+It's not so hard in most cases. Either look at the dongle if you have
+
+access to it, or look at all files that install with your soft, then you may
+
+search all .DLL's, .VXD's etc. for copyright text other than application authors.
+
+You find it quickly in almost all cases.
+
+
+
+*2* Gather all possible information from www pages of dongle vendor.
+
+This is VERY IMPORTANT STEP!
+
+
+
+You will wonder how much doc you get. Full API, often with source, demo soft,
+
+examples how to use API with your future biggest program etc. Get it all and
+
+study carefully.
+
+Remember: ALL computer hard/soft vendors are present in the Net. Just find them.
+
+Don't panic when you read all info about dongle security. They ARE secure. OK.
+
+You can't crack them unless they're done by complete idiots. OK.
+
+But you want to crack the application, NOT the dongle.
+
+When you read about RSA encryption, one-way functions and see in the
+
+API some interesting Question/Answer hashing functions, remember that it's only
+
+API. No one uses it. Only simple functions like Check/Serial Number/Read and
+
+sometimes Write are used.
+
+
+
+*3* You may also get an evaluation dongle from dongle dealer. For free.
+
+If not for free ask for 14-day lease. It works! They want to sell these boxes.
+
+Call these 0-800 or 0130 numbers. They want to help you unless you say something
+
+stupid when asked for software you want to protect.
+
+The people at Rainbow and Aladin dealers are _extremely_ helpful.
+
+
+
+*4* Now you know the dongle/app you want to crack and have (or not) some additional
+
+info. Time to think (+Orc calls it Zen).
+
+
+
+Imagine a software company making big good proggy. The proggy is almost finished,
+
+then comes the boss and says: &quot;Ok, we're ready, now is the time to protect our
+
+fantastic product. We have a demo kit from dongle X. So, dear programmers, use
+
+it&quot;.
+
+And poor programmers are studying dongle docs, API etc and putting some API
+
+calls into their code.
+
+
+
+Sometimes it ends like this:
+
+
+
+        call DONGLE
+
+        or ax, ax
+
+        jz goodguy
+
+badguy:
+
+
+
+Yes, you may not believe it, yet it's true. (See previous essays)
+
+
+
+Sometimes they go little further but in most cases, I repeat: in MOST cases
+
+the idea is stupid.
+
+
+
+But the chain is so strong as its weakest link. And in all 4 different progs
+
+protected with different dongles the weakest link was the interface:
+
+
+
+     Application - Dongle API (mostly contained in a DLL)
+
+
+
+The dongle manufacturers are smart guys, they know how to encrypt data, make
+
+self-modifying code, anti-debug tricks etc. I recommend: Leave their code as is.
+
+The application side is much easier to crack.
+
+
+
+The first thing in real crack is to find THE call (rarely more than one)  to
+
+the dongle API, Use IDA or WDASM and remember the name of the DLL containing
+
+dongle API and after several minutes (last time 2 hours and 40MB .IDB file!)
+
+you have it.
+
+
+
+There should be a part of API statically linked to the executable we are
+
+cracking which calls the DLL, funny people at Aladin make self-mod code here,
+
+so our further goal is to go a bit up.
+
+
+
+Our poor programmers are lazy. Everyone is lazy when it comes to make some
+
+dumb work like calling the dongle. So they write their own functions like:
+
+
+
+QuickCheckIfDonglePresent()
+
+GetDongleSerialNumber()
+
+ReadDongleByte( addr ) - or word, or dword, or even full table
+
+WriteDongleByte( addr, value )
+
+
+
+Maybe they are exported by name? Maybe the name is ReadDongle or similar?
+
+
+
+Look carefully at references IDA gives you. You certainly find it.
+
+You should find procs called only once - they should be interfaces between
+
+application/API. Who writes two wrappers to one function?
+
+
+
+The dongle API is very well structured in most cases, the function number is
+
+explicitly given, 0 - check, 1 - get number, 2 - read, 3 - write, etc...
+
+Identify where are params/results.
+
+And this is the thing which helps us crack. We may have also the API docs!
+
+The API producers want to make API maximally user-friendly. They make it also
+
+more cracker-friendly... We may find quickly what the app expects from the
+
+dongle by studying API calls and 'cmp ax' following it.
+
+
+
+*5* Then comes the active part (you may need dongle for short period of time)
+
+Patch the code inserting a CC byte in the 'App-API Interface' place(s).
+
+
+
+Run SoftICE with BPINT 3.
+
+
+
+Replace INT 3 with the original byte, then set BPX to this address, trace...
+
+Look what happens when there is no dongle. You may have luck and quickly find
+
+a checkpoint with bad/good guy switch. Try to go the other way and see what
+
+happens (maybe your app starts running).
+
+
+
+Try to patch the code to emulate QuickCheckIfDonglePresent function.
+
+Simply return a value which satisfies calling proc.
+
+
+
+This may be sufficient in most stupid cases.
+
+
+
+Then try to emulate GetSerial# routine. Remember that dongle serial# may be
+
+stored and used to display # in About box. See references IDA gives you.
+
+Not all dongles have GetSerial# proc. Sometimes serial# is read like normal
+
+data from dongle.
+
+
+
+This may be sufficient in most not-so-stupid cases.
+
+
+
+And then comes to dongle reading. Several bytes are read, I assume that you find
+
+the place where they are stored and all references to this place.
+
+Several checks may happen and certainly will happen in programs with different
+
+options enabled/disabled by the dongle.
+
+
+
+maybe so (real example from one of leading SCADA programs)
+
+  cmp eax, some_value1
+
+  je is_model_1
+
+  cmp eax, some_value2
+
+  je is_model_2
+
+  etc.
+
+
+
+
+
+or maybe so (real example from Israeli program with Israeli dongle)
+
+
+
+  test eax, mask_1
+
+  jz lab1
+
+  call enable_option_1
+
+lab1:
+
+  etc.
+
+
+
+or maybe so (electrical engineering tools made in France with french dongle)
+
+
+
+  12 words read from dongle are stored from [ebx]
+
+
+
+  mov ecx, 12
+
+lab1:
+
+  cmp word ptr [ebx], 1
+
+  jne lab2
+
+  call enable_option(cx)
+
+lab2:
+
+  inc ebx
+
+  loop lab1
+
+
+
+Believe me. It's real.
+
+
+
+If you have a working dongle, read all values from it, and you know what to
+
+emulate (set BPX after API read function does his job and make notes).
+
+
+
+And here the real example. The app is useless to you, it isn't freely available,
+
+so let's study the disassembly I prepared for you.
+
+
+
+*1* Our dongle is french Actikey and the DLL is CCNMMNT.DLL
+
+*2* We do the disassembly of our target (40 MB) and look into .idata section.
+
+    It takes a little longer than one cocktail...
+
+    The result is astonishing, but I wait until ALL references were displayed.
+
+*3* Crtl-S and go to .idata section. I found extern imported from CCNMMNT.DLL
+
+    Go to reference of it.
+
+
+
+00594510 ; Imports from CCNMMNT.dll
+
+00594510
+
+00594510                 extrn CCNMM:dword       ; DATA XREF: j_CCNMM&#24;r
+
+
+
+Only one reference! The name j_CCNMM is assigned by IDA!
+
+then:
+
+
+
+00408770 ;               S u b r o u t i n e
+
+00408770
+
+00408770 j_CCNMM         proc near               ; CODE XREF: key_io+6F&#24;p
+
+00408770                 jmp     ds:CCNMM        ; jump to Dongle DLL
+
+00408770 j_CCNMM         endp
+
+
+
+The name key_io and other below are assigned by me, they are not exported ;-)
+
+
+
+Let's go one step up. See: Only one reference. A green light! We are on our 
+
+good way.
+
+then:
+
+
+
+0040BA10 key_io          proc near               ; CODE XREF: main_key_check+8
+
+0040BA10                                         ; main_key_check+18C&#24;p
+
+0040BA10                                         ; key_check2+45&#25;p
+
+
+
+After checking, I found that key_check2 is called only from the main_key_check,
+
+so we still only have one reference here. We are still inside dongle API code.
+
+
+
+Let's go up.
+
+
+
+0040B840 ;               S u b r o u t i n e
+
+0040B840
+
+0040B840 main_key_check  proc near               ; CODE XREF: key_fun_00+4D&#24;p
+
+0040B840                                         ; keyfn_18_sernum+68&#24;p
+
+0040B840                                         ; keyfn_02_write+5B&#24;p
+
+0040B840                                         ; keyfn_03_read+56&#24;p
+
+0040B840                                         ; key_fun_1b+50&#24;p
+
+0040B840                                         ; key_fun_1c+54&#24;p
+
+0040B840                                         ; key_fun_1d+5C&#24;p
+
+
+
+Of course you may ask, how do I know that this is API and not our 
+
+application? Quick answer: Funcs 1b, 1c and 1d aren't called!
+
+Do you imagine writing wrappers that are never called? They were written by
+
+the dongle makers and linked to the app.
+
+In fact keyfn_02_write isn't called also. This is good news, the key should 
+
+always respond with the same data.
+
+
+
+The names of the callers are self-explanatory. Where I got them from? 
+
+Studying the procs, that's all, see for example:
+
+
+
+0040A250 keyfn_18_sernum proc near               ; CODE XREF: (several)
+
+0040A250
+
+0040A250 arg_0           = dword ptr  8
+
+0040A250
+
+0040A250                 push    esi
+
+0040A251                 call    key_fun_00
+
+0040A256                 cmp     ax, 1
+
+0040A25A                 jnz     short skc110
+
+0040A25C                 mov     ax, 1           ; 1 - error?
+
+0040A260                 pop     esi
+
+0040A261                 retn
+
+
+
+0040A262 skc110:
+
+0040A262                 mov     word ptr ds:key_fun, 18h  ; function 18!!!
+
+0040A26B                 xor     eax, eax
+
+0040A26D                 mov     esi, [esp+4+arg_0]
+
+0040A271                 mov     word ptr ds:key_result_1, magic1
+
+0040A27A                 mov     word ptr ds:key_par3, ax
+
+0040A280                 push    offset key_par4
+
+0040A285                 mov     word ptr ds:key_par4, ax
+
+0040A28B                 push    offset key_par3
+
+0040A290                 mov     word ptr ds:key_par1, magic2
+
+0040A299                 mov     word ptr ds:key_par2, magic3
+
+0040A2A2                 push    offset key_par2
+
+0040A2A7                 mov     [esi], eax
+
+0040A2A9                 push    offset key_par1
+
+0040A2AE                 push    offset key_result_1
+
+0040A2B3                 push    offset key_fun
+
+0040A2B8                 call    main_key_check        ; here our call
+
+0040A2BD                 mov     word ptr ds:main_result, ax
+
+0040A2C3                 add     esp, 18h
+
+                    ....store results...
+
+
+
+The magic values are identifying the dongle and the product, so I removed 
+
+them... they are unimportant for our cracking.
+
+
+
+And this is the top of dongle API. Now it's time to identify what the
+
+API is expected to return. Several 'cmp ax, something' and I was able to emulate
+
+API functions 00 (quick check) and 18 (get serial).
+
+I applied a short patch using HIEW to emulate these functions.
+
+
+
+After that my proggy started with all options disabled.
+
+Analyzing other 'cmp ax, something' was almost trivial.
+
+
+
+So I wrote a short emulator of key_fn_02_read and now the proggy opens all
+
+options to me.
+
+
+
+Conclusions.
+
+
+
+* Dongle cracking is not much more complicated as serial# cracking. You need
+
+  more theoretical background from dongle producers, good disassembler which
+
+  finds all Xrefs and SoftICE of course. The shareware protections are often
+
+  much more sophisticated than simple dongle calls in expensive commercial apps.
+
+  Of course, there are programs protected better, but they are exceptions.
+
+
+
+* Don't start cracking from BPIO on LPT ports. Try to find The Weakest Link!
+
+
+
+* Remember, Programmers are lazy when it comes tu put foreign code into their own.
+
+  Not all API calls are used. Check simplest functions first and see what happens.
+
+
+
+* Let your cracked program run for several minutes. Almost always there is
+
+  a dongle check performed each 1 minute or so. Your crack should survive this.
+
+  Try all actions the program should perform. Select every item from menu.
+
+  Or, if you prefer, study whole disassembly for dongle calls...
+
+
+
+* Beware when cracking with real dongles connected. There is theoretically the
+
+  possibility to destroy a dongle. Use dongles only to read their contents
+
+  and remove them when SoftICE-ing your cracks. They aren't necessary at this
+
+  time :-) However I never found any auto-destruction procedure when studying
+
+  various dongles API.
+
+  Neverthless, you have been warned!
+
+
+
+Good Luck!
+
+
+
+zeezee</PRE>
+
+<FONT color="green">(c) <FONT color="#5500AA">zeezee</FONT> All rights reversed</FONT>
+
+<HR ALIGN="CENTER" WIDTH="100%" SIZE="3">
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</I></CENTER>
+
+<BR><CENTER>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="project3.htm" tppabs="http://www.anticrack.de/fravia/project3.htm">Back to Project 3</A> 
+
+           <HR width="33%">
+
+
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut CGI-scripts</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering legal?</A></CENTER>
+
+<CENTER><HR ALIGN="CENTER" WIDTH="100%" SIZE="2"></CENTER>
+
+</BODY>
+
+</HTML>
+
+
+

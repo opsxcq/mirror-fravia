@@ -1,0 +1,1291 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>casmw652.htm: How to crack an hardcore dongle-protected program</TITLE>
+
+</HEAD>
+
+
+
+<BODY BGCOLOR=#C0C0C0 TEXT=#001010 VLINK=#405040><CENTER>
+
+<FONT size=+3> How to crack an hardcore dongle-protected program<BR>
+
+by Shaman
+
+<HR></CENTER></FONT>
+
+<CENTER>Courtesy of Fravia's page of 
+
+reverse engineering 
+
+<HR>
+
+Slightly edited by fravia+, 4 May 1998
+
+</CENTER>
+
+<HR>
+
+
+
+<PRE><CENTER><FONT size=+2>
+
+Shaman's
+
+How to crack an hardcore dongle-protected program
+
+04 May 1998
+
+</FONT></CENTER>
+
+<FONT color=purple>
+
+Hi. It's addon to the +HCU's <A href="project3.htm" tppabs="http://www.anticrack.de/fravia/project3.htm">Project 3</A>. 
+
+
+
+"How to crack hardcore dongle-protected program. Casmate 6.52 by Scanvec"
+
+
+
+I know many crackers who try to crack CASMATE v*6.* for windows, and some
+
+#cracking people think what it's impossible :-)
+
+
+
+This is a short manual 'how-to-crack' casmate v6.52. All casmate from v6.0,
+
+have the same protection scheme but with little differences.
+
+</FONT>
+
+
+
+Casmate have 3 protection levels:
+
+
+
+I.   HASP envelope
+
+II.  HASP checks
+
+III. Security Lock number
+
+IV.  Disable functions (depend of HASP memory)
+
+V.   Full emulator
+
+VI.  Greets
+
+
+
+
+
+-----------------------------------------------------------------------
+
+I. Cracking the HASP envelope.
+
+
+
+First - casmate is protected by an HASP-envelope, read the 
+
+<A href="javascript:if(confirm('http://www.fravia.org/project3.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.fravia.org/project3.htm'" tppabs="http://www.fravia.org/project3.htm">+HCU's dongle project</A>
+
+
+
+Ok, load casmate in W-ice Symbol Loader:
+
+
+
+cs:005a shr cl,1
+
+...
+
+
+
+look at the:
+
+
+
+cs:065d		pop ds
+
+cs:065f		call 1174     ; nothing interesting, you can nope it.
+
+cs:0661		call 213c     ; decrypting code
+
+cs:0664		call 0725     ; run envelope check
+
+
+
+Yeah, second call procedure decrypt some block and third call execute it.
+
+Don't use breakpoint on execute (bpx cs:725)-  you get GPF because casmate
+
+use some hints for decrypt code. This approach was described in many 'antidebug' 
+
+essays. Do breakpoint on memory access to cs:725, w-ice is up at the next code:
+
+
+
+cs:21aa		add [di+4],bx
+
+
+
+look at the begin of this block:
+
+
+
+cs:217a		mov si,06d3		; begin address of block to decoding
+
+cs:217d		add si,bp
+
+cs:217f		xor cx,cx
+
+cs:2181		mov cx,088a		; counter of bytes
+
+cs:2184		sub cx,6		; dec last 3 words
+
+cs:2187		add si,cx		; get end address
+
+cs:2189		mov di,06d3		; begin address
+
+cs:218c		add di,bp
+
+cs:218e		push ax
+
+cs:218f		push bx
+
+cs:2190		mov bx,003d		; Oops! - first byte for XOR
+
+cs:2193		mov ax,cs:[di]		; get byte, look at the cs:21b2
+
+cs:2196		add ax,bx		; decrypt
+
+cs:2198		mov bx,ax		; ...
+
+cs:219a		ror ax,1		; ...
+
+cs:219c		and ax,8000		; ...
+
+cs:219f		add ax,bx		; ...
+
+cs:21a1		add ah,al		; ...
+
+cs:21a3		mov bx,ax		; ...
+
+cs:21a5		mov [di],ax             ; put 1-st word 
+
+cs:21a7		add [di+2],bx		; put (add) 2-nd word
+
+cs:21aa		add [di+4],bx		; put (add) 3-nd word
+
+cs:21ad		add di,6
+
+cs:21b0		cmp di,si		; compare 'end?'
+
+cs:21b2		jb 2193			; if 'no' then g 2193 (next step)
+
+...
+
+
+
+if you _NOW_ put bpx cs:21b4 you get the decrypted block at cs:06d3,
+
+and can save it to disk, length of block 088ah (i use sdump95.exe for it).
+
+
+
+And what we get? - ok:
+
+
+
+cs:0725		mov ax,sp
+
+cs:0727		mov [c7c5],ax
+
+cs:072a		move byte ptr [c7a7],0
+
+cs:072f		cmp word ptr [c7c3],0
+
+cs:0734		jnz 0739		; HERE!
+
+
+
+if you patch this jnz to jmp - you crack the envelope. btw - cas_win.exe
+
+say 'HASP plug not found', now it say 'Can not run CASmate-Pro: Plug
+
+not found'.
+
+
+
+how to do it:
+
+
+
+ a) Decrypt block
+
+ b) Patch jnz on jmp in this block
+
+ c) Crypt this block
+
+ d) Put patched block in ca_swin.exe
+
+
+
+First i wrote 2 program to decrypt/crypt code - stupid guy... Why? 
+
+Because! - envelope crypt back code after all checking HAHAHA.
+
+Patch our JNZ, then do bpm cs:725 again and w-ice is up:
+
+
+
+cs:1dfa		sub [di+4],bx		; look like "crypt back" code :-)
+
+cs:1dfd 	add di,6
+
+cs:1e00		cmp di,si
+
+cs:1e02		jb 1de1
+
+cs:1e04		pop bx
+
+
+
+This code is crypt back our block. Ok, clear all breakpoints, then
+
+do bpx cs:1e04, 'g'. W-ice up again, now, at address cs:06d3
+
+is crypted block, length of this block 88ah bytes, but Aladdin coders
+
+are so lazy, you can easy patch 3 words back without any other change and
+
+casmate still work. Brr in words only high byte is changed, only 3 bytes,
+
+and 1 byte in 4 word (first next word) for correcting checksum in 'bx'.
+
+(Aladdin guys, if you are reading this, please learn the basic elements 
+
+of cryptography before sending out your 'dongle protections' ;-).
+
+
+
+Patch in caswin.exe next 4 bytes:
+
+
+
+CAS_WIN.EXE
+
+0003AB34: 74 EA
+
+0003AB36: 73 FD
+
+0003AB38: 8A 14
+
+0003AB3A: 4A D4
+
+
+
+That's all - envelope cracked.
+
+
+
+
+
+
+
+-----------------------------------------------------------------------
+
+II. Cracking Scanvec protection.
+
+
+
+Uhums - Scanvec think what envelope is sux - that's right...
+
+and do some checks in casmate, ok.
+
+
+
+First - HASP has opened API entrypoint, find in cas_win.exe string
+
+'HASPDOSDRV', then first JMP after this string:
+
+(use any hex viewer i like HIEW)
+
+
+
+00022B2A: E933BB                       jmp    00002E660
+
+
+
+this jump point to:
+
+
+
+0002E660: 55                           push   bp
+
+0002E661: 8BEC                         mov    bp,sp
+
+0002E663: 1E                           push   ds
+
+0002E664: 06                           push   es
+
+0002E665: 56                           push   si
+
+0002E666: 57                           push   di
+
+0002E667: 55                           push   bp
+
+0002E668: E9C244                       jmp    000022B2D ; API entrypoint
+
+0002E66B: 5D                           pop    bp
+
+0002E66C: 5F                           pop    di
+
+0002E66D: 5E                           pop    si
+
+0002E66E: 07                           pop    es
+
+0002E66F: 1F                           pop    ds
+
+0002E670: 5D                           pop    bp
+
+0002E671: CB                           retf
+
+
+
+jmps at address 2e668 is HASP API, realy this is CALL, because after
+
+done each HASP procedure returned to 2e66b!
+
+if now you patch cas_win.exe like:
+
+
+
+0002E667: CC                           int 3
+
+0002E668: E9C244                       jmp    000022B2D ; API entrypoint
+
+0002E66B: CC                           int 3
+
+
+
+and do 'i3here on' in w-ice, you can trace all HASP calls. W-ice will be up
+
+every time when program want to call ANY HASP functions. Old 'push bp' and
+
+'pop bp' is non-critical code, forget about this...
+
+
+
+You need know some about HASP for trace HASP API calls - this is short
+
+description of _documented_ HASP functions:
+
+
+
+
+
+------------------------------------cut---------------------------------------
+
+HASP-3          LPT-key without memory
+
+MemoHASP        LPT-key with memory (from 112 to 496 bytes)
+
+NetHASP[X]      LPT-key with memory (5..100 users) networking
+
+TimeHASP        LPT-key with memory (16 bytes) and realtime clock
+
+
+
+Ports: 378 = LPT
+
+
+
+When any function is called:
+
+                          BH = function number (Table 1)
+
+                          BL = port identificator (Table 2)
+
+
+
+Out from 3,4,6,32h,33h functions in CX placed 'Status Code' (Table 3)
+
+
+
+Table 1|
+
+-------
+
+ŠÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕ‹ÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕ‹ÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕª
+
+†       SERVICE      „       CALL         „             RETURN               †
+
+†  BH=FUNC,  BL=PORT „                    „                                  †
+
+ÃÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÿÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÿÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕ¼
+
+†1.                  „                    „    AX : 0 - HASP NOT FOUND       †
+
+†      ISHASP        „                    „         1 - HASP FOUND           †
+
+«ŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸ‰ŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸ‰ŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸ
+
+†2.                  „  AX=SEEDCODE       „    AX : 1ST RETURN CODE          †
+
+†     HASPCODE       „  CX=PASSWORD 1     „    BX : 2ND RETURN CODE          †
+
+†                    „  DX=PASSWORD 2     „    CX : 3RD RETURN CODE          †
+
+†                    „                    „    DX : 4TH RETURN CODE          †
+
+«ŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸ‰ŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸ‰ŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸ
+
+†3.                  „  CX=PASSWORD 1     „    BX : DATA                     †
+
+†     READMEMO       „  DX=PASSWORD 2     „    CX : STATUS                   †
+
+†                    „  DI=MEMORY ADDR.   „    (READ 1 byte at DI)           †
+
+«ŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸ‰ŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸ‰ŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸ
+
+†4.                  „  CX=PASSWORD 1     „    CX : STATUS                   †
+
+†     WRITEMEMO      „  DX=PASSWORD 2     „                                  †
+
+†                    „  DI=MEMORY ADDR.   „                                  †
+
+†                    „  SI=MEMORY DATA.   „                                  †
+
+«ŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸ‰ŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸ‰ŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸ
+
+†5.                  „  CX=PASSWORD 1     „    AX : MEMORY SIZE              †
+
+†    HASPSTATUS      „  DX=PASSWORD 2     „    BX : HASP TYPE                †
+
+†                    „                    „    CX : ACTUAL LPT_NUM           †
+
+«ŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸ‰ŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸ‰ŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸ
+
+†6.                  „  CX=PASSWORD 1     „    AX : IDLOW                    †
+
+†      HASPID        „  DX=PASSWORD 2     „    BX : IDHIGH                   †
+
+†                    „                    „    CX : STATUS                   †
+
+«ŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸ‰ŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸ‰ŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸ
+
+†32h.                „  CX=PASSWORD 1     „    CX : STATUS                   †
+
+†     READBLOCK      „  DX=PASSWORD 2     „                                  †
+
+†                    „  DI=MEM.START ADDR.„                                  †
+
+†                    „  SI=BLOCK LENGTH   „                                  †
+
+†                    „  ES=BUFER SEG.     „                                  †
+
+†                    „  AX=BUFER OFFS.    „                                  †
+
+«ŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸ‰ŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸ‰ŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸ
+
+†33h.                „  CX=PASSWORD 1     „    CX : STATUS                   †
+
+†     WRITEBLOCK     „  DX=PASSWORD 2     „                                  †
+
+†                    „  DI=MEM.START ADDR.„                                  †
+
+†                    „  SI=BLOCK LENGTH   „                                  †
+
+†                    „  ES=BUFER SEG.     „                                  †
+
+†                    „  AX=BUFER OFFS.    „                                  †
+
+»ÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕº
+
+
+
+Table 2|
+
+-------
+
+ŠÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕª
+
+†                                  Port_Num                                  †
+
+ÃÕÕÕÕÕÕÕÕÕÕÕ‹ÕÕÕÕÕÕÕÕÕ‹ÕÕÕÕÕÕÕÕÕÕ‹ÕÕÕÕÕÕÕÕÕÕ‹ÕÕÕÕÕÕÕÕÕÕ‹ÕÕÕÕÕÕÕÕÕÕ‹ÕÕÕÕÕÕÕÕÕÕ¼
+
+†     0     „    1    „     2    „     3    „   101    „   102    „   103    †
+
+«ŸŸŸŸŸŸŸŸŸŸŸ‰ŸŸŸŸŸŸŸŸŸ‰ŸŸŸŸŸŸŸŸŸŸ‰ŸŸŸŸŸŸŸŸŸŸ‰ŸŸŸŸŸŸŸŸŸŸ‰ŸŸŸŸŸŸŸŸŸŸ‰ŸŸŸŸŸŸŸŸŸŸ
+
+† all ports „   LPT1  „   LPT2   „   LPT3   „   3BCh   „   378h   „   278h   †
+
+»ÕÕÕÕÕÕÕÕÕÕÕ¦ÕÕÕÕÕÕÕÕÕ¦ÕÕÕÕÕÕÕÕÕÕ¦ÕÕÕÕÕÕÕÕÕÕ¦ÕÕÕÕÕÕÕÕÕÕ¦ÕÕÕÕÕÕÕÕÕÕ¦ÕÕÕÕÕÕÕÕÕÕº
+
+
+
+Table 3|
+
+-------
+
+ŠÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕª
+
+†                               Status Codes                                 †
+
+ÃÕÕÕÕÕÕÕÕÕÕ‹ÕÕÕÕÕÕÕÕÕ‹ÕÕÕÕÕÕÕÕÕÕ‹ÕÕÕÕÕÕÕÕÕÕÕ‹ÕÕÕÕÕÕÕÕÕÕ‹ÕÕÕÕÕÕÕÕÕ‹ÕÕÕÕÕÕÕÕÕÕÕ¼
+
+†   0      „   -1    „     -2   „    -3     „   -4     „    -5   „   -999    †
+
+«ŸŸŸŸŸŸŸŸŸŸ‰ŸŸŸŸŸŸŸŸŸ‰ŸŸŸŸŸŸŸŸŸŸ‰ŸŸŸŸŸŸŸŸŸŸŸ‰ŸŸŸŸŸŸŸŸŸŸ‰ŸŸŸŸŸŸŸŸŸ‰ŸŸŸŸŸŸŸŸŸŸŸ
+
+†Operation „Time-out „  Invalid „  No HASP  „  Not a   „  Write  „  Invalid  †
+
+†succeeded „         „  address „ key found „ MemoHASP „  failed „  serice   †
+
+»ÕÕÕÕÕÕÕÕÕÕ¦ÕÕÕÕÕÕÕÕÕ¦ÕÕÕÕÕÕÕÕÕÕ¦ÕÕÕÕÕÕÕÕÕÕÕ¦ÕÕÕÕÕÕÕÕÕÕ¦ÕÕÕÕÕÕÕÕÕ¦ÕÕÕÕÕÕÕÕÕÕÕº
+
+------------------------------------cut---------------------------------------
+
+
+
+Ok, now you can easily see what casmate want from HASP...
+
+in w-ice "i3here" then "g" look at cs:eip then kill all int 3 by NOP,
+
+type "bpx &lt;address of first int 3> do "?eax;?ebx;?ecx;?edx;?esi;?edi;g;"
+
+reload cas_win.exe and run it (if you have key - it's SO easy)...
+
+After this use dlog.exe to extract log to file...
+
+cas_win.exe can use many dongles, i think this is different packs with
+
+different functions. (See [IV] in this manual).
+
+Ok, one right password is:
+
+
+
+cx:dx=03EBD:05A5B heximal.
+
+
+
+In log -
+
+
+
+1. ISHASP
+
+2. HASPCODE (some times)
+
+3. HASPID
+
+4. READMEMO
+
+
+
+All this operations 2 times.
+
+
+
+(rem: ISHASP does not need any passwords)
+
+
+
+now we can easy write an emulator and insert it to API entry address...
+
+
+
+0002E668: E8C244                       call   000022B2D
+
+
+
+why there CALL not jmp? - because now we can easy RET from our emulator,
+
+using RETN command...
+
+(see [V])
+
+
+
+
+
+
+
+-----------------------------------------------------------------------
+
+III-IV. Cracking 'Security Lock Number' ('SLN')
+
+
+
+Every casmate have unique 'SLN' i think for Software
+
+Support and Antipiracy...
+
+How to crack this security lock number:
+
+
+
+I get dump from HASP (use HASPED.EXE from Aladdin):
+
+
+
+
+
+00000000:  xx xx xx xx sl sl 00 00 „ FE FF FF FF FF FF FF FF
+
+           ^^ ^^ ^^ ^^
+
+           First CRC
+
+                       ^^ ^^ 
+
+                       this is 'SLN'
+
+00000010:  FC FB FF FF FF FF FF FF „ FF FF FF FF FF FF FF FF
+
+00000020:  on on on on on on on on „ on on on on yy yy yy yy
+
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+                                                 ^^ ^^ ^^ ^^
+
+                                                 Second CRC
+
+00000030:  on on on on on on on on „ on on on on on on on on
+
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+           About 'on' see in description
+
+           
+
+00000040:  FF FF FF FF FF FF FF FF „ FF FF FF FF FF FF FF FF
+
+00000050:  FF FF FF FF FF FF FF FF „ FF FF FF FF zz zz zz zz
+
+                                                 ^^ ^^ ^^ ^^
+
+                                                 Third CRC
+
+00000060:  FF FF FF FF FF FF FF FF „ FF FF FF FF FF FF FF FF
+
+
+
+
+
+---[This info from Ignoramus - Thanks!]
+
+When CasMate reads from the dongle the memoryblock for the SECOND
+
+time, right after that memory checksums are checked - there are three DWORDS
+
+When you put a breakpoint into the dongle emulation code, you
+
+can trace it and find the real checksums.
+
+Then you can change the HASP ID (in emulation) or change some pieces
+
+of the memory (to enable the other options). Only thing you have to do
+
+is correct the checksums then.
+
+
+
+Key USE : ISHasp, HaspCode, HaspID, ReadBlock, probably ReadMemo as well
+
+sometimes (when you enable some options or have some errors in memory or
+
+so...) even WriteBlock...
+
+---[End]---
+
+
+
+              
+
+All 'on' bytes - switch 'OFF/ON' casmate functions, if all 'on=FF - then
+
+all casmate functions is disabled, if 'on'= 00 then all casmate functions
+
+is enabled.
+
+
+
+You can change 'SLC', but casmate can't run after this, because
+
+he check 3 CRC-sum of blocks, don't forget to calculate correct CRC!
+
+
+
+Now we can change all 'on' to 00, 'SLN' to 00, then do breakpoint
+
+to memory access to CRC addresses and calculate 'right' CRC checksum.
+
+
+
+We get:
+
+
+
+00000000:  78 4D 2D 28-00 00 00 00-FE FF FF FF-FF FF FF FF
+
+00000010:  FC FB FF FF-FF FF FF FF-FF FF FF FF-FF FF FF FF
+
+00000020:  00 00 00 00-00 00 00 00-00 00 00 00-00 00 A8 89
+
+00000030:  00 00 00 00-00 00 00 00-00 00 00 00-00 00 00 00
+
+00000040:  FF FF FF FF-FF FF FF FF-FF FF FF FF-FF FF FF FF
+
+00000050:  FF FF FF FF-FF FF FF FF-FF FF FF FF-64 85 58 48
+
+00000060:  FF FF FF FF-FF FF FF FF-FF FF FF FF-FF FF FF FF
+
+
+
+All features, SLN=0 and correct CRC's viola! :-)
+
+
+
+(rem: you can see enabled/disabled functions from casmate main
+
+menu, 'Misc' -> 'Register options')
+
+
+
+
+
+
+
+-----------------------------------------------------------------------
+
+V. Full emulator in cas_win.exe
+
+
+
+00022B2D: 90                           nop
+
+00022B2E: 90                           nop
+
+00022B2F: 90                           nop
+
+00022B30: 80FF01                       cmp    bh,001
+
+00022B33: 750D                         jne    000022B42
+
+00022B35: B80100                       mov    ax,00001
+
+00022B38: BB0000                       mov    bx,00000
+
+00022B3B: B90000                       mov    cx,00000
+
+00022B3E: BA0000                       mov    dx,00000
+
+00022B41: C3                           retn
+
+00022B42: 81F9BD3E                     cmp    cx,03EBD
+
+00022B46: 7508                         jne    000022B50
+
+00022B48: 81FA5B5A                     cmp    dx,05A5B
+
+00022B4C: 7502                         jne    000022B50
+
+00022B4E: EB24                         jmps   000022B74
+
+00022B50: 80FF02                       cmp    bh,002
+
+00022B53: 7412                         je     000022B67
+
+00022B55: 80FF05                       cmp    bh,005
+
+00022B58: 740D                         je     000022B67
+
+00022B5A: B80000                       mov    ax,00000
+
+00022B5D: BB0000                       mov    bx,00000
+
+00022B60: B9FDFF                       mov    cx,0FFFD
+
+00022B63: BA0000                       mov    dx,00000
+
+00022B66: C3                           retn
+
+00022B67: B80000                       mov    ax,00000
+
+00022B6A: BB0000                       mov    bx,00000
+
+00022B6D: B90000                       mov    cx,00000
+
+00022B70: BA0000                       mov    dx,00000
+
+00022B73: C3                           retn
+
+00022B74: 80FF03                       cmp    bh,003
+
+00022B77: 0F859B00                     jne    000022C16
+
+00022B7B: 83FF38                       cmp    di,038
+
+00022B7E: 720D                         jb     000022B8D
+
+00022B80: B80000                       mov    ax,00000
+
+00022B83: BB0000                       mov    bx,00000
+
+00022B86: B9FEFF                       mov    cx,0FFFE
+
+00022B89: BA0000                       mov    dx,00000
+
+00022B8C: C3                           retn
+
+00022B8D: E80000                       call   000022B90
+
+00022B90: 5B                           pop    bx
+
+00022B91: D1E7                         shl    di,1
+
+00022B93: 03DF                         add    bx,di
+
+00022B95: 2E8B5F14                     mov    bx,cs:[bx][00014]
+
+00022B99: 33C0                         xor    ax,ax
+
+00022B9B: B90000                       mov    cx,00000
+
+00022B9E: BA0000                       mov    dx,00000
+
+00022BA1: C3                           retn
+
+00022BA2: 90                           nop
+
+00022BA3: 90                           nop
+
+00022BA4: 784D                         js     000022BF3
+
+00022BA6: 2D2800                       sub    ax,00028
+
+00022BA9: 0000                         add    [bx][si],al
+
+00022BAB: 00FE                         add    dh,bh
+
+00022BAD: FFFF                         ???    di
+
+00022BAF: FFFF                         ???    di
+
+00022BB1: FFFF                         ???    di
+
+00022BB3: FFFC                         ???    sp
+
+00022BB5: FB                           sti
+
+00022BB6: FFFF                         ???    di
+
+00022BB8: FFFF                         ???    di
+
+00022BBA: FFFF                         ???    di
+
+00022BBC: FFFF                         ???    di
+
+00022BBE: FFFF                         ???    di
+
+00022BC0: FFFF                         ???    di
+
+00022BC2: FFFF                         ???    di
+
+00022BC4: 0000                         add    [bx][si],al
+
+00022BC6: 0000                         add    [bx][si],al
+
+00022BC8: 0000                         add    [bx][si],al
+
+00022BCA: 0000                         add    [bx][si],al
+
+00022BCC: 0000                         add    [bx][si],al
+
+00022BCE: 0000                         add    [bx][si],al
+
+00022BD0: 0000                         add    [bx][si],al
+
+00022BD2: A889                         test   al,089
+
+00022BD4: 0000                         add    [bx][si],al
+
+00022BD6: 0000                         add    [bx][si],al
+
+00022BD8: 0000                         add    [bx][si],al
+
+00022BDA: 0000                         add    [bx][si],al
+
+00022BDC: 0000                         add    [bx][si],al
+
+00022BDE: 0000                         add    [bx][si],al
+
+00022BE0: 0000                         add    [bx][si],al
+
+00022BE2: 0000                         add    [bx][si],al
+
+00022BE4: FFFF                         ???    di
+
+00022BE6: FFFF                         ???    di
+
+00022BE8: FFFF                         ???    di
+
+00022BEA: FFFF                         ???    di
+
+00022BEC: FFFF                         ???    di
+
+00022BEE: FFFF                         ???    di
+
+00022BF0: FFFF                         ???    di
+
+00022BF2: FFFF                         ???    di
+
+00022BF4: FFFF                         ???    di
+
+00022BF6: FFFF                         ???    di
+
+00022BF8: FFFF                         ???    di
+
+00022BFA: FFFF                         ???    di
+
+00022BFC: FFFF                         ???    di
+
+00022BFE: FFFF                         ???    di
+
+00022C00: 64855848                     test   fs:[bx][si][00048],bx
+
+00022C04: FFFF                         ???    di
+
+00022C06: FFFF                         ???    di
+
+00022C08: FFFF                         ???    di
+
+00022C0A: FFFF                         ???    di
+
+00022C0C: FFFF                         ???    di
+
+00022C0E: FFFF                         ???    di
+
+00022C10: FFFF                         ???    di
+
+00022C12: FFFF                         ???    di
+
+00022C14: 90                           nop
+
+00022C15: 90                           nop
+
+00022C16: 80FF32                       cmp    bh,032
+
+00022C19: 753E                         jne    000022C59
+
+00022C1B: 57                           push   di
+
+00022C1C: 03FE                         add    di,si
+
+00022C1E: 83FF38                       cmp    di,038
+
+00022C21: 5F                           pop    di
+
+00022C22: 760D                         jbe    000022C31
+
+00022C24: B80000                       mov    ax,00000
+
+00022C27: BB0000                       mov    bx,00000
+
+00022C2A: B9FEFF                       mov    cx,0FFFE
+
+00022C2D: BA0000                       mov    dx,00000
+
+00022C30: C3                           retn
+
+00022C31: E80000                       call   000022C34   ---------- (1)
+
+00022C34: 5B                           pop    bx
+
+00022C35: D1E7                         shl    di,1
+
+00022C37: 03DF                         add    bx,di
+
+00022C39: 81EB9000                     sub    bx,00090
+
+00022C3D: 8BCE                         mov    cx,si
+
+00022C3F: 1E                           push   ds
+
+00022C40: 0E                           push   cs
+
+00022C41: 1F                           pop    ds
+
+00022C42: 8BF3                         mov    si,bx
+
+00022C44: 8BF8                         mov    di,ax
+
+00022C46: F3A5                         repe   movsw
+
+00022C48: 1F                           pop    ds
+
+00022C49: B80000                       mov    ax,00000
+
+00022C4C: BB0000                       mov    bx,00000
+
+00022C4F: B90000                       mov    cx,00000
+
+00022C52: BA0000                       mov    dx,00000
+
+00022C55: C3                           retn
+
+00022C56: 90                           nop
+
+00022C57: 90                           nop
+
+00022C58: 90                           nop
+
+00022C59: 80FF05                       cmp    bh,005
+
+00022C5C: 750D                         jne    000022C6B
+
+00022C5E: B80100                       mov    ax,00001
+
+00022C61: BB0100                       mov    bx,00001
+
+00022C64: B96600                       mov    cx,00066
+
+00022C67: BA0000                       mov    dx,00000
+
+00022C6A: C3                           retn
+
+00022C6B: 80FF06                       cmp    bh,006
+
+00022C6E: 750D                         jne    000022C7D
+
+00022C70: B80000                       mov    ax,00000
+
+00022C73: BB0000                       mov    bx,00000
+
+00022C76: B90000                       mov    cx,00000
+
+00022C79: BA0000                       mov    dx,00000
+
+00022C7C: C3                           retn
+
+00022C7D: 80FF02                       cmp    bh,002
+
+00022C80: 7531                         jne    000022CB3
+
+00022C82: 3D19F5                       cmp    ax,0F519
+
+00022C85: 750D                         jne    000022C94
+
+00022C87: B80100                       mov    ax,00001
+
+00022C8A: BBB3D2                       mov    bx,0D2B3
+
+00022C8D: B968F1                       mov    cx,0F168
+
+00022C90: BA0100                       mov    dx,00001
+
+00022C93: C3                           retn
+
+00022C94: 3D21BF                       cmp    ax,0BF21
+
+00022C97: 750D                         jne    000022CA6
+
+00022C99: B80100                       mov    ax,00001
+
+00022C9C: BBE044                       mov    bx,044E0
+
+00022C9F: B90100                       mov    cx,00001
+
+00022CA2: BA0E9D                       mov    dx,09D0E
+
+00022CA5: C3                           retn
+
+00022CA6: B81000                       mov    ax,00010
+
+00022CA9: BB1100                       mov    bx,00011
+
+00022CAC: B91200                       mov    cx,00012
+
+00022CAF: BA1300                       mov    dx,00013
+
+00022CB2: C3                           retn
+
+00022CB3: 90                           nop
+
+00022CB4: 90                           nop
+
+00022CB5: B80000                       mov    ax,00000
+
+00022CB8: BB0000                       mov    bx,00000
+
+00022CBB: B90000                       mov    cx,00000
+
+00022CBE: BA0000                       mov    dx,00000
+
+00022CC1: C3                           retn
+
+
+
+
+
+Don't forget to insert CALL into API entrypoint:
+
+0002E668: E8C244                       call   000022B2D
+
+
+
+and crack envelope:
+
+0003AB34: 74 EA
+
+0003AB36: 73 FD
+
+0003AB38: 8A 14
+
+0003AB3A: 4A D4
+
+
+
+
+
+That's all. Cut you porno pictures on CAM plotters ;-)
+
+
+
+
+
+
+
+-----------------------------------------------------------------------
+
+VI. Greets
+
+
+
+Personal: KrK, NightIce, Vizitor, mr.Zimaman, stpark, hijaq, Fixit, Meteo,
+
+          Creat0r, mr.f0x, PSH, Ignoramus, acpizer, _random, Marquz,
+
+          Lordbyte, The_Owl, [bk], Tokz, Fossil, Goofer.
+
+
+
+Group   : UCL - WOW we are the best
+
+          UCF - Uh, you TOO ;-)
+
+          Factor - newbies, but so good
+
+          Siege - URRA!
+
+          Pinnacle - Yahoo!
+
+          Sodom - :-( so worry about you death.
+
+
+
+...and all #cracking Peoples around the world.
+
+
+
+(x)'98 by Shaman
+
+E-mail: whshaman@iname.com
+
+EfNet : #ucl'98, #cracking, #ucf2000...
+
+</PRE>
+
+
+
+
+
+<HR size=2 width=33%>
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</I></CENTER>
+
+<BR><CENTER>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" 
+
+VSPACE="0"
+
+HSPACE="0" ALIGN="BOTTOM" width="13" height="13"><A HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage </A>
+
+<IMG 
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" width="13" height="13"><A 
+
+HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" 
+
+HEIGHT="13"
+
+BORDER="0" VSPACE="0" HSPACE="0" NATURALSIZEFLAG="0"><A 
+
+HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" 
+
+HSPACE="0" width="13" height="13"><A
+
+HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" 
+
+BORDER="0"
+
+VSPACE="0" HSPACE="0" width="13" height="13"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools </A><IMG 
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" width="13" height="13"><A 
+
+HREF="coumes.htm" tppabs="http://www.anticrack.de/fravia/coumes.htm">counter
+
+measures </A><BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" 
+
+HSPACE="0" width="13" height="13"><A
+
+HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" 
+
+ALIGN="BOTTOM"
+
+BORDER="0" VSPACE="0" HSPACE="0" width="13" height="13"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails </A><IMG SRC=
+
+"bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" width="13" height="13"><A 
+
+HREF=
+
+"searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" 
+
+BORDER=
+
+"0" VSPACE="0" HSPACE="0" width="13" height="13"><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut </A><IMG 
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" width="13" height="13"><A 
+
+HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia </A><BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" 
+
+HSPACE="0" width="13" height="13"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering legal? </A></CENTER></P>
+
+
+
+</BODY>
+
+</HTML>

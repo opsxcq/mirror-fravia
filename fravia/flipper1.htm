@@ -1,0 +1,520 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>flipper1</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+<CENTER><FONT size="+3">iniquity's inequality protection scheme</FONT>
+
+<BR>(and some tips about pascal reverse engineering)<BR>
+
+  <BR>
+
+    <IMG SRC="stupid.gif" tppabs="http://www.anticrack.de/fravia/stupid.gif" ALT="stupid" ALIGN="BOTTOM" WIDTH="114" HEIGHT="43" BORDER="0" VSPACE="0" HSPACE="0">
+
+
+
+<H4>by Flipper<BR>
+
+<BR>
+
+(31 August 1997)</H4>
+
+<HR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">Courtesy of fravia's page 
+
+of reverse engineering<BR><BR><I>Well, a quite interesting essay 
+
+for a couple of reasons:<BR> 
+
+- Flipper doesn't use neither winice nor wdasm, he 
+
+cracks with HIEW (and take notice: it is always a good idea to learn how to reverse 
+
+engineer our targets with a whole collection of tools... heavy paranoid 
+
+protection schemes 
+
+specifically targeted against our beloved winice and wdasm are 
+
+nowadays proliferating like 
+
+mushrooms... and yet they can be easily cracked with symdeb! :-)
+
+<BR>
+
+- Flipper is reversing a Pascal target and knows Pascal enough to give 
+
+us all some very interesting &quot;insights&quot; about pascal compilation... hey 
+
+Flipper, what about being among the first Authors in our new future +HCU's project: 
+
+&quot;<FONT color="blue">Compiler peculiarities</FONT>&quot;? (Starting October 1997).<BR>
+
+Well, read and enjoy.<BR><BR>
+
+<B>A small notice about pascal</B></I><BR>
+
+First developed by Niklaus Wirth in the early 1970s, Pascal was intended 
+
+primarily as a tool for teaching students the fundamentals of good 
+
+programming practice. However, the clarity and simplicity of the language 
+
+rapidly attracted interest beyond the world of academia, and Pascal has become 
+
+a major programming language... almost in spite of itself.<BR>As most of the recent compilers 
+
+add a great many features to Wirth's original specification, modern Pascal compilers 
+
+can be just as powerful as the C programming language. In actual fact, 
+
+ programming in Pascal (yet not in Delphi) has some clear benefits 
+
+over programming in C. For one thing, the syntax of Pascal is less cryptic than C, and, 
+
+more importantly, Pascal also does a great deal of checking so that the 
+
+programmer is alerted to errors which a C compiler would let slip through.
+
+(Yet I only use C and never really used Pascal... go figure :-)<BR><BR>
+
+You'll find easily on the web: 
+
+- Turbo Pascal (Borland);
+
+- QuickPascal (Microsoft); 
+
+- Prospero Pascal; 
+
+- Mystic Pascal; 
+
+- Borland Delphy 1.0 (complete version on PC-Plus superCD 35b, 
+
+May 1997, 4 UK pounds)<BR> 
+
+<BR><I>And now enjoy this essay by Flipper!
+
+</I>
+
+
+
+<BR><HR size="7">
+
+<PRE>-- iniquity's inequality protection scheme --
+
+(and some tips about pascal reverse engineering)
+
+by Flipper (upg), 31 Aug 1997</CENTER>
+
+
+
+When someone approached me a few weeks ago with the news that a new version
+
+of Iniquity BBS had been released, I didn't think much of it. However, in
+
+this short text I'll describe how to simply reverse engineer this simple
+
+protection scheme. The protection itself is so simple, anyone without any
+
+knowledge of assembly could figure out how to bypass it; I hope that this
+
+file can be of some use on Fravia's page of &quot;bad protections&quot;, so that more
+
+so called shareware authors can actually write something worth cracking.
+
+
+
+Here's a list of what you'll need:
+
+
+
+1. a copy of Iniquity 1.01 for DOS <A href="tppmsgs/msgs1.htm#183" tppabs="http://www.anticrack.de/fravia/tppmsgs/msgs1.htm#183">[http://www.mirage.org/iniquityhq/]</A>
+
+2. hiew 5.65 (everywhere on the Web)
+
+
+
+Let's get started.. allright, install Iniquity, and run it. Nothing new, just
+
+a different look in the configuration screen. So, what's to crack here? When
+
+I started Iniquity up, it has &quot;Registration Number: 0&quot; (or something close
+
+to those words) printed inside the status window. I've looked all over, but
+
+I can't see any option to enter a serial number. Okay, so let's read what
+
+the README!.1ST has in it.
+
+
+
+(scroll down a bit, and you'll come to this..)
+
+  <FONT color="purple">
+
+NOTE: Begining with this version of Iniquity, it is now &quot;freeware/shareware&quot;.
+
+      Everyone gets a freeware two node license.  If you want to run more
+
+      than two nodes - you must register.  The price structure is as follows:
+
+
+
+                        4 nodes - $50
+
+                       16 nodes - $100
+
+                       48 nodes - $150
+
+                      124 nodes - $200
+
+
+
+I did this because it has costed me thousands of dollars in compilers to
+
+write the telnet server stack - and it will cost more to implement the
+
+web server.</FONT>
+
+
+
+I just have to say one thing before we continue to reverse engineer this
+
+program; Iniquity was written in Turbo Pascal 7.0. That means that it most
+
+likely was compiled with Borland's standard issue compiler for pascal, which 
+
+you can get for free everywhere and is anyway sold for less than 100 dollars.
+
+A good TCP/IP library (TPU unit) can be found by browsing through the vast
+
+SWAG archives, and wouldn't cost a cent.. however, this person thinks that
+
+people will pay for a bbs which is a 'telnet server'. You be the judge :-)
+
+
+
+So, that's the protection right there. If you try and run a bbs with more
+
+than two nodes, it will simply not work. So, if you run Iniquity like so:
+
+
+
+*NOTE*, make sure to have the multinode option set to 'yes' before you try
+
+        run Iniquity multinode.
+
+
+
+C:\BBS\iniquity node 3
+
+
+
+Here's the message that comes up below.
+
+
+
+--begin snippet
+
+
+
+detecting computer hardware [node 3]
+
+  <FONT color="purple">
+
+Iniquity is only registered for 2 nodes, for more nodes
+
+please write to support at iniquitybbs@hotmail.com
+
+					 </FONT>
+
+--end snippet
+
+
+
+Here's the plan. Load up INIQUITY.EXE in hiew 5.65. Press F7, and type in the
+
+search string &quot;<FONT color="purple">for more nodes</FONT>&quot;. You'll end up at $614C, and there's the text
+
+string in plain sight. Scroll down a bit to $6362, and you'll see the bytes
+
+'55 89', which in pascal's case, happens to the be the code for the beginning
+
+of a procedure. Press F4, and then F3, and you'll be able to view the ASM
+
+source of the procedure. Usually, with pascal in general you can find the
+
+code which uses a string directly below it, starting with the characters 'U&#137;'
+
+and ending with a RETF, or a LEAVE statement.
+
+
+
+You'll see something like this..
+
+
+
+00006362: 55                           push   bp
+
+00006363: 89E5                         mov    bp,sp
+
+00006365: B80002                       mov    ax,00200
+
+00006368: 9A3005421E                   call   01E42:00530
+
+0000636D: 81EC0002                     sub    sp,00200
+
+00006371: 9A0303421E                   call   01E42:00303
+
+00006376: A3B8C6                       mov    [0C6B8],ax
+
+
+
+There's nothing interesting going on here, so we'll just browse through this
+
+sort of 'dead listing' and see if we have any luck :&gt; Now, knowing that this
+
+program was written in pascal, we can usually assume the programmer has done
+
+one of two things.
+
+
+
+(1) the worst way to check something... like this ;-)
+
+
+
+NumberOfNodes := 2;
+
+
+
+ if ParamStr(3) &lt;= NumberOfNodes then
+
+  begin
+
+   .. run the bbs ..
+
+  end
+
+ else
+
+  begin
+
+   writeln ('please buy more nodes!');
+
+   halt(1);
+
+  end;
+
+
+
+(2) a nicer, much neater way..
+
+
+
+NumberOfNodes := 2;
+
+
+
+ if ParamStr(3) &gt; NumberOfNodes then
+
+  begin
+
+   writeln ('please buy more nodes!');
+
+   halt(1);
+
+  end;
+
+
+
+So, keep this in mind while 'guessing and testing' through the code. Sooner
+
+or later, you'll come across a row of instructions that looks like this:
+
+
+
+000068DE: 9A1F05291C                   call   01C29:0051F -
+
+000068E3: 9AB70F421E                   call   01E42:00FB7 -
+
+000068E8: BF9019                       mov    di,01990
+
+000068EB: 0E                           push   cs
+
+000068EC: 57                           push   di
+
+000068ED: 9AB70F421E                   call   01E42:00FB7 -
+
+000068F2: 6A00                         push   000
+
+000068F4: 9A6409421E                   call   01E42:00964 -
+
+000068F9: 9A6108421E                   call   01E42:00861 -
+
+000068FE: 9AF404421E                   call   01E42:004F4 -
+
+<FONT color="red">**</FONT>00006903: 803E68BC02                 <FONT color="red">**</FONT>cmp    b,[0BC68],002
+
+<FONT color="red">**</FONT>00006908: 7670                       <FONT color="red">**</FONT>jbe    00000697A   -
+
+0000690A: BF14DA                       mov    di,0DA14
+
+0000690D: 1E                           push   ds
+
+0000690E: 57                           push   di
+
+0000690F: 9A4008421E                   call   01E42:00840 -
+
+00006914: 9AF404421E                   call   01E42:004F4 -
+
+00006919: BF14DA                       mov    di,0DA14
+
+0000691C: 1E                           push   ds
+
+0000691D: 57                           push   di
+
+0000691E: 9A4008421E                   call   01E42:00840 -
+
+00006923: 9AF404421E                   call   01E42:004F4 -
+
+00006928: BF14DA                       mov    di,0DA14
+
+
+
+The code that we're concerned about is at offset $6903.
+
+
+
+&gt;00006903: 803E68BC02                   cmp    b,[0BC68],002
+
+&gt;00006908: 7670                         jbe    00000697A   -
+
+
+
+First, compare the node number entered on the command line (the ParamStr
+
+function was called before these instructions). (J)ump if it's (B)elow or
+
+(E)qual to the maximum number of nodes.
+
+
+
+So, you could simply modify the value on line $6903, but there's an easier
+
+way to let yourself use as many as 255 nodes maximum.
+
+
+
+Simply change this instruction
+
+
+
+00006908: 7670                         jbe    00000697A
+
+
+
+to
+
+
+
+00006908: EB70                         jmps   00000697A
+
+
+
+forcing the program to jump to the loading sequence unconditionally.
+
+
+
+That's all there is to it. I read a usenet post that stated &quot;<FONT color="purple">I'd like 
+
+to see anyone get past Iniquity's new 128-bit encryption! heh.</FONT>&quot;
+
+
+
+I don't know about you, but I sure didn't see any encryption while I was
+
+poking about the asm code ;) a small note to all shareware programmers,
+
+stay away from protections like this one, it certainly won't make you much
+
+money, that's for sure.
+
+
+
+written by flipper (upg) on 08/30/97. </PRE>
+
+
+
+<FONT color="green">(c) flipper 1997. All rights reversed</FONT>
+
+<HR ALIGN="CENTER" WIDTH="100%" SIZE="3">
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</I></CENTER>
+
+<BR><CENTER>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0">
+
+<A HREF="project7.htm" tppabs="http://www.anticrack.de/fravia/project7.htm">Back to Project 7</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#84'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#84">homepage</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#73'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#73">links</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#82'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#82">students' essays</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut CGI-scripts</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering legal?</A></CENTER>
+
+<CENTER><HR ALIGN="CENTER" WIDTH="100%" SIZE="2"></CENTER>
+
+</BODY>
+
+</HTML>
+
+
+

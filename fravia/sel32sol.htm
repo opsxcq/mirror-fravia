@@ -1,0 +1,406 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>sel32sol</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR=#C0C0C0 TEXT=#001010 VLINK=#405040>
+
+<CENTER><FONT size=+3>+HCU's special Project: 'Our protections'<BR>
+
+<A href="protecti.htm" tppabs="http://www.anticrack.de/fravia/protecti.htm"><IMG SRC="tough.gif" tppabs="http://www.anticrack.de/fravia/tough.gif" ALT="tough" ALIGN=BOTTOM 
+
+WIDTH=114 HEIGHT=43 BORDER=0 VSPACE=0 HSPACE=0></A>
+
+<BR>
+
+<FONT color=blue>SELF32: THE SOLUTION</FONT>
+
+<BR></FONT>
+
+<BR>
+
+<FONT size=+1>
+
+by +RCG, 14 January 1998
+
+</FONT><BR>
+
+<A href="hcu98_3.htm" tppabs="http://www.anticrack.de/fravia/hcu98_3.htm"><IMG SRC="hcu1.gif" tppabs="http://www.anticrack.de/fravia/hcu1.gif" ALT="cracker" ALIGN=BOTTOM 
+
+WIDTH=114 HEIGHT=43 BORDER=0 VSPACE=0 HSPACE=0></A>
+
+<BR>
+
+<BR>
+
+<I>I have chosen this path to introduce +RCG's new essays because I believe 
+
+that our readers would be good adviced to 'deepen' first +RCG's self32 protection 
+
+(and to study +Zer0's solution to it) before attempting to go further.</I>
+
+</CENTER>
+
+<HR size=6><PRE>SELF32: THE SOLUTION
+
+
+
+The protection was perfectly explained by +Zer0, so I
+
+will only comment how I was able to Create a Self-Modificable
+
+code on the fly (I publish this because now I have some new info
+
+and I can create real encrypted programms not using crafty
+
+methods as you will see.) 
+
+
+
+
+
+How can we create a self-modificable code?
+
+
+
+Look at this:
+
+
+
+Code Segment
+
+	Call	GetUserNAme
+
+	Call	GetUserCode
+
+	Call	Get_Password_With_Name_and_Code
+
+	Call	Decrypt_Code
+
+	Call	LoadDecryptedCode
+
+	Jump	Decrypted_Code
+
+
+
+Decrypted_Code:
+
+	dd	1000h dup (90)	;nops or whatever you like
+
+
+
+LoadDecryptedCode:
+
+        push    L NULL
+
+        push    L FILE_ATTRIBUTE_NORMAL
+
+        push    L OPEN_EXISTING
+
+        push    L NULL
+
+        push    L NULL
+
+        push    L GENERIC_READ+GENERIC_WRITE               
+
+        push    offset DecryptedFileName
+
+        call    CreateFileA             ;Open file
+
+        cmp     eax,-1
+
+        je      File_Error
+
+        mov     File_Handle,eax
+
+                
+
+        push    L NULL
+
+        push    offset NbytesReaded
+
+        push    L NumBytesToRead                     
+
+        push    offset Decrypted_Code	<==This is the bug
+
+        push    [File_Handle]
+
+        call    ReadFile
+
+        cmp     eax,FALSE
+
+        je      File_Error
+
+	ret
+
+File_Error:
+
+	xor	eax,eax
+
+	ret
+
+
+
+ENDS
+
+
+
+
+
+How W95 prevents this?
+
+
+
+	*Remember Kernel is at Segment 137h ==> Privilege
+
+	 level 3. (137h=......11b) ==> 11b=3h
+
+
+
+Setting a bpx at Readfile we will get this Code:
+
+
+
+	esp+18:null
+
+	esp+14:offset NbytesReaded
+
+	esp+10:NumBytesToRead
+
+	esp+0C:Destination (Decrypted_Code)
+
+	esp+08:File_Handle
+
+	esp+04:Return address
+
+	esp+00:BFF76ED7 (for ReadFile)
+
+
+
+Exported fn(): ReadFile - Ord:0241h
+
+:BFF75806    push BFF76ED7	;go here at ret to read
+
+:BFF7580B    jmp BFF75812
+
+Exported fn(): WriteFile - Ord:02E2h
+
+:BFF7580D    push BFF76E80	;or here to write
+
+:BFF75812    mov eax, dword ptr [esp+14]  ;NBytesReaded
+
+:BFF75816    push 00000004
+
+:BFF75818    push eax
+
+:BFF75819    call BFF784F0   ;IsBadHugeWritePtr
+
+:BFF7581E    test eax, eax
+
+:BFF75820    jne BFF7582D
+
+:BFF75822    mov eax, dword ptr [esp+14]
+
+:BFF75826    mov dword ptr [eax], 00000000 ;Clear NbytesReaded
+
+:BFF7582C    ret	==> Go to Read/Write
+
+:BFF7582D    pop eax
+
+:BFF7582E    push 00000057
+
+:BFF75830    call BFF7DACA   ;SetLastError
+
+:BFF75835    sub eax, eax
+
+:BFF75837    ret 0014
+
+
+
+ReadFile (BFF76ED7):
+
+:BFF76ECF    add esp, 00000004
+
+:BFF76ED2    jmp BFF75B2E
+
+.
+
+.
+
+:BFF76ED7    sub edx, edx	;ReadFile goes here
+
+:BFF76ED9    push BFF9DF58	;this let the stack equal
+
+:BFF76EDE    push dword ptr fs:[edx] ;This add 4, so:
+
+
+
+		esp+1C:null                    
+
+		esp+18:offset NbytesReaded     
+
+		esp+14:NumBytesToRead          
+
+		esp+10:Destination (Decrypted_Code)
+
+		esp+0C:File_Handle             
+
+		esp+08:Return address          
+
+		esp+04:BFF76ED7 (for ReadFile) 
+
+		esp+00:dword ptr fs:[edx]
+
+
+
+:BFF76EE1    mov dword ptr fs:[edx], esp
+
+:BFF76EE4    mov eax, dword ptr [esp+10]  ;Destination
+
+:BFF76EE8    mov ecx, dword ptr [esp+14]  ;NbytesToRead
+
+:BFF76EEC    jcxz BFF76F05	;Read zero bytes?
+
+:BFF76EEE    dec ecx
+
+:BFF76EEF    lea ecx, dword ptr [ecx+eax] ;ecx=end of destination
+
+:BFF76EF2    add byte ptr [ecx], 00  ;E Voila!!!!
+
+			  ;if destination is code segment then
+
+			  ;write into it is forbidden and 
+
+			  ;an exception is generated and trapped
+
+			  ;by the OS giving us the error code.
+
+:BFF76EF5    cmp eax, ecx ;Is end of dest.=begin of dest.
+
+:BFF76EF7    je BFF76F05
+
+:BFF76EF9    add byte ptr [eax], 00  ;try to write at
+
+:BFF76EFC    add eax, 00001000       ;next page of 4Kb
+
+:BFF76F01    cmp eax, ecx 	     ;Finished?	
+
+:BFF76F03    jb BFF76EF9
+
+:BFF76F05    mov ecx, dword ptr [esp+18]  ;NbytesReaded
+
+:BFF76F09    add dword ptr [ecx], 00000000 ;Again with
+
+					   ;NbytesReaded
+
+:BFF76F0C    mov ecx, dword ptr [esp+1C]  ;Overlapped struct
+
+:BFF76F10    jcxz BFF76F19		;if null go and read
+
+:BFF76F12    add byte ptr [ecx], 00	;else check begin and
+
+:BFF76F15    add byte ptr [ecx+13], 00  ;end of structure
+
+:BFF76F19    pop dword ptr fs:[edx]
+
+:BFF76F1C    add esp, 00000004	;restore true return address
+
+:BFF76F1F    jmp BFF7583A    ;go read
+
+
+
+
+
+All right, now we know where is the problem, so we can
+
+try to jump directly to BFF7583A.
+
+
+
+How to get the correct jump?...look!!!
+
+
+
+GetJmp:
+
+        mov     esi,[CFile]	;ReadFile jmp offset in data.
+
+        mov     esi,[esi]	;ReadFile jmp offset in program.
+
+        mov     esi,[esi]	;ReadFile jmp in dll (1st push)
+
+        mov     esi,[esi+1]	;Get 2nd push value (BFF76ED7) 
+
+NOK:    mov     al,[esi]	
+
+        cmp     al,0E9h		;check for jmp opcode
+
+        je      OK
+
+        inc     esi
+
+        jmp     NOK
+
+OK:     mov     CFile,esi	;now esi is the direct jmp. add.
+
+        ret
+
+
+
+Final comment, try to put any address like C0110000 (VxD
+
+addresses) and you will see there are no problems, you
+
+can modify VxD without restrictions (is this a bug?).... and
+
+we can prevent SoftIce using this 'bug'....work on it!!!!!!
+
+
+
+My Kernel Version is 4.00.950  but I have downloaded other
+
+versions and all worked.... also I have discovered that some
+
+versions were patched preventing this fact (why?????).
+
+
+
+Well, like +Zer0 said this way is a little hard to implement
+
+in High Level Languages, but now we are going to implement
+
+it very easily.
+
+</PRE>
+
+<HR size=6>
+
+<CENTER>
+
+<A href="protecti.htm" tppabs="http://www.anticrack.de/fravia/protecti.htm"><IMG SRC="tough.gif" tppabs="http://www.anticrack.de/fravia/tough.gif" ALT="tough" ALIGN=BOTTOM 
+
+WIDTH=114 HEIGHT=43 BORDER=0 VSPACE=0 HSPACE=0></A>
+
+<BR><FONT color=gray>Back to Our protections</FONT><HR width=33%>
+
+No, no, no! I want to go FURTHER and read +RCG's new essay: <BR> 
+
+<A href="crymaco.htm" tppabs="http://www.anticrack.de/fravia/crymaco.htm">CRYPTOGRAPHY AND MATHEMATICS OF CHAOS</A>!
+
+<HR width=33%>
+
+No, no, no! I want to go FURTHER and read +RCG's new essay: <BR> 
+
+<A href="vxdbasic.htm" tppabs="http://www.anticrack.de/fravia/vxdbasic.htm">A FIRST INTRODUCTION TO VxD</A>!
+
+<HR>
+
+</BODY>
+
+</HTML>
+
+
+

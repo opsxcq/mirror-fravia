@@ -1,0 +1,380 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>athevica.htm</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+<CENTER><FONT size="+3">Symantec Visual caf» trial version 1.0 (1997)</FONT>
+
+<BR>(a very silly protection scheme on a very interesting 
+
+target)
+
+  <BR>
+
+<H4><BR>by A+heist<BR>
+
+(6 November 1997, slightly edited by fravia+)</H4><BR>
+
+
+
+<IMG SRC="stupid.gif" tppabs="http://www.anticrack.de/fravia/stupid.gif" ALT="stupid" ALIGN="BOTTOM" WIDTH="114" HEIGHT="43" BORDER="0" VSPACE="0" HSPACE="0"></A>
+
+<BR>Most stupid protection
+
+
+
+<HR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">Courtesy of fravia's page 
+
+of reverse engineering<BR>       
+
+<BR><I>Well, A+heist seems to prefer always  
+
+easy protections and he is a lazy cracker indeed: he should at least 
+
+ have worked a little more on the 'this function is not allowed' 
+
+scheme :-) 
+
+<BR>I was tempted NOT to publish this essay: the protection scheme is 
+
+extremely banal, and targets with 'non sticking' trial limit are 
+
+sitting ducks even for average doom users, really not worth of our 
+
+time... yet A+heist 'didactic' is not bad (I like his comments to 
+
+the code and the way he has reduced the code to the minimum) and, 
+
+more relevantly,  this target is 
+
+very important for the FUTURE of our community, it seems clear (at 
+
+least to 
+
+some of us) that we are living the beginning of a great universal 
+
+'javation', therefore the sooner you'll learn how to program (and how 
+
+to crack :-) in Java, the better.</I></CENTER><HR size="6"> 
+
+                 <PRE>
+
+Symantec Visual caf» trial version 1.0 (1997)
+
+by A+heist, november 1997
+
+
+
+Here you go with a very silly protection scheme on a very interesting 
+
+target, which you can have almost for nothing, since in the last months 
+
+it has been published on many magazines CD-ROMs. I'm lazy, and I'll 
+
+crack this very quickly :)
+
+
+
+A small explanation for all those that would like to begin their Java
+
+career: Symantec Visual Caf» Pro, Borland JBuilder, Lotus BeanMachine, 
+
+SunSoft JDK freeware and SunSoft JavaStudio (with JavaStar, JavaScope 
+
+and JavaSpec) are considered the best developer tools around. Micro$oft's 
+
+J++ is NOT considered a good tool (besides: it's good netiquette to 
+
+avoid any Micro$oft product independently from its intrinsic value, for 
+
+reasons that should be obvious for the readers of the essays).
+
+
+
+Our target, Visual Caf» (Trial version 1.0, 1997) is only an update 
+
+of the 1996 kit. You'll crack it here and use it to 'get the feeling',
+
+then you'll switch to Visual caf» Pro, let's hope that Symantec will 
+
+soon release that as well with another silly protection scheme. 
+
+Nice thing in our target is that you get the Sun JDK 1.02 INSIDE it, and 
+
+that it carries all necessary javaAPI helpfiles within :)  
+
+
+
+OK, let's crack this together in less than one minute! 
+
+- start target, 
+
+- run target, 
+
+- set time to 1999: &quot;Your trial version has expired&quot;,
+
+- back to now: works again (no sticky flag setting then: a 
+
+  really easy one) 
+
+- Finetuning the OS date you will notice a MSgBox saying 
+
+  that &quot;you have only 4/3/2/1 day(s) left&quot;
+
+- Disassemble target, get dead listing
+
+- Search inside your editor...
+
+
+
+Here you are:
+
+
+
+Conditional jump here from 004126BD
+
+:004126F2 68AC454A00              push 004A45AC       ;-&gt;&quot;.java&quot;
+
+:004126F7 8D8DE4F6FFFF            lea ecx, dword ptr [ebp+FFFFF6E4]
+
+:004126FD E832A10500              call 0046C834
+
+:00412702 8D8DE4F6FFFF            lea ecx, dword ptr [ebp+FFFFF6E4]
+
+:00412708 E877A30500              call 0046CA84       ;get days left
+
+:0041270D 89C3                    mov ebx, eax        ;save days left
+
+:0041270F 83F8FF                  cmp eax, FFFFFFFF   ;check days left
+
+:00412712 7404                    je 00412718         ;beggar off: -0
+
+:00412714 85DB                    test ebx, ebx       ;0=beggar off
+
+:00412716 7533                    jne 0041274B        ;else check how many
+
+
+
+:beggar_off
+
+:00412718 6AFF                 push FFFFFFFF
+
+:0041271A 6A00                 push 00000000
+
+:0041271C 6821290000           push 00002921    ; &quot;Your trial version has expired
+
+:00412721 E8C6EB0800           Call 004A12EC    ; SFC42.SFC42:NoName0537
+
+:00412726 C745FCFFFFFFFF       mov [ebp-04], FFFFFFFF
+
+:0041272D 8D8DB0F6FFFF         lea ecx, dword ptr [ebp+FFFFF6B0]
+
+:00412733 E86AED0800           Call 004A14A2    ; SFC42.SFC42:NoName0610
+
+:00412738 31C0                 xor eax, eax     ; eax=FALSE
+
+:0041273A 8B4DF4               mov ecx, dword ptr [ebp-0C]
+
+:0041273D 64890D00000000       mov dword ptr fs:[00000000], ecx
+
+...       pop all
+
+:0041274A C3                   ret          ;expired, beggar off
+
+
+
+:from 00412716(C) ;not expired: how many days left?
+
+:0041274B 83FB05              cmp ebx, 5       ;d'you have 5?
+
+:0041274E 7D5E                jge 004127AE     ;more than 4: go and use it
+
+:00412750 8D8DF8F7FFFF        lea ecx, dword ptr [ebp+FFFFF7F8]
+
+:00412756 E829ED0800          Call 004A1484     ;SFC42.SFC42:NoName0605
+
+... irrelevant code
+
+:00412777 50                  push eax
+
+:00412778 6820290000          push 00002920   ; &quot;You have only %1 days left in your trial period.&quot;
+
+:0041277D 8D85F8F7FFFF        lea eax, dword ptr [ebp+FFFFF7F8]
+
+... irrelevant code
+
+:004127AB 83C40C              add esp, 0000000C
+
+
+
+from 0041274E(C), more than 5 days
+
+|
+
+:004127AE 8D8D08F8FFFF            lea ecx, dword ptr [ebp+FFFFF808] 
+
+...happy work, good nice cracker
+
+
+
+Well, I don't believe you need anything at all more than this.
+
+I have done the following: I have substituted 
+
+the FIRST check of the days left:
+
+
+
+:0041270F 83F8FF        cmp eax, FFFFFFFF   ;check days left
+
+:00412712 7404          je 00412718         ;beggar off: -0
+
+
+
+with a 'fixed' day_left value greater than 4:
+
+
+
+:0041270F BB06000000    mov ebx, 00000007   ;7 days left eternally!  
+
+
+
+And that's all, of course: now our target will 'believe' for the 
+
+eternity that we still have a week trial. 
+
+Why 7 days and not many more? Because 
+
+1)	7 is enough to avoid any nag screen
+
+2) 	+ORC said somewhere something like 'never never maximize 
+
+        our patching values uselessly', and I'm a good student :) 
+
+
+
+We can now use this for a long while... yet there is another 
+
+protection scheme (sort of :) inside:   
+
+  
+
+:nobody seems to call this snippet  
+
+:00416627 6AFF                    push FFFFFFFF
+
+:00416629 6A00                    push 00000000
+
+
+
+* Possible Reference to String Resource ID=10530: &quot;This function is not allowed in the trial version.&quot;
+
+                                  |
+
+:0041662B 6822290000              push 00002922
+
+
+
+* Reference To: SFC42.SFC42:NoName0537, Ord:04AFh
+
+                                  |
+
+:00416630 E8B7AC0800              Call 004A12EC
+
+:00416635 C3                      ret      
+
+
+
+This corresponds to the 'Live Update' option in the help 
+
+menu, and does not seem to me to be particularly important.
+
+If you wanna crack this, you'll need to fire softice.
+
+
+
+So that's it, hope you'll enjoy java, I believe we need many 
+
+more crackers (and especially +crackers) on this :)
+
+
+
+Enjoy! A+heist 1997</PRE>   
+
+<FONT color="green">(c) A+heist 1997. All rights reversed</FONT>
+
+<HR ALIGN="CENTER" WIDTH="100%" SIZE="3">
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</I></CENTER>
+
+<BR><CENTER>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="project7.htm" tppabs="http://www.anticrack.de/fravia/project7.htm">project7</A> 
+
+           <HR width="33%">
+
+
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut CGI-scripts</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering legal?</A></CENTER>
+
+<CENTER><HR ALIGN="CENTER" WIDTH="100%" SIZE="2"></CENTER>
+
+</BODY>
+
+</HTML>
+
+
+
+
+
+
+

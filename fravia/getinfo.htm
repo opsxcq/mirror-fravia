@@ -1,0 +1,120 @@
+<HTML>
+
+<HEAD>
+
+<TITLE> </TITLE>
+
+</HEAD>
+
+<BODY LINK="#0000ff" BGCOLOR="#000000">
+
+<DIR>
+
+
+
+<B><FONT SIZE=7 COLOR="#00ff00"><P>NiKoDeMoS pReSeNtZ</P></DIR>
+
+
+
+</B></FONT><FONT COLOR="#ff0000"><H2>The Quick Guide to Smashing those insidious *.DAT filez. </H2>
+
+</FONT><FONT COLOR="#00ffff"><P>It all began one day with a casual stroll through </FONT><A HREF="javascript:if(confirm('http://www.fravia.org/  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.fravia.org/'" tppabs="http://www.fravia.org/">http://www.fravia.org/</A><FONT COLOR="#00ffff"> when I came across the interesting information about </FONT><FONT COLOR="#c0c0c0">USER.DAT </FONT><FONT COLOR="#00ffff">and </FONT><FONT COLOR="#c0c0c0">SYSTEM.DAT</FONT><FONT COLOR="#00ffff">. Amazed to find all of this interesting information about myself stored in there, I set on a quest to pursue this mysterious file. </P>
+
+</FONT><I><FONT COLOR="#ffff00"><P>Problem:</P>
+
+</I></FONT><FONT COLOR="#ffffff"><P>Figure out what the Hell USER.DAT and SYSTEM.DAT are, and how to extract any gems that might be found.</P>
+
+</FONT><I><FONT COLOR="#ffff00"><P>The Attack:</P>
+
+</I></FONT><FONT COLOR="#ffffff"><P>It was really quite simple. The first thing that I did was go into a DOS session. You'll notice that USER.DAT is hidden. Try a:</P>
+
+<P>ATTRIB -H USER.DAT </P>
+
+<P>And you get some stupid message about Windows not even going there. Try to copy it: </P>
+
+<P>COPY USER.DAT USERSV.DAT </P>
+
+<P>And it can't see the file. Can't modify it. So, I just did </P>
+
+<P>EDIT USER.DAT </P>
+
+<P>Then took <U>F</U>ile Save <U>a</U>s ÷ and got myself a malleable copy! </P>
+
+<P>Okay, I noticed there were some good strings. I wanted to list them in a logical way. My first attempt, </FONT><A HREF="javascript:if(confirm('http://129.105.116.5/fravia/zipped/getinfo.zip  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://129.105.116.5/fravia/zipped/getinfo.zip'" tppabs="http://129.105.116.5/fravia/zipped/getinfo.zip">getinfo.zip</A><FONT COLOR="#ffffff">, was rather limited. I load the file into a buffer, then scan the buffer for certain strings (Name, Address, Mail) and then dump whatever valid alphanumeric characters I find after that. Gave some interesting results. </P>
+
+<P>What next? Let's see how the darned things are stored! So, I pulled out a handy </FONT><FONT COLOR="#00ffff">hex editor </FONT><FONT COLOR="#ffffff">and started examing strings. What I found was something like this:</P>
+
+</FONT><FONT COLOR="#00ff00"><CODE><P>0000 0700 0800 5573 6572 2049 444A 4C49 4B4E 5304 0000 ÷÷User IDJLIKNESS÷</P>
+
+</FONT></CODE><FONT COLOR="#ffffff"><P>Interesting. For similar strings, we see a similar pattern. </P>
+
+<P>Based on this, I make the assumption: </P>
+
+</FONT><FONT COLOR="#00ff00"><CODE><P>struct ms_garbage_entry {</P><DIR>
+
+<DIR>
+
+
+
+<P>char dummy; </P>
+
+<P>char desc_offset;</P>
+
+<P>char dummy;</P>
+
+<P>char val_offset; </P>
+
+<P>char dummy;</P>
+
+<P>char stringstuff[512]; } it;</FONT></CODE><FONT COLOR="#ffffff"> </P></DIR>
+
+</DIR>
+
+
+
+<P>Now this is grossly over-simplified, mostly because the offsets are probably words (two-byte integers) and the strings may extend to be longer, with this simplification seems to work okay for us. </P>
+
+<P>So, it was simple. I went back to getinfo and modified it to a new program, </FONT><A HREF="javascript:if(confirm('http://129.105.116.5/fravia/zipped/getinf.zip  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://129.105.116.5/fravia/zipped/getinf.zip'" tppabs="http://129.105.116.5/fravia/zipped/getinf.zip">getinf.zip</A><FONT COLOR="#ffffff">. The basic changes were that instead of worrying about the content of this data, I am going to simply match the above structure. I go through the buffer and move it into the structure. If the dummys are not zero, I assume a bad hit and move on. I then check the value at stringstuff + desc_offset + val_offset and hope for <I>something</I>. The end doesn't seem to be consistent (most common is 0x01, but there is other stuff as well!). </P>
+
+<P>Anyway, the result is that we get a pretty good parsing. The information is extraordinary. Close examination by dumping into an output file: </P>
+
+<P>GETINF c:\windows\user.dat &gt; string.txt </P>
+
+<P>Leads to the following conclusion: </P>
+
+</FONT><I><FONT COLOR="#ffff00"><P>Conclusion:</P>
+
+</I></FONT><FONT COLOR="#ffffff"><P>The USER.DAT and SYSTEM.DAT files are manifestations of the registry!!!! If you search through your registry, then check the values in these files, you'll see the startling similarity!! This is the hidden file system of the registry, I'm convinced of it.</P>
+
+</FONT><I><FONT COLOR="#ffff00"><P>Future projects:</P>
+
+</I></FONT><FONT COLOR="#ffffff"><P>There is a lot more to do. We need to find out </P>
+
+<OL>
+
+
+
+<LI>What <I>every</I> byte in the file means</LI>
+
+<LI>How information is referenced (where are the pointers, offsets?)</LI>
+
+<LI>How to EXACTLY determine the data type of a value (my program guesses, but doesn't always guess right!)</LI>
+
+<LI>How to update directly to this file, thus bypassing any Windows-monitored registry gateway </LI></OL>
+
+
+
+<P>&nbsp;</P>
+
+</FONT><FONT COLOR="#00ffff"><P>THAT'S IT FOR NOW!!! UNTIL NEXTIME ÷.</P>
+
+</FONT><ADDRESS><A HREF="mailto://jayke@mindspring.com">mailto://jayke@mindspring.com</A></ADDRESS>
+
+<P>&nbsp;</P>
+
+<FONT COLOR="#ffffff"><P>&nbsp;</P>
+
+</FONT><FONT COLOR="#00ff00"><CODE><P>&nbsp;</P></FONT></CODE></BODY>
+
+</HTML>
+

@@ -1,0 +1,648 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>MemMonitor95 Standard Edition 4.0  and its ThunkConnect32 relations</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+<CENTER><FONT size="+3">MemMonitor95 Standard 4.0  and its ThunkConnect32 relations</FONT>
+
+<BR>(Half-crippled program / Unhiding an hidden window / Thunk vagaries)
+
+<H2>by <FONT color="#5500AA">FootSteps</FONT></H2>
+
+(24 November 1997, slightly edited by fravia+)</H4>
+
+<!--<a href="protecti.htm" tppabs="http://www.anticrack.de/fravia/protecti.htm"><IMG SRC="tough.gif" tppabs="http://www.anticrack.de/fravia/tough.gif" ALT="our protections" ALIGN=BOTTOM WIDTH=114 HEIGHT=43 BORDER=0 VSPACE=0 HSPACE=0></a><br><Font color= gray>Our protections</fonT>-->
+
+<HR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">Courtesy of fravia's page 
+
+of reverse engineering<HR>       
+
+<I>Well, thunking (thunking up, thunking down, thunkconnect...) was about time to have a 
+
+look at these thunks, don't you believe? Besides there is some 'intuition and luck' in this essay 
+
+and, moreover, I like quite a lot little jewels like the following one:
+
+</CENTER></I><PRE><FONT color="purple">bpx CreateWindowExA do &quot;dd *((ss:esp)+8)
+
+     With that, each CreateWindowExA hooked by Winnie will show us the second
+
+     parameter we need : lpClassName in the data window.</FONT></PRE><I><CENTER>
+
+This kind of info is, IMHO, what makes an essay valuable for us: the targets 
+
+are completely irrelevant... but the knowledge... Ahh, the knowledge... I could 
+
+carry on drinking more and more of it, sitting here and awaiting a slow dawn that 
+
+still hides inside the heavy clouds of november...
+
+</I></CENTER><HR size="6"><PRE>
+
+MemMonitor95 Standard Edition 4.0  and its ThunkConnect32 relations 
+
+Half-crippled program / Hidden window / Thunked.
+
+================================================
+
+
+
+You'll need :
+
+
+
+MemMonitor 95 Standard Trial 4.0 from Prudens <A href="javascript:if(confirm('http://www.spywindows.com/  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.spywindows.com/'" tppabs="http://www.spywindows.com/">http://www.spywindows.com/</A>
+
+MemMonitor 95 Professional Trial from Prudens <A href="javascript:if(confirm('http://www.spywindows.com/  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.spywindows.com/'" tppabs="http://www.spywindows.com/">ibidem</A>
+
+Winnie 3.01 to 3.22 (everywhere on the web)
+
+BRW 4.5 to 5.2      (everywhere on the web)
+
+Winsight 5.x        (everywhere with BC++5)
+
+WDasm32 8.x         (everywhere on the web, use 8.9)
+
+IDA 3.7             (everywhere on the web, don't miss it)
+
+Windoze95           (everywhere on your HD)
+
+
+
+Once upon a time I was cracking some interesting tools of the trade, the 
+
+Prudens's trial toolz, (see below for a quick easy reversing snippet about 
+
+ExeSpy95 and ComSpy95), when I found in the third one, <FONT color="blue">MemMonitor95</FONT>, 
+
+a different protection scheme from the two others.
+
+I thought at first: &quot;oh, no... back to trace&quot;, but I was happy: it was 
+
+a good thing: I was beginning to bore myself without challenges.
+
+
+
+Running the program, memmon95.exe, I was awaiting like with Exespy95 or
+
+ComSpy95 a &quot;sympathic&quot; nag with something like 'Enter the drive where 
+
+your registration key file is' (with these kind of nags sharewares you 
+
+know immediately that the target is reversed! :-) but... here there was 
+
+no sympathic nag.
+
+Instead, a enormous bitmapped screen nag, with a irritating 'unregistered
+
+user', and a very frustrating 'Not all hooks are available in this version'. 
+
+Followed by a classic MessageBox with program presentation and bazaar.
+
+
+
+In spite of my irritation, I played a little with memmon95.exe, you know 
+
+we must always spy all the hints of the targets: where are placed on screen 
+
+words like  'unregistered', when the NagMessageBoxes happen, what functions 
+
+are disabled, etc...
+
+This memmon95.exe is a nice tool, a little better than TechFacts to follow 
+
+memory heap calls, because it show you these in real time (with TechFacts you 
+
+must refresh).
+
+
+
+I did not have to wait long in order to have my awaited nagscreen: I clicked 
+
+on a Heap captured valor, and bingo! a nag with 
+
+'This function is restricted to... etc, etc...'
+
+I just thought: ha ha ha!, Gotcha! I will fire Winnie, put a classic
+
+bpx MessageBoxA, press some F12 key, and land in a JZ opcode.
+
+
+
+Yes, you can try. Fire Winnie. Bpx MessageBoxA. Click on the ListBox 
+
+which makes the nag appear. 
+
+You land obviously in User32!MessageboxA section.
+
+But Press F12. Just once, go ahead.
+
+You see where you land?
+
+Yes, you land in the terrible <FONT color="red">Kernel32!ThunkConnect32</FONT>!
+
+Like quicksand! Aaargh!
+
+You can continue to press the F12 key. But you will sink more and more!
+
+Press it 12 times, and you'll land inside... nothing! The darkest codewoods!
+
+Because we have lost hand of Winnie's trace and we sprang back to Windows' 
+
+normal execution...
+
+
+
+Well, I jumped on the Win32 SDK. 
+
+What the hell is this ThunkConnect32 API anyway? 
+
+You won't find it in the SDK. You'll find it in the help files:
+
+Windows's developer guide (Borland C++) or in the Microsoft Programmer's
+
+guide to Windows 95 (Borland C++ Builder, M$VC++, and others compilers...).
+
+If you want more information, you've only got a ridiculous article on it 
+
+in the M$ Knowledge Base, and a serious one inside the 'guru' Schulmann's 
+
+book 'Unauthorized Windoze95'. My! You would never believe HOW MUCH 
+
+undocumented is this whole windoze bazaar!
+
+
+
+It was the first time I met this API following our paths. 
+
+In fact 'Thunking' is the relation between 32bits and 16bits applications, 
+
+either executables or DLL.
+
+And WindoZ95 makes indeed an overbloated use of that, especially with the 
+
+User32 to the old User interface... You know, W95 swap all time from 32 
+
+to 16bits, from 16bits to 32... Seems sometimes that Windows95 is in fact 
+
+the worse monstrous shareware ever programmed... :-)
+
+
+
+So, why could we not get the hand back to Winnie, after this thunk? Who knows?
+
+First, probably because of the MeMonitor95 hooks. You see, MemMonitor hooks
+
+when running some 16/32bits API like GlobalAlloc and GlobalRealloc for example,
+
+ensuring to catch some old WindoZ31 applications, then calls ThunkConnect to
+
+switch from 32bits OS to 16bits.
+
+Second, probably too, because after the nagscreen, and after the ThunkConnect32
+
+Kernel section, the system goes back in the WndProc of the program, more
+
+exactly inside the switch(message) loop. 
+
+Then, we intercept one, which displayed the nag, and the program is now waiting 
+
+some other ones (for example, when you click on some functions of the program). 
+
+Like it is waiting, and not running.
+
+Winnie sleeps. Try, after landing in Kernel!ThunkConnect32, to press F12 a
+
+little times: you will not land inside User32... you'll dwell inside the 'old' 
+
+16bits User!WaitMessage boring loops.
+
+
+
+Since I couldn't trace anymore, I disassembled memmon95.exe with W32Dasm.
+
+Well, I found quickly the right MessageBoxA references looking for
+
+'this function is restricted...'. 
+
+Yes, actually several references.
+
+And looking closer to the dead-listing, it seems that that nag happens when
+
+you click on some interesting function : A nag when you want to print, a nag 
+
+when you want to heap process click, a nag when you want to save...
+
+<U>When you want to save?</U> Hey, that isn't at all inside the buttons of 
+
+the trial version!
+
+It was time for a deeper examination of this thunked executable with BRW.
+
+
+
+I fired therefore the heavy artillery: Borland Resource Workshop. 
+
+More exactly, with version 5, run your compiler and open memmon95.exe using 
+
+edit resources as a viewer.
+
+And a lot of interesting things should appear in front of your child'eyes:
+
+The enormous bitmap which serves as nag intro.
+
+A registration window.
+
+A registration window?? Well, then...
+
+But wait... you better wait before crying victory. 
+
+Something was terribly wrong.
+
+Yes, I know something was wrong because I already spyed the OTHER 
+
+executable (cracked below), ExeSpy95. 
+
+And ExeSpy95 got TWO NagBitmapScreens.
+
+And the file we study, memmon95.exe, has only ONE NagBitmapScreen. 
+
+A big one with  the sad message 'No hooks are available' printed on it.
+
+ExeSpy95 had the same, AND another one, without any inscriptions, the 
+
+good one, the one we want: the registered one.
+
+Perhaps memmon95 could then paint over these words with a FillRect() or 
+
+some other graphic tricks in order to cover the bitmap when registered? 
+
+No, Let's not be ridiculous... :-)
+
+
+
+At this point, I had big doubts about cracking this target. 
+
+Seems that it was a &quot;really crippled&quot; trial version... and that 
+
+there were nothing to do.
+
+But I continued a little. You know, for the fun, never give up!
+
+And I fired Winsight, the window spy utility of the Borland C++.
+
+And looked closer, once more, to my &quot;MEMMON95&quot; DialogBox.
+
+Mmm, I verified all of my target, all the buttons, the ListBoxes, the
+
+EditBoxes...
+
+Suddenly, I jumped! 
+
+In the Winsight detail, a second main window &quot;MEMMON95&quot; appeared!
+
+Open it : you can remark all other child windows: a StatusBar one, a TBar one,
+
+a Client one...
+
+But all have the &quot;hidden&quot; attribute. This is why we just see the DialogBox.
+
+I got an idea and looked at the readme.1st file that come with this appz 
+
+(This is what I should have done from the beginning...)
+
+There are two version of MemMonitor : the standard (we're studying)
+
+and the Professional. I read :
+
+<FONT color="purple">
+
+STANDARD vs PROFESSIONAL (for Windows 95)
+
+=========================================
+
+The Professional Edition provides some advanced features:
+
+  1. a view/log window is provided that displays captured calls
+
+     - you can print the log
+
+     - you can save the log to a file
+
+  2. a setting window is provided that you can disable those APIs you are not
+
+     interested
+
+</FONT>
+
+Well, the Pro version provides a view/log window? 
+
+And what about the hidden window which lurk when we run the standard 
+
+MemMonitor?
+
+I then immediately wanted to un-hide this window. 
+
+But it is not possible to change attributes when an application is 
+
+running.
+
+By the way, (<I've written a BTW ;-), I did not want to intercept pushes. Then, I shut down memmon95.exe, quit my monitor, and sat down in front of a TRUE window looking the world outside... and started thinking... and fall quickly in complex metaphysics paths, all of that, you know, hidden windows, the life, computers, god, etc... my thoughts went about finding one day some 'Moskovskaja' vodka in the shops... I was even thinking that I would have never becomed a mighty +old red cracker, and that I would have remained a minable +young capitalist lamer... :-))) I stop my madness short before thinking of eventually buying this soft! Go back to the computer and look at the CreateWindow procedure : HWND CreateWindowEx( DWORD dwExStyle, // extended window style LPCTSTR lpClassName, // address of registered class name LPCTSTR lpWindowName, // address of window name DWORD dwStyle, // window style int x, // horizontal position of window int y, // vertical position of window int nWidth, // window width int nHeight, // window height HWND hWndParent, // handle of parent or owner window HMENU hMenu, // handle of menu, or child-window identifier HINSTANCE hInstance, // handle of application instance LPVOID lpParam // address of window-creation data ); We are not interested by the new dwExstyle of the window to be created but by the old dwStyle which must have the WS_VISIBLE style (Remark with Winsight that all non-hidden windows have the 'visible' attribute. Then we must ad this style to the hidden 'MEMMON95', the overlapped one. You'll remark, if you double-click in Winsight on the hidden overlapped 'MEMMON95' window, that window style is hex : 06CF0000 How will we know which one is the good window? There's a lot of CreateWindowEx in memmon95.exe. Fire Winnie. We know that we need the 'MEMMON95' class window, and we know that function parameters are passed on stack before the call. Then : bpx CreateWindowExA do "dd *((ss:esp)+8)" With that, each CreateWindowExA hooked by Winnie will show us the second parameter we need : lpClassName in the data window. Then, run memmon95.exe. We will break in : 4010E7 : MemmonScreen ; the NagBitmap 402131 : Memmon95 ; HERE! 40451C : TBAR_MEMMON95 404599 : STATUS_MEMMON95 ... (lot others) 4107B5 : Memmonptctls ; the main DialogBox ...(lot others) Well, the good call of the hidden overlapped window is at 402131. Look at the dead listing : :0040204A C745F80000CF06 mov [ebp-08], 06CF0000 ; here is stocked the dwStyle. ... ... :00402127 50 push eax :00402128 8B4D08 mov ecx, dword ptr [ebp+08] ; get up the dwStyle. :0040212B 8B5110 mov edx, dword ptr [ecx+10] ; :0040212E 52 push edx :0040212F 6A00 push 00000000 :00402131 FF15F0E64100 Call USER32.CreateWindowExA ; our hidden window. You see that dwStyle is initialized a little above. Remember, 06CF0000, we have seen inside Winsight. We need to add the WS_VISIBLE style. In WindoZ programming, when you add styles, messages and a lot of others parameters, for example, if you want a window which is maximized and overlapped, you'll write : WS_OVERLAPPED | WS_MAXIMIZED In our case, we want to add WS_VISIBLE to 06CF0000. Then, research your *.h include windoZ file for the hex valor of WS_VISIBLE. You quickly find, in winuser.h, the following association : #define WS_VISIBLE 0x10000000L Calculate then 06CF0000 | 10000000="16CF0000" All right. Let's go change this :0040204A C745F80000CF06 mov [ebp-08], 06CF0000 with :0040204A C745F80000CF16 mov [ebp-08], 16CF0000 And fire MemMonitor95, awaiting a pretty and marvelous new unhidden window... But... Instead of a magnifying new window, we got here a splendid new OS Windows 95 MessageBox with the sad 'General Protection Fault'... At this point of cracking too, I had desired to get up ; to throw my computer by the window and to go on hollydays at Katmandu with a bicycle, flowers in the mouth ; to exchange my big Pentium with a old good zx81 ; to work for Micro$oft... :-))) But I finally cutted the rope attached at the ceiling and wrapped round my neck coz I thought : hey, stop. There's always two others calls after a CreateWindow : ShowWindow() and UpdateWindow() ; after that, the created window is finally displayed on the screen. Why 16CF0000 did a bug 'GPF' ? I don't know. Not the first time I do this. Perhaps a hidden checking protection scheme well hidden? Well let's search dead listing for the ShowWindow calls. Mmm... To many. Then, we we'll use a good Winnie breakpoint as above. Run Winsight. Open the hidden overlapped window and look at the handle. I've got 43C ; sure you got something else, but write it. If you closed memmon95.exe, put a breakpoint on the creation we seen above : :00402131 FF15F0E64100 Call USER32.CreateWindowExA Step over with F10 and note the value placed in eax. This is the handle. (You can get too the handle using HWND with Softice). Then, CTRL-D, and enter the following breakpoint : bpx User32!ShowWindow if (*((ss:esp)+4)="=" 43C) Replace obviously 43C with you window's handle. Hit F5 to run. F12 to return. You'll break two times : :004025AB 6A01 push 00000001 ; nCmdShow :004025AD 8B4508 mov eax, dword ptr [ebp+08] :004025B0 50 push eax :004025B1 FF15C8E64100 Call USER32.ShowWindow ; hwnd and in : :00410756 6A00 push 00000000 ; nCmdShow :00410758 8B4DFC mov ecx, dword ptr [ebp-04] :0041075B 51 push ecx :0041075C FF15C8E64100 Call USER32.ShowWindow ; hwnd The first break is the ShowWindow called immediately after the window creation. The second update the window when program is running. BOOL ShowWindow( HWND hwnd, // handle of window int nCmdShow // show state of window ); Remark in the first break, the 00000001 argument for nCmdShow. If you look at the winuser.h, you'll remark that this stand for SW_SHOWNORMAL argument. More interesting is the second break, with nCmdShow="0," because 0 is the SW_HIDE parameter! Then change : :00410756 6A00 push 00000000 ; WS_HIDE with :00410756 6A03 push 00000003 ; WS_MAXIMIZE What about a new un-hidden and maximized window? :-) Run memmon95.exe and... Yeah! A new un-hidden maximized window! And a lot of other things : You can change all your memory hook settings, you can copy, you can clear, you can save, you can print... Err... No, you can't print anything at all. Because no hook-text are displayed on this new and beautiful but useless window. I can assure you I've search the code. I breakpointed the TextOutA, which land only in part where time is TextOuted and the boring 'Unregistered version' are flashing. There were nevertheless a lot of 'ExTextOutA' which seem to me useless in the prog. Useless? Not sure... Then, I've cracked (myself, not the program yet :-), and I've downloaded the MemMonitor Professional 4.0 Trial version. And proceded to a lot of comparison. First, the Pro version had the pretty window un-hidden. And, if you verify the dwStyle, it has right the 16CF0000 style... (?) Bizarre... What about the GPF? Second, the hooked API are well displayed on this pretty window. Then, I looked at the size of the files, to compare. That is here that I think, in regard of a lesson which +ORC has promised yet never released: 'Intuition and Luck' and that it seems to me that finally it is us that we are writing it on Fravia's site... look, three files comes with these sharewares: Smidgeon.vxd (same size for each), fhk95.dll (same size) and mem95dll.dll (42Ko) for standard version and mem95pro.dll (47Ko) for Pro version. A stupid idea came into my mind: try to replace the standard mem95dll.dll with the pro one, mem95pro.dll (bigger of 2Ko, I recall you). I awaited an monstruous "GPF of death" running the program with this new DLL and my funny idea, when... look! I cry Victory!, the API hooked were now displayed on the ex-hidden window in standard MemMonitor95. If you breakpoint now ExtTextOutA, you will land in memmon95.exe. Seems that the Pro DLL enable other functions in the program, a thing which makes me even more sure that the program is really a crippled one. Intuition and luck! The following was the less interesting: You can't save in this disabled target, and you can't print more than one line. You remark that you've got a nagscreen when you use these crippled functions. Then, let's go for the easy and classic one : bpx MessageBoxA. Choose Save. Hit F12 to go back. You land in : :00408CA6 E895E8FFFF call 00407540 ; you return here :00408CAB 85C0 test eax, eax :00408CAD 0F84F1010000 je 00408EA4 ; no error? :00408CB3 833D74AC410000 cmp dword ptr [0041AC74], 00000000 ; HERE! :00408CBA 7537 jne 00408CF3 ; jmp if good guy :00408CBC 8D85B4FDFFFF lea eax, dword ptr [ebp+FFFFFDB4] ; bad, prepare nag :00408CC2 50 push eax :00408CC3 8D8D74FCFFFF lea ecx, dword ptr [ebp+FFFFFC74] :00408CC9 51 push ecx :00408CCA 8B55FC mov edx, dword ptr [ebp-04] :00408CCD 52 push edx :00408CCE E8E8FDFFFF call 00408ABB :00408CD3 6830300000 push 00003030 :00408CD8 8D85B4FDFFFF lea eax, dword ptr [ebp+FFFFFDB4] :00408CDE 50 push eax :00408CDF 8D8D74FCFFFF lea ecx, dword ptr [ebp+FFFFFC74] :00408CE5 51 push ecx :00408CE6 6A00 push 00000000 :00408CE8 FF1554E64100 Call USER32.MessageBoxA ;nagscreen :00408CEE E9B1010000 jmp 00408EA4 * Referenced by Good Guy Jump at Address:00408CBA(C) | :00408CF3 6A00 push 00000000 :00408CF5 8D95F8FEFFFF lea edx, dword ptr [ebp+FFFFFEF8] :00408CFB 52 push edx :00408CFC FF15E4E44100 Call KERNEL32._lcreat ;beginning of writing file Well, you remark this JNZ 00408CF3 at 00408CBA, which go to the good code. And just before, the cmp dword ptr [0041AC74], 00000000. Well, search the dead-listing for [0041AC74]. You'll find 4 there are not some cmp, but some mov. We need, because of the JNZ, that [0041AC74] contain not 0. Then change the two following lines : :004077E9 C70574AC410000000000 mov dword ptr [0041AC74], 00000000 and : :00407E2B C70574AC410000000000 mov dword ptr [0041AC74], 00000000 with some mov dword ptr [0041AC74], 1 Now, you can print, you can save all your API hooks! Remark that it's even better that in the Pro trial, because none of the API choose are grayed in our un-crippled Standard settings! Finally for the fun, the two nagstrings which come before the application : Replace :004010E7 FF15F0E64100 Call CreateWindowExA with three 'inc eax, dec eax', to avoid the first NagBitmapScreen with his big delay. and replace : :004082A4 FF1554E64100 Call MessageBoxA with the same opcodes. Now, you've got a full unregistered MemMonitor95 Standard version, which work even better than a full registered one! At end, I don't say that this program CANNOT be registered with making a good *.INI file. It was much interressant to reverse it in order to have MORE functions than registering the standard one when making a INImaker. <hr><FONT color="blue"><FONT size="+1">Little digression about reversing MemMonitor95 with IDA 3.7 and W32Dasm8.9
+
+</FONT></FONT>
+
+There's a lot of the memmon95.exe code which would be interesting to see,
+
+but let's just take one example: when you click on the 'Heap captured for the
+
+process' ListBox. You remember, we've got a pretty nag then, with 'this 
+
+function is...'
+
+
+
+Well, I first reverse memmon95.exe with W32Dasm8.9. 
+
+You find quickly that the nag is at :
+
+
+
+:0040C1FD E96D050000              jmp 0040C76F                  ; a jmp here???
+
+:0040C202 8B4510                  mov eax, dword ptr [ebp+10]   ; begin of the proc.
+
+:0040C205 C1E810                  shr eax, 10
+
+:0040C208 25FFFF0000              and eax, 0000FFFF
+
+:0040C20D 25FFFF0000              and eax, 0000FFFF
+
+:0040C212 83F801                  cmp eax, 00000001
+
+:0040C215 7534                    jne 0040C24B
+
+:0040C217 8D8D50FDFFFF            lea ecx, dword ptr [ebp+FFFFFD50]
+
+:0040C21D 51                      push ecx
+
+:0040C21E 8D9510FCFFFF            lea edx, dword ptr [ebp+FFFFFC10]
+
+:0040C224 52                      push edx
+
+:0040C225 A1CCAE4100              mov eax, dword ptr [0041AECC]
+
+:0040C22A 50                      push eax
+
+:0040C22B E88BC8FFFF              call 00408ABB
+
+:0040C230 6830300000              push 00003030
+
+:0040C235 8D8D50FDFFFF            lea ecx, dword ptr [ebp+FFFFFD50]
+
+:0040C23B 51                      push ecx
+
+:0040C23C 8D9510FCFFFF            lea edx, dword ptr [ebp+FFFFFC10]
+
+:0040C242 52                      push edx
+
+:0040C243 6A00                    push 00000000
+
+:0040C245 FF1554E64100            Call USER32.MessageBoxA         ; nagscreen
+
+
+
+If you put a breakpoint on the 'begin of the proc' location I've marked,
+
+and clicking on it in MemMonitor95, SoftIce will obviously break in 40C202.
+
+But look what's above this 40C202 :
+
+:0040C1FD E96D050000              jmp 0040C76F
+
+What? A jmp? Then how could we land at the line just after?
+
+Code self modifying? No, scroll a little in Winnie when reaching this
+
+breakpoint,
+
+you see that above the 40C202, the jmp is right here.
+
+Then?
+
+Then, as we learned, never believe what you see. 
+
+What is faked here is that W32Dasm hasn't put its<FONT color="blue"> 
+
+* Referenced by a (U)nconditional or (C)onditional Jump at Addresses...</FONT>
+
+as usual.
+
+Then I thought : well, this is the procedure of the ListBox item of the
+
+memmon95.exe. Perhaps the program change it when running with some API like
+
+'SetProcAdress'. But there wasn't some of that. Then I lost a mad time to
+
+search... 
+
+To understand what's going on very quickly: let's reverse memmon95.exe with IDA.
+
+You got at the same location :
+
+
+
+40C1FDF         jmp     loc_40C76F      ; a jmp here?
+
+; -----------------------------------------------------------------------
+
+loc_40C202:				; CODE XREF: .text:0040BECFu  ; HERE!
+
+					; DATA XREF: .text:0040C7B0o
+
+		mov	eax, [ebp+10h]
+
+		shr	eax, 10h
+
+                ...
+
+		call	ds:MessageBoxA  ; nagscreen
+
+
+
+And you see, IDA has correctly reversed (and found) the caller at 0040BECF.
+
+The DATA XREF: .text:0040C7B0 point to the different locations called
+
+by this ListBox procedure :
+
+
+
+off_40C7AC	dd offset loc_40BEFA	; DATA XREF: .text:0040BECFr
+
+		dd offset loc_40C202    ; HERE is the one we study!
+
+		dd offset loc_40C250
+
+		dd offset loc_40C3FB
+
+		dd offset loc_40C491
+
+		dd offset loc_40C76F
+
+
+
+We are in the 'Call Relocation Table', by the way (<A great <a href="frarul1.htm" tppabs="http://www.anticrack.de/fravia/frarul1.htm">essay</A> 
+
+from fravia+, read it!
+
+Well, let's go to the caller, from our 40C202 location I repeat here :
+
+loc_40C202:				; CODE XREF: .text:0040BECFu  ; HERE!
+
+					; DATA XREF: .text:0040C7B0o
+
+		mov	eax, [ebp+10h]
+
+
+
+We land in :
+
+
+
+40BECF          jmp      ds:off_40C7AC[edx*4]
+
+
+
+This jmp choose the right procedure to jmp in regard of the edx valor.
+
+IDA is a little boring coz it is DOS based and not very comfortable to 
+
+use when debugging WindoZ programs. The interface is a little old and 
+
+less comfortable to use than W32Dasm... but IDA 3.7 EXPLODES, literally, 
+
+poor W32Dasm 8.9!
+
+I was a little suspicious, at the beginning... I am not any more. No
+
+wonder IDA has been chosen as the +HCU 'official' disassembler!
+
+It is indeed very strong for us 'reversers' that we can, dead-listing, 
+
+see an 'indexed-based reference' starting from a complex 
+
+jmp ds:off_40C7AC[edx*4]!
+
+
+
+Bravo Ilfak! Let's now wait the same approach (windozed) from PJ Urbanik...
+
+<HR><FONT color="blue">Little snippet about others Prudens' targets: ExeSpy95 4.41 and ComSpy95 4.41 :
+
+</FONT>
+
+First, install ExeSpy95. 
+
+Deadlist it:
+
+
+
+Replace the
+
+:004078B1 FF151C064200            Call USER32.DialogBoxParamA
+
+which is the dialogBox asking you to choose the drive where is 
+
+your registered file by :
+
+:004078B1 E941060000              jmp 00407EF7
+
+This jmp will register you, but now:
+
+:00407F25 FF150C064200            Call USER32.MessageBoxA
+
+which is the Nag saying you that you've got '0 days left'... 
+
+with three 'inc eax ; dec eax'.
+
+
+
+Same boring protection scheme with ComSpy95.
+
+If these tools of the trades interest you.
+
+Cya.
+
+
+
+--FootSteps.</PRE>
+
+<FONT color="green">(c) <FONT color="#5500AA">FootSteps </FONT> All rights reversed</FONT>
+
+<HR ALIGN="CENTER" WIDTH="100%" SIZE="3">
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</I></CENTER>
+
+<BR><CENTER>
+
+<!--<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A HREF="protecti.htm" tppabs="http://www.anticrack.de/fravia/protecti.htm">Our Protections</A>            <hr width=33%>-->
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut CGI-scripts</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering legal?</A></CENTER>
+
+<CENTER><HR ALIGN="CENTER" WIDTH="100%" SIZE="2"></CENTER>
+
+</BODY>
+
+</HTML>
+
+
+

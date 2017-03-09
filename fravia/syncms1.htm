@@ -1,0 +1,800 @@
+<html> <HTML>
+
+<HEAD>
+
+<TITLE>syncms1</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+<CENTER><FONT size="+3">Cracking Microsoft FrontPage 3.0.1.726<BR>and<BR>Microsoft Image Composer 1.5<BR></FONT><FONT size="+2">
+
+(Let's crack Micro$oft to the bones!)</FONT><BR><BR>
+
+
+
+<FONT size="+2">by +Sync<BR>
+
+<A href="hcu.htm" tppabs="http://www.anticrack.de/fravia/hcu.htm"><IMG SRC="hcu1.gif" tppabs="http://www.anticrack.de/fravia/hcu1.gif" ALT="HCU" ALIGN="BOTTOM" WIDTH="114" HEIGHT="43" BORDER="0" VSPACE="0" HSPACE="0"></A>
+
+<BR>	   <BR>
+
+(19 August 1997)</FONT>
+
+<HR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">Courtesy of Fravia's page 
+
+of reverse engineering<BR><BR><I>Well, another outstanding essay from +Sync! There 
+
+is a lot of code, here, but everything is clear and you just need to peruse this 
+
+essay slowly, tasting quietly Micro$oft's stupidity... gee! I love this section as 
+
+much as +Sync does!</I></CENTER><HR size="2"><PRE><CENTER><FONT size="+2">
+
+Cracking Microsoft FrontPage 3.0.1.726 and Image Composer 1.5<BR>
+
+By +Sync </CENTER></FONT>
+
+
+
+        Well, I saw this and I had to jump on it.  I can't say how happy 
+
+I am to be contributing to the destruction of Micro$oft. They are offering
+
+FrontPage 98 for download on their website.  
+
+If you would rather go straight to downloading and skip registering yourself 
+
+with Micro$oft then go to:
+
+<A href="tppmsgs/msgs2.htm#255" tppabs="http://www.anticrack.de/fravia/tppmsgs/msgs2.htm#255">http://www.microsoft.com/frontpage/download/pick_default.htm</A>
+
+You'll notice very quickly that it is over 20 MB in size.  
+
+We are beginning to expect this sort of thing from them. 
+
+This crack is very straightforward.  
+
+I offer this crack simply so that nobody out there pays a dime to Micro$oft to
+
+use this program, they have enough already.  I did not tear out the insides of
+
+the protection, as it was not necessary.  
+
+Here is how I did it.
+
+        First run the program as usual and see how it behaves.  Next set your
+
+system date ahead past the end of the evaluation period.  You'll get a
+
+nasty screen telling you that you are out of the evalutation period and that
+
+they would be happy to give you the location of the nearest reseller of the
+
+full version.  Then it kicks you out.  
+
+Okay, so set your system date back and run again, it still says you're a bad guy.  
+
+So it saves the fact that your eval period is over somewhere, probably in the registry. 
+
+At this point I fully intended to trace the registry calls and figure out what 
+
+this target was doing there, but it turned out to be unnecessary.  
+
+I followed the BMSG approach outlined in +Orc's Lesson 9, with WinIce.  
+
+I quickly discovered that the nag window is opened by FP30CUTIL.DLL which is found 
+
+in the /BIN directory.  
+
+So next, I break out WDASM 8.9 and search for 'expired'.  
+
+Bingo, found along with all the rest of the text from the nag window.  
+
+Look up from here in the dead listing, and you'll find a conditional jmp, at 67B2CEC9, 
+
+which is referenced in two places, 67B2CD1F and 67B2CD28.  
+
+So let's look at that code, it's shown below. 
+
+Note that the references to 'Expired_FLag' refer to some indicator that you
+
+are beyond your eval period unrelated to the sytem date (but probably in the
+
+registry).
+
+
+
+* Reference To: MFC42.MFC42:NoName0197, Ord:0DC1h
+
+                                  |
+
+:67B2CD05 E890430200    Call 67B5109A        ;sets AX=1 if Expired_Flag is set
+
+:67B2CD0A 51            push ecx
+
+:67B2CD0B 8B4DEC        mov ecx, dword ptr [ebp-14]
+
+:67B2CD0E 8945C4        mov dword ptr [ebp-3C], eax   ;Store Expired_Flag in [ebp-3c]
+
+:67B2CD11 8BC4          mov eax, esp
+
+:67B2CD13 8908          mov dword ptr [eax], ecx
+
+:67B2CD15 8D4DD8        lea ecx, dword ptr [ebp-28]
+
+:67B2CD18 E8E9020000    call 67B2D006        ;returns AX=1 if system clock is past 1997
+
+:67B2CD1D 3BC3          cmp eax,ebx          ;Is Ax=0 ?
+
+:67B2CD1F 0F85A4010000  jne 67B2CEC9         ;No Jump to Bad Guy Code
+
+:67B2CD25 395DC4        cmp dword ptr [ebp-3C], ebx   ;Is Expired_Flag Set ?
+
+:67B2CD28 0F859B010000  jne 67B2CEC9                  ;Yes, Jump to Bad Guy Code
+
+:67B2CD2E 51            push ecx
+
+:67B2CD2F 8B4DDC        mov ecx, dword ptr [ebp-24]
+
+:67B2CD32 8BC4          mov eax, esp
+
+:67B2CD34 8908          mov dword ptr [eax], ecx
+
+:67B2CD36 8D4DD8        lea ecx, dword ptr [ebp-28]
+
+:67B2CD39 E8C8020000    call 67B2D006        ;Returns AX=1 if system clock is past 1997
+
+:67B2CD3E 3BC3          cmp eax, ebx         ;System Date OK? (again)
+
+:67B2CD40 0F846E010000  je 67B2CEB4          ;Yes, jump over bad code
+
+:67B2CD46 8D4DF4        lea ecx, dword ptr [ebp-0C]   ;no, let's nag luser
+
+:67B2CD49 E8DE3E0200              Call 67B50C2C		  ;-&gt;MFC42:NoName000
+
+:67B2CD4E 53                      push ebx
+
+:67B2CD4F 8D4DEC                  lea ecx, dword ptr [ebp-14]
+
+:67B2CD52 66895DC8                mov word ptr [ebp-38], bx
+
+:67B2CD56 66895DCA                mov word ptr [ebp-36], bx
+
+:67B2CD5A 66895DCC                mov word ptr [ebp-34], bx
+
+:67B2CD5E 66895DCE                mov word ptr [ebp-32], bx
+
+:67B2CD62 66895DD0                mov word ptr [ebp-30], bx
+
+:67B2CD66 66895DD2                mov word ptr [ebp-2E], bx
+
+:67B2CD6A 66895DD4                mov word ptr [ebp-2C], bx
+
+:67B2CD6E 66895DD6                mov word ptr [ebp-2A], bx
+
+:67B2CD72 E81D430200              Call 67B51094	     ;-&gt;  MFC42:NoName0196
+
+:67B2CD77 8B4014                  mov eax, dword ptr [eax+14]
+
+:67B2CD7A 53                      push ebx
+
+:67B2CD7B 056C070000              add eax, 0000076C
+
+:67B2CD80 8D4DEC                  lea ecx, dword ptr [ebp-14]
+
+:67B2CD83 668945C8                mov word ptr [ebp-38], ax
+
+:67B2CD87 E808430200              Call 67B51094	  ;-&gt;MFC42:NoName0196
+
+:67B2CD8C 8B4010                  mov eax, dword ptr [eax+10]
+
+:67B2CD8F 53                      push ebx
+
+:67B2CD90 40                      inc eax
+
+:67B2CD91 8D4DEC                  lea ecx, dword ptr [ebp-14]
+
+:67B2CD94 668945CA                mov word ptr [ebp-36], ax
+
+:67B2CD98 E8F7420200              Call 67B51094	   ;-&gt;MFC42:NoName0196
+
+:67B2CD9D 8B400C                  mov eax, dword ptr [eax+0C]
+
+:67B2CDA0 6A7F                    push 0000007F
+
+:67B2CDA2 6880000000              push 00000080
+
+:67B2CDA7 8D4DF4                  lea ecx, dword ptr [ebp-0C]
+
+:67B2CDAA 668945CE                mov word ptr [ebp-32], ax
+
+:67B2CDAE E845420200              Call 67B50FF8	 ;-&gt;MFC42:NoName017
+
+:67B2CDB3 50                      push eax
+
+:67B2CDB4 8D45C8                  lea eax, dword ptr [ebp-38]
+
+:67B2CDB7 53                      push ebx
+
+:67B2CDB8 50                      push eax
+
+:67B2CDB9 6A02                    push 00000002
+
+:67B2CDBB 6800040000              push 00000400
+
+:67B2CDC0 FF15A811B267            Call dword ptr [67B211A8]	;-&gt;KERNEL32.GetDateFormatA,
+
+:67B2CDC6 6AFF                    push FFFFFFFF
+
+:67B2CDC8 8D4DF4                  lea ecx, dword ptr [ebp-0C]
+
+:67B2CDCB E88C3E0200              Call 67B50C5C	            ;-&gt;MFC42:NoName0013
+
+:67B2CDD0 53                      push ebx
+
+:67B2CDD1 8D8DB0FEFFFF            lea ecx, dword ptr [ebp+FFFFFEB0]
+
+:67B2CDD7 E8B3C70100              call 67B4958F
+
+:67B2CDDC 381D7054B567            cmp byte ptr [67B55470], bl
+
+:67B2CDE2 743D                    je 67B2CE21
+
+:67B2CDE4 8D4DFC                  lea ecx, dword ptr [ebp-04]
+
+:67B2CDE7 E8403E0200              Call 67B50C2C	   ;-&gt;MFC42:NoName0005
+
+
+
+*  Reference to &quot;Your beta version of %1 is going to expire on %2. Now is the&quot;
+
+                                  |
+
+:67B2CDEC 6838080000              push 00000838
+
+:67B2CDF1 8D4DFC                  lea ecx, dword ptr [ebp-04]
+
+:67B2CDF4 E875220100              call 67B3F06E	  ;-&gt; fp30cutl.ExpFn0251
+
+:67B2CDF9 8B45F4                  mov eax, dword ptr [ebp-0C]
+
+:67B2CDFC 6A02                    push 00000002
+
+:67B2CDFE 8945E4                  mov dword ptr [ebp-1C], eax
+
+:67B2CE01 8D45E0                  lea eax, dword ptr [ebp-20]
+
+:67B2CE04 50                      push eax
+
+:67B2CE05 8D8560FFFFFF            lea eax, dword ptr [ebp+FFFFFF60]
+
+:67B2CE0B FF75FC                  push [ebp-04]
+
+:67B2CE0E BE7454B567              mov esi, 67B55474   ;StringData -&gt;&quot;FrontPage 98&quot;
+
+:67B2CE13 8975E0                  mov dword ptr [ebp-20], esi
+
+:67B2CE16 50                      push eax
+
+:67B2CE17 E872420200              Call 67B5108E	  ;-&gt;MFC42:NoName0195
+
+:67B2CE1C 8D4DFC                  lea ecx, dword ptr [ebp-04]
+
+:67B2CE1F EB3B                    jmp 67B2CE5C
+
+
+
+* Referenced by a Jump at Address:67B2CDE2(C)
+
+|
+
+:67B2CE21 8D4DFC                  lea ecx, dword ptr [ebp-04]
+
+:67B2CE24 E8033E0200              Call 67B50C2C	  ;-&gt;MFC42:NoName0005
+
+
+
+* Reference  &quot;Your evaluation copy of %1 is going to expire on %2. Now is &quot;
+
+                                  |
+
+:67B2CE29 683D080000              push 0000083D
+
+:67B2CE2E 8D4DFC                  lea ecx, dword ptr [ebp-04]
+
+:67B2CE31 E838220100              call 67B3F06E	  ;-&gt;fp30cutl.ExpFn025
+
+:67B2CE36 8B45F4                  mov eax, dword ptr [ebp-0C]
+
+:67B2CE39 6A02                    push 00000002
+
+:67B2CE3B 8945E4                  mov dword ptr [ebp-1C], eax
+
+:67B2CE3E 8D45E0                  lea eax, dword ptr [ebp-20]
+
+:67B2CE41 50                      push eax
+
+:67B2CE42 8D8560FFFFFF            lea eax, dword ptr [ebp+FFFFFF60]
+
+:67B2CE48 FF75FC                  push [ebp-04]
+
+:67B2CE4B BE7454B567              mov esi, 67B55474	 ;StringData  -&gt;&quot;FrontPage 98&quot;
+
+:67B2CE50 8975E0                  mov dword ptr [ebp-20], esi
+
+:67B2CE53 50                      push eax
+
+:67B2CE54 E835420200              Call 67B5108E	    ;-&gt;MFC42:NoName019
+
+:67B2CE59 8D4DFC                  lea ecx, dword ptr [ebp-04]
+
+
+
+* Referenced by a Jump at Address:67B2CE1F(U)
+
+:67B2CE5C E8073E0200              Call 67B50C68		;-&gt;MFC42:NoName0015
+
+:67B2CE61 8D4DF8                  lea ecx, dword ptr [ebp-08]
+
+:67B2CE64 E8C33D0200              Call 67B50C2C	    ;-&gt;MFC42:NoName0005
+
+
+
+* Reference &quot;If you would like to find out about resellers in your area, &quot;
+
+                                  |
+
+:67B2CE69 6837080000              push 00000837
+
+:67B2CE6E 8D4DF8                  lea ecx, dword ptr [ebp-08]
+
+:67B2CE71 E8F8210100              call 67B3F06E	   ;-&gt;fp30cutl.ExpFn0251()
+
+:67B2CE76 8D45E0                  lea eax, dword ptr [ebp-20]
+
+:67B2CE79 6A01                    push 00000001
+
+:67B2CE7B 50                      push eax
+
+:67B2CE7C 8D8564FFFFFF            lea eax, dword ptr [ebp+FFFFFF64]
+
+:67B2CE82 FF75F8                  push [ebp-08]
+
+:67B2CE85 8975E0                  mov dword ptr [ebp-20], esi
+
+:67B2CE88 50                      push eax
+
+:67B2CE89 E800420200              Call 67B5108E	   ;-&gt;MFC42:NoName0195
+
+:67B2CE8E 8D8DB0FEFFFF            lea ecx, dword ptr [ebp+FFFFFEB0]
+
+:67B2CE94 E814C90100              call 67B497AD
+
+:67B2CE99 8D4DF8                  lea ecx, dword ptr [ebp-08]
+
+:67B2CE9C E8C73D0200              Call 67B50C68	;-&gt;MFC42:NoName0015
+
+:67B2CEA1 8D8DB0FEFFFF            lea ecx, dword ptr [ebp+FFFFFEB0]
+
+:67B2CEA7 E868010000              call 67B2D014
+
+:67B2CEAC 8D4DF4                  lea ecx, dword ptr [ebp-0C]
+
+:67B2CEAF E8B43D0200              Call 67B50C68		 ;-&gt;MFC42:NoName0015
+
+
+
+* Referenced by a Jump at Address:67B2CD40(C)
+
+|
+
+:67B2CEB4 8D4DF0                  lea ecx, dword ptr [ebp-10]
+
+:67B2CEB7 891D6054B567            mov dword ptr [67B55460], ebx
+
+:67B2CEBD E8A63D0200              Call 67B50C68		;-&gt;MFC42:NoName0015
+
+
+
+* Referenced by a Jump at Address:67B2CC7C(U)
+
+|
+
+:67B2CEC2 33C0         xor eax, eax         ;Good guy lands here
+
+:67B2CEC4 E92D010000   jmp 67B2CFF6         ;and jmps again over bad stuff
+
+
+
+* Referenced by a Jump at Addresses:67B2CD1F(C), :67B2CD28(C)
+
+|
+
+:67B2CEC9 53            push ebx            ;You don't want to be here!
+
+:67B2CECA 8D8DB0FEFFFF  lea ecx, dword ptr [ebp+FFFFFEB0]
+
+:67B2CED0 E8BAC60100    call 67B4958F
+
+
+
+So, patching it is simple, we just force to jumps to always indicate the
+
+system dat is ok and Expired_Flag is false.  Here is what I did.
+
+Change:
+
+:67B2CD18 E8E9020000              call 67B2D006 ; AX=1 if system clock past 1997
+
+:67B2CD1D 3BC3                    cmp eax,ebx   ;Is Ax=0
+
+:67B2CD1F 0F85A4010000            jne 67B2CEC9  ;No Jump to Bad Guy Code
+
+To:
+
+:67B2CD18 E8E9020000              call 67B2D006 ; AX=1 if system clock past 1997
+
+:67B2CD1D 3BC3                    cmp eax,ebx   ;Is Ax=0
+
+:67B2CD1F EB0D                    jmp 67B2CD2E  ;Just Jmp over the crap
+
+
+
+Of course there are a million ways you could have patched it, I just
+
+prefer to patch only 1 place in possible.  
+
+But this is very nice.  Micro$oft was kind enough to put the check into a dll, 
+
+so all three executables will run perfectly, now and for forever, and we did not 
+
+need to fish out the insides of many of the calls to do it. 
+
+That's it, quick and dirty.  
+
+Enjoy, and Crack Micro$oft to the bones.
+
+
+
+But wait, why stop at just this program.  
+
+Go ahead and download Micro$oft Image Composer as well.  
+
+It's just as easy, maybe even a little easier. This time let's use
+
+WinIce a little more.  
+
+Load up the file IMGCOMP.EXE into Symbol Loader and do a BPX GetSystemTime 
+
+(make sure you have loaded the appropriate exports in Winice.Dat).  
+
+Then hit F5 and run.  When it breaks into SoftIce do a few P Ret's (F12) until 
+
+you return to IMGCOMP code.  You will be just under the call shown below.
+
+
+
+* Referenced by a Jump at Addresses:00416A2E(C), :00416A4C(C), :00416A55(C)
+
+|
+
+:0044ADB1 8B9424E0000000          mov edx, dword ptr [esp+000000E0]
+
+:0044ADB8 6AFF                    push FFFFFFFF
+
+:0044ADBA 6A00                    push 00000000
+
+:0044ADBC 52                      push edx
+
+:0044ADBD E889280300              Call 0047D64B	   ;-&gt;MFC42:NoName0316
+
+:0044ADC2 83FE03                  cmp esi, 00000003       ;You land Here
+
+:0044ADC5 7D13                    jge 0044ADDA
+
+:0044ADC7 6A03                    push 00000003
+
+
+
+Well, we obviously don't want this call to be made.  Looking up, we see
+
+it is referenced by jumps at 3 locations.  
+
+So let's fix those three spots so that they do not jump here.
+
+
+
+Location 1
+
+:00416A21 E88BE5FEFF              Call 00404FB1	  ;MFC42:NoName0112
+
+:00416A26 8BF0                    mov esi, eax
+
+:00416A28 8B442414                mov eax, dword ptr [esp+14]
+
+:00416A2C 85C0                    test eax, eax
+
+:00416A2E 0F857D430300            jne 0044ADB1
+
+
+
+Location 2
+
+:00416A45 E89B000000              call 00416AE5
+
+:00416A4A 85C0                    test eax, eax
+
+:00416A4C 0F855F430300            jne 0044ADB1
+
+
+
+Location 3
+
+:00416A55 0F8D56430300            jnl 0044ADB1
+
+
+
+So Let's patch 'em up.
+
+
+
+Location 1
+
+Change:
+
+:00416A2E 0F857D430300    jne 0044ADB1
+
+To:       404040484848    inc ax ,inc ax, inc ax, dec ax, dec ax,dec ax 
+
+
+
+Location 2
+
+Change:
+
+:00416A4C 0F855F430300            jne 0044ADB1
+
+To:       404040484848            same as location 1
+
+          
+
+Location 3
+
+Change:
+
+:00416A55 0F8D56430300            jnl 0044ADB1          
+
+To:       404040484848            same as above
+
+
+
+
+
+Okay, now run it.  You get a nag telling you you have 1 day left of
+
+evaluation.
+
+Well, the program is cracked, but we don't like the nag.  Do the same as
+
+above, BMSG on the window handle and P RET back to IMGCOMP code.  
+
+You end up at 44AD82 shown below.
+
+
+
+* Referenced by only one Jump at Address:00416A6F(C)
+
+|
+
+:0044AD02 8D4C2410                lea ecx, dword ptr [esp+10]
+
+:0044AD06 E8D565FBFF              Call 004012E0	;-&gt;MFC42:NoName0089
+
+:0044AD0B 8D4C2424                lea ecx, dword ptr [esp+24]
+
+:0044AD0F C78424CC00000000000000  mov dword ptr [esp+000000CC], 00000000
+
+:0044AD1A E8C165FBFF              Call 004012E0	  ;-&gt;MFC42:NoName0089
+
+:0044AD1F 8B4C242C                mov ecx, dword ptr [esp+2C]
+
+:0044AD23 8B44241C                mov eax, dword ptr [esp+1C]
+
+:0044AD27 2BC8                    sub ecx, eax
+
+:0044AD29 B807452EC2              mov eax, C22E4507
+
+:0044AD2E 81C17F510100            add ecx, 0001517F
+
+:0044AD34 C68424CC00000001        mov byte ptr [esp+000000CC], 01
+
+:0044AD3C F7E9                    imul ecx
+
+:0044AD3E 03D1                    add edx, ecx
+
+:0044AD40 C1FA10                  sar edx, 10
+
+:0044AD43 8BC2                    mov eax, edx
+
+:0044AD45 C1E81F                  shr eax, 1F
+
+:0044AD48 03D0                    add edx, eax
+
+:0044AD4A 8BF2                    mov esi, edx
+
+:0044AD4C 85F6                    test esi, esi
+
+:0044AD4E 7F05                    jg 0044AD55
+
+:0044AD50 BE01000000              mov esi, 00000001
+
+
+
+* Referenced by a Jump at Address:0044AD4E(C)
+
+|
+
+:0044AD55 8B8C24F0000000          mov ecx, dword ptr [esp+000000F0]
+
+:0044AD5C 51                      push ecx
+
+:0044AD5D 8D4C2414                lea ecx, dword ptr [esp+14]
+
+:0044AD61 E88665FBFF              call 004012EC
+
+:0044AD66 8B542410                mov edx, dword ptr [esp+10]
+
+:0044AD6A 56                      push esi
+
+:0044AD6B 8D442428                lea eax, dword ptr [esp+28]
+
+:0044AD6F 52                      push edx
+
+:0044AD70 50                      push eax
+
+:0044AD71 E8D97CFBFF              Call 00402A4F		;-&gt;MFC42:NoName0087
+
+:0044AD76 8B4C2430                mov ecx, dword ptr [esp+30]
+
+:0044AD7A 83C40C                  add esp, 0000000C
+
+:0044AD7D 6A00                    push 00000000
+
+:0044AD7F 6A00                    push 00000000
+
+:0044AD81 51                      push ecx
+
+
+
+* Reference To: MFC42.MFC42:NoName0212, Ord:04B0h
+
+                                  |
+
+:0044AD82 E816280300      Call 0047D59D    ;This call puts up NAG
+
+:0044AD87 8D4C2424        lea ecx, dword ptr [esp+24]   ;You land HERE
+
+
+
+
+
+This code is referenced 1 time at 416a6f, as shown below, with the
+
+patch.
+
+
+
+Change:
+
+:00416A68 E878000000              call 00416AE5
+
+:00416A6D 85C0                    test eax, eax
+
+:00416A6F 0F858D420300            jne 0044AD02
+
+To:
+
+:00416A68 E878000000              call 00416AE5
+
+:00416A6D 85C0                    test eax, eax
+
+:00416A6F 404040484848            3 inc eax  + 3 dec eax
+
+
+
+
+
+That's it.  Micro$ft Image Composer is now yours forever.  Please
+
+continue the fight against Micro$oft, if we do not win - then we all loose.  
+
+One final note.
+
+isn't it interesting how these MFC programs, which were written in 'high'
+
+level languages with little or no effort, can be cracked with little or no
+
+effort as well?
+
+
+
++Sync  </PRE>
+
+ <FONT color="green">(c) +Sync 1997. All rights reserved</FONT>
+
+<HR ALIGN="CENTER" WIDTH="100%" SIZE="3">
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</I></CENTER>
+
+<BR><CENTER>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">
+
+<A HREF="project9.htm" tppabs="http://www.anticrack.de/fravia/project9.htm">project 9</A><BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">
+
+<A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#84'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#84">homepage</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"> 
+
+<A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#73'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#73">links</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0">
+
+<A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#82'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#82">students' essays</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut CGI-scripts</A>
+
+
+
+
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia</A><BR>
+
+
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering illegal?</A></CENTER>
+
+<CENTER><HR ALIGN="CENTER" WIDTH="100%" SIZE="2"></CENTER>
+
+</BODY>
+
+</HTML>
+

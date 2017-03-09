@@ -1,0 +1,1217 @@
+<HTML>
+
+<HEAD><TITLE>Howtocr1</TITLE></HEAD>
+
+<BODY text="#000000" vlink="#ff0000 vlink=">
+
+<CENTER><H1>HOW TO CRACK, by +ORC, A TUTORIAL</H1></CENTER>
+
+<HR  size=1>
+
+<P><CENTER>Lesson 9 (1): How to crack Windows, Hands on</CENTER></P>
+
+<HR  size=1>
+
+<P><CENTER>[Winformant][Snap32]</CENTER></P>
+
+<HR align=center width=50% size=1>
+
+<P><PRE>  THE [DATA_CONSTRAINT] TRICK - [WINFORMANT 4]
+
+     I have chosen an older windows application for Win 3.1.
+
+(WIN4MANT.EXE, 562271 bytes, Version 1.10, by Joseph B. Albanese;
+
+you'll find it searching the web with the usual tools, see how
+
+to do it at the end of this lesson), in order to show you how to
+
+use a nice little trick, at times really useful in cracking
+
+password protected programs: [data_constraint]. Inside almost all
+
+protection routines, as you have already learned, there is a
+
+moment when on the stack the ECHO of the real, "correct"
+
+passnumber or password appears. The location of this ECHO varies,
+
+but most of the time it'll be in a range of +- 0x90 bytes from
+
+one of the locations where the user input dwells. This is due to
+
+datadump windows constraints inside the tools used by the
+
+protectionists... but this use is bound to diminish... especially
+
+after this lesson :=)
+
+
+
+[WINFORMANT CRACKING]
+
+ This application is -per se- crappy, I doubt you'll ever use
+
+it... but its curious (and pretty rare) "deactivate" mode is
+
+nevertheless very interesting for us: you can "unregister"
+
+Winformant on the fly if you feel the need to.
+
+ This feature is pretty useful for scholars that like to
+
+investigate password algorithms with valid and invalid codes
+
+without having to reinstall every time to delete a valid code.
+
+For your cracking exercises choose programs that have
+
+"REVERSIBLE" protections (rare) or that can be re-registered a
+
+billion times (more frequent). Programs that keep the valid
+
+registration on *.ini or special files will also do the job: you
+
+just change a couple of lines to "unregister" them.
+
+ The trick of this lesson: [data_constraint], or "password
+
+proximity", bases on the protectionist's need to keep an eye on
+
+the protection "working" when he assembles it. He must "see" the
+
+relationships between USER INPUT NUMBER, USER INPUT TRANSFORMED
+
+and the CORRECT NUMBER ANSWER (in our jargon: the "Bingo"). These
+
+relationships must be constantly checked In order to debug the
+
+protection code. Mostly they will dwell TOGETHER inside a small
+
+stack area, allowing them to be "seen" in the SAME watchwindow.
+
+Most of the time, therefore, the "ECHO" will "materialize"
+
+shortly not very far away from one of the locations of the USER
+
+INPUT. Let's crack:
+
+
+
+* Fire Winice and then Winformant
+
+* Choose HELP and then choose REGISTRATION
+
+* Fill the registration fields with "+ORC+ORC" as "Registrant"
+
+and "12121212" as "Activation" code (use whatever you fancy).
+
+CTRL+D              ;switch to Winice
+
+:task               ;let's see what's the name of this crap
+
+TaskName  SS:SP StackTop StackBot StackLow TaskDB  hQueue  Events
+
+WINWORD   1AD7:85F2 4A52  8670      7532     1247    122F    0000
+
+PROGMAN   1737:200A 0936  2070      1392     066F    07F7    0000
+
+DISKOMAT *2C5F:6634 1D3C  6AC6      5192     2CB7    2C9F    0000
+
+
+
+:hwnd DISKOMAT      ;which window is getting the input?
+
+WinHandle   Hqueue  QOwner    Class Name        Window Procedure
+
+0EB4(0)      2C9F    DISKOMAT  #32769            04A7:9E6B
+
+ 0F34(1)     2C9F    DISKOMAT  #32768            USER!BEAR306
+
+ 365C(1)     2C9F    DISKOMAT  #32770            2C3F:0BC6
+
+  36BC(2)    2C9F    DISKOMAT  Button            2C3F:1CEA
+
+  3710(2)    2C9F    DISKOMAT  Edit              2C3F:24BE
+
+... and many more irrelevant windows.
+
+
+
+Let's pinpoint the code, here the relevant window is the first
+
+"Edit" one, for obvious reasons (more on this later).
+
+:bmsg 3710 wm_gettext           ;set breakpoint
+
+CTRL+D                          ;run the babe until you get:
+
+Break Due to BMSG 3710 WM_GETTEXT C=01
+
+  Hwnd=3710 wParam=0050 lParam=2C5F629A msg=000D WM_GETTEXT
+
+2C3F:000024BE B82F2C            MOV     AX,2C2F
+
+So! Now we have "pinpointed" the babe (more on "pinpointing"
+
+later). Let's snoop around a little: look at the stack to fetch
+
+your babe's last call (if it does not show immediately, just keep
+
+pinpointing, for instance on GetWindowText() or do a BPRW
+
+diskomat (very useful), and then try and retry the stack...
+
+should this too fail to work, search for your input in memory (in
+
+the 30:0 lffffffff selector, as usual) and breakpoint range on
+
+it with ReadWrite, and then stack, stack, stack... until you get
+
+the "real" list of calls coming from your babe's protection.
+
+:stack              ; let's see
+
+USER(19) at 073F:124C [?] through 073F:1239
+
+CTL3D(02) at 2C3F:0D53 [?] through 2C3F:0D53
+
+DISKOMAT(01) at 2C97:20B9 [?] through 2C97:20B9
+
+DISKOMAT(01) at 2C97:3D94 [?] through 2C97:3D94
+
+DISKOMAT(01) at 2C97:49E2 [?] through 2C97:4918
+
+DISKOMAT(04) at 2C7F:EA20 [?] through 2C7F:EA20
+
+USER(01) at 04A7:19BE [?] through USER!GETWINDOWTEXT
+
+== CTL3D(02) at 2C3F:24BE [?] through 04A7:3A3CÊ
+
+
+
+ Beautiful stack fishing! Do immediately a BPX on babe:EA20.
+
+2C7F:EA35 9A25ABA704   CALL   USER!GETWINDOWTEXT
+
+2C7F:EA3A 8D46AE       LEA    AX,[BP-52]     ;load ptr "+ORC+ORC"
+
+2C7F:EA3D 16           PUSH   SS   ;save pointer segment
+
+2C7F:EA3E 50           PUSH   AX   ;save pointer offset
+
+2C7F:EA3F 9A768D872C   CALL   2C87:8D76; get strlen "ORC+ORC"
+
+2C7F:EA44 83C404       ADD    SP,+04
+
+2C7F:EA47 3D2800       CMP    AX,0028
+
+2C7F:EA4A 762C         JBE    EA78
+
+...
+
+2C7F:EA97 8D46AE       LEA    AX,[BP-52]     ;load ptr "+ORC+ORC"
+
+2C7F:EA9A 16           PUSH   SS     ;various algors on input
+
+2C7F:EA9B 50           PUSH   AX     ;follow here, we do not
+
+...                                  ;need to care
+
+2C7F:EAB2 0F851101     JNE    EBC7
+
+2C7F:EAB6 8D8E5CFF     LEA    CX,[BP+FF5C]  ;ptr "12121212"
+
+2C7F:EABA 16           PUSH   SS
+
+2C7F:EABB 51           PUSH   CX
+
+2C7F:EABC 9A768D872C   CALL   2C87:8D76 ;get strlen "12121212"
+
+2C7F:EAC1 83C404       ADD    SP,+04
+
+2C7F:EAC4 50           PUSH   AX
+
+2C7F:EAC5 8D865CFF     LEA    AX,[BP+FF5C] ;ptr "12121212" HERE!
+
+2C7F:EAC9 16           PUSH   SS
+
+2C7F:EACA 50           PUSH   AX
+
+...etc, various algors on input follow here
+
+
+
+  OK, it's enough: now obviously follows the code that
+
+"algorithmize" the number string, and then, somewhere, you'll
+
+have the hideous compare that divides good guys and bad crackers.
+
+You could examine, and crack, and search...
+
+  BUT NOW IT'S THE "MAGIC MOMENT" OF THE ECHO! We know and *feel*
+
+it: The echo must be somewhere... how do we find it? Searching
+
+"12121212" in memory fishes at least 10 different locations...
+
+:s 30:0 lffffffff '12121212'
+
+Pattern Found at 0030:0005AD6A
+
+.... (7 more)
+
+Pattern Found at 0030:80509D6A
+
+Pattern Found at 0030:8145AD6A
+
+ Should we look for all occurrences of string '12121212',
+
+starting with the two at 80000000, dumping +-0x90 around it...
+
+until we find the echo? We could, and it would work, but that's
+
+not zen... that's boring! In other protections these locations
+
+could proliferate on purpose, to deter the casual cracker. There
+
+must be some other way... And lo and behold! YES! There is a
+
+quicker way... THE LAST loading of the numeric input string in
+
+the code (the one after the strlen count) is the "right" one for
+
+our cracking purposes, coz protections follow (mostly) this
+
+pattern (remember: we are inside a "stack-heavy" section of the
+
+code... if you want to crack higher I suggest you read some good
+
+literature about stack working, stack tricks and stack magics
+
+with the Intel processors):
+
+     LOAD NAMEString - COUNT NAMEStringLen
+
+     LOAD NAMEString - TRANSFORM NAMEString
+
+     LOAD CODEString - COUNT CODEStringLen
+
+     LOAD CODEString
+
+               *ECHO must be here*
+
+     TRANSFORM CODEString
+
+               *ECHO must be here*
+
+     COMPARE TRANSFORMED_NAMEString WITH TRANSFORMED_CODEString
+
+
+
+  This means that at line
+
+2C7F:EAC5 8D865CFF   LEA  AX,[BP+FF5C]  ;ptr "12121212"
+
+you'll already have your echo somewhere... just dump the memory
+
+around the pointer [BP+FF5C]:
+
+:d 2c5f:61e8   ;these numbers will differ in your computer
+
+02 62 2F 06 02 00 26 2E-A3 4E A3 4E 01 00 38 30  .b/...&..N.N..80
+
+33 37 2D 36 34 36 2D 33-38 33 36 00 01 06 02 00  37-646-3836.....
+
+2F 06 75 62 C3 2E B7 04-F2 24 2F 06 CE 6E 2F 06  /.ub.....$/..n/.
+
+49 00 5A 00 01 00-04 2C 2F 06 AE 24 36 62 00 00  I.Z......,/..$6b
+
+74 62 7A 2E B7 04 36 62-01 00 C2 62 2F 2C 26 2E  tbz...6b...b/,&.
+
+03 01 BA 0F AE 24 5F 02-C9 01 5E 02 BA 01 5F 02  .....$_...^..._.
+
+31 32 31 32 31 32 31 32-00 0C 00 BC 02 00 00 00  12121212........
+
+00 49 00 BA 0F-AE 24 F2 24 2F 06 00 00 00 00 00  ....I....$.$/...
+
+AF 17 00 E2 5F-7A 62 FE FF 79 1B BA 0F 00 00 00  ......._zb..y...
+
+96 0B 01 00 02 4E 00-37 01 8A 62 D2 0F 8F 17 00  .....N..7..b....
+
+2F 06 00 37 01-98 62 20 10 16 03 2F 06 00 00 00  /.....7..b .../.
+
+C2 62 2B 4F 52 43 2B 4F-52 43 00 0D AE 24 2F 06  .b+ORC+ORC......
+
+
+
+ Look at this dump: everybody is there! The stack pointers points
+
+in the middle, at string "12121212". 0x50 bytes before it you'll
+
+find our good old ECHO (i.e. the CORRECT passnumber) and 0x50
+
+bytes afterwards you'll see your handle: here "+ORC+ORC".
+
+     It's cracked! The code for my "+ORC+ORC" is 8037-646-3836...
+
+Now begin your assignments: if you rally want to learn cracking:
+
+-    "Unregister" and find anew your own code for your own
+
+     handle. *DO NOT* use serial numbers with any other name
+
+     that your own handle, that's miserable stealing, not
+
+     cracking. I'll begin to punish the serial#_aficionados on
+
+     the Web, coz I like real outlaws, but I detest stupid
+
+     pickpockets.
+
+-    Study the two coding algorithms, the one for the input name
+
+     and the one for the input number, this will be very useful
+
+     for your future cracking sessions.
+
+-    Find the "Compare", i.e. the code that sets the two usual
+
+     flags "good guy, you may move on" and "bad cracker, beggar
+
+     off", and
+
+-    Create a "real" crack for this protection, that will allow
+
+     anybody you think deserves it, with any name and any
+
+     password number, to get through.
+
+
+
+[CRACKING SNAP 32]
+
+     Snap 32  (SNAP32.EXE 356.352 bytes, 24/11/95,  Version 2.54,
+
+by Greg Kochaniak) is a "snapshot" shareware program for Windows
+
+95, that allows users to save the screen, parts of it, or a
+
+single window. It's a very common 'try before you buy' program,
+
+limited to 30 days use. You'll find it everywhere on the Web. If
+
+you do not know how to search the Web (poor guy!), learn at the
+
+end of this lesson the correct procedure to find all the files
+
+you need on the Net and get them automatically emailed to you
+
+(that's something you should learn: SEARCHING! It's even more
+
+important than cracking!).
+
+     Snap32 is not very interesting (I don't think I used it more
+
+than a couple of times), but its protection is: in order to (try
+
+to) deter casual crackers it does not compare strings, it
+
+compares a "magic" sum (from Namestring) with another magic sum
+
+(from Numberstring). And:
+
+*    SUMS magics inside the GDI, not inside its own code;
+
+*    USES a look_up table for input validation instead of
+
+     "plain" code;
+
+*    COMPARES the "magic" manipulation from input NUMBER with
+
+     the "magic" manipulation from input NAME.
+
+
+
+  The cracking procedure for most of these windows programs is
+
+pretty simple and relatively straightforward:
+
+
+
+1)   SEE THE NAME OF YOUR BABE AND ITS QUEUE SELECTOR
+
+:task     ;This is the Winice95 command you type after firing
+
+snap32 and getting at the "Enter License" nag window:
+
+
+
+TaskName SS:SP     StckTp   StckBt  StckLw TaskDB  Hqueue  Events
+
+Snap32   0000:0000 006 AC000 006B0000       270E    D27    0000
+
+
+
+OK, the babe is Snap32,it's HQUEUE is 0xD27, it's TaskDB is
+
+0x27OE, orright.
+
+
+
+2)   SEE THE MODULES OF YOUR BABE:
+
+:map32 snap32       ;Your command
+
+Owner     Obj Name  Obj#  Address        Size      Type
+
+SNAP32    .text     0001  0137:00401000  00043000  CODE  RO
+
+SNAP32    .rdata    0002  013F:00444000  00002E00  IDATA RO
+
+SNAP32    .data     0003  013F:00447000  00009000  IDATA RW
+
+SNAP32    .idata    0004  013F:00471000  00001C00  IDATA RW
+
+SNAP32    .rsrc     0005  013F:00473000  00001600  IDATA RO
+
+SNAP32    .reloc    0006  013F:00475000  00004C00  IDATA RO
+
+
+
+OK, so the code is in selector 137:(as usual), and you have there
+
+43000 bytes of code from 401000 to 401000+43000; the DATA,
+
+ReadWrite and ReadOnly, are in selector 13F: (as usual).
+
+
+
+3) SEE THE HANDLE OF THE PROTECTION "NAG" WINDOW
+
+:hwnd snap32             ;Your command
+
+Window Handle  Hqueue  SZ  Qowner   Class Name Window Procedure
+
+ 0350(1)       0D27    32  SNAP32   #02071     144F:0560
+
+  0354(2)      0D27    32  SNAP32   #02071     17CF:102E
+
+  ... and many more windows that we do not care of.
+
+
+
+  OK, so, for our cracking purposes, it's Handle 0x350. Most of
+
+the times the "nag" window you want to crack will be the first
+
+one in the hwnd listing (coz it was the last one to appear).
+
+Watch the number in parentheses that follows the Whandle: (1) is
+
+a mother, (2) are "children" windows. At times you'll find under
+
+"Class Name" something like "Edit" (see before the Winformant
+
+cracking)... SNIFF THERE! At times the "Window Procedure" code
+
+location in a list of more than twenty, will be slightly
+
+different for one or two windows... SNIFF THERE!
+
+
+
+4) BREAKPOINT MESSAGE WM_GETTEXT (or any other WM_ that you can
+
+think of in order to "pinpoint" the code of our babe).
+
+"Pinpointing" the code is extremely important in windows
+
+cracking... this idiotic OS moves code, data and stack out and
+
+inside the pages all the time... so you'll keep getting on
+
+"INVALID" sections without a correct pinpointing. Good
+
+Pinpointing points are in general:
+
+  BMSG xxxx WM_GETTEXT   (good for passwords)
+
+  BMSG xxxx WM_COMMAND   (good fro OK buttons)
+
+  BPRW *your babe* TW    (good for tracking)
+
+  u USER!GETWINDOWTEXT   (u and then BPX inside the code)
+
+  u GETDLGITEM           (for the Hwnd of an Item inside a
+
+                         Dialog Box)
+
+  CSIP NOT GDI           (if you have too many interferences)
+
+  u USER!SHOWWINDOW      (bpx with counter occurrence to get to
+
+                         the "right" window)
+
+  u GETSYSTEMTIME        (for "time-crippled" software)
+
+and many others pinpointing points you'll learn. If you are
+
+really desperate for pinpointing, just do a BMSG xxxx WM_MOVE and
+
+then move the nag window, this will always work. Let's go on:
+
+
+
+:bmsg 350 wm_gettext     ;Your command
+
+OK, so the code is ready to be pinpointed.
+
+
+
+5)RUN THE PROGRAM TO THE BREAKPOINT:
+
+CTRL+D                   ;Your command to exit Winice and run
+
+                         until it pops out at breakpoint
+
+OK, now you pop out inside Winice somewhere... (look at the stack
+
+to know where) so the code has been pinpointed.
+
+
+
+6) SEARCH THE DATA AREA for your input string (4 Gigabytes from
+
+30:0... remember that DATA are *always* in 30:0 to 30:FFFFFFFF
+
+and CODE is *always* in 28:0 to 28:FFFFFFFF). In most protection
+
+the "registration_number" string must match the "username"
+
+string, which cannot be constrained, in order to allow users to
+
+choose whatever stupid name they fancy. Some protections requires
+
+fixed symbols inside the "username" string, though... in these
+
+rare eventualities, just apply to the "username" string what
+
+we'll do here with the "registration_number" string. The point
+
+to remember is: begin always with the protection fumbling your
+
+number, crack only if necessary the protection that fumbles your
+
+name. Let's search now.
+
+
+
+:s 30:0 lffffffff '12121212'  ;Your command
+
+     Pattern Found at 0030:80308612
+
+
+
+80000000 is good. Lower era videos, mirrors and BIOS, higher
+
+(around C0000000) you have the OS dustbins... the point to
+
+remember is: investigate always FIRST the 80000000 locations.
+
+
+
+7)   BREAKPOINT ON MEMORY RANGE ON THIS STRING.
+
+By the way: prepare a watch window  dex 3 es:di, you'll soon see
+
+how useful such an automated watchwindow is in password cracking.
+
+
+
+:bpr 30:80308612 30:80308612+8 RW  ;Your command
+
+
+
+OK Now we'll begin to dig out the relevant parts of the code.
+
+Remember that you must breakpoint *every* copy of the string that
+
+protection generates. A typical copy routine, very frequently
+
+used in windows copy protection schemes, dwells inside
+
+KERNEL!HMEMCPY (+0076):
+
+
+
+0117:9E8E 66C1E902      SHR     ECX,02
+
+0117:9E92 F36766A5      REPZ MOVSD      ;makes a copy in es:di
+
+0117:9E96 6659          POP     ECX
+
+0117:9E98 6683E103      AND     ECX,+03
+
+0117:9E9C F367A4        REPZ MOVSB
+
+0117:9E9F 33D2          XOR     DX,DX
+
+
+
+In fact, this piece of copying code is so often used for password
+
+verifications that sometimes you just need to bpx on 0117:9E92
+
+to get the correct stack sequence... but let's, for now, continue
+
+without such little tricks: just keep on BPRring (Breakpoint on
+
+memory range) all copies that protection makes.
+
+
+
+8) LET THE BABE RUN, it will breakpoint on all manipulations of
+
+your input string. One of them will lead to the magic.
+
+8.1.)     VALIDATION phase
+
+There are many routines that check and "validate" your inputs.
+
+The most common ones check that your numbers ARE really numbers,
+
+i.e. in the range 0x30-0x39. Usually this is done with:
+
+          CMP  EAX,+30
+
+          JB   no_number
+
+          CMP  EAX,+39
+
+          JA   no_number
+
+At times the protectionists use TABLES instead... The number
+
+itself is used as a pointer to a "ready made" table where the
+
+relevant magic can be used as a protection. Imagine that a number
+
+4  in your input points to a code section that throws you
+
+immediately outside the validation routine... or imagine that a
+
+number 7, if found in your input, fetches a magic code that
+
+removes the whole program from your harddisk (or worse): "Ah, ah!
+
+Stupid cracker will never know that he should not have used
+
+number 4... and definitely not number 7! Next time he'll
+
+learn..." Yes, tables have been used for such nasty tricks.
+
+Here the relevant code for the "validation" part of our
+
+protection (still checking my favourite input string '12121212'):
+
+:check_if_valid
+
+0137:4364AE 8A16       MOV     DL,[ESI] ;load license number
+
+0137:4364B0 33C0       XOR     EAX,EAX  ;zero AX
+
+0137:4364B2 668B0451   MOV     AX,[ECX+2*EDX] ;look table for 84
+
+0137:4364B6 83E008     AND     EAX,+08  ;OK if AND'S TO zero
+
+0137:4364B9 85C0       TEST    EAX,EAX  ;and therefore
+
+0137:4364BB 7403       JZ      004364C0 ;go on
+
+0137:4364BD 46         INC     ESI      ; ready for next number
+
+0137:4364BE EBCD       JMP     0043648D
+
+:strip_-_&_+_signs
+
+0137:4364C0 33DB       XOR     EBX,EBX  ;clean BX
+
+0137:4364C2 8A1E       MOV     BL,[ESI] ;load license number
+
+0137:4364C4 46         INC     ESI      ;ready for next
+
+0137:4364C5 8BFB       MOV     EDI,EBX  ;save copy
+
+0137:4364C7 83FB2D     CMP     EBX,+2D  ;is it a "-"?
+
+0137:4364CA 7405       JZ      004364D1
+
+0137:4364CC 83FB2B     CMP     EBX,+2B  ;is it a "+"?
+
+
+
+8.2.)     MANIPULATION (summing magic numbers)
+
+Your wisely set breakpoints on memory range for the occurrence
+
+of the string "12121212" will pop you out, inter alia, inside
+
+following piece of code (note how this part of protection dwells
+
+inside GDI, and  NOT inside the code selector of snap32):
+
+0557:11BD 33C0         XOR  EAX,EAX        ;zero AX
+
+0557:11BF 66648B06     MOV  AX,FS:[ESI]    ;load number
+
+0557:11C3 83C602       ADD  ESI,+02        ;point to next
+
+0557:11C6 66833C4700   CMP  WORD PTR [EDI+2*EAX],+00
+
+0557:11CB 0F8424010000 JE   000012F5
+
+0557:11D1 668B0442     MOV  AX,[EDX+2*EAX] ;load from magic table
+
+0557:11D5 03D8         ADD  EBX,EAX        ;save sum in EBX
+
+0557:11D7 49           DEC  ECX            ;till we are done
+
+0557:11D8 75E5         JNZ  000011BF       ;loop along
+
+
+
+Interesting, isn't it? Protection is using this GDI routine to
+
+create a SUM (through pointers to another table) that depends on
+
+your very input numbers. We are now very near to the crack... can
+
+you *feel* it? If not, prepare yourself a good Martini Vodka!
+
+This is the correct way to do it:
+
+ * Get a "highball" glass;
+
+ * Put some ice cubes inside it (2 or 3);
+
+ * Add Martini Dry (From Martini & Rossi). Fill to 1/3;
+
+ * Add Moskowskaja Wodka (the only real Vodka). Fill to 2/3;
+
+ * Add a zest of lemon (From Malta or Southern France);
+
+ * Add a green "sound" olive (from Italy or Israel);
+
+ * Add Schweppes Indian Tonic. Fill to the brim.
+
+Sit deeper and relax, sip slowly and *feel* where the code of the
+
+protection scheme you are cracking "moves"... It's like a
+
+current... a slow tide. If you still do not believe me, just try
+
+it.
+
+
+
+We'll now find out where protection stores the "magic" sum (and
+
+now you'll pop out inside the very own snap32 code, this is the
+
+"real" protection part):
+
+
+
+8.3.)     The ludicrous "HIDING" of the magic sum
+
+0137:40437E 83C404       ADD     ESP,+04
+
+0137:404381 8B4DE8       MOV     ECX,[EBP-18]
+
+0137:404384 8945F0       MOV     [EBP-10],EAX  ;***HERE!***
+
+0137:404387 68FF000000   PUSH    000000FF
+
+0137:40438C 8D8574FBFFFF LEA     EAX,[EBP+FFFFFB74] ;load string
+
+0137:404392 50    PUSH   EAX                      ;push it
+
+0137:404393 E886410100   CALL    0041851E         ;manipulate
+
+0137:404398 8D8574FBFFFF LEA     EAX,[EBP+FFFFFB74] ;load string
+
+0137:40439E 50    PUSH   EAX                      ;push it
+
+0137:40439F E88C210300   CALL    00436530         ;manipulate
+
+
+
+As you can see, the protection is very simple: The "magic" sum
+
+is hidden only two lines before the further manipulations of the
+
+input string. We have found location 137:404384, here, in the
+
+CORRECT way, through bprring of the string that has been
+
+manipulated in the GDI, but actually, we could have found it
+
+quickly just checking superficially what's happening "around" all
+
+manipulations of the input string. Do we really need to follow
+
+all manipulations of our registration_number and eventually also
+
+all manipulation of our username? NO, not at all: we just set a
+
+BPR on the stack location where protection hides the sum [EBP-10]
+
+and we'll see what happens: 90% of these protections just create
+
+two sums, a sum from your username and a sum from your
+
+registration_number... somewhere there will be a compare that
+
+must use this location (or a copy of it... we'll see).
+
+
+
+8.4.) COMPARING THE MAGICS FROM THE TWO INPUT STRING
+
+Breakpoint on memory range on the sum location [EBP-10] that you
+
+saw in the previous code and you'll land at this piece of code:
+
+0137:404412 E82F050000   CALL 00404946
+
+0137:404417 83C40C       ADD  ESP,+0C
+
+0137:40441A 3B45F0       CMP  EAX,[EBP-10] ;comp AX & magicsum
+
+0137:40441D 740F         JZ   0040442E
+
+0137:40441F 68C0874400   PUSH 004487C0
+
+0137:404424 E8149E0000   CALL 0040E23D
+
+0137:404429 83C404       ADD  ESP,+04
+
+0137:40442C EB5B         JMP  00404489
+
+0137:40442E 893DA0714400 MOV  [004471A0],EDI
+
+0137:404434 85FF         TEST EDI,EDI
+
+
+
+That's it, you have made it! We found the compare between the
+
+"username" magic number (for my "+ORC+ORC" string that's here
+
+0x7C25621B) in AX (we do not need to know how this landed
+
+there... it's irrelevant!) and the "license_number" '12121212'
+
+(whose magic is here 0x00B8F47C) stored in [pointer-10.] How do
+
+we find now the correct INPUT number for +ORC+ORC? Well, it's
+
+easy...  the "magic number" must be the same... therefore:
+
+
+
+Cracked=Dec(0x7C25621B)
+
+Cracked=2082824731
+
+
+
+     That was it. Old Snap32 has been cracked. You could now
+
+prepare a crack in order to distribute this program around
+
+without its simple protection. Good cracked applications should
+
+be given free (i.e. cracked) to all the people that NEED them and
+
+do not have the money to buy them. Don't forget that in this
+
+intolerable society the 0,5% of the citizens own the 56% of the
+
+industrial capital and the 63% of the propaganda machines (data
+
+from US researchers... therefore suspect... the real situation
+
+is probably even worser) effectively conditioning the destiny of
+
+millions of slaves, moronized by television watching. So crack
+
+the applications and give them to the people you care and the
+
+peolple that need them, but for the others... just EXPLAIN
+
+everybody how you did it... this is real help: giving knowledge,
+
+not wares. DO NOT use my handle and my codes to crack this
+
+program, get yours, I gave you mine only as an help for this
+
+cracking lesson. I have showed you the way enough... THIEFS, not
+
+crackers, use the codes that others have found. You are (gonna
+
+be) CRACKERS! Remember it, look straight ahead, crack accurately
+
+and keep your tommy in.
+
+
+
+HOW TO SEARCH THE INTERNET FOR FILES WITHOUT MOVING A FINGER
+
+  It's amazing: most of the people roaming around inside Internet
+
+DO NOT know how to use effectively the web. I'll be very
+
+altruistic and explain how to fetch the very example of Snap32,
+
+the babe we cracked in this lesson.
+
+
+
+1) Choose an archie from this list (I will not explain you what
+
+an archie is, you should know it... if you do not, be ashamed):
+
+     archie.univie.ac.at      131.130.1.23        Austria
+
+     archie.belnet.be         193.190.248.18      Belgium
+
+     archie.funet.fi          128.214.6.102       Finland
+
+     archie.univ-rennes1.fr   129.20.254.2        France
+
+     archie.th-darmstadt.de   130.83.22.1         Germany
+
+     archie.ac.il             132.65.16.8         Israel
+
+     archie.unipi.it          131.114.21.10       Italy
+
+     archie.uninett.no        128.39.2.20         Norway
+
+
+
+2) Email a message to your archie:
+
+     To:       archie.univie.ac.at (for instance)
+
+     Subject:                      (nothing on this field)
+
+     Body:     set search sub      (substrings too)
+
+               set maxhits 140     (max 140 hits)
+
+               set maxhitspm 9     (not the same file all over)
+
+               find snap32         (we want this)
+
+
+
+3) After a while you'll get (per email) your answer: Here the
+
+answer from the Austrian archie
+
+
+
+Host ftp.wu-wien.ac.at    (137.208.8.6)
+
+ Last updated 17:48  9 Aug 1995
+
+ Location: /pub/systems/windows.32/misc
+
+  FILE    -rw-r-----  128957 bytes  15:59 16 Jun 1995  snap32.zip
+
+Host space.mit.edu    (18.75.0.10)
+
+ Last updated 00:45  4 Mar 1996
+
+ Location: /pub/mydir
+
+  FILE    -rw-r--r--  407040 bytes  11:55 28 Nov 1995  snap32.exe
+
+
+
+4) ftpmail your file (Browsing is no good: too busy and lame).
+
+Again, I will not explain you what an FTPMAIL server is: learn
+
+it by yourself... choose a good one from this list (there are
+
+many more... you'll learn):
+
+   bitftp@vm.gmd.de                           (Germany)
+
+   ftpmail@ieunet.ie                          (Ireland)
+
+   bitftp@plearn.edu.pl                       (Poland)
+
+   ftpmail@ftp.sun.ac.za                      (South Africa)
+
+   ftpmail@ftp.sunet.se                       (Sweden)
+
+   ftpmail@ftp.luth.se                        (Sweden)
+
+   ftpmail@src.doc.ic.ac.uk                   (United Kingdom)
+
+
+
+To:       ftpmail@ftp.sun.ac.za.   (for instance)
+
+Subject:                           (leave blank)
+
+Body:     open space.mit.edu       (the last occurrence that
+
+                                   the archie sent)
+
+          cd/pub/mydir             (get the correct subdir)
+
+          bin                      (prepare for BINARY)
+
+          get snap32.exe           (I want this)
+
+          quit                     (bye)
+
+
+
+5) Your FTPMAIL server will first notice you a receipt:
+
+
+
+FTP EMAIL response...
+
+ftpmail has received the following job from you:
+
+      reply-to +ORC
+
+      open space.mit.edu +ORC@now.here
+
+      get snap32.exe
+
+ftpmail has queued your job as: 1834131821.5514
+
+Your priority is 1 (0 = highest, 9 = lowest)
+
+Requests to sunsite.doc.ic.ac.uk will be done before other jobs.
+
+There are 14 jobs ahead of this one in the queue.
+
+4 ftpmail handlers available.
+
+To remove send a message to ftpmail containing just:
+
+delete 1834131821.5514
+
+
+
+After a while you'll get a second message, with your file
+
+uuencoded inside... everything has been done.
+
+YESSIR! there is absolutely no need to loose time on the WWW,
+
+"surfing" idiotically from a junk site to the next or waiting
+
+hours to download some slow file from an instable server! Wasting
+
+time of your own LIFE, that you could use to read poetry, to make
+
+love, to look at the stars, to sail slowly between the Aegean
+
+islands or to start a nice cracking session. What's the point of
+
+wasting your time when machines can perform all the searches you
+
+need better, more productively and faster than you ever could...
+
+YESSIR! You can get *everything* on the Web, and without paying
+
+your Internet provider more than a couple of dimes... Nice, isn't
+
+it?
+
+
+
+By now, if you have followed all my lessons, you should be able
+
+to crack relatively quickly "normal" applications. There are some
+
+new projects for 1997: a cracking "university", that will allow
+
+us to prepare for the divine war against Microsoft repulsive
+
+dominion. If you do not have already chosen your handle (your
+
+"cracker" name, that's it), you may consider choosing an handle
+
+with a "+" somewhere inside it or, eventually, add a "+" to your
+
+handle. This sign is used by me and by friends that have studied
+
+and/or contributed. But a "+" in your handle ("official +ORC
+
+cracker") will mean even more:
+
+1)   allows support from me personally (on a "do ut des" basis)
+
+2)   allows pupils to identify each other (good for joining
+
+     forces)
+
+3)   will open you (eventually) the doors to the "higher"
+
+     cracking university I'll set up on the Web in 1997.
+
+(I'm not getting megalomaniac... In reality I only need a "quick"
+
+method to know on which (anonymous) people I can count on for the
+
+next phase).
+
+
+
+Well, that's it for this lesson, reader. Not all lessons of my
+
+tutorial are on the Web.
+
+     You 'll obtain the missing lessons IF AND ONLY IF you mail
+
+me back (via anon.penet.fi) with some tricks of the trade I may
+
+not know that YOU discovered. Mostly I'll actually know them
+
+already, but if they are really new you'll be given full credit,
+
+and even if they are not, should I judge that you "rediscovered"
+
+them with your work, or that you actually did good work on them,
+
+I'll send you the remaining lessons nevertheless. Your
+
+suggestions and critics on the whole crap I wrote are also
+
+welcomed.
+
+</PRE></P>
+
+
+
+<BR><CENTER><A href="mailto:an526164@anon.penet.fi">E-mail +ORC</A></CENTER>
+
+
+
+<P><CENTER><PRE>+ORC an526164@anon.penet.fi</PRE></CENTER></P>
+
+</BODY>
+
+</HTML>

@@ -1,0 +1,530 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>rezel1.htm A correction/addition to RudeBoy's essay</TITLE>
+
+</HEAD>
+
+
+
+<BODY BGCOLOR=#C0C0C0 TEXT=#001010 VLINK=#405040><CENTER>
+
+<FONT size=+3> BEGINNERS: <I>A correction/addition to RudeBoy's essay</I> </FONT>
+
+<HR></CENTER>
+
+<CENTER>Courtesy of Fravia's page of 
+
+reverse engineering 
+
+<HR>
+
+Slightly edited by fravia+, 3 May 1998
+
+</CENTER>
+
+<HR>
+
+<PRE><FONT color=purple>
+
+...when I wanted to send this tutorial to you I realized that somebody 
+
+(The_Rude_Boy) already published an essay on the same target (<A href="javascript:if(confirm('http://129.105.116.5/fravia/rudeboy.htm3  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://129.105.116.5/fravia/rudeboy.htm3'" tppabs="http://129.105.116.5/fravia/rudeboy.htm3">rudeboy.htm</A>).
+
+Well at first I thought "Now my tut is worthless!". Yet, when I was done 
+
+reading Rudeboy's tut I realized that my tut could be quite good and interesting 
+
+after all... (sorry Rude_Boy)... Especially (but not only) for beginners... 
+
+You better read it to believe it... 
+
+
+
+rezel
+
+ronnrezel@hotmail.com</FONT>
+
+<HR size=6>
+
+<CENTER>
+
+-------------------------------------------------------------------
+
+A correction/addition to RudeBoy's essay
+
+How to Crack PolyView V2.9.0 (and any other version as well)
+
+By ReZeL
+
+-------------------------------------------------------------------
+
+</CENTER>
+
+1) Introduction;
+
+   Well, first of all I would like to thank +0RC, fravia+, Lordcaligo, 
+
+   Ed!son, +Natzgul and all of you guys that wrote great tutorials. 
+
+   Please keep up the good work!
+
+
+
+2) What's needed for this cracking session;
+
+   Target Program: Polyview V2.9.0 (http://www.polybytes.com)
+
+   This program is an image viewer and coversion tool for windoze95 and NT.
+
+   Tools  : 1) Our beloved Softice (I used V3.2 for windoze95)
+
+               - This is the best debugger so far (Thanks NuMega!)
+
+            2) W32dsm diassembler (I used W32dsm V8.9)
+
+               - This is IMO the best windows disassembler so far 
+
+            3) Hexworkshop or any other hexeditor
+
+               - Which one doesn't matter, as long as you can hexedit the 
+
+                 file for "permanent" cracking... if you wish.
+
+
+
+3) The Main Part
+
+   Now let the fun begin...
+
+
+
+   Step 1:
+
+   Run the program (polyview) and you'll see the pretty pictre of a parrot
+
+   with the "UNREGISTERED" string written onto it. I assume you already
+
+   know how to use softice (if not than go get it and read Ed!son excellent
+
+   manual on windoze95 cracking).
+
+
+
+   Step 2:
+
+   Go to registration and license registration. Enter the name and license #
+
+   mine goes like this . Licensee: ReZeL   License number: 1122334455 (this
+
+   is my lucky number :).
+
+
+
+   Step 3:
+
+   Enter softice (Ctrl-D), now you are into softice. There are a lot of
+
+   ways to fish the proctection scheme. you can bpx on hmemcpy for example, or
+
+   getdlgitemtexta,getwindowtexta and so on (Get +Orc and Ed!son tutorials
+
+   to learn how to do a good protection scheme fishing). OK! I save you the
+
+   work bpx getwindowtext will do the job.
+
+   Strange as it may seems, though this application is for window 95 yet the
+
+   bpx getwindowtextA (32 bit app won't work here)
+
+
+
+   Step 4:
+
+   Press Ctrl-D to get back to the application. Press "OK" and you'll be
+
+   back into Softice. Press F12 until you get to the caller of this function.
+
+   You and scroll up (Ctrl- arrow) will see some code as belows:
+
+           .
+
+           .
+
+      014f:004988909    50             push eax
+
+      014f:0049890a     ff7508         push dword ptr [ebp+08]
+
+      014f:0049890d     ff157c9e4e00   Call [user32!getwindowtexta]
+
+      014f:00498913     3bc6           cmp eax,esi
+
+      014f:00498913     7514           jnz 0049892b
+
+           .
+
+           .
+
+    Note: The segment (014f may not be the same on your system hence
+
+    remember your real segment as it will be used later on..
+
+
+
+   You can step through the function if you want! bu I prefer using our
+
+   second tool now!!!!
+
+
+
+   Step 5:
+
+   do bd 0 to disable the bpx we set before and proceed with Ctrl-D , you
+
+   will get the window with "registration unsuccessful. please bla bla bla....
+
+   don't be so bad you will crack that in a minute or two. Well, we'll
+
+   see..
+
+
+
+   Step 6:
+
+   Fire up w32dsm89 now and open the polyview.exe file. Save that file as
+
+   project so you won't lost precious time again to disassemble it in
+
+   future.
+
+   Look at all string references. Search for Register unsuccesful, double click
+
+   on it will bring the cursor to the possible reference. Scroll up and look
+
+   who brought you there and you'll se reference to the conditional jump at
+
+   00434d79.
+
+       
+
+   Check 00434d79 and a little bit above (we want to know what's going
+
+   on before the code do the jump at 00434d79 don't we?). You'll se the code
+
+   as follows:
+
+                              .
+
+                              .
+
+      00434d65  8b0f            move ecx,dword ptr [esi+00000168],eax
+
+      00434d67  50              push eax  <===== Your fake key here
+
+      00434d68  51              push ecx  <===== Your handle here
+
+      00434d69  898668010000    mov dword ptr [esi+00000168],eax
+
+      00434d6f  e83c0bffff      call 004258b0 <==== We want to trace this call
+
+      00434d74  83c408          add esp,00000008
+
+      00434d77                  test eax,eax
+
+      00434d79                  je 00434e1c      <==== This is the reference
+
+      00434d7f  3beb            cmp ebp,ebx            to the "Register
+
+                                                       unsuccesful" string
+
+   well now, you see before that conditional jump there is a call to 00425b0
+
+   yess... something fishy is going on. But if you just change the je to jne
+
+   you need to deal with the other conditional jump before you reach the
+
+   "register successful" string (refer to disassembler). Hence it is not an 
+
+   effective way to crack (which I didn't do :) at least before i proceed with
+
+   inspection of the suspicious caller.
+
+
+
+   Step 7:
+
+
+
+   Run the polyview again and repeat step 1 to step 4, now you are ready to
+
+   debug the application again. After step 4, this is what you need to do
+
+
+
+   bd 0 (disable the breakpoint) and do G 014f:434d65 (You did remember the
+
+   offset did you?) and you'll break at just exactly before the calling function.
+
+   Now what we gonna do is tracing the "Caller" so do f10 until you step on the
+
+   call 004258b0 and do T to trace it....
+
+
+
+   Now this is what you'll see in the call code:
+
+
+
+       014f:004258b6  6aff            push ff
+
+       014f:004258b8  6868364b00      push 004b3660
+
+       014f:004258bd  50              push eax
+
+       014f:004258be  64892500000000  mov FS: [00000000],esp     ;fs:000000=0105f9fc
+
+       014f:004258c5  83ec08          sub esp,08
+
+       014f:004258c8  53              push ebx
+
+       014f:004258c9  55              push ebp
+
+       014f:004258ca  56              push esi
+
+       014f:004258cb  57              push edi
+
+       014f:004258cc  8b7c2428        mov edi,[esp+28]
+
+       014f:004258d0  6890284e00      push 004e2890
+
+       014f:004258d5  57              push edi
+
+       014f:004258d6  e8c5000000      call 004259a0
+
+       014f:004258db  8b5c2434        mov ebx,[esp+34]
+
+       014f:004258df  83c408          add esp,08
+
+       014f:004258e2  3bc3            cpm ebx,eax
+
+       014f:004258e4  7518            jnz 004258fe
+
+
+
+   now you see that the last jump (jnz 004258fe) is the one who say that
+
+   you key are good or bad. How to know the good key? well, you just need to do
+
+   ?ebx and you'll see the number string (this is the real key). To confirm
+
+   this you do ?eax and you'll see in my case '1122334455' string which is
+
+   my fake key. Yess!!! that picture of parrot no more will have the
+
+   unregistered string on it.........
+
+        For me the key will be 302477010 (if ?eax  give you leading zeros
+
+   just ignore it , i,e: ?ebx you get 0302477010 then the key will be 302477010
+
+   also please ignore the negative number if any)
+
+
+
+   Now, if you want to make the 'keymaker' simply trace the code "of.class" tppabs="http://fravia.org/of.class" the first
+
+   caller (4258b0) until the comparison which is i'm pretty sure the real
+
+   key generator given your name as reference.
+
+
+
+   Step 8:
+
+
+
+   Now you want to crack this application for good isn't it? What you
+
+   should do?
+
+   Hexeditor come in handy to patch the jump from jnz to jz (now anything you
+
+   enter EXCEPT the real key will register the application) . So search the
+
+   string in hexworkshop for 83c4083bc37518 and before you change 75 byte to 74 byte
+
+   please do search again to make sure there is only one place in the app which
+
+   same as your search string.
+
+   what you need to do is patch 83c4083bc37518 to 83c4083bc37418. Now your patch
+
+   is done.
+
+    Enjoy!
+
+4) Reading Suggestion;
+
+
+
+   Cracking Manuals:
+
+         * +Orc cracking tutorial (all of them) go and grab it!
+
+         * Ed!son cracking manual for Windoze95
+
+         * Uncle Joe handbook
+
+         * +Orc student's essays (quite a lot!)
+
+         * CBD tutorial
+
+         * and all other tutorials (too many too list)
+
+   Assembly Manual:
+
+         * Assembly tutorial from Guadalajara and Yale university
+
+         * Others (there is a lot of information you can get for free on
+
+           the net)
+
+   Tools Manual:
+
+         * Softice Manual by NuMega
+
+
+
+
+
+5)Outro
+
+   Greet goes to (in no particular order):
+
+         
+
++Orc, fravia+, Lordcaligo, Ed!son, +Natzgul, Odin, Razzia, +X0anon, +Greythorne
+
+st0ne, TKC, CBD, ^pain^, the rest of the +Crackers and all other nice and clever 
+
+crackers who realease their tutorials to the scene.
+
+          Knowledge is power.....Only when we use it!! 
+
+
+
+   Note: 1. The real key won't be obsolete and can be used for all future
+
+         versions (as polybyte claims in the help file)
+
+         2. The software can be unregistered by re-register it with false
+
+         key so you can try to register it with other name to prove that's it
+
+         is working
+
+	 3. Do not STEAL this target! If you use it other than for cracking and 
+
+	 protection studying purposes, register it. If you want to steal this program, 
+
+         this is a long (and useless) way to do it: just download it, already regged, 
+
+	 from a stupid warez site and beggar off.
+
+
+
+   That's it guys...
+
+   sign off in peace
+
+   ReZeL
+
+   </prE><HR>
+
+<CENTER>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database</A>
+
+<BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="realicra.htm" tppabs="http://www.anticrack.de/fravia/realicra.htm">reality cracking</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="howtosea.htm" tppabs="http://www.anticrack.de/fravia/howtosea.htm">how to search</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="javascri.htm" tppabs="http://www.anticrack.de/fravia/javascri.htm">javascript wars</A>
+
+<BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity academy</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut
+
+CGI-scripts</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia+</A>
+
+<BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering
+
+legal?</A>
+
+</CENTER>
+
+<HR>
+
+<!-- THAT'S ALL, THANKS A LOT this will allow automated retrieval -->
+
+</BODY>
+
+</HTML>
+

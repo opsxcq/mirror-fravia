@@ -1,0 +1,758 @@
+<html>
+
+<HTML>
+
+<HEAD>
+
+<TITLE>aescu2.htm</TITLE>
+
+</HEAD>
+
+
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+<A NAME="anchortop"></A>
+
+
+
+<H2><CENTER>
+
+XferPro 2.00 32 bits for Windos 95<BR>
+
+   by Aesculapius, April 1997<BR>
+
+</H2>
+
+<HR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">
+
+<I>Courtesy of fravia's page of reverse engineering</I>
+
+</CENTER>
+
+<HR size="3">
+
+<PRE>
+
+XferPro 2.00 32 bits for Windos 95
+
+
+
+        Hi all! In this essay, I'll teach you how to crack a serial number
+
+based protection scheme using the 'dead listing' approach. Is this possible?
+
+Yes it is, but what does this means?, what is this serial number thing?
+
+Right, don't be impatient; take three deep breathes, no more than that or
+
+you'll be dizzy. Are you done? Ok, let's proceed...
+
+
+
+	 The engine of this scheme is a mathematical sequence which will take
+
+a serial number typed by the user and validate it according to certain
+
+characteristics this number must have, i.e., it must have no more than 23
+
+digits and not less than 19, the first two digits must be letters and the
+
+following two must be a three digits number greater than 285, etc, etc. Other
+
+approach to this scheme is to make some mathematical modifications to the
+
+users name and get a valid serial number from this mathematically modified
+
+name, in this manner, every user has a unique serial number. This last
+
+approach has a weak point, the software itself must contain the mathematical
+
+sequence to calculate the valid number. When you type your name and a false
+
+serial number, the program calculates the valid number for your name and
+
+compares it with the number you typed. If both numbers are equal then you
+
+are a valid user and the application runs in its registered form. If both
+
+numbers are different then you'll receive a polite advice, warning that
+
+the serial you typed is not correct. Many crackers use this situation on
+
+their behalf by using a cracking technique called 'hear the echo'
+
+(Read +ORC tutorial).
+
+
+
+Which one of these two approaches is used by XferPro, probably the first one.
+
+The programs that calculate the valid serial number according to the users
+
+name will include in the registration instructions, phrases like this one:
+
+'Type your name exactly as you want it to appear in your registration
+
+(CASE is important)'. You cannot find any sentence like this one in the
+
+documentation of xferpro, so we will deduce that the serial number must
+
+have certain characteristics but it's not derived from the user name.
+
+You must reach the 'perfecto entendimiento' of the 'dead listing' approach
+
+before trying this crack, so read carefully lesson 9.3 of +ORC tutorial and
+
+then continue. I also highly recommend the excellent +ORC students essays.
+
+Cracking this scheme may be accomplished by two different approaches.
+
+Either calculating a valid password (burn some brain cells analyzing the
+
+code), very boring, or changing the course of the river after the decision
+
+has been taken. This knowledge is essential to crack many programs nowadays,
+
+because recent applications based in this scheme activate unregistered
+
+nag-screens and deactivate some other useful and desirable functions,
+
+forcing you to crack too many locations of the code. Remember, as I always
+
+say: 'A good cracker is like a good surgeon, very subtile changes and great
+
+results'. Overusing your Hex editor all the time denotes that you don't
+
+understand the heart of the protection scheme. What I pretend you to learn
+
+today is to recognize the weakest place of this program and change it in
+
+your behalf.
+
+
+
+		 You can find XferPro 2.00 at http://www.sabasoft.com/ 
+
+
+
+	Ok, enough nonsense, let's take some heat!
+
+
+
+	Our first logical approach it's to start w32dasm7 and disassemble
+
+the file xferp32.exe, load the disassembled text file in your favorite word
+
+processor, then, you have to use your Zen analyzes capabilities. What do I
+
+look for? To answer this question, you'll have to run Xferpro, it'll present
+
+you a NAG screen, now press the REGISTRATION button, type your name and
+
+any false serial number and hit the REGISTER button. You'll receive the
+
+following message: 'Your Registration Data is Incorrect'. Well, lets search
+
+for this phrase, press the search button in your word processor and look
+
+for the following pattern: Your Registration Data is Incorrect. You'll land
+
+in the following segment of the code:
+
+
+
+* Reference To: USER32.GetDlgItemTextA, Ord:0000h
+
+			^^^^^^^^^^^^^^^^^^^^
+
+			   Look at this, I could also find this location by
+
+                           using the Imported functions button at w32dasm7
+
+                           looking for 'GetDlgItemTextA'!!!
+
+
+
+                                  |
+
+:00416DA8 E827D70000              Call 004244D4  ;  
+
+:00416DAD E8AE000000              call 00416E60  ; The protection scheme?
+
+:00416DB2 85C0                    test eax, eax  ; EAX=1 Unregistered
+
+                                                 ; EAX=0 Registered
+
+:00416DB4 7412                    je 00416DC8    ; The Bingo Jump to the
+
+                                                   successful registration
+
+                                                   clearance at :00416DC8 avoiding
+
+                                                   the wrong serial number warning
+
+                                                   message!
+
+
+
+If you change the instruction at :00416DB4 from je 00416DC8 to jne 00416DC8
+
+then the registration box will accept any serial number as valid. This
+
+means that the protection scheme analysis is stored in EAX. If EAX=1 then,
+
+the serial number is false and, if EAX=0 the serial number is valid.
+
+
+
+
+
+* Possible StringData Ref from Data Obj -&gt;&quot;Your Registration Data is Incorrect!&quot;
+
+                                  |
+
+:00416DB6 683C1C4300              push 00431C3C  ; We need to jump over
+
+                                                   this segment!!!
+
+:00416DBB 6A30                    push 00000030
+
+:00416DBD 56                      push esi
+
+:00416DBE E8A51B0000              call 00418968
+
+:00416DC3 83C40C                  add esp, 0000000C
+
+:00416DC6 EB47                    jmp 00416E0F
+
+
+
+* Referenced by a (U)nconditional or (C)onditional Jump at Address:
+
+|:00416DB4(C)
+
+|
+
+:00416DC8 6801000080              push 80000001  ; This segment will be
+
+                                                   executed if your serial                             serial number is 
+
+                                                   number is valid
+
+
+
+* Possible Indirect StringData Ref from Data Obj -&gt;&quot;username&quot;
+
+                                  |
+
+:00416DCD 689C0A4300              push 00430A9C
+
+:00416DD2 56                      push esi
+
+:00416DD3 E8C0B30000              call 00422198
+
+
+
+* Possible StringData Ref from Data Obj -&gt;&quot;You Have Been Successfully Registered.&quot;
+
+                                  |
+
+Analyzing this segment of code, we can quickly deduce that the protection
+
+scheme lies under the CALL at :00416DAD. It could be in the CALL at offset
+
+:00416DA8 but I doubt it. The CPU has very few registers available to
+
+execute a large segment of code without using all of them. Now we're
+
+following our feelings, lets hit the search button of your word processor
+
+and search the offset of the call at :00416DAD. Search the following
+
+pattern: 00416E60. We land right in the middle of the protection scheme:
+
+
+
+
+
+* Referenced by a CALL at Addresses:
+
+|:00416DAD   , :0041A156   , :0042367A   , :00423811   
+
+  ^^^^^^^^      ^^^^^^^^      ^^^^^^^^     ^^^^^^^^^ 
+
+  Executed 1 Time  Two times   Three times   Four times
+
+|
+
+
+
+Wow, the protection scheme is CALLed from four different locations of
+
+the code! This means that you're forced to crack the code at this level
+
+and not after the protection scheme has been executed because this would
+
+implicate corrections in four different areas.
+
+
+
+:00416E60 53                      push ebx ; push registers 
+
+:00416E61 56                      push esi
+
+:00416E62 57                      push edi
+
+:00416E63 55                      push ebp
+
+:00416E64 81C4FCFEFFFF            add esp, FFFFFEFC
+
+:00416E6A 33F6                    xor esi, esi      ; clear esi.
+
+:00416E6C 8BC4                    mov eax, esp
+
+:00416E6E BB780A4300              mov ebx, 00430A78 ; moves memory location                                                                  tion offset 430A78
+
+                                                      to ebx. Is this the
+
+                                                      location of the 
+
+                                                      serial number we
+
+                                                      typed?
+
+
+
+:00416E73 33FF                    xor edi, edi      ; erase EDI
+
+:00416E75 EB66                    jmp 00416EDD
+
+:00416E77 803B2D                  cmp byte ptr [ebx], 2D ; Compares one 
+
+                                                           byte of [ebx]
+
+                                                           memory loca-
+
+                                                           tion with
+
+                                                           the character dash
+
+                                                           2D Hex='-'
+
+:00416E7A 7544                    jne 00416EC0 ; if byte not to equal '-'
+
+                                                 jump 00416EC0
+
+
+
+:00416E7C C60000                  mov byte ptr [eax], 00
+
+:00416E7F 8BC6                    mov eax, esi
+
+:00416E81 83E801                  sub eax, 00000001
+
+:00416E84 7207                    jb 00416E8D
+
+:00416E86 7416                    je 00416E9E ; if byte equal to '-' jump
+
+                                                :00416E9E
+
+:00416E88 48                      dec eax
+
+:00416E89 7426                    je 00416EB1
+
+:00416E8B EB24                    jmp 00416EB1
+
+:00416E8D 54                      push esp
+
+:00416E8E E85DC8FFFF              call 004136F0
+
+:00416E93 59                      pop ecx
+
+:00416E94 8BE8                    mov ebp, eax
+
+:00416E96 81E5FF030000            and ebp, 000003FF
+
+:00416E9C EB1D                    jmp 00416EBB
+
+:00416E9E 54                      push esp         ; lands from 00416E86
+
+:00416E9F E84CC8FFFF              call 004136F0
+
+:00416EA4 59                      pop ecx
+
+:00416EA5 C1E00A                  shl eax, 0A
+
+:00416EA8 2500FC1F00              and eax, 001FFC00
+
+:00416EAD 0BE8                    or ebp, eax
+
+:00416EAF EB0A                    jmp 00416EBB     ; jumps 00416EBB
+
+:00416EB1 B801000000              mov eax, 00000001
+
+:00416EB6 E9D9000000              jmp 00416F94
+
+:00416EBB 46                      inc esi          ; If any byte of the number at 
+
+                                                     [ebx] equal to character dash
+
+                                                     '-' then ESI is increased by
+
+                                                     one
+
+ 
+
+:00416EBC 8BC4                    mov eax, esp
+
+:00416EBE EB1B                    jmp 00416EDB
+
+:00416EC0 8A13                    mov dl, [ebx] ; moves one byte of ebx
+
+                                                  to dl
+
+
+
+:00416EC2 0FBECA                  movsx byte ptr ecx, edx
+
+:00416EC5 F681D17F430002          test byte ptr [ecx+00437FD1], 02
+
+:00416ECC 750A                    jne 00416ED8
+
+:00416ECE B801000000              mov eax, 00000001
+
+:00416ED3 E9BC000000              jmp 00416F94
+
+:00416ED8 8810                    mov [eax], dl
+
+:00416EDA 40                      inc eax
+
+:00416EDB 43                      inc ebx ; increase the offset pointer
+
+                                            in ebx. So our serial number
+
+                                            is analyzed one byte at a 
+
+                                            time. 
+
+:00416EDC 47                      inc edi
+
+:00416EDD 83FF20                  cmp edi, 00000020
+
+:00416EE0 7D05                    jge 00416EE7
+
+:00416EE2 803B00                  cmp byte ptr [ebx], 00 ; Compares one 
+
+                                                           byte in [ebx]
+
+                                                           with 00. If 
+
+                                                           the number has
+
+                                                           more charac-
+
+                                                           ters then
+
+                                                           repeat the
+
+                                                           process
+
+:00416EE5 7590                    jne 00416E77
+
+:00416EE7 C60000                  mov byte ptr [eax], 00
+
+:00416EEA 54                      push esp
+
+:00416EEB E800C8FFFF              call 004136F0       ; What's inside this 
+
+                                                        call?
+
+:00416EF0 59                      pop ecx
+
+:00416EF1 C1E015                  shl eax, 15
+
+:00416EF4 250000E0FF              and eax, FFE00000
+
+:00416EF9 0BE8                    or ebp, eax
+
+:00416EFB 83FE02                  cmp esi, 00000002   ; Does our serial
+
+                                                        number has two
+
+                                                        two dashes?
+
+
+
+:00416EFE 740A                    je 00416F0A	     ; No, then EAX=1 and
+
+                                                       jump to 0:0416F94
+
+                                                       because the number
+
+                                                       is false...
+
+                                                       Yes, the number has                                                                     two dashes and
+
+                                                       Therefore jump to 
+
+                                                       The next step at 
+
+                                                       :00416F0A
+
+
+
+:00416F00 B800000000              mov eax, 00000001 ; Set EAX=1 Unreg!
+
+:00416F05 E98A000000              jmp 00416F94 ; Exit from the protection
+
+                                                 scheme call with unre-
+
+                                                 gistered flag set in
+
+                                                 EAX=1
+
+
+
+    *** Some lines eliminated to save some space ***
+
+ 
+
+:00416F94 81C404010000            add esp, 00000104 ;lands from :00416F05
+
+:00416F9A 5D                      pop ebp           ; pop registers...
+
+:00416F9B 5F                      pop edi
+
+:00416F9C 5E                      pop esi
+
+:00416F9D 5B                      pop ebx
+
+:00416F9E C3                      ret               ; returns with EAX 
+
+                                                      value set to 00 Reg.
+
+                                                      or 01 Unreg.
+
+
+
+This segment compares the serial number I typed, looking for the presence
+
+of dashes. The real serial number must have two dashes or else will be
+
+considered a fake. So ESI will be equally to two when we finish this segment
+
+if your serial number has two dashes. If our serial number has more, less or
+
+no dashes at all then the code moves the value 01 to EAX and returns to the
+
+CALLer. We've seen enough. Lets's crack...
+
+
+
+If  you change the instruction at :00416F00 from:
+
+
+
+:00416F00 mov eax, 00000001 ; to
+
+:00416F00 mov eax, 00000000 ; then the protection scheme will accept 
+
+                              any serial number as valid except if
+
+                              it have two dashes in it.
+
+
+
+	So, load your favorite Hex Editor, and search the following pattern:
+
+
+
+	B801000000E98A000000 ; and change it to
+
+	
+
+	B800000000E98A000000 ; That's it...
+
+
+
+The protection scheme, will analyze the serial number you typed, if it
+
+doesn't contains two dashes, it'll direct the execution to the instruction
+
+:00416F00 trying to move the value 01 to EAX, off course, our patching,
+
+will store 00 in EAX instead, and the program will interpret that the serial
+
+number is valid.
+
+
+
+        This is too easy, lets analyze deeper. +ORC taught us that
+
+there is always a better way. Well, what do you think about this
+
+way:
+
+
+
+	If you look the code in the protection scheme once again, you'll
+
+note that there are several occurrences of the following instruction
+
+sequences:
+
+	
+
+:00416F00 mov eax, 00000001 
+
+:00416F05 jmp 00416F94 
+
+ 
+
+	at :00416EB1, :00416ECE, :00416F00 and so on... What is the meaning
+
+of this? Very easy, this protection scheme uses a stepwise approach. It'll
+
+run the first step to check if the serial number you typed fulfill certain
+
+characteristics, if it does, then it'll go to the next step to check for
+
+further characteristics, if it does not, then the program MOVes EAX,00000001
+
+(EAX=1 means false serial number and therefore program is unregistered) and
+
+returns to the CALLer. In other words, it doesn't matters what the program
+
+is doing, what really matters is, that the protection scheme must return with
+
+EAX=00. Considering this, look the code again, beginning at :00416E60. As
+
+you can see, there is a jump at :00416E75. If we change this jump to direct
+
+the execution to the instruction :00416EB1 and change this instruction
+
+(:00416EB1) from MOV EAX,00000001 to MOV EAX,00000000, then our program will
+
+be cracked, because the execution after pushing register, moves 00 to EAX
+
+(Registered) in :00416EB1 and then jumps to :00416F94 where it pop registers
+
+and return to the CALLer.
+
+
+
+	This approach has several advantages over the first one we analyzed.
+
+
+
+        1. You don't have to put a false serial number in the registration
+
+box in the first time. This patch will immediately eliminate de NAG screen.
+
+2. The user can type any serial number or even no number at all, there is
+
+no restriction about the number of dashes or any other character in the
+
+serial number. 3. Cracking just the NAG screen is not a bad idea but
+
+unfortunately the program will continue to warn its unregistered status when
+
+you open the help/about box. This is because the protection scheme is
+
+checked at list four times as we already mentioned.
+
+
+
+        I hope this brief essay will help you to better understand the
+
+        capabilities of the 'dead listing' approach when it is in good
+
+        experimented hands.
+
+
+
+        In a future essay I'll show you how to turn a serial number
+
+        protection scheme into a key generator itself.
+
+
+
+
+
+						Take care, bye bye...
+
+
+
+
+
+                                           Aesculapius
+
+                                   Aesculapius@cyberjunkie.com
+
+                      http://www.trailerpark.com/phase2/aesculap/index.htm
+
+</PRE>
+
+
+
+<FONT color="green">Aesculapius 1997. All rights reversed.</FONT>
+
+<CENTER><HR ALIGN="CENTER" WIDTH="100%" SIZE="3">
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</I></CENTER>
+
+<BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#84'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#84">homepage</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"> 
+
+<A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#73'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#73">links</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0">
+
+<A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#82'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#82">students' essays</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">
+
+<A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">
+
+<A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">
+
+<A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">
+
+<A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">
+
+<A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">
+
+<A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering legal?</A>
+
+</CENTER>
+
+<CENTER><HR ALIGN="CENTER" WIDTH="100%" SIZE="2"></CENTER>
+
+</BODY>
+
+</HTML>
+
+
+
+
+
+
+

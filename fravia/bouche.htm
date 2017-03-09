@@ -1,0 +1,594 @@
+<html><HEAD>
+
+<TITLE>bouche</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+<CENTER><FONT size="+5">BoundsChecker time limit<BR>
+
+(&quot;Persistent file protection&quot;)</FONT>
+
+<BR>
+
+<H4><I>by Harwi</I>
+
+<BR>(05 July 1997, slightly edited by Fravia)</H4>
+
+<HR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">
+
+Courtesy of Fravia's page of reverse engineering
+
+<BR><BR><I>Well... even Boundschecker uses a pretty simple &quot;Cuckoo's egg&quot; 
+
+protection scheme... actually pretty 
+
+deceiving, thinking how good in assembly coding the Numega boys should be...<BR> 
+
+Thanks Harwi! Discovering this you show  
+
+ us the way... and I notice a very interesting &quot;zen&quot; touch 
+
+in your reverse engineering approach, btw :-)</I></CENTER>
+
+<HR size="2">
+
+<PRE>
+
+<CENTER><FONT size="+3">
+
+How I did IT.<BR>
+
+Reverse engineering<BR>the Protection scheme of BoundsChecker 5<BR>
+
+(Win95 14-day trial version)</FONT><BR>
+
+ By Harwi, 4 July 1997.
+
+</CENTER><BR>
+
+
+
+I would say that the &quot;second&quot; hottest debugger in the windows/dos world 
+
+is probably BoundsChecker (BC) from NuMega. I would also say that it 
+
+directly follows -in importance- after our beloved SoftIce, from that 
+
+same holy company.
+
+From the moment I first saw BC version 4 on the Visual C/C++ version 4 CD  
+
+(VC4), about a year ago, I loved it. 
+
+For the people who don't know about it: BoundsChecker is a debugger for 
+
+application developers, i.e. people writing programs using the 'normal' 
+
+application programming interface (API) for Win95 or NT or whatever, 
+
+depending on what for a platform they are targeting. I would draw a line 
+
+between these programmers and those writing drivers (like VXD's in windows) 
+
+and stuff like that, where there is more low-level (assembler) programming 
+
+involved. 
+
+There are versions of BC for Win95, NT and Dos, I think, maybe more.
+
+(Bug: A Bug is -in computer language- an error or condition that crashes 
+
+or at least prevents a program from running as intended. Most bugs are due 
+
+to logical mistakes in the sequence of execution of statements. A debugger 
+
+is a program that lets the programmer monitor the code being executed and 
+
+gives him a chance to understand what is happening and what is going wrong.)
+
+
+
+Conventional Debuggers, like theone you get with most compilers are nice 
+
+tools indeed, they let you step through the code, change variables put 
+
+breakpoints here and there and a lot more. 
+
+The annoying thing about them is that you have to have some sort of idea 
+
+or intuition) where your error is located, so that you can breakpoint 
+
+there and understand what&#146;s going wrong.
+
+BC on the other hand does this work automatically, because it hooks each 
+
+and every API call, pointer read and pointer write and so on. So you 
+
+don't put any breakpoints anymore, you just run your program inside 
+
+BC and BC will break whenever your program executes any error, and 
+
+display the source code, together with relevant explanations. 
+
+The responsable for theis brilliant tool is -as far as I know- Matt 
+
+Pietrek, who was (or still is?) project leader for BC at NuMega (if 
+
+you are reverse engineering anything at all you MUST have read his 
+
+books :-) 
+
+I must state here that I believe BoundsChecker absolutely worth its 
+
+price, and should I ever use it for commercial purposes, I will 
+
+purchase a copy!
+
+
+
+Sadly enough the first demo I had, on the VC4-CD, was limited to 
+
+debugging an application called Bugbench, that made the ugliest 
+
+programming errors -that kind of errors that everyone who has 
+
+ever done application development loves to find in her/his source 
+
+code.
+
+Too bad that I didn't know how to crack it at that time... I could 
+
+not, because I hadn't yet learned enough about cracking.
+
+
+
+When I came across Fravia's Page, about a month ago, I read +ORC's 
+
+tutorial and a lot of the students' essays, and after reading, I 
+
+tried to crack BoundsChecker and guess what: I got it. 
+
+That was a great success for me :-) 
+
+
+
+So, here comes the interesting part...
+
+<BR>
+
+<FONT size="+4">How I did IT.</FONT> 
+
+
+
+First I downloaded bc50_v(1).exe from <A href="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#1'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#1">http://www.numega.com</A>.  
+
+<FONT color="purple">Download quickly!</FONT> I don't know how long they'll keep it there after 
+
+the publishing of this essay... (you'll be able to fetch it from other 
+
++crackers though :-)
+
+
+
+Being all excited about this new &quot;time limited&quot; version, I installed it 
+
+at once, without saving important system stuff, like the registry, and 
+
+the various windows directory files... 
+
+A mistake and a pity, because later I had to fetch another computer 
+
+and re-install the same software again, in order to see which registry 
+
+entries had been made and HAD NOT been removed by the uninstaller, a 
+
+fact evident, since the time limit expiration did hold after 
+
+uninstalling.
+
+
+
+Unfortunately I made a second mistake, assuming that BoundsChecker 
+
+saved the date information inside the registry. This is common with 
+
+many programs, NOT with BoundsChecker! 
+
+Therefore I didn&#146;t backup the VERY IMPORTANT (and unfortunately huge) 
+
+file list of both the <FONT color="purple">windows</FONT> directory 
+
+and  the <FONT color="purple">windows\system</FONT> directory. 
+
+Too bad - comparing the registry backup with the registry after the 
+
+install didn't give me any clue... no suspicious looking entry at 
+
+all. 
+
+Not very smart! I had wasted the two machines I had available for 
+
+my installations and still wasn&#146;t able to just reinstall BC in order 
+
+to use it after the trial period expires. That means only one thing: 
+
+the date information must be hidden somewhere in ANOTHER file 
+
+installed on my machine.
+
+
+
+By simply uninstalling BC you will not reset your trial period anew. 
+
+I found that you can play around with the system date, though, and 
+
+in this way you'll be able to use BC as long as you want. 
+
+But that&#146;s not what I like, and of course for such kidding you have 
+
+to remember the original install date, in order to be able to set 
+
+the system date within the allowed 14 days, which is also neither 
+
+really &quot;elegant&quot; nor nice.
+
+I had to crack this target, I felt it :-)
+
+
+
+What did I do? 
+
+Using SoftIce I put a breakpoint on GetSystemTime API function.  
+
+Then I started BC and ... nothing! BC is not calling GetSystemTime, 
+
+how is that possible? Are they using some fancy stuff to get the 
+
+date? I was puzzled. 
+
+I load Bugbench and press the Run button, the Trial Dialog pops up. 
+
+Still no call to GetSystemTime, I&#146;m missing something here.
+
+I went and got a coffee (I&#146;m sorry Fravia! there were no cocktails 
+
+around) and thinked about it. 
+
+Lets try DialogBoxParamA, somewhere the target must open that 
+
+dialogbox! 
+
+I pressed Run again.
+
+There we are! SoftIce comes up, I type &#145;stack&#146;, but no callstack 
+
+is displayed, I don&#146;t know what this means, maybe someone can 
+
+explain it (?). 
+
+
+
+
+
+
+
+I step through the system code to the next return.
+
+That&#146;s it I am now in TLOCK32.DLL, before I didn&#146;t even know that 
+
+TLOCK32 was used by BC because BC.EXE does not have an import 
+
+section, so you can&#146;t see what DLL&#146;s are used. The DLL&#146;s in the 
+
+BC directory don&#146;t say what they import either. To see the static 
+
+imports of .exe and ...dll files, you can use the &#147;Quick View&#148; 
+
+that comes with windows. 
+
+If disassembled BC.EXE still does not have any explicit reference 
+
+to TLOCK32.DLL, so it is either dynamically loaded or loaded by 
+
+some other DLL (BTW in the disassembly one can see a lot more 
+
+imports then the &#147;Quick view&#148; is displaying).
+
+
+
+Where is TLOCK32.DLL&#133; search, aha! It&#146;s in windows\system, possibly 
+
+a file that is not removed by the uninstaller.
+
+But since I&#146;m here let&#146;s see what the dialog does. I put a breakpoint 
+
+one line in front of the call to DialogBoxParamA (and GO); back 
+
+in windows I close the dialog with Cancel and open it again with 
+
+Run. In SoftIce again: some pushes before the call to DialogBoxParamA, 
+
+there is the address of the callback for this dialog pushed, I put 
+
+a breakpoint on the callback and remove the one inside DialogBoxParamA. 
+
+Go! And back in SoftIce inside the dialog callback function. BC must 
+
+now initialize the controls to display how far in the trial we are. 
+
+I step through the code and find some GetDlgItem and SetWindowTextA 
+
+calls and then a suspicios looking section where a memory location 
+
+is compared to 1,2 and 4. That looks like a flag! 
+
+The corresponding jumps go to quite large blocks of code inside the 
+
+callback, maybe I am lucky and they do something to the state of the 
+
+application here. I remove all breakpoints and set one right in 
+
+front of that compare section. GO! Back in windows (after closing 
+
+the dialog with Cancel) I advance my system date by two days. Press 
+
+Run... SoftIce pops up&#133; the flag (loaded to EAX) holds a 2, GO! &#147;12 
+
+Days left&#148; in the blue bar and the message inside the box saying &#147;12 
+
+Days left&#133;&#148;. Cancel and again Run&#133; SoftIce, EAX is still 2, I change 
+
+to 1. GO!
+
+GOTCHA! 14 Days left! Beauty!
+
+Cancel, and advance the date by one year, Run ...  back in SoftIce 
+
+the flag (EAX) is 4, GO! &#147;Trial expired&#148;, no Blue anymore, Cancel! 
+
+And Run&#133; SoftIce: The Flag is still 4, change it to 1, GO! But now, 
+
+still &#147;Trial expired&#148; what&#146;s that? I thought I had it, Cancel and 
+
+Run ... now the flag is 2, what&#146;s that? GO! Ahhh! Blue! and &#147;14 Days 
+
+left&#148;. And now press OK, the Bugbench starts and I try some Errors, 
+
+it works BC displays them. So it is only a matter of the initialization 
+
+of the dialog controls. When the trial is over you can set the flag 
+
+to 1 and the trial will begin anew. All you must do is close the dialog 
+
+and reopen it again; you will get a new trial period.
+
+
+
+Now I disassemble TLOCK32 and here I find the answer why I didn&#146;t 
+
+catch the GetSystemTime calls, Simple! GetSystemTime is not called 
+
+- they call GetLocalTime. Something to remember.
+
+
+
+So what do I do with that flag? 
+
+I change from:
+
+	:100029EA 7417	je 10002A03    // New trial
+
+crk	:100029EA 7517	jne 10002A03
+
+
+
+Start BC again, load Bugbench and press Run &#133; and &#133; and &#133; and... 
+
+NOTHING! No dialog no starting Bugbench, nothing!
+
+Why that? Maybe a there is a checksum? I look again at the 
+
+TLOCK32.ASM file. 
+
+Then I change:
+
+	:100029EC 83F802	cmp eax, 00000002     // Whithin trial 
+
+crk	:100029EC 83F801	cmp eax, 00000001 
+
+
+
+
+
+Start BC, load Bugbench and press Run, here we go, the dialog 
+
+pops up and after OK Bugbench starts.
+
+I play around with some dates and it works fine.
+
+Here is the section where the flag is compared completely.
+
+     :100029E2 A198FA0010    mov eax, [1000FA98] // This seams to be a sort of flag 
+
+     :100029E7 83F801        cmp eax, 00000001   // new trial
+
+     :100029EA 7417	     je 10002A03
+
+crk  :100029EA 7517          jne 10002A03      	 // checksum is 1+
+
+     :100029EC 83F802        cmp eax, 00000002   // Whithin trial 
+
+crk  :100029EC 83F801        cmp eax, 00000001     
+
+     :100029EF 0F848F000000  je 10002A84         //also  for checksum -1	
+
+     :100029F5 83F804        cmp eax, 00000004   // trial is over
+
+     :100029F8 0F8466010000  je 10002B64        
+
+     :100029FE E981010000    jmp 10002B84  
+
+
+
+
+
+I think this approach has its own beauty because it displays the 
+
+protection dialog and thereby lets you remember the great victory 
+
+of the past. But when you start your compiler, the dialog is also 
+
+displayed and since we know now where BC stores its state, lets see 
+
+if we cannot get ride of that dialog completely. 
+
+The questions that come to mind are (at least to me): 
+
+What about the flag being equal 3? What does the flag value 3 
+
+tell BC about its state? 
+
+Some playing with the flag (and SoftIce) soon gives the friendly 
+
+answer: 
+
+YES! 3 means, BC has been purchased. Some more playing with memory 
+
+read/write breakpoints gives the location where it is easy to 
+
+change a byte and a second to make the checksum happy. Here is 
+
+what I changed so that there is no dialog popping up anymore 
+
+(still inside TLOCK32.DLL):
+
+
+
+	&#133;
+
+	:100011F9 DFE0	fbld tbyte ptr eax
+
+	:100011FB F6C401	test ah, 01
+
+
+
+/// and here I crack for no dialog
+
+	:100011FE 752e	jne 1000122e
+
+crk	:100011FE 7500	jne 10001200 // checksum difference is &#150;2e
+
+
+
+	:10001200 BE04000000	mov esi, 00000004
+
+crk	:10001200 BE03000000	mov esi, 00000003 // checksum difference is &#150;2f
+
+
+
+	:10001205 EB27	jmp 1000122E
+
+	:10001207 BE04000000	mov esi, 00000004
+
+crk	:10001207 BE052e0000	mov esi, 00002e05 // for checksum only , back to 0
+
+
+
+	:1000120C E8CF090000	call 10001BE0
+
+	:10001211 6A00	push 00000000
+
+	:10001213 E8F8010000	call 10001410
+
+
+
+Of course there are a lot more ways to crack this, mine is just one 
+
+of them. I must also say that I have been extremely lucky to find 
+
+the code (with the flag-compare) inside the dialogs callback fairly 
+
+soon. If I hadn&#146;t, I might not have gone back to the callback. 
+
+But, to speak with +ORC, sometimes you need some Zen.
+
+
+
+Someone may ask, where the installation date is stored... I must 
+
+admit that I still don&#146;t know that, but I also don&#146;t care much, 
+
+because I&#146;m not going to break into my locked main door when my 
+
+bathroom window is open.
+
+
+
+Harwi, 05 July 1997
+
+
+
+</PRE>
+
+
+
+
+
+<BR>
+
+<HR ALIGN="CENTER" WIDTH="100%" SIZE="3">
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</I></CENTER>
+
+<BR><CENTER>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#84'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#84"> homepage</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"> 
+
+<A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#73'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#73"> links</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0">
+
+<A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm"> anonymity</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm"> +ORC</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#82'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#82"> students' essays</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm"> tools</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm"> cocktails</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm"> search_forms</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm"> mailFraVia</A></CENTER><BR>
+
+
+
+<CENTER>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm"> Is reverse engineering legal?</A></CENTER>
+
+<CENTER><HR ALIGN="CENTER" WIDTH="100%" SIZE="2"></CENTER>
+
+
+
+</BODY>
+
+</HTML>
+
+
+
+
+
+
+

@@ -1,0 +1,701 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>daq1</TITLE>
+
+</HEAD>
+
+
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+<A NAME="anchortop"></A>
+
+<!-- HTML code by Fravia, Yeah, go ahead, steal my code, sucker -->
+
+
+
+<H2><CENTER>How to &quot;neuter&quot; WebWhacker V2.0<BR><BR>
+
+   by +daQ, May 1997</H2><BR>
+
+With an addition by KampRET, 29 November 1997<BR>
+
+<HR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">
+
+<I>Courtesy of fravia's page of reverse engineering</I>
+
+</CENTER>
+
+<HR size="3">
+
+<PRE>
+
+How to Neuter WebWhacker V2.0 by +daQ
+
+
+
+Difficulty:    Beginner
+
+Time to Fish:  1-3 hours
+
+Tools:         W32dasm, hex editor
+
+
+
+Webwhacker is a great tool; go to your favorite website, and run this lil app,
+
+and you can download to your heart's content everything on that site.  BUT the
+
+evaluation copy has a rather annoying limit;  Only 2 levels deep can you delve
+
+into your target site.  But there is no limit how many sub levels you can
+
+re-whack your site (the trial is limited to 20 sites you may add however)
+
+
+
+Before we begin, let's take a look at how this program works.   The dead-listing
+
+approach works best here (from experience... when I first tried to fix this
+
+program to remove the level limitation, I tried Soft-Ice 3.0.  Using various
+
+bpx's i was able to see what was getting scanned in right before the the error 
+
+message, &quot;You have exceeded&quot;...but there were too many things going on). 
+
+
+
+Back to the dead listing.
+
+Since we already knew from running our app that the error message is &quot;You have
+
+exceeded the maximum number of adds for the evaluation version&quot;, lets take a
+
+look at the string references:
+
+
+
+code_segment(1);
+
+* Reference To: MFC40.MFC40:NoName0098, Ord:15EAh
+
+                                  |
+
+:0041DAF1 E8D0B80400              	   Call 004693C6
+
+:0041DAF6 8B45F0                  	   mov eax, [ebp-10]
+
+:0041DAF9 C7808C00000000000000    	   mov dword ptr [ebx+0000008C], 0
+
+:0041DB03 83B89C00000002          	   cmp dword ptr [eax+0000009C], 2  ; this #2 should
+
+                                                                      ; look familiar
+
+:0041DB0A 7E1B                    	   jle 0041DB27
+
+:0041DB0C 6AFF                    	   push FFFFFFFF
+
+:0041DB0E 6A00                       push 00000000
+
+
+
+*  Reference to String Resource ID=00139: &quot;The maximum number of levels
+
+has been exceeded for the evalu&quot;
+
+                                  |
+
+:0041DB10 688B000000              	push 0000008B
+
+
+
+* Reference To: MFC40.MFC40:NoName0124, Ord:0424h
+
+
+
+                                  |
+
+:0041DB15 E822B80400            	Call 0046933C
+
+:0041DB1A 8B45F0                  	mov eax, [ebp-10]
+
+:0041DB1D C7809C00000002000000    	mov dword ptr [ebx+0000009C], 2 ;odd...what
+
+                              ; happens when we enter a number greater than 2?
+
+<HR>
+
+code_segment(2)
+
+:00408E5F 8BB5F0FEFFFF            	mov esi, [ebp+FFFFFEF0]
+
+:00408E65 83FE02                  cmp esi, 2 ; Hey, does #2 look familiar at all?
+
+:00408E68 7E13                    	jle 00408E7D
+
+:00408E6A 6AFF                   	push FFFFFFFF
+
+:00408E6C BE02000000       		mov esi, 2 ;what happens when we put
+
+                                           ;more than 2 in our window?                                                                                                                                                                            ;It becomes 2!!
+
+:00408E71 6A00                    	push 0
+
+:00408E73 688B000000      		push 8B ;&quot;The maximum number of levels&quot;
+
+
+
+* Reference To: MFC40.MFC40:NoName0124, Ord:0424h
+
+                              |
+
+:00408E78 E8BF040600     		Call 0046933C
+
+:00408E7D 8BBDF4FEFFFF            	mov edi, [ebp+FFFFFEF4]
+
+:00408E83 8D4DE8                  	lea ecx, [ebp-18]
+
+:00408E86 E8A58AFFFF              	call 00401930
+
+:00408E8B 897064                  	mov [eax+64], esi
+
+:00408E8E 83FEFF                  	cmp esi, FFFFFFFF
+
+
+
+code_segment(3);
+
+* Reference To: MFC40.MFC40:NoName0410, Ord:0897h
+
+:004091AC E8E5FE0500              	Call 00469096     ;read our values in
+
+:004091B1 83F801                  	cmp eax, 00000001 ;compare eax to 1
+
+:004091B4 0F85A8000000            	jne 00409262      ; jump if equal
+
+:004091BA 8B55C4                  	mov edx, [ebp-3C] ; (min whack level u
+
+:004091BD 8955E0                  	mov [ebp-20], edx ; can enter)
+
+:004091C0 83FA02                  	cmp edx, 00000002 ;compare edx to 2 (our
+
+                                                    ;maximum levels)
+
+:004091C3 7E15                    	jle 004091DA      ;jump if less than 2
+
+:004091C5 6AFF                    	push FFFFFFFF
+
+:004091C7 6A00                    	push 00000000
+
+:004091C9 688B000000      		push 8B ;&quot;The maximum number of levels&quot;
+
+
+
+* Reference To: MFC40.MFC40:NoName0124, Ord:0424h
+
+                                  |
+
+:004091CE E869010600              	Call 0046933C
+
+:004091D3 C745E002000000          	mov [ebp-20], 00000002
+
+
+
+Let's start with the most obvious:  In code_segment(3), we have
+
+cmp edx, 00000002
+
+why would we wish to leave this code alone? Let's change it to 9, so it reads
+
+:004091C0 83FA09                  	cmp edx, 00000009
+
+Write our file to disk (search 8B55C483FA027E15 in hexpert and change to
+
+8B55C483FA097E15)
+
+Run our app.  Hell-Yeah!  One of our windows now let's us enter 9 levels as the
+
+max for whacking. But the others dont :-(
+
+
+
+*DUHH* remember there where 3 code segments?  We only changed one of them, so
+
+Let's do the others too now:
+
+
+
+in code_segment(2)
+
+:00408E65 83FE02                cmp esi, 00000002
+
+
+
+*ponder*.  Change that puppy to 9 as well
+
+Side note:  When looking for codes, I use Hexpert 3.0.  Searching for about
+
+10-12 hex will usually locate the code you need on the first time.  *ALWAYS*
+
+search again, however, to make sure you are modifying the code you need to.
+
+You'll waste a lot of time modifying the code twice.  Sometimes in Soft-Ice 
+
+You'll come across codes, write them down, and modify them later.  In some
+
+programs, these are duplicated in the file and all have to be changed.  So 
+
+what's the meaning of this?  Test, Test, and Test... :)
+
+
+
+Now, Let's work on the code_segment(1).  It's the same principle as all the 
+
+others: load the value you want to whack, compare if It's greater than 2, 
+
+give us our not-so-polite error message.
+
+
+
+:0041DB03 83B89C00000002  	cmp dword ptr [eax+0000009C], 2  ;this should look
+
+                                                   ;familiar, change it to 09.
+
+
+
+Now, if you are greedy like I was the first time, I change all my 02ms to AAms. 
+
+I figured, hell, 170 levels is all Imll ever need.  And if a sitems got more
+
+than 170 levels, it had to be written with Microsoft Front page to be that
+
+bloated.
+
+
+
+Ahi! Remember +ORC's lesson about *NEVER* maxing out values?  Well, he was 
+
+right, of course... take this case: AA won't work because the maximum you may 
+
+enter in our target is 100!  
+
+So by throwing a number in that was greater than 100, I screwed myself over 
+
+(and spent countless hours trying to figure where I went wrong). Always 
+
+heed +ORc's teachings! 
+
+And for our target use instead, after you have verified your re-coding, 
+
+&quot;64&quot; hex (100 dec).
+
+
+
+Now in all these segments you can see a MOV that places the 02 into the register
+
+after the error message has been given.  To make a clean crack, change those
+
+values as well (just in case for some odd reason it gets that far, we want it to
+
+max itself out cuz we don't like stupid protections).
+
+
+
+Wow.  We've come a long way.  WebWhacker is contentedly downloading site for us
+
+now, everybody is happy ..except, what's this?  Another limit?????
+
+
+
+Side note:  While I was testing, after everything is done, I reached my maximum
+
+number of adds (20 in this case) right after I had finished my last recursive
+
+test.
+
+
+
+Ok, At this point I'm a little shaky, cuz I got it working and I'm not sure
+
+whether or not the protection checks to see if number_of_adds==20 or if
+
+number_of_adds&gt;=20.  In the first case, if the number of adds is 21, it'll be
+
+false and the proggy will run.  In the second, the code will always reject if
+
+greater than 20, and will have to be modified with a JMP instead of JZ or JNZ. 
+
+
+
+And look! There are two &quot;normal&quot; code_snippets like this, and a &quot;weird&quot; one.
+
+
+
+* Reference To: ADVAPI32.RegQueryValueA, Ord:00E0h
+
+                                  |
+
+:0040F79E FF1574DB4800            	Call dword ptr [0048DB74]
+
+:0040F7A4 85C0                    	test eax, eax
+
+:0040F7A6 7513                    	jne 0040F7BB
+
+:0040F7A8 8D44241C                	lea eax, [esp + 1C]
+
+:0040F7AC 50                      	push eax
+
+
+
+You'll have to trust me here; I used a combinaton of &quot;Soft-Ice and luck&quot; and hit 
+
+this location (I knew where to look by tracing (See below my original thoughts on 
+
+how to beat the add thing). Change jne 0040F7BB to jmp 0040F7BB (75 to EB) and 
+
+it'll work (at least, I think so..I'm sorry, sloppy cracking here. I was totally
+
+caught off guard when it hit me with the max adds, so I hadn't even prepared a
+
+registry tracking program.  My apologies :)
+
+
+
+*New thought on this code section*
+
+Well, I hated myself for being so sloppy and unprepared. After downloading and
+
+running RegMon.exe (GET IT!!!!! It's the BEST TOOL for monitoring the overbloated
+
+winRegistry), I tracked the key down to HKCR\FFGEVLDOC\136\Wound
+
+In this key dwells the number of adds you have made. By editing the jmp like I
+
+previously described (jne 0040f7BB to jmp 0040F7BB, the program works like this:
+
+from regmon's output:
+
+
+
+54	Webwhack	QueryValue	HKCR\FFGEVLDOC\136\Wound	SUCCESS	&quot;10&quot;	
+
+55	Webwhack	SetValue	HKCR\FFGEVLDOC\136\Wound	SUCCESS	&quot;0&quot;
+
+
+
+*giggle* WebWhacker now politely reset's the number of adds for us every time. :)
+
+Don't you like programs protected by 4 bytes? :)
+
+
+
+More entry-Level tutorials will follow.  Next up on the list,
+
+
+
+Pioneer Pro from Caligari (http://www.caligari.com)
+
+Photoshop Cracking! (http://www.jpg.com)
+
+
+
+Download the Pro version of Pioneer (only the Best!), this one is a 
+
+ONE BYTE CRACK!!!!!  1000's of dollars of software protected by 1 byte.
+
+Seems a little stupid, eh?
+
+
+
+Download your PegasysPhilter today and start working...this one is taking some
+
+time for me :( try running adobe4.0 and a few other apps at the same time...
+
+damn windows...
+
+
+
+May 1997, +daQ
+
+<HR>
+
+My original thoughts on how to crack the Add Limitation sections:
+
+
+
+code_segment(4);
+
+
+
+* Referenced by a  Jump at Address:00408D51(C)
+
+
+
+:00408F6F 6AFF                    	push FFFFFFFF
+
+:00408F71 6A10                    	push 00000010
+
+:00408F73 688B000000      		push 8B ;&quot;The maximum number of levels&quot;
+
+
+
+* Reference To: MFC40.MFC40:NoName0124, Ord:0424h
+
+                                  |
+
+:00408F78 E8BF030600              	Call 0046933C
+
+:00408F7D EBB5                    	jmp 00408F34
+
+:00408F7F 8B4DF0                  	mov ecx, [ebp-10]
+
+:00408F82 E9F9BE0100              	jmp 00424E80
+
+:00408F87 B848814700              	mov eax, 00478148
+
+
+
+Interesting.  Now, from the code_segment(4) we see that the error message is
+
+jumped to from  00406C6A(C) (the ( C ) meaning a Conditional Jump..read:
+
+something is checking).  So lets look at the code around 00406C6A:
+
+
+
+code_segment(5);
+
+*  StringData Ref from Data Obj -&gt;&quot;Grab URL&quot;
+
+                                  |
+
+:00406C2C 6830664800              	push 00486630
+
+:00406C31 8D8D04FCFFFF            lea ecx, [ebp+FFFFFC04]
+
+:00406C37 C645FC02                	mov [ebp-04], 02
+
+:00406C3B C645FC01                	mov [ebp-04], 01
+
+:00406C3F E8CC080100              	call 00417510
+
+:00406C44 C645FC03                	mov [ebp-04], 03
+
+:00406C48 8D8D04FCFFFF            lea ecx, [ebp+FFFFFC04]
+
+:00406C4E E8AD0A0100              	call 00417700
+
+:00406C53 3D25300000              	cmp eax, 00003025
+
+:00406C58 0F85C1010000            	jne 00406E1F
+
+:00406C5E B9E0BD4800              	mov ecx, 0048BDE0
+
+:00406C63 E8888C0000              	call 0040F8F0     ;Something in here must set EAX
+
+                                                    ;to trigger the jump.
+
+:00406C68 85C0                    	test eax, eax     ;This must be what triggered
+
+                                                    ;our jump.
+
+:00406C6A 0F84FD010000            je 00406E6D       ;This is where our jump
+
+                                                    ;originated.
+
+:00406C70 B9E0BD4800              	mov ecx, 0048BDE0
+
+
+
+
+
+Ok, now Let's take a look at the code around 0040F8F0.  Something in here must
+
+trigger our jump.
+
+
+
+* Referenced by a CALL at Addresses:00406C63, :00408D4A, :004222A8, :00422378  
+
+|
+
+:0040F8F0 E8EBFFFFFF              	call 0040F8E0 ;another call..this is annoying
+
+:0040F8F5 85C0                    	test eax, eax
+
+:0040F8F7 B801000000              	mov eax, 00000001 ;DialogID_0001
+
+:0040F8FC 7F02                    	jg 0040F900
+
+:0040F8FE 33C0                    	xor eax, eax
+
+:0040F900 C3                      	ret ;Cond_jump from 0040F8FC(C)
+
+
+
+Allright, lets track down that last call:
+
+
+
+:0040F8E0 8B4114                  	mov eax, [ecx+14] ;call from :0040F8F0  
+
+:0040F8E3 2B4110                  sub eax, [ecx+10]
+
+:0040F8E6 C3                      	ret
+
+
+
+Thats it?????  Ok. Remeber +ORC's lessons about keeping it simple?  Here we
+
+have delved, what, 4 levels into calls?  Wouldn't it have been simpler to trace
+
+back to the very first one, the one we know triggers the jump, and *fix* it so
+
+it doesn't care whether or not EAX is true or false?  Go back and check over
+
+that segment of code:
+
+
+
+:00406C63 E8888C0000              	call 0040F8F0 ;Something in here must set EAX
+
+:00406C68 85C0                    	test eax, eax ;This is trigger
+
+:00406C6A 0F84FD010000              je 00406E6D ; jump good boy
+
+
+
+originated.
+
+
+
+Ok.  Why not change the third call so that 01 is always loaded, and screw the
+
+rest of the code.  This might work (why don't some of you test it out there?)
+
+Like I said, I don't know if this works or not.  I bypassed it once, and it
+
+works straight now, so I think it is probably only checking for ==20 ..which is
+
+bad coding (who ever told you to use == inside any &quot;if&quot; statement was a bad 
+
+teacher).
+
+
+
+Final comments on what to change:  Here it is straight, the complete crack for
+
+level limits:
+
+
+
+code_segment(1);
+
+
+
+* Reference To: MFC40.MFC40:NoName0098, Ord:15EAh
+
+                                  |
+
+:0041DAF1 E8D0B80400             	Call 004693C6
+
+:0041DAF6 8B45F0                  	mov eax, [ebp-10]
+
+:0041DAF9 C7808C00000000000000    mov dword ptr [ebx+0000008C], 0
+
+:0041DB03 83B89C00000064          cmp dword ptr [eax+0000009C], 64 ;<CHANGED :0041DB0A 7E1B jle 0041DB27 :0041DB0C 6AFF push FFFFFFFF :0041DB0E 6A00 push 00000000 :0041DB10 688B000000 push 8B ;"The maximum number of levels" * Reference To: MFC40.MFC40:NoName0124, Ord:0424h | :0041DB15 E822B80400 Call 0046933C :0041DB1A 8B45F0 mov eax, [ebp-10] :0041DB1D C7809C00000064000000 mov dword ptr [ebx+0000009C], 64 ;<--changed code_segment(2) * Referenced by a Jump at Address:00408E46(C) | :00408E5F 8BB5F0FEFFFF mov esi, [ebp+FFFFFEF0] * Referenced by a Jump at Address:00408E4D(U) | :00408E65 83FE64 cmp esi, 00000064 ;<--changed :00408E68 7E13 jle 00408E7D :00408E6A 6AFF push FFFFFFFF :00408E6C BE64000000 mov esi, 00000064 ;<--changed :00408E71 6A00 push 00000000 :00408E73 688B000000 push 8B ;"The maximum number of levels" * Reference To: MFC40.MFC40:NoName0124, Ord:0424h | :00408E78 E8BF040600 Call 0046933C code_segment(3); * Reference To: MFC40.MFC40:NoName0410, Ord:0897h | :004091AC E8E5FE0500 Call 00469096 :004091B1 83F801 cmp eax, 00000001 :004091B4 0F85A8000000 jne 00409262 :004091BA 8B55C4 mov edx, [ebp-3C] :004091BD 8955E0 mov [ebp-20], edx :004091C0 83FA64 cmp edx, 00000064 ;<--changed :004091C3 7E15 jle 004091DA :004091C5 6AFF push FFFFFFFF :004091C7 6A00 push 00000000 :004091C9 688B000000 push 8B ;"The maximum number of levels" * Reference To: MFC40.MFC40:NoName0124, Ord:0424h | :004091CE E869010600 Call 0046933C :004091D3 C745E064000000 mov [ebp-20], 00000064 ;<--changed Thats it! Check out Forefront's site...now they have WebWacker 3.0. Could this be background "for" tppabs="http://www.anticrack.de/fravia/for" the latest version? Stay tuned. +daQ, May 1997 </pre>
+
+<HR><FONT size="+2">
+
+<I>And here a small addition by KampRET, received on 29 Nov 1997</I><HR>
+
+</FONT><PRE>
+
+========================================
+
+ONE BYTE with WEBWHACKER v3.0 (3.0.0.27)
+
+
+
+After read +daQ essay about How to Neuter WebWhacker v2.0, i d/l
+
+WebWhacker v3.0, 
+
+install it, run  ... etc.
+
+
+
+In the Properties window, Whack Depth Levels captured my attention, 
+
+why I can't choosing the &quot;All Levels&quot; Depth option (grayed condition)?
+
+
+
+Hmm.. interesting me
+
+Run WDasm for file WW.EXE (2055168 bytes - CRC32: 392BB884)
+
+Find reference to Dialog: &quot;&amp;All Levels&quot;
+
+
+
+
+
+---1-----------------------------------------------
+
+:00447F7B B9C0884F00              mov ecx, 004F88C0
+
+:00447F80 E8EEC4FEFF              call 00434473		;<2 :00447F85 85C0 test eax, eax :00447F87 0F841A000000 je 00447FA7 * Possible Reference to Dialog: DialogID_007B, CONTROL_ID:03FF, "&All Levels" | :00447F8D 68FF030000 push 000003FF :00447F92 8B4DF0 mov ecx, dword ptr [ebp-10] * Reference To: MFC42.MFC42:NoName0395, Ord:0C14h | :00447F95 E800930600 Call 004B129A :00447F9A 8945F8 mov dword ptr [ebp-08], eax :00447F9D 6A00 push 00000000 :00447F9F 8B4DF8 mov ecx, dword ptr [ebp-08] * Reference To: MFC42.MFC42:NoName0393, Ord:0A52h | :00447FA2 E8FF920600 Call 004B12A6 * Referenced by a Jump at Address:00447F87(C) | * Possible Reference to Dialog: DialogID_0001 | :00447FA7 B801000000 mov eax, 00000001 :00447FAC E900000000 jmp 00447FB1 2----------------------------------------------- :00434473 55 push ebp :00434474 8BEC mov ebp, esp :00434476 83EC04 sub esp, 00000004 :00434479 53 push ebx :0043447A 56 push esi :0043447B 57 push edi :0043447C 894DFC mov dword ptr [ebp-04], ecx :0043447F 8B45FC mov eax, dword ptr [ebp-04] :00434482 8B88E0000000 mov ecx, dword ptr [eax+000000E0] :00434488 E8ACC1FEFF call 00420639 ;<---3 :0043448D E900000000 jmp 00434492 3----------------------------------------------- :00420639 55 push ebp :0042063A 8BEC mov ebp, esp :0042063C 83EC04 sub esp, 00000004 :0042063F 53 push ebx :00420640 56 push esi :00420641 57 push edi :00420642 894DFC mov dword ptr [ebp-04], ecx :00420645 8B4DFC mov ecx, dword ptr [ebp-04] :00420648 E87EF7FFFF call 0041FDCB :0042064D A808 test al, 08 :0042064F 0F840A000000 je 0042065F * Possible Reference to Dialog: DialogID_0001 | :00420655 B801000000 mov eax, 00000001 ;<---Kena lo! (Gotcha!) :0042065A E907000000 jmp 00420666 ; Offset 1FA55 * Referenced by a Jump at Address: |:0042064F(C) | :0042065F 33C0 xor eax, eax :00420661 E900000000 jmp 00420666 * Referenced by a Jump at Addresses:0042065A(U), :00420661(U) | :00420666 5F pop edi :00420667 5E pop esi :00420668 5B pop ebx :00420669 C9 leave :0042066A C3 ret I don't know why my feeling said to change the byte at address: :) :00420655 B801000000 mov eax, 00000001 to B800000000 mov eax, 00000000 Save the changed...... run it.... Hey!!... there's no nag appear (the registration dialog), Hey!!... I can choose "All Levels" Depth or "Levels" to 9999 without a warning (max number...exceeded... :) KampRET.="=======&lt;/pre">
+
+<BR>
+
+<HR ALIGN="CENTER" WIDTH="100%" SIZE="3">
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</I></CENTER>
+
+<BR><CENTER>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html"> homepage</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"> 
+
+<A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm"> links</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0">
+
+<A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm"> anonymity</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm"> +ORC</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm"> students' essays</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm"> tools</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm"> cocktails</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm"> search_forms</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm"> mailFraVia</A><BR>
+
+
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm"> Is reverse engineering illegal?</A></CENTER>
+
+<CENTER><HR ALIGN="CENTER" WIDTH="100%" SIZE="2"></CENTER>
+
+</BODY>
+
+</HTML>
+
+      

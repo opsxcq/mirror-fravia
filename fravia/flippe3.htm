@@ -1,0 +1,674 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>flippe3</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+<CENTER><FONT size="+3">Cracking SendMail 2.0 for Windows NT</FONT>
+
+<BR>(Obvious Name Protections)<BR>  <BR>
+
+<H4>by Flipper (upg)<BR>
+
+<A href="project7.htm" tppabs="http://www.anticrack.de/fravia/project7.htm">
+
+<IMG SRC="stupid.gif" tppabs="http://www.anticrack.de/fravia/stupid.gif" ALT="stupid" ALIGN="BOTTOM" WIDTH="114" HEIGHT="43" BORDER="0" VSPACE="0" HSPACE="0"></A>
+
+<BR>
+
+  <BR>
+
+(24 September 1997)</H4>
+
+<HR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">Courtesy of fravia's page 
+
+of reverse engineering<BR><BR>
+
+<I>Well,  here is Flipper's email:</I></CENTER><PRE>
+
+Fravia,
+
+
+
+  I have written another essay, but I hope you can use it under the 1997 HCU
+
+training exercises. It has a date check, in a DLL file which uses obvious to
+
+spot names like 'ValidateTrial', etc. Once again, I only used Hiew and wdasm
+
+8.5 -- no softice. It also contains an explanation of how if..then..else
+
+statements are compiled in C for Windows. I hope you can find a spot on your
+
+page to stick it.
+
+
+
+flipper (upg)</PRE>
+
+<I><CENTER>So, dear stupid shareware programmers... Should you call your routine &quot;Fuck_all_hackers&quot;; &quot;Bombtheluser&quot;; &quot;Protectmyass&quot;; or &quot;Bitethosewhodaremodifymycode&quot;? No, no, no you silly little poor things! First you should not call them at all (learn a little assembly, for Godot's sake!) and if you really do, call them &quot;Allocatingmorememory&quot;; &quot;Freeingpointers&quot;; &quot;Givingextraspeed&quot; or &quot;GH45HHA-12&quot; (this last one is a little suspect :-)<BR>Write it one hundred times on your blackboards:<BR>&quot;I should not use plain English names to tag my protection routines&quot;<BR>
+
+&quot;I should not use plain English names to tag my protection routines&quot;<BR> 
+
+&quot;I should not use plain English names to tag my protection routines&quot;<BR> 
+
+&quot;I should not use plain English names to tag my protection routines&quot;<BR> 
+
+&quot;...&quot;<BR>
+
+Comprehendes?<BR>
+
+</CENTER></I>
+
+<HR size="6"><FONT size="+1"><CENTER>
+
+Cracking SendMail 2.0 for Windows NT - Obvious Name Protections<BR>
+
+Written by Flipper (upg) on 09/21/97</CENTER></FONT>
+
+<PRE>
+
+This time around, our target is Metainfo's SendMail 2.0 for Windows NT. The
+
+trouble with reverse engineering this software is that you must be running
+
+Windows NT Server to install and configure it. I was running NT Server, but
+
+couldn't get my DNS address verified -- I had hit a brick wall. Now, all that
+
+was left was a dead listing approach without the actual program installed on
+
+my machine.
+
+
+
+I had a friend install it on an internet connected NT Server machine, and I
+
+copied the file SENDMAIL.EXE onto a disk. This was just the beginning.
+
+
+
+Tools You'll Need:
+
+
+
+1. Windows Disassembler 8.5 or above
+
+2. Hiew 5.65
+
+3. A copy of SendMail 2.0 Build 2144 for Windows NT Server.
+
+   [it can easily be found at http://www.metainfo.com/]
+
+
+
+First things first. I had no idea what would happen if I had set the clock
+
+ahead after SendMail was installed, so back I went to my friend's place to
+
+see what would happen. The software works for 30 days, and then the trial
+
+key expires. Thus, the service will start, but anyone trying to access the
+
+SMTP port will get a nice message stating that the software has expired.
+
+
+
+If you enter an invalid key, it will bring up a message box saying the all
+
+too familiar phrase, &quot;Invalid Key.&quot;
+
+
+
+So, let's get a dead listing of SENDMAIL.EXE. After looking through the code
+
+for string references and the like, you'll come up with absolutely nothing.
+
+How can this be? Well, all this means is that those strings are contained
+
+in a dynamic link library (dll) file. So, do we find out what file those
+
+strings are stored in? Simple.
+
+
+
+Load up SENDMAIL.EXE (assuming you could either get a copy, or installed it
+
+yourself) with Hacker's View. Press F7 and search for the string &quot;Invalid
+
+Key&quot;. No luck there, so try &quot;expired&quot;. Finally, a match -- now I know what
+
+you are saying, 'but you said there was no string reference to this phrase
+
+in the dead listing, flipper old pal..'. I did say that, but sometimes the
+
+dead listing does not reveal all that lies beneath the code.
+
+
+
+By just looking at the code from Hiew, we can see what file those nasty
+
+strings are being held in.
+
+
+
+.0005D010:  49 6E 76 61-6C 69 64 20-73 65 72 69-61 6C 20 6E  Invalid serial n
+
+.0005D020:  75 6D 62 65-72 20 6F 72-20 74 72 69-61 6C 20 74  umber or trial t
+
+.0005D030:  69 6D 65 20-65 78 70 69-72 65 64 00-53 4D 00 00  ime expired SM
+
+.0005D040:  46 73 64 61-68 36 37 61-6E 76 63 00-53 4F 46 54  Fsdah67anvc SOFT
+
+.0005D050:  57 41 52 45-5C 4D 65 74-61 49 6E 66-6F 5C 53 65  WARE\MetaInfo\Se
+
+.0005D060:  6E 64 6D 61-69 6C 00 00-66 31 32 33-2D 34 35 36  ndmail  f123-456
+
+.0005D070:  32 2D 30 33-36 31 2D 31-32 33 34 00-43 61 6E 6E  2-0361-1234 Cann
+
+.0005D080:  6F 74 20 6C-6F 61 64 20-6D 65 74 61-63 70 31 30  ot load metacp10
+
+.0005D090:  2E 64 6C 6C-00 00 00 00-47 65 74 54-72 69 61 6C  .dll    GetTrial
+
+.0005D0A0:  49 6E 73 74-61 6C 6C 54-69 6D 65 00-56 61 6C 69  InstallTime Vali
+
+.0005D0B0:  64 61 74 65-53 65 72 69-61 6C 00 00-49 6E 69 74  dateSerial  Init
+
+.0005D0C0:  52 65 67 69-73 74 72 61-74 69 6F 6E-00 00 00 00  Registration
+
+.0005D0D0:  6D 65 74 61-63 70 31 30-2E 64 6C 6C-00 00 00 00  metacp10.dll
+
+
+
+How interesting these lines above are. Look at what we have in the above
+
+listing, and you'll see how powerful a hex editor can be.
+
+
+
+1. We have the phrase we searched for at 5D010 (all addresses are in 32 bit
+
+   DWORD format)
+
+
+
+2. At 5D040 we have the location in the registry where the serial number
+
+   will be stored (SOFTWARE\MetaInfo\Sendmail)
+
+
+
+3. Loo and behold, we even have a reference to the Demo License serial number
+
+   at 5D060.
+
+
+
+4. At line 5D080 we now know the name of the dll that is being called :-)
+
+
+
+5. And to make our job even easier, we also have the names of all of the
+
+   functions called in order to check the serial number at line 5D090.
+
+
+
+With all this, we should be able to crack this program in about ten minutes.
+
+
+
+First, find the file METACP10.DLL. It should be located in your Windows NT
+
+'System32' directory. Once you have that file, get a dead listing of it
+
+right away. One of the reasons I use dead listings so much is that SoftIce
+
+for Windows NT is a pain to setup, and I don't want to restart the computer
+
+just to get rid of a little date check ;-&gt;
+
+
+
+All right, what should we search for in the METACP10.DLL dead listing? Simple,
+
+anything that leads us to the protection scheme. Such words as 'Expired Key'
+
+and 'Invalid Key' come to mind.. as well as 'Registered', 'Days in use', and
+
+'ValidateSerial'.
+
+
+
+Let's begin with 'ValidateSerial', since we know this function was called
+
+from inside SENDMAIL.EXE. Now stop for a moment; the name of this function
+
+gives it away, and if you look further into the METACP10.DLL file, you'll
+
+come across similar functions, with down to earth, easy to understand names.
+
+
+
+Here's what I came across when I searched for that phrase.
+
+
+
+* Referenced by a CALL at Addresses:10001D82   , :10001E2B
+
+|
+
+Exported fn(): ValidateSerial - Ord:001Fh
+
+:10001673 55                      push ebp
+
+:10001674 8BEC                    mov ebp, esp
+
+:10001676 83EC0C                  sub esp, 0000000C
+
+:10001679 837D0800                cmp dword ptr [ebp+08], 00000000
+
+:1000167D 7408                    je 10001687
+
+:1000167F 8B4508                  mov eax, dword ptr [ebp+08]
+
+:10001682 8945F8                  mov dword ptr [ebp-08], eax
+
+:10001685 EB07                    jmp 1000168E
+
+
+
+Aha, we've stumbled upon a goldmine. There are only two places where this
+
+function is called from. Now, there are two possible ways to crack this
+
+software. One way is to assume the user has left the demo key as is, and
+
+the program will expire normally, and the other is to allow the user to enter
+
+any key they want, and then the program will report an invalid key.
+
+
+
+The easiest way (and most rewarding way) to do this crack is to choose the
+
+second way, but I will leave that as an exercise for the more advanced
+
+cracker. For time's sake, we'll take the easy way out, and a way out that
+
+will let you make a crack that any user can use.
+
+
+
+Let's follow this procedure through, and see where it takes us. At 1000167D
+
+we see a jump if ebp+08 is equal to 0. If that's the case, it takes us to
+
+this piece of code.
+
+
+
+:10001687 C745F848140110          mov [ebp-08], 10011448
+
+
+
+So, if epb+08 is equal to zero, then epb-08 will now equal 10011448, which
+
+is not a pointer, so it will not show up in the dead listing.
+
+
+
+Back to the function, it will eventually jump to 1000168E. We find..
+
+
+
+* Possible StringData Ref from Data Obj -&gt;&quot;f123-4562-0361-1234&quot;
+
+                                  |
+
+:1000168E 6874E00010              push 1000E074
+
+:10001693 8B4DF8                  mov ecx, dword ptr [ebp-08]
+
+:10001696 51                      push ecx
+
+:10001697 E8042B0000              call 100041A0
+
+:1000169C 83C408                  add esp, 00000008
+
+:1000169F 85C0                    test eax, eax         
+
+:100016A1 7509                    jne 100016AC          ; ref to ValidateBomb
+
+:100016A3 6A00                    push 00000000
+
+* Reference To: METACP10.ValidateTrial
+
+                                  |
+
+:100016A5 E847010000              call 100017F1
+
+:100016AA EB37                    jmp 100016E3
+
+
+
+So there is our reference to the demo serial number, and finally a call
+
+to a function called 'ValidateTrial'. I spent a good deal of time looking
+
+through each of these procedures, and I won't dwell too deeply on them here,
+
+but if you trace 'ValidateTrial' to 100017F1, you'll run into another good
+
+function name, 'ValidateBomb'. Suffice it to say, we don't want this program
+
+to ever reach the 'ValidateBomb' phase, so the crack is very clear now.
+
+
+
+Well, we don't want to jump to a procedure that calls 'ValidateBomb', so we
+
+simply remove that jump alltogether from 100016A1.
+
+
+
+:100016A1 90                      nop
+
+:100016A2 90                      nop
+
+
+
+That should take care of the first check, and now onto the second check.
+
+
+
+:100016A5 90                      nop          
+
+:100016A6 90                      nop
+
+:100016A7 90                      nop
+
+:100016A8 90                      nop
+
+:100016A9 90                      nop
+
+
+
+I know this method is horrible, and a nicer way is to use inc ax, dec ax
+
+instead, but I only patched it this way to show you how this program uses 
+
+simple plain English names for every function, and in that respect, making 
+
+it very easy to jump around, or complete cut them out.
+
+
+
+The above patch will properly crack this software, and the demo key will now
+
+work as if the program is in registered mode. However, I'm not done yet. I
+
+have one more thing to show you about the wonderful dll we are cracking.
+
+
+
+Search for the word 'Registered' in the dead listing. You should end up at
+
+line 10001ED1. If you look below, there are 5 different possibilities that
+
+a serial key can force the program to report. These five 'blocks' of code
+
+are set one after another without a call or jump reference above them. This
+
+is very interesting indeed. Let's have a look at the code just above 10001ED1
+
+for a moment.
+
+
+
+The five keyfile 'modes' are as follows. Registered, Trial Key, Expired Key,
+
+Invalid Key, and Intermediate (hmm..)
+
+
+
+* Referenced by a Jump at Address:10001E37(C)
+
+|
+
+:10001EA5 833D4816011000          cmp dword ptr [10011648], 00000000
+
+:10001EAC 0F858B000000            jne 10001F3D
+
+:10001EB2 8B55FC                  mov edx, dword ptr [ebp-04]
+
+:10001EB5 8995A8F6FFFF            mov dword ptr [ebp+F6A8], edx
+
+:10001EBB 83BDA8F6FFFF04          cmp dword ptr [ebp+F6A8], 00000004
+
+:10001EC2 7774                    ja 10001F38
+
+:10001EC4 8B85A8F6FFFF            mov eax, dword ptr [ebp+F6A8]
+
+:10001ECA FF2485AB200010          jmp dword ptr [4*eax + 100020AB]
+
+
+
+Look at the last line of code, at line 10001ECA. This is a very unique jump
+
+indeed. It translates as JUMP to a 32 BIT ADDRESS, which is the value of EAX
+
+multiplied by 4, plus the DWORD (pointer) value of 100020AB.
+
+
+
+At 100020AB we find this piece of code.
+
+
+
+:100020AB D11E0010                DWORD 10001ED1
+
+
+
+So, FOUR times the value of EAX plus DWORD 10001ED1.. that sounds like a
+
+jump to this following bit of code..
+
+
+
+* Possible StringData Ref from Data Obj -&gt;&quot;Registered&quot;
+
+                                  |
+
+:10001ED1 6804E10010              push 1000E104
+
+:10001ED6 8B4D0C                  mov ecx, dword ptr [ebp+0C]
+
+:10001ED9 51                      push ecx
+
+:10001EDA 8B5508                  mov edx, dword ptr [ebp+08]
+
+:10001EDD 52                      push edx
+
+
+
+How interesting. So, if the line before the jump inserts a value into EAX,
+
+it makes no matter what it is, then we can assume that this very interesting
+
+jump routine is an if then else structure, very well compiled.
+
+
+
+:10001EC4 8B85A8F6FFFF            mov eax, dword ptr [ebp+F6A8]
+
+
+
+Now, let's assume for a moment that the structure looks something like this
+
+in C.
+
+
+
+ if (RegFlag == 1)
+
+ {
+
+  .. this program is registered, set other flags, jump, etc. ..
+
+ }
+
+ else (RegFlag == 2)
+
+ {
+
+  if (DaysInUse &gt; 30)
+
+  {
+
+   exit(0);
+
+  }
+
+ }
+
+
+
+And it continues like this for the next three options. So, using a bit of
+
+logic, we can come to the conclusion that if EAX would somehow equal ZERO,
+
+zero multiplied by four is STILL ZERO, plus 10001ED1 would make this program
+
+jump to what's at 10001ED1, which is the correct address for the 'Registered'
+
+mode string.
+
+
+
+Simply change the instruction at 10001EC4 to
+
+
+
+:10001EC4 33C0                    xor eax, eax             ; set eax to ZERO
+
+:10001EC6 90                      nop
+
+:10001EC7 90                      nop
+
+:10001EC8 90                      nop
+
+:10001EC9 90                      nop
+
+
+
+Alas, this only controls the text display, so the program will still not work
+
+after thirty days ;-) but it makes for interesting reverse engineering, as
+
+this code is compact, and written very well.
+
+
+
+Final notes? Well, I only had to use two tools to accomplish this job, and
+
+one of them wasn't softice. Hiew does such a nice job of 32 bit addressing
+
+that I find it does the job without the need for debugging at all. SendMail
+
+is an excellent e-mail server, and since most high priced Windows NT programs
+
+need to be written as efficiently as possible, most NT programs tend to use
+
+a lot of compact code, as we've seen here.
+
+
+
+Oh, and one final warning about this program. If you try and disassemble any
+
+of the files mentioned here in Windows NT, wdasm32 just crashes and your
+
+computer will record a memory access violation. To get a dead listing, use
+
+Windows 95 instead.
+
+
+
+written by flipper (upg) on 09/21/97.
+
+
+
+</PRE>
+
+<FONT color="green">(c) Flipper 1997. All rights reversed</FONT>
+
+<HR ALIGN="CENTER" WIDTH="100%" SIZE="3">
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</I></CENTER>
+
+<BR><CENTER>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="project7.htm" tppabs="http://www.anticrack.de/fravia/project7.htm">Back to Project 7</A> (&quot;Most stupid protection&quot;)
+
+<BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#84'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#84">homepage</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#73'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#73">links</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#82'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#82">students' essays</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut CGI-scripts</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering legal?</A></CENTER>
+
+<CENTER><HR ALIGN="CENTER" WIDTH="100%" SIZE="2"></CENTER>
+
+</BODY>
+
+</HTML>
+
+
+

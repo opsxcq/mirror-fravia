@@ -1,0 +1,802 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>pepper3.htm</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+<CENTER><FONT size="+3">UNBOX: Why and how to create complete Crack Systems</FONT>
+
+<BR>(RSAGNT32.DLL cracking and a nice trick to avoid difficult memory CRChecking)
+
+<H4>by Pepper<BR>
+
+(21 November 1997)</H4>
+
+<!--<a href="protecti.htm" tppabs="http://www.anticrack.de/fravia/protecti.htm"><IMG SRC="tough.gif" tppabs="http://www.anticrack.de/fravia/tough.gif" ALT="our protections" ALIGN=BOTTOM WIDTH=114 HEIGHT=43 BORDER=0 VSPACE=0 HSPACE=0></a><br><Font color= gray>Our protections</fonT>-->
+
+<HR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">Courtesy of fravia's page 
+
+of reverse engineering<BR>       
+
+<BR><I>Well, another interesting contribute by Pepper. Object oriented cracking, once more. 
+
+The ideas explained by Pepper here are VERY 
+
+interesting (and throw a crude light on the trustworthiness of commercial protection schemes) yet 
+
+something escapes me... would it not be more effective, for the whole scene, to concentrate on MAJOR targets? What I mean is: here (and elsewhere) we have a (clever) crack system  for hundred of minor 
+
+targets... where are the essays explaining the cracks (say) necessary in order to run Microsoft's New Flight Simulator or Microsoft's Age of Empires without the original cd-rom? I always feel a little empty seeing how much cleverness and talent is invested on &quot;minor&quot; protection schemes when there are MILLION of copies of  'hugely advertised'  Microsoft's programs roaming around, untamed, in the wild.<BR>This said the recent approach towards object oriented cracking is of course the right one, as Pepper skillfully explains in this nice essay. The memory 'trick' about creating a fake, CRC-correct, file in memory in order to allow the patching and running CRC-unchecked of the 'real' one is a 'magnum opus' idea! Enjoy! 
+
+
+
+</I></CENTER><HR size="6"><PRE><FONT size="+2"><CENTER>
+
+Why and how to create complete Crack Systems
+
+(plus a nice trick to avoid difficult memory patchers)</FONT>
+
+===========================================</CENTER>
+
+
+
+1. Basics
+
+         
+
+The typical crack story is like that:
+
+
+
+- Release of a new Program
+
+- Request for a Crack
+
+- Making a Crack (KeyGen, Patch or whatever)
+
+- New Version of the Program is released
+
+- Updating the Crack
+
+- The protection scheme of the Program is changed
+
+- Again a new crack to be done
+
+
+
+and so on. A never ending story, sometimes necessary but often
+
+boring. Shouldn't we think of a more systematical way for our
+
+work ? I think so and want to show how in principle such kind
+
+of work can be done. If you are expecting detailed listings how
+
+to crack you will be disappointed. But if you are interested in
+
+learning and understanding the theory and the development process
+
+of Crack Systems please continue. My goal is not to teach you how
+
+to crack but to open your mind to a new approach of cracking.
+
+To avoid plain theory which may be boring I decided to use some
+
+samples which are approved to work. So lets begin...
+
+
+
+2. Where a Crack System will be useful
+
+
+
+More and more software is distributed on the Net by Electronic
+
+Shopping Centers. You can download hundreds of Programs but have
+
+to unlock before they can be used. Sometimes the program is a trial
+
+software which will expire after a certain time. Sometimes it is
+
+a Full Version which only can be installed after it was unlocked
+
+in the proper way. The principle is always the same:
+
+
+
+The original Program is encrypted or packed and you have to enter
+
+a certain Code to make it fully functional. Shopping Centers use
+
+a special kind of Encryption System and for all programs you get
+
+from there the process of unlocking is the same. Here a few Samples
+
+for Electronic Shopping Centers using different Encryption Systems:
+
+
+
+ - ZIPLOCK
+
+ - BuyOnet
+
+ - UNBOX
+
+
+
+Besides that another method has become more and more popular. 
+
+The software author uses a tool to encrypt his product and now is able
+
+to distribute and sell it on his own. No Shopping Center is needed.
+
+A well established product for example is
+
+
+
+ - SalesAgent Wrapper
+
+
+
+So if we find a way how to unlock such programs we dont have to
+
+create hundreds of individual cracks, patches or KeyGens. Let us
+
+use as a first sample the programs from the Shopping House UNBOX.
+
+I know that many cracks were made on that subject in the past.
+
+Also some notes on their lousy protection schemes are published. 
+
+But UNBOX is like a virus: creating more and more different versions
+
+of their poor encryption lockers makes a crack to be a never ending
+
+hunting game of fox and rabbit. But you will understand better when
+
+reading the following notes.
+
+
+
+3. A first approach to UNBOX
+
+
+
+We run such a program in WinIce and try to break into where the
+
+Code is checked. That's not too difficult and rather soon we find
+
+a place where a conditional jump is made - either to start with
+
+the unlocking process or to show an error message. So let us try
+
+to jump to the unlocking process even we had entered a wrong Code
+
+and let us assume it works. In fact there are a few more patches
+
+necessary until the unlocking will work without a correct Code
+
+(depending on the UNBOX Version we use) but that's not our subject.
+
+We will assume that after some time we found a way to unlock a
+
+program within WinIce.
+
+
+
+But take care: we made all our tests in WinIce and we still are
+
+far away from a Crack System. So lets patch the Unlocked original
+
+Program and run again... and we get an error message of a corrupt
+
+file. Ugly, ugly. But why shouldn't we look for the place where the
+
+Selfcheck (CRC) of the program is done ? I tell you openly: that
+
+can be horrible. Sometimes you will find a single location for the
+
+CRC, sometimes not. Often the CRC is done more than once and done
+
+on various locations. That means a lot of analyses and later on a
+
+lot of additional patches. We can do so but I want to introduce
+
+another way how to deal with the CRC problem.
+
+
+
+Here is the ONE and ONLY part where you will see some Source Code.
+
+I saw some kind of &quot;memory patchers&quot; which work on such stuff (crack
+
+code which is generated during runtime) but &quot;memory patchers&quot; are
+
+difficult to make and also uncomfortable to be used. So have a look
+
+on the following trick - simple but effective.
+
+
+
+So far we found
+
+
+
+ - we must patch the target Program to unlock it and we know where to patch
+
+ - if we patch the target Program it will refuse to run (CRC)
+
+
+
+Now let us use our Brain to find a NEW way. First we analyse what
+
+the target Program is doing step by step:
+
+
+
+ - The Program is loaded and executed
+
+ - The Program opens itself into memory
+
+ - The memory content is checked -somehow- to detect modifications
+
+ - If everything is fine the program will continue
+
+
+
+Could we load something into memory and let the Program believe it
+
+is &quot;correct&quot; ? First we must know how a Program loads a copy of
+
+itself into memory for CRC purposes. We break into at &quot;OpenFile&quot; or at
+
+&quot;_lopen&quot; or another of the well known Breakpoints. If we know the
+
+location let us trace backwards and we will find something like
+
+
+
+        push word ptr [29E2]            (Original)
+
+        push ds
+
+        push 31CE
+
+        push 0104
+
+        call GetModuleFileName
+
+ :xxx   push ...
+
+
+
+and we realize what happens here: The Program checks for the Name
+
+of itself and later will use that FileName to make an &quot;OpenFile&quot;
+
+followed by &quot;Read&quot; and so on. Can we modify the Program to accept
+
+another FileName ? We can if we know what the pushed parameters
+
+are:
+
+
+
+DS:31CE is the address where GetModuleFileName will store the
+
+FileName. So there we could write what we want to be used as File
+
+to be opended for the CRC. Thats it! We make a copy of our original
+
+Prog, name it to &quot;XXX&quot;, write &quot;XXX&quot; to the address DS:31CE and the
+
+CRC will always be right.
+
+
+
+But how to write &quot;XXX&quot; to DS:31CE ? We only have a few bytes to
+
+patch for that. So we decide to use the shortest FileName possible
+
+and modify the above coding to
+
+
+
+        mov ax,0055                     (Patch)
+
+        mov [31CE],ax
+
+        mov cx,1
+
+        jmp xxx
+
+        call GetModuleFileName
+
+ :xxx   push ...
+
+
+
+What does that mean ? Very simple: we have written into DS:31CE
+
+the bytes 55 00 what is the string &quot;U&quot; followed by a zero byte
+
+as indicator for end of the string. That means our FileName is
+
+a single letter &quot;U&quot;. We also set CX to 1 because CX should have
+
+the length of the FileName when returning from GetModuleFileName.
+
+Finally we ignore GetModuleFileName (we jump over).
+
+
+
+Now all we have to do is: name the copy of the original Program to
+
+&quot;U&quot; and patch the Program as above plus patches required to unlock.
+
+
+
+Running the Program will now perform the CRC on the original file
+
+&quot;U&quot; and later on the Unlock process will start.
+
+
+
+Let us summarize how far we are:
+
+
+
+ - we make a copy of the original Program named &quot;U&quot;
+
+ - we patch the original Program to use &quot;U&quot; as the Program in memory
+
+ - we run the patched Program
+
+
+
+But still we have no Crack System - we only learned an important
+
+trick which helps a lot for such kind of protection.
+
+
+
+4. A deeper analyse of UNBOX
+
+
+
+If you dump a Program from UNBOX you will see the following structure:
+
+
+
+ - part 1 is always looking similar (roughly the first 120 kByte)
+
+ - part 2 is always different
+
+
+
+That means UNBOX programs consist of a header (part 1) and a body
+
+(part 2). The header is the Program executed when loading, the body
+
+is the encrypted program we want to unlock. The header has a fixed
+
+length, the body is variable depending on the encrypted program.
+
+
+
+So lets make a test and strip off the body. Result is the header
+
+only which we name HEADER.EXE (if you dont know how to strip off
+
+you really should learn). In HEADER.EXE we make all above mentioned
+
+patches and run. It works. So what has happened ?
+
+
+
+ - HEADER.EXE is loaded
+
+ - HEADER.EXE loads &quot;U&quot; into memory for the CRC
+
+ - CRC is OK (&quot;U&quot; is the identical copy of the original Program)
+
+ - HEADER.EXE starts to unlock because we had patched to do so
+
+ - HEADER.EXE uses &quot;U&quot; to find the body because &quot;U&quot; is the FileName
+
+
+
+That simplifies the story. Now we only have to make copies of UNBOX
+
+programs with name &quot;U&quot; and run HEADER. No patcher is required, an
+
+important step to finalize our project. 
+
+
+
+Analysing various UNBOX programs we will find a lot of different
+
+headers. That's the reason why our patches we made with one program
+
+will not work on all UNBOX programs. But as we found that only the
+
+header is the subject to be cracked, our project becomes more and
+
+more transparent. We only have to analyse a couple of UNBOX programs,
+
+each with a different header to find where the relevant patches to be
+
+done. So step by step we get a collection of patched headers. We will
+
+also find that each header has somewhere a significant string with a
+
+&quot;FileVersion&quot;. That is helpful to identify the header type.
+
+
+
+Finally we may have 10 or more headers according to different File
+
+Versions like 2.10, 3.15, 3.17 and so on. Let us name the headers
+
+according to the FileVersion and we will have a set of what we call
+
+&quot;Unlockers&quot;:
+
+
+
+ - UB2_10.EXE
+
+ - UB3_15.EXE
+
+ - UB3_17.EXE
+
+
+
+Do you see that we are now closer to what we call a Crack System ?
+
+We only need a tool to check a Program whether it is an UNBOX type
+
+and which header (FileVersion) is used. Depending on our programming
+
+knowledge we may write in VisualBasic, Pascal, C++ or whatever.
+
+The features of the MainProgram should be:
+
+
+
+ - An Open File Dialog to select a Program 
+
+ - A check to scan the selected Program for UNBOX FileVersion
+
+ - A function to make a copy from the Program named &quot;U&quot;
+
+ - A function to run the suitable Unlocker
+
+ - A function to delete &quot;U&quot; when closing (to save disk space)
+
+
+
+Finally we will have a nice Crack System with a user friendly shell
+
+and which is modular to be prepared for further upgrades. In fact
+
+the creating of the various &quot;Unlockers&quot; is hard work. Thats the real
+
+cracking... like the work you have to do with any individual program. 
+
+Also the FileVersion is not a fully reliable information, because UNBOX 
+
+once or twice changed the version without changing the Version number. 
+
+But then another scan will identifiy the differences. 
+
+Here we only should have learned how to create a System and what are 
+
+the benfits of such a System.
+
+
+
+Limits: why did I use UNBOX as a sample and not ZIPLOCK or others ?
+
+The answer is simple: UNBOX can be cracked as the encryption uses
+
+a so called Single Key encryption (DES) and all required information
+
+to decrypt is inside the program header. ZIPLOCK did the same and
+
+so a crack was possible in 1996. But later ZIPLOCK switched to a
+
+real Double Key protection (RSA). Without the second Key a decryption
+
+is only possible using brute force. You may ask why not all use RSA
+
+and the answer is: RSA is slow and complex, DES is fast and less
+
+complex, some people are clever, some are stupid. No more comments
+
+on that.
+
+
+
+BtW: the System is available as UBXWIN v1.9 with 13 Unlockers
+
+
+
+5. SalesAgent - a wrapper for anyone.
+
+
+
+SalesAgent is an excellent example how to make money. Develop an
+
+encryption system and sell it to others so they can protect their
+
+software and create Trial-Ware or BUY-Ware. It has been established
+
+since a long time in many different versions. A wonderful challenge
+
+for a Crack System. But first we must find the crack itself before
+
+we can think of a System. That's not the subject here. It can be found
+
+using WinIce. But we want to avoid cracking each individual.
+
+
+
+So first lets have a look on the so called TRY and BUY software.
+
+Whenever you run such a program you get a trial period. Afterwards
+
+you only can BUY. Set back your date: it will not work. I saw a
+
+fine essay about patching such progs but we want to go &quot;shopping&quot;
+
+without running hundreds of individual cracks.
+
+
+
+All that TRY and BUY programs use a special DLL named RSAGNT32.DLL
+
+There is also a 16-Bit DLL around but seldom used. We will find
+
+that some patches in RSAGNT32.DLL will enable to &quot;buy&quot; any program
+
+without a valid KeyCode - as far as we do it running WinIce. Now
+
+lets patch RSAGNT32.DLL and run the TRY and BUY Program. How bad,
+
+a CRC error is shown. So we have to find where the CRC is done and
+
+how to proceed. We will find the check is made in the TRY and BUY
+
+Program. So lets patch the Program and try again. It works.
+
+
+
+But we are not done. There are so many versions of RSAGNT32.DLL
+
+around. The latest one seems to be v2.5.0.5 Should we crack each
+
+individual ? And how to see which one is used ? Also we will find
+
+that not every TRY and BUY Program can be patched at the same
+
+address in the same way. And we find that some Programs that will
+
+refuse to work if patched (CRC on its own). Now its time to sort
+
+out everything:
+
+
+
+We find 2 basic Types of TRY and BUY Programs:
+
+
+
+ - Type 1 makes a CRC on the DLL but if patched it will work
+
+ - Type 2 makes a CRC on itself but not on the DLL
+
+
+
+We also find that a patched DLL of Version 2.5.0.5 is accepted
+
+by Programs which originally are supplied with another DLL version.
+
+And we find that during the installation of a TRY and BUY program
+
+the RSAGNT32.DLL usually is copied to the actual folder, but some times
+
+not. If so we find it either copied to the Win95 or the Win95/System
+
+folder. A wonderful mixup of possibilities which all have to be sorted
+
+out before a crack will work. I guess you will understand that one
+
+crack only will work on one Program. So its really time for a System.
+
+
+
+We decide to make a Crack System with a MainProgram like for UNBOX:
+
+
+
+ - An Open File Dialog to select a Program 
+
+ - A check to scan the selected Program for SalesAgent Type
+
+ - A check to search for RSAGNT32.DLL and a scan for it
+
+ - A check to scan where the Program to be patched and how
+
+ - A function to backup the Program before patching
+
+ - A function to run the patched Prog
+
+ - A function to delete patched Program (to save disk space)
+
+
+
+Of course we create a &quot;Crack DLL&quot; named RSAG2505.DLL which has to
+
+be located in the Windows Path. Now depending of the SalesAgent
+
+type detected our MainProg
+
+
+
+ - either patches the Program to use our RSAG2505.DLL (Type 1)
+
+ - or rename the RSAG2505.DLL to RSAGNT32.DLL (Type 2)
+
+
+
+Also depending on the scan of the Program we make the right patches at
+
+the right addresses. So what we have is a complete system that works
+
+on all kind of TRY and BUY progs as long as RSAGNT32.DLL is used.
+
+And we are modular, what means if we see that our crack DLL does not
+
+work with a special Program we can add another one like RSAGxxxx.DLL
+
+
+
+You will agree that its worth to analyse the structures of SalesAgent
+
+protected programs because finally we get a mighty user friendly 
+
+cracking tool.
+
+
+
+During our analyses we will find another SaleAgent protection: not
+
+using an external DLL. Here the DLL structure is part of the Program.
+
+That makes scanning even more difficult. But also here we find several
+
+significant byte sequences which allow to make the suitable patches.
+
+That kind of programs are usually BUY only Programs.
+
+
+
+All of them are different, and so for all an individual patch would
+
+have been necessary. But if we find a way to do the right scans we
+
+only need one single MainProgram - another kind of a System Crack.
+
+
+
+BtW: both Systems are available as PC-RSAG v1.3 and PC-RSBUY v1.6
+
+
+
+6. Conclusions
+
+
+
+Its obvious that systematical work is more effective than discovering the
+
+wheel every time. The samples above are only highlights but the principle
+
+will work in many more cases. Always remember
+
+
+
+ - A patched DLL often is the Key to work with other programs too.
+
+ - Try to find protection schemes and find the common of them.
+
+
+
+If you still dont believe that a DLL crack is better than a Prog
+
+crack: please see my note on <A href="pepper2.htm" tppabs="http://www.anticrack.de/fravia/pepper2.htm">MSACCESS 2.0</A>. I found a
+
+way to read locked DataBases (*.MDB) patching MSACCESS.EXE but that
+
+was only the beginning. Later I saw that patching MSAJT200.DLL is
+
+much more effective: it enables to read and write to any *.MDB
+
+independently of the kind of protection for the *.MDB
+
+
+
+Believe me - its worth to have a deeper look at a scheme after first success !
+
+
+
+With greetings to our good old friend Saltine...
+
+
+
+Pepper [PC]                                        November 1997</PRE>
+
+<FONT color="green">(c) Pepper. All rights reversed</FONT>
+
+<HR ALIGN="CENTER" WIDTH="100%" SIZE="3">
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</I></CENTER>
+
+<BR><CENTER>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut CGI-scripts</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering legal?</A></CENTER>
+
+<CENTER><HR ALIGN="CENTER" WIDTH="100%" SIZE="2"></CENTER>
+
+</BODY>
+
+</HTML>
+

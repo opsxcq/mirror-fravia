@@ -1,0 +1,324 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>marigold.htm</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+<CENTER><FONT size="+2">DoNotWasteTime_MrCracker@@YGHPBDPBEIPAEPAI@Z</FONT>
+
+<BR>(Timelock vagaries inside Ulead Gif Animator 2.0 - tl303inj.dll)
+
+<H2>by <FONT color="#5500AA">Marigold</FONT></H2>
+
+(16 January 1998)</H4>
+
+
+
+<A href="timelock.htm" tppabs="http://www.anticrack.de/fravia/timelock.htm"><IMG SRC="timelock.gif" tppabs="http://www.anticrack.de/fravia/timelock.gif" ALT="timelock" ALIGN="BOTTOM" WIDTH="114" HEIGHT="43" BORDER="0" VSPACE="0" HSPACE="0"></A>
+
+<BR><FONT color="gray">Timelock</FONT>
+
+
+
+<HR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">Courtesy of fravia's page 
+
+of reverse engineering<HR>       
+
+<I>Well, Marigold sent a very interesting letter, the first part is reported 
+
+here, and regards Timelock 3, the second part has been annexed to UncleVan's 
+
+recent essay about Mijenix's targets. You'll find the relevant link at the bottom.<BR> 
+
+Enjoy!</I></CENTER><HR size="6">
+
+<PRE>
+
+14 January 1998
+
+Dear Fravia+,
+
+
+
+It is not an essay. Just some words in discussion.
+
+I like your site very much and think that the level of expertise 
+
+one meets here may satisfy the most demanding. Moreover, high 
+
+cultural standards of essays (slightly edited by ...) are 
+
+unparalleled among similar sites. I do not belong to any group 
+
+and visiting such places gives me encouragement necessary to 
+
+overcome my laziness. 
+
+But enough appraisals, hereafter I will follow &quot;Criticize&quot; 
+
+section of your rules. I think the young and innocent who you 
+
+teach should better know many different solutions to a problem 
+
+than the only one given even if somebody considers it the best. 
+
+
+
+I first found your site when I was looking for some information 
+
+on TimeLock. I had just visited the Preview Software site and 
+
+seen all that boasting about TimeLock version 3.xx. Needless to 
+
+say, I was happy to find out that an organized effort is under 
+
+way to defeat this monster. To my disappointment it was only 
+
+about version 2-. And all the 9 essays on the topic gave really 
+
+only ONE solution. Of cause, the solution with the unlocking key 
+
+is very elegant. I am not going to discuss other people's 
+
+aesthetic ideals but in cracking (... comme a la guerre) 
+
+pragmatism provides the steadiest basis. And as far as pragmatism 
+
+is concerned, TimeLock protection in all targets I've seen so far 
+
+was within the famous scheme:
+
+...
+
+call ProtectionFunction
+
+cmp eax, RightValue
+
+jnz SomeBadProcedure
+
+...
+
+
+
+tl32v20.dll contains several ...ProtectionFunctions... and comparison 
+
+logic is slightly more sophisticated, but it actually makes no 
+
+difference. In my deep conviction such protection schemes MUST be 
+
+bypassed.  Why should I fuss about satisfying some perverted 
+
+check, if in most cases it is enough to substitute call operator 
+
+with 
+
+
+
+mov eax, RightValue
+
+
+
+or to do a similar thing and after that you may delete-and-forget 
+
+all that tl32v20.dll, *.lic etc?  So far this approach was tested 
+
+with HiProfiler for VC++ and VB by TracePoint Technologies, 
+
+Diskeeper 3.0 (both server and workstation versions), 
+
+PowerBuilder by Sybase, QuickView Plus 4.50 by Inso Corp. and 
+
+worked well. (In qvp.dll they combined all calls to TimeLock 
+
+functions inside an exported procedure named QVPTrialWareStart 
+
+which must return non-zero. Very nice of them.)
+
+<FONT color="purple">
+
+~~~~~
+
+Man is selling a powder against cockroaches.
+
+- How it works?
+
+- You must catch a cockroach, put some powder into its mouth and 
+
+  make it to swallow.
+
+- If I caught a cockroach, I could just smash it!
+
+- This method is also possible.
+
+~~~~~
+
+</FONT>
+
+TimeLock 3.xx is another matter. I studied only one target, Ulead 
+
+Gif Animator 2.0 (I obtained it through TuCows, don't remember 
+
+where); executable ga_main.exe protected with TimeLock version 
+
+3.03 (tl303inj.dll). This DLL has two exported functions: 
+
+DoNotWasteTime_MrCracker@@YGHPBDPBEIPAEPAI@Z and 
+
+PleaseTraceIntoMe_MrCracker@@YGKKKPAEPAXKK@Z. (sic!)
+
+
+
+Protection is based on &quot;wrapping&quot; technique, as they call it. For 
+
+the sake of brevity and considering your expertise, I'll omit 
+
+trivial details and describe only highlights. Protection encrypts 
+
+a short block of code after the program entry point making 
+
+impossible to find it in the listing; creates an additional 
+
+section in .exe file, named PREVIEW; and places program entry 
+
+point there. Code at this new entry point looks like that:
+
+
+
+...
+
+call tl303inj.PleaseTraceIntoMe_MrCracker
+
+call [eax]
+
+
+
+If protection check fails, the function returns address of 
+
+ExitProcess. If check is OK, the function decrypts program code 
+
+(Read- and then WriteProcessMemory) and returns address of the 
+
+original entry point. How did I find it? Just took an advice 
+
+given in the name of the function. If you traced into it after 
+
+the call of WriteProcessMemory, you know the entry point (6AB60), 
+
+length of encrypted code (362 bytes) and the code itself. The 
+
+final solution is obvious after that. (In my case the only 
+
+complication was that the trial period has expired before I 
+
+started reverse engineering and nasty thing didn't start 
+
+application at its own will.)  All this does not look 
+
+particularly tough, but TimeLock 3.xx protection may still not, 
+
+of course, be considered as defeated. A new glorious goal for the 
+
+TimeLock project participants! I guess in the nearest future 
+
+there will be no lack of targets.
+
+
+
+I confess now that the real reason to write this letter was the 
+
+essay by Uncle Van on Mijenix's target...
+
+
+
+     Many kisses,
+
+      Marigold
+
+
+
+mari-g(at)usa(point)net</PRE>
+
+<FONT color="green">(c) <FONT color="#5500AA"> Marigold </FONT> All rights reversed</FONT>
+
+<HR>
+
+<FONT size="+1"><I><CENTER>
+
+see </I><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="CENTER" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A href="uvessa_2.htm" tppabs="http://www.anticrack.de/fravia/uvessa_2.htm">uvessa_2.htm</A><I> in order to read 
+
+the rest of this very interesting Marigold's contribute!</FONT></I></CENTER>
+
+<HR ALIGN="CENTER" WIDTH="100%" SIZE="3">
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</I></CENTER>
+
+<BR><CENTER>
+
+<A href="timelock.htm" tppabs="http://www.anticrack.de/fravia/timelock.htm"><IMG SRC="timelock.gif" tppabs="http://www.anticrack.de/fravia/timelock.gif" ALT="timelock" ALIGN="BOTTOM" WIDTH="114" HEIGHT="43" BORDER="0" VSPACE="0" HSPACE="0"></A>
+
+<BR><FONT color="gray">Back to the Timelock project</FONT>
+
+           <HR width="33%">
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="javascri.htm" tppabs="http://www.anticrack.de/fravia/javascri.htm">javascripts</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut CGI-scripts</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering legal?</A></CENTER>
+
+<CENTER><HR ALIGN="CENTER" WIDTH="100%" SIZE="2"></CENTER>
+
+</BODY>
+
+</HTML>
+
+
+
+
+
+
+

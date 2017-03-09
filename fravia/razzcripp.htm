@@ -1,0 +1,1832 @@
+<html>
+
+
+
+<head>
+
+
+
+<title>razzcripp</title>
+
+
+
+</head>
+
+
+
+<body BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+
+
+<center><font size="+3">razzia's tutorial for crippled programs<br></font><font size="+2">
+
+
+
+(The beautiful creation of the &quot;RazziaPad&quot;)</font>
+
+
+
+
+
+
+
+<h4>by razzia<br>
+
+
+
+<br>
+
+
+
+(19 August 1997)</h4>
+
+
+
+<hr>
+
+
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">Courtesy of Fravia's page 
+
+
+
+of reverse engineering<br><br><i>Well, once more I'm amazed: Razzia's 
+
+
+
+essays are always outstanding, but this one will make history in the scene: 
+
+
+
+he's showing us with a very easy to follow example the road to the most 
+
+
+
+sublime advanced cracking that you can dream of: ADDING functionality to 
+
+
+
+ANY target you fancy... that's exactly what our aim should always be: they 
+
+
+
+speak (falsely) of &quot;object&quot; oriented programming, as if the 
+
+
+
+toy languages they 
+
+
+
+use could really be used to integrate smoothly completely different compiled 
+
+
+
+code (try to integrate visualbasic with visual c++ and you'll see what 
+
+
+
+I mean) and Razzia throw them all possible eggs in the face DEMONSTRATING 
+
+
+
+here, under your privileged eyes, dear readers of my page, how (relatively) 
+
+
+
+easy it is to do such &quot;novelties&quot; and &quot;modernities&quot; using good old &quot;obsolete&quot; 
+
+
+
+assembly.<br>
+
+
+
+I have no words: Razzia is a great cracker (as if we did not know it already) 
+
+
+
+he may join the +HCU anytime he wishes, I'm sure +ORC would love this essay 
+
+
+
+(hope you are reading this from wherever you are now, Master!).<br><br>
+
+
+
+So, once more, READ this essay, by all means, HEAD what Razzia teaches and 
+
+
+
+try this out on other targets until you master this. Here you'll go, right 
+
+
+
+now, from 
+
+
+
+&quot;dilettante&quot; to &quot;advanced&quot; crackers, here and now!</i></center><hr><pre>
+
+
+
+<font size="+3"><center>
+
+
+
+ razzia's tutorial for crippled programs</font></center>
+
+
+
+
+
+
+
+
+
+
+
+                           <b>Introduction</b>
+
+
+
+
+
+
+
+  I think every cracker knows the feeling when you download a program
+
+
+
+and it turns out to be crippleware. We feel disappointed because we didn't
+
+
+
+even get a fair chance in the fight. But in this tutorial i want to
+
+
+
+show you that the fight doesnt necessarily have to end there. There is
+
+
+
+a good chance we can add the missing code to the program. It will not
+
+
+
+be easy, and a good deal of knowledge about windows is needed, but the
+
+
+
+satisfaction of a crack  will in such cases be greater.
+
+
+
+
+
+
+
+                       <b>Tools and References</b>
+
+
+
+
+
+
+
+  Before you start an operation like this you will need to know 
+
+
+
+how windows programs work, and how windows exe files are construc-
+
+
+
+ted. You will need to study the following documents :
+
+
+
+ 
+
+
+
+   - <a href="javascript:if(confirm('http://www.microsoft.com/win32dev/base/pefile.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.microsoft.com/win32dev/base/pefile.htm'" tppabs="http://www.microsoft.com/win32dev/base/pefile.htm">http://www.microsoft.com/win32dev/base/pefile.htm</a>
+
+
+
+     A document about the structure of the PE header (Win32 files are
+
+
+
+     called PE files).
+
+
+
+
+
+
+
+   - Vlad magazine #6
+
+
+
+     This virus magazine explains in this issue how they made the 
+
+
+
+     first win95 virus called Bizatch, souce code is included. This 
+
+
+
+     issue also has another document about the PE header. In the past 
+
+
+
+     this document was included in the microsoft win32 SDK package.
+
+
+
+     But somehow (!) microsoft stopped doing that.
+
+
+
+
+
+
+
+   - Fravia's tutorials about <a href="taskman1.htm" tppabs="http://www.anticrack.de/fravia/taskman1.htm">Taskman</a> and <a href="filemon1.htm" tppabs="http://www.anticrack.de/fravia/filemon1.htm">Filemon</a>
+
+
+
+     This will give you a good understanding about how windows programs 
+
+
+
+	 look when they have been compiled to assembly. 
+
+
+
+
+
+
+
+   - Wap32 example that comes with Tasm 5.
+
+
+
+     This example will show you how to make win32 programs in assembly.
+
+
+
+     This program is also used as the host for Bizatch, so you will
+
+
+
+     find its source also in Vlad #6.     
+
+
+
+
+
+
+
+   - A windows programming book
+
+
+
+
+
+
+
+  The tools i have used in this case are Softice 3.0, Tasm 5, Hiew 5.65,
+
+
+
+IDA PRO 3.6 and <a href="javascript:if(confirm('http://129.105.116.5/fravia/pedump.zip  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://129.105.116.5/fravia/pedump.zip'" tppabs="http://129.105.116.5/fravia/pedump.zip">pedump</a> (19585 bytes).
+
+
+
+
+
+
+
+
+
+
+
+                      <b>A few words about Win32 programs</b>
+
+
+
+
+
+
+
+   Every win95 executable file consists of 2 parts : the PE header and 
+
+
+
+the sections. The PE header contains all kind of information for the os
+
+
+
+about how to threat this file. The sections are grouped by their 
+
+
+
+functionality. For example there is one section for the programs code, 
+
+
+
+one for its data, one with its resources, one with the table of 
+
+
+
+imported functions and a few more.  
+
+
+
+
+
+
+
+  Now, what happens when win95 loads a program is this: 
+
+
+
+  First an environment is created for the program where it gets its own 
+
+
+
+virtual address-space. Then win95 has to decide where in this virtual
+
+
+
+address-space it should place the program. That information is avail-
+
+
+
+able in the PE header. The PE header contains the desired imagebase
+
+
+
+of the program, this is the adress the program wants to be loaded at.
+
+
+
+  Then windows takes all the sections and places them in memory 
+
+
+
+beginning at the imagebase (default imagebase is 400000h). Where
+
+
+
+exactly it places the sections is also stated in the PE header. Every
+
+
+
+section has its own so called <font color="red">RVA</font> (Relative Virtual Address). This is
+
+
+
+just an offset relative to the imagebase.
+
+
+
+  Once the sections are in memory, windows has to know how to threat 
+
+
+
+those sections. It has to know which section contains a stucture with
+
+
+
+the resources, which one has the scructure of the import table etc. 
+
+
+
+That is also stated in the PE header with RVA's to the beginning of the 
+
+
+
+various so called data directories. 
+
+
+
+  Then finally windows has to jump to the programs code. This entrypoint
+
+
+
+is in the PE header as the entrypoint RVA. 
+
+
+
+
+
+
+
+  The above words about the PE header is not meant as a replacement for
+
+
+
+the PE document i mentioned at the beginning of this tutorial. I would
+
+
+
+recommend to every (win32) cracker to study the PE header thoroughly.
+
+
+
+It will give you a much better understanding of win95 programs.
+
+
+
+
+
+
+
+          
+
+
+
+                        <b>Our target : Notepad</b>
+
+
+
+
+
+
+
+  I dont program much, but when i do they are small programs most of 
+
+
+
+the time, ie keygens, patches. To edit my code i like to use Note-
+
+
+
+pad. But one disadventage of Notepad is that it doesn't show linenumbers.
+
+
+
+So when the compiler gives an error with linenumber, i have to load 
+
+
+
+another editor to find the line with the error. Therefore it would be 
+
+
+
+nice if i could add some code that shows me the current line of the 
+
+
+
+cursor.
+
+
+
+
+
+
+
+  The reason i chose Notepad as an example in this tutorial is that it
+
+
+
+is small and simple. So its perfect for learning purposes.
+
+
+
+
+
+
+
+  I dont know if Notepad.exe is the same on every version of win95, 
+
+
+
+the one i have is 35.328 bytes long.
+
+
+
+                  
+
+
+
+
+
+
+
+                              <b>Strategy</b>
+
+
+
+
+
+
+
+  Well, its time now to think about the 'crack'. We want to add some 
+
+
+
+code to a program and want that code to interact with the existing 
+
+
+
+code. We can do it in two steps. First we have to find out what code
+
+
+
+we are gonna add. Then we will have to append this code to the file
+
+
+
+and patch the file at some places so it will jump to the new code
+
+
+
+at the right times.
+
+
+
+
+
+
+
+                  <b>Part 1 : find out what code we need</b>     
+
+
+
+
+
+
+
+  In order to find out what code we have to add we will need to do
+
+
+
+some investigation on the target program. 
+
+
+
+
+
+
+
+  The 'heart' of every windows program is its WndProc procedure. This
+
+
+
+procedure is called by windows everytime the user has interacted 
+
+
+
+with the programs window. Windows passes to this procedure a few 
+
+
+
+variables, like a windows message, so that WndProc knows what happened
+
+
+
+and can perform what needs to be done to keep the window updated. 
+
+
+
+
+
+
+
+  In the case of notepad the main program generates a childwindow
+
+
+
+of the 'edit' class (to get more information about this class check 
+
+
+
+your windows programming books).The edit childwindow gets the size of
+
+
+
+the mainwindow all the time. In order to print our own text to the 
+
+
+
+mainwindow we will have to reduce the size of the 'edit' childwindow
+
+
+
+so it wont cover the complete mainwindow area. 
+
+
+
+
+
+
+
+  Everytime the user changes the size of the mainwindow, windows 
+
+
+
+calls the WndProc functions with the WM_SIZE message. The WndProc 
+
+
+
+procedure then can react to this event, ie adjust the size of the 
+
+
+
+'edit' childwindow to the new size of the mainwindow. 
+
+
+
+
+
+
+
+  Lets locate this WndProc procedure and see how it handles the 
+
+
+
+WM_SIZE message. You can do that either with Softice or IDA. Lets 
+
+
+
+chose the more relaxed way, and do it with IDA.
+
+
+
+
+
+
+
+  Run IDA and load Notepad.exe. There are a lot of ways to get to
+
+
+
+WndProc procedure, but the easiest way is via the RegisterClass 
+
+
+
+function. You see, at the beginning of every windows-program the main
+
+
+
+window is 'registered' to windows. The parameter to RegisterClass
+
+
+
+is a variable of WNDCLASS, which contains a pointer to the WndProc 
+
+
+
+function (check your winAPI reference).
+
+
+
+
+
+
+
+  So, press control-l in IDA and press return on the RegisterClassExA
+
+
+
+function (notepad uses this variation of RegisterClass). IDA will show
+
+
+
+you:
+
+
+
+
+
+
+
+00402B16 	lea   eax, [ebp-30h]
+
+
+
+00402B19 	mov   dword ptr [ebp-08h], offset aNotepad
+
+
+
+00402B20	mov   dword ptr [ebp-28h], offset loc_401AAD ;<wndproc ! 00402B27 mov dword ptr [ebp-10h], 6 00402B2E mov dword ptr [ebp-2Ch], 1000h 00402B35 push eax 00402B36 mov [ebp-24h], edi 00402B39 mov [ebp-20h], edi 00402B3C call ds:RegisterClassExA Easily we see that loc_401AAD is the location of the WndProc proce- dure. At loc_401AAD IDA shows : 00401AAD loc_401ADD: ;WndProc 00401AAD push ebp 00401AAE mov ebp, esp 00401AB0 push esi 00401AB1 push edi 00401AB2 mov esi, [ebp+0Ch] 00401AB5 cmp esi, 5 ;beware that WM_SIZE="5" 00401AB8 ja short loc_401ACE 00401ABA jz loc_401BC6 ;jump here for WM_SIZE 00401AC0 cmp esi, 2 00401AC3 jz loc_401BB9 00401AC9 jmp loc_401B51 We see that here the program checks to see which message it is dealing with and branches accordingly. To find out which value corresponds to WM_SIZE you can look it up in the header files that come with a win32 c++ compiler (there is a free one at www.cygnus.com)'or you can do '? wm_size' in softice,</pre>
+
+
+
+<i>or you can download right now <a href="javascript:if(confirm('http://129.105.116.5/fravia/winuser.h  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://129.105.116.5/fravia/winuser.h'" tppabs="http://129.105.116.5/fravia/winuser.h">winuser.h</a> 
+
+
+
+from the Watcom C/C++ (version 11) package... the compiler you 
+
+
+
+should buy, btw... courtesy of fravia :-)</i><pre>
+
+
+
+  We also see that for a WM_SIZE msg the program branches to
+
+
+
+loc_401BC6. If you examine the code at that location you will see a 
+
+
+
+call to this procedure:
+
+
+
+
+
+
+
+0040113F sub_40113F	 proc near		
+
+
+
+0040113F	 push	 1
+
+
+
+00401141	 mov	 eax, ds:dword_406004
+
+
+
+00401146	 push	 0
+
+
+
+00401148	 push	 eax
+
+
+
+00401149	 call	 ds:InvalidateRect
+
+
+
+0040114F	 push	 1
+
+
+
+00401151	 mov	 eax, ds:dword_406004
+
+
+
+00401156	 push	 dword ptr [esp+0Ch]  ;Height
+
+
+
+0040115A	 push	 dword ptr [esp+0Ch]  ;Width
+
+
+
+0040115E	 push	 0
+
+
+
+00401160	 push	 0
+
+
+
+00401162	 push	 eax                  ;handle of 'edit' win
+
+
+
+00401163	 call	 ds:MoveWindow        ;Update size of 'edit' win
+
+
+
+00401169	 retn	 8
+
+
+
+00401169 sub_40113F	 endp
+
+
+
+
+
+
+
+  Note that the handle of the 'edit' child window is apparently stored
+
+
+
+in (virtual) address 406004.
+
+
+
+  We also see that for every WM_SIZE message the 'edit' childwindow gets 
+
+
+
+updated with a call to MoveWindow with the new size of the mainwindow.
+
+
+
+But we dont want the edit childwindow to be the full size of the 
+
+
+
+mainwindow. 
+
+
+
+  In order to get a smaller heigth  we have to place a jump to our
+
+
+
+own code at the line with (virtual) adress 00401156. Such a jump takes
+
+
+
+5 bytes, so our return adress will have to be 0040115E. For the code
+
+
+
+that gets overwritten we will make up in our code. 
+
+
+
+
+
+
+
+  Own our code will look like :
+
+
+
+      
+
+
+
+Own_Code_1:            
+
+
+
+      sub    esp,8	
+
+
+
+      push   ebx                      ;Save ebx temporarily
+
+
+
+
+
+
+
+      mov    ebx,[esp+0Ch+4]          ;Get heigth
+
+
+
+      sub    ebx,20                   ;Substract 20                  
+
+
+
+      mov    [esp+4+4],ebx            ;Push heigth
+
+
+
+             
+
+
+
+      mov    dwHeight,ebx             ;Save Height
+
+
+
+
+
+
+
+      mov    ebx,[esp+0Ch]            ;Get width
+
+
+
+      mov    [esp+4],ebx              ;Push width 
+
+
+
+	      	
+
+
+
+      pop    ebx                      ;Restore ebx	                                    
+
+
+
+      jmp    0040115E                 ;Return to where we left       
+
+
+
+      dwHeigth      dd    0 
+
+
+
+              
+
+
+
+  One note here is appropiate. We save the Height because we will need 
+
+
+
+this value in the printing part of our code, as you will see if you
+
+
+
+continue reading my essay.
+
+
+
+
+
+
+
+  Ok, one down, one more to go (as you will see). We want to print 
+
+
+
+some text on the mainwindow. Everytime a window needs to get 
+
+
+
+'repainted', for example when another window overlapped it or when 
+
+
+
+the user changed the windows size, windows will call the WndProc
+
+
+
+procedure with WM_PAINT. This means we have to 'trap' the WM_PAINT
+
+
+
+msg in the WndProc function and make a jump to our own routine, the
+
+
+
+one that prints text. 
+
+
+
+  We will also need to print every time the vertical position 
+
+
+
+of the cursor has changed. The easiest way to do that is by ignoring 
+
+
+
+all the possible messages that inform about a change in the cursor
+
+
+
+position, and instead compare the new cursor position with the old
+
+
+
+one.
+
+
+
+  If you examine the WndProc code you will see it doesnt do anything 
+
+
+
+with the WM_PAINT message. So, at the beginning of the WndProc procedure
+
+
+
+we have to insert a jump to our own code.
+
+
+
+   
+
+
+
+  The beginning of WndProc procedure looked like this:
+
+
+
+
+
+
+
+00401AAD loc_401ADD:			    ;WndProc	 
+
+
+
+00401AAD	 push	 ebp
+
+
+
+00401AAE	 mov	 ebp, esp
+
+
+
+00401AB0	 push	 esi		    ;<good place for jump 00401AB1 push edi 00401AB2 mov esi, [ebp+0Ch] 00401AB5 cmp esi, 5 ;<- return here 00401AB8 ja short loc_401ACE 00401ABA jz loc_401BC6 00401AC0 cmp esi, 2 00401AC3 jz loc_401BB9 00401AC9 jmp loc_401B51 A nice place to put the jump to our code for processing WM_PAINT will be at the line with (virtual) adress 00401AB0. And again, the jumping code occupies 5 bytes, so it will return at adress 00401AB5. Our own code for the WM_PAINT msg will look like this : Our_Code_2: push esi push edi mov esi, [ebp+0Ch] ; Esi contains current message now push 0 push 1 push EM_LINEFROMCHAR push [406004] ; (Handle of 'edit' child win) call SendMessageA ; After this call EAX will have ; the y position of cursor cmp eax,dwLine ; Has cursor pos changed ? jnz update_line_num ; If yes, print the new line num cmp esi,0Fh ; Is the current msg a WM_PAINT ? jnz no_update_needed ; If no , return to WndProc update_line_num: mov dwLine,eax ; Save new y position of cursor inc eax push eax push offset szFormat push offset sLineNumber call wsprintfA ; Convert number to ascii push [406000h] ; (Handle of main window) call GetDC ; Get the device context mov theDC,eax ; Save dc push 0 push 0 push 0 push 14 push sLineNumber push 0 push [dwHeigth] push [theDC] call TabbedTextOut ; Print the text push [theDC] push [406000h] ; (Handle of main window) call ReleaseDC ; Release the DC no_update_needed: mov esi, [ebp+0Ch] jmp 0401AB5h ; Return to WndProc dwLine dd 0 szFormat db '%#05d',0 sLineNumText db ' line : ' sLineNumber db 6 dup (?) theDC dd 0 A few notes about the above code. First of all i used only api functions that were already imported by Notepad.exe (check its import table). What if the API's functions we need were not in the import table? I will explain at the end of this tutorial how to solve this problem. Secondly, some functions need the handle of the main window as a parameter. You can find its (virtual) address with IDA if you look where notepad stores it after the first call to CreateWindowExA. Finally, this code is not final. Consider it as a sketch, or a blueprint. Some minor, but very important, changes will be necessary. <b>Part 2 : Appending our code</b>
+
+
+
+
+
+
+
+
+
+
+
+  Now we are ready to start thinking about adding our code to 
+
+
+
+notepad.exe. Our main concern will be to make code that is not 
+
+
+
+dependant on the memory location it get placed. This is because our
+
+
+
+code gets compiled independently of the notepad code. Therefore our
+
+
+
+instuctions with addresses will not get relocated by the win32 loader.
+
+
+
+
+
+
+
+  Lets start from the beginning and deal with the problems as they
+
+
+
+occur on our path.
+
+
+
+   
+
+
+
+  The first question to deal with is <u>where</u> should we place our 
+
+
+
+code inside the target. The easiest way is to append our code to the 
+
+
+
+<u>last</u> section of notepad.exe. 
+
+
+
+Let's examine the header of the last section, which happens to be 
+
+
+
+the <font color="blue">.reloc</font> section.
+
+
+
+
+
+
+
+  At the dos prompt type 'pedump notepad.exe &gt; out.txt'. If you have 
+
+
+
+downloaded pedump, this will make a file with the header information 
+
+
+
+of notepad.
+
+
+
+
+
+
+
+  The last section header shows :
+
+
+
+           
+
+
+
+06 .reloc    VirtSize: 0000091E      VirtAddr:  0000B000
+
+
+
+      raw data offs:   00008000  raw data size: 00000A00
+
+
+
+      relocation offs: 00000000  relocations:   00000000
+
+
+
+      line # offs:     00000000  line #'s:      00000000
+
+
+
+      characteristics: 42000040
+
+
+
+      INITIALIZED_DATA  MEM_DISCARDABLE  MEM_READ
+
+
+
+  
+
+
+
+  We see that there is a space of A00h-91Eh = E2h bytes left in the
+
+
+
+section. For me this was not enough, mainly because i am a bad coder 
+
+
+
+and produce too big code. So, first thing that should be done is to 
+
+
+
+increase the size of this section. I increased both Virtual Size and
+
+
+
+raw data size to B00h.
+
+
+
+  Our code needs also to write to its variables, so another thing we
+
+
+
+have to do with this section is to add a MEM_WRITE property to its
+
+
+
+flags.  
+
+
+
+  An easy way to find the file-offsets of the places we want to change
+
+
+
+is to load notepad.exe with Hiew. You will find the header easily 
+
+
+
+because the first 8 bytes contain its name, <u>&quot;.reloc&quot;</u> in this case.
+
+
+
+
+
+
+
+  This section header tells us also what the RVA of our code is going
+
+
+
+to be. The RVA of the section itself is B000h , it has 91eh bytes, so 
+
+
+
+that means the RVA of our code will be B91Eh. (As a reminder, a RVA 
+
+
+
+is just an offset/distance to the image base)    
+
+
+
+  This knowledge is needed for the jumps from notepad to our code and
+
+
+
+vice versa. Knowing that in 32 bit programs all jumps get compiled to
+
+
+
+relative jumps (opcode is E9), we can compile those jumps (total of 4)
+
+
+
+in tasm with :
+
+
+
+   
+
+
+
+	jmp $+ (RVA_of_destination_code - RVA_of_current_instruction)    
+
+
+
+
+
+
+
+  For example, we needed a jump from 00401156 to Our_code_1. 
+
+
+
+We know the RVA of Our_code_1 is B91Eh. So we can produce the opcode
+
+
+
+for this jump with : jmp $+(B91Eh - 1156h) . 
+
+
+
+
+
+
+
+   Another point of concern is that our code makes use of 'local' 
+
+
+
+variables, like &quot;mov   dwHeigth,ebx&quot;. In order to be able to 
+
+
+
+read/write to variables without needing relocation we can use the
+
+
+
+same old good trick that all exe-protectors and virii have been 
+
+
+
+using until today :
+
+
+
+  
+
+
+
+	call next_instruction
+
+
+
+  next_instruction:  
+
+
+
+	pop ebp
+
+
+
+	sub ebp, offset next_instruction  ;ebp has now 'delta' offset
+
+
+
+  
+
+
+
+        mov [ebp + offset dwHeigth], ebx
+
+
+
+
+
+
+
+  This code is independent from the memory location it gets placed at.
+
+
+
+
+
+
+
+  There is just one more thing left to take cafe of : the calls to
+
+
+
+the api functions. If you examine with Hiew the calls to api's from 
+
+
+
+the original code of notepad, you will see that in reality they have
+
+
+
+the form : 
+
+
+
+         
+
+
+
+	call [address_of_a_dword_var]
+
+
+
+
+
+
+
+  So, they are infact indirect calls trough a dword variable which
+
+
+
+contains the address of the api function in question.
+
+
+
+  Win95 uses this method of calling api's because in this way it  
+
+
+
+needs to put the address of the relevant api function at only one 
+
+
+
+place. 
+
+
+
+  So, for us to make use of an api function we need to find out the 
+
+
+
+RVA of the dword variable that contains the address of the api
+
+
+
+function we want to use. 
+
+
+
+  This can be done by examining the operand of the inscruction in Hiew.
+
+
+
+For example for a SendMessageA call Hiew shows :
+
+
+
+
+
+
+
+	FF1554744000		call   SendMessageA ;USER32.dll
+
+
+
+
+
+
+
+  Which in reality is 
+
+
+
+  
+
+
+
+	FF1554744000		call   [00407454]
+
+
+
+
+
+
+
+  So, the RVA of this variable is 7454. To calculate the address of 
+
+
+
+this variable in memory you still have to calculate the image base, 
+
+
+
+which is : EIP_At_start_of_own_code - B91Eh. Then the address of the 
+
+
+
+variable is ofcourse : image base + RVA.
+
+
+
+
+
+
+
+  In practice : 
+
+
+
+
+
+
+
+Our_code_1:                                ; <rva ... ... call next_instruction next_instruction: pop ebp sub ebp, offset next_instruction ; ebp has now 'delta' offset ... ... mov eax,ebp add eax, offset Our_code_1 ; <-- EAX has now the ; the EIP at Our_code_1 sub eax, B91eH ; <-- EAX has image base add eax, 7454h ; <-- [EAX] has now the ; address of SendMessageA call [eax] ; call SendMessageA The same method can be used to address variables of the original code of notepad, like the variable with (virtual) address 406000h that contained the handle of the main window. The complete source to patch notepad.exe and add the extra code is included with this tutorial. Also is included is the notepad.exe that i have.</pre><center><i>
+
+
+
+DOWNLOAD EVERYTHING </i><a href="javascript:if(confirm('http://129.105.116.5/fravia/razzia.zip  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://129.105.116.5/fravia/razzia.zip'" tppabs="http://129.105.116.5/fravia/razzia.zip">razzia.zip</a> <i>HERE!</i></center><pre> 
+
+
+
+                        <b>Final notes</b>
+
+
+
+
+
+
+
+ 
+
+
+
+  We have seen that we can add any code we want to any win32 
+
+
+
+program. 
+
+
+
+The question now is how we can know what code we have add to a 
+
+
+
+crippled program ?
+
+
+
+
+
+
+
+  Sometimes it is obvious. For example when we are dealing with a 
+
+
+
+save disabled program and the file it should generate is a text file. 
+
+
+
+If the output file is not a text file, it can be helpful to check
+
+
+
+the Swag file format encyclopedia.
+
+
+
+(available at <a href="javascript:if(confirm('http://www.gdsoft.com/swag/swag.html  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.gdsoft.com/swag/swag.html'" tppabs="http://www.gdsoft.com/swag/swag.html">http://www.gdsoft.com/swag/swag.html</a>).
+
+
+
+ 
+
+
+
+  Sometimes examining old versions of a program can help. Or examining 
+
+
+
+'lite' versions of programs which are not crippled. 
+
+
+
+  Also examining the load function can be helpful.
+
+
+
+
+
+
+
+  Another question is what should we do if we need to use api functions 
+
+
+
+which are not imported by our target. 
+
+
+
+  The easiest solution to that is just to replace 2 entries in the 
+
+
+
+import table with the kernel32 functions GetModuleHandle and 
+
+
+
+GetProcAdress. With those two functions you can get the address of 
+
+
+
+every function you fancy.
+
+
+
+  If you also change the entry point RVA to let it point at some code 
+
+
+
+that you have added, which will put the addresses of the two original 
+
+
+
+functions at the places they were supposed to get, then there will be no
+
+
+
+problem.
+
+
+
+ 
+
+
+
+                         <b>The Greetings</b>
+
+
+
+
+
+
+
+   I would like to take advantage of this oppurtunity and thank the
+
+
+
+following persons for everything they thought me in the past :
+
+
+
+ 
+
+
+
+  THE_OWL, rANDOM, aCP, madmax, lost_soul and xygorf.     
+
+
+
+       
+
+
+
+  Also i would like to greet the wonderfull ppl in #cracking,
+
+
+
+#cracking4newbies and #Pc97 :
+
+
+
+ 
+
+
+
+  Psychotrn, lordbyte, j0b, ThePharao, musashi, sharp, mailman, dwolf,
+
+
+
+niabi, josephco, StarDogg Champion (Brain is fried dude ;--), tHATDUDE, 
+
+
+
+cyberlatin, blorgth, sice_boy, jacky_x, teraphy and everybody
+
+
+
+else i forgot..
+
+
+
+
+
+
+
+ Finally my special thanks go to +ORC, fravia+ and +gthorne.
+
+
+
+
+
+
+
+ august 1997 - razzia 
+
+
+
+
+
+
+
+    </pre>
+
+
+
+ <font color="green">(c) razzia 1997. All rights reserved</font>
+
+
+
+
+
+
+
+<hr ALIGN="CENTER" WIDTH="100%" SIZE="3">
+
+
+
+<center><i>You are deep inside fravia's page of reverse engineering,  
+
+
+
+choose your way out:</i></center>
+
+
+
+<br><center>
+
+
+
+
+
+
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">
+
+
+
+<a HREF="project6.htm" tppabs="http://www.anticrack.de/fravia/project6.htm">project 6</a><br>
+
+
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">
+
+
+
+<a HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage</a>
+
+
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"> 
+
+
+
+<a HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links</a> 
+
+
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0">
+
+
+
+<a HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity</a> 
+
+
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><a HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC</a>
+
+
+
+
+
+
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><a HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays</a>
+
+
+
+
+
+
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><a HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database</a><br>
+
+
+
+
+
+
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><a HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools</a>
+
+
+
+
+
+
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><a HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails</a>
+
+
+
+
+
+
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><a HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut CGI-scripts</a>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><a HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms</a>
+
+
+
+
+
+
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><a HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia</a><br>
+
+
+
+
+
+
+
+
+
+
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><a HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering illegal?</a></center>
+
+
+
+<center><hr ALIGN="CENTER" WIDTH="100%" SIZE="2"></center>
+
+
+
+</body>
+
+
+
+</html>
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+

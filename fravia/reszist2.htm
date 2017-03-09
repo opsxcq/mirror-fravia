@@ -1,0 +1,295 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>rezist2.htm</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+<CENTER><FONT size="+3">DLL-based schemes are *dead*</FONT>
+
+<BR>(A long overdue lesson for shareware programmers)<BR>
+
+<BR>
+
+<IMG SRC="stupid.gif" tppabs="http://www.anticrack.de/fravia/stupid.gif" ALT="stupid" ALIGN="center" WIDTH="114" HEIGHT="43" BORDER="0" VSPACE="0" HSPACE="0"></A>
+
+  <BR>
+
+
+
+<H4>by +ReZiDeNt<BR>
+
+<IMG SRC="hcu1.gif" tppabs="http://www.anticrack.de/fravia/hcu1.gif" ALT="+cracker" ALIGN="center" WIDTH="114" HEIGHT="43" BORDER="0" VSPACE="0" HSPACE="0"></A>
+
+<BR>
+
+(22 September 1997)</H4>
+
+<HR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">Courtesy of fravia's page 
+
+of reverse engineering<BR><BR><I>
+
+Well, protectionists don't seem to have learned much yet, do they?
+
+Here is +ReZiDeNt's email:</I></CENTER><PRE>
+
+Hello fravia+,
+
+
+
+Here's a quick contribution to the 'stupid protections' project - 
+
+it's amazing how stupid protections can be, it took less than five 
+
+minutes to crack this (most of that time was spent disassembling the 
+
+file :-))</PRE>
+
+         <HR size="6"><PRE>
+
+<FONT size="+2">
+
+A contribution to the 'Stupid Protections' project
+
+by +ReZiDeNt</FONT>
+
+
+
+Target: 6x86 Configuration Control 3.15, by Olivier Gilloire
+
+
+
+6x86cfg.exe, 950,272 bytes, download from
+
+<A href="tppmsgs/msgs1.htm#184" tppabs="http://www.anticrack.de/fravia/tppmsgs/msgs1.htm#184">http://www.chez.com/6x86config/</A> or any shareware site, such as
+
+<A href="tppmsgs/msgs1.htm#185" tppabs="http://www.anticrack.de/fravia/tppmsgs/msgs1.htm#185">http://www.softseek.com</A>
+
+
+
+Tools: BRW 4.5
+
+       SoftICE 3.1 (we don't really even need this at all!)
+
+       W32Dasm 8.9
+
+
+
+
+
+This program is designed to tweak Cyrix 6x86 and 6x86MX CPUs to
+
+improve CPU performance. Since I have a 6x86 P166+ CPU I thought I'd
+
+give it a try, perhaps see whether it can speed things up under the
+
+dreaded Windoze 95.
+
+
+
+This program is also a classic case of 'bloatware' - nearly a
+
+megabyte of data (12 precious and expensive minutes of downloading
+
+time if you have a 14.4 modem as I do!) just to tweak a few settings.
+
+What makes this huge size even more ludicrous is the fact that there
+
+is a command line program by another author that does much the same
+
+thing, except it is only a few kilobytes! So much for Micro$haft's
+
+'the road ahead'...
+
+
+
+Back to the crack...when you run the program it places itself in the
+
+system tray and in the startup folder - upon starting Windoze the CPU
+
+settings are altered and you see a nasty splash screen telling you how
+
+may days you have left in your evaluation period. Hmm...take a look at
+
+it with BRW and we can see that there is *another* splash screen, one
+
+for the registered users only, without any nag on it. However, within
+
+the program itself there is no option to register, so we will have to
+
+make a physical patch for this somehow. Now is the time to make a dead
+
+listing of the program, see what we can find...look at the imported
+
+functions and lo and behold, what do we see:
+
+
+
+SoftVer.?GetSoftVersion@@YAHXZ
+
+SoftVer.?GetUsedDays@@YAHXZ
+
+
+
+This is really far too easy...how on earth did the author hope to
+
+protect his program with this *pathetic* scheme, no doubt bought
+
+over-the-counter from some stupid and greedy protectionists who
+
+assured him that forking over $199 would save him from the evil
+
++crackers ;-) So Olivier Gilloire, where ever you are, you might want
+
+to get your money back...these DLL-based schemes are *dead*,
+
+especially when you give the whole game away by naming everything so
+
+nicely for us :-)
+
+
+
+So let's search for the above string,
+
+'SoftVer.?GetSoftVersion@@YAHXZ'. You'll see that we find just one
+
+relevant occurrence:
+
+
+
+* Reference To: SoftVer.?GetSoftVersion@@YAHXZ, Ord:0000h
+
+                                  |
+
+:0040314E E867330000    Call 004064BA ; registered version?
+
+:00403153 A804          test al, 04
+
+:00403155 743B          je 00403192 ; jump if good guy!
+
+:00403157 53            push ebx    ; else beggar off
+
+:00403158 8D8D60FFFFFF  lea ecx, dword ptr [ebp+FFFFFF60]
+
+:0040315E E8882D0000    call 00405EEB
+
+:00403163 8D8D60FFFFFF  lea ecx, dword ptr [ebp+FFFFFF60]
+
+:00403169 C645FC01      mov [ebp-04], 01
+
+:0040316D E889A80100    call 0041D9FB
+
+:00403172 395DC4        cmp dword ptr [ebp-3C], ebx
+
+
+
+Take a look at the above lines in SoftICE if you really want to,
+
+you'll see that all we need to do to crack this program is to replace
+
+the following instruction:
+
+
+
+:00403155 743B                    je 00403192  ; jump if good guy!
+
+
+
+with:
+
+
+
+:00403155 EB3B                    jmp 00403192 ; jump always!
+
+
+
+In 6x86cfg.exe (430,592 bytes) at offset 0x2555 insert 0xEB to make
+
+the changes permanent!
+
+
+
+Just one byte to defeat a stupid protection scheme that probably
+
+describes itself as 'uncrackable' :-) It goes to prove that +ORC was
+
+of course right, we can never underestimate the stupidity of
+
+protectionists.
+
+
+
+Good Hunting,
+
++ReZiDeNt, September 1997 </PRE>
+
+
+
+ <FONT color="green">(c) +ReZiDeNt 1997. All rights reversed</FONT>
+
+<HR ALIGN="CENTER" WIDTH="100%" SIZE="3">
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</I></CENTER>
+
+<BR><CENTER>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="project7.htm" tppabs="http://www.anticrack.de/fravia/project7.htm">Back to Project 7</A> 
+
+(&quot;Most stupid protection&quot;)<HR width="22%">
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#84'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#84">homepage</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#73'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#73">links</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#82'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#82">students' essays</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut CGI-scripts</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering legal?</A></CENTER>
+
+<CENTER><HR ALIGN="CENTER" WIDTH="100%" SIZE="2"></CENTER>
+
+</BODY>
+
+</HTML>

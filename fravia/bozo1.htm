@@ -1,0 +1,279 @@
+<HTML>
+
+<HEAD>
+
+  <META NAME="GENERATOR" CONTENT="Photoshop Filter Hacking">
+
+  <TITLE>bozo1</TITLE>
+
+</HEAD>
+
+<BODY TEXT="#001010" VLINK="#405040">
+
+
+
+<P><CENTER><FONT SIZE="+4">SOFTICE NT - PHASE 8<BR>
+
+</FONT><FONT SIZE="+2">The concluding essay</FONT>
+
+<BR>
+
+</CENTER>
+
+
+
+<H4><CENTER><I>by BOZO</I><BR>
+
+(02 August 1997, slightly edited by Fravia)</CENTER></H4>
+
+
+
+<CENTER><HR><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"> Courtesy of Fravia's page of reverse engineering<BR>
+
+<HR> <I>Well, this good essay from Bozo concludes the whole project...<BR>Reading this essay I have two observations:<BR>1) I regret that Bozo doesn't &quot;go into the good and 
+
+bad points&quot; of Winice, because such a discussion would be very useful and 
+
+it is surely appropriate here, among people that knows this tool like 
+
+nobody else :-)<BR>2) What about that &quot;dongle driver reverse engineering&quot;
+
+Bozo speaks about? Hey Bozo, we have a running +HCU's project about dongles, don't you know it? 
+
+Where is that essay? I want it! :-)</I></CENTER><HR><PRE><FONT size="+2"><B>Cracking of Winice for WinNT</B></FONT>
+
+
+
+I have been looking, for a long... long time for WinIce for WinNT, 
+
+since I am forced by other software to use it and I did not feel to 
+
+install Windows 95 just to have Winice. 
+
+When, at last, a trial version was made available at <A href="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#1'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#1">Numega's site</A> 
+
+I could not wait to crack it. 
+
+Unfortunately the &quot;real&quot; reverse engineers were too fast for me. 
+
+In any case... When Frog's first crack for WinIce for Windows95 became 
+
+available, I tried it on my version, with a slight variation... and: 
+
+BINGO... I found the code... changed it... and... PRESTO... it worked. 
+
+When the following essays became available for WinIce for 
+
+WinNT), I though to myself... crazy... what are these people talking 
+
+about? Checksums and all... My copy of Winice for WinNT just works fine 
+
+and I thought that the WinNT crackers went a little bit overboard.
+
+
+
+In any case ... I used my homemade crack for Winice WinNT... and started 
+
+cracking everything in sight. 
+
+Well... to all crackers .. Winice has its good points and its bad ones, 
+
+but I don't want to go into that. 
+
+By the way: Wdasm, Urbanik's disassembler, is an excellent tool in its 
+
+own right and has a definite place next to WinIce. 
+
+Okay... back to reverse engineering WinIce for WinNT.
+
+
+
+After a while I had to reformat my disk and reinstall WinIce. 
+
+I made a backup with the intention to restore it to itsself. 
+
+Later I decided to reinstall WinIce and that's were the s... hit the 
+
+fan: My copy was not working any more! 
+
+I could not find the code cracked by the +HCU's students in the essays, 
+
+nothing worked any more... BUT IT HAD WORKED PREVIOUSLY! 
+
+What went wrong? 
+
+Checksum and the tootie came up... and no WinIce.
+
+
+
+After a long cracking session and a lot of frustration, I decided to 
+
+sit down and think back... 
+
+Must be something with the installation, I thought, and tried various 
+
+options... Automatic load, manual load, System load and, finally, load 
+
+WinIce during booting. 
+
+Now I remembered... I wanted to crack a dongle driver and that was how 
+
+I installed it in the first place... in order to load it during the 
+
+WinNT boot phase.
+
+
+
+So what is the crack? Just perform the small (and obvious) crack below... 
+
+and ensure that the WinIce driver is loaded <FONT color="red">during the boot phase</FONT>. 
+
+No checksum... nothing... everything loads smoothly.
+
+
+
+BTW. The loader32.exe and nmtrans.dll are identical to the first 
+
+cracks regarding Win95, see the relevant essays.
+
+
+
+Now read the following code and modify as indicated.
+
+<B>
+
+(NOTE: use in BOOT configuration else it will sumcheck and wont load)</B>
+
+
+
+:0003B80B 3BC2               cmp eax, edx
+
+:0003B80D 7202               jb 0003B811
+
+:0003B80F 2BC2               sub eax, edx
+
+
+
+* Referenced by a Jump at Address:0003B80D(C)
+
+|
+
+:0003B811 83F80E                cmp eax, 0000000E  ;0xE = 14 days!
+
+:0003B814 720F            ***   jb 0003B825	; change to jmp (EB0F)
+
+:0003B816 C705B0E4060000000000  mov dword ptr [0006E4B0], 0
+
+:0003B820 8B45F8                mov eax, [ebp-08]
+
+:0003B823 EB13                  jmp 0003B838
+
+
+
+* Referenced by a Jump at Address:0003B814(C)
+
+|
+
+:0003B825 B90E000000           mov ecx, 0000000E    ;0xE = 14 days!
+
+:0003B82A 2BC8             *** sub ecx, eax		; change to nop,nop
+
+:0003B82C 8D4601               lea eax, [esi+01]
+
+:0003B82F 6BC003               imul eax, eax, 00000003
+
+:0003B832 890DB0E40600         mov [0006E4B0], ecx
+
+
+
+* Referenced by a Jump at Address:0003B823(U)
+
+|
+
+:0003B838 5F                pop edi
+
+:0003B839 5E                pop esi
+
+:0003B83A 5B                pop ebx
+
+:0003B83B 8BE5              mov esp, ebp
+
+:0003B83D 5D                pop ebp
+
+:0003B83E C20C00            ret 000C
+
+
+
+
+
+Okay .... thats it. There are a number of other cracks of mine, but 
+
+those are mostly boring 2 minute jobs. 
+
+
+
+Visual Basic still presents some problems though...
+
+
+
+Greetings to all crackers and... keep them coming... 
+
+Hopefully I get the time to share with you all some other techniques... 
+
+there are a number of things I am working on... time permitting.
+
+
+
+(Hope +ORC publishes soon another of his lessons... 
+
+ <B>Whats happening, +ORC ....?)</B>
+
+
+
+
+
+Bozo                 29 July 1997
+
+</PRE><FONT color="green">
+
+(c) Bozo, 1997. All rights reserved.</FONT>
+
+ </PRE>
+
+		<HR size="2">
+
+<CENTER><I>You are deep inside fravia's page of reverse
+
+engineering, choose your way out:</CENTER>
+
+
+
+
+
+<P><CENTER><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#84'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#84">homepage </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"> <A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#73'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#73">links
+
+</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0" NATURALSIZEFLAG="0"> <A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity
+
+</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#82'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#82">students' essays </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools
+
+</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails </A><BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mailFraVia
+
+</A><BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">is reverse engineering legal? </A></FONT></CENTER></P>
+
+
+
+<P><CENTER><FONT SIZE="-1"><HR></FONT></CENTER>
+
+</BODY>
+
+</HTML>
+
+
+
+
+
+  

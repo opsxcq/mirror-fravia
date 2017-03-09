@@ -1,0 +1,3030 @@
+<html>
+
+<HTML>
+
+<HEAD>
+
+<TITLE>eudorauk</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+<CENTER><H2>How to defeat a three-folded protection<BR>
+
+(semi-advanced cracking)</H2><H4><I>by TheChineese</I></H4>
+
+<BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">Courtesy of Fravia's page 
+
+of reverse engineering
+
+<BR>~<BR><I>
+
+Well, this essay is indeed interesting... just read it straight on, 
+
+and you'll get 
+
+a lot of info at first glance, you'll understand even more 
+
+when you delve inside it.<BR><BR>Note the hyperlinked listing...<BR> I wish 
+
+all people sending contributions would work html like this! (Take note, 
+
++HCUkers! :-)
+
+</I></CENTER>
+
+<HR size="2">
+
+
+
+<PRE>
+
+<PRE><CENTER>	
+
+<B><FONT SIZE="+2">HOW TO CRACK EUDORA PRO 3.01 (AND 3.0) TRIAL VERSION</FONT></B>
+
+<B><FONT SIZE="+2">By TheChineese (jun 97)</FONT></B>
+
+</CENTER></PRE>
+
+<HR>
+
+<PRE>
+
+<A NAME="preliminaire">WHY ?</A>
+
+------------
+
+
+
+(English is not my mother tongue , so please  be indulgent ...)
+
+
+
+I was working on Eudora Pro 3.0 and plan to send it to +ORC... but 
+
++RCG made it before me :-( 
+
+So i downloaded the Eudora Pro 3.0.1 French version and worked on it.
+
+(International version available at <A href="javascript:if(confirm('http://www.eudora.com/  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.eudora.com/'" tppabs="http://www.eudora.com/">http://www.eudora.com</A>).
+
+First of all it seem that in this case removing the keys in the register 
+
+doesnt works. So i searched all the proctection routines in Eudora
+
+and made a patch.
+
+
+
+------------
+
+A-TOOLS
+
+------------
+
+- Eudora Pro 3.0.1 French version (Eudora.exe 1 116 712 bytes)
+
+- Softice 3.1 (3.0)
+
+- Windasm 8.0
+
+- Psedit or Hwork
+
+ 
+
+------------------------------------------
+
+B- PROTECTION SCHEME
+
+-------------------------------------------
+
+We have to understand and to find all the protection schemes.
+
+When we execute Eudora there is the first proctection scheme
+
+
+
+1	Checksum routine 
+
+2	&quot;Last bits&quot; routine
+
+3	Date encryption routine	
+
+4 	&quot;How many day left&quot; routine 
+
+
+
+(as described by +RCG in his lesson)
+
+
+
+But after that we have several places in eudora where we found the proctection
+
+
+
+In fact, after using Eudora a little bit, we realize
+
+that there is a call to the protecion each time we try to:
+
+
+
+	-  Read the mail
+
+	-  Send the mal
+
+	-  Remove a mailbox
+
+	-  Read the mail with Personalities (Dominant) 
+
+Sometimes there is even a double call to the protection 
+
+
+
+This is the summary of the second protection scheme:
+
+
+
+	- &quot;How many day left&quot; routine
+
+	Wich calls:
+
+		
+
+		- Last bits ok ?
+
+		- Checksum ?
+
+
+
+	- and the routine compares the actual date to the &quot;limit date&quot; and 
+
+        to the &quot;install&quot; date
+
+
+
+	
+
+----------
+
+C-HOW TO ?
+
+----------
+
+For the first Protection 
+
+--------------------------------------------------------
+
+We have to :
+
+0) fire softice
+
+1) set the system date after limit date
+
+2) bpx messageboxa
+
+3) use F10 or F12 (for backtracing)
+
+4) in order to find the piece of code at :00441C49
+
+
+
+For the other proctection
+
+-----------------------------
+
+0) use  windasm 
+
+1) Read the snippet of code of the first protection, find
+
+   the value 29D7AB54 (which is the initial value of the checksum)
+
+2) Search all the code using the same value 29D7AB54 
+
+3) bpx at the piece of code using the Value 29D7AB54
+
+4) use Eudora (read, send, remove mailbox etc ) and pop into Softice
+
+
+
+
+
+CONCLUSION
+
+-------
+
+This is the summary of all the location of the protection code
+
+
+
+
+
+I	<A HREF="#verif lancement">:00441C49 </A>First call to the protection when firing Eudora
+
+
+
+II	<A HREF="#IIveriflireenvoyercourier">:004A5BC0 </A>When we try to Read or Send Mail 
+
+
+
+III	<A HREF="#IIIverifperso">:004A95F0 </A>When trying to read mail (Personnalities Dominant ...)
+
+
+
+IV	<A HREF="#doubleverif">:004AA1A0 </A>Double protection ( called sometimes ...)
+
+
+
+V	<A HREF="#boitelettre">:00432D70 </A>Removing mailbox
+
+
+
+VI 	<A HREF="#patch">For The Patch
+
+</A>
+
+<A NAME="verif lancement">------------------------------------------------------------------------------</A>
+
+First Proctection
+
+When firing Eudora
+
+**************************
+
+-----------------------------------------------------------------
+
+:00441C49 FF153C275000            Call dword ptr [0050273C]
+
+:00441C4F 85C0                    test eax, eax
+
+:00441C51 741F                    je 00441C72
+
+:00441C53 8D8560FCFFFF            lea eax, [ebp+FFFFFC60]
+
+:00441C59 B9B89F4F00              mov ecx, 004F9FB8
+
+:00441C5E 50                      push eax
+
+:00441C5F E8CC970500              call 0049B430		&lt;---- <A HREF="#1ercall">first call	checksum
+
+</A>:00441C64 85C0                    test eax, eax			
+
+:00441C66 740A                    je 00441C72			bad guy if eax=0 (to nop) 90 90
+
+:00441C68 B9B89F4F00              mov ecx, 004F9FB8
+
+:00441C6D E87E980500              call 0049B4F0		&lt;---- <A HREF="#2emecall">2nd call	date decryption
+
+</A>* Referenced by a Jump at Addresses:00441C51(C), :00441C66(C)
+
+|
+
+:00441C72 B9B89F4F00              mov ecx, 004F9FB8
+
+:00441C77 E8949C0500              call 0049B910		&lt;---- <A HREF="#3emecallcombierdejours">3rd call how many days left?
+
+</A>:00441C7C 8BF8                    mov edi, eax		&lt;-- edi= numbers of day
+
+:00441C7E 85FF                    test edi, edi		if  edi=0 bad guy
+
+:00441C80 0F85CC000000            jne 00441D52		&lt;--- <A HREF="#verif jours &gt; 7">TEST DAY &gt;7 </A> change : jmp 441d52
+
+:00441C86 8D4DC8                  lea ecx, [ebp-38]
+
+:00441C89 BEFFFFFFFF              mov esi, FFFFFFFF
+
+* Reference To: MFC40.MFC40:NoName0924, Ord:01E6h
+
+                                  |
+
+:00441C8E E805F10800              Call 004D0D98
+
+:00441C93 68FEFF0000              push 0000FFFE
+
+:00441C98 8D4DC8                  lea ecx, [ebp-38]
+
+:00441C9B C745FC00000000          mov [ebp-04], 00000000
+
+* Reference To: MFC40.MFC40:NoName0881, Ord:0E48h
+
+                                  |
+
+:00441CA2 E8E1F10800              Call 004D0E88
+
+:00441CA7 C745FC01000000          mov [ebp-04], 00000001
+
+:00441CAE 6A00                    push 00000000
+
+:00441CB0 8B45C8                  mov eax, [ebp-38]
+
+:00441CB3 6A00                    push 00000000
+
+:00441CB5 50                      push eax
+
+* Reference To: MFC40.MFC40:NoName0400, Ord:0425h
+
+                                  |
+
+:00441CB6 E86FFB0800              Call 004D182A
+
+:00441CBB 8975FC                  mov [ebp-04], esi
+
+:00441CBE E887000000              call 00441D4A
+
+<A NAME="1goodguy">* Referenced by a   Jump at Addresses:</A> :00441C2E(C), :00441D55(C), :00441DB0(U)
+
+|
+
+:00441CC3 B930A04F00              mov ecx, 004FA030       &lt;  here good guy **************
+
+:00441CC8 E8E37D0200              call 00469AB0           &lt;--no limitation message
+
+:00441CCD 8B45EC                  mov eax, [ebp-14]
+
+:00441CD0 05D4040000              add eax, 000004D4
+
+:00441CD5 50                      push eax
+
+:00441CD6 C70094000000            mov dword ptr [eax], 00000094
+
+* Reference To: KERNEL32.GetVersionExA, Ord:0138h
+
+<A NAME="verif jours &gt; 7">-----------------------------------------------------------</A>
+
+CHECKING IF EDI &gt;7  FOR MESSAGE                              
+
+
+
+------------------------------------------------------------
+
+* Referenced by a   Jump at Address:00441C80(C)
+
+|
+
+:00441D52 83FF07                  cmp edi, 00000007
+
+:00441D55 0F8368FFFFFF            jnb 00441CC3		&lt;-- TEST DAY &gt;7 <A HREF="#1goodguy">good guy ( change : jmp 441CC3)</A>
+
+:00441D5B 8D4DCC                  lea ecx, [ebp-34]	
+
+:00441D5E BEFFFFFFFF              mov esi, FFFFFFFF
+
+* Reference To: MFC40.MFC40:NoName0924, Ord:01E6h
+
+                                  |
+
+:00441D63 E830F00800              Call 004D0D98
+
+:00441D68 68FDFF0000              push 0000FFFD
+
+:00441D6D 8D4DCC                  lea ecx, [ebp-34]
+
+:00441D70 C745FC02000000          mov [ebp-04], 00000002
+
+* Reference To: MFC40.MFC40:NoName0881, Ord:0E48h
+
+                                  |
+
+:00441D77 E80CF10800              Call 004D0E88
+
+:00441D7C 57                      push edi
+
+:00441D7D 8D8D60FDFFFF            lea ecx, [ebp+FFFFFD60]
+
+:00441D83 C745FC03000000          mov [ebp-04], 00000003
+
+:00441D8A 8B45CC                  mov eax, [ebp-34]
+
+:00441D8D 50                      push eax
+
+:00441D8E 51                      push ecx
+
+* Reference To: MSVCRT40.sprintf, Ord:0448h
+
+                                  |
+
+:00441D8F FF1560375000            Call dword ptr [00503760]
+
+:00441D95 83C40C                  add esp, 0000000C
+
+:00441D98 8D8D60FDFFFF            lea ecx, [ebp+FFFFFD60]
+
+:00441D9E 6A00                    push 00000000
+
+:00441DA0 6A00                    push 00000000
+
+:00441DA2 51                      push ecx
+
+* Reference To: MFC40.MFC40:NoName0400, Ord:0425h
+
+                                  |
+
+:00441DA3 E882FA0800              Call 004D182A
+
+:00441DA8 8975FC                  mov [ebp-04], esi
+
+:00441DAB E80D000000              call 00441DBD
+
+:00441DB0 E90EFFFFFF              jmp 00441CC3
+
+:00441DB5 8D4DCC                  lea ecx, [ebp-34]
+
+* Reference To: MFC40.MFC40:NoName0799, Ord:02C2h
+
+                                  |
+
+:00441DB8 E9CFEF0800              Jmp 004D0D8C
+
+<A NAME="1ercall">----------------------------------------------------------------------</A>
+
+1st call Checksum
+
+-----------------------------------------------------------------------
+
+* Referenced by a CALL at Address:00441C5F   
+
+|
+
+:0049B430 53                      push ebx
+
+:0049B431 56                      push esi
+
+:0049B432 57                      push edi
+
+:0049B433 33F6                    xor esi, esi
+
+:0049B435 55                      push ebp
+
+:0049B436 8BF9                    mov edi, ecx
+
+:0049B438 8B442414                mov eax, [esp + 14]
+
+:0049B43C 6800800000              push 00008000
+
+:0049B441 50                      push eax
+
+* Reference To: MSVCRT40._open, Ord:0322h
+
+                                  |
+
+:0049B442 FF150C375000            Call dword ptr [0050370C]
+
+:0049B448 83C408                  add esp, 00000008
+
+:0049B44B 8BD8                    mov ebx, eax
+
+:0049B44D 83FBFF                  cmp ebx, FFFFFFFF
+
+:0049B450 0F848C000000            je 0049B4E2
+
+:0049B456 6A02                    push 00000002
+
+:0049B458 6AD8                    push FFFFFFD8
+
+:0049B45A 53                      push ebx
+
+* Reference To: MSVCRT40._lseek, Ord:02DEh
+
+                                  |
+
+:0049B45B FF15DC375000            Call dword ptr [005037DC]
+
+:0049B461 83C40C                  add esp, 0000000C
+
+:0049B464 8BE8                    mov ebp, eax
+
+:0049B466 83FDFF                  cmp ebp, FFFFFFFF
+
+:0049B469 746D                    je 0049B4D8
+
+:0049B46B 6A28                    push 00000028
+
+:0049B46D 57                      push edi
+
+:0049B46E 53                      push ebx
+
+* Reference To: MSVCRT40._read, Ord:0333h
+
+                                  |
+
+:0049B46F FF1510375000            Call dword ptr [00503710]
+
+:0049B475 83C40C                  add esp, 0000000C
+
+:0049B478 83F8FF                  cmp eax, FFFFFFFF
+
+:0049B47B 745B                    je 0049B4D8
+
+:0049B47D 8B4710                  mov eax, [edi+10]
+
+:0049B480 8BCF                    mov ecx, edi
+
+:0049B482 50                      push eax
+
+:0049B483 E808050000              call 0049B990
+
+:0049B488 8BCF                    mov ecx, edi
+
+:0049B48A 894710                  mov [edi+10], eax
+
+:0049B48D 8B4714                  mov eax, [edi+14]
+
+:0049B490 50                      push eax
+
+:0049B491 E80A050000              call 0049B9A0
+
+:0049B496 8BCF                    mov ecx, edi
+
+:0049B498 894714                  mov [edi+14], eax
+
+:0049B49B 8B4718                  mov eax, [edi+18]
+
+:0049B49E 50                      push eax
+
+:0049B49F E80C050000              call 0049B9B0		&lt;-- manip data
+
+:0049B4A4 8BCF                    mov ecx, edi
+
+:0049B4A6 894718                  mov [edi+18], eax
+
+:0049B4A9 8B471C                  mov eax, [edi+1C]
+
+:0049B4AC 50                      push eax
+
+:0049B4AD E83E050000              call 0049B9F0		&lt;-- manip data
+
+:0049B4B2 55                      push ebp
+
+:0049B4B3 8BCF                    mov ecx, edi
+
+:0049B4B5 53                      push ebx
+
+:0049B4B6 89471C                  mov [edi+1C], eax
+
+:0049B4B9 E8F2060000              call 0049BBB0 	&lt;-- <A HREF="#checksumfile">checksum file</A>
+
+:0049B4BE 394724                  cmp [edi+24], eax	if equal
+
+:0049B4C1 740C                    je 0049B4CF		jmp --&gt;here
+
+:0049B4C3 897710                  mov [edi+10], esi
+
+:0049B4C6 897714                  mov [edi+14], esi
+
+:0049B4C9 897718                  mov [edi+18], esi
+
+:0049B4CC 89771C                  mov [edi+1C], esi
+
+* Referenced by a   Jump at Address:0049B4C1(C)
+
+|
+
+:0049B4CF 8BCF                    mov ecx, edi		&lt;-- here
+
+:0049B4D1 E85A020000              call 0049B730		&lt;-- <A HREF="#3bitok">lasts bit ok
+
+</A>:0049B4D6 8BF0                    mov esi, eax
+
+* Referenced by a   Jump at Addresses:0049B469(C), :0049B47B(C)
+
+|
+
+:0049B4D8 53                      push ebx
+
+* Reference To: MSVCRT40._close, Ord:0251h
+
+                                  |
+
+:0049B4D9 FF1504375000            Call dword ptr [00503704]
+
+:0049B4DF 83C404                  add esp, 00000004
+
+* Referenced by a   Jump at Address:0049B450(C)
+
+|
+
+:0049B4E2 8BC6                    mov eax, esi
+
+:0049B4E4 5D                      pop ebp
+
+:0049B4E5 5F                      pop edi
+
+:0049B4E6 5E                      pop esi
+
+:0049B4E7 5B                      pop ebx
+
+:0049B4E8 C20400                  ret 0004
+
+
+
+
+
+<A NAME="2emecall">------------------------------------------------------------------------</A>
+
+2nd call: date decryption  (and KEYS in REGITER )
+
+------------------------------------------------------------------------
+
+* Referenced by a CALL at Address:
+
+|:00441C6D   
+
+|
+
+:0049B4F0 64A100000000            mov eax, fs:[00000000]
+
+:0049B4F6 55                      push ebp
+
+:0049B4F7 8BEC                    mov ebp, esp
+
+:0049B4F9 6AFF                    push FFFFFFFF
+
+:0049B4FB 687FB64900              push 0049B67F
+
+:0049B500 50                      push eax
+
+:0049B501 64892500000000          mov fs:[00000000], esp
+
+:0049B508 81EC5C010000            sub esp, 0000015C
+
+:0049B50E 53                      push ebx
+
+:0049B50F 56                      push esi
+
+:0049B510 57                      push edi
+
+:0049B511 8BF1                    mov esi, ecx
+
+:0049B513 8D8D98FEFFFF            lea ecx, [ebp+FFFFFE98]
+
+:0049B519 E8A294FEFF              call 004849C0
+
+* Possible StringData Ref from Data Obj -&gt;&quot;HKEY_CURRENT_USER\Software\Microsoft\Notepad&quot; &lt;-- R»f»rence ˝ Regiter for  limit date and instal date
+
+                                  |
+
+:0049B51E 68A07C4F00              push 004F7CA0
+
+:0049B523 8D8D98FEFFFF            lea ecx, [ebp+FFFFFE98]
+
+:0049B529 C745FC00000000          mov [ebp-04], 00000000
+
+:0049B530 E8AB94FEFF              call 004849E0
+
+:0049B535 85C0                    test eax, eax
+
+:0049B537 0F8426010000            je 0049B663
+
+:0049B53D 6A50                    push 00000050
+
+:0049B53F 8D45A4                  lea eax, [ebp-5C]
+
+:0049B542 50                      push eax
+
+:0049B543 8D8D98FEFFFF            lea ecx, [ebp+FFFFFE98]
+
+* Possible StringData Ref from Data Obj -&gt;&quot;lfWindowPos&quot;		&lt;-- 1st KEY
+
+                                  |
+
+:0049B549 68947C4F00              push 004F7C94
+
+:0049B54E E8DD95FEFF              call 00484B30
+
+:0049B553 8BF8                    mov edi, eax
+
+:0049B555 8D45A4                  lea eax, [ebp-5C]
+
+:0049B558 50                      push eax
+
+* Reference To: MSVCRT40.atol, Ord:03D4h
+
+                                  |
+
+:0049B559 FF15CC375000            Call dword ptr [005037CC]
+
+:0049B55F 83C404                  add esp, 00000004
+
+:0049B562 8D8D98FEFFFF            lea ecx, [ebp+FFFFFE98]
+
+:0049B568 89462C                  mov [esi+2C], eax
+
+:0049B56B 6A50                    push 00000050
+
+:0049B56D 8D45A4                  lea eax, [ebp-5C]
+
+:0049B570 50                      push eax
+
+* Possible StringData Ref from Data Obj -&gt;&quot;lfIconPos&quot;		&lt;-- 2nd KEY
+
+:0049B5EA 894630                  mov [esi+30], eax
+
+:0049B5ED 52                      push edx
+
+:0049B5EE FFD7                    call edi
+
+:0049B5F0 83C40C                  add esp, 0000000C
+
+:0049B5F3 8D4DA4                  lea ecx, [ebp-5C]
+
+:0049B5F6 51                      push ecx
+
+* Possible StringData Ref from Data Obj -&gt;&quot;lfWindowPos&quot;
+
+                                  |
+
+:0049B5F7 68947C4F00              push 004F7C94
+
+:0049B5FC 8D8D98FEFFFF            lea ecx, [ebp+FFFFFE98]
+
+:0049B602 E86995FEFF              call 00484B70
+
+:0049B607 8B4630                  mov eax, [esi+30]
+
+:0049B60A 8D4DA4                  lea ecx, [ebp-5C]
+
+:0049B60D 50                      push eax
+
+* Possible StringData Ref from Data Obj -&gt;&quot;%ld&quot;
+
+                                  |
+
+:0049B60E 6878694F00              push 004F6978
+
+:0049B613 51                      push ecx
+
+:0049B614 FFD7                    call edi
+
+:0049B616 83C40C                  add esp, 0000000C
+
+:0049B619 8D4DA4                  lea ecx, [ebp-5C]
+
+:0049B61C 51                      push ecx
+
+* Possible StringData Ref from Data Obj -&gt;&quot;lfIconPos&quot;	                                  |
+
+:0049B61D 68887C4F00              push 004F7C88
+
+:0049B622 8D8D98FEFFFF            lea ecx, [ebp+FFFFFE98]
+
+:0049B628 E84395FEFF              call 00484B70
+
+* Referenced by a   Jump at Addresses:
+
+|:0049B58F(C), :0049B597(C)
+
+|
+
+:0049B62D 8B462C                  mov eax, [esi+2C]
+
+:0049B630 8BCE                    mov ecx, esi
+
+:0049B632 50                      push eax
+
+:0049B633 E878030000              call 0049B9B0
+
+:0049B638 8BCE                    mov ecx, esi
+
+:0049B63A 89462C                  mov [esi+2C], eax
+
+:0049B63D 8B4630                  mov eax, [esi+30]
+
+:0049B640 50                      push eax
+
+:0049B641 E8AA030000              call 0049B9F0
+
+:0049B646 894630                  mov [esi+30], eax
+
+:0049B649 8B4610                  mov eax, [esi+10]
+
+:0049B64C 8D0C80                  lea ecx, [eax + 4*eax]
+
+:0049B64F 8D14C9                  lea edx, [ecx + 8*ecx]
+
+:0049B652 8D0452                  lea eax, [edx + 2*edx]
+
+:0049B655 8D0480                  lea eax, [eax + 4*eax]
+
+:0049B658 C1E007                  shl eax, 07
+
+:0049B65B F7D8                    neg eax
+
+:0049B65D 03462C                  add eax, [esi+2C]
+
+:0049B660 894628                  mov [esi+28], eax
+
+* Referenced by a   Jump at Address:
+
+|:0049B537(C)
+
+|
+
+:0049B663 C745FCFFFFFFFF          mov [ebp-04], FFFFFFFF
+
+:0049B66A E81A000000              call 0049B689
+
+:0049B66F 8B45F4                  mov eax, [ebp-0C]
+
+:0049B672 5F                      pop edi
+
+:0049B673 64A300000000            mov fs:[00000000], eax
+
+:0049B679 5E                      pop esi
+
+:0049B67A 5B                      pop ebx
+
+:0049B67B 8BE5                    mov esp, ebp
+
+:0049B67D 5D                      pop ebp
+
+:0049B67E C3                      ret
+
+<A NAME="3emecallcombierdejours">-----------------------------------------------------------------------</A>
+
+
+
+3dr call How many days left ? (time !...is money ...)
+
+
+
+-------------------------------------------------------------------------
+
+* Referenced by a CALL at Address:
+
+|:00441C77   
+
+|
+
+:0049B910 53                      push ebx
+
+:0049B911 56                      push esi
+
+:0049B912 57                      push edi
+
+:0049B913 8BF1                    mov esi, ecx
+
+:0049B915 33FF                    xor edi, edi
+
+:0049B917 E814FEFFFF              call 0049B730 	&lt;-- <A HREF="#3bitok">last  bits  ok?
+
+</A>:0049B91C 33DB                    xor ebx, ebx
+
+:0049B91E 85C0                    test eax, eax
+
+:0049B920 7464                    je 0049B986		&lt;-- if eax=0 bad guy
+
+:0049B922 57                      push edi
+
+* Reference To: MSVCRT40.time, Ord:0466h
+
+                                  |
+
+:0049B923 FF1558375000            Call dword ptr [00503758]
+
+:0049B929 83C404                  add esp, 00000004
+
+:0049B92C 8BC8                    mov ecx, eax		&lt;-- actual date
+
+:0049B92E 817E10E8030000          cmp [esi+10], 000003E8
+
+:0049B935 7207                    jb 0049B93E
+
+:0049B937 BFE8030000              mov edi, 000003E8
+
+:0049B93C EB23                    jmp 0049B961
+
+* Referenced by a   Jump at Address:
+
+|:0049B935(C)
+
+|
+
+:0049B93E 8B462C                  mov eax, [esi+2C]
+
+:0049B941 394630                  cmp [esi+30], eax
+
+:0049B944 751B                    jne 0049B961
+
+:0049B946 3BC1                    cmp eax, ecx
+
+:0049B948 7617                    jbe 0049B961
+
+:0049B94A 394E28                  cmp [esi+28], ecx
+
+:0049B94D 7712                    ja 0049B961
+
+:0049B94F 2BC1                    sub eax, ecx
+
+:0049B951 BF80510100              mov edi, 00015180	&lt;-- 3600*24h=15180=1 Day
+
+:0049B956 057F510100              add eax, 0001517F	&lt;-- compensate
+
+:0049B95B 2BD2                    sub edx, edx
+
+:0049B95D F7F7                    div edi
+
+:0049B95F 8BF8                    mov edi, eax		&lt;-- days left
+
+* Referenced by a   Jump at Addresses:
+
+|:0049B93C(U), :0049B944(C), :0049B948(C), :0049B94D(C)
+
+|
+
+:0049B961 8B4618                  mov eax, [esi+18]
+
+:0049B964 3BC1                    cmp eax, ecx
+
+:0049B966 7612                    jbe 0049B97A
+
+:0049B968 2BC1                    sub eax, ecx
+
+:0049B96A 2BD2                    sub edx, edx
+
+:0049B96C B980510100              mov ecx, 00015180
+
+:0049B971 057F510100              add eax, 0001517F
+
+:0049B976 F7F1                    div ecx
+
+:0049B978 8BD8                    mov ebx, eax
+
+* Referenced by a   Jump at Address:
+
+|:0049B966(C)
+
+|
+
+:0049B97A 8BC7                    mov eax, edi
+
+:0049B97C 3BDF                    cmp ebx, edi
+
+:0049B97E 7708                    ja 0049B988
+
+:0049B980 5F                      pop edi
+
+:0049B981 8BC3                    mov eax, ebx
+
+:0049B983 5E                      pop esi
+
+:0049B984 5B                      pop ebx
+
+:0049B985 C3                      ret
+
+<A NAME="checksumfile">-------------------------------------------------------------------</A>
+
+
+
+	Routine checksum file
+
+
+
+--------------------------------------------------------------------
+
+* Referenced by a CALL at Address:
+
+|:0049B4B9   
+
+|
+
+:0049BBB0 B804100000              mov eax, 00001004
+
+:0049BBB5 E806680300              call 004D23C0
+
+:0049BBBA 53                      push ebx
+
+:0049BBBB 56                      push esi
+
+:0049BBBC 8BB42410100000          mov esi, [esp + 00001010]
+
+:0049BBC3 57                      push edi
+
+:0049BBC4 55                      push ebp
+
+:0049BBC5 BF54ABD729              mov edi, 29D7AB54		&lt;-- initial value
+
+:0049BBCA 56                      push esi
+
+* Reference To: MSVCRT40._tell, Ord:0369h
+
+                                  |
+
+:0049BBCB FF15E4365000            Call dword ptr [005036E4]
+
+:0049BBD1 89442414                mov [esp + 14], eax
+
+:0049BBD5 83C404                  add esp, 00000004
+
+:0049BBD8 33DB                    xor ebx, ebx
+
+:0049BBDA 6A00                    push 00000000
+
+:0049BBDC 6A00                    push 00000000
+
+:0049BBDE 56                      push esi
+
+* Reference To: MSVCRT40._lseek, Ord:02DEh
+
+                                  |
+
+:0049BBDF FF15DC375000            Call dword ptr [005037DC]
+
+:0049BBE5 83C40C                  add esp, 0000000C
+
+:0049BBE8 399C241C100000          cmp [esp + 0000101C], ebx
+
+:0049BBEF 742F                    je 0049BC20
+
+* Referenced by a   Jump at Address:
+
+|:0049BC1E(C)
+
+|
+
+:0049BBF1 8BEB                    mov ebp, ebx
+
+:0049BBF3 81E5FF0F0000            and ebp, 00000FFF
+
+:0049BBF9 7514                    jne 0049BC0F
+
+:0049BBFB 8D442414                lea eax, [esp + 14]
+
+:0049BBFF 6800100000              push 00001000
+
+:0049BC04 50                      push eax
+
+:0049BC05 56                      push esi
+
+* Reference To: MSVCRT40._read, Ord:0333h
+
+                                  |
+
+:0049BC06 FF1510375000            Call dword ptr [00503710]
+
+:0049BC0C 83C40C                  add esp, 0000000C
+
+* Referenced by a   Jump at Address:
+
+|:0049BBF9(C)
+
+|
+
+:0049BC0F 0FBE442C14              movsx byte ptr eax, [esp + ebp + 14]
+
+:0049BC14 03F8                    add edi, eax
+
+:0049BC16 43                      inc ebx
+
+:0049BC17 3B9C241C100000          cmp ebx, [esp + 0000101C]
+
+:0049BC1E 72D1                    jb 0049BBF1
+
+* Referenced by a   Jump at Address:
+
+|:0049BBEF(C)
+
+|
+
+:0049BC20 8B442410                mov eax, [esp + 10]
+
+:0049BC24 6A00                    push 00000000
+
+:0049BC26 50                      push eax
+
+:0049BC27 56                      push esi
+
+* Reference To: MSVCRT40._lseek, Ord:02DEh
+
+                                  |
+
+:0049BC28 FF15DC375000            Call dword ptr [005037DC]
+
+:0049BC2E 83C40C                  add esp, 0000000C
+
+:0049BC31 8BC7                    mov eax, edi
+
+:0049BC33 5D                      pop ebp
+
+:0049BC34 5F                      pop edi
+
+:0049BC35 5E                      pop esi
+
+:0049BC36 5B                      pop ebx
+
+:0049BC37 81C404100000            add esp, 00001004
+
+:0049BC3D C20800                  ret 0008
+
+
+
+
+
+
+
+<A NAME="IIveriflireenvoyercourier">---------------------------------------------------------------------------------------------------------------------------------------------------</A>
+
+
+
+II 
+
+(send ou get mail)
+
+1st routine
+
+*********
+
+
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------
+
+::004A5BC0 64A100000000            mov eax, fs:[00000000]
+
+:004A5BC6 55                      push ebp
+
+:004A5BC7 8BEC                    mov ebp, esp
+
+:004A5BC9 6AFF                    push FFFFFFFF
+
+:004A5BCB 682F604A00              push 004A602F
+
+:004A5BD0 50                      push eax
+
+:004A5BD1 64892500000000          mov fs:[00000000], esp
+
+:004A5BD8 81ECA0010000            sub esp, 000001A0
+
+:004A5BDE 894DF0                  mov [ebp-10], ecx
+
+:004A5BE1 53                      push ebx
+
+:004A5BE2 56                      push esi
+
+:004A5BE3 B9B89F4F00              mov ecx, 004F9FB8
+
+:004A5BE8 57                      push edi
+
+:004A5BE9 E8625CFFFF              call 0049B850		&lt;-- <A HREF="#1combienjour">inter1 how many days left ? </A> 
+
+:004A5BEE 85C0                    test eax, eax
+
+:004A5BF0 7445                    je 004A5C37		&lt;-- <A HREF="#1bingo">jmp good guy (if eax=0)</A>
+
+							change into jmp 4a5c37
+
+* Reference To: MFC40.MFC40:NoName0896, Ord:0411h
+
+                                  |
+
+:004A5BF2 E837B20200              Call 004D0E2E
+
+:004A5BF7 85C0                    test eax, eax
+
+:004A5BF9 B800000000              mov eax, 00000000
+
+:004A5BFE 740C                    je 004A5C0C
+
+* Reference To: MFC40.MFC40:NoName0896, Ord:0411h
+
+                                  |
+
+:004A5C00 E829B20200              Call 004D0E2E
+
+:004A5C05 8B10                    mov edx, [eax]
+
+:004A5C07 8BC8                    mov ecx, eax
+
+:004A5C09 FF5278                  call [edx+78]
+
+* Referenced by a   Jump at Address:
+
+|:004A5BFE(C)
+
+|
+
+:004A5C0C 6A00                    push 00000000
+
+:004A5C0E 8B4020                  mov eax, [eax+20]
+
+:004A5C11 6A00                    push 00000000
+
+:004A5C13 682E050000              push 0000052E
+
+:004A5C18 50                      push eax
+
+* Reference To: USER32.PostMessageA, Ord:01A3h
+
+                                  |
+
+:004A5C19 FF15783A5000            Call dword ptr [00503A78]
+
+:004A5C1F B8FEFFFFFF              mov eax, FFFFFFFE
+
+* Referenced by a   Jump at Addresses:
+
+|:004A5CF7(U), :004A5D80(U), :004A5DD1(U), :004A5E17(U), :004A5EBF(U), 
+
+|:004A5FDD(U), :004A602A(U)
+
+|
+
+:004A5C24 8B4DF4                  mov ecx, [ebp-0C]
+
+:004A5C27 5F                      pop edi
+
+:004A5C28 64890D00000000          mov fs:[00000000], ecx
+
+:004A5C2F 5E                      pop esi
+
+:004A5C30 5B                      pop ebx
+
+:004A5C31 8BE5                    mov esp, ebp
+
+:004A5C33 5D                      pop ebp
+
+:004A5C34 C21400                  ret 0014
+
+
+
+
+
+<A NAME="1bingo">* Referenced by a   Jump at Address:</A>
+
+|:004A5BF0(C)
+
+|
+
+:004A5C37 33FF                    xor edi, edi		&lt;-- good guy
+
+:004A5C39 8B4DF0                  mov ecx, [ebp-10]
+
+:004A5C3C 688B280000              push 0000288B
+
+:004A5C41 897964                  mov [ecx+64], edi
+
+:004A5C44 E8B7DCFDFF              call 00483900
+
+:004A5C49 83C404                  add esp, 00000004
+
+:004A5C4C 8B4DF0                  mov ecx, [ebp-10]
+
+:004A5C4F 682A270000              push 0000272A
+
+:004A5C54 894170                  mov [ecx+70], eax
+
+:004A5C57 E874DCFDFF              call 004838D0
+
+:004A5C5C 83C404                  add esp, 00000004
+
+:004A5C5F 8B4DF0                  mov ecx, [ebp-10]
+
+:004A5C62 0FBFC0                  movsx word ptr eax, eax
+
+:004A5C65 6878280000              push 00002878
+
+:004A5C6A 894140                  mov [ecx+40], eax
+
+:004A5C6D E85EDCFDFF              call 004838D0
+
+:004A5C72 83C404                  add esp, 00000004
+
+:004A5C75 8B4DF0                  mov ecx, [ebp-10]
+
+:004A5C78 0FBFD0                  movsx word ptr edx, eax
+
+:004A5C7B 6A08                    push 00000008
+
+:004A5C7D 895144                  mov [ecx+44], edx
+
+:004A5C80 897958                  mov [ecx+58], edi
+
+<A NAME="1combienjour">------------------------------------------------------------------------</A>
+
+inter1 et inter1.4 How many day left ?
+
+------------------------------------------------------------------------
+
+* Referenced by a CALL at Addresses:
+
+|:00432D75   , :004A5BE9   , :004A9C98   
+
+|
+
+:0049B850 53                      push ebx
+
+:0049B851 56                      push esi
+
+:0049B852 57                      push edi
+
+:0049B853 8BF1                    mov esi, ecx
+
+:0049B855 33FF                    xor edi, edi
+
+:0049B857 E814FFFFFF              call 0049B770		&lt;-- <A HREF="#1bitok">inter2 last bits ok?
+
+</A>:0049B85C 33DB                    xor ebx, ebx
+
+:0049B85E 85C0                    test eax, eax
+
+:0049B860 7441                    je 0049B8A3
+
+:0049B862 57                      push edi
+
+* Reference To: MSVCRT40.time, Ord:0466h
+
+                                  |
+
+:0049B863 FF1558375000            Call dword ptr [00503758]
+
+:0049B869 83C404                  add esp, 00000004
+
+:0049B86C 817E10E8030000          cmp [esi+10], 000003E8
+
+:0049B873 7311                    jnb 0049B886
+
+:0049B875 8B4E2C                  mov ecx, [esi+2C]
+
+:0049B878 394E30                  cmp [esi+30], ecx
+
+:0049B87B 750E                    jne 0049B88B
+
+:0049B87D 3BC1                    cmp eax, ecx		*** actual date &gt; limit date ?
+
+:0049B87F 730A                    jnb 0049B88B		yes bad guy
+
+:0049B881 394628                  cmp [esi+28], eax	*** actual date inf instal date ?
+
+:0049B884 7705                    ja 0049B88B		si oui bad guy
+
+* Referenced by a   Jump at Address:
+
+|:0049B873(C)
+
+|
+
+:0049B886 BF01000000              mov edi, 00000001
+
+* Referenced by a   Jump at Addresses:
+
+|:0049B87B(C), :0049B87F(C), :0049B884(C)
+
+|
+
+:0049B88B 394618                  cmp [esi+18], eax
+
+:0049B88E 7605                    jbe 0049B895
+
+:0049B890 BB01000000              mov ebx, 00000001
+
+* Referenced by a   Jump at Address:
+
+|:0049B88E(C)
+
+|
+
+:0049B895 85FF                    test edi, edi
+
+:0049B897 740A                    je 0049B8A3
+
+:0049B899 85DB                    test ebx, ebx
+
+:0049B89B 7406                    je 0049B8A3
+
+:0049B89D 33C0                    xor eax, eax
+
+:0049B89F 5F                      pop edi
+
+:0049B8A0 5E                      pop esi
+
+:0049B8A1 5B                      pop ebx
+
+:0049B8A2 C3                      ret
+
+* Referenced by a   Jump at Addresses:
+
+|:0049B860(C), :0049B897(C), :0049B89B(C)
+
+|
+
+:0049B8A3 B801000000              mov eax, 00000001
+
+:0049B8A8 5F                      pop edi
+
+:0049B8A9 5E                      pop esi
+
+:0049B8AA 5B                      pop ebx
+
+:0049B8AB C3                      ret
+
+
+
+
+
+<A NAME="1bitok">--------------------------------------------------------------------------</A>
+
+inter2
+
+---------------------------------------------------------------------------
+
+* Referenced by a CALL at Address:
+
+|:0049B857   
+
+|
+
+:0049B770 56                      push esi
+
+:0049B771 8BF1                    mov esi, ecx
+
+:0049B773 E858FFFFFF              call 0049B6D0		&lt;--- <A HREF="#1dernierbitroutine">inter3 last bits ok?</A>:0049B778 85C0                    test eax, eax
+
+:0049B77A 7504                    jne 0049B780			*** if eax=1 go on 
+
+:0049B77C 33C0                    xor eax, eax
+
+:0049B77E 5E                      pop esi
+
+:0049B77F C3                      ret
+
+
+
+
+
+* Referenced by a   Jump at Address:
+
+|:0049B77A(C)
+
+|
+
+:0049B780 8B4610                  mov eax, [esi+10]
+
+:0049B783 394614                  cmp [esi+14], eax
+
+:0049B786 751B                    jne 0049B7A3
+
+:0049B788 8B461C                  mov eax, [esi+1C]
+
+:0049B78B 394618                  cmp [esi+18], eax
+
+:0049B78E 7513                    jne 0049B7A3
+
+:0049B790 8BCE                    mov ecx, esi
+
+:0049B792 E819030000              call 0049BAB0		&lt;--- <A HREF="#1filechecksum">inter4 checksum?
+
+</A>:0049B797 2B4620                  sub eax, [esi+20]
+
+:0049B79A 5E                      pop esi
+
+:0049B79B 83F801                  cmp eax, 00000001
+
+
+
+
+
+:0049B79E 1BC0                    sbb eax, eax
+
+:0049B7A0 F7D8                    neg eax
+
+:0049B7A2 C3                      ret
+
+
+
+
+
+* Referenced by a   Jump at Addresses:
+
+|:0049B786(C), :0049B78E(C)
+
+|
+
+:0049B7A3 33C0                    xor eax, eax
+
+:0049B7A5 5E                      pop esi
+
+:0049B7A6 C3                      ret
+
+<A NAME="1dernierbitroutine">---------------------------------------------------------------------------</A>
+
+inter3
+
+---------------------------------------------------------------------------
+
+* Referenced by a CALL at Address:
+
+|:0049B773   
+
+|
+
+:0049B6D0 813947382559            cmp dword ptr [ecx], 59253847
+
+:0049B6D6 7521                    jne 0049B6F9
+
+:0049B6D8 817904CBEACFAD          cmp [ecx+04], ADCFEACB
+
+:0049B6DF 7518                    jne 0049B6F9
+
+:0049B6E1 8179085C0E5F8D          cmp [ecx+08], 8D5F0E5C
+
+:0049B6E8 750F                    jne 0049B6F9
+
+:0049B6EA 81790CA4E9F8B6          cmp [ecx+0C], B6F8E9A4
+
+:0049B6F1 7506                    jne 0049B6F9
+
+:0049B6F3 B801000000              mov eax, 00000001
+
+:0049B6F8 C3                      ret
+
+
+
+
+
+* Referenced by a   Jump at Addresses:
+
+|:0049B6D6(C), :0049B6DF(C), :0049B6E8(C), :0049B6F1(C)
+
+|
+
+:0049B6F9 33C0                    xor eax, eax
+
+:0049B6FB C3                      ret
+
+<A NAME="1filechecksum">---------------------------------------------------------------------------</A>
+
+inter4
+
+---------------------------------------------------------------------------
+
+* Referenced by a CALL at Address:
+
+|:0049B792   
+
+|
+
+:0049BAB0 83EC10                  sub esp, 00000010
+
+:0049BAB3 B854ABD729              mov eax, 29D7AB54
+
+:0049BAB8 BA01000000              mov edx, 00000001
+
+:0049BABD 53                      push ebx
+
+:0049BABE 56                      push esi
+
+:0049BABF BB03000000              mov ebx, 00000003
+
+:0049BAC4 88542408                mov [esp + 08], dl
+
+:0049BAC8 57                      push edi
+
+:0049BAC9 885C240D                mov [esp + 0D], bl 
+
+:0049BACD 885C240F                mov [esp + 0F], bl 
+
+:0049BAD1 88542410                mov [esp + 10], dl
+
+:0049BAD5 885C2412                mov [esp + 12], bl 
+
+:0049BAD9 885C2414                mov [esp + 14], bl 
+
+:0049BADD 88542415                mov [esp + 15], dl
+
+:0049BAE1 C644240E04              mov [esp + 0E], 04
+
+:0049BAE6 C644241102              mov [esp + 11], 02
+
+:0049BAEB 33FF                    xor edi, edi
+
+:0049BAED 885C2417                mov [esp + 17], bl 
+
+:0049BAF1 C644241304              mov [esp + 13], 04
+
+:0049BAF6 C644241602              mov [esp + 16], 02
+
+:0049BAFB C644241802              mov [esp + 18], 02
+
+* Referenced by a   Jump at Address:
+
+|:0049BB21(C)
+
+|
+
+:0049BB00 33F6                    xor esi, esi
+
+:0049BB02 8A543C0C                mov dl, [esp + edi + 0C]
+
+:0049BB06 84D2                    test dl, dl
+
+:0049BB08 7411                    je 0049BB1B
+
+:0049BB0A 33DB                    xor ebx, ebx
+
+:0049BB0C 8ADA                    mov bl , dl
+
+* Referenced by a   Jump at Address:
+
+|:0049BB19(C)
+
+|
+
+:0049BB0E C1E608                  shl esi, 08
+
+:0049BB11 33D2                    xor edx, edx
+
+:0049BB13 8A11                    mov dl, [ecx]
+
+:0049BB15 41                      inc ecx
+
+:0049BB16 03F2                    add esi, edx
+
+:0049BB18 4B                      dec ebx
+
+:0049BB19 75F3                    jne 0049BB0E
+
+* Referenced by a   Jump at Address:
+
+|:0049BB08(C)
+
+|
+
+:0049BB1B 03C6                    add eax, esi
+
+:0049BB1D 47                      inc edi
+
+:0049BB1E 83FF0D                  cmp edi, 0000000D
+
+:0049BB21 72DD                    jb 0049BB00
+
+:0049BB23 5F                      pop edi
+
+:0049BB24 5E                      pop esi
+
+:0049BB25 5B                      pop ebx
+
+:0049BB26 83C410                  add esp, 00000010
+
+:0049BB29 C3                      ret
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<A NAME="IIIverifperso">-------------------------------------------------------------------------------------------------------------------------------------------------------</A>
+
+III
+
+get mail when Personalities (Dominant ..)
+
+********************
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------
+
+* Referenced by a CALL at Address:
+
+|:004A6768   
+
+|
+
+:004A95F0 64A100000000            mov eax, fs:[00000000]
+
+:004A95F6 55                      push ebp
+
+:004A95F7 8BEC                    mov ebp, esp
+
+:004A95F9 6AFF                    push FFFFFFFF
+
+:004A95FB 685D9C4A00              push 004A9C5D
+
+:004A9600 50                      push eax
+
+:004A9601 64892500000000          mov fs:[00000000], esp
+
+:004A9608 81EC04010000            sub esp, 00000104
+
+:004A960E 894DF0                  mov [ebp-10], ecx
+
+:004A9611 53                      push ebx
+
+:004A9612 56                      push esi
+
+:004A9613 57                      push edi
+
+:004A9614 6886270000              push 00002786
+
+:004A9619 E8B2A2FDFF              call 004838D0
+
+:004A961E 83C404                  add esp, 00000004
+
+:004A9621 B9B89F4F00              mov ecx, 004F9FB8
+
+:004A9626 663D0100                cmp ax, 0001
+
+:004A962A 1BC0                    sbb eax, eax
+
+:004A962C F7D8                    neg eax
+
+:004A962E 8945E8                  mov [ebp-18], eax
+
+:004A9631 E87A22FFFF              call 0049B8B0		&lt;-- <A HREF="#2combiendejours">inter1.2 how many days
+
+</A>:004A9636 85C0                    test eax, eax
+
+:004A9638 7437                    je 004A9671		&lt;-- change into  jmp 4a9671
+
+							
+
+* Reference To: MFC40.MFC40:NoName0896, Ord:0411h
+
+                                  |
+
+:004A963A E8EF770200              Call 004D0E2E
+
+:004A963F 85C0                    test eax, eax
+
+:004A9641 B800000000              mov eax, 00000000
+
+:004A9646 740C                    je 004A9654
+
+* Reference To: MFC40.MFC40:NoName0896, Ord:0411h
+
+                                  |
+
+:004A9648 E8E1770200              Call 004D0E2E
+
+:004A964D 8B10                    mov edx, [eax]
+
+:004A964F 8BC8                    mov ecx, eax
+
+:004A9651 FF5278                  call [edx+78]
+
+* Referenced by a   Jump at Address:
+
+|:004A9646(C)
+
+|
+
+:004A9654 6A00                    push 00000000
+
+:004A9656 8B4020                  mov eax, [eax+20]
+
+:004A9659 6A00                    push 00000000
+
+:004A965B 682E050000              push 0000052E
+
+:004A9660 50                      push eax
+
+* Reference To: USER32.PostMessageA, Ord:01A3h
+
+                                  |
+
+:004A9661 FF15783A5000            Call dword ptr [00503A78]
+
+:004A9667 B8FEFFFFFF              mov eax, FFFFFFFE
+
+:004A966C E9D3050000              jmp 004A9C44
+
+* Referenced by a   Jump at Address:
+
+|:004A9638(C)
+
+|
+
+:004A9671 8B4DF0                  mov ecx, [ebp-10]		&lt;-- here good guy
+
+:004A9674 E8C7070000              call 004A9E40
+
+:004A9679 85C0                    test eax, eax
+
+:004A967B 0F8546050000            jne 004A9BC7
+
+:004A9681 6A08                    push 00000008
+
+* Reference To: MFC40.MFC40:NoName0902, Ord:02D9h
+
+                                  |
+
+:004A9683 E882770200              Call 004D0E0A
+
+:004A9688 8945EC                  mov [ebp-14], eax
+
+:004A968B 83C404                  add esp, 00000004
+
+:004A968E C745FC00000000          mov [ebp-04], 00000000
+
+:004A9695 8BF0                    mov esi, eax
+
+:004A9697 B800000000              mov eax, 00000000
+
+:004A969C 85F6                    test esi, esi
+
+:004A969E 740C                    je 004A96AC
+
+:004A96A0 68027F0000              push 00007F02
+
+:004A96A5 8BCE                    mov ecx, esi
+
+:004A96A7 E844B6FDFF              call 00484CF0
+
+<A NAME="2combiendejours">-----------------------------------------------------------------------</A>
+
+inter1.2
+
+------------------------------------------------------------------------
+
+* Referenced by a CALL at Address:
+
+|:004A9631   
+
+|
+
+:0049B8B0 53                      push ebx
+
+:0049B8B1 56                      push esi
+
+:0049B8B2 57                      push edi
+
+:0049B8B3 8BF1                    mov esi, ecx
+
+:0049B8B5 33FF                    xor edi, edi
+
+:0049B8B7 E8F4FEFFFF              call 0049B7B0		&lt;--- inter2.2 <A HREF="#2bitok">last bits ok ?
+
+</A>:0049B8BC 33DB                    xor ebx, ebx
+
+:0049B8BE 85C0                    test eax, eax			if eax=o 
+
+:0049B8C0 7441                    je 0049B903			jmp  bad guy
+
+:0049B8C2 57                      push edi
+
+* Reference To: MSVCRT40.time, Ord:0466h
+
+                                  |
+
+:0049B8C3 FF1558375000            Call dword ptr [00503758]
+
+:0049B8C9 83C404                  add esp, 00000004
+
+:0049B8CC 817E10E8030000          cmp [esi+10], 000003E8
+
+:0049B8D3 7311                    jnb 0049B8E6
+
+:0049B8D5 8B4E2C                  mov ecx, [esi+2C]
+
+:0049B8D8 394E30                  cmp [esi+30], ecx
+
+:0049B8DB 750E                    jne 0049B8EB
+
+:0049B8DD 3BC1                    cmp eax, ecx		same as before
+
+:0049B8DF 730A                    jnb 0049B8EB
+
+:0049B8E1 394628                  cmp [esi+28], eax
+
+:0049B8E4 7705                    ja 0049B8EB
+
+* Referenced by a   Jump at Address:
+
+|:0049B8D3(C)
+
+|
+
+:0049B8E6 BF01000000              mov edi, 00000001
+
+* Referenced by a   Jump at Addresses:
+
+|:0049B8DB(C), :0049B8DF(C), :0049B8E4(C)
+
+|
+
+:0049B8EB 394618                  cmp [esi+18], eax
+
+:0049B8EE 7605                    jbe 0049B8F5
+
+:0049B8F0 BB01000000              mov ebx, 00000001
+
+* Referenced by a   Jump at Address:
+
+|:0049B8EE(C)
+
+|
+
+:0049B8F5 85FF                    test edi, edi
+
+:0049B8F7 740A                    je 0049B903
+
+:0049B8F9 85DB                    test ebx, ebx
+
+:0049B8FB 7406                    je 0049B903
+
+:0049B8FD 33C0                    xor eax, eax
+
+:0049B8FF 5F                      pop edi
+
+:0049B900 5E                      pop esi
+
+:0049B901 5B                      pop ebx
+
+:0049B902 C3                      ret
+
+
+
+
+
+* Referenced by a   Jump at Addresses:
+
+|:0049B8C0(C), :0049B8F7(C), :0049B8FB(C)
+
+|
+
+:0049B903 B801000000              mov eax, 00000001
+
+:0049B908 5F                      pop edi
+
+:0049B909 5E                      pop esi
+
+:0049B90A 5B                      pop ebx
+
+:0049B90B C3                      ret
+
+<A NAME="2bitok">--------------------------------------------------------------------</A>
+
+inter2.2
+
+----------------------------------------------------------------------
+
+* Referenced by a CALL at Address:
+
+|:0049B8B7   
+
+|
+
+:0049B7B0 56                      push esi
+
+:0049B7B1 8BF1                    mov esi, ecx
+
+:0049B7B3 E848FFFFFF              call 0049B700		&lt;--- <A HREF="#2routinedernierbitok">inter3.2 routine last  bits ok
+
+</A>:0049B7B8 85C0                    test eax, eax
+
+:0049B7BA 7504                    jne 0049B7C0			if eax=1 on go on else bad guy
+
+:0049B7BC 33C0                    xor eax, eax
+
+:0049B7BE 5E                      pop esi
+
+:0049B7BF C3                      ret
+
+
+
+
+
+* Referenced by a   Jump at Address:
+
+|:0049B7BA(C)
+
+|
+
+:0049B7C0 8B4610                  mov eax, [esi+10]
+
+:0049B7C3 394614                  cmp [esi+14], eax
+
+:0049B7C6 751B                    jne 0049B7E3
+
+:0049B7C8 8B4618                  mov eax, [esi+18]
+
+:0049B7CB 39461C                  cmp [esi+1C], eax
+
+:0049B7CE 7513                    jne 0049B7E3
+
+:0049B7D0 8BCE                    mov ecx, esi
+
+:0049B7D2 E859030000              call 0049BB30		&lt;--- <A HREF="#2checksum">inter4.2 checksum
+
+</A>:0049B7D7 2B4620                  sub eax, [esi+20]
+
+:0049B7DA 5E                      pop esi
+
+:0049B7DB 83F801                  cmp eax, 00000001
+
+:0049B7DE 1BC0                    sbb eax, eax
+
+:0049B7E0 F7D8                    neg eax
+
+:0049B7E2 C3                      ret
+
+
+
+
+
+* Referenced by a   Jump at Addresses:
+
+|:0049B7C6(C), :0049B7CE(C)
+
+|
+
+:0049B7E3 33C0                    xor eax, eax
+
+:0049B7E5 5E                      pop esi
+
+:0049B7E6 C3                      ret
+
+<A NAME="2routinedernierbitok">--------------------------------------------------------------------</A>
+
+inter3.2
+
+---------------------------------------------------------------------
+
+* Referenced by a CALL at Address:
+
+|:0049B7B3   
+
+|
+
+:0049B700 813947382559            cmp dword ptr [ecx], 59253847
+
+:0049B706 7521                    jne 0049B729
+
+
+
+:0049B708 817904CBEACFAD          cmp [ecx+04], ADCFEACB
+
+:0049B70F 7518                    jne 0049B729
+
+:0049B711 8179085C0E5F8D          cmp [ecx+08], 8D5F0E5C
+
+:0049B718 750F                    jne 0049B729
+
+:0049B71A 81790CA4E9F8B6          cmp [ecx+0C], B6F8E9A4
+
+:0049B721 7506                    jne 0049B729
+
+:0049B723 B801000000              mov eax, 00000001
+
+:0049B728 C3                      ret
+
+
+
+
+
+* Referenced by a   Jump at Addresses:
+
+|:0049B706(C), :0049B70F(C), :0049B718(C), :0049B721(C)
+
+|
+
+:0049B729 33C0                    xor eax, eax
+
+:0049B72B C3                      ret
+
+
+
+<A NAME="2checksum">----------------------------------------------------------------------</A>
+
+inter4.2
+
+-----------------------------------------------------------------------
+
+* Referenced by a CALL at Address:
+
+|:0049B7D2   
+
+|
+
+:0049BB30 83EC10                  sub esp, 00000010
+
+:0049BB33 B854ABD729              mov eax, 29D7AB54
+
+:0049BB38 BA01000000              mov edx, 00000001
+
+:0049BB3D 53                      push ebx
+
+:0049BB3E 56                      push esi
+
+:0049BB3F BB03000000              mov ebx, 00000003
+
+:0049BB44 88542408                mov [esp + 08], dl
+
+:0049BB48 57                      push edi
+
+:0049BB49 885C240D                mov [esp + 0D], bl 
+
+:0049BB4D 885C240F                mov [esp + 0F], bl 
+
+:0049BB51 88542410                mov [esp + 10], dl
+
+:0049BB55 885C2412                mov [esp + 12], bl 
+
+:0049BB59 885C2414                mov [esp + 14], bl 
+
+:0049BB5D 88542415                mov [esp + 15], dl
+
+:0049BB61 C644240E04              mov [esp + 0E], 04
+
+:0049BB66 C644241102              mov [esp + 11], 02
+
+:0049BB6B 33FF                    xor edi, edi
+
+:0049BB6D 885C2417                mov [esp + 17], bl 
+
+:0049BB71 C644241304              mov [esp + 13], 04
+
+:0049BB76 C644241602              mov [esp + 16], 02
+
+:0049BB7B C644241802              mov [esp + 18], 02
+
+* Referenced by a   Jump at Address:
+
+|:0049BBA1(C)
+
+|
+
+:0049BB80 33F6                    xor esi, esi
+
+:0049BB82 8A543C0C                mov dl, [esp + edi + 0C]
+
+:0049BB86 84D2                    test dl, dl
+
+:0049BB88 7411                    je 0049BB9B
+
+:0049BB8A 33DB                    xor ebx, ebx
+
+:0049BB8C 8ADA                    mov bl , dl
+
+* Referenced by a   Jump at Address:
+
+|:0049BB99(C)
+
+|
+
+:0049BB8E C1E608                  shl esi, 08
+
+:0049BB91 33D2                    xor edx, edx
+
+:0049BB93 8A11                    mov dl, [ecx]
+
+:0049BB95 41                      inc ecx
+
+:0049BB96 03F2                    add esi, edx
+
+:0049BB98 4B                      dec ebx
+
+:0049BB99 75F3                    jne 0049BB8E
+
+* Referenced by a   Jump at Address:
+
+|:0049BB88(C)
+
+|
+
+:0049BB9B 03C6                    add eax, esi
+
+:0049BB9D 47                      inc edi
+
+:0049BB9E 83FF0D                  cmp edi, 0000000D
+
+:0049BBA1 72DD                    jb 0049BB80
+
+:0049BBA3 5F                      pop edi
+
+:0049BBA4 5E                      pop esi
+
+:0049BBA5 5B                      pop ebx
+
+:0049BBA6 83C410                  add esp, 00000010
+
+:0049BBA9 C3                      ret
+
+<A NAME="doubleverif"></A>
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------
+
+IV
+
+double check  (send/get mail)( sometimes only ....)
+
+********************
+
+------------------------------------------------------------------------------------------------------------------------------------------------------
+
+* Referenced by a CALL at Addresses:
+
+|:00460863   , :004766A3   , :00494AE5   , :004C030B   
+
+|
+
+:004AA1A0 64A100000000            mov eax, fs:[00000000]
+
+:004AA1A6 55                      push ebp
+
+:004AA1A7 8BEC                    mov ebp, esp
+
+:004AA1A9 6AFF                    push FFFFFFFF
+
+:004AA1AB 68C2A34A00              push 004AA3C2
+
+:004AA1B0 B9B89F4F00              mov ecx, 004F9FB8
+
+:004AA1B5 50                      push eax
+
+:004AA1B6 64892500000000          mov fs:[00000000], esp
+
+:004AA1BD 83EC08                  sub esp, 00000008
+
+:004AA1C0 C745EC00000000          mov [ebp-14], 00000000
+
+:004AA1C7 56                      push esi
+
+:004AA1C8 E82316FFFF              call 0049B7F0		&lt;--- <A HREF="#3combiendejours">inter1.3 how many day left?</A>
+
+:004AA1CD 85C0                    test eax, eax
+
+:004AA1CF 743E                    je 004AA20F		&lt;--- if eax=0 jmp good guy
+
+							 change into jmp 004AA20F
+
+* Reference To: MFC40.MFC40:NoName0896, Ord:0411h
+
+                                  |
+
+:004AA1D1 E8586C0200              Call 004D0E2E
+
+:004AA1D6 85C0                    test eax, eax
+
+:004AA1D8 B800000000              mov eax, 00000000
+
+:004AA1DD 740C                    je 004AA1EB
+
+* Reference To: MFC40.MFC40:NoName0896, Ord:0411h
+
+                                  |
+
+:004AA1DF E84A6C0200              Call 004D0E2E
+
+:004AA1E4 8B10                    mov edx, [eax]
+
+:004AA1E6 8BC8                    mov ecx, eax
+
+:004AA1E8 FF5278                  call [edx+78]
+
+* Referenced by a   Jump at Address:
+
+|:004AA1DD(C)
+
+|
+
+:004AA1EB 6A00                    push 00000000
+
+:004AA1ED 8B4020                  mov eax, [eax+20]
+
+:004AA1F0 6A00                    push 00000000
+
+:004AA1F2 682E050000              push 0000052E
+
+:004AA1F7 50                      push eax
+
+* Reference To: USER32.PostMessageA, Ord:01A3h
+
+                                  |
+
+:004AA1F8 FF15783A5000            Call dword ptr [00503A78]
+
+* Referenced by a   Jump at Address:
+
+|:004AA2C3(U)
+
+|
+
+:004AA1FE 33C0                    xor eax, eax
+
+* Referenced by a   Jump at Address:
+
+|:004AA307(U)
+
+|
+
+:004AA200 8B4DF4                  mov ecx, [ebp-0C]
+
+:004AA203 5E                      pop esi
+
+:004AA204 64890D00000000          mov fs:[00000000], ecx
+
+:004AA20B 8BE5                    mov esp, ebp
+
+:004AA20D 5D                      pop ebp
+
+:004AA20E C3                      ret
+
+
+
+
+
+* Referenced by a   Jump at Address:
+
+|:004AA1CF(C)
+
+|
+
+:004AA20F 6822270000              push 00002722		&lt;--- good guy
+
+:004AA214 E8B796FDFF              call 004838D0
+
+:004AA219 83C404                  add esp, 00000004
+
+:004AA21C 6685C0                  test ax, ax
+
+:004AA21F 7427                    je 004AA248
+
+:004AA221 68C0000000              push 000000C0
+
+:004AA226 E8A534F7FF              call 0041D6D0
+
+:004AA22B 83C404                  add esp, 00000004
+
+:004AA22E 3D82040000              cmp eax, 00000482
+
+:004AA233 0F8585000000            jne 004AA2BE
+
+:004AA239 6A00                    push 00000000
+
+:004AA23B 6822270000              push 00002722
+
+:004AA240 E8FB97FDFF              call 00483A40
+
+:004AA245 83C408                  add esp, 00000008
+
+<A NAME="3combiendejours">----------------------------------------------------------------------</A>
+
+inter1.3
+
+----------------------------------------------------------------------
+
+* Referenced by a CALL at Address:
+
+|:004AA1C8   
+
+|
+
+:0049B7F0 53                      push ebx
+
+:0049B7F1 56                      push esi
+
+:0049B7F2 57                      push edi
+
+:0049B7F3 8BF1                    mov esi, ecx
+
+:0049B7F5 33FF                    xor edi, edi
+
+:0049B7F7 E834FFFFFF              call 0049B730		&lt;--- <A HREF="#3bitok">inter2.3 last bits ok
+
+</A>:0049B7FC 33DB                    xor ebx, ebx
+
+:0049B7FE 85C0                    test eax, eax
+
+:0049B800 7441                    je 0049B843
+
+:0049B802 57                      push edi
+
+* Reference To: MSVCRT40.time, Ord:0466h
+
+                                  |
+
+:0049B803 FF1558375000            Call dword ptr [00503758]
+
+:0049B809 83C404                  add esp, 00000004
+
+:0049B80C 817E10E8030000          cmp [esi+10], 000003E8
+
+:0049B813 7311                    jnb 0049B826
+
+:0049B815 8B4E2C                  mov ecx, [esi+2C]
+
+:0049B818 394E30                  cmp [esi+30], ecx
+
+:0049B81B 750E                    jne 0049B82B
+
+:0049B81D 3BC8                    cmp ecx, eax
+
+:0049B81F 760A                    jbe 0049B82B
+
+:0049B821 394628                  cmp [esi+28], eax
+
+
+
+:0049B824 7705                    ja 0049B82B
+
+* Referenced by a   Jump at Address:
+
+|:0049B813(C)
+
+|
+
+:0049B826 BF01000000              mov edi, 00000001
+
+* Referenced by a   Jump at Addresses:
+
+|:0049B81B(C), :0049B81F(C), :0049B824(C)
+
+|
+
+:0049B82B 394618                  cmp [esi+18], eax
+
+:0049B82E 7605                    jbe 0049B835
+
+:0049B830 BB01000000              mov ebx, 00000001
+
+* Referenced by a   Jump at Address:
+
+|:0049B82E(C)
+
+|
+
+:0049B835 85FF                    test edi, edi
+
+:0049B837 740A                    je 0049B843
+
+:0049B839 85DB                    test ebx, ebx
+
+:0049B83B 7406                    je 0049B843
+
+:0049B83D 33C0                    xor eax, eax
+
+:0049B83F 5F                      pop edi
+
+:0049B840 5E                      pop esi
+
+:0049B841 5B                      pop ebx
+
+:0049B842 C3                      ret
+
+
+
+
+
+* Referenced by a   Jump at Addresses:
+
+|:0049B800(C), :0049B837(C), :0049B83B(C)
+
+|
+
+:0049B843 B801000000              mov eax, 00000001
+
+:0049B848 5F                      pop edi
+
+:0049B849 5E                      pop esi
+
+:0049B84A 5B                      pop ebx
+
+:0049B84B C3                      ret
+
+
+
+<A NAME="3bitok">-----------------------------------------------------------------------</A>
+
+inter2.3  last bits ok? 
+
+------------------------------------------------------------------------
+
+* Referenced by a CALL at Addresses:
+
+|:0049B4D1   , :0049B7F7   , :0049B917   
+
+|
+
+:0049B730 56                      push esi
+
+:0049B731 8BF1                    mov esi, ecx
+
+:0049B733 E868FFFFFF              call 0049B6A0		&lt;---<A HREF="#3routinebitok"> inter3.3 routine last bits ok?
+
+</A>:0049B738 85C0                    test eax, eax		
+
+:0049B73A 7504                    jne 0049B740			if eax=1 go on else bad guy
+
+:0049B73C 33C0                    xor eax, eax
+
+:0049B73E 5E                      pop esi
+
+:0049B73F C3                      ret
+
+
+
+
+
+* Referenced by a   Jump at Address:
+
+|:0049B73A(C)
+
+|
+
+:0049B740 8B4610                  mov eax, [esi+10]
+
+:0049B743 394614                  cmp [esi+14], eax
+
+:0049B746 751B                    jne 0049B763
+
+:0049B748 8B461C                  mov eax, [esi+1C]
+
+:0049B74B 394618                  cmp [esi+18], eax
+
+:0049B74E 7513                    jne 0049B763
+
+:0049B750 8BCE                    mov ecx, esi
+
+:0049B752 E8D9020000              call 0049BA30		&lt;---<A HREF="#3checksum"> inter4.3 checksum</A>
+
+:0049B757 2B4620                  sub eax, [esi+20]
+
+:0049B75A 5E                      pop esi
+
+:0049B75B 83F801                  cmp eax, 00000001
+
+:0049B75E 1BC0                    sbb eax, eax
+
+:0049B760 F7D8                    neg eax
+
+:0049B762 C3                      ret
+
+
+
+
+
+* Referenced by a   Jump at Addresses:
+
+|:0049B746(C), :0049B74E(C)
+
+|
+
+:0049B763 33C0                    xor eax, eax
+
+:0049B765 5E                      pop esi
+
+:0049B766 C3                      ret
+
+<A NAME="3routinebitok">------------------------------------------------------------------------</A>
+
+inter3.3 final byte
+
+------------------------------------------------------------------------
+
+* Referenced by a CALL at Address:
+
+|:0049B733   
+
+|
+
+:0049B6A0 813947382559            cmp dword ptr [ecx], 59253847
+
+:0049B6A6 7521                    jne 0049B6C9
+
+:0049B6A8 817904CBEACFAD          cmp [ecx+04], ADCFEACB
+
+:0049B6AF 7518                    jne 0049B6C9
+
+:0049B6B1 8179085C0E5F8D          cmp [ecx+08], 8D5F0E5C
+
+:0049B6B8 750F                    jne 0049B6C9
+
+:0049B6BA 81790CA4E9F8B6          cmp [ecx+0C], B6F8E9A4
+
+:0049B6C1 7506                    jne 0049B6C9
+
+:0049B6C3 B801000000              mov eax, 00000001
+
+:0049B6C8 C3                      ret
+
+
+
+
+
+* Referenced by a   Jump at Addresses:
+
+|:0049B6A6(C), :0049B6AF(C), :0049B6B8(C), :0049B6C1(C)
+
+|
+
+:0049B6C9 33C0                    xor eax, eax
+
+:0049B6CB C3                      ret
+
+
+
+
+
+<A NAME="3checksum">------------------------------------------------------------------------</A>
+
+inter4.3
+
+---------------------------------------------------------------------------
+
+* Referenced by a CALL at Address:
+
+|:0049B752   
+
+|
+
+:0049BA30 83EC10                  sub esp, 00000010
+
+:0049BA33 B854ABD729              mov eax, 29D7AB54
+
+:0049BA38 BA01000000              mov edx, 00000001
+
+:0049BA3D 53                      push ebx
+
+:0049BA3E 56                      push esi
+
+:0049BA3F BB03000000              mov ebx, 00000003
+
+:0049BA44 88542408                mov [esp + 08], dl
+
+:0049BA48 57                      push edi
+
+:0049BA49 885C240D                mov [esp + 0D], bl 
+
+:0049BA4D 885C240F                mov [esp + 0F], bl 
+
+:0049BA51 88542410                mov [esp + 10], dl
+
+:0049BA55 885C2412                mov [esp + 12], bl 
+
+:0049BA59 885C2414                mov [esp + 14], bl 
+
+:0049BA5D 88542415                mov [esp + 15], dl
+
+:0049BA61 C644240E04              mov [esp + 0E], 04
+
+:0049BA66 C644241102              mov [esp + 11], 02
+
+:0049BA6B 33FF                    xor edi, edi
+
+:0049BA6D 885C2417                mov [esp + 17], bl 
+
+:0049BA71 C644241304              mov [esp + 13], 04
+
+:0049BA76 C644241602              mov [esp + 16], 02
+
+:0049BA7B C644241802              mov [esp + 18], 02
+
+* Referenced by a   Jump at Address:
+
+|:0049BAA1(C)
+
+|
+
+:0049BA80 33F6                    xor esi, esi
+
+:0049BA82 8A543C0C                mov dl, [esp + edi + 0C]
+
+:0049BA86 84D2                    test dl, dl
+
+:0049BA88 7411                    je 0049BA9B
+
+:0049BA8A 33DB                    xor ebx, ebx
+
+:0049BA8C 8ADA                    mov bl , dl
+
+* Referenced by a   Jump at Address:
+
+|:0049BA99(C)
+
+|
+
+:0049BA8E C1E608                  shl esi, 08
+
+:0049BA91 33D2                    xor edx, edx
+
+:0049BA93 8A11                    mov dl, [ecx]
+
+:0049BA95 41                      inc ecx
+
+:0049BA96 03F2                    add esi, edx
+
+:0049BA98 4B                      dec ebx
+
+:0049BA99 75F3                    jne 0049BA8E
+
+* Referenced by a   Jump at Address:
+
+|:0049BA88(C)
+
+|
+
+:0049BA9B 03C6                    add eax, esi
+
+:0049BA9D 47                      inc edi
+
+:0049BA9E 83FF0D                  cmp edi, 0000000D
+
+:0049BAA1 72DD                    jb 0049BA80
+
+:0049BAA3 5F                      pop edi
+
+:0049BAA4 5E                      pop esi
+
+:0049BAA5 5B                      pop ebx
+
+:0049BAA6 83C410                  add esp, 00000010
+
+:0049BAA9 C3                      ret
+
+<A NAME="boitelettre"></A>
+
+---------------------------------------------------------------------------
+
+V
+
+v»rif lors d'une suppression de boite aux lettres
+
+---------------------------------------------------------------------------
+
+* Referenced by a CALL at Addresses:
+
+|:0042A44C   , :0043325B   , :004333D2   , :00451C5F   , :00494E1B   , 
+
+|:004C739A   
+
+|
+
+:00432D70 B9B89F4F00              mov ecx, 004F9FB8
+
+:00432D75 E8D68A0600              call 0049B850		&lt;--<A HREF="#1combienjour"> inter1.4 how many day left?
+
+</A>:00432D7A 85C0                    test eax, eax
+
+:00432D7C 740E                    je 00432D8C		&lt;-- if eax=0 jmp good guy
+
+:00432D7E 6AFF                    push FFFFFFFF		change into jmp 432d8c
+
+:00432D80 6A00                    push 00000000
+
+* Possible Reference to String Resource ID=00096: &quot;Votre version d'»valuation valable 30 jours est expir»e. Pou&quot;
+
+                                  |
+
+:00432D82 6A60                    push 00000060
+
+* Reference To: MFC40.MFC40:NoName0248, Ord:0424h
+
+                                  |
+
+:00432D84 E82FE70900              Call 004D14B8
+
+:00432D89 33C0                    xor eax, eax
+
+:00432D8B C3                      ret
+
+
+
+
+
+* Referenced by a   Jump at Address:
+
+|:00432D7C(C)
+
+|
+
+:00432D8C 833DA0694F0000          cmp dword ptr [004F69A0], 00000000	&lt;-- good guy
+
+:00432D93 751F                    jne 00432DB4
+
+:00432D95 A1006C4F00              mov eax, [004F6C00]
+
+:00432D9A 50                      push eax
+
+* Reference To: MFC40.MFC40:NoName0916, Ord:040Bh
+
+                                  |
+
+:00432D9B E828E00900              Call 004D0DC8
+
+:00432DA0 8B4804                  mov ecx, [eax+04]
+
+:00432DA3 E898FE0000              call 00442C40
+
+:00432DA8 A3A0694F00              mov [004F69A0], eax
+
+:00432DAD 85C0                    test eax, eax
+
+:00432DAF 7503                    jne 00432DB4
+
+:00432DB1 33C0                    xor eax, eax
+
+:00432DB3 C3                      ret
+
+----------------
+
+inter1.4
+
+----------------
+
+----------------
+
+inter2.4
+
+----------------
+
+----------------
+
+inter3.4
+
+----------------
+
+----------------
+
+inter4.4
+
+----------------
+
+
+
+
+
+<A NAME="patch">-----------------------------------------------------------------------------</A>
+
+
+
+VI )Make a patch for Eudora Pro 3.0.1( french version)
+
+ 
+
+-----------------------------------------------------------------------------
+
+
+
+
+
+
+
+SEARCH FOR
+
+
+
+1)
+
+
+
+E8CC97050085C0740A
+
+
+
+replace by
+
+
+
+E8CC97050085C09090
+
+
+
+2)
+
+
+
+0F85CC000000
+
+replace by
+
+E9CD00000090
+
+3)
+
+
+
+0F8368FFFFFF
+
+replace by
+
+E969FFFFFF90
+
+4)
+
+
+
+E8625CFFFF85C07445
+
+ replace by
+
+E8625CFFFF85C0EB45
+
+
+
+5)
+
+E87A22FFFF85C07437
+
+replace by
+
+E87A22FFFF85C0EB37
+
+
+
+6)
+
+E82316FFFF85C0743E
+
+replace by
+
+E82316FFFF85C0EB3E
+
+
+
+7)
+
+E8D68A060085C0740E
+
+replace by
+
+E8D68A060085C0EB0E
+
+
+
+OF course there is a lot of way to make a patch...
+
+
+
+PS: I think that i found all the piece of code about protection, if  i'm false <BR>
+
+ tell me <A HREF="mailto:chineese@mygale.org">chineese@mygale.org
+
+</A>		
+
+
+
+<BR>
+
+</PRE>
+
+<BR>
+
+<HR ALIGN="CENTER" WIDTH="100%" SIZE="3">
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</I></CENTER>
+
+<BR><CENTER>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html"> homepage</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"> 
+
+<A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm"> links</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0">
+
+<A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm"> anonymity</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm"> +ORC</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm"> students' essays</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm"> tools</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm"> cocktails</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm"> search_forms</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm"> mailFraVia</A></CENTER><BR>
+
+
+
+<CENTER>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm"> Is reverse engineering illegal?</A></CENTER>
+
+<CENTER><HR ALIGN="CENTER" WIDTH="100%" SIZE="2"></CENTER>
+
+
+
+</BODY>
+
+</HTML>
+
+
+
+
+
+
+
+</BODY>
+
+</HTML>
+
+            
+

@@ -1,0 +1,62 @@
+<HTML>
+
+<HEAD>
+
+<META Name="Voluntary Content Rating" content="it's fravia's: great!">
+
+<TITLE>sice_al1.htm: Kaxeli's Softice's DigitCheck's Checkdigit :-)</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR=#C0C0C0 TEXT=#001010 ALINK=#405040 VLINK=#8850AA>
+
+<CENTER>
+
+<FONT size=+4>Kaxeli's Softice's DigitCheck's Checkdigit :-)</FONT>
+
+</CENTER>
+
+<HR>
+
+Soft-Ice setup uses DigitCheck function from utility.dll (part of the setup package) to validate
+
+the s/n. If s/n is invalid, DigitCheck will return 0 and cl register containing the corrected
+
+value for bad symbol in s/n. Following program demonstrates how to ask CheckDigit to conveniently
+
+generate serial numbers for us. For product ID list you can search into the nminst32.dll for 431.
+
+You will see huge table with old and even future product IDs. Intention or stupidity
+
+?<BR><BR>#include &lt;windows.h&gt;<BR>#include &lt;stdio.h&gt;<BR><BR>int main(int argc, char**
+
+argv)<BR>{<BR>    HANDLE h;<BR>    char sn[128];<BR>    int (*check)(char*);<BR>    char c;<BR>   
+
+int i = 8, ok;<BR><BR>    if ((h = LoadLibrary("utility.dll")) == 0 ||<BR>       (((void*&)check)
+
+= GetProcAddress(h, "DigitCheck")) == 0)<BR>    {<BR>        printf("can't load
+
+utility.dll\n");<BR>        return 1;<BR>    }<BR>    if (argc == 2)<BR>    {<BR>       
+
+strcpy(sn, argv[1]);<BR>    }<BR>    else<BR>    {<BR>        printf("enter serial number prefix,
+
+8 hexadecimal digits, starting with valid 3 digit product code:\n");<BR>        scanf("%s",
+
+sn);<BR>        printf("generated s/n:\n");<BR>    }<BR>    strcpy(sn + i, "zzzz");<BR>    while
+
+(1)<BR>    {<BR>        ok = check(sn);<BR>        _asm mov c, cl<BR>        if (ok)<BR>       
+
+{<BR>           sn[i] = 0;<BR>           break;<BR>        }<BR>        sn[i++] = toupper(c);<BR>   
+
+}<BR>    printf("%.4s-%.6s-%.2s", sn, sn + 4, sn + 10);<BR>    FreeLibrary(h);<BR>    return
+
+0;<BR>}<BR><BR>
+
+<BR>
+
+<BR>
+
+kaxeli(at)yahoo.com
+
+
+

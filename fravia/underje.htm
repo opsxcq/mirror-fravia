@@ -1,0 +1,346 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>underje</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+<CENTER><FONT size="+3">JEREMY LILLEY'S PROTEXE! EXE/COM V5.5</FONT><BR><BR>
+
+(&quot;Exploring a weak protection scheme&quot;)<BR> <BR>
+
+<H4>by The Undertaker<BR>
+
+<BR>
+
+(24 September 1997, slightly edited by fravia+)</H4>
+
+<HR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">Courtesy of fravia's page 
+
+of reverse engineering<BR><BR>
+
+<I>Well,  here is a new essay from our Srilankan friend, The Undertaker, who &quot;tackles&quot; 
+
+here a 
+
+commercial protector... and, as usual, said protectors make a very meagre figure! You'll 
+
+learn something about Keyboard &amp; timer interrupt masking routines and the usual 
+
+anti-softice trick (MOV SI,4647) here.<BR>A small critic: can you please please remember 
+
+to GIVE THE EXACT LOCATION where we can download your targets? Yes, we all 
+
+know how to search and find them... but what's the point of keeping to oneself a basic 
+
+information like the BEST (quickest, &quot;bandwidthest&quot;) location for downloading our targets?</I><HR size="6">
+
+<FONT size="+1">
+
+JEREMY LILLEY'S PROTEXE! EXE/COM V5.5<BR>
+
+Exploring a weak protection scheme<BR>
+
+By<BR>
+
+The Undertaker -=BANDA=-</CENTER></FONT><PRE>
+
+
+
+<INTRODUCTION</b>
+
+Well, I thought  that Jeremy was a good software protectionist.
+
+My thoughts  shattered once I saw his protexe! program. 
+
+Actually I expected lots of traps, of anti debugging tricks, of new methods 
+
+of protection from a program named &quot;protexe&quot;! 
+
+But I ended up with a big sad disappointment. 
+
+Here is the story called &quot;Promising a lot and Delivering scant&quot;.
+
+I think every reverser will feel like I do about protexe!.
+
+
+
+<B>How I did proceed:</B>
+
+First I encrypted a .EXE file using protexe!. 
+
+I called it <FONT color="blue">test.exe</FONT>
+
+Then I used Soft-Ice 2.80 to analyse the encrypted program. 
+
+Let's go, +friends:
+
+Load the encrypted program using Softice's loader.
+
+<FONT color="blue">
+
+ldr test.exe
+
+</FONT>
+
+In the early part of the encrypted file you can see 
+
+Keyboard &amp; timer interrupt masking routines like.
+
+
+
+XXXX:XXXX OUT   21,BA           --&gt;     Keyboard mask.
+
+XXXX:XXXX OUT   21,BB           --&gt;     Keyboard &amp; timer mask.
+
+
+
+Lame tricks isn't it? 
+
+Avoid all these (don't trace into them) &amp; put a break point &amp; go.
+
+
+
+BPINT   3
+
+
+
+You'll land here...
+
+
+
+XXXX:0194 CC            INT     3
+
+XXXX:0195 EBFD          JMP     0194
+
+XXXX:0197 AC            LOADSB
+
+XXXX:0198 00F8          ADD     AL,BH
+
+XXXX:019A 4A            DEC     DX
+
+XXXX:019B 7503          JNZ     1A0
+
+XXXX:019D 83E909        SUB     CX,+9         --&gt; ***
+
+XXXX:01A0 76E3          MUL     BL
+
+
+
+Now put a execution break point on 19D &amp; go.
+
+
+
+BPX   19D
+
+
+
+Then trace through the code until you see this..
+
+
+
+XXXX:01F7 E421       IN      AL,21
+
+XXXX:     3403       XOR     AL,03   --&gt; Enabling the previously
+
+XXXX:     E621       OUT     21,AL   --&gt; masked keyboard &amp; timer int.
+
+
+
+Rest of the code seems to be CRC checking routine. 
+
+Skip all these junk until you find following snippet:
+
+
+
+XXXX:024B E90000        JMP     24E
+
+XXXX:024E E90000        JMP     251
+
+XXXX:0251 8B868802      MOV     BX,[BP+288]
+
+
+
+Mmmmm! two near jumps with no effects. 
+
+Suspicious isn't it? 
+
+But these two jumps will take you somewhere else once your .EXE file 
+
+has been compressed before using the protexe!. 
+
+If the file is compressed, these jumps take to the decompression 
+
+routines of the packer. 
+
+But if you didn't use any compression utility, before using the
+
+protexe!, the above jumps have no effect. 
+
+Ok! It does not matetr anyway if those jumps have any effect on your 
+
+own test file or not, just skip the rest of the code (don't trace into 
+
+nor process it) and scroll your code window  until you see following 
+
+instructions.
+
+
+
+XXXX:0352 E2F3          LOOP    347
+
+XXXX:0354 BE4746        MOV     SI,4647       --&gt; **
+
+XXXX:0357 B81109        MOV     AX,911
+
+XXXX:035A CC            INT     3
+
+
+
+Remember the Anti-Debugging tricks used to kick Soft-Ice. 
+
+If you don't know or remember them, then read the <A href="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#96'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#96">relevant articles</A> 
+
+provided on Fravia's. 
+
+The above code looks to me as a very simple lame Anti-Debugging trick to kick 
+
+Soft-Ice. 
+
+Let's quickly crack this before we proceed.
+
+
+
+Before you execute INT 3 set SI=0. 
+
+Otherwise SoftIce get stoned. 
+
+Then execute the INT 3 and process until you see the far jump. 
+
+This jump take you to the original code of the .EXE file.
+
+
+
+XXXX:XXXX    JMP  XXXX:XXXX   --&gt; This jump takes you to the
+
+                                  beginning of the unprotected code.
+
+
+
+
+
+Do you think such a <FONT color="blue">protexe!</FONT> can protect your  programs? 
+
+D'you think you can get at least a 20% improvement in terms of protection?
+
+I think that our Jeremy should re-think twice the coding of his protection 
+
+scheme. 
+
+Anyway no protector can protect 100% (should you believe you have found one, 
+
+take a little rest and then crack it :-) 
+
+But at least a commercial  protector should be able to do its job by some 
+
+extent. So I was deceived.
+
+But I found a good thing in protexe! Let's give Jeremy some merit: its good 
+
+CRC checking scheme, and its integration, both are good and well written. 
+
+Unfortunately this can be bypassed very easily as well, as you have seen :-)
+
+By the way, let's not have an &quot;eurocentric&quot; vision of the world: most of the 
+
+countries don't have any &quot;software laws&quot; at all! Including my country: Sri 
+
+Lanka. 
+
+Because of this, every protectionist's job is and will remain very open and 
+
+clear!!! 
+
+So there is no point in annoying the few that try to study seriously all these 
+
+banal and uselessly stupid protection schemes in Europe or in the States... 
+
+should it be necessary, we'll move the whole cracking scene inside a server in
+
+SriLanka or elsewhere... and get much more nastier :-)
+
+
+
+
+
+Greetings goes to all HCU+ friends....
+
+
+
+The Undertaker -=BANDA=-         //SRI LANKA//
+
+</PRE>
+
+<FONT color="green">(c) The Undertaker 1997. All rights reversed</FONT>
+
+<HR ALIGN="CENTER" WIDTH="100%" SIZE="3">
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</I></CENTER>
+
+<BR><CENTER>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#84'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#84">homepage</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#73'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#73">links</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#82'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#82">students' essays</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut CGI-scripts</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering legal?</A></CENTER>
+
+<CENTER><HR ALIGN="CENTER" WIDTH="100%" SIZE="2"></CENTER>
+
+</BODY>
+
+</HTML>
+

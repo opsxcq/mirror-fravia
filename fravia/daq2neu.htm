@@ -1,0 +1,924 @@
+<html><HEAD>
+
+<TITLE>daq2</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+<CENTER><FONT size="+3">More Demo Evaluations:  Caligari Pioneer Pro v1.1</FONT><BR>
+
+<FONT size="+2">
+
+(&quot;Timelock32.dll version 1.0 Key generator&quot;)</FONT>
+
+
+
+<BR>
+
+<H4><I>by +daQ</I>
+
+<BR>(26 July 1997)</H4>
+
+<HR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">
+
+Courtesy of Fravia's page of reverse engineering<BR><HR size="2">
+
+	<I>
+
+Well, +daQ has re-sent his work on Caligari's program. I'm no big fan of 
+
+keygenerators, which are all the rage among many crackers, because I don't 
+
+believe that we should give any lamer the chance to steal software without 
+
+any understanding of our trade (I believe, on the countrary, that we should TEACH 
+
+people how to reverse engineer ANY software they fancy, provided they do 
+
+understand a little our trade). But timelock.dll is a &quot;commercial&quot; protection, 
+
+and our aim is to destroy them, teaching shareware programmers how useless 
+
+it is to rely on this crap and how better (and cleverer) it would be to 
+
+insert a couple of small <B>own</B> routines -in assembly of course- inside their programs in 
+
+order to defeat the casual cracker... therefore this keygenerator for Timelock32.dll is 
+
+welcome, and carries a serious lesson for all shareware programmers!<BR><BR></I></CENTER>
+
+<HR size="2">
+
+<CENTER>
+
+   <H3>
+
+      More Demo Evaluations:  Caligari Pioneer Pro v1.1 by +daQ
+
+   </H3>
+
+   <H4>
+
+      Timelock32.dll version 1.0 Key generator
+
+   </H4>
+
+</CENTER>
+
+
+
+<PRE>
+
+
+
+Difficulty:    Beginner
+
+Time to Fish:  1-3 hours
+
+Tools:         SoftIce, C/C++ compiler (djp)
+
+Comments:      I apologize to everyone for my poor planning
+
+               as this turns out, this describes a key generator
+
+               for all programs that use tlock32.dll (version 1.0)
+
+               This came to my attention after reading Riz la+'s 
+
+               essays; in fact, as i had known yet failed to say,
+
+               the code in he C program presented below can generate
+
+               a reg code for any tlock program (i think, having
+
+               tested it with Pioneer, PioneerPro...all it takes is
+
+               the 'secret' ID number from the exe file.  In both the
+
+               PioneerPro and Pionneer, it was presented right after
+
+               a search for 'ini' in the executable.
+
+
+
+
+
+Preamble to a patch
+
+Welcome!  If you read my <A href="daq2.htm" tppabs="http://www.anticrack.de/fravia/daq2.htm">first essay</A>, you know to download this program
+
+and experiment on it.  Well, as it turned out, I was able to write a key
+
+generator for it;  This is my first ever attempt at a key generator.  I
+
+wrote it a long time ago, so please bear with me if my explanations souds
+
+weak or missing items.  
+
+
+
+To begin with, let's start softice.  We know that there is a 'purchase' 
+
+option, so before disassembling the target, lets just observe it running.
+
+We want to look for any oddities that might be occuring, like comparing
+
+strings (lstrcmpA),
+
+Start softice, and instead of loading a module, just run pioneer pro.
+
+Choose 'purchase', then cntrl-d.  Set a standard series of breakpoints
+
+(at least, standard for me), of
+
+bpx getwindowtexta
+
+bpx getwindowtext
+
+bpx getdlgitemtexta
+
+bpx getdlgitemtext
+
+Enter some bogus info, 123454321 for a unlock code, +daQ 4 EvR, and HCU
+
+as the organization
+
+Soft ice pops up in the at getwindowtexta; clear our other breakpoints,
+
+and hit F5 to continue (3 entry fields, so maybe more than one bpx?)
+
+Ok, so now we see it scans in 2 of our fields with getwindowtexta.  We rerun
+
+the purchase option, enter the same information, and pop into softice again.
+
+
+
+Before we crack, lets just examine the code.
+
+Look carefully at what is going on;  We come out of our 2nd getwindowtexta
+
+(with F11), and now are faced with some code.  Here is a listing from Wdasm85
+
+of tlock32.dll
+
+<HR WIDTH="55%">
+
+                                                                                               
+
+* Possible StringData Ref from Data Obj -&gt;&quot;Please enter your name&quot;                             
+
+                                  |                                                            
+
+:10002136 6890D20010              push 1000D290                                                
+
+:1000213B 6A00                    push 00000000                                                
+
+                                                                                               
+
+* Reference To: USER32.MessageBoxA, Ord:0188h                                                  
+
+                                  |                                                            
+
+:1000213D FF1564030110            Call dword ptr [10010364]                                    
+
+:10002143 E938FEFFFF              jmp 10001F80                                                 
+
+                                                                                               
+
+* Referenced by Jump at Address: 1000212A(C)                                                                                  
+
+|                                                                                              
+
+:10002148 8D442424                lea eax, dword ptr [esp + 24]                                
+
+:1000214C 6A28                    push 00000028                                      
+
+:1000214E 50                      push eax                                                     
+
+:1000214F 57                      push edi                                                     
+
+:10002150 FFD3                    call ebx                                                     
+
+:10002152 8D442424                lea eax, dword ptr [esp + 24]   ;HERE! is where you enter    
+
+:10002156 8D4C2410                lea ecx, dword ptr [esp + 10]   ;after the second BPX        
+
+:1000215A 50                      push eax                        ;pointer to name                             
+
+:1000215B 51                      push ecx                        ;pointer to reg code entered                             
+
+:1000215C E89FF1FFFF              call 10001300                   ;call 'purchase user' routine   
+
+:10002161 83C408                  add esp, 00000008               ;do a d esp-8                
+
+:10002164 85C0                    test eax, eax                   ;if eax is non-zero, then 
+
+                                                                  ;the code is good.<FONT COLOR="FF0000">
+
+:10002166 0F84C1000000            je 1000222D                     ;wrong code; beggar off</FONT>                                                                                        
+
+:1000216C 6A01                    push 00000001                                                
+
+:1000216E E87DF2FFFF              call 100013F0                                                
+
+:10002173 83C404                  add esp, 00000004                                            
+
+                                                                                               
+
+* Possible StringData Ref from Data Obj -&gt;&quot;rb+&quot;                                                
+
+                                  |                                                            
+
+:10002176 6848D00010              push 1000D048                                                
+
+:1000217B 6870E50010              push 1000E570                                                
+
+:10002180 E89B0D0000              call 10002F20                                                
+
+:10002185 83C408                  add esp, 00000008                                            
+
+:10002188 8BF8                    mov edi, eax                                                 
+
+:1000218A 85FF                    test edi, edi                                                
+
+:1000218C 0F84ED000000            je 1000227F                                                  
+
+:10002192 8D442410                lea eax, dword ptr [esp + 10]                                
+
+:10002196 6A00                    push 00000000                                                
+
+:10002198 6A02                    push 00000002                                                
+
+:1000219A 50                      push eax                                                     
+
+:1000219B 57                      push edi                                                     
+
+:1000219C E82F020000              call 100023D0                                                
+
+:100021A1 8D442434                lea eax, dword ptr [esp + 34]
+
+:100021A5 83C410                  add esp, 00000010                                            
+
+:100021A8 68D0E40010              push 1000E4D0                                                
+
+:100021AD 50                      push eax                                                     
+
+                                                                                               
+
+* Possible StringData Ref from Data Obj -&gt;&quot;User&quot;                                               
+
+                                  |                                                            
+
+:100021AE 6880D00010              push 1000D080                                                
+
+                                                                                               
+
+* Possible StringData Ref from Data Obj -&gt;&quot;Registration&quot;                                       
+
+                                  |                                                            
+
+:100021B3 6880D20010              push 1000D280                                                
+
+                                                                                               
+
+* Reference To: KERNEL32.WritePrivateProfileStringA, Ord:0253h       ;If the purchase code
+
+                                  |                                  ;had been accepted, this                          
+
+:100021B8 FF1554020110            Call dword ptr [10010254]          ;is where your file would
+
+                                                                     ;be written.                          
+
+* Possible Reference to Dialog: DLG_PURCHASE2, CONTROL_ID:2335, &quot;&quot;                             
+
+                                  |                                                            
+
+:100021BE 6835230000              push 00002335                                                
+
+:100021C3 56                      push esi                                                     
+
+:100021C4 FFD5                    call ebp                                                     
+
+:100021C6 8D4C2424                lea ecx, dword ptr [esp + 24]                                
+
+:100021CA 6A28                    push 00000028                                                
+
+:100021CC 51                      push ecx                                                     
+
+:100021CD 50                      push eax                                                     
+
+:100021CE FFD3                    call ebx                                                     
+
+:100021D0 8D442424                lea eax, dword ptr [esp + 24]                                
+
+:100021D4 68D0E40010              push 1000E4D0                                                
+
+:100021D9 50                      push eax                                                     
+
+                                                                                               
+
+* Possible StringData Ref from Data Obj -&gt;&quot;Company&quot;                                            
+
+                                  |                                                            
+
+:100021DA 6878D20010              push 1000D278                                                
+
+                                                                                               
+
+* Possible StringData Ref from Data Obj -&gt;&quot;Registration&quot;                                       
+
+                                  |                                                            
+
+:100021DF 6880D20010              push 1000D280                                                
+
+                                                                                               
+
+* Reference To: KERNEL32.WritePrivateProfileStringA, Ord:0253h                                 
+
+                                  |                                                            
+
+:100021E4 FF1554020110            Call dword ptr [10010254]                                    
+
+:100021EA 57                      push edi                                                     
+
+:100021EB E8500D0000              call 10002F40                                                
+
+:100021F0 83C404                  add esp, 00000004                                            
+
+:100021F3 6820E60010              push 1000E620                                                
+
+                                                                                               
+
+* Possible StringData Ref from Data Obj -&gt;&quot;RegNum&quot;                                             
+
+                                  |                                                            
+
+:100021F8 684CD00010              push 1000D04C                                                
+
+:100021FD 6850E60010              push 1000E650                                                
+
+                                                                                               
+
+* Reference To: KERNEL32.WriteProfileStringA, Ord:025Ah                                        
+
+                                  |                                                            
+
+:10002202 FF1550020110            Call dword ptr [10010250]                                    
+
+:10002208 C705C0E4001003000000    mov dword ptr [1000E4C0], 00000003                           
+
+:10002212 6A02                    push 00000002                                                
+
+:10002214 E8D7F1FFFF              call 100013F0                                                
+
+:10002219 83C404                  add esp, 00000004                                            
+
+:1000221C 6800200000              push 00002000                                                
+
+:10002221 6850E60010              push 1000E650                                                
+
+                                                                                               
+
+* Possible StringData Ref from Data Obj -&gt;&quot;Thank you for your purchase!&quot;                       
+
+                                  |                                                            
+
+:10002226 6858D20010              push 1000D258                                                
+
+:1000222B EB4A                    jmp 10002277                                                 
+
+
+
+<FONT COLOR="FF0000">                                                                                               
+
+* Referenced by a Jump at Address:10002166(C)   ;beggar off jump lands here  </FONT>
+
+|                                                                                              
+
+:1000222D 8D442410                lea eax, dword ptr [esp + 10]      ;pointer to entered reg code
+
+:10002231 50                      push eax                                                     
+
+:10002232 E8F9EFFFFF              call 10001230                      ;call 'restore trial' routine
+
+:10002237 83C404                  add esp, 00000004                                            
+
+:1000223A 85C0                    test eax, eax                      ;if result is nonzero, trial is restored
+
+<FONT COLOR="FF0000">
+
+:1000223C 742A                    je 10002268                        ;Final beggar off jump</FONT>
+
+:1000223E C705C0E4001001000000    mov dword ptr [1000E4C0], 00000001                           
+
+:10002248 E873F9FFFF              call 10001BC0                                                
+
+:1000224D 6A01                    push 00000001                                                
+
+:1000224F E89CF1FFFF              call 100013F0                                                
+
+:10002254 83C404                  add esp, 00000004                                            
+
+:10002257 6800200000              push 00002000                                                
+
+:1000225C 6850E60010              push 1000E650                                                
+
+                                                                                               
+
+* Possible StringData Ref from Data Obj -&gt;&quot;Your trial period has been restored.&quot;               
+
+                                  |                                                            
+
+:10002261 6830D20010              push 1000D230                                                
+
+:10002266 EB0F                    jmp 10002277                                                 
+
+                                                                                               
+
+* Referenced by a Jump at Address:1000223C(C)                                                                                  
+
+|                                                                                              
+
+:10002268 6800200000              push 00002000                                                
+
+:1000226D 6850E60010              push 1000E650                                                
+
+                                                                                               
+
+* Possible StringData Ref from Data Obj -&gt;&quot;You have entered an incorrect &quot;                     
+
+                                        -&gt;&quot;code please contact the vendor.&quot;                    
+
+                                  |                                                            
+
+:10002272 68F0D10010              push 1000D1F0                                                
+
+
+
+
+
+Ok.....
+
+
+
+If you've followed the poor marks i left, you can see there if *two*
+
+regcode checks.  One is at offset 10001300 and the other is at 10001230
+
+The first one, if it doesn't jump away, leads to the final message, &quot;Thank you
+
+for your purchase&quot;.  This is the one we want (althought the second is just as
+
+fun).  Please note
+
+:10002161 83C408                  add esp, 00000008
+
+If you do an d esp-8, and look around that area, you will notice both the bogus
+
+reg code and the actual reg code we enetered.
+
+
+
+So how can we crack this? Well, lets screw the patch, and just read in our little
+
+regnumber so nicely displayed for us.  Or, if you feel like having to type all
+
+that bull in everytime, just nop the jmp (it's not nop sensitive...)
+
+
+
+*grin* I'd like to take this moment to thank Riz la+ for making the point of
+
+listing Caligari's PPro .... otherwise i would never have checked timelocks's site
+
+fore more information. (see another article on <A HREF="daqtlk.htm" tppabs="http://www.anticrack.de/fravia/daqtlk.htm">Timelock's code</A>.)
+
+
+
+Now, we will show you how to get *any* code for pioneer...let's build +daQ's first
+
+keygenerator.
+
+
+
+<H3>
+
+   Key Generation for Pioneer Pro by +daQ
+
+</H3>
+
+To the best of my knowledge, no key generator exists.  Therefore, this is a truly first.
+
+
+
+Remember back when we discussed that call and test eax, eax?  Well, lets have a look at
+
+the source code around that call.
+
+
+
+Some notes:  Do a d eax, d esp, d edx, etc often in this section.  Step through it 
+
+slowly, taking notes (i ended up with 3 pages front and back for my code generator)
+
+ESP points to our finished code, ECX points to our registration ID, and 
+
+EDX to the *secret* code, which is actually hidden in the exe...hard coded 
+
+is always so poor.  It would have been better to generate it on the fly, and store 
+
+it, rather than leaving blatantly out in the open.
+
+
+
+My key generator isn't well documented; BUT you should print both out and study
+
+where they are the same.  I have moved the store parts of the regcode in a more
+
+natural fashion (ie, save the correct digit before loading a new one), to make 
+
+it easier to read.
+
+
+
+A couple of notes here (this is how i did it)
+
+<FONT COLOR="FF00FF">2 1 2 9 7 2 7 7 1 1 1 6 <THE serial number you are presented</FONT>
+
+<FONT COLOR="0000FF">0 1 2 3 4 5 6 7 8 9 A B <THE offeset used with [1000E62_] where the _ is the hex below the code</FONT>
+
+
+
+<FONT COLOR="FF00FF">6 5 3 3 1 0 <THE *secret* code "from.class" tppabs="http://fravia.org/from.class" the executable</FONT>
+
+<FONT COLOR="0000FF">0 1 2 3 4 5 <THE offest used with EDX</FONT>
+
+
+
+ESP points to the finished registration code.  It is referenced with +x where x is
+
+an offset.  Very nice. (for us)
+
+
+
+Final comments:
+
+this version generates a file called .tdk (pproi.tdk) in the /windows dir.  Remove
+
+it and you can experiment more with these generators.
+
+
+
+* Referenced by a CALL at Address:10001308   
+
+|
+
+:10001A50 A13CD00010              mov eax, [1000D03C]
+
+:10001A55 83EC0C                  sub esp, 0000000C
+
+
+
+* Possible StringData Ref from Data Obj -&gt;&quot;00000000&quot;
+
+                                  |
+
+:10001A58 B93CD00010              mov ecx, 1000D03C
+
+:10001A5D 8D542400                lea edx, dword ptr [esp]
+
+:10001A61 8902                    mov dword ptr [edx], eax
+
+:10001A63 8B4104                  mov eax, dword ptr [ecx+04]
+
+:10001A66 8A4908                  mov cl, byte ptr [ecx+08]
+
+:10001A69 894204                  mov dword ptr [edx+04], eax
+
+:10001A6C 884A08                  mov byte ptr [edx+08], cl
+
+:10001A6F 8B15C4E40010            mov edx, dword ptr [1000E4C4]   ;this is the pointer to the
+
+                                                                  ;secret code in the .exe file
+
+:10001A75 8A0D2AE60010            mov cl, byte ptr [1000E62A]     ;CL==1
+
+:10001A7B 8A4203                  mov al, byte ptr [edx+03]       ;Al==3
+
+:10001A7E 3AC1                    cmp al, cl
+
+:10001A80 7C02                    jl 10001A84                     ;if 3 is less then 1, jmp away 
+
+:10001A82 8AC1                    mov al, cl                      ;AL==1
+
+
+
+* Referenced by a Jump at Address:10001A80(C)
+
+|
+
+:10001A84 8B15C4E40010            mov edx, dword ptr [1000E4C4]   ;this is the pointer to the
+
+                                                                  ;secret code in the .exe file
+
+:10001A8A 8A0D2BE60010            mov cl, byte ptr [1000E62B]     ;CL==6
+
+:10001A90 88442400                mov byte ptr [esp], al          ;writes our 1st digit (1)     
+
+:10001A94 8A4204                  mov al, byte ptr [edx+04]       ;AL==1
+
+:10001A97 3AC1                    cmp al, cl
+
+:10001A99 7F02                    jg 10001A9D                     ;if 1 is greater than 6, jmp away
+
+:10001A9B 8AC1                    mov al, cl                      ;AL==6
+
+
+
+* Referenced by a Jump at Address:10001A99(C)
+
+|
+
+:10001A9D 8B15C4E40010            mov edx, dword ptr [1000E4C4]   ;this is the pointer to the
+
+                                                                  ;secret code in the .exe file
+
+:10001AA3 8A0D26E60010            mov cl, byte ptr [1000E626]     ;CL==7
+
+:10001AA9 88442401                mov byte ptr [esp + 01], al     ;writes our 2nd digit (6)
+
+:10001AAD A029E60010              mov al, [1000E629]              ;AL==1
+
+:10001AB2 88442402                mov byte ptr [esp + 02], al     ;write then 3rd digit (1)
+
+<FONT COLOR="880088">                                                                  ;Notice no compare, straight store</FONT>
+
+:10001AB6 8A4201                  mov al, byte ptr [edx+01]       ;AL==5
+
+:10001AB9 3AC1                    cmp al, cl
+
+:10001ABB 7F02                    jg 10001ABF                     ;if 5 is greater than 7, jmp away
+
+:10001ABD 8AC1                    mov al, cl                      ;AL==7
+
+
+
+* Referenced by a Jump at Address:10001ABB(C)
+
+|
+
+:10001ABF 8B15C4E40010            mov edx, dword ptr [1000E4C4]   ;this is the pointer to the
+
+                                                                  ;secret code in the .exe file
+
+:10001AC5 8A0D27E60010            mov cl, byte ptr [1000E627]     ;CL==7
+
+:10001ACB 88442403                mov byte ptr [esp + 03], al     ;write the 4th digit (7)
+
+:10001ACF A028E60010              mov al, [1000E628]              ;AL==1
+
+:10001AD4 88442404                mov byte ptr [esp + 04], al     ;write 5th digit (1)
+
+<FONT COLOR="880088">                                                                  ;Notice no compare, straight store</FONT>
+
+:10001AD8 8A4205                  mov al, byte ptr [edx+05]       ;AL==0
+
+:10001ADB 3AC1                    cmp al, cl                   
+
+:10001ADD 7C02                    jl 10001AE1                     ;if 0 is less than 7, jmp away
+
+:10001ADF 8AC1                    mov al, cl                      ;nothing happens
+
+
+
+* Referenced by a Jump at Address:10001ADD(C)
+
+|
+
+:10001AE1 8B15C4E40010            mov edx, dword ptr [1000E4C4]   ;this is the pointer to the
+
+                                                                  ;secret code in the .exe file
+
+:10001AE7 8A0D2BE60010            mov cl, byte ptr [1000E62B]     ;CL==6
+
+:10001AED 88442405                mov byte ptr [esp + 05], al     ;write 6th digit (0)
+
+:10001AF1 A025E60010              mov al, [1000E625]              ;AL==2
+
+:10001AF6 88442406                mov byte ptr [esp + 06], al     ;write the 7th digit (2)
+
+<FONT COLOR="880088">                                                                  ;Notice no compare, straight store</FONT>
+
+:10001AFA 8A4202                  mov al, byte ptr [edx+02]       ;AL==2
+
+:10001AFD 3AC1                    cmp al, cl
+
+:10001AFF 7F02                    jg 10001B03                     ;if 2 is greater than 6, jmp away
+
+:10001B01 8AC1                    mov al, cl                      ;AL==6
+
+
+
+* Referenced by a Jump at Address:10001AFF(C)
+
+|
+
+:10001B03 8B4C2410                mov ecx, dword ptr [esp + 10]
+
+:10001B07 88442407                mov byte ptr [esp + 07], al     ;write the last digit (6)
+
+:10001B0B 8D442400                lea eax, dword ptr [esp]
+
+:10001B0F 50                      push eax
+
+:10001B10 51                      push ecx
+
+
+
+* Reference To: KERNEL32.lstrcpyA, Ord:026Fh
+
+                                  |
+
+:10001B11 FF155C020110            Call dword ptr [1001025C]
+
+:10001B17 83C40C                  add esp, 0000000C
+
+:10001B1A C3                      ret
+
+
+
+-------------------------------------------------------------------------
+
+Can you see what is happening?  Pioneer Pro is taking the given
+
+registration ID, and comparing certain number positions with the *secret*
+
+ID, and if one is larger or smaller, storing that value!!!!!!
+
+Rather weak for a protection, cuz once the *secret* ID is found, and the
+
+code looked at, it falls fast.
+
+-------------------------------------------------------------------------
+
+:oh yeah, you can't see the #includes...they are stdio.h, and string.h
+
+         
+
+#include <STDIO.h>
+
+#include <STRING.h>
+
+
+
+#define NumOfNums 13
+
+
+
+
+
+void main(void)
+
+{
+
+int RegArray[NumOfNums];
+
+int RegArrayNormal[NumOfNums-1];
+
+int PionCnstArray[7];
+
+int PionNrmArray[7];
+
+int AuthArray[9];
+
+
+
+      int AL, CL =0; /*lets use register names to keep it simple and understandable*/
+
+      int z=0;
+
+
+
+int x;
+
+
+
+   printf(&quot;\nCode Generator for PioneerPro by +daQ\n\n&quot;);
+
+   printf(&quot;Please Enter your registration numbers\n&quot;);
+
+   printf(&quot;without the PR-, and no spaces:\n&quot;);
+
+      for (x=0; x<13; x++) { RegArray[x]="getchar();" /*Storing our registration number for use*/ } for (x="0;" x<13; x++) { RegArrayNormal[x]="(RegArray[x]" 48); /*converting the getchar into decimal nums we can compare and use*/ } printf("\nNow please enter the 'secret' code "embedded.class" tppabs="http://fravia.org/embedded.class" in the"); printf("\nexecutable file right after the programs 'ini' entry."); printf("\nFor example, pionPro is 653310, pioneer is 448610."); printf("\nIt is 6 digits long: "); for (x="0;" x<6; x++) { PionCnstArray[x]="getchar();" /*Storing our targets number for use*/ } for (x="0;" x<6; x++) { PionNrmArray[x]="(PionCnstArray[x]" 48); /*converting the getchar into decimal nums we can compare and use*/ } printf("\n\nIn order to more fully evaluate the PioneerPro program, the\n"); printf("correct authorization number for the registration code of\n\n\t"); for (x="0;" x<12; x++) { printf("%d",RegArrayNormal[x]); } printf(" would be:\n"); /* Here is the guts of our code generator */ CL="RegArrayNormal[10]" ; /*first mov cl, ecx+A(hex)*/ AL="PionNrmArray[3]" ; if (AL> CL)
+
+            AL=CL;
+
+      AuthArray[0]=AL;
+
+   
+
+      CL = RegArrayNormal[11] ;  /*2nd move and compare*/
+
+      AL = PionNrmArray[4] ;  
+
+         if (AL <CL) AL="CL;" AuthArray[1]="AL;" AL="RegArrayNormal[9]" ; AuthArray[2]="AL;" /*write num quick*/ CL="RegArrayNormal[6]" ; /*3rd mov and compare*/ AL="PionNrmArray[1]" ; if (AL < CL) AL="CL;" AuthArray[3]="AL;" AL="RegArrayNormal[8]" ; AuthArray[4]="AL;" CL="RegArrayNormal[7]" ; /*first mov cl, ecx+A(hex)*/ AL="PionNrmArray[5]" ; if (AL> CL)
+
+            AL=CL;
+
+      AuthArray[5]=AL;
+
+
+
+
+
+      AL = RegArrayNormal[5] ;  
+
+         AuthArray[6]=AL;
+
+
+
+      CL = RegArrayNormal[11] ; /*first mov cl, ecx+A(hex)*/
+
+      AL = PionNrmArray[2] ;  
+
+         if (AL <CL) AL="CL;" AuthArray[7]="AL;" for (x="0;" x<8; x++) { printf("%d",AuthArray[x]); } } /*** End Main Module ***/ That's it. You now have a fully functioning key generator for any program that uses tlock32.dll version 1.0 See if you can modify this program to 'restore' your 'trial period'; the code "is.class" tppabs="http://fravia.org/is.class" almost the same.....Gotta love pre-packaged Spam. Special thanks to +ORC; Man, if you hadn't taken a chance on me back then, I'd be nothing (and probably alot poorer from all these cruddy sgareware programs). A plea: I'm playing around with Zmud <a gref="http://www.zuggsoft.com">Version 4.62</A>.<BR>
+
+Patches are out... teh code seems to detect and screw your own commands.<BR>
+
+
+
+Finally, these are the next two tutorials I'll send (assuming fravia accepts 
+
+my poor work):<BR>
+
+1)	As promised: Peagasys philter (www.jpg.com), already done (Photoshop hacking).<BR>
+
+2)	Windows' LPR spooler v.4.1<BR>
+
+</PRE>
+
+<FONT color="blue">(c) +daQ 1997.</FONT> All rights reserved.
+
+   </PRE>
+
+
+
+<HR ALIGN="CENTER" WIDTH="100%" SIZE="3">
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</I></CENTER>
+
+<BR><CENTER>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"> 
+
+<A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links </A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0">
+
+<A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity </A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays </A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails </A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mailFraVia </A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">is reverse engineering legal? </A></CENTER>
+
+<CENTER><HR ALIGN="CENTER" WIDTH="100%" SIZE="2"></CENTER>
+
+
+
+</BODY>
+
+</HTML>
+
+
+
+
+
+        
+
+
+

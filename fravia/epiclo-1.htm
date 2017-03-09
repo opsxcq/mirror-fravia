@@ -1,0 +1,517 @@
+<html>
+
+<head>
+
+<title>koviepiclo</title>
+
+</head>
+
+<body BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+<center><h2>HomeSite Secrets<br>
+
+(Windows95 registry cracking)</h2><h4><i>by Epic Lord</i></h4>
+
+<br>
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">Courtesy of Fravia's page of 
+
+reverse engineering</center>
+
+<hr size="2">
+
+<i><center>Well an interesting document from our friend EpicLord... the 
+
+reversing approach used here is so good that it will 'hold' for many 
+
+months (a terrible long time on the web)...<br>~
+
+<br>See? I was right! Have a look at ml_am's new
+
+cracking of <a href="hs3.htm" tppabs="http://www.anticrack.de/fravia/hs3.htm">Homesite version 3</a>, for instance!
+
+</i></center><hr size="6">
+
+<pre>
+
+
+
+
+
+HomeSite Secrets        by: Epic Lord
+
+================
+
+
+
+Version 2.5 Pre-Release - March 9, 1997 Copyright 1997 by Nick Bradbury
+
+http://www.dexnet.com/homesite.html
+
+
+
+
+
+Prologue
+
+--------
+
+
+
+This document is a kind of beginners guide for getting rid of some ugly
+
+features of a cute nice program. The level of the essay is low enough for
+
+any windows95 (disaster) user to grasp.
+
+
+
+The informational value of the essay lies in the fact that it is the first
+
+(at least I've known) one on windows95 registry cracking.
+
+
+
+The tools which were used here can be found on the web, without any difficulty.
+
+
+
+
+
+Introduction
+
+------------
+
+
+
+Homesite 2.5 seems to me (IMHO) a very nice and useful program for editing
+
+web pages. It enables the user to edit multiple pages of a(n) homesite
+
+concurrently. Facilitates to edit the whole web site without loosing
+
+individual pages' information.
+
+
+
+Both an internal and an external browser facilitates WYSWYG and the
+
+browsers are user definable.
+
+
+
+And so and so... A very nice program. Little bit clumsy (written in
+
+Delphi). However, it is not freeware :-(. It has some nifty features which
+
+force the user to register. Here comes the explanation (and solutions) of
+
+each:
+
+
+
+
+
+1. Usage count
+
+--------------
+
+
+
+The applications counts how many times it is used. When the counter reaches
+
+some maximum number (50 in this case), it does something unwishful :-).
+
+
+
+After analyzing all the files, it appeared that the count was stored in the
+
+registry. Binary comparison (open registry, export to a file and close; use
+
+the regedit.exe, located in windows directory) of two exported registry
+
+photographes showed that the value is in
+
+
+
+   [HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\WinSHTrack]
+
+   &quot;UserInfo&quot;=&quot;*&quot;
+
+
+
+The value userinfo takes is the ASCII representation of the usage count.
+
+Ex: for 7 times, ASC 7 is written. Therefore, clearing the value of
+
+&quot;Userinfo&quot; (by simply deleting it in the registry editor) will reset the
+
+usage count to 2 (guess why).
+
+
+
+Anyway, by changing the value, it will be possible to use the program
+
+indefinetely.
+
+
+
+By the way, sure, by deleting the whole key (userinfo), the usage counts
+
+will be reset to zero.
+
+
+
+A wonderful utility called <a href="javascript:if(confirm('http://www.mygale.org/01/fravia/regmnsrc.zip  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.mygale.org/01/fravia/regmnsrc.zip'" tppabs="http://www.mygale.org/01/fravia/regmnsrc.zip">registry monitor</a> (by Mark Russimowich &amp; Bryce
+
+Cogswell) can be very useful for tracing the registry calls.
+
+
+
+The required codecrack can be pinpointed by locating RegsetvalueExA.
+
+Beware, this is an advapi32.dll function. You must import advapi.dll to
+
+your favorite debugger:-)
+
+
+
+Let's have a weak crack:
+
+
+
+
+
+:0045CB06 8B45FC                  mov eax, [ebp-04]
+
+:0045CB09 50                      push eax 
+
+:0045CB0A 56                      push esi
+
+:0045CB0B 6A00                    push 00000000
+
+:0045CB0D 8BC7                    mov eax, edi -&gt; here.
+
+
+
+
+
+
+
+patch it with move eax,eax
+
+
+
+     
+
+
+
+this patch will deform the userinfo registry key.
+
+                        Program is always used 1 time.
+
+
+
+:0045CB0F E8506FFAFF              call 00403A64
+
+:0045CB14 50                      push eax
+
+:0045CB15 8B4304                  mov eax, [ebx+04]
+
+:0045CB18 50                      push eax
+
+
+
+* Reference To: advapi32.RegSetValueExA, Ord:0000h -&gt; patched.
+
+
+
+
+
+
+
+no more counter increase
+
+                                  |
+
+:0045CB19 E82E8BFAFF              Call 0040564C
+
+:0045CB1E 85C0                    test eax, eax
+
+:0045CB20 7423                    je 0045CB45
+
+:0045CB22 897DF4                  mov [ebp-0C], edi
+
+
+
+
+
+The crack above is a quick and dirty one. By changing the value, we
+
+distorted the name of the registry key (namely userinfo) and the program
+
+does never able to read its value correctly.
+
+
+
+However, by totally eliminating the call at 0045CB19 with nooping and
+
+moving 0's to eax will do the same more gently. :-)
+
+
+
+By the way, I could not pinpoint the counter cause the program always uses
+
+indirect addressing.
+
+
+
+
+
+2.The Nag Screen
+
+----------------
+
+
+
+Homesite does employ a very boring nag screen scheme. It not only appears
+
+at the beginning, but also at the end; politely :-) reminding you to
+
+register.
+
+
+
+Interestingly enough, I happened to own :-) a cracked version of UrSofts
+
+WDasm7.0 Demo. It is a nice windows95 disassembler and not a Demo anymore.
+
+The related documentation can be found at http://www.mygale.org/01/fravia.
+
+
+
+Of course I disassembled the file [Homesite.exe]. Why? because all the
+
+string references were in it (uh! which references? such as &quot;you may
+
+legally..&quot;).
+
+
+
+I found nothing while analyzing the listing of the file. No menu
+
+references, no dialog references no nothing. Just plain assembler and some
+
+ugly jumps. Smart programmer. Used Borlands 32 bit C++ compiler instead of
+
+ugly Micro$oft's C garbage compilers (sorry, it was Borland's Delphi, not
+
+C++, that's why the references were indirect, errare humanum est).
+
+
+
+Seems that the programmer (or the compiler) keeps all the necessary data in
+
+data segment, and uses them with direct absolute addressing, when
+
+appropriate.
+
+
+
+So, there comes the Borland's Resource Workshop (a must be utility for
+
+better code :-. Can be found at the Reverse Engineering HQ. However,
+
+Delphi's resource compiler slightly differs from the early ones. So
+
+couldn't get rid of the whole nag screen (was my first aim).
+
+
+
+By the way, be careful. Analyzing the code under a debugger shows that the
+
+nag screen is activated through a &quot;sendmessage&quot; event to the child window;
+
+very difficult to trace.
+
+
+
+
+
+3.The Registration Code
+
+-----------------------
+
+
+
+Well, here comes the cream from the crop. All the story above was just for
+
+heating. Now the registration code comes.
+
+
+
+Analyzing the registry calls of the program shows that it looks for a key
+
+&quot;Registration&quot; under Homesite section of HKEY_CURRENT_USER;SOFTWARE. Regmon
+
+clearly shows that the key is &quot;NOTFOUND&quot;.
+
+
+
+Under the key, the program also looks for two string values, a &quot;User&quot; and a
+
+&quot;Reg No&quot; Guess why.
+
+
+
+Well, lets create the key &quot;Registration&quot; and two string values under it,
+
+namely &quot;User&quot; and &quot;Reg No&quot;. Fill the value of &quot;User&quot; with &quot;Epic Lord&quot; ie.
+
+and fire winice.
+
+
+
+If you don't know how to edit the registry :-( use &quot;regedit.exe&quot; under your
+
+windows95 directory.
+
+
+
+The important thing is understanding the registry calls under advapi32.dll.
+
+The standard 16 bit calls are already under kernel.dll. These are 32 bit
+
+calls, generally ended with ExA (RegQueryValueExA, RegSetValueExA etc). The
+
+documentation is pure and simple (can be found using any winapi help) because 
+
+the call parameters are in ASCII (ds:di) and in Integer.
+
+
+
+With all the information, lets put an expert breakpoint with winice3 (see +ORC's
+
+4.2 lesson):
+
+
+
+
+
+bpx RegQueryValueExa If (*edi&gt;='User') do &quot;dd *edi&quot;
+
+
+
+which means
+
+
+
+
+
+1. stop while executing advapi32.RegQueryValueExa
+
+
+
+2. where the contents of EDI &gt;= 'User'
+
+
+
+3. and dump the contents of memory
+
+
+
+EDI points to the name of the key and/or the name of the string value.
+
+Therefore, after 4 breakpoints, you will land a place, where all your
+
+information appears: your name, your false registration number (if any) and
+
+your real registration number. This is registration key checking from win95
+
+registry.
+
+
+
+User  : Epic Lord
+
+Reg No: 160093435806
+
+
+
+See?!
+
+
+
+Just hear the echo. Thank you +ORC and people who distributes the all
+
+necessary manuals, info and tutorials.
+
+
+
+
+
+Epic, May 6th 97</pre>
+
+
+
+<hr ALIGN="CENTER" WIDTH="100%" SIZE="3">
+
+<font color="green">(c) <font color="#5500AA">EpicLord</font> All rights reversed</font>
+
+<hr ALIGN="CENTER" WIDTH="100%" SIZE="3">
+
+<center><i>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</i></center>
+
+<br><center>
+
+<!--<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A HREF="project4.htm" tppabs="http://www.anticrack.de/fravia/project4.htm">Back to Project 4</A>            <hr width=33%>-->
+
+
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><a HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage</a>
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><a HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links</a> 
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><a HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity</a> 
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><a HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC</a>
+
+
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><a HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays</a>
+
+
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><a HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database</a><br>
+
+
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><a HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools</a>
+
+
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><a HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails</a>
+
+
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><a HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut CGI-scripts</a>
+
+
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><a HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms</a>
+
+
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><a HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia+</a><br>
+
+
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><a HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering legal?</a></center>
+
+<center><hr ALIGN="CENTER" WIDTH="100%" SIZE="2"></center>
+
+</body>
+
+</html>

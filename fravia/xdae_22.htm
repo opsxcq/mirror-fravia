@@ -1,0 +1,434 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>xdae_22.htm: Cracking File Read Aloud v1.1 (the chmod indicator) </TITLE>
+
+</HEAD>
+
+
+
+<BODY BGCOLOR=#C0C0C0 TEXT=#001010 LINK=#990099 VLINK=#405040 ALINK=#FF0000>
+
+<CENTER>
+
+
+
+<!-- HEADING AND INDEX -->
+
+<A href="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm"><IMG SRC="academy.gif" tppabs="http://www.anticrack.de/fravia/academy.gif" ALT="academy" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" 
+
+NATURALSIZEFLAG="0" WIDTH="114" HEIGHT="43"></A><BR><FONT color=Gray>
+
+Back to the academy</FONT><BR>
+
+
+
+<H1><B>Cracking File Read Aloud v1.1<BR>
+
+(the chmod indicator)</B></H1><BR>
+
+(Courtesy of fravia's pages of reverse engineering ~ December 1998)<BR><BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN=CENTER HEIGHT=5 WIDTH=413 
+
+ALT= red><BR><BR>
+
+<H2>Cracking File Read Aloud v1.1<BR>
+
+(the chmod indicator)</H2>
+
++Xdaemon / 98'<BR>
+
+24 December 1998</CENTER>
+
+<BR>
+
+Well, a nice little essay for beginners, with an useful (handy) hint: almost anytime that a protection scheme hides something in a file, it will us the chmod function. In good old C  it was like this:
+
+<FONT color=purple><PRE>
+
+int chmod(path, pmode);
+
+char *path;	Path name of existing file
+
+int pmode;	Permission setting for file
+
+</PRE></FONT><BR>
+
+Where the meaning of the pmode argument can be either S_IWRITE, S_IREAD or S_IREAD|S_IWRITE<BR>
+
+If write permission is not given, the file is made read-only (under DOS it is not possible to give write only permission).<BR>
+
+The chmod function returns the value zero if the permission setting is successfully changed, else -1 in case of error (with errno set to ENOENT).	Have fun with this essay.
+
+
+
+<HR>
+
+<PRE>
+
+
+
+Cracking File Read Aloud v1.1
+
+
+
++Xdaemon / 98'
+
+
+
+
+
+
+
+- [Cracking Time] : 10 Mins Including D/L
+
+- [Location     ] : Http://www.winfiles.com if you wish to 'crack along'.
+
+- [Tools Needed ] : Wdasm/Disassembler & Hex Editor
+
+
+
+	Ok we've got the target, a horrible attempt at speech synthesis which
+
+uses .wav files for every word it tries to (90% of the time incorrectly) 
+
+pronounce.
+
+We're not interested in the program at all, I tried it for 30 seconds (Thanks, 
+
+I don't need 30 days to make up my mind) and decided it would have been history 
+
+as soon as it was cracked, this is merely to possibly learn a little
+
+about cracking and to fend off boredom.
+
+
+
+    Before doing anything when cracking you should read the documentation, it 
+
+offers valuable clues about the products protection or lack there of. 
+
+According to the Readme.txt in the distributions .zip file the product will 
+
+only execute 30 times before deactivating itself. 
+
+I actually tried it just to make sure it did it, as some programs bluff, you 
+
+can take my word or try it yourself if it amuses you. 
+
+We are also informed that the program can't be registered but 
+
+you will need to download a new unrestricted version after you register.
+
+I was 99% positive the protector wasn't lying because A) He doesn't seem 
+
+intelligent enough to implement any reg scheme, and the program has no 
+
+registration menu's etc. of anykind, as well as no hits on "regi" with a 
+
+hex editor except for the one "Unregistered Version 1.1" for the main
+
+window, and B) He "sells" you the registered version by giving you a url 
+
+via email where you can download (non pw protected it sounds like) it 
+
+which sounds real bootleg.
+
+
+
+	The first thing I tried was using Win Registry Expose to see if the
+
+program reads or writes any keys in the registry. (This was quicker for me than
+
+loading wdasm and checking the imports, or even searching quickview's output 
+
+but either of those would have found "0" results just as easily). 
+
+I'm starting to think the program stores the counter either in itself or in 
+
+another file now, so I copied the exe to a backup file name and reran it. 
+
+
+
+fc /b fra.exe bak.exe
+
+
+
+gives "0 differences encountered" afterwards. 
+
+Ok, it's not modifying a value stored in itself, so it either modifies something 
+
+like a bad sector, a "leftover" space in your cmos, or just another file it 
+
+decides to make. So -judging from the caliber of the author- we can now deduce
+
+that the day counter is stored in another file somewhere. If you load the program 
+
+into wdasm and look at the imports you will see one with the ending "_chmod", 
+
+this function obviously changes file attributes, we now know almost certainly that 
+
+the file will be hidden, read only, etc.
+
+	
+
+	Load the program into any good hex editor and look near the end and you
+
+shall find : "c:\fzarcsa.zlz". This doesn't seem to have any valid use, except
+
+possibly holding the day count. Before that string is the same string with  
+
+.rb & .wb tacked onto the end, this is how the compiler "built" the file open 
+
+calls they he used to open the file...
+
+
+
+ fp=fopen( "c:\fzarcsa.zlz","rb");. 
+
+
+
+We can now crack this program using the following
+
+batch file to start "fra", calling fra.bat instead of calling fra.exe :
+
+					attrib -s -h -r c:\*.zlz
+
+					del c:\*.zlz
+
+					fra.exe
+
+
+
+	Of course we want to strive for a little more class than that, so fire
+
+up wdasm again and export the file to an .alf of your choice. Load it into a good
+
+editor, or even m$ wordpad, and get ready to search. We know the program is going to
+
+be checking if an input byte (the file was in the format ubyte:days,0) is equal to 
+
+30 decimal.
+
+We could just look for a close fread/fwrite pair in order to find this but we want to 
+
+hit it right on the head, so look for  0000001E in the file. 
+
+
+
+Nothing. I was stumped for about a tenth of a second here, couldn't believe that 
+
+this programmer was above potatohead level, then I got it! 
+
+Try 001E instead, and forgetting the occurrences inside addresses, you will hit 
+
+the first (and only) one that is inside in an instruction.	
+
+	
+
+- You'll end up here...
+
+
+
+* Possible Reference to Menu: MenuID_0001 
+
+:0002.3C02 6A01                   push 0001
+
+:0002.3C04 6A02                   push 0002
+
+:0002.3C06 16                     push ss
+
+:0002.3C07 8D866CFF               lea ax, [bp+FF6C]      - FILE READ BUFFER LOCATION
+
+:0002.3C0B 50                     push ax
+
+:0002.3C0C 9AFFFF0000             call BC450RTL._fread
+
+:0002.3C11 83C40C                 add sp, 000C
+
+:0002.3C14 FFB670FF               push word ptr [bp+FF70]
+
+:0002.3C18 FFB66EFF               push word ptr [bp+FF6E]
+
+:0002.3C1C 9AFFFF0000             call BC450RTL._fclose
+
+:0002.3C21 83C404                 add sp, 0004
+
+
+
+* Referenced by a Jump at Address:0002.3BF8(C)
+
+|
+
+:0002.3C24 83BE6CFF1E             cmp word ptr [bp+FF6C], 001E - F_INPUT DCOUNT BYTE &lt;=&gt; 30 ?
+
+:0002.3C29 7E08                   jle 3C33                     - IF &lt;= 30 then jmp STILL_IN_TRIAL
+
+
+
+* Possible Reference to Menu: MenuID_0001 
+
+                                  |
+
+:0002.3C2B 6A01                   push 0001                    - BEGGAR OFF, used &gt; 30 times                
+
+:0002.3C2D 9AFFFF0000             call 0001.09FFh              - "QUIT" ROUTINE
+
+:0002.3C32 59                     pop cx
+
+
+
+* Referenced by a Jump at Address:0002.3C29(C)
+
+|
+
+:0002.3C33 FF866CFF               inc word ptr [bp+FF6C]      - DCOUNT++ before writing to file
+
+:0002.3C37 1E                     push ds
+
+:0002.3C38 687C1B                 push 1B7C
+
+:0002.3C3B 1E                     push ds
+
+:0002.3C3C 686D1B                 push 1B6D
+
+
+
+*** MORE NON PROTECTION RELATED CODE HERE ***
+
+
+
+* Possible Reference to Menu: MenuID_0001 
+
+                                  |
+
+:0002.3C69 6A01                   push 0001
+
+:0002.3C6B 6A02                   push 0002
+
+:0002.3C6D 16                     push ss
+
+:0002.3C6E 8D866CFF               lea ax, [bp+FF6C]          - LOCATION OF INCREMENTED DCOUNT
+
+:0002.3C72 50                     push ax
+
+:0002.3C73 9AFFFF0000             call BC450RTL._fwrite
+
+:0002.3C78 83C40C                 add sp, 000C
+
+:0002.3C7B FFB66AFF               push word ptr [bp+FF6A]
+
+:0002.3C7F FFB668FF               push word ptr [bp+FF68]
+
+:0002.3C83 9AFFFF0000             call BC450RTL._fclose
+
+:0002.3C88 83C404                 add sp, 0004
+
+:0002.3C8B 6A02                   push 0002
+
+
+
+
+
+So how do we crack it now? You could do a lot of things here but there
+
+is a principle known as "occum's razor" which states that the most simple method that 
+
+works is invariably the most correct one. 
+
+Below is the most simple method you could possibly come up with to
+
+toast this protection.
+
+
+
+OLD : 83BE6CFF1E7E08:cmp word ptr [bp+FF6C], 001E - F_INPUT DCOUNT BYTE &lt;=&gt; 30 ?
+
+                     jle 3C33                     - IF &lt;= 30 then jmp STILL_IN_TRIAL
+
+
+
+NEW : 83BE6CFF1EEB08:cmp word ptr [bp+FF6C], 001E - F_INPUT DCOUNT BYTE &lt;=&gt; 30 ?
+
+                     jmp 3C33                     - DISCARD RESULT, ALWAYS JUMP "STILL_IN_TRIAL"
+
+
+
+	- If you want to have a little laugh have a look at the whole
+
+readme.txt and look for a reference to "blindness", you will no doubt, agree 
+
+with me that the author of this FRA target is not only unable, but also insane.
+
+
+
+				- +Xdaemon 98'
+
+           		modchips(at)gnwmail(point)com</PRE>
+
+<HR><CENTER>
+
+<I>You'r deep inside fravia's pages of reverse engineering, choose your way out</I><HR width=44%>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" ALT="red" WIDTH="13" HEIGHT="13" BORDER="0"
+
+VSPACE="0" HSPACE="0"><A HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage </A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALIGN="BOTTOM" ALT="red" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"> <A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links
+
+</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13"
+
+ALT="red" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0" NATURALSIZEFLAG="0"> <A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity
+
+</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" ALT="red" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A
+
+HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" ALT="red" WIDTH="13" HEIGHT="13" BORDER="0"
+
+VSPACE="0" HSPACE="0"><A HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays </A><IMG SRC=
+
+"bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" ALT="red" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools
+
+</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" ALT="red" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A
+
+HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails </A><BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" ALT="red" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A
+
+HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database </A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" ALT="red" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A
+
+HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER=
+
+"0" VSPACE="0" HSPACE="0" width="13" height="13"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms </A><IMG SRC=
+
+"bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" ALT="red" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia
+
+</A><BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" ALT="red" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A
+
+HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">is reverse engineering legal? </A></FONT></CENTER>
+
+<HR>
+
+</BODY>
+
+</HTML>
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,332 @@
+<HTML>  
+
+<HEAD>  
+
+<TITLE>EnTray v 1.3</TITLE>  
+
+</HEAD>  
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">  
+
+<CENTER><FONT size="+2">EnTray-Vous, Merci<BR></FONT><I>  
+
+Or, &quot;How NOT to use the Registry to protect your software&quot;</I><BR>  
+
+  <IMG SRC="stupid.gif" tppabs="http://www.anticrack.de/fravia/stupid.gif" ALT="HCU" ALIGN="BOTTOM" WIDTH="114" HEIGHT="43" BORDER="0" VSPACE="0" HSPACE="0">  
+
+<BR><BR>  
+
+<H4>by Mammon_<BR>  
+
+<BR>  
+
+(27 August 1997)</H4>  
+
+<HR>  
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">Courtesy of Fravia's page   
+
+of reverse engineering<BR><BR><I>Well, here is the letter I got from the author:</CENTER></I><PRE>Fravia:  
+
+ 
+
+I'm not much one for contributing essays, but this has got to be the
+
+stupidest protection scheme I have ever come across. I cracked this program at
+
+work in under 3 minutes, breaking my previous record with QuickViewPlus 4.0 ( a
+
+5 or so minute BMSG approach done while on the phone...very expedient ;),
+
+and was so shocked by the poor programming in terms of security and in general
+
+that I had to stop using the program. I passed it on to another aspiring
+
+cracker and told him to crack it without w32dasm or Soft-Ice as an exercise... </PRE><I><CENTER>
+
+And this essay contains indeed an important lesson for all shareware 
+
+programmers: try at least not to be OBVIOUS... what's the point of a protection 
+
+scheme so weak that you don't even need to dead list it (let alone winice it) to 
+
+crack it in 2 minutes flat? I know, I know... these &quot;programmers&quot; are not &quot;real&quot; 
+
+programmers... they just assemble toy applications after having read &quot;Teach yourself 
+
+Visual Basic for Windows 95 in 21 days&quot; or some other crap like that... yet, c'mon, 
+
+dear protectionist reader... if you have made it until this page you should know better how to protect a program 
+
+(and how to deprotect it if needs be :-)
+
+</I></CENTER>  
+
+<HR size="2"><CENTER><FONT size="+1">EnTray-Vous, Merci  
+
+                </FONT></CENTER><P> 
+
+<PRE> 
+
+ 
+
+Target: EnTray Version 1.3, by Ashkay R 
+
+EXE Size: 48.5 K 
+
+Zip File: 661.8 K 
+
+Distribution: Tucows (<A href="tppmsgs/msgs1.htm#182" tppabs="http://www.anticrack.de/fravia/tppmsgs/msgs1.htm#182">http://207.155.78.240/files/entray13.zip</A>) 
+
+ 
+
+The protection scheme used on this software was so simple to defeat that I 
+
+am embarassed to even be writing about it; in fact it has so diminished my
+
+respect for the programmer that I cannot bring myself to even use the 
+
+software anymore.  
+
+And what software is this? 
+
+ 
+
+It is EnTray, a program which, like TrayIcon, allows you to put any
+
+shortcut you like (for example, the Soft-Ice Symbol Loader or BaseCalc) on 
+
+your TaskBar. 
+
+It is shareware, and very easy to use... even easier to configure than 
+
+TrayIcon. The program is 48.5 K and comes with a 987K .dll file (mfc42.dll, 
+
+hmmm, what could this have been written using-- Delphi? Pascal? No wait, I'll 
+
+get it, hold on...) -- as far as I'm concerned, yet another reason to use 
+
+&quot;static&quot; instead of &quot;shared&quot; libraries when compiling MFC (or any C++/VB) 
+
+applications. There is no reason a program with a max size of maybe 100K 
+
+should be distributed with over 1 MB of binary files. 
+
+ 
+
+Every detail of an application is a clue as to how to crack it. I took the
+
+marriage of a 987K .dll with a 49K .exe to indicate that I would need neither
+
+Soft-Ice nor W32DASM. 
+
+The biggest lesson to be gained from EnTray is to never make things more  
+
+complicated than they need be. 
+
+ 
+
+<B>Stage 1: Information gathering</B> 
+
+ 
+
+EnTray comes with numerous help files in HTML format (another sign...); 
+
+I only bothered to unzip REGN.HTM, in which the author states: 
+
+  <FONT color="purple">
+
+&quot;On receipt of your registration request, I will send you a registration 
+
+program which you will need to run in order to register EnTray to your name. 
+
+The registered version differs from the downloadable version in only two
+
+respects : 
+
+  The About Box does not appear on starting up EnTray and EnTray silently 
+
+  installs itself; 
+
+  The About Box (when you choose to bring it up) acknowledges that your 
+
+  copy of EnTray is licensed to you.&quot;
+
+  					 </FONT>
+
+When you run Entray, a small nag screen pops up telling you that the
+
+software is UNREGISTERED. The first thing that comes to mind is to kill the 
+
+nag screen with a resource editor; but BRW gives an &quot;Unknown File Format&quot; 
+
+error, and Symantec Resource Studio gives an &quot;Invalid Bitmap Header&quot; error--
+
+probably due to calls in the MFC .dll. 
+
+Next step: right-click on EnTray.exe and choose QuickView, scroll down to
+
+the Imports Section. Hmmm, MFC, MSVCRT (MS Visual C++ Runtime Library), Kernel, 
+
+User, GDI, and...  ah, ADVAPI32.DLL, infamous for its registry access calls. 
+
+Sure enough, EnTray imports <FONT color="blue">
+
+RegCreateKeyExA, 
+
+RegSetValueExA, 
+
+RegQueryValueExA, and 
+
+RegOpenKeyExA.</FONT> 
+
+Door #1 is therefore the 95 Registry. 
+
+ 
+
+<B>Stage 2: Runtime Monitoring</B> 
+
+ 
+
+The best thing to do when a program accesses the Registry is, of course, 
+
+to run  RegMon, which gives us the following output: 
+
+<FONT color="purple"> 
+
+30435 OpenKey      LOCAL\Software\Akshay\Entray\1.0      SUCCESS 
+
+30436 QueryValueEx LOCAL\Software\Akshay\Entray\1.0\REG  NOT FOUND 
+
+</FONT> 
+
+This seems fairly straightforward: EnTray is looking for a value named
+
+&quot;REG&quot; in HKEY_LOCAL_MACHINE\Software\Akshay\Entray\1.0, and as the 
+
+program is not registered it is not finding it. 
+
+So using RegEdit, create a string value in the above key, name 
+
+it REG and give it a value of 1 for &quot;True&quot;. 
+
+ 
+
+Restart EnTray...Bingo! No nag screen. Your product is now registered. 
+
+ 
+
+<B>Stage 3: Disgust</B> 
+
+ 
+
+Granted, this pretty weak protection scheme is for a program that was 
+
+probably written more for personal use that for commercial distribution; 
+
+I can accept that.  
+
+But, the one criticism I will offer before deleting the program from my
+
+system: try at least to be less than obvious...if nothing else, DO NOT call 
+
+the &quot;magic registry key&quot; <FONT color="blue">REG</FONT> -- call it MRU or WindowPos, or HCU, and put it 
+
+in HKEY_CURRENT_CONFIG/Display/Settings or any other key that the system accesses 
+
+frequently; the HKLM/Software key added by your program should only contain 
+
+settings regarding user preferences and file locations, <U>not</U> the key to 
+
+your whole protection scheme. 
+
+ 
+
+_m 
+
+ 
+
+</PRE> 
+
+ <FONT color="green">_m 1997: All rights reversed. Hail Eris!</FONT>  
+
+<HR ALIGN="CENTER" WIDTH="100%" SIZE="3">  
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,    
+
+choose your way out:</I></CENTER>  
+
+<BR><CENTER>  
+
+  
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">  
+
+<A HREF="project7.htm" tppabs="http://www.anticrack.de/fravia/project7.htm">Project 7</A><BR>  
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">  
+
+<A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#84'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#84">homepage </A>  
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">   
+
+<A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#73'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#73">links </A>   
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0">  
+
+<A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity </A>   
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC </A>  
+
+  
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#82'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#82">students' essays </A>  
+
+  
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database </A><BR>  
+
+  
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools </A>  
+
+  
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails </A>  
+
+  
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut CGI-scripts </A>  
+
+  
+
+  
+
+  
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms </A>  
+
+  
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia </A><BR>  
+
+  
+
+  
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering illegal? </A></CENTER>  
+
+<CENTER><HR ALIGN="CENTER" WIDTH="100%" SIZE="2"></CENTER>  
+
+</BODY>  
+
+</HTML> 
+
+ 
+
+  
+
+  
+
+      
+

@@ -1,0 +1,505 @@
+<HTML>
+
+<HEAD>
+
+  <META NAME="GENERATOR" CONTENT="Hexpert32, Version 3.0.05">
+
+  <TITLE>daqtod</TITLE>
+
+</HEAD>
+
+<BODY bgcolor="CCCCCC" text="#001010" vlink="#405040 Alink=#00FF50">
+
+
+
+<P><CENTER><FONT SIZE="+4">Hexpert32, Version 3.0.05<BR>
+
+</FONT><FONT SIZE="+2">Cracking the tools of the trade</FONT>
+
+<BR>
+
+</CENTER>
+
+
+
+<H4><CENTER><I>by +daQ</I><BR>
+
+<BR>
+
+(06 August 1997, slightly edited by Fravia)</CENTER></H4>
+
+<CENTER>With a small addition by Epic Lord, 19 August 1997</CENTER>
+
+
+
+<CENTER><HR><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"> Courtesy of Fravia's page of reverse engineering<BR>
+
+<HR> <I>Well, this essay is a little on the easy side, yet I stick to our aim: we 
+
+publish essays regarding useful tools for our trade... and  even if I 
+
+personally  still prefer good old (DOS) psedit, it's always useful to 
+
+have other nice Windows Hexeditors at hand :-)</I></CENTER><HR>
+
+
+
+<CENTER>
+
+   <H2>
+
+      Hexpert32 version 3.0.05
+
+   </H2>
+
+   <H3>
+
+      Cracking the tools of the trade
+
+   </H3>
+
+</CENTER>
+
+<PRE>
+
+ 
+
+Target:        <A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#74'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#74">Hxpert32.exe</A>
+
+Difficulty:    Easy, only for beginners
+
+Time to Fish:  30 mins
+
+Tools:         SoftIce, HexEditor
+
+Comments:      I would like to apologize that this essay is out of
+
+               sequence with what I had previously said; This is one
+
+               that has been bugging me for a bit, and I figured an
+
+               easy crack/patch would be fun for everyone.
+
+ 
+
+ 
+
+Preamble:
+
+ 
+
+   Hexpert is a great program for modifying exe's, dll's, anything that
+
+needs to be edited, I would be tempted to use this one program over any
+
+other.  It's stability is great, and it has 2 very simple protections, one
+
+which I cracked in 5 minutes, the other I toyed with for 25 minutes.
+
+I know of several other programs that operate on this procedure for the
+
+first crack (winweather, for example.)
+
+ 
+
+<HR>
+
+ 
+
+Crack part 1:
+
+ 
+
+   When you first run Hxpert32 (I will refer to it as hexpert), you get a 
+
+load file screen....this is a great program to stick in your 'sendto' 
+
+section of the windows dir.  You can fire any file off to it, to peruse
+
+at your leisure.
+
+ 
+
+   After loading the file, a very ugly screen pops up, proclaiming the
+
+shareware status.  You can't even hit the space bar to close it down,
+
+it's so annoying.  So instead of viewing any other file, let's view
+
+hexpert instead.
+
+ 
+
+   Make a copy (hxpert.ded), and we shall edit this first.  Sendto the
+
+file, and begin to peruse it's contents.  Most shareware authors think
+
+alike in one regard.  If they prepare to different programs (reg'd and
+
+share) with conditional compilation, then they are very good about labeling
+
+routines.  This is good for our case, because a search for the phrase/words 
+
+of nag, share, free, regis, register, registration, etc usually will turn 
+
+up several instances of their locations.  When we search for share, we 
+
+get an occurence of it, with some other text in the file itself.  A little
+
+further on there is are the words: &quot;Registered to:________&quot;.  If anyone 
+
+can figure out how to add this to the 'about' screen, please post it.... 
+
+I have no BRW to work with yet, so am not able to recompile on the fly
+
+as +Fravia says. 
+
+ 
+
+   Proceed to replace the words SHAREWARE with 00's.  Now, when you execute
+
+the app, there is no begining screen, and no ending screen to contend with.
+
+We are now 1/2 of the way finished with our crack.
+
+ 
+
+ 
+
+Crack Part 2:
+
+ 
+
+As you may have noticed while running this application, another annoying
+
+nag screen pops up.  It tells us to 'register' if we find this program 
+
+useful.  There are 2 ways the program can do this:
+
+1) Count the number of operations we do (key strokes), and randomly send this
+
+   when we reach a previously set number.
+
+2) Use a timer, or a random timer.
+
+ 
+
+Let's investigate the latter first.  I believe there has already been an
+
+essay involving settimer, and killtimer.  These require 'push's for the
+
+duration of the count.  If we let the app run with no other input, our
+
+former guess should show no window (which it does not do), so we know for
+
+a fact the 2nd choice is correct.
+
+ 
+
+cntrl-d into softice.
+
+ 
+
+:bpx settimer
+
+:bpx killtimer
+
+ 
+
+cntrl-d back out.
+
+ 
+
+Let the program run, do nothing while it does.  Eventually, you will
+
+break in on the killtimer because the set timer had been previously 
+
+called. If you scan upwards in the code, you will see where the call 
+
+came from.  This is the entire second protection scheme.
+
+ 
+
+ 
+
+* Possible Reference to Dialog: ABOUT 
+
+                                  |
+
+:0040A153 68446C4100              push 00416C44
+
+:0040A158 51                      push ecx
+
+ 
+
+* Reference To: USER32.DialogBoxParamA, Ord:008Eh
+
+                                  |
+
+:0040A159 FF1568C44100            Call dword ptr [0041C468]
+
+:0040A15F 33C0                    xor eax, eax
+
+:0040A161 E982D1FFFF              jmp 004072E8
+
+:0040A166 FF05B8684100            inc dword ptr [004168B8]              ;every time this code
+
+                                                                        ;is executed, this 
+
+                                                                        ;flag is incremented.
+
+:0040A16C 833DB868410005          cmp dword ptr [004168B8], 00000005    ;After 5 calls, it
+
+:0040A173 7C4B                    jl 0040A1C0                           ;will execute these
+
+:0040A175 8B8424AC060000          mov eax, dword ptr [esp + 000006AC]   ;following codes.
+
+:0040A17C 6A00                    push 00000000
+
+:0040A17E C705B868410000000000    mov dword ptr [004168B8], 00000000
+
+:0040A188 50                      push eax
+
+ 
+
+* Reference To: USER32.KillTimer, Ord:016Dh                             ;Here is where you
+
+                                  |                                     ;pop out at.
+
+:0040A189 FF15B8C44100            Call dword ptr [0041C4B8]
+
+:0040A18F 8B8C24AC060000          mov ecx, dword ptr [esp + 000006AC]
+
+:0040A196 6A30                    push 00000030
+
+ 
+
+* Possible StringData Ref from Data Obj -&gt;&quot;HEXpert (Unlicensed evaluation &quot;
+
+                                        -&gt;&quot;copy)&quot;
+
+                                  |
+
+:0040A198 68A86B4100              push 00416BA8
+
+ 
+
+* Possible StringData Ref from Data Obj -&gt;&quot;If you find this program useful, &quot;
+
+                                        -&gt;&quot;please register!&quot;
+
+                                  |
+
+:0040A19D 68746B4100              push 00416B74
+
+:0040A1A2 51                      push ecx
+
+ 
+
+* Reference To: USER32.MessageBoxA, Ord:0195h
+
+                                  |
+
+:0040A1A3 FF1558C44100            Call dword ptr [0041C458]
+
+:0040A1A9 8B8C24AC060000          mov ecx, dword ptr [esp + 000006AC]
+
+:0040A1B0 6A00                    push 00000000
+
+:0040A1B2 6860EA0000              push 0000EA60                ;EA60 is 60,000 decimal
+
+:0040A1B7 6A00                    push 00000000                ;settimer works in millisecs
+
+:0040A1B9 51                      push ecx                     ;therefore this is a 1min
+
+                                                               ;delay.
+
+* Reference To: USER32.SetTimer, Ord:0215h
+
+                                  |
+
+:0040A1BA FF15BCC44100            Call dword ptr [0041C4BC]
+
+ 
+
+* Referenced by a Jump at Addresses:
+
+|:0040A173(C)
+
+|
+
+:0040A1C0 33C0                    xor eax, eax
+
+ 
+
+As you should be able to see, there is a total of 5 calls made to this 
+
+function;  after the fifth call, the annoying 'buy me' message is 
+
+popped up.  Since each call is a one minute delay, we are given 5 minutes
+
+before we are again annoyed by this bad protection.
+
+ 
+
+Lets bpx on the flag location, to see if it's operated anywhere else in
+
+the entire program...
+
+ 
+
+:bpm 004168B8  ;it's not, trust me....
+
+ 
+
+ok.  So how can we disable this protection?  The first and most obvious would
+
+be to patch the jump, so that no matter how many times it's called, it will
+
+go right past it.  But, after 0xFF times, what will happen? I dont know, and
+
+do not intend to find out.  So instead, let's play with the code.
+
+ 
+
+here is the relevant code again:
+
+ 
+
+* Reference To: USER32.DialogBoxParamA, Ord:008Eh
+
+                                  |
+
+:0040A159 FF1568C44100            Call dword ptr [0041C468]
+
+:0040A15F 33C0                    xor eax, eax
+
+:0040A161 E982D1FFFF              jmp 004072E8
+
+:0040A166 FF05B8684100            inc dword ptr [004168B8]
+
+:0040A16C 833DB868410005          cmp dword ptr [004168B8], 00000005
+
+:0040A173 7C4B                    jl 0040A1C0
+
+:0040A175 8B8424AC060000          mov eax, dword ptr [esp + 000006AC]
+
+ 
+
+after the inc dword ptr, we don't want it to compare.  So, using +ORC's
+
+teachings, let's change it to
+
+ 
+
+* Reference To: USER32.DialogBoxParamA, Ord:008Eh
+
+                                  |
+
+:0040A159 FF1568C44100            Call dword ptr [0041C468]
+
+:0040A15F 33C0                    xor eax, eax
+
+:0040A161 E982D1FFFF              jmp 004072E8
+
+:0040A166 FF05B8684100            inc dword ptr [004168B8]
+
+:0040A16C FF0DB8684100            dec dword ptr [004168B8]     ;decrease the increase.
+
+:0040a172 90                      nop                          ;pad one byte
+
+:0040A173 EB4B                    jmp 0040A1C0                 ;who cares, jump past
+
+                                                               ;annoying nag screen.
+
+:0040A175 8B8424AC060000          mov eax, dword ptr [esp + 000006AC] ;nag screen stuff
+
+ 
+
+ 
+
+All wrapped up in one neat package now!
+
+ 
+
+search for 'shareware' using hexpert itself, change it to 00's.
+
+ 
+
+search for:
+
+ 
+
+FF05B8684100833DB8684100057C4B
+
+ 
+
+change to:
+
+ 
+
+FF05B8684100FF0DB868410090EB4B
+
+ 
+
+Thats it!
+
+ 
+
+Next Tutorial:
+
+1) windows LPR spooler v 4.1
+
+2) don't know yet....
+
+ 
+
++daQ		</PRE>
+
+ <FONT color="green">
+
+(c) +daQ, 1997. All rights reserved.</FONT>
+
+<HR><I>An addition frop Epic Lord</I><BR><BR><PRE>
+
+Here is a small addition for daQ+'s essay about Hexpert32, Version 3.0.05. 
+
+BRW works well for this simple crack. Just load HxPert32.exe in the toolkit 
+
+and delete the shareware references. There are two of them. That will be 
+
+enough for the crack :=)
+
+
+
+Best wishes, Epic Lord</PRE>
+
+ 
+
+		<HR size="2">
+
+<CENTER><I>You are deep inside fravia's page of reverse
+
+engineering, choose your way out:</CENTER>
+
+
+
+
+
+<P><CENTER><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#84'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#84">homepage </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"> <A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#73'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#73">links
+
+</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0" NATURALSIZEFLAG="0"> <A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity
+
+</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#82'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#82">students' essays </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools
+
+</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails </A><BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mailFraVia
+
+</A><BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">is reverse engineering legal? </A></FONT></CENTER></P>
+
+<HR>
+
+ 

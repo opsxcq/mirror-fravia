@@ -1,0 +1,583 @@
+<HTML>
+<HEAD>
+<TITLE>Reverse engineering techniques explained #01: string search by +MaLaTTiA</TITLE>
+<HTML>
+<HEAD>
+<META Name="Voluntary Content Rating" content="it's fravia's: great!">
+<TITLE>tech01.htm: Reverse engineering techniques explained #01: string search</TITLE>
+</HEAD>
+<BODY BGCOLOR=#C0C0C0 TEXT=#001010 ALINK=#405040 VLINK=#8850AA>
+<CENTER><B><FONT size=+3>Reverse engineering techniques explained<BR>#01: string search</FONT></B>
+
+<BR><FONT size=+4>by +Malattia <A href="hcu98_3.htm" tppabs="http://www.anticrack.de/fravia/hcu98_3.htm"><IMG SRC="hcu1.gif" tppabs="http://www.anticrack.de/fravia/hcu1.gif" ALT="+cracker" ALIGN=BOTTOM 
+WIDTH=114 HEIGHT=43 BORDER=0 VSPACE=0 HSPACE=0></A><BR></FONT>(4 October 1998)<BR><BR><A href="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm"><IMG SRC="notassi3.gif" tppabs="http://www.anticrack.de/fravia/notassi3.gif" ALT="not assigned" ALIGN=BOTTOM WIDTH=114 
+HEIGHT=43 BORDER=0 VSPACE=0 HSPACE=0></A>
+<BR><FONT color=gray>Not assigned</FONT><BR>
+<HR>Courtesy of fravia's pages of reverse engineering
+<HR></CENTER></FONT>
+
+<I>
+String search is a quite important technique for any reverse engineer: by
+using it you can find not only strings related to the program registration
+(which is useful, of course, if you want to crack a program), but also hidden
+functions, useful info or... nice surprises. You'll see what I mean later, 
+now it's better if we start with a little bit of theory...
+</I><HR>
+
+<PRE>
+[mirc32.exe][opera.exe]
+
+When we say "string" we mean a sequence of alphanumeric values (that is 
+printable characters like numbers, uppercase and lowercase letters and chars
+such as "Ë", "&" or ";") terminated by a "zero" byte. Of course, all the
+messages we can see in a program window are strings, but also the window's
+name, the name of the compiler used to build the executable file, the errors
+you can cause and the names of the files opened are all strings. In some
+programs you won't be able to read everything in clear (for instance, Visual
+Basic executables, or some kind of encrypted files such as Calypso's
+mailboxes. If you want, you can give a look at my tute on Calypso reverse
+engineering if you want to find more info).
+Of course, not all the information you can obtain from a file are useful:
+sometimes you will happen to find nonsense strings like "D4ZIOq};eV[" or
+"f43g7b" other times you will find words with some sense but that don't seem
+interesting at all. So, it's important to learn HOW to search for strings
+inside a file, depending on what kind of information you're looking for.
+
+The first thing to do is think what exactly you want to do: if you are
+searching for a particular string you can just use the search function of an
+hexeditor or a fileviewer; if, on the other side, you want to look around
+inside a file and see if you can learn something useful, you can use either a
+fileviewer (more useful than a hexed in this case) or a "string ripper", a
+program which automatically recognizes sequences of characters which can be
+considered a string and prints them with their offset. Here is a short
+description of the main tools you can use to make a string search:
+
+
+--the tools-(begins)----------------------------------------------------------
+
+************
+HEX EDITORS:
+************
+
+You can select the one you like most (they are really a lot!). If you're not
+satisfied by the ones you find on the Internet, of course, you can write a
+custom one. I use "ready made" ones, such as Hiew (hiewXXX.zip, where XXX is
+the version number, ie. hiew524.zip, ~66k), Fileview (fileview.zip, ~104kb),
+or Cygnus (cygnu102.zip, ~324k, REALLY FAST!!!).
+
+
+***********
+FILEVIEWERS
+***********
+
+Just one name: LIST by V. Buerg. This is ABSOLUTELY the best txt/bin file
+viewer ever made in my opinion. I've got version 9.0h (list90h.zip, ~99k) and
+it's amazingly powerful: it can handle huge files (up to 16mb if I remember
+well) so you can even use it on a disassembled listing; it has a very fast
+search function (no comparison with slow windoze programs, of course!) and it
+just needs a dos box to run. You can use it to see both txt and binary files
+and it has a lot of options.
+
+
+**************
+STRING RIPPERS
+**************
+
+Come on, it's not hard, you can do it yourselves!
+Anyway, if you want to find one, you can download strings.exe (or .zip, I
+don't remember exactly) from +Fravia's site (hope the file is still online),
+or BinTxtScan.zip (there is a version with the source files too), a good
+string ripper which runs under w95 and lets you do searching and selection of
+particular strings inside the list of the ones it found. Of course, you can
+do any search you want by saving the strings you found on a file and then
+opening it with list :)
+
+
+**************
+ONE LAST THING
+**************
+
+Don't ask me the addresses of these files. Search them on the net and, if you
+don't find them, learn how to search them on +Fravia's site.
+
+--the tools---(ends)----------------------------------------------------------
+
+
+Ok, now that you have your tools let's learn how to use them. To do this we
+will study some examples, some of them are more cracking related while others
+are "pure reverse engineering" ones.
+
+
+**********STRING SEARCH TO CRACK A PROGRAM**********
+[mirc32.exe]
+
+Unfortunately, all these months spent cracking programs taught me just one
+thing: most of the programmers are lazy and, sometimes, quite stupid. This is
+a bad new, of course, because I'm a programmer too :)
+But, after all, this is also a good new because, statistically, we can say 
+that about 90% of the programs around there has really easy (such as name &
+serial or "cinderella") protections. This means that you just have to find
+the "right place", patch one or two byes and voila', the work is done. In
+this case string search can be quite useful, because the individuation of
+that right piece of code becomes nuts. How can you do it, operatively? Well,
+there are several ways: here are some.
+
+
+FIRST STEP: 
+
+Run the program, try to insert a dummy name/regnum and write down the message
+that appears: this is the string you have to search. Otherwise, if you have a
+cinderella protection, put your clock forward some years, run the program and
+write down the message that appears.
+
+
+SECOND STEP: 
+
+Disassemble the file with Wdasm, use its "String Data References" command to
+see the list of all the strings in the program and find the right one. An
+alternative is to search directly the string inside the dead listing using
+wdasm find command.
+
+or
+
+Disassemble the file with Wdasm, save it and do a string search with LIST.
+It's the method I usually use and it's really fast.
+
+or
+
+Disassemble the file with any other program you like (even one which doesn't
+write the references in the text). Then search the string in the file you
+want to crack with a program which tells you the offsets of the found string
+(ie. a string ripper or LIST in hex mode). Finally, do some operations on the
+offset value you found (we'll see them later) and search that value.
+
+
+THIRD STEP:
+
+Since the message you wrote down is originated by an error, trace back the
+code to see if there's a jump that lets you avoid it: if you find it try to
+follow the "other way": most of the times you will find messages such as
+"Thank you for your registration" or similar ones. That's ok: you have
+confirm that you have found the right jump. Otherwise, well, go and give a
+look at the code around there, I'm sure you'll find the right place :)
+
+EXAMPLE:
+
+The same, old, pluricracked (and keygenerated :)) mIRC... the version I'm
+going to disassemble is v5.4 32 bit.
+If you try and insert a random serial (and it's wrong... otherwise you're
+really lucky!) the message that appears is "Sorry, your registration name and
+number don't match!". Now you can search that in the different ways explained
+before: if you search it directly you'll end at address 43d33c. If, 
+otherwise, you search for it in the executable, you'll find it at offset
+B1602. How can you use this? Since this is just an offset from the beginning
+of the file, you have to add it to another value, which is a new "starting
+point" from which the offset is calculated. If you disassemble mirc32.exe you
+can read these information before the beginning of the dead listing code:
+
+
+Disassembly of File: mirc32.exe
+Code Offset = 00000800, Code Size = 000ABC00
+Data Offset = 000AC400, Data Size = 00011600
+
+Number of Objects = 0007 (dec), Imagebase = 00400000h
+
+Object01: CODE     RVA: 00010000 Offset: 00000800 Size: 000ABC00 Flags: ...
+Object02: DATA     RVA: 000C0000 Offset: 000AC400 Size: 00011600 Flags: ...
+Object03: .idata   RVA: 000F0000 Offset: 000BDA00 Size: 00001A00 Flags: ...
+Object04: .edata   RVA: 00100000 Offset: 000BF400 Size: 00000200 Flags: ...
+Object05: .reloc   RVA: 00110000 Offset: 000BF600 Size: 00010800 Flags: ...
+Object06: .rsrc    RVA: 00130000 Offset: 000CFE00 Size: 00017000 Flags: ...
+Object07: .debug   RVA: 00150000 Offset: 000E6E00 Size: 000158A5 Flags: ...
+
+The values we're interested in are the ones related to the DATA object. In
+fact, as you can see, it starts at offset AC400 and has a 11600h bytes size,
+which includes our B1602 offset.
+That "RVA" value is very important, because it tells us at which point of the
+source the data object starts: since the value is C0000, we know that the
+beginning address of the data object is at 004C0000 (value 00400000 is taken
+from "Imagebase" value).
+Now, since we know that DATA offset in the file is AC400, we just have to
+calculate the difference between the offset of our string and the offset of
+DATA (that is, B1602-AC400=5202), and then add it to the DATA beginning
+address (that is, 004C0000+00005202=004C5202). The value we've found is the
+one we have to search in the dead listing and, in fact:
+
+
+* Possible StringData Ref from Data Obj ->"mIRC Registration!"
+                                  |
+:0043D337 6898524C00              push 004C5298
+
+* Possible StringData Ref from Data Obj ->"Sorry, your registration name "
+                                        ->"and number don't match!"
+                                  |
+:0043D33C 6802524C00              push 004C5202
+                                 ^^^^^^^^^^^^^^^
+:0043D341 8B4508                  mov eax, dword ptr [ebp+08]
+:0043D344 50                      push eax
+
+* Reference To: USER32.MessageBoxA, Ord:0000h
+                                  |
+:0043D345 E819E70700              Call 004BBA63
+
+
+
+So, remember, the formula you have to use to calculate the right address is:
+
+
+           Imagebase+
+                 RVA+
+Offset_of_the_string-
+Offset_of_the_object=
+---------------------
+Address of the string
+
+
+Of course, you have to check that you're calculating it on the right object:
+this is done by checking its offset and dimension in the file.
+
+Maybe this kind of approach could seem to you just tricky and with no 
+advantages, but there are cases in which it is quite useful. For instance,
+suppose you have the same string repeated more times inside the file, but you
+want to find the references to just ONE of those strings. In this case you 
+can use the "offset technique" to be sure that the string that is referred in
+the code is the one you're interested in. Also, you will be able to find the
+places in which your string is used, even if your disassembler doesn't show
+the string references like Wdasm and IDA do.
+
+
+-----------------------------------------------------------------------------
+A LITTLE TIP
+
+In some programs, you'll find strings in a different format: instead of being
+saved in the "standard" mode, the characters are alternated with zeroes 
+(ASCII zeroes, of course). So, if you have the string representing number 
+666, instead of the hex sequence
+
+36 36 36
+
+you'll have the sequence
+
+36 00 36 00 36 00			
+
+If you're searching for some particular strings in a binary file you will 
+have some problems if they are zero-alternated, but there's a way to make it
+easy: with LIST, call the "find" command with backslash and write, for
+instance,
+
+6?6?6 (yes, when in hex mode you can search both the hex and the ascii)
+
+That's incredible... it works! :)
+-----------------------------------------------------------------------------
+
+
+**********FIND "SECRETS" USING STRING SEARCH**********
+[netscape.exe][opera.exe][winamp.exe]
+
+Since all the operations that the program lets you do must be written 
+somewhere in the executable file (or in some dlls or linked files), string
+search can be used to find lots of secrets and undocumented functions inside
+programs. For instance, since we know that the guys from Netscape use to put
+some "secret" information in their program, let's see what we can find inside
+it...
+First of all, let's decide what kind of information we want to find: if we 
+know that (like in this case) we want to find all the "about:" commands we 
+can just make a search of that string, otherwise if we don't know what to 
+search yet we can just rip all the strings in the exe file and then browse 
+the output. However, note that this operation can be quite time expensive and
+you are suggested to do this only if you have some spare time and don't 
+really know what to search (it can be compared to code tracing from the 
+beginning of a program to find the protection inside it! Hey kids, don't do
+it at home!).
+
+
+[NETSCAPE.EXE]
+
+Ok, let's start from an "I know what to find" example: if we use LIST and
+browse netscape.exe (my version is still 4.03, but it shouldn't be so 
+different from the other ones) to find all the "about:" commands we can use,
+we find these occurences:
+
+about:pics         (just gives me an error)
+about:blank        (shows a blank page)
+about:authors      (shows a screen with "about:auhors removed")
+about:license      (shows the license)
+about:memory-cache (shows the memory cache)
+about:image-cache  (shows a list of the cached images)
+about:global       (shows global history entries)
+about:cache        (shows disk cache statistics)
+about:security     (another error)
+about:document     (gives some info about the current document)
+
+Woa! Did you know there were so many about: commands? But... I remember 
+there was that nice about:mozilla trick in the old versions, isn't it there 
+anymore? If you try it on your Netscape it works, so there must be another 
+file containing this kind of info... Ok, open a DOS prompt, run LIST and 
+search for "about:" string in the first dll you find in the directory: you 
+won't find anything, but LIST keeps in memory the string you searched so you
+just have to press ESC one time to go back to the file manager view, then
+select another dll and press F3 (find next), and so on...
+In the file RESDLL.DLL you find these others "abouts":
+
+about:plugins      (shows the installed plugins)
+about:fonts        (shows installed font displayers)
+
+Hey, still didn't find about:mozilla... but now I think that YOU can find
+it easily! Note that, just after these two last "abouts", you can see (and 
+change) the various items that are shown when you open the menus in Netscape
+(but it's the subject of another essay, go and check it on +Fravia's site).
+
+
+[OPERA.EXE]
+
+Well, I think you've understood how this technique works: if you want to do
+some exercise, another good program which holds some nice secrets is Opera 
+web browser. This is a very good program and I wanted to see if it had any
+nice secrets like netscape (I had some spare time), so I opened it and just
+browsed the strings inside it... If you open Opera.exe with BinTextScan 
+you'll find some interesting strings like SHOW EXIT DIALOG (that lets you 
+hide the dialog window which asks if you want save the windows at the exit)
+or SHOW SPLASH SCREEN (which lets you hide the splash screen that appears
+when you run the program). While the first of the two commands is described
+in detail in the help file, the second one is (AFAIK) still undocumented.
+"Anyway", I thought, "it should work like the previous command"... I tried
+and it really works the same way: to disable these two functions, just
+follow the help file and add the lines
+
+SHOW SPLASH SCREEN=0
+SHOW EXIT DIALOG=0
+
+to your c:\windows\opera.ini file in the [USER PREFS] section.
+
+
+[WINAMP.EXE]
+
+The last one (I've seen it just NOW and it deserves to be read!). Open
+Winamp 2.0 executable file and just read the first lines... you'll see this
+string:
+
+"if (billg!=satan) exit(1); else ShowNiftyWinamp();"
+
+... no comment. :))
+
+
+**********SECURITY WITH STRING SEARCH**********
+[FtpWolf][Back Orifice v1.20]
+
+Maybe you haven't realized it yet, but every string in a program can be, in
+some way, useful for you: for instance, you can see the files accessed by the
+program, the api calls or the internet sites to which the program itself
+connects. This last operation is particularly useful for some kind of
+protections (for instance see Ftpwolf crack on my site, or give a look to
+Audiograbber v1.31 - FULL version - GOOD protection) but also can help you
+find any trojan in your system (suppose you have Back Orifice installed on
+your computer... since you know how it is done, you can easily recognize it
+by just looking at the hex dump!). Also, you can view if any program passes
+information on the Net without letting you know it.
+
+-----------------------------------------------------------------------------
+SOME EXAMPLES
+
+If you want to see if a program writes something in your registry, you can 
+search something like "software\" or, since registry strings are quite long,
+just use a ripper and browse the string list for the longest ones.
+
+If you want to find if a program connects to the internet, you can search
+for standard strings like "www", "http://", "mailto:" and so on.
+
+If you want to see if it contains some ready-made html you can search for 
+"HTML", "HEAD", "TITLE", "FORM" and so on. For instance, if you search
+for "HTML" on Back Orifice v1.20 boserve.exe executable, you'll fall inside
+the html code of the webserver (Yes! A trojan with a webserver inside it!) 
+and you will also be able to read this:
+
+"BAHAHAHAHAHAHAHAHAHA    You WISH you could access below the root!"
+
+... these guys from the Cult of the Dead Cow are funny too :)
+-----------------------------------------------------------------------------
+
+
+**********STALKING WITH STRING SEARCH**********
+
+I hear you asking me "How can I stalk if I just search inside a file?". Well,
+as I told you there are LOTS of infos inside binary files: and, between all
+these information, you will happen to find some strings that are typical of
+that program which can be put in relation with some other strings inside 
+other programs. For instance, programmers often use some strings during the
+debugging of their programs, such as "Ok, you arrived here!" or just "ok" or
+whatever passes in their heads. Some other times they use to refer to files
+on their hard disks.  Also, compilers use to name themselves inside the code,
+and this is particularly useful if the compiler string is not common (not a
+well known compiler, very old version and so on).
+
+-----------------------------------------------------------------------------
+ANOTHER TIP
+
+Compiler name inside the code is also useful if you want to use a different
+cracking approach according to the language used (for instance, I usually try
+Wdasm first on VC++ programs, while I start with Smartcheck with WB ones). If
+you want to save some time, write down somewhere these standard strings and 
+you'll be able to immediately recognize the compiler/language used by just
+searching them. Otherwise, you can write a program to do it automatically or
+search the Internet to find some application specialized in binary file
+recognition (they exist, and some of them are really good!).
+-----------------------------------------------------------------------------
+
+All the pieces of information mentioned before can be used to stalk the
+programmer and know, for instance, if two programs are written by him even if
+he's trying to remain anonymous. If you want an example, just open the file
+calypso.exe and search for ":\" (this is a VERY USEFUL search pattern!): you
+will find strings like this
+
+C:\CalyArch\Mdbase.cpp
+
+which is a reference to a directory on the programmer's harddisk. Now, this
+is a very particular name referring just to this program, but suppose that
+that guy used some odd name for a parent dir where he stores ALL his programs
+(such as \myprogs or \sources or whatever else): in this case you are able to
+recognize him by just giving a look at the exe file!
+
+Of course, there are other info that you can search, such as the resource
+which contains program info, company name, version and description of the
+program... but I don't think that they will be filled by a programmer who
+doesn't want to be recognized. Anyway, since this doesn't cost so much time,
+you can give a look at it too.
+
+
+
+Well, reader, this is all. If you want to contribute with your suggestions to
+the development of this tute, to send me another text file explaining your
+favorite techniques, or just to tell me what you think about this tutorial,
+please drop me a mail at malattia@freenet.hut.fi.
+If you want to read my other tutorials and essays, search them on the 
+Internet or ask them directly to me (note: I'll send them to you IF and ONLY
+IF you contribute with some NEW piece of information! Please, NO banal essays
+and tutes!)
+</PRE>
+<HR>
+(c) .+MaLaTTiA. 1998.<BR>
+WARNING: this tutorial is published for EDUCATIONAL PURPOSES only! Nobody
+except you is responsible for what you do with the things you read here.
+Also, if you intend to use shareware programs for a period longer than the
+allowed one remember that you have to BUY them!
+
+</PRE></FONT>
+<HR>
+
+<BR><CENTER><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+ALT="red" ALIGN=BOTTOM WIDTH=88% HEIGHT=6 BORDER=0
+VSPACE=0 HSPACE=0><BR><BR><I>You'r deep inside fravia's pages of reverse engineering, choose your way out!</I><BR>
+<!-- Begin Javascript relocator <font color=gray><b>~</b></fonT> Javascript code by fravia+ -->
+<FORM name="FraviasForm">
+<SCRIPT LANGUAGE="javascript">
+<!--
+
+function FravPage(list) {
+	      location.href = list.options[list.selectedIndex].value
+}
+
+// -->
+</SCRIPT>
+<DIV align="center">
+<CENTER>
+<P center="&lt;center&gt;&lt;/center&gt;">&nbsp;<SELECT name="fraviale" size="1">
+
+<OPTION>Choose another page!</OPTION>
+<OPTION value="index.htm">Main page</OPTION>
+<OPTION value="academy.htm">Software reversing Lab</OPTION>
+<OPTION value="realicra.htm">Reality cracking Lab</OPTION>
+<OPTION value="noanon.htm">Anonymity Lab</OPTION>
+<OPTION value="ideale.htm">Site busting Lab</OPTION>
+<OPTION value="howtosea.htm">How to search Lab</OPTION>
+<OPTION value="sealight.htm">--Search engines (light)</OPTION>
+<OPTION value="searengi.htm">--Search engines (heavy)</OPTION>
+<OPTION value="links.htm">Links</OPTION>
+<OPTION value="tools.htm">Tools</OPTION>
+<OPTION value="javascri.htm">Javascript reversing</OPTION>
+<OPTION value="screamin.htm">Screaming truth</OPTION>
+<OPTION value="entran.htm">Main entrance</OPTION>
+<OPTION value="new_what.htm">What's new on fravia's</OPTION>
+<OPTION value="info.htm">Mail fravia+</OPTION>
+<OPTION value="http://greythorne.home.ml.org">+Greythorne's</OPTION>
+<OPTION value="http://www.InsideTheWeb.com/mbs.cgi/mb186724">Tools of our trade msgboard</OPTION>
+<OPTION value="http://www.InsideTheWeb.com/mbs.cgi/mb155985">Main msgboard</OPTION>
+</SELECT>
+
+<INPUT type="button" value="Let's go!" onclick="FravPage(this.form.elements[0])">
+<BR>
+</DIV>
+
+</FORM>
+<!-- end Javascript relocator -->
+<BR><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+ALT="red" ALIGN=BOTTOM WIDTH=88% HEIGHT=6 BORDER=0
+VSPACE=0 HSPACE=0><BR><BR>
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0
+VSPACE=0 HSPACE=0><A
+HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0
+VSPACE=0 HSPACE=0>
+<A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links </A>
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0>
+<A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity </A>
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC </A>
+
+<IMG
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays </A>
+
+<IMG
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database </A>
+
+<IMG
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+HREF="botstart.htm" tppabs="http://www.anticrack.de/fravia/botstart.htm">bots wars</A>
+
+<BR>
+<IMG
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut </A>
+
+<IMG
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+HEIGHT=13 BORDER=0
+VSPACE=0 HSPACE=0><A
+HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools </A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+HEIGHT=13
+BORDER=0 VSPACE=0 HSPACE=0><A
+HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails </A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+HEIGHT=13
+BORDER=0 VSPACE=0 HSPACE=0><A
+HREF="javascri.htm" tppabs="http://www.anticrack.de/fravia/javascri.htm">javascript wars </A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0
+VSPACE=0 HSPACE=0><A
+HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms </A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0
+VSPACE=0 HSPACE=0><A
+HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia </A><BR>
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0
+VSPACE=0 HSPACE=0><A
+HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering illegal?
+</A></CENTER>
+
+</BODY>
+</HTML>

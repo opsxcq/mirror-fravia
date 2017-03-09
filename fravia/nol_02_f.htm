@@ -1,0 +1,2687 @@
+<html>
+
+<head>
+
+<title>nol_02_f.htm:
+
+Reversing the report encryption algorithm for the
+
+flexlm license manager
+
+
+
+</title></head><body BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+<table CELLPADDING="1" CELLSPACING="2" BORDER="1" WIDTH="100%" HEIGHT="22">
+
+<tr><td></td><td>
+
+<!-- Choose  a TITLE and a subtitle, choose well! -->
+
+<center><font SIZE="+2">
+
+Reversing the report encryption algorithm for the
+
+flexlm license
+
+manager.
+
+</font><br><font SIZE="+1">
+
+Explains the encryption algorithm used by vendor
+
+daemons for reporting.
+
+</font></center></td><td>
+
+<!-- Choose  a PROJECT GIF, leave this if unsure -->
+
+<center><a href="flexlm.htm" tppabs="http://www.anticrack.de/fravia/flexlm.htm"><img SRC="flexlm.gif" tppabs="http://www.anticrack.de/fravia/flexlm.gif" ALT="flexlm" ALIGN="CENTER" WIDTH="114" HEIGHT="43" BORDER="0" VSPACE="0" HSPACE="0"></a><br><font color="gray">flexlm</font>
+
+</center></td></tr><tr><td bgcolor="#FFFFEA"><center><font COLOR="890000">
+
+<!-- CHOOSE A DATE (will probably be changed) -->
+
+21-oct-1999
+
+</font></center></td><td bgcolor="#FFFFEA"><center>by
+
+<font size="+3">
+
+<!-- CHOOSE A HANDLE , i.e. your pseudo (wont bechanged) -->
+
+Nolan Blender
+
+</font></center></td><td VALIGN="center" bgcolor="#FFFFEA">
+
+<!--<a href="hcu98_3.htm" tppabs="http://www.anticrack.de/fravia/hcu98_3.htm"><IMG SRC="hcu1.gif" tppabs="http://www.anticrack.de/fravia/hcu1.gif"ALT="+cracker" ALIGN=BOTTOMWIDTH=114 HEIGHT=43 BORDER=0 VSPACE=0 HSPACE=0></a>-->
+
+</td></tr><tr><td><center><a href="index.html" tppabs="http://www.anticrack.de/fravia/index.html"><img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"></a></center></td>
+
+<td BGCOLOR="898030"><center>Courtesy of Fravia's page
+
+of
+
+reverse engineering</center>
+
+</center></td><td BGCOLOR="898030"><center>
+
+<!-- Your truly+ will edit only if really necessary-->
+
+slightly edited
+
+<br>
+
+by fravia+
+
+</center></td></tr>
+
+<!-- this is for thedata.....fra_00xx....yymmdd....handle..beg+int...notass... -->
+
+<tr><td><font color="#C4C0CF">fra_00xx<br>980926<br>Nolan Blender<br>0100<br>FL<br>PC<br></font></td><td><i><center>
+
+Lately, many of my more industrious and investigative contributors have taken it upon 
+
+themselves to supply documents which purport to explain and/or illuminate the most 
+
+secret workings of the FlexLM schemes.<br>You may be able to read a very interesting example 
+
+of team-reversing (about FlexLM) <a href="revework.htm" tppabs="http://www.anticrack.de/fravia/revework.htm">here</a><br><br>
+
+Nolan Blender writes in the following essay: </center></i>
+
+&quot;<font color="blue">In many ways,
+
+reversing code is a
+
+mental
+
+exercise of examining what is happening in the
+
+program, and asking &quot;If I
+
+were
+
+writing this, what would I be trying to accomplish?</font>&quot;<br><center><i>
+
+It is indeed, and this very good essay will delight many readers.
+
+</i></center></td><td></td></tr><tr><td></td>
+
+<!-- Leonard Coehn's old song, because we are poets,not only crackers-->
+
+<td BGCOLOR="898030"><center></i><b>There is a crack,
+
+a crack in
+
+everything
+
+That's how the light gets in</b></center>
+
+<!-- Leonard Coehn's old song, because we are poets,not only crackers-->
+
+</center></td><td></td></tr><tr><td VALIGN="MIDDLE" bgcolor="#C6E7C6"><font color="blue"><center>Rating</font></font></center>
+
+
+
+</td><td VALIGN="MIDDLE" bgcolor="#C6E7C6"><font color="blue"><center>
+
+<!-- CHOOSE A RATING (may be changed) -->
+
+( )<b>Beginner</b> (X)<b>Intermediate</b> (
+
+)<b>Advanced</b> (
+
+)<b>Expert</b></font>
+
+</center></td><td></td></tr></table>
+
+<!-- END HEAD  --><br>
+
+This document describes the reversing of the FlexLM
+
+reporting algorithm
+
+on the HP
+
+platform.   Mostly this was done as an exercise in
+
+reverse engineering,
+
+and to
+
+determine exactly how the encryption of the reporting
+
+logfiles was done
+
+in
+
+Flexlm.
+
+<hr><center><font SIZE="+2">
+
+<!-- Repeat your TITLE  -->
+
+Reversing the report encryption algorithm for the
+
+flexlm license
+
+manager.
+
+   </font><br>
+
+   <font SIZE="+2">
+
+<!-- Repeat your SUBTITLE -->
+
+Explains the encryption algorithm used by vendor
+
+daemons for reporting.
+
+   </font><br><font COLOR="0B7FC1">
+
+<!-- REPEAT YOUR CHOSEN HANDLE HERE -->Written by
+
+Nolan Blender
+
+</font></center><br><br>
+
+
+
+<!-- INTRO STARTS HERE -->
+
+<table CELLPADDING="1" CELLSPACING="2" BORDER="1" WIDTH="100%" HEIGHT="22">
+
+<tr><td bgcolor="#C6E7C6"><center><font size="+2"><font color="blue">Introduction</font>
+
+</font></center></td></tr></table>
+
+This essay describes in some depth how the reversing
+
+of the Flexlm
+
+reporting log
+
+encryption algorithms was done.  The reversing of one
+
+of the smaller
+
+modules is
+
+discussed in depth, as well as some of the techniques
+
+used to decode
+
+sections of
+
+the more difficult to understand programs.  Methods to
+
+replicate the
+
+functionality
+
+of the reversed modules is discussed as well.   The
+
+ability to decode
+
+the Flexlm
+
+logfiles isn't a generally useful thing, but the
+
+methods described can
+
+be used
+
+for reversing other programs.
+
+</pre><br><br>
+
+
+
+<!-- TOOLS STARTS HERE -->
+
+<table CELLPADDING="1" CELLSPACING="2" BORDER="1" WIDTH="100%" HEIGHT="22">
+
+<tr><td bgcolor="#C6E7C6"><center><font size="+2"><font color="blue">Tools
+
+required</font>
+
+</font></center></td></tr></table>
+
+DDE for HP-UX <br>
+
+ANSI C compiler.
+
+<!-- PASTE HERE YOUR REQUIRED TOOLS -->
+
+<br><br>
+
+
+
+<!-- TARGET URL STARTS HERE -->
+
+<table CELLPADDING="1" CELLSPACING="2" BORDER="1" WIDTH="100%" HEIGHT="22">
+
+<tr><td bgcolor="#C6E7C6"><center><font size="+2"><font color="blue">Target's URL/FTP</font>
+
+</font></center></td></tr></table>
+
+<!-- DON'T FORGET TO PASTE HERE THE URL/FTP OF YOURTARGET(S) -->
+
+ftp.globes.com <br>
+
+Get the version 6.1 Flexlm SDK for HP, and use
+
+Pilgrim's or my
+
+techniques to unpack.
+
+<br><br>
+
+
+
+<!-- PROGRAM HISTORY STARTS HERE -->
+
+<table CELLPADDING="1" CELLSPACING="2" BORDER="1" WIDTH="100%" HEIGHT="22">
+
+<tr><td bgcolor="#C6E7C6"><center><font size="+2"><font color="blue">Program
+
+History</font>
+
+</font></center></td></tr></table>
+
+<!-- PASTE HERE YOUR TARGET'S HISTORY (if any) -->
+
+Flexlm generates logfiles which can be interpreted by
+
+special tools
+
+provided by
+
+Globetrotter, most notably Samreport, Samsuite and by
+
+the repapi
+
+product.  The
+
+file is encrypted, supposedly to prevent tampering,
+
+but most likely to
+
+force end
+
+users to purchase their expensive license reporting
+
+tool rather than
+
+exporting
+
+the raw data into a spreadsheet and generating the
+
+reports there.  The
+
+logfile
+
+is somewhat tamper resistant, and it is possible to
+
+determine if lines
+
+have been
+
+deleted from the log file.  The capability to decode
+
+what is in the file
+
+
+
+directly isn't too useful since the Globetrotter
+
+reporting tools have
+
+been
+
+cracked, but it is satisfying to know what is going
+
+into the log.
+
+
+
+<br><br>
+
+
+
+<!-- REAL ESSAY  STARTS HERE -->
+
+<table CELLPADDING="1" CELLSPACING="2" BORDER="1" WIDTH="100%" HEIGHT="22">
+
+<tr><td bgcolor="#C6E7C6"><center><font size="+2"><font color="blue">Essay</font></font>
+
+</center></td></tr></table>
+
+
+
+Preliminaries.
+
+<br><br>
+
+Although this paper is mostly about reversing the
+
+algorithm that
+
+is used for encryption, I am including some assembly
+
+code sections
+
+as well.  There are some fundamental differences
+
+between how the
+
+Intel and PA-RISC processors work, and how the calling
+
+sequences
+
+are implemented.
+
+<br><br>
+
+Firstly, the byte order is different on the machines. 
+
+PA-RISC
+
+(and SPARC and MIPS) are big endian implementations. 
+
+The most
+
+significant byte is stored at the starting address for
+
+these
+
+machines.  On Intel and VAX machines, the least
+
+significant
+
+byte is stored at the starting address.  This is
+
+important if
+
+you are debugging because when , say, using Softice to
+
+debug
+
+on Intel machines, on memory operations you will see
+
+that
+
+0x31323334 is equivalent to &quot;4321&quot; where it is &quot;1234&quot;
+
+on the
+
+big endian machines.
+
+<br><br>
+
+The subroutine calling sequence is significantly
+
+different as
+
+well.  On the HP-UX implementation on PA-RISC,
+
+registers are
+
+used to pass arguments where possible.  The calling
+
+sequence
+
+on Windows NT intel pushes the arguments onto the
+
+stack.
+
+<br><br>
+
+Outline of the process.<br>
+
+1) A daemon was built using the Flexlm Software
+
+Development Kit
+
+   that had a complete symbol table and debug
+
+information.
+
+<br><br>
+
+2) A license file for that daemon was created that
+
+created
+
+   a reportlog.
+
+<br><br>
+
+3) The debugger was run on the daemon, and the
+
+relevant calls
+
+   to the logging routines determined.  This was done
+
+by tracing
+
+   the vendor daemon while a checkout was done.
+
+<br><br>
+
+4) The relevant object file was extracted from the
+
+Globetrotter
+
+   supplied library, and a program that emulated the
+
+calls to
+
+   the relevant routines was created.  The output of
+
+the program
+
+   was checked against the logfile to make sure that
+
+the same
+
+   behaviour was exhibited by the test program as the
+
+actual
+
+   daemon.
+
+<br><br>
+
+5) The program was analysed and a program that
+
+emulated the
+
+   behaviour of the test program was written.
+
+
+
+<br><br>
+
+Step 1.<br>
+
+This process was described in an earlier essay, but
+
+the
+
+essential part is to change the makefile so that
+
+everything
+
+is compiled with the -g option, and the rules which
+
+strip the
+
+resulting executable are removed.  It is possible to
+
+debug
+
+a completely stripped executable, but life is
+
+difficult enough
+
+as it is, so any advantages which can be gained should
+
+be used.
+
+<br><br>
+
+Step 2.
+
+A license file that contains options for creating a
+
+logfile
+
+was generated.  Here is the relevant line from that
+
+file:
+
+<br><br>
+
+VENDOR blenderd blenderd blenderd.opts
+
+<br><br>
+
+blenderd.opts contains
+
+<br><br>
+
+REPORTLOG +myreport
+
+<br><br>
+
+All this is documented in the Flexlm end user manual,
+
+and there
+
+is nothing difficult or undocumented with this step.
+
+<br><br>
+
+Step 3.<br>
+
+The executable was run, and calls to ls_append_repfile
+
+and
+
+ls_lf were called with information, then the calls to
+
+the
+
+file system write were called with data somewhere in
+
+those
+
+routines.  These calls were carefully examined and the
+
+interesting
+
+routines determined.  The tactic of writing an
+
+intercepting
+
+routine that passes arguments through and logs them
+
+was used
+
+to get typical input into ls_lf.
+
+<br><br>
+
+Step 4.<br>
+
+The relevant object was then extracted from
+
+liblmgr_s.a.
+
+This object is ls_filter.o - this contains the
+
+encrypting code
+
+that converts the plaintext into the form that is
+
+written to
+
+the file.   The next step was to build an executable
+
+that would
+
+reproduce the function in question.  The unix nm
+
+command was
+
+used to figure out the missing globals or functions,
+
+then
+
+the vendor daemon operation was examined to extract
+
+the relevant
+
+values from the executable.
+
+<br><br>
+
+Makefile contains
+
+<br><br>
+
+CFLAGS= -Ae -g
+
+<br><br>
+
+all: democrack
+
+<br><br>
+
+democrack.o: democrack.c
+
+<br>    cc $(CFLAGS) democrack.c -c
+
+<br><br>
+
+democrack: democrack.o lsfilter.o
+
+<br>    cc $(CFLAGS)   democrack.o lsfilter.o  -o democrack
+
+<pre>
+
+Program initially contains
+
+
+
+#include&lt;stdio.h&gt;
+
+main(int argc, char *argv[])
+
+{
+
+}
+
+
+
+
+
+
+
+% make
+
+        cc -Ae -g democrack.c -c
+
+        cc -Ae -g   democrack.o lsfilter.o  -o
+
+democrack
+
+/usr/ccs/bin/ld: Unsatisfied symbols:
+
+   ls_replog_ascii (data)
+
+   ls_log_repfile_client (data)
+
+   ls_replog_clear (data)
+
+   ls_log_repfile (data)
+
+   ls_client_send_str (code)
+
+*** Error exit code 1
+
+</pre>
+
+At this point, we know that there are a whole bunch of
+
+variables and
+
+subroutines messing.  My tactic here is to start
+
+debugging the license
+
+server, and to declare the missing variables as
+
+initialized data space.
+
+<br><br>
+
+The working vendor daemon must now be examined, and
+
+the process of
+
+determining
+
+what variables are getting passed in.  The value of
+
+the missing
+
+variables
+
+can be determined too.
+
+<br><br>
+
+Since we know the argument list that is passed to the
+
+vendor daemons by
+
+using
+
+ps -ef, we call the vendor daemon directly.  DDE
+
+allows you to attach to
+
+an
+
+existing process, however it's much simpler to call
+
+the program
+
+directly.
+
+<br><br>
+
+% /opt/langtools/bin/dde ./blenderd -T myhost 6.1 3 -c
+
+test.dat
+
+<br><br>
+
+Once dde has started, we want to put a breakpoint at
+
+ls_lf, the routine
+
+which
+
+writes to the logfile.
+
+<br><br>
+
+dde&gt; break ls_lf<br>
+
+Breakpoint(s) set.
+
+<br><br>
+
+Then go is typed to run the program.
+
+<br><br>
+
+At this point, I should note that it may not be
+
+possible to set a
+
+breakpoint
+
+at some locations because the scope of the procedure
+
+is not visible to
+
+main.
+
+You can get the address to break on by using the nm
+
+command.  nm -x
+
+gives values
+
+which are suitable for dde.  The syntax is
+
+break `va(address)
+
+where address is the hex address of the item of
+
+interest.
+
+<br><br>
+
+After the program hits the breakpoint, we look at the
+
+call in the
+
+preceeding
+
+stack frame (by opening the stack view, then clicking
+
+on the frame of
+
+interest,
+
+in this case, ls_append_repfile+0c8.  Since we don't
+
+have the source, we
+
+must look
+
+at the assembly code at this point:
+
+<pre>
+
+0000EA68  ls_append_repfile+00ac  STB         %r0,R'590(%r1)
+
+0000EA6C  ls_append_repfile+00b0  ADDIL       L'0,%r27
+
+0000EA70  ls_append_repfile+00b4  STW         %r0,R'3c(%r1)
+
+0000EA74  ls_append_repfile+00b8  ADDIL       L'2800,%r27
+
+0000EA78  ls_append_repfile+00bc  STW         %r0,R'528(%r1)
+
+0000EA7C  ls_append_repfile+00c0  LDW         -420(%r30),%r26
+
+0000EA80  ls_append_repfile+00c4  LDIL        L'6800,%r31
+
+0000EA84  ls_append_repfile+00c8  BLE         R'3e8(%sr4,%r31)
+
+0000EA88  ls_append_repfile+00cc  COPY        %r31,%r2
+
+</pre>
+
+The program counter is at EA84 at this frame.  I
+
+looked at the
+
+preceeding
+
+frames, and I saw that only r26 was set, and that r25
+
+was not set.<br>
+
+Since the
+
+arguments under HPUX are passed with registers, I
+
+conclude that ls_lf
+
+takes one
+
+argument.  So far so good.  But what is that argument?<br>
+
+ At this point,
+
+we are at
+
+the entry of ls_lf so the register should still
+
+contain the first
+
+argument.
+
+<pre>
+
+dde&gt; regs
+
+r0: 00000000  00000000  0000EA8F
+
+r3 : 7B03AE50  00000007  7B03A51C  7B03A53C
+
+r7 : 7B03A650  7B03A650  00000020  0000001F
+
+r11: 00000000  00000000  08000084  08000084
+
+r15: 00000000  00000001  4001CAF0  00000008
+
+r19: 00000040  00000040  00000108  00004000
+
+r23: 00000141  008C0A00  00000000  7B03F118
+
+r27: 4000A610  00000040  00000008  7B03F550
+
+r31: 0000EA8F
+
+pc: 0000EA8C  ipsw: 0006000F  sar: 00000018
+
+</pre>
+
+So r26 contains 7b03f118 - a pointer to some sort of
+
+automatic variable
+
+on the
+
+stack.  Let's check it out:
+
+<pre>
+
+dde&gt; dump -from 7b03f118 -to 7b03f128
+
+7B03F118: 2320464C  45586C6D  20526570  6F727420
+
+7B03F128: 4C6F672C
+
+</pre>
+
+That sure looks like character data to me!
+
+<pre>
+
+dde&gt; dump -from 7b03f118 -to 7b03f128 -char
+
+7B03F118: &quot;# FL&quot;  &quot;EXlm&quot;  &quot; Rep&quot;  &quot;ort &quot;
+
+7B03F128: &quot;Log,&quot;
+
+</pre>
+
+After checking a few more runs, it was clear that the
+
+input was a null
+
+terminated
+
+string. So now we can start to fill in the blanks in
+
+our &quot;main&quot; program.
+
+<pre>
+
+#include&lt;stdio.h&gt;
+
+int ls_replog_ascii[6];
+
+int ls_log_repfile_client;
+
+int ls_replog_clear[6];
+
+FILE *ls_log_repfile;
+
+extern char *cksumbuf;  /* declared in lsfilter.o */
+
+extern long buflen;
+
+extern char *curra;
+
+
+
+main(int argc, char *argv[])
+
+{
+
+    ls_lf(&quot;# FLEXlm Report Log, 8 September, 1999,
+
+\&quot;blenderd\&quot; on
+
+\&quot;myhost\&quot;\n&quot;
+
+);
+
+    ls_lf(&quot;5 2 2\n&quot;);
+
+    ls_lf(&quot;7 1 78261234\n&quot;);
+
+    ls_lf(&quot;23 1\n&quot;);
+
+    ls_lf(&quot;7 2 hp700_u9\n&quot;);
+
+    ls_lf(&quot;27 2\n&quot;);
+
+    ls_lf(&quot;7 3 /usr/tmp/lockblenderd\n&quot;);
+
+}
+
+int ls_client_send_str()
+
+{
+
+    printf (&quot;ls_client_send_str called.\n&quot;);
+
+}
+
+</pre>
+
+Attempting to compile and run this program gets a
+
+segmentation fault.
+
+Some of these variables need to be initialized.  The
+
+next step is to run
+
+DDE
+
+against our program.  The program will fault, and we
+
+can then look at
+
+the
+
+assembly listing to see what made it fault.
+
+<pre>
+
+
+
+Break at: \\democrack\main\12
+
+dde&gt; go
+
+Intercepted event type 'signal SIGSEGV'.
+
+Signal received by process 11165: (SIGSEGV).
+
+Stopped at: ls_lf+0254 (000038B8)
+
+
+
+Assembly shows us:
+
+
+
+000038A0  ls_lf+023c  LDW             -1044(%r30),%r31
+
+000038A4  ls_lf+0240  LDO             R'1(%r31),%r19
+
+000038A8  ls_lf+0244  STW             %r19,-1044(%r30)
+
+000038AC  ls_lf+0248  ADDIL           L'5800,%r27
+
+000038B0  ls_lf+024c  LDO             R'2f8(%r1),%r20
+
+000038B4  ls_lf+0250  LDW             -1044(%r30),%r21
+
+000038B8  ls_lf+0254  LDWX,S          %r21(%r20),%r22
+
+000038BC  ls_lf+0258  COMIBF,=        -1,%r22,ls_lf+021c
+
+
+
+regs are
+
+
+
+r0: 00000000  40006B10  0000386B
+
+r3 : 7B03A000  00000001  7B03A4F0  7B03A4F8
+
+r7 : 7B03A608  7B03A608  00000020  0000001F
+
+r11: 00000000  00000000  08000084  08000084
+
+r15: 00000000  00000001  4001CA20  00000002
+
+r19: 0000007E  40006E08  0000007E  00000000
+
+r23: 00000000  00000001  4000117A  00000000
+
+r27: 40001310  00000001  00000001  7B03AAC8
+
+r31: 0000007D
+
+pc: 000038B8  ipsw: 0006000F  sar: 00000008
+
+
+
+Looking at r20 we see
+
+
+
+dde&gt; dump -from 40006e08
+
+40006E08: 00000000
+
+</pre>
+
+So it sure looks like an attempt to reference through
+
+a bad pointer.
+
+In this case we're lucky - this is one of the
+
+variables which we're
+
+looking
+
+for.   To get the values, we need to look at the
+
+vendor daemon again
+
+though.
+
+<pre>
+
+% nm -x democrack | grep 6e08
+
+ls_replog_ascii     |0x40006e08|extern|data   |$BSS$
+
+0.1u 0.0s 0:00 11%
+
+</pre>
+
+The offset was at ls_lf+254, so now we must hunt down
+
+that offset in the
+
+vendor daemon.
+
+<pre>
+
+In our daemon directory:
+
+
+
+
+
+% nm -x blenderd | grep ls_lf
+
+ls_lf               |0x00005db0|extern|code   |$CODE$
+
+</pre>
+
+So we can figure out the equivalent offset in that
+
+routine in the vendor
+
+daemon.
+
+It's the base address+offset.
+
+<pre>
+
+dde&gt; print 0x5db0+0x254 -hex
+
+0x0000000000006004
+
+</pre>
+
+We start up the vendor daemon again, and set a
+
+breakpoint at that
+
+offset.
+
+<pre>
+
+% /opt/langtools/bin/dde ./blenderd -T myhost 6.1 3 -c test.dat
+
+
+
+Once dde has started
+
+
+
+dde&gt; break `va(6004)
+
+Breakpoint(s) set.
+
+dde&gt; go
+
+Break at: ls_lf+0254 (00006004)
+
+</pre>
+
+We look at the assembly code again, and we can see
+
+that we're in the
+
+same
+
+spot in ls_lf, just that everything should be OK at
+
+this point.
+
+<pre>
+
+dde&gt; regs
+
+r0: 00000000  40005E10  00005FB7
+
+r3 : 7B03AE50  00000007  7B03A51C  7B03A53C
+
+r7 : 7B03A650  7B03A650  00000020  0000001F
+
+r11: 00000000  00000000  08000084  08000084
+
+r15: 00000000  00000001  4001CAF0  00000008
+
+r19: 00000001  40006320  00000001  00000006
+
+r23: 00000000  00000001  400010C2  00000000
+
+r27: 4000A610  00000001  00000001  7B03F9D0
+
+r31: 00000000
+
+pc: 00006004  ipsw: 0004000F  sar: 0000001B
+
+
+
+Looking at that location, it appears as though this is
+
+a pointer to an array of ints.
+
+
+
+dde&gt; dump -from 40006320 -to 40006340
+
+40006320: 00000006  00000007  00000019  00000025
+
+40006330: 00000026  FFFFFFFF  0A000000  0A000000
+
+40006340: 0A000000
+
+
+
+After tracing the program a bit, we find that it uses -1 as a terminator,
+
+thus we can initialize the array and quit at the first -1.
+
+
+
+    ls_replog_ascii[0] = 0x00000006;
+
+    ls_replog_ascii[1] = 0x00000007;
+
+    ls_replog_ascii[2] = 0x00000019;
+
+    ls_replog_ascii[3] = 0x00000025;
+
+    ls_replog_ascii[4] = 0x00000026;
+
+    ls_replog_ascii[5] = 0xffffffff;
+
+
+
+After a few hours of digging around looking at variables, the following
+
+program can be had:
+
+
+
+#include&lt;stdio.h&gt;
+
+int ls_replog_ascii[6];
+
+int ls_log_repfile_client;
+
+int ls_replog_clear[6];
+
+FILE *ls_log_repfile;
+
+extern char *cksumbuf;  /* declared in lsfilter.o */
+
+extern long buflen;
+
+extern char *curra;
+
+
+
+main(int argc, char *argv[])
+
+{
+
+    char instr[1024];
+
+    char outstr[1024];
+
+    char instr1[1024];
+
+    int num;
+
+    int i;
+
+    unsigned long testval;
+
+    unsigned long *fooval;
+
+    FILE *fp;
+
+    char ibuf[1024];
+
+
+
+    ls_log_repfile = stdout;
+
+    ls_replog_ascii[0] = 0x00000006;
+
+    ls_replog_ascii[1] = 0x00000007;
+
+    ls_replog_ascii[2] = 0x00000019;
+
+    ls_replog_ascii[3] = 0x00000025;
+
+    ls_replog_ascii[4] = 0x00000026;
+
+    ls_replog_ascii[5] = 0xffffffff;
+
+    ls_replog_clear[0] = 0x00000005;
+
+    ls_replog_clear[1] = 0xffffffff;
+
+    ls_replog_clear[2] = 0x000001f3;
+
+    ls_replog_clear[3] = 0x00000000;
+
+    ls_replog_clear[4] = 0x00000000;
+
+    ls_replog_clear[5] = 0x00000000;
+
+    ls_log_repfile_client = 0;
+
+
+
+    curra = (char *) malloc(1024 * sizeof(char));
+
+    cksumbuf = (char *) malloc(1024 * sizeof(char));
+
+    buflen = 0;
+
+    strcpy(curra, &quot;&quot;);
+
+
+
+    ls_lf(&quot;# FLEXlm Report Log, 8 September, 1999,
+
+\&quot;blenderd\&quot; on
+
+\&quot;myhost\&quot;\n&quot;
+
+);
+
+    ls_lf(&quot;5 2 2\n&quot;);
+
+    ls_lf(&quot;7 1 78261234\n&quot;);
+
+    ls_lf(&quot;23 1\n&quot;);
+
+    ls_lf(&quot;7 2 hp700_u9\n&quot;);
+
+    ls_lf(&quot;27 2\n&quot;);
+
+    ls_lf(&quot;7 3 /usr/tmp/lockblenderd\n&quot;);
+
+
+
+    ls_flush_replog(stdout);
+
+    fflush(stdout);
+
+}
+
+int ls_client_send_str()
+
+{
+
+    printf (&quot;ls_client_send_str called.\n&quot;);
+
+    return(0);
+
+}
+
+</pre>
+
+
+
+Now we are ready to start reversing the actual code.
+
+The procedure that I use to reverse engineer programs
+
+is to build a
+
+program
+
+that duplicates the behaviour of the target routines. <br>
+
+The procedure is
+
+to
+
+step through the target routines one instruction at a
+
+time, at the same
+
+time building a program which generates the same data.<br>
+
+ By examining the
+
+code which is produced, an idea of what the original
+
+programmer was
+
+trying
+
+to accomplish can be extracted.   In many ways,
+
+reversing code is a
+
+mental
+
+exercise of examining what is happening in the
+
+program, and asking &quot;If I
+
+were
+
+writing this, what would I be trying to accomplish?&quot;
+
+<br><br>
+
+If you watch the data being fed into ls_lf (via the
+
+code interception
+
+trick)
+
+you can see how the programmers of this algorithm save
+
+space.  Since
+
+there is
+
+a lot of information associated with an event
+
+(checkout, checkin, etc)
+
+that is
+
+common, a set of values associated with a user or
+
+machine or hosttype or
+
+whatever is
+
+assigned a code, and the individual events are a
+
+combination of these
+
+codes.  It
+
+is a clever idea, and will prevent the log files from
+
+growing at an
+
+excessive rate.<br>
+
+However, I digress from the task at hand.
+
+<br><br>
+
+The first complete routine that is of value to examine
+
+is incr_currc.
+
+This
+
+routine is called many times, and is very
+
+straightforward.  What is is
+
+trying
+
+to accomplish?
+
+<br><br>
+
+As it turns out, in general, the first character of
+
+each line indicates
+
+what kind
+
+of data the line contains.  The sequence
+
+Copyright_1988-1996_Globetrotter_Software_Inc_
+
+will be repeated over and over in the first character
+
+position,  If
+
+there is a change of
+
+encryption mode, the sequence will skip 3 positions
+
+instead of one.
+
+<br><br>
+
+Here is the assembly code:
+
+
+
+0000438C  incr_currc       ADDIL       L'0,%r27      ;load the base reg into r1
+
+00004390  incr_currc+0004  LDW         R'4(%r1),%r22 ;grab the value at base+4
+
+00004394  incr_currc+0008  COMIBF,=,N  0,%r22,incr_currc+0020 ;not null, go to 20 otherwise
+
+00004398  incr_currc+000c  ADDIL       L'fffff800,%r27 ;
+
+0000439C  incr_currc+0010  LDW         R'758(%r1),%r31 ;set the pointer to a string
+
+000043A0  incr_currc+0014  ADDIL       L'0,%r27
+
+000043A4  incr_currc+0018  B           incr_currc+005c ;and bail out, but first
+
+000043A8  incr_currc+001c  STW         %r31,R'4(%r1) ;save the value at base+4
+
+000043AC  incr_currc+0020  ADDIL       L'0,%r27 ;Come here if not null
+
+000043B0  incr_currc+0024  LDW         R'4(%r1),%r19 ;Increment the pointer
+
+000043B4  incr_currc+0028  LDO         R'1(%r19),%r20
+
+000043B8  incr_currc+002c  ADDIL       L'0,%r27
+
+000043BC  incr_currc+0030  STW         %r20,R'4(%r1)
+
+000043C0  incr_currc+0034  ADDIL       L'0,%r27
+
+000043C4  incr_currc+0038  LDW         R'4(%r1),%r21
+
+000043C8  incr_currc+003c  ADDIL       L'fffff800,%r27
+
+000043CC  incr_currc+0040  LDW         R'758(%r1),%r22
+
+000043D0  incr_currc+0044  LDO         R'2e(%r22),%r1
+
+000043D4  incr_currc+0048  COMBT,<n %r21,%r1,incr_currc+005c ;If it's more than 0x2e past start 000043D8 incr_currc+004c ADDIL L'fffff800,%r27 000043DC incr_currc+0050 LDW R'758(%r1),%r31; set the pointer back to the start 000043E0 incr_currc+0054 ADDIL L'0,%r27 000043E4 incr_currc+0058 STW %r31,R'4(%r1) 000043E8 incr_currc+005c BV %r0(%r2); go back from whence we came 000043EC incr_currc+0060 NOP </prE>
+
+Because of the pipelined behaviour of the PA-RISC
+
+processor,
+
+instructions are
+
+only sort of executed sequentially.  The ,N modifier
+
+means DON'T execute
+
+the
+
+following instruction.  The branch instruction at
+
+incr_currc+0018 and
+
+the
+
+store to memory instruction at at incr_currc+001c are
+
+both executed
+
+during the
+
+branch, but they only take one operation.  If you'll
+
+notice, all the
+
+instructions
+
+are the same size.
+
+<br><br>
+
+We can dig out the value at fffff800+758 by examining
+
+r31 at
+
+incr_currc+10.  The
+
+value is 40001191, so now
+
+<pre>
+
+dde&gt; dump -from 40001191 -to 400011c1 -char
+
+40001191: &quot;Copy&quot;  &quot;righ&quot;  &quot;t_19&quot;  &quot;88-1&quot;
+
+400011A1: &quot;996_&quot;  &quot;Glob&quot;  &quot;etro&quot;  &quot;tter&quot;
+
+400011B1: &quot;_Sof&quot;  &quot;twar&quot;  &quot;e_In&quot;  &quot;c_\0\377&quot;
+
+400011C1: &quot;\377\377\377\377&quot;
+
+</pre>
+
+Which gives us the string that it's stepping through.
+
+<br><br>
+
+chptr is set to this string, and it goes over and over
+
+the same pattern.
+
+<pre>
+
+char
+
+*cstring=&quot;Copyright_1988-1996_Globetrotter_Software_Inc_&quot;;
+
+
+
+
+
+int incr_currc(void) {
+
+    if (chptr == 0) { /* incr_currc+8 */
+
+        chptr = cstring;
+
+    }
+
+    else {
+
+        chptr++;
+
+        if (chptr &gt;= cstring+46) {
+
+            chptr = cstring;
+
+        }
+
+    }
+
+    return(0);
+
+}
+
+</pre>
+
+
+
+Now after understanding a little bit about how the
+
+incr_currc works, we
+
+can
+
+turn our attention to the encryption algorithm itself.
+
+  There are a
+
+couple of
+
+things which seem relatively straightforward in C, but
+
+become somewhat
+
+warped
+
+and more difficult to understand after compilation.
+
+<br><br>
+
+The designers of the this processor implemented a
+
+shift and add
+
+instruction.  A
+
+lot of the time, programmers are multiplying by some
+
+integer constant,
+
+and
+
+rather than chew up a lot of cycles doing a multiply,
+
+the shift/add
+
+instructions
+
+can be combined for faster execution.  For example, a
+
+multiplication by
+
+5 could
+
+be expressed as a multiplication by 4 and an addition.<br>
+
+ So in the case
+
+of 3 * 5,
+
+it could be expressed as 3+(3*4).   The processor
+
+could implement this
+
+by left
+
+shifting 3 2 bits, then adding 3.  So 0x00000011<2 is 0x00001100. add 0x00000011 and you get 0x00001111, or 15 (0x0e) which is 3*5. I explain this so that if the software designers use multiplication, you can figure out what is going on. <br><br>
+
+Some of the subroutines, such as remI (remainder) are
+
+used to implement
+
+modulo
+
+(%) operations. It is better to examine the output of
+
+these routines as
+
+they are
+
+used to implement standard operations, and are twisted
+
+hand tuned
+
+assembler.<br>
+
+Look at this if you want to see the  ingenuity of the
+
+designers of this
+
+machine.
+
+If you see $$ calls, they are usuall implementations
+
+of standard
+
+operations.
+
+<br><br>
+
+Here is an example of this from the &quot;filter&quot; routine. 
+
+The &quot;shift and
+
+add&quot;
+
+technique is used to combine the values.
+
+<pre>
+
+4028  filter+0254  ADDIL           L'fffff800,%r27
+
+402C  filter+0258  LDW             R'694(%r1),%r21
+
+4030  filter+025c  SH2ADD          %r21,%r21,%r22
+
+4034  filter+0260  SH2ADD          %r22,%r0,%r31
+
+4038  filter+0264  ADDIL           L'fffff800,%r27
+
+403C  filter+0268  LDW             R'690(%r1),%r19
+
+4040  filter+026c  ADD             %r19,%r31,%r20
+
+4044  filter+0270  ADDIL           L'fffff800,%r27
+
+4048  filter+0274  LDW             R'698(%r1),%r21
+
+404C  filter+0278  SH2ADD          %r21,%r21,%r22
+
+4050  filter+027c  SH2ADD          %r22,%r0,%r1
+
+4054  filter+0280  SH2ADD          %r1,%r1,%r31
+
+4058  filter+0284  SH2ADD          %r31,%r0,%r19
+
+405C  filter+0288  ADD             %r20,%r19,%r20
+
+4060  filter+028c  STW             %r20,-52(%r30)
+
+</pre>
+
+This actually translates to code similar to what
+
+follows.
+
+
+
+<pre>
+
+/* This is globally declared. */
+
+int sv_690[4]; /* local storage for filter() */
+
+/* Local variable */
+
+int fv_d;        /* offset -52 */
+
+fv_d = sv_690[0] + sv_690[1] * 20 + sv_690[2] * 400;
+
+</pre>
+
+Algorithm reversing.<br>
+
+ If you examine the algorithm which is used to select
+
+the character to
+
+be
+
+ printed in nb_encrypt (a version of ascii_filter) you
+
+can see that they
+
+use an
+
+ index into the string pointed to by curra, which in
+
+turn is incremented
+
+each
+
+ time the algorithm is run.  We need an inverse of
+
+this function, but
+
+this
+
+ function is not available in the report generation
+
+code that we are
+
+inspecting.
+
+ The algorithm itself must be reversed.  An inverse
+
+mapping array is
+
+built by
+
+ mapping the index into the location pointed to by the
+
+value in
+
+initvals.  This
+
+ may not be too clear, so I have included the code
+
+which generates the
+
+inverse
+
+ decoding array.
+
+<pre>
+
+#include&lt;stdio.h&gt;
+
+#include&lt;string.h&gt;
+
+
+
+char initvals[] =
+
+{
+
+ 0x37, 0x5a, 0x4b, 0x43, 0x71, 0x36,
+
+ 0x34, 0x29, 0x5e, 0x21, 0x79, 0x45,
+
+ 0x5b, 0x7a, 0x5f, 0x7d, 0x59, 0x2b,
+
+ 0x46, 0x66, 0x53, 0x42, 0x3a, 0x3b,
+
+ 0x76, 0x3d, 0x25, 0x74, 0x58, 0x63,
+
+ 0x38, 0x26, 0x35, 0x73, 0x40, 0x28,
+
+ 0x27, 0x47, 0x23, 0x61, 0x6d, 0x41,
+
+ 0x7c, 0x68, 0x4d, 0x44, 0x7e, 0x52,
+
+ 0x51, 0x39, 0x55, 0x67, 0x30, 0x4e,
+
+ 0x69, 0x4a, 0x3f, 0x24, 0x5d, 0x4c,
+
+ 0x56, 0x6f, 0x50, 0x60, 0x6e, 0x2d,
+
+ 0x5c, 0x72, 0x2a, 0x49, 0x75, 0x31,
+
+ 0x3e, 0x6b, 0x70, 0x7b, 0x22, 0x2f,
+
+ 0x64, 0x33, 0x54, 0x78, 0x3c, 0x4f,
+
+ 0x48, 0x2e, 0x20, 0x6c, 0x2c, 0x62,
+
+ 0x32, 0x57, 0x77, 0x65, 0x6a, 0x00
+
+};
+
+
+
+int main()
+
+{
+
+ char *p;
+
+ char outarr[256]; /* 256 different mappings */
+
+ int i;
+
+ int outindex; /* index into output table */
+
+ int numindex = 0; /* the current index into initvals
+
+table */
+
+
+
+ /*
+
+  * &quot;unused&quot; values will have 255 for easier fault
+
+  * detection.
+
+  */
+
+ for (i = 0; i <256; i++) { outarr[i]="0xff;" } /* * step through the initvals array, and load * the location in outarr with the index into * the initvals array. */ for (p="initvals;" *p !="\0" ; p++) { outindex="(int)" *p &amp; 0xff; outarr[outindex]="numindex;" numindex++; } /* load the last value anyway, probably not used */ outindex="(int)" *p &amp; 0xff; outarr[outindex]="numindex;" /* dump the array to stdout */ printf ("char * decodetable[]="{&quot;);" for (i="0;" i &lt; 256; i++) { if (i%8="=0)" { printf ("\n "); } printf ("%02x", outarr[i] &amp; 0xff); if (i !="255)" { printf (", "); } } printf ("\n};\n"); } </prE>
+
+Here we have the completed encrypt/decrypt (for
+
+ascii_filter).
+
+Sections which should be examined in depth are the
+
+inner for loops
+
+in the encrypt and decrypt sections.
+
+<pre>
+
+#include&lt;stdio.h&gt;
+
+#include&lt;string.h&gt;
+
+/* Now internal */
+
+
+
+char tstbuf[1024]; /* 40002978? */
+
+char *curra; /* In other at 40006ee4 */
+
+int curoffset; /* current offset value */
+
+
+
+/*
+
+ * This is the encryption values array
+
+ */
+
+char initvals[] =
+
+{
+
+ 0x37, 0x5a, 0x4b, 0x43, 0x71, 0x36,
+
+ 0x34, 0x29, 0x5e, 0x21, 0x79, 0x45,
+
+ 0x5b, 0x7a, 0x5f, 0x7d, 0x59, 0x2b,
+
+ 0x46, 0x66, 0x53, 0x42, 0x3a, 0x3b,
+
+ 0x76, 0x3d, 0x25, 0x74, 0x58, 0x63,
+
+ 0x38, 0x26, 0x35, 0x73, 0x40, 0x28,
+
+ 0x27, 0x47, 0x23, 0x61, 0x6d, 0x41,
+
+ 0x7c, 0x68, 0x4d, 0x44, 0x7e, 0x52,
+
+ 0x51, 0x39, 0x55, 0x67, 0x30, 0x4e,
+
+ 0x69, 0x4a, 0x3f, 0x24, 0x5d, 0x4c,
+
+ 0x56, 0x6f, 0x50, 0x60, 0x6e, 0x2d,
+
+ 0x5c, 0x72, 0x2a, 0x49, 0x75, 0x31,
+
+ 0x3e, 0x6b, 0x70, 0x7b, 0x22, 0x2f,
+
+ 0x64, 0x33, 0x54, 0x78, 0x3c, 0x4f,
+
+ 0x48, 0x2e, 0x20, 0x6c, 0x2c, 0x62,
+
+ 0x32, 0x57, 0x77, 0x65, 0x6a, 0x00};
+
+
+
+/*
+
+ * This is the decryption values array.  Invalid values
+
+ * are set to ff
+
+ */
+
+char decodetable[] = {
+
+ 0x5f, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+
+ 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+
+ 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+
+ 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+
+ 0x56, 0x09, 0x4c, 0x26, 0x39, 0x1a, 0x1f, 0x24,
+
+ 0x23, 0x07, 0x44, 0x11, 0x58, 0x41, 0x55, 0x4d,
+
+ 0x34, 0x47, 0x5a, 0x4f, 0x06, 0x20, 0x05, 0x00,
+
+ 0x1e, 0x31, 0x16, 0x17, 0x52, 0x19, 0x48, 0x38,
+
+ 0x22, 0x29, 0x15, 0x03, 0x2d, 0x0b, 0x12, 0x25,
+
+ 0x54, 0x45, 0x37, 0x02, 0x3b, 0x2c, 0x35, 0x53,
+
+ 0x3e, 0x30, 0x2f, 0x14, 0x50, 0x32, 0x3c, 0x5b,
+
+ 0x1c, 0x10, 0x01, 0x0c, 0x42, 0x3a, 0x08, 0x0e,
+
+ 0x3f, 0x27, 0x59, 0x1d, 0x4e, 0x5d, 0x13, 0x33,
+
+ 0x2b, 0x36, 0x5e, 0x49, 0x57, 0x28, 0x40, 0x3d,
+
+ 0x4a, 0x04, 0x43, 0x21, 0x1b, 0x46, 0x18, 0x5c,
+
+ 0x51, 0x0a, 0x0d, 0x4b, 0x2a, 0x0f, 0x2e, 0xff,
+
+ 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+
+ 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+
+ 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+
+ 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+
+ 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+
+ 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+
+ 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+
+ 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+
+ 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+
+ 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+
+ 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+
+ 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+
+ 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+
+ 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+
+ 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+
+ 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
+
+
+
+/*
+
+ * String containing array used for marking ascii_filter or filter
+
+ */
+
+char
+
+*cstring=&quot;Copyright_1988-1996_Globetrotter_Software_Inc_&quot;;
+
+
+
+unsigned long myedata; /* in other at 400013d8 */
+
+/*
+
+ * pointer to current value in cstring
+
+ */
+
+char *chptr; /* in other at 400013dc */
+
+
+
+main()
+
+{
+
+ char mystr[1024];
+
+ char encstr[1024];
+
+ char decstr[1024];
+
+
+
+ nb_crypt_init();
+
+ mystr[0] = *chptr;
+
+ /* Load in the test string. */
+
+ strcpy(mystr+1,&quot;The quick brown fox jumps over the lazy dog. 1234567890\n&quot;);
+
+ printf (&quot;orig  : %s\n&quot;, mystr);
+
+
+
+ /* encrypt the string */
+
+ nb_encrypt(mystr, encstr);
+
+ printf (&quot;encstr: %s\n&quot;, encstr);
+
+ nb_crypt_init();
+
+ nb_decrypt(encstr, decstr);
+
+ printf (&quot;decstr: %s\n&quot;, decstr);
+
+}
+
+
+
+/*----------------------------------------------------------*
+
+ *
+
+ * nb_crypt_init()
+
+ *
+
+ * initialize pointers and variables.  This is a consolidation
+
+ * of various initializations.
+
+ *----------------------------------------------------------*/
+
+int nb_crypt_init()
+
+{
+
+ myedata = 0;
+
+ chptr = 0;
+
+ curra = 0;
+
+ curoffset = 0;
+
+ if (curra == 0)
+
+ {
+
+  curra = tstbuf;
+
+ }
+
+ if (tstbuf[0] == '\0')
+
+ {
+
+  strcpy(tstbuf, initvals);
+
+  strcat(tstbuf, initvals);
+
+ }
+
+ if (chptr == 0)
+
+ {
+
+  chptr = cstring;
+
+ }
+
+ return(0);
+
+}
+
+/*----------------------------------------------------------*
+
+ *
+
+ * nb_encrypt
+
+
+
+*----------------------------------------------------------*/
+
+int nb_encrypt (char *instr, char *outstr)
+
+{
+
+
+
+ char *asval_a;    /* offset -100 */
+
+ char *asval_b;    /* offset -56 */
+
+ int asval_c;    /* offset -52 */
+
+
+
+ asval_a = instr;
+
+ /* Determine if we were in filter mode before */
+
+ if (myedata != 1)
+
+ { /* ascii_filter+0x78 */
+
+  if (myedata != 0)
+
+  { /* ascii_filter+0x94 */
+
+   incr_currc();
+
+  }
+
+  myedata = 1;
+
+ }
+
+ outstr[0] = chptr[0];
+
+ /* step the firstchar pointer */
+
+ incr_currc();
+
+ /* Copy string to output; first char reserved for indicator */
+
+ strcpy(outstr+1, instr);
+
+ for (asval_b = outstr+1; *asval_b != '\0'; asval_b++)
+
+ {
+
+  /* Ignore low nonprintable chars */
+
+  if (*asval_b &gt;= ' ')
+
+  {
+
+   /*
+
+    * Since the ascii range we are converting
+
+    * starts at 32, subtract 32 to have range
+
+    * start at 0
+
+    */
+
+   asval_c = (*asval_b) - 32;
+
+   /*
+
+    * Use the encrypting table to find a corresponding
+
+value
+
+    * and set the output char to that value
+
+    */
+
+   *asval_b = curra[asval_c];
+
+   /*
+
+    * move the start of the encryption table
+
+    * to the new location ptr
+
+    */
+
+   curra = curra+asval_c;
+
+    /* cycle around if  getting close to the end of
+
+the string */
+
+   if (curra &gt; tstbuf+95)
+
+   {
+
+    curra = curra - 95;
+
+   }
+
+
+
+   /*
+
+    * For keeping track of the current location
+
+    * you can ignore this for this example.
+
+    */
+
+   curoffset = curoffset + asval_c;
+
+   if (curoffset &gt; 95)
+
+   {
+
+    curoffset = curoffset-95;
+
+   }
+
+  }
+
+ }
+
+ return(0);
+
+}
+
+/*----------------------------------------------------------*
+
+ *
+
+ * nb_decrypt
+
+ *----------------------------------------------------------*/
+
+int nb_decrypt (char *instr, char *outstr)
+
+{
+
+
+
+ char *asval_a;
+
+ char *asval_b;
+
+ int asval_c;
+
+ int tmpval;
+
+ int tmpval1;
+
+
+
+
+
+ asval_a = instr;
+
+ if (myedata != 1)
+
+ { /* ascii_filter+0x78 */
+
+  if (myedata != 0)
+
+  { /* ascii_filter+0x94 */
+
+   incr_currc();
+
+  }
+
+  myedata = 1;
+
+ }
+
+ outstr[0] = chptr[0];
+
+ incr_currc();
+
+ strcpy(outstr, instr+1);
+
+ for (asval_b = outstr; *asval_b != '\0'; asval_b++)
+
+ {
+
+  if (*asval_b &gt;= ' ')
+
+  {
+
+   /* Determine offset index */
+
+   tmpval = *asval_b &amp; 0xff;
+
+
+
+   /* Decode table is basically inverse mapping of encode table */
+
+   tmpval1 = (int) (decodetable[tmpval]&amp;0xff) - curoffset;
+
+   if (tmpval1 <0) { tmpval1 +="95;" } *asval_b="tmpval1" + 32; asval_c="tmpval1;" curoffset="curoffset" + asval_c; if (curoffset> 95)
+
+   {
+
+    curoffset = curoffset-95;
+
+   }
+
+  }
+
+ }
+
+ return(0);
+
+}
+
+/*----------------------------------------------------------*
+
+ *
+
+ * incr_currc
+
+ *----------------------------------------------------------*/
+
+int incr_currc(void)
+
+{
+
+ chptr++;
+
+ if (chptr &gt;= cstring+46)
+
+ {
+
+  chptr = cstring;
+
+ }
+
+ return(0);
+
+}
+
+
+
+
+
+One run of this program.
+
+
+
+myhost [6]% ./a.out
+
+orig  : CThe quick brown fox jumps over the lazy dog. 1234567890
+
+
+
+encstr:
+
+C(ln##v_lLaayw&quot;*gg%yCC/r9@::4w\NN|f,,Ia@XXZT?uulyc9uwSMI.
+
+
+
+decstr: CThe quick brown fox jumps over the lazy dog. 1234567890
+
+
+
+0.0u 0.0s 0:00 3%
+
+</pre>
+
+<br><br>
+
+
+
+<!-- FINAL NOTES STARTS HERE -->
+
+<table CELLPADDING="1" CELLSPACING="2" BORDER="1" WIDTH="100%" HEIGHT="22">
+
+<tr><td bgcolor="#C6E7C6"><center><font size="+2"><font color="blue">Final
+
+Notes</font>
+
+</font></center></td></tr></table>
+
+
+
+This particular piece of reverse engineering isn't a
+
+crack as much as it
+
+demonstrates how a particular encryption can be
+
+reverse engineered. Many
+
+keygens
+
+use some sort of trapdoor encryption where the
+
+algorithm is only meant
+
+to go one
+
+way, and the authorization code is compared against
+
+the output of the
+
+algorithm.
+
+Some methods have data hidden within the provided key,
+
+which is then
+
+used by the
+
+program.    Being able to reverse encryption
+
+algorithms enables
+
+reversers to
+
+extract &quot;secret&quot; data from authorization codes where
+
+secret data is
+
+encoded in
+
+the provided authorization code.
+
+<br><br>
+
+I have avoided posting the full reversing of
+
+ls_filter.o because this
+
+essay is
+
+long enough as it is, and  most reversers are not
+
+interested in getting
+
+usage
+
+statistics from the license daemon.  It is possible
+
+with reverse
+
+engineering to
+
+build a program which can open the logfile and build
+
+an application that
+
+can
+
+extract complete information from this file.
+
+
+
+
+
+<br><br>
+
+
+
+<!-- OB DUH STARTS HERE -->
+
+<table CELLPADDING="1" CELLSPACING="2" BORDER="1" WIDTH="100%" HEIGHT="22">
+
+<tr><td bgcolor="#C6E7C6"><center><font size="+2"><font color="blue">Ob
+
+Duh</font></font>
+
+</center></td></tr></table><center><i>I wont even
+
+bother explaining you
+
+   that you should BUY this target program if you
+
+intend to use it for a
+
+
+
+   longer period than the allowed one. Should you want
+
+to STEAL this
+
+   software instead, you don't need to crack its
+
+protection scheme at
+
+all:
+
+   you'll find it on most Warez sites, complete and
+
+already regged,
+
+   farewell, don't come back.</i></center>
+
+
+
+<!-- WAY OUT STARTS HERE -->
+
+<hr><center><i>You are deep inside fravia's page of
+
+reverse engineering,
+
+
+
+choose your way out:<br><br></i></center>
+
+<br><center>
+
+
+
+<a href="flexlm.htm" tppabs="http://www.anticrack.de/fravia/flexlm.htm"><img SRC="flexlm.gif" tppabs="http://www.anticrack.de/fravia/flexlm.gif" ALT="flexlm" ALIGN="CENTER" WIDTH="114" HEIGHT="43" BORDER="0" VSPACE="0" HSPACE="0"></a>
+
+<br>
+
+<font color="gray">Back to FlexLM project</font>
+
+<br><br>
+
+
+
+<!-- OR JUST A LINK LIKE THIS -->
+
+
+
+<!--<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13HEIGHT=13BORDER=0 VSPACE=0 HSPACE=0><A HREF="project1.htm" tppabs="http://www.anticrack.de/fravia/project1.htm">BacktoYour_chosen_project</A><hr width=33%>-->
+
+
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><a HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage</a>
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><a HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links</a>
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><a HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms</a>
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><a HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC</a>
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><a HREF="protec.htm" tppabs="http://www.anticrack.de/fravia/protec.htm">how to
+
+protect</a>
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><a HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database</a>
+
+<br>
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><a HREF="realicra.htm" tppabs="http://www.anticrack.de/fravia/realicra.htm">reality cracking</a>
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><a HREF="howtosea.htm" tppabs="http://www.anticrack.de/fravia/howtosea.htm">how
+
+to search</a>
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><a HREF="javascri.htm" tppabs="http://www.anticrack.de/fravia/javascri.htm">javascript wars</a>
+
+<br>
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><a HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools</a>
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><a HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity academy</a>
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><a HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails</a>
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><a HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut CGI-scripts</a>
+
+
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><a HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia+</a>
+
+<br>
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><a HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is
+
+reverse engineering
+
+legal?</a>
+
+</center>
+
+<hr>
+
+<!-- THAT'S ALL, THANKS A LOT this will allowautomated retrieval -->
+
+</body>
+
+</html>

@@ -1,0 +1,388 @@
+<HTML>  
+
+<HEAD>  
+
+<TITLE>pna1</TITLE>  
+
+</HEAD>  
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">  
+
+<CENTER><FONT size="+2">Ulead PhotoImpact Trial 3.01<BR></FONT><I>  
+
+&quot;Protections&quot; spitting the name of the calling dll and of the calling function</I><BR>  
+
+<BR>  <IMG SRC="stupid.gif" tppabs="http://www.anticrack.de/fravia/stupid.gif" ALT="STUPID" ALIGN="BOTTOM" WIDTH="114" HEIGHT="43" BORDER="0" VSPACE="0" HSPACE="0">
+
+ <IMG SRC="trainin7.gif" tppabs="http://www.anticrack.de/fravia/trainin7.gif" ALT="Training 97" ALIGN="BOTTOM" WIDTH="114" HEIGHT="43" BORDER="0" VSPACE="0" HSPACE="0">
+
+<BR><BR>  
+
+<H4>by PNA<BR>  
+
+<BR>  
+
+(29 August 1997)</H4>  
+
+<HR>  
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">Courtesy of Fravia's page   
+
+of reverse engineering<BR><BR><I>Well, if they call &quot;protection&quot; the 
+
+giving away of the calling 
+
+dll and of the calling function, they deserve to be cracked black and blue 
+
+until 
+
+they'll learn better. Since this is a very short essay, and since there is 
+
+a &quot;sbb&quot; construction inside it, I could not resist to the temptation of 
+
+offering a small +HCU training exercise for all future +HCUkers (and all other interested 
+
+reverse engineers :-)<BR>Solve it! (And get 
+
+some nice gamez as &quot;reward&quot; :-)</I></CENTER><HR size="7"><PRE>
+
+Target: Ulead PhotoImpact Trial 3.01 (<A href="tppmsgs/msgs1.htm#174" tppabs="http://www.anticrack.de/fravia/tppmsgs/msgs1.htm#174">http://www.ulead.com</A>)
+
+Protection Scheme: 30 day time protection
+
+
+
+The stupidity of this protection is hard to beat. I recently switched
+
+from the C64 to PC and was really surprised by the lack of
+
+sophistication of modern protection schemes compared to protections on 
+
+the old C64 which provided much more of a challenge (of course a pure 
+
+von Neumann architecture allows much more creativity than modern 
+
+computers (PE-header, etc.)
+
+The Crack: 
+
+Starting UPI after expiration-date brings up a messagebox with the
+
+common bla bla BUT with the name of a dll (U32cfg.dll) inside its caption!
+
+If you think this is stupid read on and enjoy the climax.
+
+Loading U32cfg.dll in a disassembler and listing the export functions
+
+(there are only a few) reveals the true extent of the programmer's brain
+
+damage: one of the functions is called <FONT color="blue">ulcCheckLegality</FONT> !!!
+
+The following wdasm listing doesn't need to be commented I suppose
+
+
+
+
+
+Exported fn(): ulcCheckLegality - Ord:0004h
+
+:4EB04160 8B442408                mov eax, [esp + 08]
+
+:4EB04164 6A00                    push 00000000
+
+:4EB04166 8B4C2408                mov ecx, [esp + 08]
+
+
+
+* Possible Reference to Dialog: DialogID_0001
+
+                                  |
+
+:4EB0416A 6A01                    push 00000001
+
+:4EB0416C 50                      push eax
+
+:4EB0416D 51                      push ecx
+
+:4EB0416E E80D000000              call 4EB04180
+
+:4EB04173 83C410                  add esp, 00000010
+
+:4EB04176 83F801                  cmp eax, 00000001
+
+:4EB04179 1BC0                    sbb eax, eax			;<SEE below :4EB0417B 40 inc eax :4EB0417C C20800 ret 0008 This is it. PNA (Post Natal Abortion) </pre>
+
+
+
+<FONT color="green">PNA 1997. All rights reversed.</FONT>
+
+<HR size="3">
+
+<CENTER>
+
+ <IMG SRC="trainin7.gif" tppabs="http://www.anticrack.de/fravia/trainin7.gif" ALT="Training 97" ALIGN="BOTTOM" WIDTH="114" HEIGHT="43" BORDER="0" VSPACE="0" HSPACE="0"></CENTER>
+
+<I>Well, let's not forget that there are also young future crackers 
+
+reading these pages... &quot;Hey? How comes that there is a compare and no 
+
+conditional jump there?&quot;<BR>So I thought that the following small 
+
+<FONT color="blue">+HCU training exercise</FONT>  
+
+could have some interest for future +HCUkers... have a look once more at 
+
+the following three lines from PNA's target code, I'll comment them a little:</I><PRE>
+
+:4EB04176 83F801 cmp eax, 1    ;this cmp sets the carry flag ON (if 0) or OFF (if not 0)
+
+:4EB04179 1BC0   sbb eax, eax  ;if ax<>0 -&gt; ax=0 if ax=0-&gt;ax=FFFF
+
+:4EB0417B 40     inc eax       ;ax=0 only if 0 at the beginning
+
+                               ;else ax=1, whatever it was</PRE>
+
+<I>See, sbb is &quot;integer subtract with borrow&quot;, the contrary of adc 
+
+(add with carry). 
+
+If the carry flag is set, 
+
+the result of the instruction <U>sbb ax,ax</U> 
+
+changes and is equivalent to <U>dec ax</U> (a decrement of one).<BR>
+
+Here the instruction cmp eax,1 sets the carry flag (CY) if ax was 
+
+zero, and it will be NC (Non Carry) if ax was anything else but zero.<BR>
+
+What does this mean? It means that after these three instructions 
+
+you'll have in ax either zero or one,
+
+zero if ax was zero and one if ax was not zero, 
+
+indipendently of the starting value of ax. So now we'll return either 
+
+with zero and carry set or with 1 and carry not set.
+
+<BR><BR>
+
+Here are some other interesting examples... see 
+
+if you understand these snippets (best answers will be premied with nice 
+
+strategic gamez):</I><PRE>
+
+From Ecstatica2... a nice game I'm cracking right now
+
+(sbb and or)
+
+:A9D68 38EC      cmp ah, ch
+
+:A9D6A 19C0      sbb eax, eax
+
+:A9D6C 0C01      or al, 01
+
+:A9D70 C3        ret
+
+
+
+(sbb, inc and je)
+
+:B53F4 668B38    mov di, word ptr [eax]
+
+:B53F7 668B7002  mov si, word ptr [eax+02]
+
+:B53FB B405      mov ah, 05
+
+:B53FD B003      mov al, 03
+
+:B53FF CD31      int 31          ;Ah! By the way... Int31 05/03	:-)
+
+:B5401 19C0      sbb eax, eax
+
+:B5403 40        inc eax
+
+:B5404 7410      je 000B5416
+
+
+
+
+
+From Textpad32... an interesting application that has already been cracked black and blue
+
+(a simple &quot;neg&quot; variation)
+
+:401EAA 83F801                  cmp eax, 00000001
+
+:401EAD 1BC0                    sbb eax, eax
+
+:401EAF F7D8                    neg eax
+
+
+
+(Hey: what's going on here?)
+
+:40380F 8945EC                  mov [ebp-14], eax
+
+:403812 837DDC01                cmp [ebp-24], 00000001
+
+:403816 1BC0                    sbb eax, eax
+
+:403818 F7D8                    neg eax
+
+:40381A 8945DC                  mov [ebp-24], eax
+
+:40381D 8B45EC                  mov eax, [ebp-14]
+
+
+
+(Somebody else is compared...)
+
+:405BC5 837DD401                cmp [ebp-2C], 00000001
+
+:405BC9 1BC0                    sbb eax, eax
+
+:405BCB F7D8                    neg eax
+
+
+
+(The last two snippets for today's exercise :-)
+
+:4086CB FF30                    push dword ptr [eax]
+
+:4086CD 83FA01                  cmp edx, 00000001
+
+:4086D0 1BC0                    sbb eax, eax
+
+:4086D2 24FD                    and al, FD
+
+:4086D4 0529010000              add eax, 00000129
+
+:4086D9 50                      push eax
+
+
+
+:415CD0 83F801                  cmp eax, 00000001
+
+:415CD3 1BC0                    sbb eax, eax
+
+:415CD5 24FC                    and al, FC
+
+:415CD7 83C009                  add eax, 00000009
+
+:415CDA 50                      push eax
+
+</PRE>
+
+<I>Well... explain the above snippets, just looking at the code, you don't need to dig out the 
+
+relevant programs... use <A href="tppmsgs/msgs0.htm#86" tppabs="http://www.anticrack.de/fravia/tppmsgs/msgs0.htm#86">symdeb</A> if you really don't 
+
+understand, for instance: <BR></I>
+
+<FONT color="purple">a 100/nop/nop/nop/cmp ax,1/sbb ax,ax/inc ax/nop/nop/nop/enter<BR></FONT><I>
+
+And now that you have assembled your example, test it:<BR></I><FONT color="purple">u 100/t=100/t/rf/CY/t/rax=1/t/
+
+t=100/rax=FFAA/t/ and so on...</FONT> flags changing through <U>rf CY</U> or <U>rf NC</U>, 
+
+new register values 
+
+in ax for testing through 
+
+<U>rax=whatever</U> :-)</FONT><I><BR>
+
+This will teach you how much FUN you can have testing assembly code, and, moreover, 
+
+you'll begin to understand that EACH compiler uses slightly different 
+
+constructions, and 
+
+that the reverse engineering of the sbb instruction &quot;sequences&quot; 
+
+can be also used pretty effectively in order to understand which 
+
+compiler has been used by the programmers of your target...
+
+</I>
+
+<HR ALIGN="CENTER" WIDTH="100%" SIZE="3">  
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,    
+
+choose your way out:</I></CENTER>  
+
+<BR><CENTER>  
+
+  
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">  
+
+<A HREF="project7.htm" tppabs="http://www.anticrack.de/fravia/project7.htm">Project 7</A><BR>  
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">  
+
+<A HREF="tppmsgs/msgs0.htm#84" tppabs="http://www.anticrack.de/fravia/tppmsgs/msgs0.htm#84">homepage </A>  
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">   
+
+<A HREF="tppmsgs/msgs0.htm#73" tppabs="http://www.anticrack.de/fravia/tppmsgs/msgs0.htm#73">links </A>   
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0">  
+
+<A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity </A>   
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC </A>  
+
+  
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="tppmsgs/msgs0.htm#82" tppabs="http://www.anticrack.de/fravia/tppmsgs/msgs0.htm#82">students' essays </A>  
+
+  
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database </A><BR>  
+
+  
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools </A>  
+
+  
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails </A>  
+
+  
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut CGI-scripts </A>  
+
+  
+
+  
+
+  
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms </A>  
+
+  
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia </A><BR>  
+
+  
+
+  
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering illegal? </A></CENTER>  
+
+<CENTER><HR ALIGN="CENTER" WIDTH="100%" SIZE="2"></CENTER>  
+
+</BODY>  
+
+</HTML> 
+
+
+
+
+
+
+

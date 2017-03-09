@@ -1,0 +1,630 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>lan003</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+
+
+<P><CENTER><FONT SIZE="+3">MKS Toolkit Release 5.2<BR>
+
+</FONT><FONT SIZE="+2">150 identical protection schemes</FONT>
+
+<BR>
+
+</CENTER>
+
+
+
+<H4><CENTER><I>by Drlan</I><BR>
+
+(18 September 1997, slightly edited by fravia+)</CENTER></H4>
+
+
+
+<CENTER><HR><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"> Courtesy of Fravia's page of reverse engineering<BR>
+
+<HR> <I>Well, an interesting essay, Drlan seems to specialize on nice 
+
+little &quot;tools of the trade&quot;. Here we have an interesting case: 150 little unix 
+
+programs (VERY USEFUL) ported to Win95... every single one of them with the same 
+
+stupid protection! And, as you'll read at the bottom, a request for help 
+
+from the &quot;old hands&quot; (specifically +gthorne, as it seems :-)
+
+</I></CENTER>
+
+<PRE><HR size="6">
+
+
+
+Target Program: MKS Toolkit Release 5.2
+
+Protection: Nag(s), 30 day time limit
+
+Cracked by: drlan [Me'97/C4N]!
+
+Location: <A href="tppmsgs/msgs2.htm#217" tppabs="http://www.anticrack.de/fravia/tppmsgs/msgs2.htm#217">http://www.mks.com</A>
+
+
+
+Tools needed:
+
+- SoftICE 3.01 for Windows 95
+
+- W32Dasm 8.9 (any version will do)
+
+- Hex Editor (I like PSEdit and Hex Workshop)
+
+
+
+Conventions used:
+
+&gt; denotes a SoftICE command
+
+
+
+While you may not consider it exactly a &quot;tool of our trade,&quot; this target
+
+contains a set of UNIX-like utilities that you just may find useful.  The
+
+MKS Toolkit is a set of UNIX-like programs that run on top of Windows 95
+
+or Windows NT.  I think you may find some useful tools in this babe, like
+
+many of your favorite UNIX utilities (awk, grep, vi, sh, etc.).  Granted,
+
+no program can transform Windows into UNIX, but this does give you many
+
+of the little command line utilities and a SHell with the look and feel.
+
+
+
+Download the target and run it a few times to get a feel for what's going on.
+
+You'll notice a nice little reminder that the program will expire in 30 days.
+
+That doesn't sound like quite enough time for a thorough evaluation, so let's
+
+get to work...
+
+
+
+Take a look at the directory where the demo was installed.  You'll find lots
+
+of little programs (about 150 of them, sh.exe, vi.exe, grep.exe, etc.).  Let's
+
+use grep.exe as our target.  Go ahead and run grep.  There's our friendly nag.
+
+Interestingly, grep.exe ran in the background and the nag came up as a new
+
+foreground window.  Click the CLOSE button on the nag screen and your back to a
+
+screen displaying the syntax for grep.  Ok, now set your date way ahead to see
+
+what happens when we're passed the point of no return.  You'll get a message
+
+box telling you &quot;The MKS Toolkit demo has expired.&quot;  Bummer.  Set your date to
+
+the correct date and the program still (and the nag) still runs.  So, it does
+
+not leave behind anything indicating that it already expired.  That's nice for
+
+our purposes.
+
+
+
+Run grep again and pop over into SoftICE (with Ctrl-D) to see what all is
+
+running while the nag screen is up.  We'll use the sICE TASK command.
+
+
+
+&gt;TASK	; see what tasks are running
+
+
+
+There's GREP (our target).  Hmm, and there's MKSDEMO (perhaps our nag).  Click
+
+CLOSE on the nag, then pop back into sICE and do TASK again.  Yep, MKSDEMO was
+
+the nag program (because it's no longer in our TASK list).
+
+
+
+I originally thought (hoped) I could just fix the MKSDEMO.EXE and that all
+
+would be happy.  No such luck!  Each little .EXE has its own date check built
+
+in.  I guess this is semi-good since it will take a little more work to crack
+
+all these darn little .EXEs.  Alas, after just a bit of poking around, I found
+
+that while they did a good job by not relying on a single program for the meat
+
+of the protection, that they did leave the door wide open.  All the .EXEs use
+
+the same routine to check the date, call the nag, etc.  So, we just have to
+
+do a little bit of work to crack them ALL!
+
+
+
+On to the cracking...  Let's dead list grep to see what's going on in there.
+
+Disassemble with W32Dasm 8.9 and save the dead listing.  Now, having run the
+
+target and &quot;felt&quot; its behavior, we should have some good ideas on what we're
+
+looking for.  We could search for &quot;MKSDEMO.EXE&quot; and it would take us to the
+
+section of interest.  Or, how about searching for 278D00 (that's 30 days in
+
+computer terms, 60 secs * 60 mins * 24 hours * 30 days = 259000 decimal or
+
+278D00 hex) and we know 'puters prefer hex.  Or, we could search for the text
+
+of the expiration message &quot;The MKS Toolkit demo has expired.&quot;  Either search
+
+will bring you close to the section of interest.  You should find something
+
+like this:
+
+
+
+* Referenced by a (U)nconditional or (C)onditional Jump at Address:
+
+|:00402A52(C)
+
+|
+
+:00402A65 8B45F8                  mov eax, dword ptr [ebp-08]	; install date
+
+:00402A68 05008D2700              add eax, 00278D00		; plus 30 days
+
+:00402A6D 3B45F4                  cmp eax, dword ptr [ebp-0C]	; less than now
+
+:00402A70 0F8D0D000000            jnl 00402A83			; if so, go on.
+
+
+
+* Possible StringData Ref from Data Obj -&gt;&quot;The MKS Toolkit demo trial period &quot;
+
+                                        -&gt;&quot;has expired.&quot;
+
+                                  |
+
+:00402A76 68B0C34000              push 0040C3B0		; ouch, time's up
+
+:00402A7B E8FB000000              call 00402B7B
+
+:00402A80 83C404                  add esp, 00000004
+
+
+
+* Referenced by a (U)nconditional or (C)onditional Jump at Address:
+
+|:00402A70(C)
+
+|
+
+:00402A83 C70508C4400000000000    mov dword ptr [0040C408], 00000000
+
+:00402A8D 6A00                    push 00000000
+
+:00402A8F 68A32B4000              push 00402BA3
+
+
+
+* Reference To: USER32.EnumWindows, Ord:00C8h
+
+                                  |
+
+:00402A94 FF15E0414100            Call dword ptr [004141E0]
+
+:00402A9A 833D08C4400000          cmp dword ptr [0040C408], 00000000	; hmmm?
+
+:00402AA1 0F85CF000000            jne 00402B76		; if non-zero, the func
+
+:00402AA7 6A44                    push 00000044		; was successful and we
+
+:00402AA9 6A00                    push 00000000		; make the jne
+
+:00402AAB 6818094100              push 00410918
+
+:00402AB0 E80B410000              call 00406BC0
+
+:00402AB5 83C40C                  add esp, 0000000C
+
+:00402AB8 C7051809410044000000    mov dword ptr [00410918], 00000044
+
+
+
+* Reference To: USER32.GetForegroundWindow, Ord:00F9h
+
+                                  |
+
+:00402AC2 FF15DC414100            Call dword ptr [004141DC]
+
+:00402AC8 8945E4                  mov dword ptr [ebp-1C], eax
+
+:00402ACB 8B45E4                  mov eax, dword ptr [ebp-1C]
+
+:00402ACE 50                      push eax
+
+
+
+* Possible StringData Ref from Data Obj -&gt;&quot;mksdemo.exe %d&quot;
+
+                                  |
+
+:00402ACF 6834C44000              push 0040C434			; we don't want
+
+:00402AD4 8D4580                  lea eax, dword ptr [ebp-80]	; to be here!!!
+
+:00402AD7 50                      push eax
+
+:00402AD8 E8A3400000              call 00406B80
+
+:00402ADD 83C40C                  add esp, 0000000C
+
+
+
+The EnumWindows and GetForeGroundWindow are just setting up for the call
+
+to our ugly nagger (mksdemo.exe).  But, look at the conditional jump (jne)
+
+after the call to EnumWindows.
+
+
+
+The EnumWindows function enumerates all top-level windows on the screen
+
+by passing the handle of each window, in turn, to an application-defined
+
+callback function. EnumWindows continues until the last top-level window
+
+is enumerated or the callback function returns FALSE.
+
+
+
+BOOL EnumWindows(
+
+
+
+    WNDENUMPROC lpEnumFunc,     // pointer to callback function
+
+        LPARAM lParam   // application-defined value
+
+           );
+
+
+
+Parameters
+
+
+
+lpEnumFunc
+
+
+
+Points to an application-defined callback function. For more information,
+
+see the EnumWindowsProc callback function.
+
+
+
+lParam
+
+
+
+Specifies a 32-bit, application-defined value to be passed to the callback
+
+function.
+
+
+
+Return Values
+
+
+
+If the function succeeds, the return value is nonzero.
+
+If the function fails, the return value is zero.
+
+
+
+I am not an ASM guru, nor a master of the Win32 API, but this looks like it
+
+is setting up to CALL MKSDEMO.EXE, checking that it is the foreground window
+
+and if so (return value is nonzero), it executes the jump (jne 00402B76).  So
+
+all it wants to do is launch mksdemo.exe successfully, allow it to become the
+
+foreground window, then our target (SH.EXE) continues on its merry way.  If it
+
+does not successfully launch mksdemo.exe, it will bitch about it and let you
+
+know.  So, it appears that the jump to 00402B76 is a desireable thing.  If
+
+you look further down through the dead listing, you'll see lots of phrases
+
+bitching about not being able to &quot;properly execute MKSDEMO.EXE.&quot;  And then,
+
+at 00402B76 we prepare for our RETurn to caller.  Let's have a look at this
+
+code:
+
+
+
+* Referenced by a  Jump at Addresses:00402AA1(C), :00402B63(C)
+
+|
+
+:00402B76 5F                      pop edi
+
+:00402B77 5E                      pop esi
+
+:00402B78 5B                      pop ebx
+
+:00402B79 C9                      leave
+
+:00402B7A C3                      ret
+
+
+
+As always, there are a million and one ways to crack this.  But, I'm looking
+
+for something generic because we have around 150 little .EXE's to patch.  So,
+
+let's see just how many birds we can kill with one stone! :-)
+
+
+
+We want to get rid of the nag, and we've seen what sets it up and where we
+
+need to go to bypass it.  We also want our evaluation period to last forever
+
+and we've seen the date test, too.  Let's combine all this into a nice 4 byte
+
+crack that fixes the whole mess.  How about changing the date check to skip
+
+the check and just jump to our RETurn to caller?  So, to pinpoint this we want
+
+to break in just before we compare install date+30 with current date.  There
+
+are a couple ways we could do this.
+
+
+
+1) If we're still in our evaluation period, we could BPX EnumWindows.  Then
+
+scroll up to the add eax, 00278D00 instruction and set a breakpoint there.
+
+However, if we're already past the point of no return, we'll never get to the
+
+EnumWindows call.  So, this probably isn't our best bet.
+
+
+
+2) Before we can compare the install date+30 with the current date, the progie
+
+has to get the current date from somewhere.  Two of the more common ways it
+
+can do this are: GetLocalTime and GetSystemTime.  Our target happens to use the
+
+latter.  So let's toggle over into sICE (Ctrl-D) and set a breakpoint on this.
+
+
+
+&gt;bpx GetSystemTime
+
+
+
+Run grep and sICE will pop on the GetSystemTime call.  We need to get back into
+
+our target, so press F12 twice (P RET twice).  If you look down a few lines in
+
+your code window, you'll see the line that adds 30 days to the install date.
+
+This is the line from the code snipit above.
+
+
+
+:00402A68 05008D2700              add eax, 00278D00
+
+
+
+If you scroll down in your code window a little further you'll see the call to
+
+EnumWindows.  And after the call, there is the test to check its return value
+
+and a conditional jump (jne 00402B76) if the function was successful.  I think
+
+what we'll do here is just skip the date test and jump right to the cleanup and
+
+RETurn to caller (at address 00402B76).  So, let's assemble in some new code:
+
+
+
+&gt;A
+
+&gt;JMP 00402B76
+
+&gt;(press Esc)
+
+
+
+Now, jot down the hex representation for the JMP 00402B76.  If you don't see
+
+it turn your code display on in sICE.
+
+
+
+&gt;code on
+
+
+
+The new instruction should look something like this:
+
+
+
+:00402A68 E909010000    jmp 00402B76	; jump over the whole nag mess
+
+
+
+Remember the old instruction was:
+
+
+
+:00402A68 05008D2700              add eax, 00278D00	; add 30 days
+
+
+
+So we've done a 4 byte crack, exchanging 05008D27 with E9090100.  This seems
+
+pretty elegant.  Let's try it.  Press Ctrl-D or F5 in sICE to continue running
+
+the target.  It runs, sans nag screen.
+
+
+
+Let's now transfer this live crack into something more permanent.  Load up
+
+grep.exe into your favorite hex editor and make the following change:
+
+
+
+Search: 05008D27
+
+Replace:E9090100
+
+
+
+Run it again.  Beautiful, no nags.  Set your date way ahead.  Run again.  Still
+
+no nags.  Hey this is pretty cool, but what about the remaining 150 damn .EXEs?
+
+Well, the good news is that they all use the same code to do the dirty work.
+
+In a few of them the &quot;replace&quot; string is slightly different because there is a 
+
+little more or less code in between, so they have to jump a different number of
+
+bytes.  Here's what you need to do to fix them all (starting with the ones that
+
+deviate from our E9090100).  The search string is the same for all (05008D27).
+
+
+
+mksdemo.exe	hehe, we won't need him any more
+
+tksched.exe	no date check, no nag
+
+vdiff32.exe	no date check, no nag
+
+
+
+pg.exe		E9D80000
+
+sh.exe		E9D80000
+
+vi.exe		E9D80000
+
+viw.exe		E9D80000
+
+vpax.exe	E9CB0000
+
+
+
+For all the rest of the programs, search: 05008D27 and replace: E9090100.
+
+
+
+That's it for this lesson.  Hope this was fun and instructional.
+
+
+
+Disclaimer: THIS ESSAY IS FOR EDUCATIONAL PURPOSES ONLY.  ANY USE, MIS-USE
+
+OR ILLEGAL ACTIVITY IS THE SOLE RESPONSIBILITY OF THE READER.
+
+
+
+Group GreetZ: Everyone in [Me'97/C4N], PC'97, UCF and CRACKING.
+
+Personal GreetZ: josephco, niabi, +YOSHi, razzia, {fravia+, +gthorne and +ORC}!
+
+Thank you for all your teachings.  I hope I am repaying my debt of gratitude.
+
+
+
+Invitation/Request: Since there are damn near 150 programs that need the same
+
+search and replace performed, this would be an excellent opportunity to use a
+
+&quot;generic&quot; patcher.  Again, I'm no programming guru.  I could probably come up
+
+with some spaghetti code to do this, but I think we'd all benefit more seeing
+
+how one of the masters would do this.  So, I leave this as an open invitation
+
+to any of you who'd like to enlighten us on programming a &quot;generic&quot; patcher
+
+to carry out this repetitive work for us.  How about it +gthorne, others???
+
+
+
+                                                           +drlan 
+
+
+
+</PRE>
+
+
+
+<FONT color="green"> (c) +drlan 1997. All rights reversed</FONT><HR>
+
+<CENTER><I>You are deep inside fravia's page of reverse
+
+engineering, choose your way out:</I></CENTER>
+
+
+
+
+
+<P><CENTER>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#84'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#84">homepage </A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"> <A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#73'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#73">links
+
+</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0" NATURALSIZEFLAG="0"> <A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity
+
+</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#82'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#82">students' essays </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools
+
+</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails </A><BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database </A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia
+
+</A><BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">is reverse engineering legal? </A></FONT></CENTER></P>
+
+
+
+<P><CENTER><FONT SIZE="-1"><HR></FONT></CENTER>
+
+</BODY>
+
+</HTML>
+

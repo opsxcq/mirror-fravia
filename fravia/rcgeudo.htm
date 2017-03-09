@@ -1,0 +1,228 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>rcgeudo</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+<CENTER><H2>HOW TO CRACK EUDORA PRO 3.0 (30 DAY TRIAL)<BR>
+
+(Time trial protection busting)</H2><H4><I>by +RCG</I></H4>
+
+<BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">Courtesy of Fravia's page 
+
+of reverse engineering</CENTER>
+
+<HR size="2">
+
+<PRE>
+
+
+
+
+
+		HOW TO CRACK EUDORA PRO 3.0 (30 DAY TRIAL)
+
+
+
+
+
+	Well, in this lesson I won't explain the theory again, because our master 
+
++ORC did it in his 4.1 lesson. This document is a practical exercice based on that 
+
+lesson (yes, just like I did in my school times, this is my homework).
+
+
+
+	The problem in this kind of protection is to find where the protection is 
+
+hidden, but we cannot do it by a registration menu, so we must put special attention 
+
+in the events that occur before the program stops, if we are lucky a MessageBox will 
+
+be displayed (that is a key to enter) but sometimes these keys are not so obvious.
+
+	Another problem is given by programs in Visual Basic, which is not native code, 
+
+and you see nothing but vb40032.dll calls, I have no idea how to crack those programs, 
+
+so I encourage you to help us. 
+
+
+
+
+
+
+
+	Here is my solution to this time protection scheme:
+
+
+
+	First, use the program with the correct date, nothing special happens, now 
+
+use it again but with two months added to the date: a warning message is displayed, 
+
+you cannot send mail, nor receive it.
+
+
+
+	With Eudora 3.0 we are lucky because we have this key: a MessageBox is displayed 
+
+(and this application is programmed in C), so let's use it.
+
+
+
+	Bpx MessageBoxA
+
+
+
+	Remember:
+
+
+
+	int MessageBox(
+
+	    	HWND  hwndOwner,		// handle of owner window
+
+    		LPCTSTR  lpszText,	// address of text in message box
+
+    		LPCTSTR  lpszTitle,	// address of title of message box  
+
+    		UINT  fuStyle 		// style of message box
+
+   			   );
+
+
+
+
+
+	When SoftIce pops up, trace until you get back to Eudora code, you will see this 
+
+code fragment:
+
+
+
+	
+
+
+
+* Reference To: KERNEL32.GetModuleFileNameA, Ord:00E9h
+
+                                  |
+
+:00421A29 FF1504A74E00            Call dword ptr [004EA704]
+
+:00421A2F 85C0                    test eax, eax
+
+:00421A31 741F                    je 00421A52
+
+:00421A33 8D8560FCFFFF            lea eax, [ebp+FFFFFC60]
+
+:00421A39 B9B82C4E00              mov ecx, 004E2CB8
+
+:00421A3E 50                      push eax
+
+:00421A3F E86C2B0800              call 004A45B0		;Get checksum
+
+:00421A44 85C0                    test eax, eax		Is correct?
+
+:00421A46 740A                    je 00421A52		No, bad guy
+
+:00421A48 B9B82C4E00              mov ecx, 004E2CB8
+
+:00421A4D E81E2C0800              call 004A4670		;Decrypt_date	
+
+:00421A52 B9B82C4E00              mov ecx, 004E2CB8
+
+:00421A57 E834300800              call 004A4A90    ;How_many_days_left?
+
+:00421A5C 8BF8                    mov edi, eax
+
+:00421A5E 85FF                    test edi, edi	    ;0 days left?
+
+:00421A60 0F85CC000000            jne 00421B32	    ;No, good guy.	
+
+:00421A66 8D4DC8                  lea ecx, [ebp-38]
+
+:00421A69 BEFFFFFFFF              mov esi, FFFFFFFF
+
+:00421A6E E835B10900              Call 004BCBA8
+
+:00421A73 68FEFF0000              push 0000FFFE
+
+:00421A78 8D4DC8                  lea ecx, [ebp-38]
+
+:00421A7B C745FC00000000          mov [ebp-04], 00000000
+
+:00421A82 E81BB10900              Call 004BCBA2
+
+:00421A87 C745FC01000000          mov [ebp-04], 00000001
+
+:00421A8E 6A00                    push 00000000
+
+:00421A90 8B45C8                  mov eax, [ebp-38]
+
+:00421A93 6A00                    push 00000000
+
+:00421A95 50                      push eax	
+
+:00421A96 E877B60900              Call 004BD112	 <== MessageBoxA routine :00421A9B 8975FC mov [ebp-04], esi ;SIce pops here!!! :00421A9E E887000000 call 00421B2A :00421AA3 B9302D4E00 mov ecx, 004E2D30 :00421AA8 E8A3810700 call 00499C50 :00421AAD 8B45EC mov eax, [ebp-14] :00421AB0 05D4040000 add eax, 000004D4 :00421AB5 50 push eax :00421AB6 C70094000000 mov dword ptr [eax], 00000094 How_many_days_left routineÝ: :004A4A90 53 push ebx :004A4A91 56 push esi :004A4A92 57 push edi :004A4A93 8BF1 mov esi, ecx :004A4A95 33FF xor edi, edi :004A4A97 E814FEFFFF call 004A48B0 ;Are_final_bytes_ok? :004A4A9C 33DB xor ebx, ebx :004A4A9E 85C0 test eax, eax :004A4AA0 7464 je 004A4B06 ;yes, Bad Guy :004A4AA2 57 push edi * Reference To: MSVCRT40.time, Ord:0466h | :004A4AA3 FF150CB74E00 Call dword ptr [004EB70C] :004A4AA9 83C404 add esp, 00000004 :004A4AAC 8BC8 mov ecx, eax ;Actual date :004A4AAE 817E10E8030000 cmp [esi+10], 000003E8 :004A4AB5 7207 jb 004A4ABE :004A4AB7 BFE8030000 mov edi, 000003E8 :004A4ABC EB23 jmp 004A4AE1 ;Something is wrong, beggar off :004A4ABE 8B462C mov eax, [esi+2C] ;Trial end data :004A4AC1 394630 cmp [esi+30], eax ;Must be equals :004A4AC4 751B jne 004A4AE1 :004A4AC6 3BC1 cmp eax, ecx ;Is act Date gr than Limitdate :004A4AC8 7617 jbe 004A4AE1 ;Yes, bad guy :004A4ACA 394E28 cmp [esi+28], ecxÝ ;Is act. Date low than Installdate :004A4ACD 7712 ja 004A4AE1 ;Yes, bad guy. :004A4ACF 2BC1 sub eax, ecx ;Limit date-Act. date :004A4AD1 BF80510100 mov edi, 00015180Ý;3600*24="15180h(1day)" :004A4AD6 057F510100 add eax, 0001517FÝ;Add to compensate :004A4ADB 2BD2 sub edx, edx :004A4ADD F7F7 div edi :004A4ADF 8BF8 mov edi, eax ;Days left :004A4AE1 8B4618 mov eax, [esi+18] :004A4AE4 3BC1 cmp eax, ecx :004A4AE6 7612 jbe 004A4AFA :004A4AE8 2BC1 sub eax, ecx :004A4AEA 2BD2 sub edx, edx :004A4AEC B980510100 mov ecx, 00015180 :004A4AF1 057F510100 add eax, 0001517F :004A4AF6 F7F1 div ecx :004A4AF8 8BD8 mov ebx, eax :004A4AFA 8BC7 mov eax, edi :004A4AFC 3BDF cmp ebx, edi :004A4AFE 7708 ja 004A4B08 ;Days left :004A4B00 5F pop edi :004A4B01 8BC3 mov eax, ebx ;Compensate days left. :004A4B03 5E pop esi :004A4B04 5B pop ebx :004A4B05 C3 ret :004A4B06 33C0 xor eax, eax :004A4B08 5F pop edi :004A4B09 5E pop esi :004A4B0A 5B pop ebx :004A4B0B C3 ret Note thatÝ: [esi+2c] is the limit date [esi+30] is the instalation date So, the question is, where does the program takes these values from? Let's analize deeply the routines. Are_Final_Bytes_Ok routine: :004A4820 813947382559 cmp dword ptr [ecx], 59253847 :004A4826 7521 jne 004A4849 :004A4828 817904CBEACFAD cmp [ecx+04], ADCFEACB :004A482F 7518 jne 004A4849 :004A4831 8179085C0E5F8D cmp [ecx+08], 8D5F0E5C :004A4838 750F jne 004A4849 :004A483A 81790CA4E9F8B6 cmp [ecx+0C], B6F8E9A4 :004A4841 7506 jne 004A4849 :004A4843 B801000000 mov eax, 00000001 :004A4848 C3 ret :004A4849 33C0 xor eax, eax ;Yes, final bytes wrong. :004A484B C3 ret The program flow is: 1. Is the checksum ok? Yes, go to next protection pass. 2. Are the last bytes ok? Yes, go to next pass. 3. Decrypt date values. 4. Are you inside the 30 days period? Yes, good guy. Now, you can write down the address referenced by [ecx], and use SoftIce withÝ: bmpd [ecx] W Open again Eudora, and you will be in middle of VFAT routine, so trace until again in Eudora, now put attention and try to reach the next code fragment: (tip: write in softice e ds:ecx and trace until its contents take the desired value) Get_Checksum routineÝ: * Referenced by a CALL at Address: |:00421A3F | :004A45B0 53 push ebx :004A45B1 56 push esi :004A45B2 57 push edi :004A45B3 33F6 xor esi, esi :004A45B5 55 push ebp :004A45B6 8BF9 mov edi, ecx :004A45B8 8B442414 mov eax, [esp + 14] :004A45BC 6800800000 push 00008000 ;How to open (Reopen) :004A45C1 50 push eax ;Name stringz (Eudora.exe) * Reference To: MSVCRT40._open, Ord:0322h | :004A45C2 FF15A8B64E00 Call dword ptr [004EB6A8] :004A45C8 83C408 add esp, 00000008 :004A45CB 8BD8 mov ebx, eax :004A45CD 83FBFF cmp ebx, FFFFFFFF ;Any error? :004A45D0 0F848C000000 je 004A4662 :004A45D6 6A02 push 00000002 ;Beginning at end of file :004A45D8 6AD8 push FFFFFFD8 ;Move 0x28 bytes (back) :004A45DA 53 push ebx ;Handle * Reference To: MSVCRT40._lseek, Ord:02DEh | :004A45DB FF1568B74E00 Call dword ptr [004EB768] :004A45E1 83C40C add esp, 0000000C :004A45E4 8BE8 mov ebp, eax :004A45E6 83FDFF cmp ebp, FFFFFFFF ;Any error? :004A45E9 746D je 004A4658 :004A45EB 6A28 push 00000028 ;Read last 0x28 bytes :004A45ED 57 push edi ;Buffer :004A45EE 53 push ebx ;Handle * Reference To: MSVCRT40._read, Ord:0333h | :004A45EF FF15ACB64E00 Call dword ptr [004EB6AC] :004A45F5 83C40C add esp, 0000000C :004A45F8 83F8FF cmp eax, FFFFFFFF ;Any error? :004A45FB 745B je 004A4658 :004A45FD 8B4710 mov eax, [edi+10] ;Buffer+10 :004A4600 8BCF mov ecx, edi :004A4602 50 push eax :004A4603 E808050000 call 004A4B10 ;Manipulate data :004A4608 8BCF mov ecx, edi :004A460A 894710 mov [edi+10], eax :004A460D 8B4714 mov eax, [edi+14] :004A4610 50 push eax :004A4611 E80A050000 call 004A4B20 ;Manipulate data :004A4616 8BCF mov ecx, edi :004A4618 894714 mov [edi+14], eax :004A461B 8B4718 mov eax, [edi+18] :004A461E 50 push eax :004A461F E80C050000 call 004A4B30 ;Manipulate data :004A4624 8BCF mov ecx, edi :004A4626 894718 mov [edi+18], eax :004A4629 8B471C mov eax, [edi+1C] :004A462C 50 push eax :004A462D E83E050000 call 004A4B70 ;Manipulate data :004A4632 55 push ebp :004A4633 8BCF mov ecx, edi :004A4635 53 push ebx :004A4636 89471C mov [edi+1C], eax :004A4639 E8F2060000 call 004A4D30 ;Get_file_checksum :004A463E 394724 cmp [edi+24], eax ;Is correct? :004A4641 740C je 004A464F ;Yes, good guy. :004A4643 897710 mov [edi+10], esi :004A4646 897714 mov [edi+14], esi :004A4649 897718 mov [edi+18], esi :004A464C 89771C mov [edi+1C], esi :004A464F 8BCF mov ecx, edi :004A4651 E85A020000 call 004A48B0 :004A4656 8BF0 mov esi, eax ;flag :004A4658 53 push ebx * Reference To: MSVCRT40._close, Ord:0251h | :004A4659 FF15A0B64E00 Call dword ptr [004EB6A0] :004A465F 83C404 add esp, 00000004 :004A4662 8BC6 mov eax, esi ;flag :004A4664 5D pop ebp :004A4665 5F pop edi :004A4666 5E pop esi :004A4667 5B pop ebx :004A4668 C20400 ret 0004 Get_file_checksum routineÝ: * Referenced by a CALL at Address: |:004A4639 | :004A4D30 B804100000 mov eax, 00001004 :004A4D35 E876950100 call 004BE2B0 :004A4D3A 53 push ebx :004A4D3B 56 push esi :004A4D3C 8BB42410100000 mov esi, [esp + 00001010] :004A4D43 57 push edi :004A4D44 55 push ebp :004A4D45 BF54ABD729 mov edi, 29D7AB54 ;Initial value :004A4D4A 56 push esi * Reference To: MSVCRT40._tell, Ord:0369h | :004A4D4B FF157CB64E00 Call dword ptr [004EB67C] :004A4D51 89442414 mov [esp + 14], eax ;File length :004A4D55 83C404 add esp, 00000004 :004A4D58 33DB xor ebx, ebx :004A4D5A 6A00 push 00000000 ;From beginning :004A4D5C 6A00 push 00000000 ;File zero position :004A4D5E 56 push esi ;Handle * Reference To: MSVCRT40._lseek, Ord:02DEh | :004A4D5F FF1568B74E00 Call dword ptr [004EB768] :004A4D65 83C40C add esp, 0000000C :004A4D68 399C241C100000 cmp [esp + 0000101C], ebx :004A4D6F 742F je 004A4DA0 :004A4D71 8BEB mov ebp, ebx :004A4D73 81E5FF0F0000 and ebp, 00000FFF :004A4D79 7514 jne 004A4D8F :004A4D7B 8D442414 lea eax, [esp + 14] :004A4D7F 6800100000 push 00001000 ;Read 0x1000 bytes :004A4D84 50 push eax ;Buffer :004A4D85 56 push esi ;Handle * Reference To: MSVCRT40._read, Ord:0333h | :004A4D86 FF15ACB64E00 Call dword ptr [004EB6AC] :004A4D8C 83C40C add esp, 0000000C :004A4D8F 0FBE442C14 movsx byte ptr eax, [esp + ebp + 14] :004A4D94 03F8 add edi, eax ;Add eax to checksum :004A4D96 43 inc ebx :004A4D97 3B9C241C100000 cmp ebx, [esp + 0000101C]Ý;ebx="File" lenght-0x28 :004A4D9E 72D1 jb 004A4D71 ;No, Read more :004A4DA0 8B442410 mov eax,[esp+10] ;eax="file" length :004A4DA4 6A00 push 00000000 ;From beginning :004A4DA6 50 push eax ;Displacement :004A4DA7 56 push esi ;Handle * Reference To: MSVCRT40._lseek, Ord:02DEh | :004A4DA8 FF1568B74E00 Call dword ptr [004EB768];Go end of file :004A4DAE 83C40C add esp, 0000000C :004A4DB1 8BC7 mov eax, edi ;eax="checksum" :004A4DB3 5D pop ebp :004A4DB4 5F pop edi :004A4DB5 5E pop esi :004A4DB6 5B pop ebx :004A4DB7 81C404100000 add esp, 00001004 :004A4DBD C20800 ret 0008 Decrypt routineÝ: * Referenced by a CALL at Address: |:00421A4D | :004A4670 64A100000000 mov eax, fs:[00000000] :004A4676 55 push ebp :004A4677 8BEC mov ebp, esp :004A4679 6AFF push FFFFFFFF :004A467B 68FF474A00 push 004A47FF :004A4680 50 push eax :004A4681 64892500000000 mov fs:[00000000], esp :004A4688 81EC5C010000 sub esp, 0000015C :004A468E 53 push ebx :004A468F 56 push esi :004A4690 57 push edi :004A4691 8BF1 mov esi, ecx :004A4693 8D8D98FEFFFF lea ecx, [ebp+FFFFFE98] :004A4699 E892B4FCFF call 0046FB30 :004A469E 68601D4E00 push 004E1D60 :004A46A3 8D8D98FEFFFF lea ecx, [ebp+FFFFFE98] :004A46A9 C745FC00000000 mov [ebp-04], 00000000 :004A46B0 E89BB4FCFF call 0046FB50 :004A46B5 85C0 test eax, eax :004A46B7 0F8426010000 je 004A47E3 :004A46BD 6A50 push 00000050 :004A46BF 8D45A4 lea eax, [ebp-5C] ;Buffer :004A46C2 50 push eax :004A46C3 8D8D98FEFFFF lea ecx, [ebp+FFFFFE98] :004A46C9 68541D4E00 push 004E1D54 :004A46CE E8CDB5FCFF call 0046FCA0 ;Read from register :004A46D3 8BF8 mov edi, eax ;Error flag 1 :004A46D5 8D45A4 lea eax, [ebp-5C] ;Buffer :004A46D8 50 push eax * Reference To: MSVCRT40.atol, Ord:03D4h (Ascii to long) | :004A46D9 FF1540B74E00 Call dword ptr [004EB740] :004A46DF 83C404 add esp, 00000004 :004A46E2 8D8D98FEFFFF lea ecx, [ebp+FFFFFE98] :004A46E8 89462C mov [esi+2C], eax ;Store long :004A46EB 6A50 push 00000050 :004A46ED 8D45A4 lea eax, [ebp-5C] ;Buffer :004A46F0 50 push eax :004A46F1 68481D4E00 push 004E1D48 :004A46F6 E8A5B5FCFF call 0046FCA0 ;Read from register :004A46FB 8BD8 mov ebx, eax ;Error flag 2 :004A46FD 8D45A4 lea eax, [ebp-5C] ;Buffer :004A4700 50 push eax * Reference To: MSVCRT40.atol, Ord:03D4h (Ascii to long) | :004A4701 FF1540B74E00 Call dword ptr [004EB740] :004A4707 83C404 add esp, 00000004 :004A470A 894630 mov [esi+30], eax ;Store long :004A470D 85FF test edi, edi ;Error flag 1 :004A470F 0F8598000000 jne 004A47AD :004A4715 85DB test ebx, ebx ;Error flag 2 :004A4717 0F8590000000 jne 004A47AD :004A471D 6A00 push 00000000 ;Both flag are set * Reference To: MSVCRT40.time, Ord:0466h(Put actual date to install date | ,because is the first use) :004A471F FF150CB74E00 Call dword ptr [004EB70C] :004A4725 83C404 add esp, 00000004 :004A4728 8B4E10 mov ecx, [esi+10] :004A472B 8D1489 lea edx, [ecx + 4*ecx] :004A472E 8D1CD2 lea ebx, [edx + 8*edx] :004A4731 8D0C5B lea ecx, [ebx + 2*ebx] :004A4734 8D0C89 lea ecx, [ecx + 4*ecx] :004A4737 C1E107 shl ecx, 07 :004A473A 03C1 add eax, ecx :004A473C 8BCE mov ecx, esi :004A473E 50 push eax :004A473F 894630 mov [esi+30], eax :004A4742 89462C mov [esi+2C], eax :004A4745 E806040000 call 004A4B50 :004A474A 8B4E30 mov ecx, [esi+30] :004A474D 89462C mov [esi+2C], eax :004A4750 51 push ecx :004A4751 8BCE mov ecx, esi :004A4753 E838040000 call 004A4B90 :004A4758 8B4E2C mov ecx, [esi+2C] :004A475B 8D55A4 lea edx, [ebp-5C] :004A475E 51 push ecx :004A475F 8B3DDCB64E00 mov edi, [004EB6DC] :004A4765 68BCF34D00 push 004DF3BC :004A476A 894630 mov [esi+30], eax :004A476D 52 push edx :004A476E FFD7 call edi :004A4770 83C40C add esp, 0000000C :004A4773 8D4DA4 lea ecx, [ebp-5C] :004A4776 51 push ecx :004A4777 68541D4E00 push 004E1D54 :004A477C 8D8D98FEFFFF lea ecx, [ebp+FFFFFE98] :004A4782 E859B5FCFF call 0046FCE0 :004A4787 8B4630 mov eax, [esi+30] :004A478A 8D4DA4 lea ecx, [ebp-5C] :004A478D 50 push eax :004A478E 68BCF34D00 push 004DF3BC :004A4793 51 push ecx :004A4794 FFD7 call edi :004A4796 83C40C add esp, 0000000C :004A4799 8D4DA4 lea ecx, [ebp-5C] :004A479C 51 push ecx :004A479D 68481D4E00 push 004E1D48 :004A47A2 8D8D98FEFFFF lea ecx, [ebp+FFFFFE98] :004A47A8 E833B5FCFF call 0046FCE0 :004A47AD 8B462C mov eax, [esi+2C] ;Encrypted value :004A47B0 8BCE mov ecx, esi :004A47B2 50 push eax :004A47B3 E878030000 call 004A4B30 ;Decrypt it :004A47B8 8BCE mov ecx, esi :004A47BA 89462C mov [esi+2C], eax ;Actual date :004A47BD 8B4630 mov eax, [esi+30] ;Encrypted value :004A47C0 50 push eax :004A47C1 E8AA030000 call 004A4B70 ;Decrypt it :004A47C6 894630 mov [esi+30], eax ;Date limit :004A47C9 8B4610 mov eax, [esi+10] :004A47CC 8D0C80 lea ecx, [eax + 4*eax] :004A47CF 8D14C9 lea edx, [ecx + 8*ecx] :004A47D2 8D0452 lea eax, [edx + 2*edx] :004A47D5 8D0480 lea eax, [eax + 4*eax] :004A47D8 C1E007 shl eax, 07 :004A47DB F7D8 neg eax :004A47DD 03462C add eax, [esi+2C] :004A47E0 894628 mov [esi+28], eax :004A47E3 C745FCFFFFFFFF mov [ebp-04], FFFFFFFF :004A47EA E81A000000 call 004A4809 :004A47EF 8B45F4 mov eax, [ebp-0C] :004A47F2 5F pop edi :004A47F3 64A300000000 mov fs:[00000000], eax :004A47F9 5E pop esi :004A47FA 5B pop ebx :004A47FB 8BE5 mov esp, ebp :004A47FD 5D pop ebp :004A47FE C3 ret * Referenced by a CALL at Address: |:004A47EA | :004A4809 8D8D98FEFFFF lea ecx, [ebp+FFFFFE98] :004A480F E92CB3FCFF jmp 0046FB40 You can see how the instalation date is stored inÝ: My_Pc\HKEY_CURRENT_USER\Software\Microsoft\Notepad lfIconPosÝ: Value1 lfWindowPosÝ: Value2 These two values are encrypted. The easier solution is when you will be notified about your expiration time, delete these entries in the registry. Also you can do a manipulation of the code, you have all you need to do that explained in that lesson, think that the routines are duplicated, one at the beginning an the other in the middle of the program when you try to send or receive mail, so you must find the other routines, but these are referenced above. Good LuckÝ!!!! (c) +Rcg 1997 </pre>
+
+<BR>
+
+</PRE>
+
+<BR>
+
+<HR ALIGN="CENTER" WIDTH="100%" SIZE="3">
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</I></CENTER>
+
+<BR><CENTER>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html"> homepage</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"> 
+
+<A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm"> links</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0">
+
+<A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm"> anonymity</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm"> +ORC</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm"> students' essays</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm"> tools</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm"> cocktails</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm"> search_forms</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm"> mailFraVia</A></CENTER>
+
+<CENTER><HR ALIGN="CENTER" WIDTH="100%" SIZE="2"></CENTER>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

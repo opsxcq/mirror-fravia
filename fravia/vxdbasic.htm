@@ -1,0 +1,666 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>vxdbasic</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR=#C0C0C0 TEXT=#001010 VLINK=#405040>
+
+<CENTER><FONT size=+3>+HCU's special Project: 'Our protections'<BR>
+
+<A href="protecti.htm" tppabs="http://www.anticrack.de/fravia/protecti.htm"><IMG SRC="tough.gif" tppabs="http://www.anticrack.de/fravia/tough.gif" ALT="tough" ALIGN=BOTTOM 
+
+WIDTH=114 HEIGHT=43 BORDER=0 VSPACE=0 HSPACE=0></A>
+
+<BR>
+
+<FONT color=blue>A FIRST INTRODUCTION TO VxD</FONT>
+
+<BR></FONT>
+
+<BR>
+
+<FONT size=+1>
+
+by +RCG, 14 January 1998
+
+</FONT><BR>
+
+<A href="hcu98_3.htm" tppabs="http://www.anticrack.de/fravia/hcu98_3.htm"><IMG SRC="hcu1.gif" tppabs="http://www.anticrack.de/fravia/hcu1.gif" ALT="cracker" ALIGN=BOTTOM 
+
+WIDTH=114 HEIGHT=43 BORDER=0 VSPACE=0 HSPACE=0></A>
+
+<BR>
+
+
+
+</CENTER>
+
+<HR size=6><PRE>	A FIRST INTRODUCTION TO VxD
+
+
+
+I will introduce you some basic aspects about
+
+the VxD programming (don't you think I have much
+
+more idea than you, this is my first W95 VxD :-)
+
+
+
+First you must know that a VxD can do everything
+
+we want, no more Ring3 restrictions, you can
+
+stop completely the system, read or write any
+
+memory address, hook all interrupts or exceptions,
+
+take control of the IO ports, for that reason
+
+I recomend you to reverse a little WinIce so you
+
+could see how these great programmers do it, also
+
+is a good idea study a little VxDMonitor,FileMonitor
+
+and RegMonitor all from Bryce Cogswell and Mark
+
+Russinovich, BTW I have been able to create my
+
+VxD thanks to they sourcers, M$ documentation about
+
+this makes laught.
+
+
+
+
+
+A VxD has two parts, one is the Initialization Part
+
+of Code that is discardable, so when the VxD has been
+
+loaded and initializated, the memory area of this code
+
+(and it data) is freed, and a locked (permanent) part
+
+that is only released when the VxD is unloaded.
+
+
+
+At the initialization you must perform the critical
+
+actions like hooking int,s ,devices, API,s ,etc.
+
+
+
+Well no more words and lets see it with an example,
+
+lets try to intercept timing functions of W95 so 
+
+we will use it as a TSR for reversing purposes.
+
+I will use Hedit 2.0 because it is a 'small' 
+
+program (although 340Kb is a little overbloated)
+
+so everyone could download the program and follow
+
+the example easily. Hedit get the system time and
+
+then compares it with another stored value and 
+
+if the system_time is lower than the stored value 
+
+a good guy is asummed, so we can tell the program
+
+we are in the year 1088 and then we will be good guys
+
+(quite obvious).
+
+
+
+If you read my WinIce essay, you will remember that
+
+W95 uses the Old Int 21h service 2Ah in order to get
+
+the system time, so we will path these service.
+
+
+
+Our VxD will check all time requests by hooking the
+
+Int 21h service 2Ah and then will check if the caller
+
+is Hedit gives it a good guy date otherwise lets DOS
+
+give the correct date. Easy is it?
+
+
+
+BTW, I have also added a complete service list with
+
+the codes, so you can monitor (or intercept) every
+
+call to a service using next function:
+
+
+
+	mov	eax,Service_ID
+
+	mov	esi,Our_New_Procedure
+
+	VmmCall	Hook_Device_Service
+
+	jc	Not_Installed
+
+	mov	[Real_Proc],esi
+
+
+
+Our_New_Proc:
+
+	Do 	something
+
+	jmp	[Real_Proc]
+
+
+
+
+
+
+
+
+
+		    THE SOURCE (vxdbody.asm)
+
+
+
+.386p
+
+	.xlist
+
+	include	vmm.inc
+
+	include vwin32.inc
+
+.list
+
+
+
+;============================================================================
+
+;                         S O M E   E Q U 
+
+;============================================================================
+
+
+
+VXDBODYName              EQU     <VXDBODY VXD      '> ;Must be 16 chars
+
+VXDBODYRev               EQU     00H
+
+
+
+VXDBODY_MAJOR_VERSION    EQU     1
+
+VXDBODY_MINOR_VERSION    EQU     0
+
+
+
+
+
+ErrorCode               EQU 0FFFFFFFFh
+
+
+
+;============================================================================
+
+; 			  P U B L I C   D A T A
+
+;============================================================================
+
+
+
+VXD_LOCKED_DATA_SEG
+
+
+
+FLAGS   dd 0
+
+SYS_VM  dd 0
+
+LD      dd 0
+
+
+
+
+
+VXD_LOCKED_DATA_ENDS
+
+
+
+
+
+;===================================
+
+;D E V I C E   D E C L A R A T I O N
+
+;===================================
+
+
+
+VXD_LOCKED_CODE_SEG
+
+
+
+DECLARE_VIRTUAL_DEVICE VXDBODY,  \
+
+        VXDBODY_MAJOR_VERSION,   \
+
+        VXDBODY_MINOR_VERSION,   \
+
+        VXDBODY_Control, ,       \
+
+	UNDEFINED_INIT_ORDER
+
+
+
+
+
+;=================
+
+;M A I N   C O D E
+
+;=================
+
+
+
+
+
+public VXDBODY_Control
+
+VXDBODY_Control PROC NEAR
+
+
+
+        Control_Dispatch SYS_DYNAMIC_DEVICE_INIT,       VXDBODY_Device_Init
+
+        Control_Dispatch SYS_DYNAMIC_DEVICE_EXIT,       VXDBODY_Device_Exit
+
+        Control_Dispatch W32_DEVICEIOCONTROL,           VXDBODY_ioctl
+
+	clc
+
+	ret
+
+
+
+VXDBODY_Control ENDP
+
+
+
+
+
+Public VXDBODY_ioctl
+
+BeginProc VXDBODY_ioctl
+
+
+
+	mov	ecx,[esi].dwIoControlCode	; get ioctl code
+
+        cmp     ecx,1
+
+        je      Function1
+
+        cmp     ecx,2
+
+        je      Function2
+
+        jmp     RetSuccess
+
+
+
+Function1:
+
+        ;Here everything you want
+
+        ;No more Ring3 limitations
+
+        jmp     RetSuccess
+
+
+
+Function2:
+
+        ;Here other function
+
+        ;and so on.
+
+        jmp     RetSuccess 
+
+
+
+RetSuccess:
+
+        xor     eax, eax     ;return zero = success
+
+	clc
+
+	ret
+
+RetFail:
+
+        mov     eax,ErrorCode
+
+        stc
+
+        ret
+
+
+
+
+
+EndProc VXDBODY_ioctl
+
+
+
+
+
+BeginProc Our_Int_Handler
+
+
+
+        pushad
+
+        mov     eax,[ebp.Client_EAX]
+
+        cmp     ax,2A00h                ;Get_System_Time DOS function?
+
+        jne     Let_DOS_Work
+
+        
+
+        xor     eax,eax
+
+        mov     FLAGS,eax		;Must be zero
+
+
+
+        VxDCall VWIN32_GetCurrentProcessHandle
+
+        mov     eax,[eax+38h]
+
+        or      al,7
+
+        mov     LD,eax    		;Store the Local Descriptor
+
+
+
+        VmmCall Get_Sys_VM_Handle
+
+        mov     SYS_VM,ebx
+
+
+
+        VmmCall _SelectorMapFlat <SYS_VM,LD,FLAGS>
+
+
+
+        add     eax,0F2h        ;Now eax points to the caller name
+
+        mov     ebx,[eax]
+
+        cmp     ebx,'ideH'      ;Hedit inverted
+
+        jne     Let_DOS_Work
+
+        mov     bl,[eax+4]
+
+        cmp     bl,'t'
+
+        jne     Let_DOS_Work
+
+
+
+        mov     [ebp.Client_AX],1      ;Day of week
+
+        mov     [ebp.Client_CX],1088   ;Year
+
+        mov     [ebp.Client_DX],0101h  ;Day and Month 
+
+
+
+Is_Hedit:
+
+        popad
+
+        clc     ;consume the interrupt
+
+        ret
+
+
+
+Let_DOS_Work:
+
+        popad
+
+   	stc   ; don't consume the interrupt
+
+   	ret
+
+
+
+EndProc Our_Int_Handler
+
+
+
+
+
+
+
+Public VXDBODY_Device_Exit
+
+BeginProc VXDBODY_Device_Exit
+
+
+
+        mov     eax, 21h
+
+        mov     esi, OFFSET32 Our_Int_Handler
+
+        VMMCall UnHook_V86_Int_Chain
+
+	clc
+
+	ret
+
+
+
+EndProc VXDBODY_Device_Exit
+
+
+
+VXD_LOCKED_CODE_ENDS
+
+
+
+
+
+VXD_ICODE_SEG
+
+
+
+BeginProc VXDBODY_Device_Init
+
+
+
+        mov     eax, 21h
+
+        mov     esi, OFFSET32 Our_Int_Handler
+
+   	VMMCall Hook_V86_Int_Chain
+
+	clc
+
+	ret
+
+
+
+EndProc VXDBODY_Device_Init
+
+
+
+VXD_ICODE_ENDS
+
+
+
+
+
+end
+
+
+
+
+
+
+
+		THE DEFINITIONS (vxdbody.def)
+
+
+
+
+
+VXD VXDBODY DYNAMIC
+
+SEGMENTS
+
+	_LPTEXT		CLASS 'LCODE'   PRELOAD NONDISCARDABLE
+
+	_LTEXT		CLASS 'LCODE'   PRELOAD NONDISCARDABLE
+
+	_LDATA		CLASS 'LCODE'   PRELOAD NONDISCARDABLE
+
+	_TEXT		CLASS 'LCODE'   PRELOAD NONDISCARDABLE
+
+	_DATA		CLASS 'LCODE'   PRELOAD NONDISCARDABLE
+
+	CONST		CLASS 'LCODE'   PRELOAD NONDISCARDABLE
+
+	_TLS		CLASS 'LCODE'   PRELOAD NONDISCARDABLE
+
+	_BSS		CLASS 'LCODE'   PRELOAD NONDISCARDABLE
+
+        _MSGTABLE	CLASS 'MCODE'	PRELOAD NONDISCARDABLE IOPL
+
+        _MSGDATA	CLASS 'MCODE'	PRELOAD NONDISCARDABLE IOPL
+
+        _IMSGTABLE	CLASS 'MCODE'	PRELOAD DISCARDABLE IOPL
+
+        _IMSGDATA	CLASS 'MCODE'	PRELOAD DISCARDABLE IOPL
+
+        _ITEXT		CLASS 'ICODE'   DISCARDABLE
+
+	_IDATA		CLASS 'ICODE'   DISCARDABLE
+
+	_PTEXT		CLASS 'PCODE'   NONDISCARDABLE
+
+	_PDATA		CLASS 'PDATA'   NONDISCARDABLE SHARED
+
+	_STEXT		CLASS 'SCODE'   RESIDENT
+
+	_SDATA		CLASS 'SCODE'   RESIDENT
+
+	_DBOSTART	CLASS 'DBOCODE' PRELOAD NONDISCARDABLE CONFORMING
+
+	_DBOCODE	CLASS 'DBOCODE' PRELOAD NONDISCARDABLE CONFORMING
+
+	_DBODATA	CLASS 'DBOCODE' PRELOAD NONDISCARDABLE CONFORMING
+
+	_16ICODE	CLASS '16ICODE' PRELOAD DISCARDABLE
+
+	_RCODE		CLASS 'RCODE'
+
+EXPORTS
+
+        VXDBODY_DDB
+
+
+
+
+
+		THE MAKEFILE (makefile.   )
+
+
+
+OBJECTS = vxdbody.obj
+
+
+
+vxdbody.vxd:     $(OBJECTS) vxdbody.def
+
+        LINK.EXE @<VXD -OUT:vxdbody.VXD 
+
+-DEF:vxdbody.def
+
+-MERGE:.data=_LDATA -MERGE:.bss=_LDATA -MERGE:_PDATA=_PTEXT
+
+-COMMENT:"vxdbody VXD"
+
+$(OBJECTS)
+
+<<
+
+        
+
+.asm.obj:
+
+        set ML=-coff -DBLD_COFF -DIS_32 -nologo -W3 -Zd -c -Cx -DMASM6 -DINITLOG -DDEBLEVEL=1 -DDEBUG -Fl
+
+	ml -Fo$*.obj $<
+
+
+
+vxdbody.obj:     vxdbody.asm 
+
+
+
+
+
+
+
+Also I <a href="javascript:if(confirm('http://www.anticrack.de/fravia/ourvxd.zip  \n\nThis file was not retrieved by Teleport Pro, because the server reports that this file cannot be found.  \n\nDo you want to open it from the server?'))window.location='http://www.anticrack.de/fravia/ourvxd.zip'" tppabs="http://www.anticrack.de/fravia/ourvxd.zip">attach</A> a simple program that opens our vxd and closes it,
+
+and (not implemented yet) sends orders to our vxd.
+
+
+
+Soon more (but you must work on your own)
+
+
+
+
+
++rcg 1998</PRE>
+
+<HR size=6>
+
+<CENTER>
+
+<A href="protecti.htm" tppabs="http://www.anticrack.de/fravia/protecti.htm"><IMG SRC="tough.gif" tppabs="http://www.anticrack.de/fravia/tough.gif" ALT="tough" ALIGN=BOTTOM 
+
+WIDTH=114 HEIGHT=43 BORDER=0 VSPACE=0 HSPACE=0></A>
+
+<BR><FONT color=gray>Back to Our protections</FONT><HR width=33%>
+
+
+
+<HR>
+
+</BODY>
+
+</HTML>
+

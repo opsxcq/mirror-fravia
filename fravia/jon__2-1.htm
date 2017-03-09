@@ -1,0 +1,785 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>Kremlin 2.0: they learn, we learn</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+<CENTER><FONT size="+3">Kremlin 2.0: they learn, we learn</FONT>
+
+<BR>(Lesson for shareware-programmers: Don't place the protection scheme in a DLL)<BR>
+
+<!--<a href="protecti.htm" tppabs="http://www.anticrack.de/fravia/protecti.htm"><IMG SRC="tough.gif" tppabs="http://www.anticrack.de/fravia/tough.gif" ALT="tough" ALIGN=BOTTOM WIDTH=114 HEIGHT=43 BORDER=0 VSPACE=0 HSPACE=0></a><br>-->
+
+
+
+
+
+<H2><B>by Jon</B></H2>
+
+<H4>(24 December 1997, slightly edited by fravia+)</H4>
+
+
+
+<HR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">Courtesy of fravia's page 
+
+of reverse engineering<HR>       
+
+<I>Well, merry Xmas to anyone... since on Xmas everybody is nice, I 
+
+sent an email to Mark Rosen (Author of Kremlin, a very nice guy, see 
+
+his complete letter inside Jon's <A href="jonne1.htm" tppabs="http://www.anticrack.de/fravia/jonne1.htm">Blowfish</A> 
+
+essay) and I wrote to 
+
+him:</I></CENTER><PRE><FONT color="purple">&gt;Your last protection cracked, may I publish?</FONT></PRE><CENTER><I>and he answered immediately:</I></CENTER><PRE><FONT color="purple">Sure. You can publish the crack, but please don't publish the cracked
+
+DLL file; that way you have to have half a brain and be willing to do a
+
+little work to get the regged version of Kremlin.
+
+
+
+- Mark</FONT></PRE><I><CENTER>So here you are with an essay about a very interesting cryptographical 
+
+program (Kremlin) that you now know has been made by a nice programmer. 
+
+I would say that the minimum we cand o for Mark Rosen is to send him a 
+
+'ready-made' +HCU's tough protection for his next version (I hope that 
+
+our specialists +Rcg and +Sync are reading this :-)<BR><BR>
+
+This Kremlin-cracking seems to be a Jon's speciality.<BR>Jon is our 
+
+&quot;encryption specialist&quot; (as a matter of fact cryptography is -almost- more interesting 
+
+than cracking itself). You may want to have a look at Jon's other essays: the one  
+
+about <A href="jon1.htm" tppabs="http://www.anticrack.de/fravia/jon1.htm">kremlin version 1</A>, and the one about 
+
+<A href="jonne1.htm" tppabs="http://www.anticrack.de/fravia/jonne1.htm">Blowfish</A> and you may want to 
+
+read his <A href="jonencr1.htm" tppabs="http://www.anticrack.de/fravia/jonencr1.htm">Encryption, a short tutorial</A> as well. With the 
+
+present (fourth) essay Jon has done a good job indeed... judging for 
+
+instance from this letter that appeared THIS MORNING on a maillist:</I></CENTER><PRE><FONT color="purple">
+
+Subject: Kremlin v2.0 - Protection against wdasm?
+
+
+
+Kremlin is one of my favourite encryption tools and i like to follow it
+
+with regards to its cracking aspects. It has been the subject of a
+
+couple of tutorials and the Author himself wrote a letter to fravia+ in
+
+good faith. When i noticed the new version 2.0 was out i d/l it to see
+
+if he had improved on the last version VERY bad protection. I was
+
+slightly dissapointed to see that the first .dll file i targeted
+
+(KremDLL.dll) housed the guts of the encryption scheme. after doing a
+
+half crack on it so that it would accept any rego key and running the 
+
+program successfully i got a strange window with something along the 
+
+lines of &quot;Some how you have enter the correct registration key without 
+
+paying for Kremlin... (yadda yadda yadda)&quot; this also triggered the 
+
+program to cripple itself again. Although it still accepted psuedo-rego 
+
+keys.
+
+
+
+Without finding any referance to that particular window in KremDLL.dll
+
+i tried to disassemble the main exe with wdasm and got a segment fault. 
+
+
+
+Maybe he has learnt from the past after all?
+
+
+
+-faeton</FONT></PRE><I><CENTER>
+
+And I received another message regarding this Kremlin protection scheme:
+
+</I></CENTER><PRE><FONT color="purple">Kremlin 2.0 has definetely a better algorithm. Checks all the numbers
+
+sequentially. Still 10 numbers, but does a iterative number check based
+
+on integer division, first 4 kept constant, checking the values of the
+
+others, for every check, if fails, clears edi... best Wishes.
+
+
+
+EpicLord
+
+
+
+magic number: 1111991167</FONT></PRE><I><CENTER>
+
+Of course we await a short addition to this 
+
+essay about this specifical anti-wdasm trick (which interests us more 
+
+than the cracking of this simple protection scheme, btw). 
+
+Anyway, as it seems, I could already fill a new section of my site about 
+
+encryption using only the many good essays that Jon sent to the +HCU... ok, read 
+
+and enjoy 
+
+his last one now, and merry Xmas to anyone reading this!</I></CENTER><HR size="6">
+
+<PRE>
+
+<FONT size="+2"><CENTER>
+
+Kremlin 2.0 - By Jon, on December 23, 1997.
+
+</CENTER></FONT>
+
+Greetings, all!
+
+
+
+Intro:
+
+
+
+In this essay I will crack Kremlin 2.0. 
+
+As some of you might know, I have already written an essay about an 
+
+earlier version of this program, 1.1. In that essay I defeated a 
+
+weak protection scheme, using ONLY the help-file, the Window$-registry 
+
+editor, and about 1% of my brain.
+
+A couple of weeks later the author, Mark Rosen, emailed fravia+:
+
+
+
+&quot;Hey. Nice reverse engineering page. I saw the thing on Kremlin... I'm
+
+the author of Kremlin! Oops! Well, I guess next time I'll spend more time on
+
+the protection scheme -- I concentrated on making a good program, not making
+
+a good protection scheme. Kremlin 2.0 will be really cool and will, now,
+
+have better security features and won't be as stupid. If the Jon guy who
+
+cracked the program wants a free copy, just tell him to e-mail
+
+mrosen@peganet.com and I'll give him one -- nice work.&quot;
+
+~
+
+Mark Rosen, Mach5 Software, http://www.mach5.com/, 30 September 1997
+
+
+
+And indeed, he did spend (a little) time on the protection-scheme! 
+
+And that's not all that's changed, Mr. Rosen has improved his program VERY much, 
+
+with added Encryption-Texteditor, and an automatic encryption agent (like the 
+
+System Agent, from M$Plus!). However the protection-scheme is still an easy crack. 
+
+Although it does not tolerate the trick I used last time:
+
+&quot;You have not registered but you have somehow selected a registered algorithm.&quot;,
+
+it's still fairly easy to crack.
+
+Honestly, I'd been disappointed if that trick still worked :-)
+
+Enough crap, let's crack!
+
+
+
+
+
+Tools needed:
+
+
+
+W32DASM 8.9 - There's no need for IDA here (BTW, I enjoyed a lot the full version!)
+
+
+
+A good hexeditor (I use HexWorkShop, use whatever you prefer) - To apply the patch.
+
+
+
+A string search utility (I use Search And Replace, use whatever you prefer) 
+
+                        (I'll explain later why we need this ;-)
+
+
+
+About 5% of your brain!
+
+
+
+
+
+The crack:
+
+
+
+OK, we start by disassembling Kremlin Encrypt.exe with W32DASM. We find that at the 
+
+near end of the disassembly, W32DASM freezes/crashes! Maybe Mark DID put some 
+
+anti-disassembly tricks in! I don't know, but after viewing the text-strings 
+
+of the executable, I find that we should not even be concentrating on this 
+
+file anyway, so who cares :-(
+
+Let's try a slightly different approach:
+
+Drag &amp; drop a file to Kremlin Encrypt... Enter a fake registration key, say 
+
++ORC's famous &quot;1212121212&quot; and you will immediately see this: &quot;Invalid registration 
+
+code&quot;. 
+
+Of course, what did you expect? ;-)
+
+Now, start Search &amp; Replace (a &quot;grep&quot; utility for Windows95 which is actually 
+
+only &quot;Search &amp; Nag&quot; in his crippleware version until you modify its functionalities, 
+
+anyway 'search' is more than enough for this target).
+
+Search for &quot;Invalid registration code&quot; with file mask *.* inside the Kremlin 
+
+directory. 
+
+You find that the string is located in the KremDLL.dll file. 
+
+OK, now we know that the protection scheme probably hides inside this DLL, so 
+
+load it inside W32DASM... 
+
+We start looking through the disassembly for suspicious code... 
+
+BTW, when you need to change some bytes, see the status-line in order to 
+
+get the hex-address and then just pass to your hexeditor... you wont even 
+
+need to search any long hexstring ;-)
+
+The following is almost all we need:
+
+
+
+Exported fn(): IsRegisteredCode      ;NOT a good idea to name a function like this...
+
+:05E10 56                      push esi             ;pass parameter
+
+:05E11 8B742408                mov esi, dword ptr [esp+08]
+
+:05E15 56                      push esi             ;pass passed parameter
+
+:05E16 E835FEFFFF              call 10005C50        ;Call protection-scheme 
+
+:05E1B 83C404                  add esp, 00000004    ;correct stack
+
+:05E1E 85C0                    test eax, eax        ;Check if returned reg-code is valid
+
+:05E20 750F                    jne 10005E31         ;If not zero jump to good guy
+
+:05E22 56                      push esi             ;change the above jne to a jmp
+
+:05E23 E8A8FCFFFF              call 10005AD0        
+
+:05E28 83C404                  add esp, 00000004
+
+:05E2B 85C0                    test eax, eax        ;second check
+
+:05E2D 7502                    jne 10005E31         ;If not zero jump to good guy
+
+:05E2F 5E                      pop esi
+
+:05E30 C3                      ret
+
+
+
+* Referenced by a Jump at Addresses:05E20(C), :05E2D(C)
+
+|
+
+:05E31 B801000000              mov eax, 1   ;We just changed the above code 
+
+:05E36 5E                      pop esi      ;to always jump here!
+
+:05E37 C3                      ret          ;in order to get flag 1
+
+:05E38 90                      nop
+
+...
+
+:05E3F 90                      nop
+
+
+
+Exported fn(): FixRegisteredAlg     ;Almost selfexplaining. Fixes greyed algorithms!
+
+:05E40 83EC20                  sub esp, 00000020
+
+:05E43 B907000000              mov ecx, 00000007
+
+:05E48 33C0                    xor eax, eax
+
+:05E4A 57                      push edi
+
+:05E4B 8D7C2404                lea edi, dword ptr [esp+04]
+
+:05E4F F3                      repz
+
+:05E50 AB                      stosd
+
+:05E51 66AB                    stosw
+
+:05E53 683CBD0010              push 1000BD3C
+
+:05E58 8D442408                lea eax, dword ptr [esp+08]
+
+:05E5C 6A1E                    push 0000001E
+
+:05E5E 50                      push eax
+
+
+
+* StringData Ref-&gt;&quot;RegNum&quot; ;Ha, ha! We don't need to change anything, though!
+
+                                  |
+
+:05E5F 6848B30010              push 1000B348
+
+:05E64 683CBD0010              push 1000BD3C
+
+* Reference To: KremDLL.GetGlobalString
+
+                                  |
+
+:05E69 E832CEFFFF              call 10002CA0
+
+:05E6E 83C414                  add esp, 00000014
+
+:05E71 6AFF                    push FFFFFFFF
+
+
+
+* StringData Ref from Data Obj -&gt;&quot;Algorithm&quot;
+
+                                  |
+
+:05E73 686CB30010              push 1000B36C
+
+
+
+* StringData Ref from Data Obj -&gt;&quot;Encrypt&quot;
+
+                                  |
+
+:05E78 68F8B10010              push 1000B1F8
+
+* Reference To: KremDLL.GetGlobalInt
+
+                                  |
+
+:05E7D E8FECCFFFF              call 10002B80
+
+:05E82 83C40C                  add esp, 0000000C
+
+:05E85 50                      push eax
+
+
+
+* Reference To: KremSDK.IsRegisteredAlgorithm, Ord:003Fh
+
+                                  |
+
+:05E86 E863370000              Call 100095EE
+
+:05E8B 83C404                  add esp, 00000004
+
+:05E8E 85C0                    test eax, eax
+
+:05E90 744D                    je 10005EDF
+
+:05E92 8D4C2404                lea ecx, dword ptr [esp+04]
+
+:05E96 51                      push ecx
+
+:05E97 E8B4FDFFFF              call 10005C50          ;Call protection scheme once more
+
+:05E9C 83C404                  add esp, 00000004
+
+:05E9F 85C0                    test eax, eax
+
+:05EA1 753C                    jne 10005EDF                ;Another check. Change to jmp .
+
+:05EA3 8D542404                lea edx, dword ptr [esp+04] ;to avoid the nag-text below
+
+:05EA7 52                      push edx
+
+:05EA8 E823FCFFFF              call 10005AD0
+
+:05EAD 83C404                  add esp, 00000004
+
+:05EB0 85C0                    test eax, eax
+
+:05EB2 752B                    jne 10005EDF
+
+:05EB4 8B442428                mov eax, dword ptr [esp+28]
+
+:05EB8 6A30                    push 00000030
+
+
+
+* StringData Ref from Data Obj -&gt;&quot;Kremlin&quot;
+
+                                  |
+
+:05EBA 6840B30010              push 1000B340   ;*NAG*! Bypassed by the change above!
+
+
+
+* StringData Ref from Data Obj -&gt;&quot;You have not registered but you &quot;      
+
+                               -&gt;&quot;have somehow selected a registered &quot;
+
+                               -&gt;&quot;algorithm. You may not use Blowfish, &quot;
+
+                               -&gt;&quot;IDEA, RC4, or Safer unless you &quot;
+
+                               -&gt;&quot;have registered Kremlin. Please &quot;
+
+                               -&gt;&quot;register.&quot;
+
+                                  |
+
+:05EBF 6880B50010              push 1000B580
+
+:05EC4 50                      push eax
+
+
+
+OK, these two changes: 
+
+1. Fix the &quot;greyed&quot; algorithms, making them available.
+
+2. Make sure that the nag about the &quot;unselectable algorithms&quot; doesn't show.
+
+
+
+But we need to take care of the *NAG* splashscreen, which still pops up on load!
+
+
+
+:0625A E841CAFFFF              call 10002CA0
+
+:0625F 8B74243C                mov esi, dword ptr [esp+3C]
+
+:06263 83C414                  add esp, 00000014
+
+:06266 8935D8C10010            mov dword ptr [1000C1D8], esi
+
+:0626C 833E00                  cmp dword ptr [esi], 00000000
+
+:0626F 752C                    jne 1000629D
+
+:06271 8D4C2404                lea ecx, dword ptr [esp+04]
+
+:06275 51                      push ecx
+
+:06276 E8D5F9FFFF              call 10005C50           ;Call protection scheme 1
+
+:0627B 83C404                  add esp, 00000004
+
+:0627E 85C0                    test eax, eax
+
+:06280 7511                    jne 10006293
+
+:06282 8D542404                lea edx, dword ptr [esp+04]
+
+:06286 52                      push edx
+
+:06287 E844F8FFFF              call 10005AD0           ;Call protection scheme 2
+
+:0628C 83C404                  add esp, 00000004
+
+:0628F 85C0                    test eax, eax           ;Check reg code
+
+:06291 740A                    je 1000629D             ;Jump to *NAG*? Change to jne!
+
+
+
+* Referenced by a Jump at Address:06280(C)
+
+|
+
+:06293 B802000000              mov eax, 00000002
+
+:06298 5E                      pop esi
+
+:06299 83C420                  add esp, 00000020
+
+:0629C C3                      ret
+
+
+
+
+
+
+
+* Referenced by a Jump at Addresses:0626F(C), :06291(C)
+
+|
+
+:0629D 8B4604                  mov eax, dword ptr [esi+04]    ;Here starts the *NAG*
+
+:062A0 8B0D30BD0010            mov ecx, dword ptr [1000BD30]
+
+:062A6 6A00                    push 00000000
+
+:062A8 68F05E0010              push 10005EF0
+
+:062AD 50                      push eax
+
+
+
+* Reference to Dialog: DialogID_0081  ;The dialog-box (found at disassembly start) 
+
+                                  |
+
+:062AE 6881000000              push 00000081
+
+:062B3 51                      push ecx
+
+
+
+* Reference To: USER32.DialogBoxParamA, Ord:008Eh
+
+                                  |
+
+:062B4 FF1568D20010            Call dword ptr [1000D268]
+
+:062BA 5E                      pop esi
+
+:062BB 83C420                  add esp, 00000020
+
+:062BE C3                      ret
+
+
+
+:062BF 90                      nop
+
+:062C0 8B442408                mov eax, dword ptr [esp+08]
+
+:062C4 81EC04020000            sub esp, 00000204
+
+:062CA 83E853                  sub eax, 00000053
+
+:062CD 53                      push ebx
+
+:062CE 55                      push ebp
+
+:062CF 56                      push esi
+
+:062D0 57                      push edi
+
+:062D1 0F84BE020000            je 10006595
+
+:062D7 2DBD000000              sub eax, 000000BD
+
+:062DC 0F8412020000            je 100064F4
+
+:062E2 48                      dec eax
+
+:062E3 740F                    je 100062F4
+
+:062E5 33C0                    xor eax, eax
+
+:062E7 5F                      pop edi
+
+:062E8 5E                      pop esi
+
+:062E9 5D                      pop ebp
+
+:062EA 5B                      pop ebx
+
+:062EB 81C404020000            add esp, 00000204
+
+:062F1 C21000                  ret 0010
+
+
+
+Yeah! We're done! Our target now runs beautifully, without even having to 
+
+enter any registration code! No nag, and all algorithms are available!
+
+And <U>since it's in a DLL</U> we don't need to apply patches to all the 
+
+program files!
+
+
+
+Lessons for shareware-programmers:
+
+Don't place the protection scheme in a DLL, as two things could happen:
+
+1. The DLL will be reversed and altered, making the program(s) believe 
+
+   that everything is OK! Any anti-disassembler protection inside the 
+
+   program wont make any sense!
+
+2. The program is reversed and altered, completely bypassing the 
+
+   DLL check!
+
+<U>Even more important (how long will we have to repeat it?</U>
+
+For goddamn sake! Don't make your functions so obvious! 
+
+With names like &quot;IsRegisteredAlgorithm&quot;, &quot;RegNum&quot;, &quot;IsRegisteredCode&quot; 
+
+and &quot;FixRegisteredAlg&quot;, anybody can figure out what's going on! 
+
+Make the names cryptic and hard-to-guess!
+
+
+
+Well, that's it! I hope you enjoyed reading this!
+
+
+
+Greetings fly out to:
+
+All +crackers, The +HCU, +ORC and everybody reading this!
+
+
+
+Jon
+
+
+
+Email me your comments (good or bad) to jon101514@cyberjunkie.com
+
+Don't spam or email-bomb me; it's a remailer, which I can easily disable!
+
+
+
+</PRE>
+
+<HR>
+
+<I>Well, just editing in a hurry this essay, two immediate 
+
+questions, still unanswered, spring out of the text:<BR><U>First:</U> 
+
+why 
+
+two different protection calls? The one at :06276 E8D5F9FFFF   (call 10005C50
+
+      - Call protection scheme 1)
+
+and the 'second' one at 
+
+:06287 E844F8FFFF              (call 10005AD0 - Call protection scheme 2)?<BR>
+
+<U>Second</U> How does the main exe blow wdasm?<BR>Hope somebody will send an addendum 
+
+to Jon's essay asap (I haven't the time, I didn't even download Kremlin 2... 
+
+I'm working -again- on Screen ruler :-)
+
+</I>
+
+<HR>
+
+<FONT color="green">(c) <FONT color="#5500AA">Jon (+HCU's encryption specialist)</FONT> All rights reversed</FONT>
+
+<HR ALIGN="CENTER" WIDTH="100%" SIZE="3">
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</I></CENTER>
+
+<BR><CENTER>
+
+<!--<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A HREF="project4.htm" tppabs="http://www.anticrack.de/fravia/project4.htm">Back to Project 4</A>            <hr width=33%>-->
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut CGI-scripts</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering legal?</A></CENTER>
+
+<CENTER><HR ALIGN="CENTER" WIDTH="100%" SIZE="2"></CENTER>
+
+</BODY>
+
+</HTML>

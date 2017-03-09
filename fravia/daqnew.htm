@@ -1,0 +1,523 @@
+<HTML>
+
+<HEAD>
+
+  <META NAME="GENERATOR" CONTENT="Photoshop Filter Hacking">
+
+  <TITLE>daqnew</TITLE>
+
+</HEAD>
+
+<BODY TEXT="#001010" VLINK="#405040">
+
+
+
+<P><CENTER><FONT SIZE="+4">Photoshop Filter Hacking<BR>
+
+</FONT><FONT SIZE="+2">registry monitoring</FONT><FONT SIZE="-1">
+
+<BR>
+
+</FONT></CENTER></P>
+
+
+
+<H4><CENTER><I>by +daQ</I> <BR>
+
+(31 July 1997, slightly edited by Fravia)</CENTER></H4>
+
+
+
+<P><CENTER><FONT SIZE="-1"><HR><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"> Courtesy of Fravia's page of reverse engineering<BR>
+
+<HR> <I>Well, have a look... pretty interesting reverse enginnering</I></CENTER>
+
+<HR>
+
+      Photoshop Filter Hacking
+
+   </H3>
+
+   <H4>
+
+      or how Wdasm can be used on other types of files
+
+   </H4>
+
+</CENTER>
+
+ 
+
+<PRE>
+
+Difficulty:    Beginner
+
+Time to Fish:  1-2 hours
+
+Tools:         RegistryMonitor, Hexpert32, W32dasmXX
+
+Comments:      Not too difficult of a patch, in fact, only 1 byte needs to be
+
+               changed inorder for this program to run forever.
+
+ 
+
+Preamble:
+
+In the world of programming, there are several different forms of code
+
+that are produced.  Most often, these are seen as .dll, .exe, .com, ...
+
+Yet today, I am going to introduce you to another form of program.  The
+
+Photoshop Filter (.8bi) program.
+
+ 
+
+ 
+
+Target information: (From their <A HREF="tppmsgs/msgs2.htm#248" tppabs="http://www.anticrack.de/fravia/tppmsgs/msgs2.htm#248">web site</A>)
+
+<BR><I>Pegasus' flag ship compression tool PICPRESS is now available within 
+
+Adobe Photoshop! Creates smaller JPEGs, Progressive JPEGs and PIC images! 
+
+Pegasus JPEG files are 10% to 30% smaller than standard JPEGs created for 
+
+other programs. Create thumbnails and a full size representation at the 
+
+same time. Preview the results before compressing! New version works with 
+
+Photoshop 4.0. <B>Includes 10 Trial Compressions!</B> The Better JPEG Plug-in!
+
+</I> 
+
+They got that right! Photoshop has the *worst* jpg compressor I've ever 
+
+seen in my entire life!  Before Adobe bout Aldus out, Aldus made a program
+
+called Photostyler.  They had a slide-adjustable quality factor for jpgs,
+
+made small images at great sharpness.  BUT the conglomerant adobe couldn't
+
+stand the competition, so they bought them out.  Now, Photoshop 4, instead of
+
+having improved by that technology, has plowed ahead with their own, outdated
+
+compressors and outdated items... so much for development.
+
+Enter PicPress
+
+ 
+
+Pic<I>Press</I> is *the* best image compressor i have ever seen...i see 
+
+about a 50% increase in savings.  Smaller images mean faster downloads 
+
+and less wasted bandwidth.  This translates to more enjoyable websurfing
+
+with less wait.
+
+ 
+
+From the info that they provide, we know that we are given 10 <I>Free</I>
+
+compressions.  Translating this, there are 3 different ways it can count
+
+out our number of uses.
+
+1) Write to the registry.
+
+2) Write to the some .ini file
+
+3) Hide it in the windows.ini file, under some bogus name/info
+
+ 
+
+Start Photoshop.  After this monstrous program boots, load any image, 
+
+choose File-&gt;Save As.  Scroll down to where our .jpg (pegasys) is listed,
+
+and before hitting enter, start all our monitoring programs.  It truly helps
+
+to filter these entries (you'll see all the relevant info scroll across 
+
+the screen like this) (I've highlited in blue the important parts, and in red
+
+the parts that _may_ be important...)
+
+<CENTER><HR WIDTH="50%"></CENTER>
+
+<FONT SIZE="-1">
+
+712        Photoshp        OpenKey        HKCU\Software\PegasusImaging\Apps\Plugins\IMJ_Compress   
+
+                                                      SUCCESS                 hKey: 0xC50BCCA8        
+
+<FONT COLOR="FF0000"><A NAME="da713"></A>
+
+713        Photoshp        QueryValueEx        HKCU\Software\PegasusImaging\Apps\Plugins\IMJ_Compress\OWNERREGISTRATION        
+
+                                                      SUCCESS                 &quot;&quot;        </FONT>
+
+ 
+
+714        Photoshp        CloseKey        HKCU\Software\PegasusImaging\Apps\Plugins\IMJ_Compress        
+
+                                                      SUCCESS                
+
+ 
+
+715        Photoshp        OpenKey        HKCU\Software\PegasusImaging\Apps\Plugins\IMJ_Compress        
+
+                                                      SUCCESS                 hKey: 0xC50BCCA8        
+
+<FONT COLOR="FF0000"><A NAME="da716"></A>
+
+716        Photoshp        QueryValueEx        HKCU\Software\PegasusImaging\Apps\Plugins\IMJ_Compress\LIMITED_BASE_LEVEL        
+
+                                                      SUCCESS                 &quot;2003&quot;        </FONT>
+
+ 
+
+717        Photoshp        CloseKey        HKCU\Software\PegasusImaging\Apps\Plugins\IMJ_Compress        
+
+                                                      SUCCESS                
+
+ 
+
+718        Photoshp        OpenKey        HKCU\Software\PegasusImaging\Apps\Plugins\IMJ_Compress        
+
+                                                      SUCCESS                 hKey: 0xC50BCCA8        
+
+<FONT COLOR="FF0000">
+
+719        Photoshp        QueryValueEx        HKCU\Software\PegasusImaging\Apps\Plugins\IMJ_Compress\OWNERNAME        
+
+                                                      SUCCESS                 &quot;daQdaQ&quot;        </FONT>
+
+ 
+
+720        Photoshp        CloseKey        HKCU\Software\PegasusImaging\Apps\Plugins\IMJ_Compress          
+
+                                                      SUCCESS                
+
+ 
+
+721        Photoshp        OpenKey        HKCU\Software\PegasusImaging\Apps\Plugins\IMJ_Compress        
+
+                                                      SUCCESS                 hKey: 0xC50BCCA8        
+
+<FONT COLOR="FF0000"><A NAME="da722"></A>
+
+722        Photoshp        SetValueEx        HKCU\Software\PegasusImaging\Apps\Plugins\IMJ_Compress\LIMITED_BASE_LEVEL        
+
+                                                      SUCCESS                  &quot;2002&quot;        </FONT>
+
+ 
+
+723        Photoshp        CloseKey        HKCU\Software\PegasusImaging\Apps\Plugins\IMJ_Compress        
+
+                                                      SUCCESS                
+
+ 
+
+724        Photoshp        OpenKey        HKCU\Software\PegasusImaging\Apps\Plugins\IMJ_Compress        
+
+                                                      SUCCESS                 hKey: 0xC50BCCA8        
+
+<FONT COLOR="FF0000">
+
+725        Photoshp        QueryValueEx        HKCU\Software\PegasusImaging\Apps\Plugins\IMJ_Compress\OWNERREGISTRATION        
+
+                                                      SUCCESS                 &quot;&quot;        </FONT>
+
+ 
+
+726        Photoshp        CloseKey        HKCU\Software\PegasusImaging\Apps\Plugins\IMJ_Compress        
+
+                                                      SUCCESS                
+
+ 
+
+727        Photoshp        OpenKey        HKCU\Software\PegasusImaging\Apps\Plugins\IMJ_Compress        
+
+                                                      SUCCESS                 hKey: 0xC50BCCA8        
+
+<FONT COLOR="FF0000"><A NAME="da728"></A>
+
+728        Photoshp        QueryValueEx        HKCU\Software\PegasusImaging\Apps\Plugins\IMJ_Compress\LIMITED_BASE_LEVEL        
+
+                                                      SUCCESS                 &quot;2002&quot;        </FONT>
+
+ 
+
+729        Photoshp        CloseKey        HKCU\Software\PegasusImaging\Apps\Plugins\IMJ_Compress        
+
+                                                      SUCCESS                
+
+ 
+
+730        Photoshp        OpenKey        HKCU\Software\PegasusImaging\Apps\Plugins\IMJ_Compress        
+
+                                                      SUCCESS                 hKey: 0xC50BCCA8        
+
+<FONT COLOR="FF0000">
+
+731        Photoshp        QueryValueEx        HKCU\Software\PegasusImaging\Apps\Plugins\IMJ_Compress\OWNERNAME        
+
+                                                      SUCCESS                 &quot;daQdaQ&quot;        </FONT>
+
+ 
+
+732        Photoshp        CloseKey        HKCU\Software\PegasusImaging\Apps\Plugins\IMJ_Compress        
+
+                                                      SUCCESS                
+
+ 
+
+733        Photoshp        OpenKey        HKLM\Software\PegasusImaging\Dll\PICN13        
+
+                                                      SUCCESS                 hKey: 0xC50BCC8C        
+
+ 
+
+734        Photoshp        QueryValueEx        HKLM\Software\PegasusImaging\Dll\PICN13        
+
+                                                      SUCCESS                 &quot;C:\Pegasus&quot;        
+
+ 
+
+735        Photoshp        CloseKey        HKLM\Software\PegasusImaging\Dll\PICN13        
+
+                                                      SUCCESS                
+
+ 
+
+736        Photoshp        OpenKey        HKCU\Software\PegasusImaging\Apps\Plugins\IMJ_Compress        
+
+                                                      SUCCESS                 hKey: 0xC50BCBF4        
+
+<FONT COLOR="0000FF">
+
+737        Photoshp        QueryValueEx        HKCU\Software\PegasusImaging\Apps\Plugins\IMJ_Compress\COLORPICVALUE        
+
+                                                      SUCCESS                 &quot;236&quot;        </FONT>
+
+ 
+
+738        Photoshp        CloseKey        HKCU\Software\PegasusImaging\Apps\Plugins\IMJ_Compress        
+
+                                                      SUCCESS                
+
+ 
+
+739        Photoshp        OpenKey        HKCU\Software\PegasusImaging\Apps\Plugins\IMJ_Compress        
+
+                                                      SUCCESS                 hKey: 0xC50BCBF4        
+
+<FONT COLOR="0000FF">
+
+740        Photoshp        QueryValueEx        HKCU\Software\PegasusImaging\Apps\Plugins\IMJ_Compress\CHROMINANCE        
+
+                                                      SUCCESS                 &quot;36&quot;        </FONT>
+
+ 
+
+741        Photoshp        CloseKey        HKCU\Software\PegasusImaging\Apps\Plugins\IMJ_Compress        
+
+                                                      SUCCESS                
+
+ 
+
+742        Photoshp        OpenKey        HKCU\Software\PegasusImaging\Apps\Plugins\IMJ_Compress        
+
+                                                      SUCCESS                 hKey: 0xC50BCBF4        
+
+<FONT COLOR="0000FF">
+
+743        Photoshp        QueryValueEx        HKCU\Software\PegasusImaging\Apps\Plugins\IMJ_Compress\LUMINANCE        
+
+                                                      SUCCESS                 &quot;30&quot;        </FONT>
+
+ 
+
+744        Photoshp        CloseKey        HKCU\Software\PegasusImaging\Apps\Plugins\IMJ_Compress        
+
+                                                      SUCCESS                
+
+<CENTER><HR WIDTH="50%"></CENTER>
+
+</FONT>
+
+Allright!  What did we learn from looking at this?  There are a few 
+
+numerical places where the hidden/encrypted trials may be saved.  Why 
+
+are we sure it is in the registry and not in another file ?  Well, 
+
+all our other snooping revealed _no_ file access.  That leaves these 
+
+interesting calls to the registry.  At log entry <A HREF="#da713">713</A> we 
+
+see a blatant pointer to OWNERREGISTRATION.  Hmmmm....what could this be?
+
+ 
+
+Lets turn our attention to the trial encryption.  In only one place, 
+
+is one key read, modified, then read again.  This is at logs locations
+
+<A HREF="#da716">716</A>, <A HREF="#da722">722</A>, <A HREF="#da728">728</A>.  When we run this filter again, we find that
+
+the same key is read, modified, then read again.  Except that the value is 
+
+decremented by one.  *This* is our key.  
+
+ 
+
+Now, the way i traced this call was extremely laborious.  I went into W32dasm,
+
+and searched for all the error messages i could find.  There were lots... :(
+
+ 
+
+Lets try some zen:  If i was a lazy programmer, and i wanted a simple simple
+
+simple, simple, simple, _simple_ protection, i would probably write it like
+
+this:
+
+ 
+
+int trial_run=0;
+
+int trial_enc= some random number (here it will be 2005);
+
+ 
+
+   trial_run = trial_enc - <SOME random number+1) + 10; if (trial_run < 1 || trial_run> 10)
+
+      printf(&quot;Error!&quot;);
+
+   else
+
+      write.key
+
+ 
+
+Soooooo... as you'll see 0x07d6 is the hex value of 2006 (this target uses 
+
+it... that's the reason 
+
+I have choosen this random number :-) but let's search the dissassembly
+
+of the file for good old 10 (0xA)... perhaps our programmer was so lazy, 
+
+that, thiugh he tried to hide the trial count through a random bogus number,  
+
+-alas - he used a simple (0xA) subtraction! :)
+
+ 
+
+* Reference to String Resource ID=00001: &quot;Pegasus JPEG format plugin module
+
+                                          Copyright 1995-97 Pegasus&quot;
+
+:10005CC6 C745E401000000          mov [ebp-1C], 00000001
+
+:10005CCD 8D45DC                  lea eax, dword ptr [ebp-24]
+
+:10005CD0 50                      push eax
+
+:10005CD1 68A8B40310              push 1003B4A8	 ;  -&gt;&quot;%d&quot;
+
+:10005CD6 8D8594FEFFFF            lea eax, dword ptr [ebp+FE94]
+
+:10005CDC 50                      push eax
+
+:10005CDD E834B90000              call 10011616
+
+:10005CE2 83C40C                  add esp, 0000000C
+
+:10005CE5 816DDCD6070000          sub dword ptr [ebp-24], 000007D6 <FONT COLOR="0000FF">bogus sum</FONT>
+
+:10005CEC 8345DC0A                add dword ptr [ebp-24], 0000000A <FONT COLOR="FF0000">BINGO!</FONT>
+
+:10005CF0 8B45DC                  mov eax, dword ptr [ebp-24]
+
+:10005CF3 8B8D5CFEFFFF            mov ecx, dword ptr [ebp+FE5C]
+
+:10005CF9 89415C                  mov dword ptr [ecx+5C], eax
+
+:10005CFC 837DDC00                cmp dword ptr [ebp-24], 00000000
+
+:10005D00 0F8E0A000000            jle 10005D10
+
+:10005D06 837DDC0A                cmp dword ptr [ebp-24], 0000000A <FONT COLOR="FF0000">BINGO!</FONT>
+
+:10005D0A 0F8E3A000000            jle 10005D4A
+
+ 
+
+I don't feel that there are any more explanations needed.  
+
+The code itself is self explanatory...There is the subtraction,
+
+an addition, and then a compare.  If we change the addition to 11 (0xb)
+
+then it will always add 1 more than the last trial subtracted...in other
+
+words, the counts will always be equal.  So our trial will never
+
+expire, which is what we wanted to begin with.
+
+ 
+
+So, thanks to PicPress' simple protection scheme 
+
+the world may become more bandwidth friendly!
+
+ 				   <FONT color="green">
+
+(c) +daQ 1997. All rights reserved.</FONT>
+
+ </PRE>
+
+		<HR size="2">
+
+<P><CENTER><I><FONT SIZE="-1">You are deep inside fravia's page of reverse
+
+engineering, choose your way out:</FONT></I></CENTER></P>
+
+
+
+<P><FONT SIZE="-1"><BR>
+
+</FONT></P>
+
+
+
+<P><CENTER><FONT SIZE="-1"><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#84'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#84">homepage </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"> <A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#73'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#73">links
+
+</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0" NATURALSIZEFLAG="0"> <A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity
+
+</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#82'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#82">students' essays </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools
+
+</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails </A><BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mailFraVia
+
+</A><BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">is reverse engineering legal? </A></FONT></CENTER></P>
+
+
+
+<P><CENTER><FONT SIZE="-1"><HR></FONT></CENTER>
+
+</BODY>
+
+</HTML>
+
+ 

@@ -1,0 +1,462 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>shadow1</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+<CENTER><FONT size="+3">BoundsChecker 5.02 Visual C++ Edition</FONT>
+
+<BR>(hardcoded serial numbers)<BR>
+
+  <BR>
+
+    
+
+
+
+<H4>by Shadow<BR>
+
+
+
+(21 October 1997)</H4>
+
+<HR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">Courtesy of fravia's page 
+
+of reverse engineering<BR>
+
+<BR><I>Well, a good work by Shadow. BoundsChecker is a VERY IMPORTANT tool, because, as 
+
+Quine wrote to me a couple of days ago:<BR></CENTER></I><FONT color="purple">...NuMega is the greatest
+
+software company in the world).  BC will actually let create
+
+validation modules for dlls other than the M$ system dlls and let you
+
+INSERT YOUR OWN CODE right into them!  I have experiment with this a
+
+little, but, of course, the possibilities are incredible...</FONT><I><CENTER><BR>
+
+Therefore this very interesting add-on to project 2 by Shadow is a welcomed 
+
+essay, that you should heed from a methodological point as well...<BR>I can 
+
+only say, like Shadow, that I too &quot;expected more from NuMega&quot;!<BR>Enjoy!
+
+
+
+</I></CENTER><HR size="6">
+
+<PRE><B><CENTER>
+
+How to write a Key-Maker for BoundsChecker 5.02 Visual C++ Edition
+
+------------------------------------------------------------------
+
+by Shadow</B></CENTER>
+
+
+
+If you don't have BC 5.0 already get bc502sp_v.exe directly from <A href="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#1'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#1">NuMega</A>s, 
+
+hurry up I think they'll take it off the site very soon.
+
+The File should be 8785166 Byte long. Install it, it will ask for a SN, 
+
+just ignore it.
+
+
+
+I'm using SoftIce 3.2 to crack it.
+
+OK let's start this thing and break into SoftIce at the Purchase-Window.
+
+
+
+Set a Breakpoint at GetWindowText: BPX GetWindowText
+
+and out of SoftIce again (F5).
+
+
+
+Now type in something in the Dialog:
+
+I used Key:     1234567890123456
+
+       Name:    Shadow
+
+       Company: -
+
+
+
+Also write down the shown SerialNumber (it's a random Number choosen at the 
+
+Installation) I have 6202435827700841
+
+
+
+And press OK.
+
+
+
+Well here we are in SoftIce again:
+
+
+
+Press F12 until you are in the BoundsChecker-Code
+
+
+
+014F:14F3E7B CALL [015063DC]
+
+             PUSH 00002334     <HERE we get out OK let's delete the GetWindowText-Breakpoint and set here one for later use. (May be useful) BC 0 BPX 014f:14F3E7B Now we are searching for the Key-Code we entered. S 0 L FFFFFFFF '1234567890123456' You'll find it at 0157:0066E388 Any other occurences ? S 0157:0066E389 '1234567890123456' Yes at 0157:83A61C52, but that one is not of interest, because above 80000000. We also search for the SerialNumber and find it at 0157:015010EC 0157:015044E0 0157:01504585 Now I'm setting some Range-Breakpoints on the Strings: BPR 157:0066E388 157:0066E388+F R BPR 157:015010EC 157:015010EC+F R . . . And run the thing again (F5) We get back into SoftIce: "Break due to BPR #0157:15044E0 +150:015044EF R" OK, BC is trying to read the SN let's take a closer look: 014F:014F28C6 PUSH 1501070 LEA EAX,[EBP-04] PUSH EAX INC ESI CALL 14F4E80 ADD ESP,08 LEA ECX,[ESP-04] 014F:014F28BD MOVSX EAX, BYTE PTR [ESI:015044DF] ; Here SoftIce Pops Up PUSH EAX ; (EAX="1st" Number of SN) PUSH 015014B8 PUSH ECX CALL 14F4E10 ADD ESP,0C LEA ECX,[EBP-04] PUSH ECX CALL 14F4E00 ADD ESP,04 MOV [ESI*4+EBP-48],EAX ; Store Number CMP ESI,10 ; Ox10="16" Digits 014F:014F2904 JB 014F28C6 PUSH DWORD PTR [EBP-34] Do you see the the <font color="blue">CMP ESI,10</FONT> Intruction? Our serial Number has 16 digits.
+
+Smells like a String to Number conversion. Stepping through the code you will see,
+
+that after CALL 14F4E00 EAX contains the Number equivalent to the first char 
+
+of your SN.
+
+That's repeated for all digits of your SN and the Numbers are stored with 
+
+MOV [ESI*4+EBP-48],EAX.
+
+
+
+Well that is where ?
+
+
+
+DB ESI*4+EBP-48 (or just DB EBP-48) will show you that they are stored 
+
+from 0157:066E2C4 to 0157:066E303
+
+
+
+Cause we don't need the SN-Breakpoints anymore, delete them all.
+
+
+
+Let's see how the Code continues:
+
+
+
+014F:014F2904 JB    014F28C6
+
+              PUSH  DWORD PTR [EBP-34]  ;P1 (in C the last parameter)
+
+              PUSH  DWORD PTR [EBP-08]  ;P2
+
+              PUSH  DWORD PTR [EBP-5C]  ;P3
+
+              PUSH  DWORD PTR [EBP-28]  ;P4
+
+              PUSH  DWORD PTR [EBP-44]  ;P5 (in C the first parameter)
+
+              CALL  014F257B
+
+              ADD   ESP,14
+
+              MOV   [EBP-009C],EAX
+
+
+
+              PUSH  DWORD PTR [EBP-30]
+
+              PUSH  DWORD PTR [EBP-0C]
+
+              PUSH  DWORD PTR [EBP-58]
+
+              PUSH  DWORD PTR [EBP-2C]
+
+              PUSH  DWORD PTR [EBP-40]
+
+              CALL  014F257B
+
+              ADD   ESP,14
+
+              MOV   [EBP-009C],EAX
+
+
+
+A DB [EBP-34] will show you, that the PUSHES push digits from our SN and then 
+
+a function is called. Very Smelly !!!!!!!!!!!
+
+
+
+I'm stepping into the function (CALL 014F257B):
+
+
+
+014F:014F257B PUSH  EBP
+
+              MOV   EAX,[ESP+08]     ;EAX=P5
+
+              MOV   EBP,ESP
+
+              ADD   EAX,[ESP+0C]     ;EAX=P4+P5
+
+              CMP   EAX,9            ;if (EAX&gt;9) EAX-=0A
+
+              JLE   BR1
+
+              SUB   EAX,0A
+
+BR1:          SUB   EAX,[EBP+10]     ;EAX-=P3
+
+              JNS   BR2              ;if (EAX<0) EAX+="0A" ADD EAX,0A BR2: ADD EAX,[EBP+14] ;EAX+="P2" CMP EAX,9 ;if (EAX>9) EAX-=0A
+
+              JLE   BR3
+
+              SUB   EAX,0A
+
+BR3:          SUB   EAX,[EBP+18]     ;EAX-=P1
+
+              JNS   BR4              ;if (EAX<0) EAX+="0A" ADD EAX,0A BR4: POP EBP RET OK, that is clearly an Key-Code generation Subroutine, get back to the Parameters The Parameters for the first call are (starting with Digit00) Digit04, Digit15, ..... Hey what's that: that PUSH refers to a location before my SN-Digits let's take a look, what is there DB 0157:66E2AC 0157:66E2AC 05 00 00 00 00 00 00 00 01 00 00 00 05 00 00 00 0157:66E2BC 09 00 00 00 07 00 00 00 06 00 00 00 02 00 00 00 Scroll up a little bit to see, if there is more ... No, just these 6 digits: 501597 Hmm, where are they from ? I will ignore them for now and continue exploring. The 014F257B-Subroutine is called 16-times with different parameters (16="Number" of digits the Key-Code should have !!!) After calculating, they are stored by the <font cdolor="blue">MOV [EBP-00XX],EAX</FONT> instruction
+
+into 0157:66E26C to 0157:66E2AB
+
+
+
+The Parameters for the 16 Calls are
+
+0-15 = Digits of the SN
+
+P0-P5 are the 6 Numbers found before the SN-Digits (Pre-Numbers)
+
+
+
+04,15,P0,07,00
+
+05,14,P1,06,01
+
+06,13,P2,05,02
+
+07,12,P3,04,03
+
+08,11,P4,03,04
+
+09,10,P5,02,05
+
+10,09,P0,01,06
+
+11,08,P1,00,07
+
+11,15,P2,15,08
+
+12,14,P3,14,09
+
+13,13,P4,13,10
+
+14,12,P5,12,11
+
+15,11,P0,11,12
+
+04,10,P1,10,13
+
+05,09,P2,09,14
+
+06,08,P3,08,15
+
+
+
+Yes, the numbers stored from 0157:66E26C to 0157:66E2AB are already the Numbers for 
+
+the Key-Code !!!
+
+My Key is: 6853562630694845
+
+
+
+After the 16 Calls you'll find following Code:
+
+
+
+014F:014F2AC1 PUSH  1501070
+
+              LEA   EAX,[EBP-04]
+
+              PUSH  EAX
+
+              CALL  14F4E80
+
+              ADD   ESP,08
+
+              LEA   ECX,[EBP-04]
+
+              PUSH  DWORD PTR [ESI]
+
+              PUSH  015014B4
+
+              PUSH  ECX
+
+              ADD   ESI,04
+
+              CALL  14F4E10
+
+              ADD   ESP,0C
+
+              LEA   ECX,[EBP-04]
+
+              LEA   EDX,[EBP-B0]
+
+              PUSH  ECX
+
+              PUSH  EDX
+
+              CALL  [0150628C]
+
+              LEA   ECX,[EBP-5C]
+
+              CMP   ESI,ECX
+
+              JB    14F2AC1
+
+014F:014F2B00 LEA   EAX,[EBP-B0]
+
+
+
+What do you think is this loop doing. What would you do, if you would want to 
+
+compare an Input-String with Numbers ?
+
+Yes, convert one of them.
+
+
+
+I execute up to <FONT color="blue">014F:014F2B00 LEA EAX,[EBP-B0]</FONT> and nothing 
+
+interrupts the execution.
+
+Do you remember the Range-Breakpoint on our Input-Key, so its clear, that this 
+
+loop converts the KeyNumbers to a String, if it converts something at all...
+
+
+
+I checked this by searching for '6853562630694845' and 
+
+BINGO! Found at 157:66E258
+
+
+
+Now exit SoftIce again. (F5)
+
+
+
+You will get back into SoftIce directly at the Compare-Routine (due to your 
+
+Range-BP on the Input-Key)
+
+
+
+014F:014F5690 MOV   EAX,[EDX]
+
+014F:014F5692 CMP   AL,[ECX]   <HERE you get in Take a look at the Registers and you'll see that EDX refers to the Calculated (real) Key-Code and ECX to your Input. Well that's the proof that the numbers are realy the Key-Code. But what's about the "Pre-Numbers" ? I don't realy know. After installing several times I think I can guarantee, that they are constant (Wouldn't make any sense to use random numbers anyway, cause nobody could ever register, if they are independent from the serial number) I think, they are simply a Version-Number. Numbers: 501597 Official Version 5.02 Maybe Real Version 5.01597 ???? By the way: BC behaves very strange after registering, removing with its own Un-Installer and Re-Installing it again. If you ever do it, you'll see that the target has now the SN:0000000000000000 and that BC seems to miss one of its files. So don't forget to clear the Registry manually before reinstall BC if you need to reinstall! Only one thing left to do, writing a Key-Code-Generator: Here is the C-Code: <xmp>
+
+#include &quot;stdio.h&quot;
+
+#include &quot;ctype.h&quot;
+
+
+
+int calc(int n1, int n2, int n3, int n4, int n5)
+
+{
+
+ int n;
+
+ n=n4+n5;
+
+ if (n&gt;9) n-=10;
+
+ n-=n3;
+
+ if (n<0) n+="10;" n+="n2;" if (n>9) n-=10;
+
+ n-=n1;
+
+ if (n<0) n+="10;" return n; } void main (void) { char sn[255]; int ver[6]="{5,0,1,5,9,7};" int ser[16]; char reg[17]; printf("NuMega BoundsChecker V5.02 for Visual C++ Keymaker\nby Shadow in 1997\n\n"); printf("Input Serial-Number: "); scanf("%s",sn); int sn_ok="1;" for (int i="0;" i<16; i++) { if (!isdigit(sn[i])) sn_ok="0;" else ser[i]="sn[i]-'0';" } if (sn[16]!="0)" sn_ok="0;" if (sn_ok) { int n="0;" reg[n++]="calc(ser[" 4],ser[15],ver[0],ser[ 7],ser[ 0])+'0'; reg[n++]="calc(ser[" 5],ser[14],ver[1],ser[ 6],ser[ 1])+'0'; reg[n++]="calc(ser[" 6],ser[13],ver[2],ser[ 5],ser[ 2])+'0'; reg[n++]="calc(ser[" 7],ser[12],ver[3],ser[ 4],ser[ 3])+'0'; reg[n++]="calc(ser[" 8],ser[11],ver[4],ser[ 3],ser[ 4])+'0'; reg[n++]="calc(ser[" 9],ser[10],ver[5],ser[ 2],ser[ 5])+'0'; reg[n++]="calc(ser[10],ser[" 9],ver[0],ser[ 1],ser[ 6])+'0'; reg[n++]="calc(ser[11],ser[" 8],ver[1],ser[ 0],ser[ 7])+'0'; reg[n++]="calc(ser[11],ser[15],ver[2],ser[15],ser[" 8])+'0'; reg[n++]="calc(ser[12],ser[14],ver[3],ser[14],ser[" 9])+'0'; reg[n++]="calc(ser[13],ser[13],ver[4],ser[13],ser[10])+'0';" reg[n++]="calc(ser[14],ser[12],ver[5],ser[12],ser[11])+'0';" reg[n++]="calc(ser[15],ser[11],ver[0],ser[11],ser[12])+'0';" reg[n++]="calc(ser[" 4],ser[10],ver[1],ser[10],ser[13])+'0'; reg[n++]="calc(ser[" 5],ser[ 9],ver[2],ser[ 9],ser[14])+'0'; reg[n++]="calc(ser[" 6],ser[ 8],ver[3],ser[ 8],ser[15])+'0'; reg[n]="0;" printf("\nRegistration Code: %s\n",reg); } else { printf("\nNot a valid Serial-Number (must be 16 digits)\n"); } } </xmp>
+
+That's all.
+
+
+
+PS: I expected more from NuMega !
+
+
+
+Shadow 1997  
+
+
+
+
+
+</PRE>
+
+<FONT color="green">(c) Shadow 1997. All rights reversed</FONT>
+
+<HR ALIGN="CENTER" WIDTH="100%" SIZE="3">
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</I></CENTER>
+
+<BR><CENTER>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="project2.htm" tppabs="http://www.anticrack.de/fravia/project2.htm">proj 2</A> 
+
+<HR width="33%">
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#84'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#84">homepage</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#73'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#73">links</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#82'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#82">students' essays</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut CGI-scripts</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering legal?</A></CENTER>
+
+<CENTER><HR ALIGN="CENTER" WIDTH="100%" SIZE="2"></CENTER>
+
+</BODY>
+
+</HTML>
+

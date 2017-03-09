@@ -1,0 +1,466 @@
+<HTML>
+
+
+
+<HEAD>
+
+
+
+<TITLE>gnew1.htm</TITLE>
+
+
+
+</HEAD>
+
+
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+
+
+<CENTER><FONT size="+3">PIQ + Pentium, + some general<BR>protection
+
+thoughts for the HCU</FONT>
+
+
+
+<BR>(freezing and crashing everything in sight when someone patches our
+
+programs)
+
+
+
+<H4>by g(ar)<BR>
+
+
+
+(21 November 1997)</H4>
+
+
+
+<A href="protecti.htm" tppabs="http://www.anticrack.de/fravia/protecti.htm"><IMG SRC="tough.gif" tppabs="http://www.anticrack.de/fravia/tough.gif" ALT="our protections" ALIGN="BOTTOM" WIDTH="114" HEIGHT="43" BORDER="0" VSPACE="0" HSPACE="0"></A>
+
+
+
+<BR><FONT color="gray">Our protections</FONT>
+
+
+
+
+
+<HR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">Courtesy of fravia's page 
+
+
+
+of reverse engineering<BR>       
+
+
+
+<BR><I>Sorry g(ar), no single letter pseudos are allowed for
+
+cross-referencing reasons :-)<BR>It was about time... &quot;our own
+
+protections&quot; do not seem to attract much work, yet the PIQ
+
+considerations (started by Camel Eater long ago) are slowly growing.
+
+We'll see... I must admit that I'm getting curious... could anybody send
+
+to the +HCU some <U>WORKING</U> recent PIQ-protection schemes? 
+
+
+
+</I></CENTER><HR size="6">
+
+
+
+<PRE><FONT size="+2"><CENTER>
+
+
+
+PIQ + Pentium, + some general
+
+
+
+protection thoughts for the HCU</FONT>
+
+
+
+by g(ar)</CENTER>
+
+
+
+
+
+
+
+The PIQ has been used for a long time to detect whether a prog is being
+
+traced. It is a simple idea, but actually determining the _size_ of the
+
+PIQ can be another matter altogether. The two PIQs on the Pentium are
+
+both 64 bytes long (though only one is in use at any one time) so you
+
+don't need to work it out. The 486's is 32 and the 386's 16 (though
+
+some versions have 12).
+
+
+
+First though, +Heres was right in suspecting that the Pentium always
+
+updates the PIQ. At first, I couldn't believe that this was actually the
+
+way it's done, but according to a book I've got it is in fact true. The
+
+Pentium checks the linear address of the memory address to be modified
+
+to see if it's in the PIQ. I'm not 100% sure, but it appears that even
+
+instructions in the pipeline are also saved. (When you get to execute
+
+the 'rep stosb' there should be two 'inc bx's in the pipeline).
+
+
+
+I'm not entirely sure whether this feature is a good idea in terms of
+
+CPU performance. I'd have to see some evidence before deciding.
+
+Personally, I wouldn't have thought that doing a check on every memory
+
+write just to stop self-modifying code was worth it.
+
+
+
+However, all is not lost! You _can_ use the PIQ for this trick, but only
+
+in protected mode. Consider the linear address of the instruction to
+
+modify and then consider the linear address of that same instruction in
+
+the PIQ. They're the same, right? Well, they are and they aren't. If you
+
+remap memory so you've got virtual memory you could have a different
+
+linear address that is in fact mapped to the same physical memory
+
+address. Hence if you're running normally you'll get what was in the
+
+PIQ, but if there's a debugger running then the PIQ will be different
+
+and you'll get what's in memory. Simple really :)
+
+
+
+-------------------------------------------------------------------------------
+
+
+
+This different way of doing things on the Pentium is actually pretty
+
+beneficial. As most readers will have noticed, the main problem with
+
+this type of code is that it's really easy to spot, but on the Pentium
+
+you get code like:
+
+
+
+    set address $12345678 to 10      ; these would in fact map to the
+
+    set address $87654321 to 0       ; same address
+
+
+
+(NB: I assume that $12345678 is the linear address to modify - if it
+
+isn't then you'll have to do the modification before the address to be
+
+modified gets into the pipeline. If you don't the memory address will be
+
+altered, but not the bit in the pipeline. Of course, you can have the
+
+instruction be something like 'mov eax,10' already but more useful is
+
+to change the instructions to what the real ones are, or something else
+
+entirely if a trace is on as this will fool disassemblers)
+
+
+
+If you're sneaky (which you should be) you can exploit the Pentium's
+
+large PIQ to full extent - you could have two instructions like this
+
+approx 60 bytes apart. Only if you're not being traced will the value
+
+be equal to 10. You can exploit this virtual memory mapping even more
+
+by using different addresses to read the location later on. Clearly,
+
+the location could be used as an instruction or a variable, or even
+
+both at the same time. Obviously, when setting up the mapping you'll
+
+have to be sneaky :) To make things more difficult you could hide
+
+instructions within instructions and put the byte sequence F0 0F C7
+
+C8 in somewhere as it puts Pentium's into an endless loop due to a bug.
+
+
+
+A neat trick is to have the protection routine write itself using a
+
+stealth technique to provide different length routines and have the
+
+protection routine then write vital bits of the code if the protection
+
+is passed. The writing routine itself could use the PIQ trick and so
+
+could the protection. Your protection routine should be the longest
+
+most convoluted spaghettified piece of garbage you can come up with
+
+and contain lots of jumps, checks and as much bizarre code as you can
+
+fit in, possibly with lots of stuff that's there simply 'to make the
+
+numbers up.' You should, of course, have repeated protection checks,
+
+at different points in the program, that jump into the protection
+
+code at different points. You can even have multiple protections.
+
+Also, don't just blindly take the address and stick it in your code,
+
+build it elsewhere using several instructions, preferably at
+
+different code points.
+
+
+
+If the Trap Flag is set, a trap occurs after each instruction. If this
+
+is being used by the debugger then you can use the Pentium's internal
+
+counters to verify this. Use RDTSC to get the clock count and then read
+
+it later on. You will already know a rough number of how long your
+
+code takes so you can check this to see if you're being traced. I've no
+
+idea how SoftIce or other debuggers work. This is probably one way.
+
+In all cases of having the protection being broken in any way I
+
+recommend crashing the machine (or doing something equally obtuse such
+
+as re-writing bits of the code). Obviously, there are a wide variety
+
+of ways of doing this and I leave the choice to the reader. There's
+
+no reason in my mind why you should make things easy. As an aside,
+
+if you set the Resume Flag, this disables Int 1 which is used for
+
+debugging under protected mode, or you could patch in your own
+
+version instead.
+
+
+
+A final trick is to do a file check, e.g. file length or bits of the
+
+file to see if its been changed, or the actual code in memory. If it
+
+has you could freeze the program somewhere or erase all the code from
+
+memory except a single infinite loop or delete the proggy from the disk
+
+alongwith its associated files (be careful not to delete anything you
+
+shouldn't though) or...you get the idea I guess. A final point to note
+
+is that I think you should always use multiple protections and should
+
+make life difficult by doing clearing the proggy from memory and stuff
+
+like that. It's better than nothing I suppose.
+
+
+
+I must stress that I'm an absolute newbie to PC cracking/hacking and
+
+have very little experience in the field itself. Hopefully the info
+
+here is correct and I've not written anything totally lame but if I
+
+have then please correct me and don't flame too hard. If you're going
+
+to be doing any PIQ stuff then I suggest you read up on exactly how it
+
+works, as it is quite complicated, but there should be some ideas in
+
+here for you to work on.
+
+
+
+As a final point, I think that only prgs should be available for
+
+download first, with sources following later, and there should be no
+
+help given. I mean, how many times have you bought a prg that comes
+
+with source or has hints on how to crack it?
+
+
+
+l8r,
+
+g(ar)
+
+</PRE>
+
+
+
+
+
+
+
+<FONT color="green">(c) g(ar). All rights reversed</FONT>
+
+
+
+<HR ALIGN="CENTER" WIDTH="100%" SIZE="3">
+
+
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,  
+
+
+
+choose your way out:</I></CENTER>
+
+
+
+<BR><CENTER>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="protecti.htm" tppabs="http://www.anticrack.de/fravia/protecti.htm">Our Protections</A> 
+
+
+
+           <HR width="33%">
+
+
+
+
+
+
+
+
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links</A> 
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity</A> 
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC</A>
+
+
+
+
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays</A>
+
+
+
+
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy
+
+database</A><BR>
+
+
+
+
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools</A>
+
+
+
+
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails</A>
+
+
+
+
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut CGI-scripts</A>
+
+
+
+
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms</A>
+
+
+
+
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia</A><BR>
+
+
+
+
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering
+
+legal?</A></CENTER>
+
+
+
+<CENTER><HR ALIGN="CENTER" WIDTH="100%" SIZE="2"></CENTER>
+
+
+
+</BODY>
+
+
+
+</HTML>
+

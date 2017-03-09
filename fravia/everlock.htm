@@ -1,0 +1,876 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>everlock.htm: Everlock by Az-Tech: Reversing a Commerical
+
+Copy Protection Scheme - Part 1</TITLE>
+
+                 </HEAD></H1>
+
+
+
+                 <BODY bgcolor=#C0C0C0 text=#001010 vlink=#405040>
+
+
+
+                 <CENTER>
+
+
+
+                 <A href="advanced.htm" tppabs="http://www.anticrack.de/fravia/advanced.htm"><IMG src="xtranio.gif" tppabs="http://www.anticrack.de/fravia/xtranio.gif" ALT="advanced" ALIGN=BOTTOM WIDTH=114 
+
+                 EIGHT=43 BORDER=0 VSPACE=0 HSPACE=0></A><BR>
+
+                 <FONT color=gray>Advanced Cracking</FONT>
+
+                 <BR><BR>
+
+<A href="protec.htm" tppabs="http://www.anticrack.de/fravia/protec.htm"><IMG src="protec.gif" tppabs="http://www.anticrack.de/fravia/protec.gif" ALT="protec" ALIGN=BOTTOM WIDTH=114 
+
+                 EIGHT=43 BORDER=0 VSPACE=0 HSPACE=0></A><BR>
+
+                 <FONT color=gray>How to protect better</FONT>
+
+                 <HR size=2>
+
+
+
+                 <H1 align="center">Everlock by Az-Tech: Reversing a Commerical
+
+Copy Protection Scheme - Part 1</H1>
+
+<BR>12 December 1998<BR>
+
+                 <P align="center">courtesy of fravia+'s page of reverse
+
+                 engineering</P><HR><I>Well, Tomboy's style is very refreshing: precise, 
+
+fact-oriented, sound. A very good DOS reversing essays that analyses in depth a tough protection $
+
+scheme and therefore carries quite some teachings for 
+
+advanced protectors and crackers alike. Moreover such 'weird track' - related protection schemes 
+
+are bound to reappear 'en masse' with the whole DVD bazaar and the more and more diffused  
+
+CD-ROM copy facilities.  I perfomed some minor 'terminological' editing of this part, of 
+
+course we are all awaiting part II!</I>
+
+<HR></CENTER>
+
+
+
+<PRE>
+
+Everlock by Az-Tech
+
+Reversing a Commerical
+
+Copy Protection Scheme
+
+Part 1 (Introdution)
+
+
+
+by Tomboy
+
+December 7, 1998
+
+
+
+
+
+Introduction
+
+
+
+Everlock copy protection has been around since the mid-1980s.  It is
+
+one of the few survivors from the hey-day of disk based copy
+
+protection.   Its longevity is due to Az-Tech's continuous
+
+improvement with each successive version of Everlock.  This has
+
+managed to keep them one step ahead of the casual cracker.  Although
+
+both DOS and Windows programs can be protected with Everlock, this
+
+paper deals only with the protection of DOS programs.
+
+
+
+Part 1 of this series will serve to familiarize you with some of the
+
+features of this copy protection scheme and point out possible
+
+weaknesses that can be exploited.  It should be noted that of late,
+
+Az-Tech has been heavily promoting their hardware based copy
+
+protection, EverKey (i.e. dongle) instead of Everlock.
+
+
+
+
+
+Recommended Files
+
+
+
+While there are no essential files for this study, it will be more
+
+fun if you have:
+
+
+
+- Everlock 3.21c upgrade file from www.az-tech.com
+
+- CUP 3.4 from www.suddendischarge.com
+
+- Any Everlock protected program you might have laying around
+
+- The EVREAD.ASM program
+
+
+
+
+
+Elements of the Protection Scheme
+
+
+
+Everlock is composed of some or all of the following elements:
+
+
+
+- Specially formatted track on the master (key) or working diskette,
+
+- Install counter on master diskette,
+
+- Hidden files (EV?1.SYS, EV?2.sys) containing install information,
+
+- Deleted file in root directory if hard drive install (FILE0100.CHK),
+
+- Copy protection transfer utility (EVMOVE),
+
+- Wrapped version of copy protected program (loader),
+
+- Liberal use of encryption in all important files
+
+
+
+The master diskette and working copies created by Everlock (of
+
+versions 2.x and up) cannot be copied by any known software only
+
+program (e.g. COPYIIPC, COPYRITE...etc.).  However, copies can be
+
+produced using a Deluxe Option Board (sadly discontinued by Central
+
+Point Software cica 1990).  Although Business Neverlock by Copyware
+
+states it can defeat Everlock, Az-Tech disputes this claim.
+
+
+
+Many elements of this protection scheme are similar to other
+
+commercial schemes (Prolok, Softguard,..etc.).  The common thread in
+
+all these schemes is the use of a specially formatted track on the
+
+floppy diskette.  The more difficult it is to reproduce this track,
+
+the more secure the protection.
+
+
+
+
+
+Features of the Master Diskette
+
+
+
+Analysis of the special formatted track (track 6, side 0 for my key
+
+diskette) on the Master diskette of an Everlock protected program
+
+shows that all sectors except for the last one are normal and
+
+readable from DOS.  Deeper analysis using the "Track Editor" in the
+
+Deluxe Option Board package shows that the last sector is present,
+
+but has a non-standard size of 8192 bytes (at least according to the
+
+header information) and has an incorrect data CRC.  Obviously, the
+
+sector data field crosses the index position of the floppy diskette
+
+(in the case of 360K and 720K floppies it even crosses the index
+
+position a second time).  Reading this huge sector gives the
+
+protection scheme access to all sector data on the track and the
+
+intersector information as well.  You would think that creating such
+
+a bizarre track would be a major feat requiring special hardware
+
+(like the Deluxe Option Board).  However, the copy protection
+
+tranfer utility (EVMOVE) can create working copies of the key
+
+diskette with the same format using a standard floppy drive and
+
+controller.
+
+
+
+If you are curious about the contents of these special sectors, an
+
+assembly language program has been written to read and dump the
+
+sector to a file.  The source code for "EVREAD.ASM" is pasted at the
+
+end of this paper.  You may need to edit the "drive", "track" and
+
+"sector" variables before assembling the file based upon the
+
+characteristics of your particular master diskette.  It is
+
+recommended that the program be run from your hard drive to avoid
+
+writing the output file to your key disk.
+
+
+
+
+
+How Everlock Works
+
+
+
+The wrapped program (actually a loader) employs a combination of
+
+encryption and anti-debugger tricks to keep the cracker away from its
+
+true code.  After the locader decrypts itself in memory, it verifies
+
+that the files EV?1.SYS and EV?2.SYS are present, have a hidden
+
+attribute, and contain valid information.  If the protection is
+
+floppy diskette based, it also verifies the presence of the
+
+specially formatted track and the contents of the 8192 byte sector.
+
+For a hard drive install, the information in the EV??.SYS files is
+
+the primary means to assure a valid authorization.  However, a zero
+
+byte length, deleted file (ÂILE0100.CHK) is also placed in the root
+
+directory for good measure.  The program will automatically search
+
+all drives (including network drives) looking for a valid
+
+authorization.  Failure to find a valid authorization causes the
+
+program to reset all changed system parameters, erase itself out of
+
+memory and exit to DOS.
+
+
+
+If all goes right, eventually the original program is reconstructed
+
+in memory and executes as normal.   On exit, as when the protection
+
+check fails, the program resets all changed system parameters and
+
+erases itself out of memory.
+
+
+
+
+
+Brief Introduction to EVMOVE
+
+
+
+EVMOVE (.COM or .EXE) is the name of Everlock's copy protection
+
+transfer utility.  It is used to create working copies of the
+
+program on diskettes or on a hard drive.  This program is often
+
+renamed to something else like, AUTHORIZ.COM and AUTHMOVE.COM.
+
+Because this program can create working copies of the protected
+
+program and verify that the master disk is valid, it is a primary
+
+target of our reverse engineering efforts.
+
+
+
+Az-Tech is not dumb and has made this program very tough to attack.
+
+It is encrypted (some parts are double encrypted), debugger hostile
+
+(various versions commandeer some or all INTs 0, 1, 2, 3, 4 and 5),
+
+and destroys itself in memory upon exit to DOS.  EVMOVE is an
+
+impressive piece of pure assembly language programming that deserves
+
+the cracker's respect.
+
+
+
+EVMOVE can only be decrypted using a good virtual memory debugger to
+
+get around some of its anti-debug tricks.  The "code digger"
+
+debugger built into CUP386 version 3.4 is an excellent choice.  If
+
+you aren't familar with CUP386, here is a typical command line:
+
+
+
+C:\&gt;CUP386 evmove.com /3 /d
+
+
+
+Now start tracing through the code.  A standard feature of the .COM
+
+versions of EVMOVE is a CALL xxxx to the main decryption routine
+
+which is ~8-9 bytes before the encrypted code.  Instead of RETing
+
+from the decryption CALL, there is a JMP to the decrypted code at
+
+the end of the routine.  For example:
+
+
+
+-0100  JMP   10CB
+
+.
+
+. (Data is stored here)
+
+.
+
+-10CB  MOV   AX,CS
+
+.
+
+. (Some initiation code)
+
+.
+
+-1106  CALL  32AC    ;Call to main decryption routine, ends at 330E
+
+.
+
+. (~8-9 Byte Gap)
+
+.
+
+-1110  CMP   WORD PTR [01C7],+00    ;First decrypted instruction
+
+. (Program execution continues)
+
+.
+
+.
+
+-32AC  LDS   BX,ES:[0004]    ;Main decryption routine
+
+.
+
+. (Main decryption routine)
+
+.
+
+-330E  JMP   1110    ;This is where you JMP to the decrypted code
+
+                     ;There is no "RET" from the CALL 32AC!
+
+
+
+At this point, most of the file is decrypted.  However, there are
+
+usually one or more sections within the code that are still
+
+encrypted.  These sections are not decrypted until just before they
+
+are run and are immediately reencrypted after exit.  One known
+
+example reads and decrypts the program's serial number.  This is
+
+important information that is used to link the copy protection to a
+
+particular program.  Therefore, you can't fool one Everlock
+
+protected program into running with the valid installation
+
+information from a different Everlock program.  So, you can see why
+
+the serial decyption routine would be well protected.  However,
+
+these special double encrypted sections are easy to recognize and
+
+decrypt if you know what to look for.  They will be examined further
+
+in part II of this series.
+
+
+
+
+
+Wrap-up
+
+
+
+As you can tell from the information presented, Everlock is a very
+
+complex copy protection scheme.  Even after spending years reversing
+
+this program, I still have only scratched the surface.  Hey, I could
+
+use some help from experienced DOS reversers.  With enough
+
+knowledge, we can write our own programs to create and strip this
+
+protection from disks at our whim.
+
+
+
+
+
+Source code for EVREAD.ASM
+
+==========================
+
+;/--------------------------------------------------------------\
+
+;| Module..: readev.asm						|
+
+;| Program.: readev.com						|
+
+;| Author..: Tomboy						|
+
+;| Date....: 09/17/93						|
+
+;| Version.: 1.0 for MASM 5.1					|
+
+;| Notes...: Reads data from special 8192 byte sector used in	|
+
+;|           Everlock copy protection and saves it to a file	|
+
+;\--------------------------------------------------------------/
+
+
+
+stackseg	segment	stack		;This placates the linker
+
+stackseg	ends
+
+
+
+codeseg		segment			;This assures the the code
+
+codeseg		ends			;segment will come first
+
+
+
+dataseg		segment			;The data segment comes last
+
+old_int_offset	dw	?		;address of old disk table
+
+old_int_segment	dw	?
+
+new_disk_table	db	0bh dup(00h)	;buffer for new disk table
+
+sector		db	09h		;sector number of 8192 sector
+
+track		db	06h		;track number
+
+drive		db	00h		;floppy drive number, A=0, B=1
+
+head		db	00h		;side to read, usually 0
+
+error_code	dw	?		;diskette read error code
+
+output_file	db	"8192byte.dat",00h
+
+sector_buffer	label	byte		;offset to sector data buffer
+
+dataseg		ends
+
+
+
+groupseg	group	codeseg,dataseg
+
+		assume	cs:groupseg
+
+		assume	ds:groupseg
+
+		assume	es:groupseg
+
+
+
+codeseg		segment
+
+		org	100h
+
+main		proc	near
+
+
+
+		call	save_vector	;save address of old disk table
+
+		push	ds
+
+		pop	es
+
+		push	ds
+
+		lea	di,groupseg:new_disk_table	;offset to new
+
+		mov	si,groupseg:old_int_offset	;disk table buffer
+
+		mov	ds,groupseg:old_int_segment
+
+		mov	cx,000bh		;read old disk table info
+
+		repz	movsb			;to new disk table buffer
+
+		pop	ds
+
+		mov	byte ptr groupseg:new_disk_table+3,06h	;change sector
+
+		mov	al,groupseg:sector			;size to 8192
+
+		mov	groupseg:new_disk_table+4,al	;last sector number
+
+		mov	cl,al
+
+		mov	ax,0
+
+		mov	es,ax
+
+		lea	ax,groupseg:new_disk_table
+
+		mov	es:[0078h],ax		;point disk base table INT
+
+		mov	ax,cs			;to new table location
+
+		mov	es:[007ah],ax
+
+		push	cs
+
+		pop	es
+
+		mov	bx,offset groupseg:sector_buffer	;setup for
+
+		mov	ch,groupseg:track			;absolute
+
+		mov	dl,groupseg:drive			;disk read
+
+		mov	dh,groupseg:head
+
+		mov	al,1
+
+		mov	ah,2
+
+		int	13h
+
+		mov	groupseg:error_code,ax	;save error code
+
+		call	restore_vector		;restore pointer to old
+
+						;disk base table location
+
+		sti
+
+		xor	dx,dx			;reset diskette drive
+
+		mov	ah,0
+
+		int	13h
+
+		clc
+
+
+
+		call	write_file
+
+
+
+		mov	ah,4ch			;exit
+
+		int	21h
+
+
+
+save_vector	proc	near
+
+		push	ax
+
+		push	es
+
+		mov	ax,0
+
+		mov	es,ax
+
+		mov	ax,es:[0078h]
+
+		mov	groupseg:old_int_offset,ax
+
+		mov	ax,es:[007ah]
+
+		mov	groupseg:old_int_segment,ax
+
+		pop	es
+
+		pop	ax
+
+		ret
+
+save_vector	endp
+
+
+
+restore_vector	proc	near
+
+		push	ax
+
+		push	es
+
+		mov	ax,0
+
+		mov	es,ax
+
+		mov	ax,groupseg:old_int_offset
+
+		mov	es:[0078h],ax
+
+		mov	ax,groupseg:old_int_segment
+
+		mov	es:[007ah],ax
+
+		pop	es
+
+		pop	ax
+
+		ret
+
+restore_vector	endp
+
+
+
+write_file	proc	near
+
+		sub	cx,cx		;open output file
+
+		mov	ax,3c00h	;and get handle
+
+		mov	dx,offset groupseg:output_file
+
+		int	21h
+
+
+
+		xchg	bx,ax		;move file handle to BX
+
+		mov	ax,4000h
+
+		mov	cx,2000h	;number of bytes to write
+
+		mov	dx,offset groupseg:sector_buffer
+
+		int	21h
+
+
+
+		mov	ax,3e00h	;close file
+
+		int	21h
+
+		ret
+
+write_file	endp
+
+
+
+main		endp
+
+codeseg		ends
+
+		end	main
+
+</FONT></PRE>
+
+
+
+
+
+<BR><CENTER>
+
+<HR size=5>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0
+
+VSPACE=0 HSPACE=0><A
+
+HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0
+
+VSPACE=0 HSPACE=0>
+
+<A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links </A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0>
+
+<A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity </A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN=BOTTOM
+
+BORDER=0 VSPACE=0 HSPACE=0 width="13" height="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC </A>
+
+
+
+<IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays </A>
+
+
+
+<IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database </A>
+
+
+
+<IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="botstart.htm" tppabs="http://www.anticrack.de/fravia/botstart.htm">bots wars</A>
+
+
+
+<BR>
+
+<IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut </A>
+
+
+
+<IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 BORDER=0
+
+VSPACE=0 HSPACE=0><A
+
+HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13
+
+BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13
+
+BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="javascri.htm" tppabs="http://www.anticrack.de/fravia/javascri.htm">javascript wars </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0
+
+VSPACE=0 HSPACE=0><A
+
+HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0
+
+VSPACE=0 HSPACE=0><A
+
+HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia </A><BR>
+
+
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0
+
+VSPACE=0 HSPACE=0><A
+
+HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering illegal?
+
+</A></CENTER>
+
+<HR size=4></FONT></CENTER></CENTER>
+
+</BODY>
+
+</HTML>
+
+
+
+
+
+</BODY>
+
+</HTML>
+
+
+

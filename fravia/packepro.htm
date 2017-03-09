@@ -1,0 +1,623 @@
+<HTML>
+
+<HEAD>
+
+<META Name="Voluntary Content Rating" content="it's fravia's: great!">
+
+<TITLE>packepro.htm A Packed protection, by +tsehp</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR=#C0C0C0 TEXT=#001010 ALINK=#405040 VLINK=#8850AA><P><CENTER>
+
+<A href="projunpa.htm" tppabs="http://www.anticrack.de/fravia/projunpa.htm"><IMG SRC="packers.gif" tppabs="http://www.anticrack.de/fravia/packers.gif"  ALT="packers" ALIGN=BOTTOM 
+
+WIDTH=114 HEIGHT=43 BORDER=0 VSPACE=0 HSPACE=0></A>
+
+<BR><BR>
+
+
+
+<H1>A Packed protection<BR>by +tsehp, Spring 1999</H1><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=88% HEIGHT=5 BORDER=0
+
+VSPACE=0 HSPACE=0><BR><BR> 
+
+
+
+<I>
+
+A Packed protection... +tsehp's essay is well worth reading and re-reading. Reversers 
+
+will understand how useful this kind of apporoach can be nowadays...
+
+<BR>Read and enjoy!
+
+</I></CENTER>
+
+<HR>
+
+ <BR><BR>
+
+
+
+A Packed protection.
+
+ <BR><BR>
+
+Well this is the first essay of a new kind, weíll study here a protection that is active when it
+
+is unpacked. I will not name the program according to Fraviaís new rules because the purpose of
+
+this is not to damage the programmer itself but only to learn to reverse it.
+
+ <BR><BR>
+
+This program is made to build an installation package for your application, and the demo mode is
+
+fully featured exept that the package can only install on your computer, not others.
+
+ <BR><BR>
+
+Tools needed :<BR>
+
+-Softice<BR>
+
+-Hex editor<BR>
+
+ <BR><BR>
+
+So letís start :<BR>
+
+Start Setup.exe (guess you surely know what application Iím talking about)
+
+ <BR><BR>
+
+When you try to install your package on another computer, you have a msg box telling 
+
+you that it canít work, so :<BR>
+
+Bpx messageboxa, after two F12, you find the culprit :
+
+<PRE>
+
+* Possible StringData Ref from Data Obj ->"c:\_INS999.765"
+
+                                  |
+
+:0043B447 68B84F4800              push 00484FB8
+
+:0043B44C E8EF88FEFF              call 00423D40 *Are we on the original computer ?
+
+:0043B451 85C0                    test eax, eax
+
+:0043B453 7520                    jne 0043B475  *If yes jump to good guy
+
+:0043B455 8D85FCFEFFFF            lea eax, dword ptr [ebp+FFFFFEFC] *Bad guy startÖ
+
+:0043B45B 50                      push eax
+
+:0043B45C FFB5F4FEFFFF            push dword ptr [ebp+FFFFFEF4]
+
+:0043B462 E830200000              call 0043D497
+
+:0043B467 59                      pop ecx
+
+:0043B468 59                      pop ecx
+
+:0043B469 E8B3EDFCFF              call 0040A221
+
+:0043B46E 33C0                    xor eax, eax
+
+:0043B470 E9F9020000              jmp 0043B76E
+
+</PRE>
+
+You see into softice that youíre inside _ins5576, so whereís that file ? Not 
+
+located inside your package but uncompressed into windows\temp\istmpXXX.
+
+So youíve got a problem to do the patch
+
+ <BR><BR>
+
+The question is, whereís that file coming from? If you do search _ins5576 inside 
+
+the files in your package, you find it inside _ins32i.ex
+
+ <BR><BR>
+
+So youíve got to stop when setup finished read ins32i and when the decompressed _ins5576 
+
+is in the buffer to be written to windows\temp
+
+ <BR><BR>
+
+You can use the classical bpx createfilea and readfile and to search the buffer with 
+
+occurences of 75 20 8d 85 to know when this Happens.
+
+ <BR><BR>
+
+When you manage, you land here in setup.exe :
+
+<PRE>
+
+:004044C0 56                      push esi
+
+:004044C1 753D                    jne 00404500
+
+:004044C3 8B74240C                mov esi, dword ptr [esp+0C]
+
+:004044C7 A1FC304100              mov eax, dword ptr [004130FC]
+
+:004044CC 6A00                    push 00000000
+
+:004044CE 689C274100              push 0041279C
+
+:004044D3 FF36                    push dword ptr [esi]
+
+:004044D5 FF742414                push [esp+14]
+
+:004044D9 FF701C                  push [eax+1C]
+
+
+
+* Reference To: KERNEL32.WriteFile, Ord:027Bh *this writes also the file ins5576
+
+                                  |
+
+:004044DC FF158CD04000            Call dword ptr [0040D08C]
+
+
+
+* Reference To: KERNEL32.GetLastError, Ord:00F4h
+
+                                  |
+
+</PRE>
+
+What to do? You can force setup.exe to patch the buffer just before writing it 
+
+to your HD, so your ins5576 file will contain the patch to Remove the protection, 
+
+how to do this? Not so simple...
+
+ <BR><BR>
+
+The only way is to use a part of the code just before the call to writefile. 
+
+Just replace an instruction like mov [xxxxx],XX with a call to a place that 
+
+you can modify and where to modify ? At the end of the program, just do a map32 of
+
+setup.exe, it will give you the ending part of setup.text (the code place), you 
+
+will have a little place to insert your own code.
+
+ <BR><BR>
+
+I had to put two calls, one before writefile to patch the JNE to JMP and one after 
+
+the write to put it back to JNE because at this point setup is still decompressing 
+
+ins32i and using the buffer data to uncompress other parts, if you donít all the 
+
+occurences of JNE will be changed to JMP in the rest of the unpacked ins5576.
+
+ <BR><BR>
+
+So hereís the places where I inserted the two calls :
+
+<PRE>
+
+:004044B9 E822850000              call 0040C9E0 *The first call (at the end of setup)
+
+						Change 75 to EB in the buffer at the good place.
+
+:004044BE 90                      nop 		*to fill the gaps
+
+:004044BF 90                      nop		*idem
+
+:004044C0 56                      push esi
+
+:004044C1 753D                    jne 00404500
+
+:004044C3 8B74240C                mov esi, dword ptr [esp+0C]
+
+:004044C7 A1FC304100              mov eax, dword ptr [004130FC]
+
+:004044CC 6A00                    push 00000000
+
+:004044CE 689C274100              push 0041279C
+
+:004044D3 FF36                    push dword ptr [esi]
+
+:004044D5 FF742414                push [esp+14]
+
+:004044D9 FF701C                  push [eax+1C]
+
+
+
+* Reference To: KERNEL32.WriteFile, Ord:027Bh
+
+                                  |
+
+:004044DC FF158CD04000            Call dword ptr [0040D08C]
+
+
+
+* Reference To: KERNEL32.GetLastError, Ord:00F4h
+
+                                  |
+
+:004044E2 FF15B0D04000            Call dword ptr [0040D0B0]
+
+:004044E8 FIND IT YOURSELF !      Call 0040c993 		*second call to put things back
+
+:004044ED A19C274100              mov eax, dword ptr [0041279C]
+
+:004044F2 3B06                    cmp eax, dword ptr [esi]
+
+:004044F4 740E                    je 00404504
+
+:004044F6 C705A8274100FCFFFFFF    mov dword ptr [004127A8], FFFFFFFC
+
+
+
+
+
+And here are the two calls I wrote :
+
+:0040C9E0 813D5BA7420075208D85    cmp dword ptr [0042A7a9], 858D2075 *is jne in buffer ?
+
+:0040C9EA 7507                    jne 0040C9F3 *No lets go back
+
+:0040C9EC C6055BA74200EB          mov byte ptr [0042A7a9], EB *Yes, letís patch the buffer.
+
+
+
+* Referenced by a Jump at Address:0040C9EA(C)
+
+|
+
+:0040C9F3 833DA827410000          cmp dword ptr [004127A8], 00000000 *that instruction was here
+
+						before I replaced it with tha call 40c9e0.
+
+:0040C9FA C3                      ret
+
+</PRE>
+
+So the purpose of this first call is to replace jne with jmp in the buffer memory, if you
+
+Searched with softice correctly, you will find the adress 42a7a9, before it is written into
+
+Ins5576 in your windows\temp directory. This file will loaded after and will contain the 
+
+patched Protection.
+
+ <BR><BR>
+
+So second call :
+
+<PRE>
+
+:0040C993 813DA9A74200EB208D85    cmp dword ptr [0042A7A9], 858D20EB
+
+:0040C99D 7507                    jne 0040C9A6
+
+:0040C99F C6055BA74200EB          mov byte ptr [0042A7a9], 75
+
+:0040C9A6 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+
+</PRE>
+
+This is left as an exercise to the reader! You just got to use the syntax of my first call
+
+To do the rest.
+
+ <BR><BR>
+
+You just got to know that you have to put the instruction that was before the place you putted
+
+The second call and, of course, you have to insert a Ret as well!
+
+ <BR><BR>
+
+Note that I overwrited some existing code in this place, but it was not used at all, I tried
+
+With the original setup.exe on the computer used for the creation of the package.
+
+ <BR><BR>
+
+And when you make Setup work, just stop ins5576 at 43b453 and you will find this :
+
+<PRE>
+
+:0043B447 68B84F4800              push 00484FB8
+
+:0043B44C E8EF88FEFF              call 00423D40
+
+:0043B451 85C0                    test eax, eax
+
+:0043B453 EB20                    jmp 0043B475  ***ITíS PATCHED !
+
+:0043B455 8D85FCFEFFFF            lea eax, dword ptr [ebp+FFFFFEFC]
+
+:0043B45B 50                      push eax
+
+:0043B45C FFB5F4FEFFFF            push dword ptr [ebp+FFFFFEF4]
+
+:0043B462 E830200000              call 0043D497
+
+:0043B467 59                      pop ecx
+
+:0043B468 59                      pop ecx
+
+:0043B469 E8B3EDFCFF              call 0040A221
+
+:0043B46E 33C0                    xor eax, eax
+
+:0043B470 E9F9020000              jmp 0043B76E
+
+</PRE>
+
+So you managed to make setup.exe patch ins5576 where the protection resides, note that this
+
+Kind of thing is very used in crypted protections, that you can patch when decrypted in
+
+Memory, just before being crypted again !
+
+ <BR><BR>
+
+Hope this helps you discover and understand a lot of new similar protection schemes.
+
+ <BR><BR>
+
++Tsehp (From Paris)
+
+ <BR><BR>
+
+<HR>
+
+<CENTER><I>You'r deep inside fravia's pages of reverse engineering</I>
+
+<BR><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=CENTER WIDTH=88% HEIGHT=6 BORDER=0
+
+VSPACE=0 HSPACE=0><BR><BR>
+
+<!-- Begin Javascript relocator <font color=red>~</fonT> Javascript code by fravia+ -->
+
+<FORM name="FraviasForm">
+
+<SCRIPT LANGUAGE="javascript">
+
+<!--
+
+
+
+function FravPage(list) {
+
+	      location.href = list.options[list.selectedIndex].value
+
+}
+
+
+
+// -->
+
+</SCRIPT>
+
+<DIV align="center">
+
+
+
+<P center="&lt;center&gt;&lt;/center&gt;">&nbsp;<SELECT name="fraviale" size="1">
+
+
+
+<OPTION>Choose another page!</OPTION>
+
+<OPTION value="index.htm">Main page</OPTION>
+
+<OPTION value="academy.htm">Software reversing Lab</OPTION>
+
+<OPTION value="realicra.htm">Reality cracking Lab</OPTION>
+
+<OPTION value="noanon.htm">Anonymity Lab</OPTION>
+
+<OPTION value="ideale.htm">Site busting Lab</OPTION>
+
+<OPTION value="howtosea.htm">How to search Lab</OPTION>
+
+<OPTION value="sealight.htm">--Search engines (light)</OPTION>
+
+<OPTION value="searengi.htm">--Search engines (heavy)</OPTION>
+
+<OPTION value="links.htm">Links</OPTION>
+
+<OPTION value="tools.htm">Tools</OPTION>
+
+<OPTION value="javascri.htm">Javascript reversing</OPTION>
+
+<OPTION value="screamin.htm">Screaming truth</OPTION>
+
+<OPTION value="entran.htm">Main entrance</OPTION>
+
+<OPTION value="new_what.htm">What's new on fravia's</OPTION>
+
+<OPTION value="info.htm">Mail fravia+</OPTION>
+
+<OPTION value="http://greythorne.home.ml.org">+Greythorne's</OPTION>
+
+<OPTION value="http://www.InsideTheWeb.com/mbs.cgi/mb186724">Tools of our trade msgboard</OPTION>
+
+<OPTION value="http://www.InsideTheWeb.com/mbs.cgi/mb155985">Main msgboard</OPTION>
+
+</SELECT>
+
+
+
+<INPUT type="button" value="Let's go!" onclick="FravPage(this.form.elements[0])">
+
+<BR>
+
+</DIV>
+
+
+
+</FORM>
+
+<!-- end Javascript relocator -->
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=88% HEIGHT=6 BORDER=0
+
+VSPACE=0 HSPACE=0><BR><BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0
+
+VSPACE=0 HSPACE=0><A
+
+HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0
+
+VSPACE=0 HSPACE=0>
+
+<A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links </A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0>
+
+<A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity </A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC </A>
+
+
+
+<IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays </A>
+
+
+
+<IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database </A>
+
+
+
+<IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="botstart.htm" tppabs="http://www.anticrack.de/fravia/botstart.htm">bots wars</A>
+
+
+
+<BR>
+
+<IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut </A>
+
+
+
+<IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 BORDER=0
+
+VSPACE=0 HSPACE=0><A
+
+HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13
+
+BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13
+
+BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="javascri.htm" tppabs="http://www.anticrack.de/fravia/javascri.htm">javascript wars </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0
+
+VSPACE=0 HSPACE=0><A
+
+HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0
+
+VSPACE=0 HSPACE=0><A
+
+HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia </A><BR>
+
+
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0
+
+VSPACE=0 HSPACE=0><A
+
+HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering illegal?
+
+</A></CENTER>
+
+<HR size=4></FONT></CENTER></CENTER>
+
+
+
+
+
+</BODY>
+
+</HTML>

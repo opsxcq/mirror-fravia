@@ -1,0 +1,944 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>nscekey</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+<CENTER><FONT size="+3">A little tutorial on key generators</FONT>
+
+<BR>(Netscape Cache Explorer)<BR>
+
+  <BR>
+
+
+
+<H4>by +MaLaTTiA <BR>
+
+<IMG SRC="hcu1.gif" tppabs="http://www.anticrack.de/fravia/hcu1.gif" ALT="+HCU student" ALIGN="center" WIDTH="114" HEIGHT="43" BORDER="0" VSPACE="0" HSPACE="0">
+
+<BR><BR>
+
+(20 September 1997)</H4>
+
+<HR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">Courtesy of fravia's page 
+
+of reverse engineering<BR><BR><I>
+
+Well, this is quite mathematical, yet well worth reading. Caches are a very interesting 
+
+subject <B>per se</B>... as Mammon_ explained: try typing inside your Navigator's 
+
+&quot;Location:&quot; window the following commands:<BR></I>
+
+<U><B>about:global</B></U>, <U><B>about:image-cache</B></U>, 
+
+ <I>and</I> <U><B>about:memory-cache</B></U>:-)<BR><BR><I>Netscape Cache Explorer is a nifty 
+
+little utility with an interesting xoring protection scheme, that our new +coworker 
+
++MaLaTTiA explores thoroughly in this essay. Enjoy! (BTW, this is the classical target for 
+
+&quot;ameliorations&quot; and functionalities adding! Anybody interested?)</I></CENTER><HR size="6">
+
+<PRE><FONT size="+2"><CENTER>
+
+++++++++++++++++++++++++++++++++++++
+
+A little tutorial on key generators
+
+++++++++++++++++++++++++++++++++++++</FONT>
+
+by .+MaLaTTiA.</CENTER>
+
+
+
+[Netscape Cache Explorer]
+
+
+
+Hi guys, here's my little work on nsce. (nsce.exe by Matthias Wolf, version 
+
+1.20, 22 Aug 1996, 147.456 bytes, dead listing is about 2.109.000 bytes). 
+
+This program is a cache explorer, it shows you all the sites saved in 
+
+your Netscape cache (there's a version for MSIE too) divided by domain and 
+
+lets you visit these sites again when you're offline. 
+
+It's quite useful because it lets you save these sites with all the
+
+pix and the pages linked rebuilding the links. You will reach the following 
+
+code setting the right breakpoints (I admit I had some problems finding the right
+
+place, even if it was right under my nose... and it just needed a bpx 
+
+messageboxa :) THANX +Zer0 and +ReZiDeNt for your help!). Here is the check
+
+code:
+
+
+
+:0041F88F 6A09                    push 00000009
+
+:0041F891 8D45F4                  lea eax, dword ptr [ebp-0C]
+
+:0041F894 50                      push eax    ** PUSH pw address
+
+:0041F895 FF7510                  push [ebp+10]
+
+
+
+* Reference To: USER32.GetWindowTextA, Ord:0000h
+
+                                  |
+
+:0041F898 E84A560000              Call 00424EE7
+
+:0041F89D 83F808                  cmp eax, 00000008 ** is the pw 8 chars long?
+
+:0041F8A0 0F85D5000000            jne 0041F97B      ** NO, jump
+
+:0041F8A6 6A1F                    push 0000001F ** YES, go on
+
+:0041F8A8 8D45D4                  lea eax, dword ptr [ebp-2C]  ** NAME address
+
+:0041F8AB 50                      push eax
+
+:0041F8AC 6A70                    push 00000070
+
+:0041F8AE 56                      push esi
+
+
+
+* Reference To: USER32.GetDlgItemTextA, Ord:0000h
+
+                                  |
+
+:0041F8AF E80B570000              Call 00424FBF  ** get name
+
+:0041F8B4 85C0                    test eax, eax  ** name=0 chars?
+
+:0041F8B6 0F84BF000000            je 0041F97B  ** continue asking
+
+:0041F8BC 8D45F4                  lea eax, dword ptr [ebp-0C]
+
+:0041F8BF 50                      push eax ** save pw
+
+:0041F8C0 8D45D4                  lea eax, dword ptr [ebp-2C]
+
+:0041F8C3 50                      push eax  ** save name
+
+:0041F8C4 E887020000              call 0041FB50  ** FIRST IMPORTANT CALL
+
+:0041F8C9 83C408                  add esp, 00000008
+
+:0041F8CC 8D45F4                  lea eax, dword ptr [ebp-0C]
+
+:0041F8CF 50                      push eax
+
+:0041F8D0 E8FA020000              call 0041FBCF  ** SECOND IMPORTANT CALL
+
+:0041F8D5 59                      pop ecx
+
+:0041F8D6 A320204300              mov [00432020], eax  ** save value
+
+:0041F8DB E99B000000              jmp 0041F97B  ** return to user
+
+
+
+* Referenced by a Jump at Address:0041F86F(C)
+
+|
+
+:0041F8E0 A120204300              mov eax, [00432020]  ** value saved before
+
+:0041F8E5 3B0510204300            cmp eax, dword ptr [00432010]  ** IMPORTANT!
+
+:0041F8EB 743B                    je 0041F928    *** THIS IS THE GOOD JUMP!
+
+:0041F8ED 6A50                    push 00000050 **** BAD GUY!!!
+
+:0041F8EF 8D4584                  lea eax, dword ptr [ebp-7C]
+
+:0041F8F2 50                      push eax
+
+:0041F8F3 56                      push esi
+
+
+
+
+
+Ok, let's give a look to these lines of code... first there's a check for the
+
+password: if it reaches 8 chars the coding algorithms starts, else the control
+
+returns to the user (who can enter other chars for the pw). As the password
+
+becomes 8 chars long, the program reads the name entered and makes TWO VERY
+
+IMPORTANT CALLS: the first needs two arguments, the addresses where the name
+
+and the password were saved, while the second just needs the address of the
+
+user name. After these two calls the control returns to the user, and when
+
+the OK button is selected the program jumps to address 41f8e0, where it checks
+
+the saved value with another value saved before in location 432010. If you
+
+give a look to this location (both in &quot;live&quot; approach and in dead listing)
+
+you'll see that this value is 190h, that is 400d.
+
+Now we know there's a coding algorithm who uses both the name and the password
+
+to build up just a number, which needs to be 400. Uhmm... then we DON'T have
+
+the right pw ready (the &quot;data window&quot; trick doesn't work here... sigh! :), we
+
+have to crack the proggie OR make a keygen. As the easiest way seemed to be
+
+the cracking approach, I changed the &quot;74 3b&quot; at 41f8eb in a &quot;eb 3b&quot; and tried
+
+to register with a fake pw: well, the dialog box told me the pw was right
+
+(I love this work!)... but unfortunately the program WASN'T registered... 
+
+uhm... maybe some other check... but as I'm SOOOOO lazy, I decided to change
+
+approach and try to give a look to the coding algorithm (babies, don't do
+
+this at home! :) Always GO STRAIGHT with your approaches, as +ORC taught
+
+you!). Unfortunately, it wasn't as easy as I hoped, but I learned a lot
+
+working on it: so I decided to teach you how to make a beautyful keygen, with
+
+the hope this kind of algorithm will be used again :) (just a tip: if you
+
+give a look to MSIE cache explorer, you'll find out that it uses the SAME
+
+algorithm, with just a different final number: 192h instead of 190h. :)
+
+Now, let's talk about key generators: the fist thing you have to do is to
+
+read the code and try to undersand exactly what happens. Now let's give a look
+
+to the FIRST of the two important calls, the one at 41fb50:
+
+
+
+:0041FB50 55                      push ebp
+
+:0041FB51 8BEC                    mov ebp, esp
+
+:0041FB53 83C4F8                  add esp, FFFFFFF8
+
+:0041FB56 53                      push ebx
+
+:0041FB57 56                      push esi
+
+:0041FB58 57                      push edi
+
+:0041FB59 8B7508                  mov esi, dword ptr [ebp+08]
+
+:0041FB5C 8BDE                    mov ebx, esi
+
+:0041FB5E 56                      push esi
+
+
+
+* Reference To: KERNEL32.lstrlenA, Ord:0000h
+
+                                  |
+
+:0041FB5F E8CF520000              Call 00424E33	
+
+:0041FB64 83F808                  cmp eax, 00000008  ** eax=USER NAME length
+
+:0041FB67 7305                    jnb 0041FB6E
+
+
+
+* Possible Reference to String Resource ID=00008: &quot;%d Object(s) selected&quot;
+
+                                  |
+
+:0041FB69 B808000000              mov eax, 00000008
+
+
+
+* Referenced by a  Jump at Address:0041FB67(C)
+
+|
+
+:0041FB6E 33C9                    xor ecx, ecx
+
+:0041FB70 8D55F8                  lea edx, dword ptr [ebp-08] ** NEW ADDRESS
+
+
+
+* Referenced by a  Jump at Address:0041FB7B(C)
+
+|
+
+:0041FB73 C60200                  mov byte ptr [edx], 00
+
+:0041FB76 41                      inc ecx
+
+:0041FB77 42                      inc edx
+
+:0041FB78 83F908                  cmp ecx, 00000008
+
+:0041FB7B 72F6                    jb 0041FB73
+
+
+
+** With this loop the program frees some space starting from a new address in
+
+memory &quot;zeroing&quot; the locations... uhmm... why? If it is going to use a mov it
+
+doesn't need it... let's go on:
+
+
+
+:0041FB7D 33C9                    xor ecx, ecx
+
+:0041FB7F 3BC1                    cmp eax, ecx
+
+:0041FB81 761A                    jbe 0041FB9D
+
+
+
+* Referenced by a  Jump at Address:0041FB9B(C)
+
+|
+
+:0041FB83 8BD1                    mov edx, ecx
+
+:0041FB85 83E207                  and edx, 00000007
+
+:0041FB88 8D7C15F8                lea edi, dword ptr [ebp + edx - 08]
+
+:0041FB8C 8A13                    mov dl, byte ptr [ebx]
+
+:0041FB8E 0017                    add byte ptr [edi], dl
+
+
+
+** HERE IS WHY!!! The program doesn't use a MOV, but it uses an ADD!!! :)
+
+
+
+:0041FB90 43                      inc ebx
+
+:0041FB91 803B00                  cmp byte ptr [ebx], 00
+
+:0041FB94 7502                    jne 0041FB98
+
+:0041FB96 8BDE                    mov ebx, esi
+
+
+
+* Referenced by a  Jump at Address:0041FB94(C)
+
+|
+
+:0041FB98 41                      inc ecx
+
+:0041FB99 3BC1                    cmp eax, ecx
+
+:0041FB9B 77E6                    ja 0041FB83
+
+
+
+OK... what does this loop do? The instruction at 41fb8c moves the value of
+
+the n-th letter of the string in the register DL, then this value is added
+
+in the locations contained in edi (these are exactly the locations which
+
+have been zeroed before!). This procedure is repeated until 8 characters
+
+are reached (if the string is 8 chars long or shorter), or until ALL the
+
+characters of the string are wrapped in the 8-char space in memory. What
+
+does this &quot;wrapped&quot; mean? As you can see at address 41fb85, the value of edx
+
+(it's a pointer inside the string we're building) is ANDed with 7, so if
+
+its value becomes greater than 7 it's automatically reduced by 7. Here is
+
+some examples:
+
+
+
++Zer0     --&gt; becomes in memory --&gt; +Zer0+Ze
+
+MaLaTTiA  --&gt;       remains     --&gt; MaLaTTiA
+
++ReZiDeNt --&gt; becomes in memory --&gt; *ReZiDeN
+
+
+
+The character defined by &quot;*&quot; is ASCII 159, that is 43 (&quot;+&quot;) plus 116 (&quot;t&quot;).
+
+So we have an 8 chars string which is built up with our user name... let's
+
+see what the program does now:
+
+
+
+* Referenced by a  Jump at Address:0041FB81(C)
+
+|
+
+:0041FB9D 33C9                    xor ecx, ecx
+
+:0041FB9F 8B450C                  mov eax, dword ptr [ebp+0C] ** PW ADDRESS
+
+:0041FBA2 8BD8                    mov ebx, eax
+
+:0041FBA4 8D75F8                  lea esi, dword ptr [ebp-08] ** NEW STRING
+
+
+
+* Referenced by a  Jump at Address:0041FBC6(C)
+
+|
+
+:0041FBA7 33C0                    xor eax, eax
+
+:0041FBA9 8A06                    mov al, byte ptr [esi] ** move nth letter
+
+:0041FBAB BF1A000000              mov edi, 0000001A
+
+:0041FBB0 99                      cdq
+
+:0041FBB1 F7FF                    idiv edi ** al=al/1a  dl=dl%1a
+
+:0041FBB3 80C241                  add dl, 41
+
+:0041FBB6 2813                    sub byte ptr [ebx], dl
+
+:0041FBB8 803B00                  cmp byte ptr [ebx], 00
+
+:0041FBBB 7D03                    jge 0041FBC0
+
+:0041FBBD 80031A                  add byte ptr [ebx], 1A
+
+
+
+* Referenced by a  Jump at Address:0041FBBB(C)
+
+|
+
+:0041FBC0 41                      inc ecx
+
+:0041FBC1 43                      inc ebx
+
+:0041FBC2 46                      inc esi
+
+:0041FBC3 83F908                  cmp ecx, 00000008
+
+:0041FBC6 72DF                    jb 0041FBA7
+
+
+
+After this loop, there's a ret: all the first part of the coding algorithm is
+
+here, so pay attention! The program takes the n-th value of the new coded
+
+string, divides it by 1ah (that is 26d), and puts the remainder in dl. You can
+
+see this in the comment I made at address 41fbb1: using C notation, we have
+
+al=al/1a (integer division) and dl=dl%1a (remainder of integer division).
+
+Then, the value 41h (65d) is added to dl, and the new dl is subtracted from
+
+the n-th char OF THE PASSWORD ENTERED BEFORE. If the final value is less than
+
+0, 1Ah (26d) is added. At the end of this loop, the procedure ends.
+
+Now it's the turn of the SECOND important call, at 41fbcf. Here is the &quot;full
+
+version&quot;:
+
+
+
+
+
+:0041FBCF 55                      push ebp
+
+:0041FBD0 8BEC                    mov ebp, esp
+
+:0041FBD2 83C4F8                  add esp, FFFFFFF8
+
+:0041FBD5 53                      push ebx
+
+:0041FBD6 56                      push esi
+
+:0041FBD7 57                      push edi
+
+:0041FBD8 33FF                    xor edi, edi
+
+
+
+* Reference To: KERNEL32.GetTickCount, Ord:0000h
+
+                                  |
+
+:0041FBDA E8EE510000              Call 00424DCD
+
+:0041FBDF 8945FC                  mov dword ptr [ebp-04], eax
+
+:0041FBE2 33F6                    xor esi, esi
+
+:0041FBE4 8B4508                  mov eax, dword ptr [ebp+08]
+
+:0041FBE7 8BD8                    mov ebx, eax
+
+
+
+* Referenced by a  Jump at Address:0041FC2C(C)
+
+|
+
+
+
+* Reference To: KERNEL32.GetTickCount, Ord:0000h
+
+                                  |
+
+:0041FBE9 E8DF510000              Call 00424DCD
+
+:0041FBEE 8945F8                  mov dword ptr [ebp-08], eax
+
+:0041FBF1 33C0                    xor eax, eax
+
+:0041FBF3 8A03                    mov al, byte ptr [ebx]
+
+:0041FBF5 03C6                    add eax, esi
+
+
+
+* Possible Reference to Dialog: DialogID_000A
+
+                                  |
+
+
+
+* Possible Reference to String Resource ID=00010: &quot;(Empty)&quot;
+
+                                  |
+
+:0041FBF7 B90A000000              mov ecx, 0000000A
+
+:0041FBFC 99                      cdq
+
+:0041FBFD F7F9                    idiv ecx
+
+:0041FBFF 8BCA                    mov ecx, edx
+
+:0041FC01 33C0                    xor eax, eax
+
+:0041FC03 8A4301                  mov al, byte ptr [ebx+01]
+
+:0041FC06 03C6                    add eax, esi
+
+:0041FC08 40                      inc eax
+
+:0041FC09 51                      push ecx
+
+
+
+* Possible Reference to Dialog: DialogID_000A
+
+                                  |
+
+
+
+* Possible Reference to String Resource ID=00010: &quot;(Empty)&quot;
+
+                                  |
+
+:0041FC0A B90A000000              mov ecx, 0000000A
+
+:0041FC0F 99                      cdq
+
+:0041FC10 F7F9                    idiv ecx
+
+:0041FC12 59                      pop ecx
+
+:0041FC13 0FAFCA                  imul ecx, edx
+
+:0041FC16 03F9                    add edi, ecx
+
+
+
+* Reference To: KERNEL32.GetTickCount, Ord:0000h
+
+                                  |
+
+:0041FC18 E8B0510000              Call 00424DCD
+
+:0041FC1D 2B45F8                  sub eax, dword ptr [ebp-08]
+
+:0041FC20 C1E80A                  shr eax, 0000000A
+
+:0041FC23 03C7                    add eax, edi
+
+:0041FC25 8BF8                    mov edi, eax
+
+:0041FC27 46                      inc esi
+
+:0041FC28 43                      inc ebx
+
+:0041FC29 83FE07                  cmp esi, 00000007
+
+:0041FC2C 7CBB                    jl 0041FBE9
+
+
+
+* Reference To: KERNEL32.GetTickCount, Ord:0000h
+
+                                  |
+
+:0041FC2E E89A510000              Call 00424DCD
+
+:0041FC33 2B45FC                  sub eax, dword ptr [ebp-04]
+
+:0041FC36 C1E80B                  shr eax, 0000000B
+
+:0041FC39 03C7                    add eax, edi
+
+:0041FC3B 5F                      pop edi
+
+:0041FC3C 5E                      pop esi
+
+:0041FC3D 5B                      pop ebx
+
+:0041FC3E 59                      pop ecx
+
+:0041FC3F 59                      pop ecx
+
+:0041FC40 5D                      pop ebp
+
+:0041FC41 C3                      ret
+
+
+
+All these GetTickCount calls are just a protection: if we use a &quot;normal&quot;
+
+debugger, the tick count is wrong and probably there's some error message.
+
+But we DON'T use a normal debugger: we use Winice! :)
+
+So, we are interested just in a &quot;short version&quot; of this procedure... let me
+
+cut and paste some text:
+
+
+
+:0041FBE4 8B4508                  mov eax, dword ptr [ebp+08] ** address of
+
+                                                                 changed pw
+
+:0041FBE7 8BD8                    mov ebx, eax
+
+
+
+:HERE THE BIG LOOP STARTS:
+
+:0041FBF3 8A03                    mov al, byte ptr [ebx] ** nth value
+
+:0041FBF5 03C6                    add eax, esi           ** initially 0
+
+:0041FBF7 B90A000000              mov ecx, 0000000A
+
+:0041FBFC 99                      cdq
+
+:0041FBFD F7F9                    idiv ecx               ** eax=eax/10
+
+:0041FBFF 8BCA                    mov ecx, edx           ** ecx=edx=edx%10
+
+:0041FC01 33C0                    xor eax, eax           ** eax=0
+
+:0041FC03 8A4301                  mov al, byte ptr [ebx+01] **(n+1)th value
+
+:0041FC06 03C6                    add eax, esi           ** still 0
+
+:0041FC08 40                      inc eax            ** eax=(n+1)th value+1
+
+:0041FC09 51                      push ecx           ** save first remainder
+
+:0041FC0A B90A000000              mov ecx, 0000000A
+
+:0041FC0F 99                      cdq
+
+:0041FC10 F7F9                    idiv ecx               ** eax=eax/10
+
+:0041FC12 59                      pop ecx            ** load first remainder
+
+:0041FC13 0FAFCA                  imul ecx, edx      ** ecx=1st rem.*2nd rem.
+
+:0041FC16 03F9                    add edi, ecx       ** edi=edi+ecx 
+
+                                                        EDI GROWS BIGGER!
+
+:0041FC20 C1E80A                  shr eax, 0000000A  ** eax becomes 0
+
+:0041FC23 03C7                    add eax, edi
+
+:0041FC25 8BF8                    mov edi, eax       ** no change :)
+
+:0041FC27 46                      inc esi
+
+:0041FC28 43                      inc ebx
+
+:0041FC29 83FE07                  cmp esi, 00000007  ** scanned all the pw?
+
+:0041FC2C 7CBB                    jl 0041FBE9        ** no. Jump to the start
+
+:HERE THE BIG LOOP ENDS:
+
+
+
+:0041FC36 C1E80B                  shr eax, 0000000B
+
+:0041FC39 03C7                    add eax, edi       ** ax=final value
+
+
+
+As you can see, the algorithm is not SO hard to understand: maybe it will be
+
+harder to make the keygen, but now we can still see what's going on. The prog
+
+takes the nth and (n+1)th values of the changed pw, divides them by 10, then
+
+multiplies the remainder of the nth value and the remainder of the (n+1)th one
+
+incremented by 1. If you give a look to the last lines you can see the final
+
+value of this sum is saved in eax, and if you look at the code immediately
+
+after the call you'll see THIS line:
+
+
+
+:0041F8D6 A320204300              mov [00432020], eax  ** save value
+
+
+
+which SAVES THE VALUE IN EAX for the later cmp. So, THIS is the value we want
+
+to be 190h, that is 400d. Here is how this number is built up:
+
+
+
+
+
+r1*r2 + r2*r3 + r3*r4 + r4*r5 + r5*r6 + r6*r7 + r7*r8 =190h=400d
+
+
+
+WHERE
+
+
+
+r1=p1+0%10
+
+r2=p2+1%10
+
+r3=p3+2%10
+
+r4=p4+3%10
+
+r5=p5+4%10
+
+r6=p6+5%10
+
+r7=p7+6%10
+
+r8=p8+7%10
+
+
+
+and px is the xth element of the changed password, that is:
+
+
+
+(value of the xth element of the original password-((xth element of the
+
+&quot;wrapped&quot; user name)%26)+65)+26 (if the value is <0). This is quite a mess, especially if we try to invert the "function": this is because a function like the one which returns a remainder can have an infinite number of solutions (ie., the remainder "5" can return the numbers "15", "25" and so on). All we have to do is just use our brains... we have to create _from_scratch_ ONE of the INFINITE solutions, possibly the easiest one for us! :) From now on you'll read about MY solution, but yours can be different from mine... if you have some ideas you think are better, PLEASE tell me... I'm here to learn too! You'll see my email at the end of this text. Ok, the FIRST thing we have to do is try to write down some ideas: 1) We have to reduce the number of parameters that change 2) We have to build up the value 400d. 3) We have to make this keygen work :) So I decided to start from the end: the value 400. How it is built? You can see some lines above... it's the sum of seven products in which the second member is the first member of the following product. So let's try to give some values to those rx to make up the right number. THIS is tricky... and here comes the Zen :) I thought: "Those programmers are humans like me, they probably thought about some EASY number"... also, the numbers (from r2 to r7) are multiplied TWO times, and maybe programmers found easier using just powers of 2. So: 1) Easy numbers/two multipl.> Repeat the SAME number as much as possible
+
+2) Powers of two --&gt; start with the biggest power <10=8 So I found 400 was made by (8*8)*6 + (8*2). The line written before becomes: 08*08 + 08*08 + 08*08 + 08*08 + 08*08 + 08*08 + 08*02="190h=400d" r1*r2 + r2*r3 + r3*r4 + r4*r5 + r5*r6 + r6*r7 + r7*r8="190h=400d" And: r1="p1+0%10=8"> p1=8
+
+r2=p2+1%10=8  -&gt; p2=7
+
+r3=p3+2%10=8  -&gt; p3=6
+
+r4=p4+3%10=8  -&gt; p4=5
+
+r5=p5+4%10=8  -&gt; p5=4
+
+r6=p6+5%10=8  -&gt; p6=3
+
+r7=p7+6%10=8  -&gt; p7=2
+
+r8=p8+7%10=2  -&gt; p8=5 (5+7=12 ; 12%10=2)
+
+
+
+Now we know the values the changed pw should have. But what about the
+
+ORIGINAL password? How is it made up? Numbers? Letters? Now whe have to
+
+make our job as easy as we can: I thought about numbers in a fist time, but
+
+I saw that, if you call &quot;x&quot; the value of the character of the pw and &quot;c&quot;
+
+the value of the character of the wrapped username, you get:
+
+
+
+p=(x-(65+c%26)(+26?))%10
+
+
+
+and, if x is a number (ascii 48-57) and I subtract a value which is between
+
+65 and 65+26, even if I always add 26 sometimes the value is &gt;0 and sometimes
+
+it is <0. Bad: if I have to work with remainders I don't want a "jump" like the one between 0 (remainder 0) and 1 (="255," remainder 255). I decided to use letters from a to z for the password, so I have ALWAYS positive numbers and I don't even have to deal with that (+26?) :) So, the p's are made up by the following equation: p="(x-(65+c%26))%10" Well, I've resolved a problem but now I have another one: how can I make the p's like the ones I need? If I need a remainder, both the xth letter in the alphabet and the (x+10)th will work. I decided to begin from a password made up by "a" only, then calculate his p's, then add the "difference" between the p's I've calculated and the ones I need. Let's try with a simple name: MaLaTTiA :) 1) Wrap the string M a L a T T i A (don't need it here) 2) Dec 77 97 76 97 84 84 105 65 3) p="(97-(65+c%26))%10" 07 03 08 03 06 06 01 09 (97 is "a") 4) Needed values 08 07 06 05 04 03 02 05 5) Add to "a" 01 04 08 02 08 07 01 06 6) PASSWORD: b e i c i h b g ...AND IT WORKS!!! :))) Now, here's the c code "for.class" tppabs="http://fravia.org/for.class" this key generator (please, be patient, my C is not so nice...;) ***************************************************************************** #include <stdio.h>
+
+
+
+unsigned char s[8]={0,0,0,0,0,0,0,0};
+
+char string [80];
+
+int values[8], required[8]={8,7,6,5,4,3,2,5};
+
+int i,j,ok=0,ok2=0;
+
+
+
+void main (){
+
+    printf (&quot;\n...//\\Oo/\\\\ Netscape Cache Explorer v1.26 KeyGen - by
+
+    .MaLaTTiA. //\\Oo/\\\\...\n\n&quot;);
+
+    printf (&quot;\nUser name: &quot;);
+
+    gets (string);
+
+    i=j=0;
+
+    if (string[0]==0) exit(0);
+
+    while ((!ok)||(!ok2)){
+
+        if (string[j]==0){
+
+            if (!ok2) j=0;
+
+            ok=1;
+
+        }
+
+        s[i]=s[i]+string[j];
+
+        j++;i++;
+
+        if (i&gt;7){
+
+            ok2=1;
+
+            i=0;
+
+        }
+
+    }
+
+    for (i=0;i<=7;i++){ values[i]="required[i]-((32-(s[i]%26))%10);" if (values[i]<0) values[i]="values[i]+10;" } printf ("Key: "); for (i="0;i&lt;=7;i++){" printf ("%c", 97+values[i]); } printf ("\n"); } ***************************************************************************** I've seen now it isn't even optimized... bah, it works! :)) Anyway, I think the code "is.class" tppabs="http://fravia.org/is.class" self explaining, but if you don't understand something mail me and I'll be happy to help you! Now, you can make up the keygen for MSICE, keeping in mind that the needed value is not 190h but is 192h. Try it, the algorithm is the same! :) byez, .+MaLaTTiA. (malattia@freenet.hut.fi)</pre>
+
+
+
+<FONT color="green">(c) .+MaLaTTiA. 1997. All rights reversed</FONT>
+
+<HR ALIGN="CENTER" WIDTH="100%" SIZE="3">
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</I></CENTER>
+
+<BR><CENTER>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut CGI-scripts</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering legal?</A></CENTER>
+
+<CENTER><HR ALIGN="CENTER" WIDTH="100%" SIZE="2"></CENTER>
+
+</BODY>
+
+</HTML>
+
+
+
+
+
+
+
+
+

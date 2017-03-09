@@ -1,0 +1,620 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>drlan1</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+
+
+<P><CENTER><FONT SIZE="+3">Cool 3D by Ulead - up against nags and smears<BR>
+
+</FONT><FONT SIZE="+2">Easy unsmearing and denagging</FONT>
+
+<BR>
+
+</CENTER>
+
+
+
+<H4><CENTER><I>by DrLan</I><BR>
+
+(03 September 1997)</CENTER></H4>
+
+
+
+<CENTER><HR><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"> Courtesy of Fravia's page of reverse engineering<BR>
+
+<HR> <I>Well, it's a stimulating essay. As usual, when two brains do reverse the 
+
+same target, they pick very interesting approaches, you may like to have a look at plushmm's attempt on the same target in order to learn even more from a single  session</I></CENTER><HR size="6"><PRE>
+
+Target Program: Cool 3D by Ulead
+
+Protection: Nag(s), &quot;smearing&quot;
+
+Cracked by: drlan [Me'97/C4N]!
+
+Location: <A href="tppmsgs/msgs1.htm#190 tppabs=" tppabs="http://www.anticrack.de/fravia/tppmsgs/msgs1.htm#190 tppabs=" http://www.ulead.com/" ">http://www.ulead.com</A>
+
+
+
+Tools needed:
+
+- SoftICE Win95 3.01 (see +HCU's <A href="project2.htm" tppabs="http://www.anticrack.de/fravia/project2.htm">project 2</A>)
+
+- W32Dasm 8.9 (any version will do... see +HCU's <A href="project0.htm" tppabs="http://www.anticrack.de/fravia/project0.htm">project 0</A>)
+
+- Hex Editor (I like <A href="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#37'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#37">PSEdit</A> and Hex Workshop)
+
+
+
+I didn't realize it when I set out to crack this program, but it had
+
+already been cracked by plushmm.  Should have checked first.  Anyway,
+
+I did crack it and I'd like to share what I found so that others may
+
+benefit from this knowledge.
+
+
+
+I started out by running the program to get a feel for the protection.
+
+The program pops in the beginning with a nag screen.  Anything you try
+
+to print or save has the word SAMPLE &quot;smeared&quot; on it.  Finally, we get
+
+another nag upon exiting the program.  The nag tells us that if we are
+
+good people and buy the registered version, we will be free to use it
+
+without the lovely nag screen and that our output won't have the SAMPLE
+
+banner.  There is no option to &quot;enable&quot; the program by entering a name
+
+and registration code, so we're going to have to crack this babe.  Ok,
+
+sounds like we're up against the nag(s) and the smear.
+
+
+
+I like to &quot;dead list&quot; a program before I whip out the ice (SoftICE).
+
+So, I fired up W32Dasm and let 'er rip.  If you're using a registered
+
+version of W32Dasm, you'll end up with a file called u3dedit.alf in your
+
+W32Dasm\wpjfiles directory.  This file will be about 12 Mb.  You can use
+
+W32Dasm to search the listing or save the file and use your favourite word
+
+processor or text file lister.  In my listing I found a few interesting
+
+items in the imports section:
+
+
+
+   Import Module 005: About.dll
+
+
+
+Addr:000B52C6 hint(0002) Name: IsFullVersion    ; here
+
+Addr:000B52B6 hint(0004) Name: ShowAboutBox     ; here
+
+Addr:000B52D6 hint(0001) Name: InitAboutDll
+
+
+
+Let's look deeper at our listing to see where these functions are called.
+
+Here's the first spot.  I've included a little extra code prior to the
+
+ShowAboutBox because something interesting lurks here...
+
+
+
+* Reference To: USER32.IsWindowVisible, Ord:016Ah
+
+|
+
+:00410552 FF15784F4B00            Call dword ptr [004B4F78]
+
+:00410558 85C0                    test eax, eax
+
+:0041055A 7418                    je 00410574
+
+:0041055C 833DD0F64A0000          cmp dword ptr [004AF6D0], 00000000    ;here
+
+:00410563 740F                    je 00410574
+
+:00410565 8B45F0                  mov eax, dword ptr [ebp-10]
+
+:00410568 FF701C                  push [eax+1C]
+
+
+
+* Reference To: About.ShowAboutBox, Ord:0004h
+
+|
+
+:0041056B FF15C0494B00            Call dword ptr [004B49C0]
+
+:00410571 83C404                  add esp, 00000004
+
+
+
+* Referenced by a Jump at Addresses:0041055A(C), :00410563(C)
+
+|
+
+:00410574 8D45BC                  lea eax, dword ptr [ebp-44]
+
+:00410577 8B4DF0                  mov ecx, dword ptr [ebp-10]
+
+:0041057A C745BC2C000000          mov [ebp-44], 0000002C
+
+:00410581 50                      push eax
+
+:00410582 E84BE20400              call 0045E7D2
+
+
+
+Hmm, that location [004AF6D0] looks a lot like a good guy/bad guy &quot;flag&quot;
+
+to me.  Why?  Well, the je 00410574 following the compare jumps right
+
+over the ShowAboutBox (nag).  We need to find out where the flag gets set.
+
+So, let's find out where that memory location gets written to.  Clear or
+
+disable any existing breakpoints in SoftICE.
+
+
+
+sICE command: bd * (to temporarily disable all breakpoints)
+
+or: bc * (to clear all breakpoints)
+
+
+
+Set a breakpoint on memory write to our suspect location.
+
+
+
+sICE command: bpm 004AF6D0 w
+
+
+
+Now run the program.  SoftICE should pop at the following code section:
+
+
+
+* Reference To: About.IsFullVersion, Ord:0002h
+
+|
+
+:00439979 FF15BC494B00            Call dword ptr [004B49BC]
+
+:0043997F 83C404                  add esp, 00000004
+
+:00439982 8DBED8000000            lea edi, dword ptr [esi+000000D8]
+
+:00439988 C786C000000001000000    mov dword ptr [esi+000000C0], 00000001 ;here
+
+:00439992 6800010000              push 00000100
+
+:00439997 83F801                  cmp eax, 00000001
+
+:0043999A 1BC0                    sbb eax, eax
+
+:0043999C 57                      push edi
+
+:0043999D F7D8                    neg eax
+
+:0043999F 6A00                    push 00000000
+
+
+
+* Reference To: KERNEL32.GetModuleFileNameA, Ord:00FBh
+
+|
+
+:004399A1 FF15AC4B4B00            Call dword ptr [004B4BAC]
+
+:004399A7 57                      push edi
+
+
+
+Ok, the instruction mov dword ptr [esi+000000C0], 00000001 is setting
+
+the &quot;flag&quot; to 1.  Remember, our previous code segment would have jumped
+
+over the ShowAboutBox (nag) if this flag was zero.  This is the first
+
+part of our crack.  We need to change the instruction into:
+
+
+
+:00439988 C786C000000000000000    mov dword ptr [esi+000000C0], 00000000
+
+
+
+This puts a 0 into our flag location and should make the program happy!
+
+
+
+You can try it live in SoftICE by placing a breakpoint on the line that
+
+sets the flag.  Run the program again and when it breaks on the line,
+
+assemble in the new instruction.
+
+
+
+sICE command: A
+
+sICE command: mov dword ptr [esi+000000C0], 00000000
+
+sICE command: Esc
+
+
+
+Press F5 to continue running and you should be in, without the nag.
+
+
+
+What's left?  Remember the nag said that the registered version did not
+
+have the nag and that it did not print the SAMPLE banner across all the
+
+output.  If you do a print or print preview, you'll see SAMPLE overlaid
+
+on top of your nice 3D letters.  Not very appealing...  So, let's search
+
+and destroy.
+
+
+
+Back to our &quot;dead listing&quot; now...  Let's just search for SAMPLE.  Lo and
+
+behold!  Could it be so easy?  Sure it could.  Again, I've included some
+
+of the code from above because again it holds something interesting...
+
+
+
+* Referenced by a Jump at Address:00423C55(C)
+
+|
+
+:00423C7A 8D45E0                  lea eax, dword ptr [ebp-20]
+
+:00423C7D 8D4DB8                  lea ecx, dword ptr [ebp-48]
+
+:00423C80 50                      push eax
+
+:00423C81 E80A260400              call 00466290
+
+:00423C86 8945E8                  mov dword ptr [ebp-18], eax
+
+:00423C89 85C0                    test eax, eax
+
+:00423C8B 7523                    jne 00423CB0                          ;here
+
+:00423C8D C645FC01                mov [ebp-04], 01
+
+:00423C91 E89E020000              call 00423F34
+
+:00423C96 C645FC00                mov [ebp-04], 00
+
+:00423C9A E89D020000              call 00423F3C
+
+:00423C9F C745FCFFFFFFFF          mov [ebp-04], FFFFFFFF
+
+:00423CA6 E8A3020000              call 00423F4E
+
+:00423CAB E9A6020000              jmp 00423F56                          ;hmm?
+
+
+
+* Referenced by a Jump at Address:00423C8B(C)
+
+|
+
+
+
+* Possible StringData Ref from Data Obj -&gt;&quot;SAMPLE&quot;
+
+|
+
+:00423CB0 BBB8994A00              mov ebx, 004A99B8
+
+:00423CB5 53                      push ebx
+
+:00423CB6 E8B5360200              call 00447370
+
+:00423CBB 83C404                  add esp, 00000004
+
+:00423CBE 8D4DB0                  lea ecx, dword ptr [ebp-50]
+
+:00423CC1 51                      push ecx
+
+:00423CC2 50                      push eax
+
+:00423CC3 53                      push ebx
+
+:00423CC4 FF75C0                  push [ebp-40]
+
+
+
+* Reference To: GDI32.GetTextExtentPointA, Ord:0108h
+
+
+
+Ok, so we are dropped right into the routine to setup for the SAMPLE
+
+banner by this line:
+
+
+
+:00423C8B 7523                    jne 00423CB0
+
+
+
+If we hadn't taken this jump and continued down through the code, we would
+
+have ended up at this line:
+
+
+
+:00423CAB E9A6020000              jmp 00423F56
+
+
+
+Let's see what's at :00423F56
+
+
+
+* Referenced by a Jump at Addresses:00423AF8(C), :00423B03(C), :00423B6E(C), :00423BBE(U), :00423C75(U), :00423CAB(U), :00423D4D(U), :00423D96(U)
+
+|
+
+:00423F56 33C0                    xor eax, eax
+
+
+
+* Referenced by a Jump at Addresses:00423B1E(U), :00423F0A(U)
+
+|
+
+:00423F58 8B4DF4                  mov ecx, dword ptr [ebp-0C]
+
+:00423F5B 5F                      pop edi
+
+:00423F5C 64890D00000000          mov dword ptr fs:[00000000], ecx
+
+:00423F63 5E                      pop esi
+
+:00423F64 5B                      pop ebx
+
+:00423F65 8BE5                    mov esp, ebp
+
+:00423F67 5D                      pop ebp
+
+:00423F68 C3                      ret
+
+
+
+Just tidying up a bit and preparing to RETurn.  This looks like it
+
+might just jump right over the whole SAMPLE banner mess.  Let's try
+
+it.  We could change the jne 00423CB0 from line :00423C8B in several
+
+ways.  Two of the more common would be:
+
+
+
+1) Blatantly NOP out the instruction(s).  NOP stands for No-Operation.
+
+As the name implies, it basically does nothing.  NOP is a single byte
+
+instruction so it would take 2 NOPs to wipe out our jne 00423CB0.  Some
+
+programs &quot;sniff&quot; out multiple NOPs and will not behave correctly if they
+
+detect &quot;tampering.&quot;  So perhaps a better way is something a little less
+
+obvious.
+
+
+
+2) Our master, +ORC teaches us that INC EAX, DEC EAX works quite nicely.
+
+So we change:
+
+
+
+:00423C8B 7523                    jne 00423CB0
+
+
+
+into:
+
+
+
+:00423C8B 40                      inc eax
+
+:00423C8C 48                      dec eax
+
+
+
+Which fills the space perfectly.  Our next instruction number is
+
+:00423C8D which is correct.
+
+
+
+You can try this live in SoftICE, or patch the program with your favorite
+
+hex editor.  I, like +ORC, prefer the good old <A href="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#37'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#37">PSEdit</A>.  It's small, fast 
+
+and runs in DOS.
+
+
+
+That should take care of our program.  The opening and closing nags are
+
+gone and the annoying SAMPLE banner has been removed from our output.
+
+This should make your evaluation far more enjoyable.
+
+
+
+Note: The ShowAboutBox still lives behind the Help/About menu selection.
+
+I tried opening the program in Borland's Resource Workshop to see if there
+
+was a &quot;nicer&quot; about dialog that I could enable.  However, BRW choked on the
+
+program and said it was an unrecognized format.
+
+
+
+We could eliminate it altogether, though.  Search your dead listing again
+
+for ShowAboutBox.  The first occurrence is the opening nag which we've fixed
+
+by setting the flag to 0.  The second occurrence is the Help/About.  You can
+
+tell because there are no conditional jumps into or over it.  Here is the
+
+code segment.
+
+
+
+:0043A2C6 8B411C                  mov eax, dword ptr [ecx+1C]
+
+:0043A2C9 FF701C                  push [eax+1C]
+
+
+
+* Reference To: About.ShowAboutBox, Ord:0004h
+
+|
+
+:0043A2CC FF15C0494B00            Call dword ptr [004B49C0]
+
+:0043A2D2 83C404                  add esp, 00000004
+
+:0043A2D5 C3                      ret
+
+
+
+Let's try eliminating the call.  Again, this could be done any number of
+
+different ways.  Here's the approach I took.
+
+
+
+Change:
+
+
+
+:0043A2CC FF15C0494B00            Call dword ptr [004B49C0]
+
+
+
+into:
+
+
+
+:0043A2CC 40                      inc eax
+
+:0043A2CD 48                      dec eax
+
+:0043A2CE 40                      inc eax
+
+:0043A2CF 48                      dec eax
+
+:0043A2D0 40                      inc eax
+
+:0043A2D1 48                      dec eax
+
+
+
+This makes :0043A2D2 our next instruction, which is good.  This trick
+
+works here, but will not work in all circumstances.  You need to watch
+
+what gets PUSHed onto the stack prior to the call.  A &quot;stack heavy&quot; call
+
+usually cannot be eliminated in this way.  A more creative approach must
+
+be taken under those circumstances.
+
+
+
+Disclaimer: THIS ESSAY IS FOR EDUCATIONAL PURPOSES ONLY.  ANY USE, MIS-USE
+
+OR ILLEGAL ACTIVITY IS THE SOLE RESPONSIBILITY OF THE READER.
+
+
+
+GreetZ: Everyone in [Me'97/C4N], PC'97, UCF, fravia+ and +ORC.
+
+
+
+Drlan
+
+
+
+</PRE><FONT color="green">
+
+(c) Drlan, 1997. All rights reversed.</FONT>
+
+		<HR size="2">
+
+<CENTER><I>You are deep inside fravia's page of reverse
+
+engineering, choose your way out:</I></CENTER>
+
+
+
+
+
+<P><CENTER>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#79'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#79">homepage </A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"> <A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#53'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#53">links
+
+</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0" NATURALSIZEFLAG="0"> <A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity
+
+</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#78'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#78">students' essays </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools
+
+</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails </A><BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database </A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia
+
+</A><BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">is reverse engineering legal? </A></FONT></CENTER></P>
+
+
+
+<P><CENTER><FONT SIZE="-1"><HR></FONT></CENTER>
+
+</BODY>
+
+</HTML>
+

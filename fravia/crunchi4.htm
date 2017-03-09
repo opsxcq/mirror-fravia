@@ -1,0 +1,802 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>crunchi4.htm: Little essay about the various methods and viewpoints of crunching</TITLE>
+
+</HEAD>
+
+
+
+<BODY BGCOLOR=#C0C0C0 TEXT=#001010 VLINK=#405040>
+
+<CENTER><CENTER><A href="papers.htm" tppabs="http://www.anticrack.de/fravia/papers.htm"><IMG SRC="papers.gif" tppabs="http://www.anticrack.de/fravia/papers.gif" ALT="papers" ALIGN=BOTTOM WIDTH=114 
+
+EIGHT=43 BORDER=0 VSPACE=0 HSPACE=0></A><BR><FONT color=gray>+HCU papers</FONT><BR><BR>
+
+<FONT size=+6><FONT color=blue>Little essay about the various methods and viewpoints of crunching</FONT></FONT>
+
+<BR>
+
+~ version June 1998 ~<BR>
+
+by Joa Part. IV
+
+<BR>
+
+
+
+
+
+<HR>Courtesy of fravia's page of reverse engineering<BR>
+
+<HR></CENTER><P>
+
+<P>
+
+
+
+Well, Joa continues his fundamental paper on crunching, this is part IV (since the preceding one was part 3 :-)<BR>enjoy!<P>
+
+<TABLE border=1>
+
+<TR><TD HEIGHT="33">05 June 98</TD><TD>
+
+Joa
+
+</TD><TD>~</TD><TD>
+
+<A href="crunchi1.htm" tppabs="http://www.anticrack.de/fravia/crunchi1.htm">crunchi1.htm</A>
+
+</TD><TD>Little essay about the various methods and viewpoints of crunching
+
+</TD><TD VALIGN="center" bgcolor="#E2A221"><A HREF="papers.htm" tppabs="http://www.anticrack.de/fravia/papers.htm">papers</A>
+
+</TD><TD>~</TD><TD>fra_0126</TD></TR>
+
+
+
+<TR><TD HEIGHT="33">10 June 98</TD><TD>
+
+Joa
+
+</TD><TD>~</TD><TD>
+
+<A href="crunchi2.htm" tppabs="http://www.anticrack.de/fravia/crunchi2.htm">crunchi2.htm</A>
+
+</TD><TD>Little essay about the various methods and viewpoints of crunching II
+
+</TD><TD VALIGN="center" bgcolor="#E2A221"><A HREF="papers.htm" tppabs="http://www.anticrack.de/fravia/papers.htm">papers</A>
+
+</TD><TD>~</TD><TD>fra_0129</TD></TR>
+
+
+
+<TR><TD HEIGHT="33">17 June 98</TD><TD>
+
+Joa
+
+</TD><TD>~</TD><TD>
+
+<A href="crunchi3.htm" tppabs="http://www.anticrack.de/fravia/crunchi3.htm">crunchi3.htm</A>
+
+</TD><TD>Little essay about the various methods and viewpoints of crunching III
+
+</TD><TD VALIGN="center" bgcolor="#E2A221"><A HREF="papers.htm" tppabs="http://www.anticrack.de/fravia/papers.htm">papers</A>
+
+</TD><TD>~</TD><TD>fra_012E</TD></TR>
+
+
+
+<TR><TD HEIGHT="33">17 June 98</TD><TD>
+
+Joa
+
+</TD><TD>~</TD><TD>
+
+<A href="crunchi4.htm" tppabs="http://www.anticrack.de/fravia/crunchi4.htm">crunchi4.htm</A>
+
+</TD><TD>Little essay about the various methods and viewpoints of crunching IV
+
+</TD><TD VALIGN="center" bgcolor="#E2A221"><A HREF="papers.htm" tppabs="http://www.anticrack.de/fravia/papers.htm">papers</A>
+
+</TD><TD>~</TD><TD>fra_012F</TD></TR>
+
+</TABLE>
+
+<HR><PRE>
+
+Little essay about the various methods and viewpoints of crunching.
+
+
+
+Part IV: Leaving Huffman and entering the realms of R'lyeh, eh, RLE
+
+
+
+
+
+
+
+By Joa Koester (JoKo2000@HotMail.Com) 
+
+This essay is free to be copied and read and spread as long as
+
+you are decent enough to leave my name in it. 
+
+If you have corrections, comments, better examples than the ones used 
+
+in this essay, etc. - drop me a line.
+
+
+
+
+
+OK, let's dive into the world of crunchers and munchers...
+
+
+
+
+
+Last time we discussed the possible uses of the Huffman-tech and
+
+the possibibility to use it in an adaptive way. I would like
+
+to conclude this with the remark that the Huffman-way is pretty 
+
+useless for 'normal' progs. You achieve about 5% - 10% if you
+
+are lucky. Used on normal texts yielding only characters with
+
+ASCII &gt; 127 there will be at least a 25% ratio. Normally there
+
+will be a ratio of about 30%-35%. But there you have a limited
+
+Alphabet (the letters in lower and upper cases and the numbers
+
+plus some extra symbols). What we want are algorithms usable
+
+for more general (random) data. One of these algorithms (or
+
+better the principle) is RLE.
+
+
+
+What does RLE mean?
+
+
+
+RLE, Dr. Watson, stands for Run Length Encoding. It's varying 
+
+implementations are mostly used when speed is important.
+
+On the Amiga days there was a nice picture format - IFF.
+
+It had a RLE mode (or was RLE always on? Can't remember anymore...)
+
+where the single lines of a picture were crunched with a RLE
+
+algorithm leading to a space-saving of about 30% to 80% depending
+
+on the picture. Nice, isn't it?
+
+
+
+But what is the basic idea of RLE?
+
+
+
+Ah, Watson, always so eager, aren't you? Well, your desire will
+
+be satisfied... 
+
+
+
+Imagine a file with some data and some zeros:
+
+
+
+abcdefg00000000000000000000
+
+
+
+(you will see data like this a lot in uncompressed bitmaps)
+
+
+
+Now, we want to crunch it. We would like to crunch the RUN of the
+
+zeros. For this we have to tell the decoder the LENGTH  of the run. 
+
+One obvious idea would be:
+
+
+
+abcdefg{0x14}0
+
+
+
+where the {0x14} would be a byte which would tell the 
+
+decompressor how often it has to copy the following byte, 
+
+which would give us 9 bytes instead of 27 bytes: a 66.66% ratio.
+
+Now you know where the name RLE comes from. Believe me, this is
+
+one of the most primitive ways of thinking up a crunch-method.
+
+But as with all most primitive ways it is extremely fast and 
+
+astoundingly stable. 
+
+
+
+--- Little private note ----
+
+As a programmer you don't win a prize for the most complicated 
+
+algorithm you can think of (because you aren't paid (enough) for it 
+
+and there is in most cases no time for it) (except for
+
+the field of security where complicated algs are expected. 
+
+And yet - a programmer has to debug his own routines and so he won't 
+
+use tricks he won't understand a few weeks later), so you don't do it.
+
+You program on a more stable level: KISS. Keep It Simple, Stupid!
+
+If there is a more easy way of doing it, choose it. Use preformulated
+
+libraries like the C++ STL or (yuk) MFC or Borland VCL. That's the
+
+way programmers program their applications. Hugh!
+
+--- Little private note end ---
+
+
+
+One immediate question is of course coming up:
+
+What, if the zeros would have appeared 0x61 times (the value for 'a')?
+
+The output would have been:
+
+abcdefg{0x61}0 = abcdefga0
+
+
+
+How does the decruncher know when to activate a copy loop (crunch) or 
+
+just copy the actual bytes (no-crunch)?
+
+
+
+We have to build up a rule that both, the coder and the decoder
+
+use without exceptions. The coder has to build the output in a way that
+
+the decoder can decode it's input without problems.
+
+
+
+So, what we need is a kind of SWITCH. A switch which the encoder sends.
+
+Linked with the descision of implementing the switch is automatically 
+
+the question: WHEN do i crunch? 
+
+Do i crunch when there are 10 equal bytes following in a run? Certainly.
+
+There will be enough ways to tell the decoder that a run is coming up.
+
+Do i crunch when there are 5 equal bytes following in a run? Yep. Same answer.
+
+Do i crunch when there are 4 equal bytes following in a run? Yep. Same answer.
+
+Do i crunch when there are 3 equal bytes following in a run? Hm, let me think of it.
+
+Do i crunch when there are 2 equal bytes following in a run? Eh, (panic) don't know. HELP!
+
+
+
+Ok, ok. What you need is a little overview of some ideas i observed while 
+
+analysing some RLE methods. In most crunching algorithms there will be telling
+
+bits or bytes, telling the cruncher to change into crunch/normal mode. After
+
+this switch the following bits/bytes are interpreted completely different.
+
+
+
+- IFF like.
+
+  The IFf format was build upon the idea of signed chars. I don't remember the 
+
+  algorithm in all detail, but enough to explain the idea. If someone has the
+
+  original IFF-Readme's he should correct me here. But the basic idea is the 
+
+  following:
+
+  There are TELLING bytes. These telling bytes are either signed or unsigned.
+
+  The crunched file starts with a telling byte.
+
+  The switch was the 8th bit (the sign bit) of this char. 
+
+  When the decoder encountered a signed char it knew that, by masking with 0x7f,
+
+  it would get to the Runlength of the following byte. It copied the following
+
+  byte the decoded time +2 and went on with the next byte. +2 coz there had to
+
+  be at least 2 bytes, so you could add 2 in mind, giving you a length of a
+
+  crunch-run from 2 (encoded with %1 + (2 - 2 = 0 = %000 0000) = 0x80) 
+
+  to 129 (encoded with %1 + (129 - 2 = 127 = %111 1111) = 0xff).
+
+  If the byte was not signed, that would mean that the next X +1 bytes were to 
+
+  be copied as they were. X +1 because there HAS to be at least one byte, so 
+
+  you can add 1 in mind, giving us a range 
+
+  from 1 byte (encoded with %0 + (1 - 1 = 0 = %000 0000) = 0x00) 
+
+  to 128 (encoded with %0 + (128 - 1 = 127 =  %111 1111) = 0x7f). 
+
+  The minimum crunching point was 2 equal following bytes. They would be
+
+  coded as two bytes (0x80,0x??). Yes, i know, there is no saving here, but the other
+
+  consequence would have been to encode these two bytes as no-crunch, leading
+
+  to a three byte coding (0x01, 0x??, 0x??). 
+
+  In cases like this it is most important to keep the garbage down, or else you are
+
+  increasing the filesize with it.
+
+  One example:
+
+  
+
+  abcdefg00000000000000000000 (= abcdefg + 20 '0')
+
+  
+
+  would be coded as:
+
+  
+
+  {0x06}abcdefg{0x92}0. 
+
+  0x06 because we have 7 bytes here and the decoder adds one for you.
+
+  0x92 = %10010010 = %1 0010010 = 128 + 18. 18 because the decoder adds 2 for you.
+
+
+
+  It is important that you add the original filelength with the crunched file or your 
+
+  decoder doesn't know when to stop. 
+
+
+
+  If you have a file of total random data (like a already crunched file) you will
+
+  add (filesize / 128) bytes to it. So, if your Word '95 with 3.845.120 bytes was
+
+  total random data it would be enlarged by 30.040 bytes. But run the alf on uncompressed
+
+  bitmaps and watch them shrink.
+
+
+
+  Remark: IFF is a very good and simple to implement algorithm and it's a shame that
+
+          the Amiga is dead nowadays. I see IFF only on AIFF sound formats. ;(
+
+
+
+
+
+- one for eight
+
+  We have a telling byte which is viewed as a row of eight status bits. 1 means we have
+
+  a crunch, 0 means we have garbage (or the other way round - your choice).
+
+  Crunch and Garbage have unsigned counting bytes giving us a range from 1 to 256.
+
+  After we worked thru a sequence of all 8 bits, the next telling byte is read (thus
+
+  forming a package, remember?)
+
+  The crunched file starts with such a telling byte.
+
+  One example:
+
+
+
+  abcdefg00000000000000000000xyz111222333444abcdefg = 49 bytes
+
+
+
+  We step thru the first 7 bytes and consider them Garbage. 
+
+  The next 20 bytes are Crunch.
+
+  Then 3 bytes Garbage.
+
+  Then 3 bytes Crunch.
+
+  Then 3 bytes Crunch.
+
+  Then 3 bytes Crunch.
+
+  Then 3 bytes Crunch.
+
+  Then 7 bytes Garbage.
+
+
+
+  So our telling byte would be: %0 1 0 1 1 1 1 0 = 0x5e.
+
+  The counting bytes would be (decremented by one, remember): 
+
+  0x06, 0x13, 0x02, 0x02, 0x02, 0x02, 0x02, 0x06
+
+
+
+  The crunching algorithm can start by crunching two bytes and we should do it
+
+  or else we would produce one counting byte, plus those two bytes = 3 bytes!
+
+
+
+  It is important that you add the original filelength with the crunched file or your 
+
+  decoder doesn't know when to stop. 
+
+
+
+  The whole package would look like this:
+
+  {0x5e}{0x06}abcdefg{0x13}0{0x02}xyz{0x02}1{0x02}2{0x02}3{0x02}4{0x06}abcdefg = 31 bytes
+
+
+
+  The IFF-coder would have produced:
+
+  {0x06}abcdefg{0x92}0{0x02}xyz{0x81}1{0x81}2{0x81}3{0x81}4{0x06}abcdefg = 30 bytes
+
+
+
+  While the algorithm is a little bit more complicated than the IFF-alg, it has the advantage
+
+  of having a range of 256 instead of 129 byte. In big files this could lead to some significant
+
+  savings.
+
+
+
+  I lifted this algorithm from the bit-level to the bytelevel. I saw both implementations and
+
+  due to my observations the bytelevel is much faster. In the bitlevel you read a telling-BIT. 
+
+  If it's a one (crunch) you read 8 bits as a counter, add one, read the next 8 bit as the char 
+
+  and copy your decoded byte ?-times into your destination buffer. 
+
+  If it's a zero you read the next 8 bits 
+
+  as a counter, add one and reading ? times 8 bits as a char you copy the next ? bytes. It's the
+
+  same mechanism, but implemented as byte it's sooooo much faster. The bitlevel is just more
+
+  pseudo-crypting, because you can't read anything anymore :-).
+
+
+
+  If you have a file of total random data (like a already crunched file) you will
+
+  add (filesize / 256) + ( (filesize / 256) / 8) bytes to it. 
+
+  So, if your Word '95 with 3.845.120 bytes was total random data it would be 
+
+  enlarged by 15.020 + 1878 = 16898 bytes. 
+
+  
+
+
+
+- No Garbage
+
+  This one is most interesting. As you saw above, one problem arising is the coding of garbage.
+
+  This idea here now implements a way of RLE without having the problems of garbage with the
+
+  disadvantage of only being able to crunch from up to 3 bytes in a row instead of 2 like the
+
+  others.
+
+  The idea is, that the decoder can do something about the garbage recognizing. If the decoder
+
+  would somehow recognize that we have a crunch here, it just would have to read a counter byte 
+
+  and could start the copy routine. 
+
+
+
+  Well, the easiest way of making the decoder recognizing a byte-run is to let the run partially 
+
+  STAY in the source. That means that we have to let at least two bytes in a row stay in the source for
+
+  to make the decoder able to recognize a crunch. Than we add a counting byte with a range from
+
+  1 to 256 of how many of this byte will FOLLOW and there are no garbage bytes anymore.
+
+  1 to 256 because we will crunch starting by three equal bytes in a row, so the byte will at least 
+
+  be copied once more, thus adding one to the range of a byte.
+
+  In the praxis this means you will have a run with a certain length. When the length is more than
+
+  two and shorter than 259 you subtract 3 from it. When you have a length of 3 you subtract 3 giving
+
+  a zero as output. As the decoder will at least copy one byte the run is perfect. If you have a run
+
+  of 258 you subtract 3 giving 255 as output. Exactly what can be put into a unsigned char. As two
+
+  bytes will be coded the normal way and the decoder will add one to the counter we have our 258 
+
+  runlength encoded.
+
+
+
+  One example:
+
+  abcdefg00000000000000000000xyz111222333444abcdefg = 49 bytes
+
+
+
+  abcdefg               is encoded as is
+
+  00000000000000000000  is encoded as crunch: 20 - 3 = 17 bytes will follow, so 00{0x11}
+
+  xyz                   is encoded as is
+
+  111                   is encoded as crunch: 3  - 3 = 0  byted will follow, so 11{0x00}
+
+  222                   is encoded as crunch: 3  - 3 = 0  byted will follow, so 22{0x00}
+
+  333                   is encoded as crunch: 3  - 3 = 0  byted will follow, so 33{0x00}
+
+  444                   is encoded as crunch: 3  - 3 = 0  byted will follow, so 44{0x00}
+
+  abcdefg               is encoded as is
+
+
+
+  makes alltogether:
+
+
+
+  abcdefg00{0x11}xyz11{0x00}22{0x00}33{0x00}44{0x00}abcdedfg = 32 bytes
+
+
+
+
+
+  If you have a file of total random data (like a already crunched file) you will
+
+  add 0 (!) bytes to it. That's an important feature. This algorithm can be
+
+  let loose on all data you know. In the worst case the output will be the same
+
+  as the input and no harm was done.
+
+  So, if your Word '95 with 3.845.120 bytes was total random data it would be 
+
+  still 3.845.120 bytes
+
+  The disadvantage is of course the unability to crunch two consequenting bytes.
+
+  But hey, you can't have it all, can you?
+
+
+
+
+
+There are of course a lot more possibilities of coding RLE. I hope you get the idea.
+
+Don't let the statistics deceive you. It strongly depends on the input data which
+
+of the above mentioned algorithms are best suited for the task. One good strategy 
+
+would be to load about 20%-10% of the file (if it's big) and test crunch it with 
+
+ALL your algs. Then choose the best one and crunch the whole file. This will not
+
+work on smaller files where you should load the whole file into a buffer (say, 64K
+
+or 128K or so). For most RLE-algs speed is the most critical factor. Have this 
+
+always on your mind when you invent your own RLE-crunchers.
+
+
+
+When i started writing little crunchers on my own i started with the DECruncher.
+
+It worked always fine for me. First think of a file and a possible coding. Write
+
+it down. Create a file with this coding. Write a decruncher. And then think of a 
+
+way to generate such a code. The central point of all crunch algorithms will be
+
+the pointers to your source-buffer and to internal arrays and/or to some
+
+history tables. Try it. It's easier than you may think right now.
+
+
+
+
+
+Eh, i have observed something important, i think.
+
+
+
+What is it, Watson?
+
+
+
+In your example (abcdefg00000000000000000000xyz111222333444abcdefg) the 
+
+sequence 'abcdefg' happens to appear two times. After having observed this
+
+i examined some files and texts and i realized that sequences (and, or, in...)
+
+(re)appear a lot more often than equal-byte runs in files. 
+
+Can we crunch these sequences, too?
+
+
+
+Oh, yes, Watson. We can! Jacob Ziv and Abraham Lempel published essays dealing
+
+exactly with this problem in 1977 and 1978. The theories described there are
+
+the basics of what we call today the LZxxx-algorithms. Programs like the
+
+UNIX-Compress or ZIP or RAR are based on these theories. But this is a 
+
+little bit more complicated and better dealt with in an chapter on it's own.
+
+
+
+
+
+
+
+I hope you enjoyed this chapter. 
+
+There will be more - i promise.
+
+Just have a little patience.
+
+
+
+Greetings from a programmer
+
+
+
+Joa
+
+</PRE>
+
+<CENTER>
+
+<HR size=3><A href="mailto:JoKo2000@hotmail.com">
+
+<IMG SRC="tellme.gif" tppabs="http://www.anticrack.de/fravia/tellme.gif" width="140" height="21"></A>
+
+<BR><BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links</A> 
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm"> anonymity</A> 
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC</A> 
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays</A> 
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database</A>
+
+ <BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="coumes.htm" tppabs="http://www.anticrack.de/fravia/coumes.htm">counter measures</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="botstart.htm" tppabs="http://www.anticrack.de/fravia/botstart.htm">bots wars</A> 
+
+ 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia</A>
+
+<BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering legal?</A>
+
+</CENTER></CENTER>
+
+<HR SIZE=2>
+
+
+
+</BODY>
+
+</HTML>
+

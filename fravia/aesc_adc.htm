@@ -1,0 +1,1086 @@
+<html>   <HEAD>
+
+<TITLE>sdzero</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR=#C0C0C0 TEXT=#001010 VLINK=#405040>
+
+<CENTER><H2>Reverse engineering Advanced Disk Catalog v. 1.1</H2><H4><I>by Aesculapius</I><BR>
+
+(Redundant instructions: the undiscovered treasure<BR>
+
+and a couple of lessons for shareware programmers)
+
+<BR>
+
+<BR>(21 July 1997, slightly edited by Fravia+)</H4>
+
+<HR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN=BOTTOM BORDER=0 VSPACE=0 HSPACE=0 width="13" height="13">Courtesy of Fravia's page of reverse engineering
+
+<BR><BR><I>Well, Aesculapius show us a whole new direction and cracks a couple of 
+
+useful tools without even noticing it much... what should I say? An outstanding 
+
+essay from an outstanding +cracker!
+
+
+
+</I></CENTER><HR size=2>
+
+   						<PRE>
+
+                        Advanced Disk Catalog v. 1.12
+
+          ("Redundant instructions: the undiscovered treasure")
+
+                              By Aesculapius
+
+
+
+
+
+	There was a time when CPU's were turtles and hard drives smaller than
+
+your RAM capacity is today. Considering this panorama, it's understandable
+
+why assembly coding was so necessary to enhance applications performance;
+
+things have changed though, hardware does not limit today's programmers and it's
+
+possible and desirable to use a more sophisticated high level programming
+
+language instead of pure assembly. These facts have obvious consequences: 
+
+most programs include unnecessary instructions and such thing could represent
+
+an open door for a very well shielded protection scheme. We'll deal in this
+
+essay with debugging and patching unfriendly application. 
+
+ADC 1.12 code is very sensitive to patching procedures. 
+
+Slight changes, for instance JNE to JE, will hang the whole thing, or simply, 
+
+although logic suggests that some change should crack the scheme, you can hold 
+
+your breath and count to one thousand because nothing will happen. 
+
+This is especially true if the changes are carried out in code locations "close" 
+
+to the protection scheme. 
+
+The main validation code resides in a *.DLL file named VALIDATE.DLL; to
+
+produce a more robust anti-crackers strategy, there's a checksum in the main
+
+executable (ADC.EXE) to validate the integrity of VALIDATE.DLL (one
+
+validation over another, interesting!). The scheme code itself inside
+
+VALIDATE.DLL will be executed many times. As you can see, paranoia in
+
+it's maximum expression!
+
+	
+
+	To figure out that the protection scheme was inside VALIDATE.DLL,
+
+Win-eXpose-I/O 95 v. 2.00 (WXI) probed to be a formidable tool. You can
+
+locate it at <A href="javascript:if(confirm('http://www.shetef.com/wxi95-20.zip  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.shetef.com/wxi95-20.zip'" tppabs="http://www.shetef.com/wxi95-20.zip">http://www.sheltef.com/wxi95-20.zip</A>, 1.1 Mb. You should also
+
+get Win-eXpose-Registry 95 v. 1.00 at <A href="javascript:if(confirm('http://www.sheltef.com/wxr95-10.zip  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.sheltef.com/wxr95-10.zip'" tppabs="http://www.sheltef.com/wxr95-10.zip">http://www.sheltef.com/wxr95-10.zip</A>,
+
+1.1 Mb. Both of these applications are excellent additions for our trade.
+
+All Sheltef Solutions products are distributed as a 30 days free trial limit
+
+shareware. This is the snippet of the protection scheme for all products:
+
+
+
+:0040619D FF15247B6D00 Call dword ptr [006D7B24]    ; Calculates the valid
+
+                                                    ; password 
+
+:004061A3 83C40C       add esp, 0000000C
+
+:004061A6 8D85CCFEFFFF lea eax, dword ptr [ebp+FECC]; Moves to EAX the
+
+                                                      memory offset
+
+                                                      where the password
+
+                                                      you typed is 
+
+                                                      located
+
+:004061AC 8D8DCCFDFFFF lea ecx, dword ptr [ebp+FDCC]; Moves to ECX the
+
+                                                      memory offset
+
+                                                      where the valid
+
+                                                      password is located
+
+
+
+Referenced by a Jump at Address:004061CC(C) ; The following code compares
+
+                                            ; both numbers one byte at a time
+
+:004061B2 8A10                    mov dl, byte ptr [eax]; 
+
+:004061B4 3A11                    cmp dl, byte ptr [ecx]
+
+:004061B6 751A                    jne 004061D2
+
+:004061B8 0AD2                    or dl, dl
+
+:004061BA 7412                    je 004061CE
+
+:004061BC 8A5001                  mov dl, byte ptr [eax+01]
+
+:004061BF 3A5101                  cmp dl, byte ptr [ecx+01]
+
+:004061C2 750E                    jne 004061D2
+
+:004061C4 83C002                  add eax, 00000002
+
+:004061C7 83C102                  add ecx, 00000002
+
+:004061CA 0AD2                    or dl, dl
+
+:004061CC 75E4                    jne 004061B2
+
+
+
+	Using Winice, set a breakpoint at CS:4061CC (BPX CS:4061CC), and
+
+execute the following instruction: "D ECX" after winice pops up, the memory
+
+location where the valid password is stored will be revealed. If you're too
+
+lazy, then use this data, Serial Number: AESCULAPIUS, Password: f3e39742.
+
+	Sheltef Solutions programmers should be strong candidates to win the
+
+stupidity award, because all their products use not only the same protection
+
+scheme, but also the same code generation sequence! So this data will
+
+unprotect Win-eXpose-Registry too... you wont believe it: the same password
+
+works over and over for every single program, this is too much!
+
+
+
+	Now, in regard to the subject of this essay, ADC 1.12 can be located
+
+at <A href="javascript:if(confirm('http://www.ecsc.mipt.ru/Elcom/  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.ecsc.mipt.ru/Elcom/'" tppabs="http://www.ecsc.mipt.ru/Elcom/">http://www.ecsc.mipt.ru/Elcom/</A>, 1.21 MB, dated June 25 1997.
+
+
+
+	To begin this session, load the file VALIDATE.DLL in wdsm85, hit the
+
+search button looking for: "thank you for registering". We land here:
+
+
+
+* Referenced by a Jump at Address:1C001354(C)
+
+|
+
+:1C00123F C68500FFFFFF00          mov byte ptr [ebp+FFFFFF00], 00
+
+:1C001246 6800010000              push 00000100
+
+:1C00124B 8D8500FFFFFF            lea eax, dword ptr [ebp+FF00]
+
+:1C001251 50                      push eax
+
+
+
+* Possible StringData Ref from Data Obj ->"Enter code:"
+
+                                  |
+
+:1C001252 684060001C              push 1C006040
+
+
+
+* Possible StringData Ref from Data Obj ->"Registration"
+
+                                  |
+
+:1C001257 684C60001C              push 1C00604C
+
+
+
+* Reference To: USER32.GetFocus, Ord:00F7h
+
+                                  |
+
+:1C00125C FF152C92001C            Call dword ptr [1C00922C]
+
+:1C001262 50                      push eax
+
+:1C001263 E8AA010000              call 1C001412
+
+:1C001268 83F801                  cmp eax, 00000001
+
+:1C00126B 0F85B8000000            jne 1C001329
+
+:1C001271 8D8500FFFFFF            lea eax, dword ptr [ebp+FF00]
+
+:1C001277 50                      push eax
+
+:1C001278 E881020000              call 1C0014FE
+
+:1C00127D 85C0                    test eax, eax
+
+:1C00127F 0F8514000000            jne 1C001299
+
+:1C001285 8D8500FFFFFF            lea eax, dword ptr [ebp+FF00]
+
+:1C00128B 50                      push eax
+
+:1C00128C E847060000              call 1C0018D8 ; Code validation
+
+                                                ; Sequence
+
+:1C001291 85C0                    test eax, eax ; EAX=0 Unreg.
+
+                                                ; EAX=1 Reg.
+
+:1C001293 0F8477000000            je 1C001310   ; Don't change this jump, 
+
+                                                  it won't work.
+
+
+
+* Referenced by a Jump at Address:1C00127F(C)
+
+| Possible StringData Ref from Data Obj ->"Registration" ; We want to 
+
+                                                         ; Execute this code
+
+:1C001299 685C60001C              push 1C00605C
+
+:1C00129E E81D090000              call 1C001BC0
+
+:1C0012A3 8985FCFEFFFF            mov dword ptr [ebp+FEFC], eax
+
+:1C0012A9 8D8500FFFFFF            lea eax, dword ptr [ebp+FF00]
+
+:1C0012AF 50                      push eax
+
+:1C0012B0 E8BB0D0000              call 1C002070
+
+:1C0012B5 83C404                  add esp, 00000004
+
+:1C0012B8 50                      push eax
+
+:1C0012B9 6A01                    push 00000001
+
+:1C0012BB 8D8500FFFFFF            lea eax, dword ptr [ebp+FF00]
+
+:1C0012C1 50                      push eax
+
+
+
+* Possible StringData Ref from Data Obj ->"Code"
+
+                                  |
+
+:1C0012C2 686C60001C              push 1C00606C
+
+:1C0012C7 8B85FCFEFFFF            mov eax, dword ptr [ebp+FEFC]
+
+:1C0012CD 50                      push eax
+
+:1C0012CE E872090000              call 1C001C45
+
+:1C0012D3 8B85FCFEFFFF            mov eax, dword ptr [ebp+FEFC]
+
+:1C0012D9 50                      push eax
+
+:1C0012DA E84F090000              call 1C001C2E
+
+:1C0012DF 6A40                    push 00000040
+
+
+
+* Possible StringData Ref from Data Obj ->"ADC"
+
+                                  |
+
+:1C0012E1 687460001C              push 1C006074
+
+
+
+* Possible StringData Ref from Data Obj ->"Thank you for registering!"
+
+                                  |
+
+:1C0012E6 687860001C              push 1C006078
+
+
+
+The validation sequence begins at :1C00128C. Lets search for the code 
+
+where this CALL points to: Hit the search button at wdsm85 (or text 
+
+editor) looking for :1C0018D8. We land here:
+
+
+
+* Referenced by a CALL at Addresses:1C00128C, :1C001A4D             
+
+                                     ; The validation sequence is activated 
+
+									 ; from two different code locations   
+
+
+
+:1C0018D8 55              push ebp
+
+:1C0018D9 8BEC            mov ebp, esp
+
+:1C0018DB 83EC30          sub esp, 00000030
+
+:1C0018DE 53              push ebx
+
+:1C0018DF 56              push esi
+
+:1C0018E0 57              push edi
+
+:1C0018E1 C745D01E000000  mov [ebp-30], 0000001E     ; fixed value
+
+:1C0018E8 C745FC06000000  mov [ebp-04], 00000006     ; fixed value
+
+:1C0018EF 837D0800        cmp dword ptr [ebp+08], 00 ; Is the typed code
+
+                                                       equal to 00? then
+
+                                                       EAX=0 Unreg.
+
+									  
+
+:1C0018F3 0F8507000000    jne 1C001900
+
+:1C0018F9 33C0            xor eax, eax               ; Erase EAX, EAX=0 Unreg.
+
+:1C0018FB E900010000      jmp 1C001A00               ; Return to the CALLer
+
+
+
+* Referenced by a Jump at Address:1C0018F3(C)
+
+|
+
+:1C001900 8B4508                  mov eax, dword ptr [ebp+08]
+
+:1C001903 50                      push eax
+
+
+
+? Reference To: KERNEL32.lstrlenA, Ord:028Dh ; Get Number of digits of the
+
+                                             ; typed serial number
+
+                                  |
+
+:1C001904 FF15A891001C            Call dword ptr [1C0091A8]
+
+:1C00190A 83F808                  cmp eax, 00000008 ; Is the number you
+
+                                                      typed more or less
+
+                                                      than 8 digits, then
+
+                                                      EAX=0 Unreg.
+
+:1C00190D 0F8407000000            je 1C00191A
+
+:1C001913 33C0                    xor eax, eax      ; Erase EAX
+
+:1C001915 E9E6000000              jmp 1C001A00      ; Return to the CALLer
+
+
+
+* Referenced by a Jump at Address:1C00190D(C)
+
+|
+
+:1C00191A 8B45D0                  mov eax, dword ptr [ebp-30]
+
+:1C00191D 50                      push eax
+
+
+
+* Possible StringData Ref from Data Obj ->"%02d"
+
+                                  |
+
+:1C00191E 68D460001C  push 1C0060D4
+
+:1C001923 8D45D4      lea eax, dword ptr [ebp-2C]
+
+:1C001926 50          push eax
+
+:1C001927 E8B4080000  call 1C0021E0
+
+:1C00192C 83C40C      add esp, 0000000C
+
+:1C00192F 8B4508      mov eax, dword ptr [ebp+08] ; Moves the code offset
+
+                                                    to EAX
+
+:1C001932 0FBE00      movsx eax, byte ptr [eax];    Moves the first byte
+
+                                                    of the code to EAX
+
+:1C001935 83E830      sub eax, 00000030;            Converts the first
+
+                                                    digit to decimal
+
+:1C001938 8945F8      mov dword ptr [ebp-08], eax;  Moves the decimal 
+
+                                                    value to [ebp-08]
+
+:1C00193B 8B4508      mov eax, dword ptr [ebp+08];  Moves the code offset
+
+                                                    to EAX
+
+:1C00193E 0FBE4001    movsx eax, byte ptr [eax+01]; Moves the second byte
+
+                                                    of the code to EAX
+
+:1C001942 83E830      sub eax, 00000030;            Converts second digit
+
+                                                    to decimal
+
+:1C001945 8945F4      mov dword ptr [ebp-0C], eax;  Moves the decimal
+
+                                                    value of the second
+
+                                                    digit to [ebp-0c] and
+
+                                                    so on with the rest
+
+                                                    of the 8 digits
+
+:1C001948 8B4508      mov eax, dword ptr [ebp+08]
+
+:1C00194B 0FBE4002    movsx eax, byte ptr [eax+02]
+
+:1C00194F 83E830      sub eax, 00000030
+
+:1C001952 8945F0      mov dword ptr [ebp-10], eax;  third decimal value
+
+                                                 ;  in [ebp-10]
+
+:1C001955 8B4508      mov eax, dword ptr [ebp+08]
+
+:1C001958 0FBE4003    movsx eax, byte ptr [eax+03]
+
+:1C00195C 83E830      sub eax, 00000030
+
+:1C00195F 8945EC      mov dword ptr [ebp-14], eax;  fourth in [ebp-14]
+
+:1C001962 8B4508      mov eax, dword ptr [ebp+08]
+
+:1C001965 0FBE4004    movsx eax, byte ptr [eax+04]
+
+:1C001969 83E830      sub eax, 00000030
+
+:1C00196C 8945E4      mov dword ptr [ebp-1C], eax;  fifth in [ebp-14]
+
+:1C00196F 8B4508      mov eax, dword ptr [ebp+08]
+
+:1C001972 0FBE4005    movsx eax, byte ptr [eax+05]
+
+:1C001976 83E830      sub eax, 00000030
+
+:1C001979 8945E0      mov dword ptr [ebp-20], eax;  sixth in [ebp-20]
+
+:1C00197C 8B4508      mov eax, dword ptr [ebp+08]
+
+:1C00197F 0FBE4006    movsx eax, byte ptr [eax+06]
+
+:1C001983 83E830      sub eax, 00000030
+
+:1C001986 8945DC      mov dword ptr [ebp-24], eax;  seventh in [ebp-24]
+
+:1C001989 8B4508      mov eax, dword ptr [ebp+08]
+
+:1C00198C 0FBE4007    movsx eax, byte ptr [eax+07]
+
+:1C001990 83E830      sub eax, 00000030
+
+:1C001993 8945D8      mov dword ptr [ebp-28], eax;  eighth in [ebp-28]
+
+:1C001996 8B45F8      mov eax, dword ptr [ebp-08];  Moves first digit to
+
+                                                    EAX
+
+:1C001999 2B45D8      sub eax, dword ptr [ebp-28];  first-eighth
+
+:1C00199C 8B4DF4      mov ecx, dword ptr [ebp-0C];  Moves second digit to
+
+                                                    ECX
+
+:1C00199F 2B4DDC      sub ecx, dword ptr [ebp-24];  second-seventh
+
+:1C0019A2 0FAFC1      imul eax, ecx         ; (first-eighth)*(second-seventh)
+
+:1C0019A5 8945E8      mov dword ptr [ebp-18], eax;  Result stored in 
+
+                                                    [ebp-18]
+
+:1C0019A8 8B45E8      mov eax, dword ptr [ebp-18] ; Moves result to EAX
+
+:1C0019AB 99          cdq               ; Moves high order bits of EAX to EDX
+
+:1C0019AC 33C2        xor eax, edx                ; Exclusive OR
+
+:1C0019AE 2BC2        sub eax, edx                ; subtract EAX-EDX
+
+:1C0019B0 8945E8      mov dword ptr [ebp-18], eax ; result in [ebp-18]
+
+:1C0019B3 8B45E8      mov eax, dword ptr [ebp-18] ; result in EAX
+
+:1C0019B6 3945D0      cmp dword ptr [ebp-30], eax ; EAX must be equal
+
+                                                  ; to value at [ebp-30]
+
+                                                  ; [ebp-30]=1Eh=30Dec at
+
+                                                  ; :1C0018E1 (look back) 
+
+:1C0019B9 0F8407000000je 1C0019C6
+
+:1C0019BF 33C8        xor ecx, eax ; if EAX<>1E (30 decimal) then XOR EAX
+
+                                   ; and EAX=0 Unreg.
+
+:1C0019C1 E93A000000  jmp 1C001A00                ; Returns to the CALLer
+
+
+
+At this point we could easily crack this schemes by changing instruction 
+
+:1C0019BF from XOR EAX,EAX to XOR ECX,EAX, this would erase ECX 
+
+leaving EAX intact, if EAX<>0 the program is Registered, and the 
+
+protection scheme would be disabled. Off course, we would have to deal 
+
+with the checksum (read the validate.dll checksum annihilation add on, at 
+
+the end of this essay). 
+
+
+
+However, we want to go for the gold, lets calculate the valid serial 
+
+number: we know that the validation code is calculated according to the 
+
+following equation: (first digit - eighth digit) * (second digit - 
+
+seventh digit)= 1Eh = 30 Decimal. The high order bits of EAX should be 
+
+"0" because this value will be stored in EDX and finally EDX is 
+
+subtracted from EAX.
+
+
+
+        So lets begin with this tentative 8 digits number:
+
+
+
+        88776623 ; Applying the equation: (8 - 3) * (8 - 2) => (5) * (6) = 
+
+30 Decimal = 1E Hexadecimal.
+
+
+
+	(Don't forget to check the SUB REGISTER, 30 instruction ADD ON, at 
+
+the end of this document)
+
+
+
+	This attempt will pass the first validation test and leads the 
+
+execution to the following piece of code:
+
+	
+
+* Referenced by a Jump at Address:1C0019B9(C)
+
+|
+
+:1C0019C6 8B45F0        mov eax, dword ptr [ebp-10]; Moves third digit to EAX 
+
+:1C0019C9 2B45E0        sub eax, dword ptr [ebp-20]; Subtract third-sixth 
+
+:1C0019CC 8B4DEC        mov ecx, dword ptr [ebp-14]; Moves Fourth digit to ECX
+
+:1C0019CF 2B4DE4        sub ecx, dword ptr [ebp-1C]; Subtr. Fourht - fifth
+
+:1C0019D2 0FAFC1        imul eax, ecx ;       (third-sixth) * (fourth-fifth)
+
+:1C0019D5 8945E8        mov dword ptr [ebp-18], eax; Moves result to
+
+                                                   ; [ebp-18]
+
+:1C0019D8 8B45E8        mov eax, dword ptr [ebp-18]; Moves result to EAX
+
+:1C0019DB 99            cdq            ; Moves high order bits of EAX to EDX
+
+:1C0019DC 33C2          xor eax, edx               ; Exclusive OR
+
+:1C0019DE 2BC2          sub eax, edx               ; Subtract EAX-EDX
+
+:1C0019E0 8945E8        mov dword ptr [ebp-18], eax; Moves result to
+
+                                                   ; [ebp-18]
+
+:1C0019E3 8B45E8        mov eax, dword ptr [ebp-18]; Moves result to EAX
+
+:1C0019E6 3945FC        cmp dword ptr [ebp-04], eax; Compares EAX with
+
+                                                   ; [ebp-04] which is
+
+                                                   ; equal to 06h (look
+
+                                                   ; back at :1C0018E8)
+
+:1C0019E9 0F8407000000  je 1C0019F6          ; If equal return to the CALLer
+
+:1C0019EF 33C0          xor eax, eax         ; If not equal EAX=0 Unreg.
+
+:1C0019F1 E90A000000    jmp 1C001A00         ; Return to the CALLer with EAX=0
+
+
+
+* Referenced by a Jump at Address:1C0019E9(C)
+
+|
+
+:1C0019F6 B801000000  mov eax, 00000001 ; The serial number has passed
+
+                                        ; all tests, therefore,
+
+                                        ; EAX=01 Registered
+
+:1C0019FB E900000000  jmp 1C001A00      ; Return to the CALLer
+
+                                        ; with EAX=1 Registered
+
+
+
+* Referenced by a Jump at Addresses:1C0018FB(U), :1C001915(U), :1C0019C1(U), 
+
+                                   :1C0019F1(U), :1C0019FB(U)
+
+|
+
+:1C001A00 5F                      pop edi
+
+:1C001A01 5E                      pop esi
+
+:1C001A02 5B                      pop ebx
+
+:1C001A03 C9                      leave
+
+:1C001A04 C20400                  ret 0004 
+
+
+
+	The equation looks like this: (third digit - sixth digit) * (fourth
+
+        digit - fifth digit) = 06h = 6 Decimal.
+
+
+
+        Lets modify our tentative number according to this:
+
+
+
+       Valid Number: 88552323, where, (5 - 3) * (5 - 2) =>
+
+       (2) * (3) = 6 Decimal = 06hex.
+
+
+
+        This number seems to pass all tests.
+
+
+
+	Now try to register ADC 1.12 with the Serial Number: 88552323 and
+
+        it works!
+
+
+
+
+
+                       VALIDATE.DLL ANNIHILATION ADD ON
+
+
+
+	Once we've cracked the file validate.dll with our favorite hex
+
+editor, everything seems to be fine, but when we double click on the main
+
+executable (ADC.EXE), another window pops up!!! VALIDATE.DLL missing or
+
+invalid. No!!!, there's a checksum to verify the integrity of the .dll file,
+
+Damn!!!
+
+	We're sitting in our workbench once again. If you try to execute
+
+ADC.EXE with WXI in memory, it'll inform you that the checksum resides in
+
+the main executable (ADC.EXE) itself. So lets disassemble this file with
+
+wdsm85 and hit the search button looking for this sequence: "VALIDATE.DLL is
+
+missing or invalid". We land here:
+
+
+
+* Referenced by a Jump at Address:00409239(U)
+
+|
+
+:00409266 83C4FC                  add esp, FFFFFFFC
+
+:00409269 A350F44800              mov [0048F450], eax
+
+:0040926E C60548F3480000          mov byte ptr [0048F348],00; Redundant 
+
+                                                            ; Instruction
+
+					
+
+        Several instructions eliminated to save some space!
+
+
+
+* Referenced by a Jump at Address:004092DC(U)
+
+|
+
+:0040930D A33CF34800              mov [0048F33C], eax
+
+:00409312 E8A9A70100              call 00423AC0      ; Checksum
+
+:00409317 A3FCF74800              mov [0048F7FC], eax; Moves the checksum
+
+                                                     ; of the modified
+
+                                                     ; file to [48F7FC]
+
+
+
+:0040931C 8B15E8154800  mov edx, dword ptr [004815E8]; Moves the valid
+
+                                                       checksum of the
+
+                                                       original file
+
+                                                       validate.dll to
+
+                                                       [4815E8]
+
+:00409322 3BC2          cmp eax, edx                 ; Compares both values
+
+:00409324 0F8576000000  jne 004093A0                 ; Jumps if the .dll
+
+                                                     ; file is invalid
+
+                                                     ; to 4093A0
+
+
+
+          Several instructions eliminated to save space!
+
+
+
+? Referenced by a Jump at Addresses:00409324(C), :0040937A(C) 
+
+                                      ; The checksum is activated 
+
+                                      ; from two different sections
+
+                                      ; of the code.
+
+* Reference To: USER32.GetFocus, Ord:0000h
+
+                                  |
+
+:004093A0 E800D50600              Call 004768A5 ; This is the part we
+
+                                                ; don't want to see
+
+                                                ; in our screen!
+
+:004093A5 6A00                    push 00000000
+
+:004093A7 6A10                    push 00000010
+
+
+
+* Possible StringData Ref from Data Obj ->"Fatal"
+
+                                  |
+
+:004093A9 689B7B4700              push 00477B9B
+
+
+
+* StringData Ref from Data Obj ->"VALIDATE.DLL is missing or invalid."
+
+                                  |
+
+:004093AE 68777B4700              push 00477B77
+
+:004093B3 50                      push eax
+
+
+
+Pay attention to this explanation: The checksum is calculated at :409319,
+
+then, the checksum of the modified file is stored at memory location
+
+[48F7FC], the valid checksum of the original file is stored at EDX from
+
+memory location [4815E8]. At instruction :409322 both values are compared
+
+and the decision is taken at instruction :409324 which will jump if the
+
+checksums values are different. Changing the JNE to JE won't crack this
+
+scheme, because the invalid checksum has already been stored at a memory
+
+location where it'll be checked by other locations of the code. The
+
+programmer was very intelligent because he moved the invalid checksum from a
+
+register (EAX) to the memory, and the valid checksum from memory to a
+
+register (EDX); this particular configuration will prevent us to move the
+
+right checksum to the invalid checksum memory location, because assembly can
+
+not move data directly from one memory location to another (except by the
+
+use of rep movs instructions). We can't move the right cheksum to EAX at
+
+409317 (MOV EAX, [4815E8]) because the program will crash. This piece of code
+
+is not as easy to crack as it seems.
+
+
+
+	Now load ADC.EXE with WINICE press ctrl-d, set a breakpoint at
+
+cs:409322 to see what's the difference between both checksums. Start ADC and
+
+WINICE will pop up. Execute: ? EAX and ? EDX to check both values. You get
+
+this:
+
+		
+
+			EAX: F4E9C8A1
+
+			EDX: F4E9C8A9
+
+
+
+	The difference resides in the last digit; you also know that EAX
+
+value is stored backwards at [48F7FC], this means that A1 will be
+
+stored at the first byte of that memory location. All we have to do
+
+to crack this mess is search for a redundant instruction to change the byte
+
+at [48F7FC] from A1h to A9h. Searching backwards in the code we find the
+
+perfect instruction (mov byte ptr) at :40926E. To be sure that it is in fact
+
+redundant, set a breakpoint at CS:40926E and when WINICE pops up, execute:
+
+d [48F348]. Just what I thought, this byte is already zero before the
+
+instruction stores 00 at it, therefore, it's redundant and not necessary. 
+
+
+
+	Finally, to crack the checksum, change this:
+
+
+
+:0040926E C60548F3480000 mov byte ptr [0048F348],00 
+
+
+
+to
+
+
+
+:0040926E C605E8154800A9 mov byte ptr [0048F7FC],A9 
+
+
+
+        The checksum has been defeated!
+
+
+
+        Don't forget this: redundant instructions are frequently located at
+
+push & pop sequences of the beginning and ending of almost every CALL. You
+
+may use this spare bytes at your will!
+
+
+
+                    SUB REGISTER, 30 INSTRUCTION ADD ON
+
+                               By Aesculapius
+
+
+
+	Many programs use the instruction: SUB REGISTER, 30 to convert a
+
+hexadecimal number to its decimal equivalent. Locating instructions like
+
+this one, for instance: SUB EAX, 30 several times in the same piece of code
+
+will warn you about two things:
+
+
+
+1. A valid code calculation sequence could be there.
+
+2. This instruction is used only with numbers (not with letters). So there
+
+are as many numbers in the serial code as SUB REGISTER, 30 instructions in
+
+the asm code.
+
+
+
+
+
+                                     Aesculapius - July 97
+
+                                     Email: aesculapius@cyberjunkie.com
+
+                                     HomePage: http://aesculapius.home.ml.org
+
+  </PRE>
+
+<BR>
+
+<HR ALIGN=CENTER WIDTH=100% SIZE=3>
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</I></CENTER>
+
+<BR><CENTER>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALIGN=BOTTOM BORDER=0 VSPACE=0 HSPACE=0 width="13" height="13"><A
+
+HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html"> homepage</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALIGN=BOTTOM BORDER=0 VSPACE=0 HSPACE=0 width="13" height="13"> 
+
+<A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm"> links</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0>
+
+<A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm"> anonymity</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN=BOTTOM
+
+BORDER=0 VSPACE=0 HSPACE=0 width="13" height="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm"> +ORC</A>
+
+
+
+<IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN=BOTTOM BORDER=0 VSPACE=0 HSPACE=0 width="13" height="13"><A
+
+HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm"> students' essays</A>
+
+<IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN=BOTTOM BORDER=0 VSPACE=0 HSPACE=0 width="13" height="13"><A
+
+HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm"> tools</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN=BOTTOM
+
+BORDER=0 VSPACE=0 HSPACE=0 width="13" height="13"><A
+
+HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm"> cocktails</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALIGN=BOTTOM BORDER=0 VSPACE=0 HSPACE=0 width="13" height="13"><A
+
+HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm"> search_forms</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALIGN=BOTTOM BORDER=0 VSPACE=0 HSPACE=0 width="13" height="13"><A
+
+HREF="corporate.htm" tppabs="http://www.anticrack.de/fravia/corporate.htm"> corporate</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALIGN=BOTTOM BORDER=0 VSPACE=0 HSPACE=0 width="13" height="13"><A
+
+HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm"> mailFraVia</A><BR>
+
+
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALIGN=BOTTOM BORDER=0 VSPACE=0 HSPACE=0 width="13" height="13"><A
+
+HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm"> Is reverse engineering legal?</A></CENTER>
+
+<CENTER><HR ALIGN=CENTER WIDTH=100% SIZE=2></CENTER>
+
+
+
+</BODY>
+
+</HTML>
+
+
+
+
+

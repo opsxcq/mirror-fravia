@@ -1,0 +1,2264 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>zaferdon</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+
+
+<P><CENTER><FONT SIZE="+4">Dongle reverse engineering<BR>
+
+</FONT><FONT SIZE="+2">Hasp dongles</FONT>
+
+<BR><IMG SRC="project3.gif" tppabs="http://www.anticrack.de/fravia/project3.gif" ALT="project3" ALIGN="BOTTOM" WIDTH="114" HEIGHT="43" BORDER="0" VSPACE="0" HSPACE="0">
+
+<BR>
+
+</CENTER>
+
+
+
+<H4><CENTER><I>by Zafer/BSCA</I><BR>
+
+(03 September 1997, slightly edited by Fravia)<BR>
+
+(Part C added 19 Oct 1997)</CENTER></H4>
+
+
+
+<CENTER><HR><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"> Courtesy of Fravia's page of reverse engineering<BR>
+
+<HR> <I>Well, it was about time that somebody explained the vagaries of dongle reverse engineering... (even if, for now, this tutorial looks more like a technical 
+
+specification of the various hasp-dongle services :(<BR>Important stuff, as you wil see. Anyway I must confess that I never used a program with a dongle, and all I knew (before reading these essays) was that you had to intercept the I/O calls to 
+
+the dongle parallel port, or, more precisely, fake the return codes... well, as you'll 
+
+see reading this very good tutorial by Zafer, one never ends learning!<BR>
+
+<BR><U>This tutorial is under development</U>, Zafer has promised to send 
+
+the remaining parts asap... (dear readers, you are the first in the 
+
+world to surf onto such stuff :-)</I>
+
+<HR size="7"><PRE><FONT size="+3">A tutorial on dongles reverse engineering<BR>
+
+by Zafer, September 1997</CENTER>
+
+A) <A HREF="#first_part">introduction to HASP</A>.
+
+B) <A HREF="#second_part">let's do it (dos)</A>.
+
+C) <A HREF="#third_part">let's do it (Win)</A>.
+
+D) <A HREF="#fourth_part">tips &amp; tricks</A>.<A NAME="first_part"></A>
+
+<HR size="4"><FONT color="blue">INTRODUCTION TO HASP</FONT></FONT>
+
+
+
+ These essay series only covers <FONT color="red">hasp</FONT> dongle protection (anyway, i  didn't see
+
+ too many applications using something other than hasp or sentinel)... sentinel 
+
+ dongles are also an important topic that we must take care of.
+
+
+
+ ok. lets start learning some facts about the hasp family
+
+
+
+<B># HASP-3</B>
+
+--------
+
+Cheapest hasp dongle.
+
+
+
+<B># MemoHASP</B>
+
+----------
+
+There are two different memohasp's.. memohasp-1 which has 112 bytes read/write memory and
+
+memohasp-4 which has 496 bytes read/write memory (496 bytes.. argghh)
+
+
+
+<B># NetHASP</B>
+
+---------
+
+NetHASP is infact memohasp-4 and by connecting only one hasp to a network station, you can 
+
+run it from all stations.. (limited users) It has 496 bytes read/write memory
+
+
+
+<B># TimeHASP</B>
+
+----------
+
+These dongles contains internal realtime clock. There are two different timehasp's
+
+timehasp has 16 bytes read/write memory, timehasp-4 has 512 bytes read/write memory
+
+
+
+<B># 36 series</B>
+
+-----------
+
+HASP 36pin (centronics) versions of HASP.
+
+
+
+# HASPCard
+
+----------
+
+It allows you to put dongle(s) inside the computer.. 
+
+
+
+note: HASP dongles uses d0-d7, init, atfdxt, pe lines (&quot;#36 series&quot; uses d0-d7, busy)
+
+
+
+0 Hasp Protection Methods
+
+
+
+0.1 Hasp Envelope
+
+	This is just a envelope applied to the executable files..
+
+
+
+0.1.1 HASP Error Level Codes
+
+	1 Hasp not found
+
+	2 Illegal HASP 
+
+	3 Program is modified
+
+	4 No Authorization
+
+	5 Out of runtimes
+
+	6 No answer from NetHasp Licence Manager (Nethasp only)
+
+	7 Too many users (Nethasp only)
+
+	8 Runtime expired (TimeHasp only)
+
+
+
+0.2 API
+
+	The api (obj or dll) program can check for the presence (or absence) of
+
+the dongle and respond as you wish. And you can gain moreover access to the 
+
+dongle's memory.
+
+
+
+0.2.1 Resident hasp driver
+
+        It's a tsr which provides the same hasp services as the API.
+
+ &quot;haspres&quot; is the program. the default interrupt is int 63h, but it can
+
+ be loaded as &quot;haspres xx&quot; where xx is the int #.
+
+
+
+
+
+-------------------------------------------------
+
+1. Hands on API
+
+
+
+ Hasp (Service, SeedCode/IdleTime, LptNum/ProgNum, Password1, Password2, Par1, Par2, Par3, Par4)
+
+ usage for asm:
+
+
+
+call:	bh=service
+
+	ax=SeedCode/IdleTime
+
+	bl=LptNum/ProgNum
+
+	cx=Password1
+
+	dx=Password1
+
+	di=address
+
+	si=data
+
+	es=buffer segment (for functions Read/WriteBlock, Set* ; ax=buffer offset)
+
+	
+
+
+
+return:	ax=Par1
+
+	bx=Par2
+
+	cx=Par3
+
+	dx=Par4
+
+
+
+1.1 Service
+
+  Service    	Name 		Operation
+
+-------------------------------------------------------------------------
+
+    	 1	IsHasp		Checks if a Hasp is connected
+
+
+
+returns 	Par1 		0 no hasp
+
+				1 HASP of any type
+
+-------------------------------------------------------------------------
+
+	 2	HaspCode	Gets the return codes for a given seed code.
+
+
+
+returns 	Par1/2/3/4	Return Code1/2/3/4
+
+-------------------------------------------------------------------------
+
+	 3	ReadWord	Reads 1 word from MemoHasp
+
+
+
+returns		Par2		1 word
+
+		Par3		Status (read Status below)
+
+-------------------------------------------------------------------------
+
+	 4	WriteWord	Writes 1 word to MemoHasp
+
+
+
+returns		Par3		Status (read Status below)
+
+-------------------------------------------------------------------------
+
+	 5	HaspStatus	Checks the type of Hasp	
+
+				Checks which port its connected to.
+
+				Checks to memory size.
+
+
+
+returns		Par1		1 MemoHasp-1
+
+				4 MemoHasp-4	
+
+				0 Other Types
+
+		Par2		0 HASP-3
+
+				1 MemoHasp-1/MemoHasp-4
+
+				3 TimeHasp
+
+				5 TimeHasp-4
+
+		Par3		Paralel port #
+
+-------------------------------------------------------------------------
+
+	 6	HaspID		Gets Hasp ID #
+
+
+
+
+
+returns		Par1		Low word of ID #
+
+		Par2		High word of ID #
+
+		Par3		Status (read Status below)
+
+-------------------------------------------------------------------------
+
+	40	LastStatus	Checks the status of the last call to NetHasp
+
+
+
+returns		Par1		NetStatus
+
+				0 last call was successful
+
+				otherwise its status (read Status below)
+
+		Par2		SystemError (a context-dependent errorcode)
+
+-------------------------------------------------------------------------
+
+	41	HaspCode	Get the return codes for a given seed code. (NetHasp)
+
+
+
+call		SeedCode	SeedCode (0-65535)
+
+		ProgNum	Number assigned to the application in NetHasp
+
+		Password1	First NetHASP password
+
+		Password2	Second NetHASP password
+
+
+
+returns		Par1/2/3/4	Return Code 1/2/3/4
+
+-------------------------------------------------------------------------
+
+	42	Login		Requests permission from NetHasp Licence Manager
+
+
+
+call		SeedCode	SeedCode (0-65535)
+
+		ProgNum	Number assigned to the application in NetHasp
+
+		Password1	First NetHASP password
+
+		Password2	Second NetHASP password
+
+
+
+returns		Par1/2/3/4	Return Code 1/2/3/4
+
+-------------------------------------------------------------------------
+
+	43	Logout		Requests session termination from NetHasp Licence Manager
+
+
+
+call		ProgNum	Number assigned to the application in NetHasp
+
+		Password1	First NetHASP password
+
+		Password2	Second NetHASP password
+
+-------------------------------------------------------------------------
+
+	44	ReadWord	Reads 1 word from NetHasp
+
+
+
+call		SeedCode	SeedCode (0-65535)
+
+		ProgNum	Number assigned to the application in NetHasp
+
+		Password1	First NetHASP password
+
+		Password2	Second NetHASP password
+
+		Par1		Address (NetHASP mem address 00-247)
+
+
+
+returns		Par2		Data
+
+		Par3		Status (read Status below)
+
+-------------------------------------------------------------------------
+
+	45	WriteWord	Writes 1 word to NetHasp
+
+
+
+call		SeedCode	SeedCode (0-65535)
+
+		ProgNum	Number assigned to the application in NetHasp
+
+		Password1	First NetHASP password
+
+		Password2	Second NetHASP password
+
+		Par1		Address (NetHASP mem address 00-247)
+
+		Par2		Data
+
+
+
+returns		Par3		Status (read Status below)
+
+-------------------------------------------------------------------------
+
+	46	HaspID		Gets NetHasp ID #
+
+
+
+call		ProgNum	Number assigned to the application in NetHasp
+
+		Password1	First NetHASP password
+
+		Password2	Second NetHASP password
+
+
+
+returns		Par1		IDLow (low word if ID #)
+
+		Par2		IDHigh (high word if ID #)
+
+		Par3		Status (read Status below)
+
+
+
+Note: ID #=IDLow+65536*IDHigh (idlow,high are unsigned)
+
+-------------------------------------------------------------------------
+
+	48	idleTime	Specifys a max time frame for idle stations (NetHasp)
+
+
+
+call		IdleTime 	(time frame in minutes 0-65535)
+
+		ProgNum	Number assigned to the application in NetHasp
+
+		Password1	First NetHASP password
+
+		Password2	Second NetHASP password
+
+-------------------------------------------------------------------------
+
+	50	ReadBlock	Reads a block from MemoHasp
+
+
+
+call		Par1		Start Address 
+
+				Defines the initial HASP mem address for reading block
+
+				0-55 = MemoHasp-1
+
+				0-247= MemoHasp-4
+
+				0-247= TimeHasp-4
+
+		Par2		Block Length (Block size in words)
+
+		Par3		Buffer Segment (Segment address of a variable/address)
+
+		Par4		Buffer Offset  (Offset address of a variable/address)
+
+
+
+returns		Par3		Status (read Status below)
+
+-------------------------------------------------------------------------
+
+	51	WriteBlock	Writes a block to MemoHasp
+
+
+
+call		Par1		Start Address 
+
+				Defines the initial HASP mem address for writing block
+
+				0-55 = MemoHasp-1
+
+				0-247= MemoHasp-4
+
+				0-247= TimeHasp-4
+
+		Par2		Block Length (Block size in words)
+
+		Par3		Buffer Segment (Segment address of a variable/address)
+
+		Par4		Buffer Offset  (Offset address of a variable/address)
+
+
+
+returns		Par3		Status (read Status below)
+
+-------------------------------------------------------------------------
+
+	52	ReadBlock	Reads a block from NetHasp
+
+
+
+call		ProgNum	Number assigned to the application in NetHasp
+
+		Password1	First NetHASP password
+
+		Password2	Second NetHASP password
+
+		Par1		Start Address 
+
+				Defines the initial NetHASP mem address for reading block
+
+				(0-247)
+
+		Par2		Block Length (Block size in words) (max 24words)
+
+		Par3		Buffer Segment (Segment address of a variable/address)
+
+		Par4		Buffer Offset  (Offset address of a variable/address)
+
+
+
+returns		Par3		Status (read Status below)
+
+-------------------------------------------------------------------------
+
+	53	WriteBlock	Writes a block to NetHasp
+
+
+
+call		ProgNum	Number assigned to the application in NetHasp
+
+		Password1	First NetHASP password
+
+		Password2	Second NetHASP password
+
+		Par1		Start Address 
+
+				Defines the initial NetHASP mem address for writing block
+
+				(0-247)
+
+		Par2		Block Length (Block size in words) (max 24words)
+
+		Par3		Buffer Segment (Segment address of a variable/address)
+
+		Par4		Buffer Offset  (Offset address of a variable/address)
+
+
+
+returns		Par3		Status (read Status below)
+
+-------------------------------------------------------------------------
+
+	70	SetTime		Sets TimeHasp clock
+
+
+
+call		Password1	first timehasp password
+
+		Password2	second timehasp password
+
+		Par1		Second
+
+		Par2		Minute
+
+		Par4		Hour (00-23)
+
+
+
+returns		Par3		Status (read Status below)
+
+-------------------------------------------------------------------------
+
+	71	GetTime		Gets TimeHasp time
+
+
+
+call		Password1	first timehasp password
+
+		Password2	second timehasp password
+
+
+
+returns		Par1		Second
+
+		Par2		Minute
+
+		Par3		Status (read Status below)
+
+		Par4		Hour (00-23)
+
+-------------------------------------------------------------------------
+
+	72	SetDate		Sets TimeHasp date
+
+
+
+call		Password1	first timehasp password
+
+		Password2	second timehasp password
+
+		Par1		Day
+
+		Par2		Month
+
+		Par4		Year (00-99)
+
+
+
+returns		Par3		Status (read Status below)
+
+-------------------------------------------------------------------------
+
+	73	GetDate		Gets Timehasp date	
+
+
+
+call		Password1	first timehasp password
+
+		Password2	second timehasp password
+
+
+
+returns		Par1		Day
+
+		Par2		Month
+
+		Par3		Status (read Status below)
+
+		Par4		Year (00-99)
+
+-------------------------------------------------------------------------
+
+	74	WriteByte	Writes 1 byte to TimeHasp		
+
+
+
+call		Password1	first timehasp password
+
+		Password2	second timehasp password
+
+		Par1		Address (mem address of TimeHasp 00-15)
+
+		Par2		Data
+
+
+
+returns		Par3		Status (read Status below)
+
+-------------------------------------------------------------------------
+
+	75	ReadByte	Reads 1 byte from TimeHasp
+
+
+
+call		Password1	first timehasp password
+
+		Password2	second timehasp password
+
+		Par1		Address (mem address of TimeHasp 00-15)
+
+
+
+returns		Par2		Data
+
+		Par3		Status (read Status below)
+
+-------------------------------------------------------------------------
+
+	76	WriteBlock	Writes a block to TimeHasp
+
+
+
+call		Password1	first timehasp password
+
+		Password2	second timehasp password
+
+		Par1		Start Address 
+
+				Defines the initial TimeHASP mem address for writing block
+
+				(00-15)
+
+		Par2		Block Length (Block size in bytes)
+
+		Par3		Buffer Segment (Segment address of a variable/address)
+
+		Par4		Buffer Offset  (Offset address of a variable/address)
+
+
+
+returns		Par3		Status (read Status below)
+
+
+
+Note: this service only writes the first 16 bytes of TimeHasp, to write a block
+
+      to 248word mem of TimeHasp-4, use service 51.
+
+-------------------------------------------------------------------------
+
+	77	ReadBlock	Reads a block from TimeHasp
+
+
+
+call		Password1	first timehasp password
+
+		Password2	second timehasp password
+
+		Par1		Start Address 
+
+				Defines the initial TimeHASP mem address for reading block
+
+				(00-15)
+
+		Par2		Block Length (Block size in bytes)
+
+		Par3		Buffer Segment (Segment address of a variable/address)
+
+		Par4		Buffer Offset  (Offset address of a variable/address)
+
+
+
+returns		Par3		Status (read Status below)
+
+
+
+Note: this service only reads the first 16 bytes of TimeHasp, to read a block
+
+      to 248word mem of TimeHasp-4, use service 50.
+
+-------------------------------------------------------------------------
+
+	78	GetHaspID	Gets TimeHasp ID #
+
+
+
+call		Password1	first timehasp password
+
+		Password2	second timehasp password
+
+
+
+returns		Par1		IDLow (low word if ID #)
+
+		Par2		IDHigh (high word if ID #)
+
+		Par3		Status (read Status below)
+
+
+
+Note: ID #=IDLow+65536*IDHigh (idlow,high are unsigned)
+
+-------------------------------------------------------------------------
+
+	85	SetConfigName	Sets the name of NetHasp conf. file 
+
+call		Par2		BufferSize (byte size of buffer containing the name
+
+				of NetHasp conf. file)
+
+		Par3		Buffer Segment (Segment address of the buffer containing
+
+				the name of the NetHasp conf. file)
+
+		Par4		Buffer Offset  (Offset address of the buffer containing
+
+				the name of the NetHasp conf. file)
+
+-------------------------------------------------------------------------
+
+	96	SetServerName	Sets the name of Nethasp Licence Manager to which
+
+				the protected progie will perform a NetHasp Login 
+
+call		Par2		BufferSize (byte size of buffer containing the name
+
+				of NetHasp Licence Manager)
+
+		Par3		Buffer Segment (Segment address of the buffer containing
+
+				the name of the NetHasp Licence Manager)
+
+		Par4		Buffer Offset  (Offset address of the buffer containing
+
+				the name of the NetHasp Licence Manager)
+
+-------------------------------------------------------------------------
+
+1.2 SeedCode
+
+
+
+1.3 LptNum
+
+	0 		searches all ports
+
+	1/2/3 		checks lpt1/lpt2/lpt3
+
+	101/102/103 	checks 3bc/378/278   ;(ports you'll have to bpio onto :-)
+
+
+
+1.4/5 	Password 1/2
+
+
+
+
+
+1.6/7/8 Par(ameters) 1/2/3
+
+
+
+1.9 Status Codes
+
+
+
+1.9.1 HASP-3, MemoHASP, TimeHASP-4, NetHASP
+
+
+
+	 0 Successful
+
+	-1 TimeOut (unsuccessful write operation)
+
+	-2 Address is out of range
+
+	-3 Hasp with the specified password was not found
+
+	-4 Hasp was found but it's not MemoHASP
+
+	-5 Unsuccessful write operation
+
+      -999 Invalid service
+
+
+
+1.9.2 TimeHASP, TimeHASP-4
+
+
+
+	0 Successful
+
+      -20 Invalid day
+
+      -21 Invalid month
+
+      -22 Invalid year
+
+      -23 Invalid seconds
+
+      -24 Invalid minutes
+
+      -25 Invalid hours
+
+      -26 Invalid address (not in range of 0-15)
+
+      -27 TimeOut (unsuccessful write operation)
+
+      -28 Hasp not found
+
+      -29 Hasp was found but it's not TimeHASP
+
+
+
+1.9.3 HASP Device Drivers
+
+
+
+	-100 Can't open HASP device driver (win32)
+
+	-101 Can't read HASP device driver (win32)
+
+	-102 Can't close HASP device driver (win32)
+
+	-110 Can't open HASP device driver (dos, dos extender, win)
+
+	-111 Can't read HASP device driver (dos, dos extender, win)
+
+	-112 Can't close HASP device driver (dos, dos extender, win)
+
+	-120 Can't allocate DOS memory (dos, dos extender, win protected with stand-alone keys)
+
+	-121 Can't deallocate DOS memory (dos, dos extender, win protected with stand-alone keys)
+
+
+
+1.9.4 NetHASP LastStatus
+
+
+
+	0 Successful
+
+--Errors which occurs in communication between proggie and NetHASP 
+
+   Licence Manager Or by the parameters you passed to the routine--
+
+	1 IPX, NetBios, TCP/IP protocols haven't installed properly
+
+	2 Communication error (unable to get socket number)	
+
+	3 Communication error
+
+	4 No NetHASP licence manager found
+
+	5 Cannot read the NetHASP licence manager address file
+
+	6 Cannot close the NetHASP licence manager address file
+
+	7 Communication error (failed to send packet)
+
+	8 No Answer from NetHASP licence manager
+
+	10 You didn't call Login Service yet
+
+	11 Communication error (adapter error)
+
+	15 No active NetHASP licence manager found	
+
+	18 Can't perform Login because of an unsuccessful SetServerName call
+
+	19 Syntax error in conf. file (line # returns in Par2, if 0 then there is
+
+                   an enviroment variable with an illegal setting)
+
+	20 Error handling conf. file (system error code in Par2) 
+
+	21 Couldn't allocate memory
+
+	22 Couldn't deallocate memory
+
+	23 Invalid NetHASP mem address
+
+	24 Invalid NetHASP service
+
+	25 Failed to load winsock.dll
+
+	26 Failed to unload winsock.dll
+
+	28 winsock.dll startup error
+
+	40 NetHASP services are not supported
+
+
+
+	--Errors which occurs after the client-server communication has been established--
+
+	129 Correct NetHASP is not connected.
+
+	130 ProgNum isn't in the ProgList of NetHASP mem
+
+	131 Error reading from NetHASP mem
+
+	132 Error writing to NetHASP mem
+
+	133 Login request exceeds the # of stations (limited user)
+
+	134 Login request exceeds the # of activations for progie
+
+	135 Logout was called before calling login
+
+	136 NetHASP license manager is busy.
+
+	137 No space in NetHASP log table
+
+	138 Internal NetHASP error (# of licensed stations is larger than allowed by NetHASP)
+
+	139 Computer with NetHASP crached &amp; reactivated (must call login again)
+
+	140 NetHASP license manager does not serve the network of your station
+
+	141 Invalid service
+
+	142 NetHASP license manager matching the name specified in NetHASP conf. file not found
+
+	150 No NetHASP license manager with the assigned name was found
+
+	151 Two or more different NetHASP license managers with the assigned name were found
+
+
+
+
+
+2.0 Things to remember
+
+
+
+        - there can be more than one seedcode
+
+	- it can be checking dongle with dummy passwords to confuse you
+
+	- it can be using the return code as seed for encryption/variable
+
+	- read <A href="project3.htm" tppabs="http://www.anticrack.de/fravia/project3.htm">xoanon</A>'s doc. (delaying reactions 
+
+                to a checking)
+
+	- in the dongles memory, program can store a routine, jumptables, seeds
+
+	  for a decryption etc.. (you may need the dongle itself in order to crack the 
+
+                dongle at %100)
+
+</PRE>
+
+<HR size="6">
+
+<A NAME="second_part"></A><PRE><CENTER>
+
+<FONT size="+3"><FONT color="blue">Let's do it (DOS)</FONT></FONT>
+
+</CENTER>
+
+</PRE>
+
+<I>Second and third part will be ready asap, part four is (partly) already there</I></CENTER>
+
+
+
+<HR size="6">
+
+<A NAME="third_part"></A><PRE><CENTER>
+
+<FONT size="+3"><FONT color="blue">Let's do it (Windows)</FONT></FONT>
+
+</CENTER>
+
+<HR>     
+
+Part C, added 19 Oct 1997
+
+<HR>
+
+
+
+A introduction to hasp
+
+B let's do it
+
+C ------------------------------ LET'S DO IT (WIN) 
+
+------------------------
+
+D tips &amp; tricks. 
+
+
+
+
+
+	ok. when writing this doc, i searched some `common` programs to give as
+
+examples but there were no programs given to `public` via ftp/www.
+
+
+
+        so, as my target i chose several different programs from local
+
+companies.
+
+
+
+1) Our first Victim &quot;Cevirmen&quot;
+
+ Cevirmen translates english-2-turkish, and seems to use Hasp3.
+
+
+
+ As i got the program, what i did to crack was using my &quot;Trick1&quot;. 
+
+I plugged my leds to the parallel port, and ran the program. Then a 
+
+firmwindow popped up.
+
+I pressed ok and saw my leds flashing. then menu came and i loaded a 
+
+txt, then pressed &quot;Automatic Translation&quot;. (but nothing happened.)
+
+
+
+	so, i ldr'ed the program, and traveled throu' the code with f10/f8.
+
+soon after the show_firmwindow call, i saw my leds flashing again. :))
+
+looking after the call, i saw some cmp's. Now i knew which call made the 
+
+dongle check.
+
+
+
+	next, i loaded the program with ida 3.7 and go to the call which
+
+checked for dongle. 
+
+
+
+	notes: 
+
+1.1) cevirmen uses hasp95.vxd for hasp functions so using a bpio 378 
+
+   will do no good to us since our program is in ring 3 and vxd is in 
+
+   ring 0. so you can use bpio -h 378 to set a breakpoint. you'll find 
+
+   yourself in hasp95.vxd so &quot;p ret&quot;'ing you can go back..
+
+1.2) after disasm'ing program i saw a lot of calls to CheckHasp. so 
+
+   patching directly the CheckHasp call is a wiser approach.
+
+1.3) luckily this program used only  services 1 &amp; 2 to check dongle. 
+
+   Which are IsHasp &amp; HaspCode (read HaspApi functions) and luckily 
+
+   again it only compared the return codes of the seed number. (it 
+
+   could have used the return codes for decryption and/or use it as 
+
+   a part of code.) ie. ret codes could be the opcodes of mov eax,1.
+
+1.4) i always recommend you to disasm the file, (as i told you 
+
+   there were too many CheckHasp calls, but there could be some other 
+
+   direct calls to _hasp)
+
+1.5) i changed the addresses and wrote some comments to let you better
+
+   understand in the given disasm forms.
+
+1.6) i'll give these long codes once, so on other cracking usage 
+
+   refer these.
+
+
+
+;S u b r o u t i n e      Attributes: bp-based frame
+
+;This is the CheckHasp, it is called many times by the program.
+
+
+
+CheckHasp       proc near               ; CODE XREF: sub_409069+1A6&#24;p
+
+
+
+arg_0           = dword ptr  8
+
+
+
+                push    ebp
+
+                mov     ebp, esp
+
+                push    ebx
+
+                mov     ebx, [ebp+arg_0]
+
+                lea     eax, [ebx+0D4h]
+
+                push    eax
+
+                lea     edx, [ebx+0D0h]
+
+                push    edx
+
+                lea     ecx, [ebx+0CCh]         ;
+
+                push    ecx
+
+                lea     eax, [ebx+0C8h]         ;Ret1
+
+                push    eax
+
+                push    dword ptr [ebx+0ACh]
+
+                push    dword ptr [ebx+0A8h]
+
+                push    dword ptr [ebx+0B4h]
+
+                push    dword ptr [ebx+0B0h]
+
+                push    1               	; Service 1 (IsHasp) Checks 
+
+                                                ; if Hasp exists
+
+                call    HaspPushCall    	; call _Hasp
+
+
+
+***             cmp     dword ptr [ebx+0C8h], 0 ; Par1=0? (No Hasp=0, Hasp exists=1)
+
+***             jnz     short HaspFound 	; Good Guy
+
+
+
+                push    ebx             	; Bad Guy
+
+                call    sub_460A3E
+
+                pop     ecx
+
+                xor     eax, eax
+
+                pop     ebx
+
+                pop     ebp
+
+                retn
+
+; 
+
+---------------------------------------------------------------------------
+
+
+
+HaspFound:                              ; CODE XREF: CheckHasp+49&#24;j
+
+                lea     edx, [ebx+0C4h]
+
+                push    edx
+
+                lea     ecx, [ebx+0C0h]
+
+                push    ecx
+
+                lea     eax, [ebx+0BCh]
+
+                push    eax
+
+                lea     edx, [ebx+0B8h]
+
+                push    edx
+
+                push    dword ptr [ebx+0ACh]
+
+                push    dword ptr [ebx+0A8h]
+
+                push    dword ptr [ebx+0B4h]
+
+                push    dword ptr [ebx+0B0h]
+
+                push    2               	; Service 2 (HaspCode) gets 
+
+                                                ; return code
+
+                call    HaspPushCall		; call _Hasp
+
+
+
+                mov     ecx, [ebx+0B8h] 	; Check return codes for given 
+
+Seed #
+
+                cmp     ecx, [ebx+0D8h]         ;
+
+                jnz     short HaspFail          ;
+
+                mov     eax, [ebx+0BCh]         ;
+
+                cmp     eax, [ebx+0DCh]         ;
+
+                jnz     short HaspFail          ;
+
+                mov     edx, [ebx+0C0h]         ;
+
+                cmp     edx, [ebx+0E0h]         ;
+
+                jnz     short HaspFail
+
+                mov     ecx, [ebx+0C4h]
+
+                cmp     ecx, [ebx+0E4h]
+
+                jz      short HaspOk
+
+
+
+HaspFail:                               ; CODE XREF: CheckHasp+9E&#24;j
+
+                                        ; CheckHasp+AC&#24;j ...
+
+                push    ebx
+
+                call    sub_460A3E
+
+                pop     ecx
+
+                xor     eax, eax
+
+                pop     ebx
+
+                pop     ebp
+
+                retn
+
+; 
+
+---------------------------------------------------------------------------
+
+
+
+HaspOk:                                 ; CODE XREF: CheckHasp+C8&#24;j
+
+                mov     eax, 1          ; eax=1 (ok, user has right 
+
+dongle)
+
+                pop     ebx
+
+                pop     ebp
+
+                retn
+
+CheckHasp       endp
+
+
+
+
+
+	now as you see, the program first checks if the dongle exists. then if
+
+it finds a dongle, it checks for the return codes for the given seed 
+
+code. if
+
+that's ok, too; it puts 1 into eax and returns.. Easy.. ie. change
+
+                cmp     dword ptr [ebx+0C8h], 0 ; Par1=0? (No Hasp=0, 
+
+Hasp exists
+
+                jnz     short HaspFound 	; Good Guy :)
+
+
+
+		to Call HaspOk
+
+
+
+	then i ran the program again and.. well done Zafer.. :)	
+
+
+
+
+
+	but let me show you some details.. first of all the following code
+
+comes with the hasp package for software developers to include in their 
+
+code..
+
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;;
+
+;;  HASPBC32.ASM
+
+;;
+
+;;
+
+;;  Description:
+
+;;        This file links the application to the procedure that checks
+
+;;        the HASP key. This file performs the following:
+
+;;
+
+;;          a. Gets the parameters from the application stack.
+
+;;          b. Initialize the appropriate registers.
+
+;;          c. Calls haspreg, procedure that checks the HASP key.
+
+;;	    d. Receives the return values from haspreg and moves them to.
+
+;;	       the stack.
+
+;;
+
+;;  Compilation instructions:
+
+;;
+
+;;        masm -Mx haspbc32;
+
+;;    
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+
+.386P
+
+
+
+_TEXT SEGMENT  BYTE PUBLIC USE32 'CODE'
+
+	ASSUME   CS:_TEXT
+
+
+
+	extrn haspreg : near
+
+	public _hasp		
+
+
+
+;
+
+; Frame structure after pushing EBP.
+
+;
+
+RetCode4	equ	[EBP+40]    	
+
+RetCode3	equ	[EBP+36]    	
+
+RetCode2	equ	[EBP+32]    	
+
+RetCode1	equ	[EBP+28]    	
+
+PlugNameHi	equ	[EBP+24]    	
+
+PlugNameLow	equ	[EBP+20]    	
+
+Lptnum		equ	[EBP+16]    	
+
+SeedCode	equ	[EBP+12]    	
+
+Cmd		equ	[EBP+8 ]    	
+
+
+
+_hasp proc near
+
+
+
+	push	Ebp
+
+	mov	Ebp, Esp
+
+	
+
+	push	Eax Ebx	Ecx Edx	Edi Esi
+
+
+
+	mov	Esi, RetCode1
+
+	mov	Edi, [Esi]
+
+
+
+	mov	Ebx, 0
+
+	mov	Ebx, Cmd
+
+	mov	bh, bl
+
+	mov	bl, 0
+
+	add	Ebx, LptNum
+
+
+
+	mov	Eax, SeedCode
+
+	mov	Ecx, PlugNameLow
+
+	mov	Edx, PlugNameHi
+
+
+
+	cmp	bh,50	       
+
+	jb	NotBlockOperation  
+
+ 	mov	Esi, RetCode4
+
+	mov	Eax, [Esi]
+
+
+
+NotBlockOperation:
+
+
+
+	mov	Esi, RetCode2
+
+	mov	Esi, [Esi]
+
+
+
+	push	Ebp
+
+	call	haspreg
+
+	pop	Ebp
+
+
+
+	mov	Edi, RetCode1
+
+	mov	[Edi], Eax
+
+	mov	Edi, RetCode2
+
+	mov	[Edi], Ebx
+
+	mov	Edi, RetCode3
+
+	mov	[Edi], Ecx
+
+	mov	Edi, RetCode4
+
+	mov	[Edi], Edx
+
+
+
+	pop	Esi Edi Edx Ecx Ebx Eax 
+
+	pop	Ebp
+
+
+
+	ret
+
+
+
+_hasp endp
+
+_TEXT   ENDS
+
+       END
+
+
+
+
+
+ok, this is the common code that you'll see in the hasp protected 
+
+programs.
+
+let's see this in our `cevirmen` example.. our example did a
+
+                call    HaspPushCall		; call _Hasp
+
+
+
+
+
+HaspPushCall    proc near               ; CODE XREF: CheckHasp+3D&#24;p
+
+                                        ; CheckHasp+8D&#24;p
+
+
+
+arg_0           = dword ptr  8
+
+arg_4           = dword ptr  0Ch
+
+arg_8           = dword ptr  10h
+
+arg_C           = dword ptr  14h
+
+arg_10          = dword ptr  18h
+
+arg_14          = dword ptr  1Ch
+
+arg_18          = dword ptr  20h
+
+arg_1C          = dword ptr  24h
+
+arg_20          = dword ptr  28h
+
+
+
+                push    ebp
+
+                mov     ebp, esp
+
+                push    [ebp+arg_20]    ; this part just pushes some 
+
+values
+
+                push    [ebp+arg_1C]	; for the _Hasp 
+
+                push    [ebp+arg_18]
+
+                push    [ebp+arg_14]
+
+                push    [ebp+arg_10]
+
+                push    [ebp+arg_C]
+
+                push    [ebp+arg_8]
+
+                push    [ebp+arg_4]
+
+                push    [ebp+arg_0]
+
+                call    NormalHaspCode  ; HaspBC32.asm
+
+                pop     ebp
+
+                retn    24h
+
+HaspPushCall    endp
+
+
+
+
+
+	i'll skip the NormalHaspCode part since it's the same as 
+
+HaspBC32.asm but will show some parts from HaspReg. I won't comment 
+
+much since it explains itself.
+
+
+
+;the code jumps here from the call haspreg
+
+Hasp_           proc near               ; CODE XREF: NormalHaspCode+36&#25;p
+
+                pusha
+
+                lea     esi, HaspFFFFFFFF
+
+                cmp     dword ptr [esi], 0FFFFFFFFh
+
+                jz      short Hasp_Skip
+
+                pusha
+
+                lea     esi, GetEnvStrings
+
+                call    dword ptr [esi]
+
+                lea     esi, GetEnvStr_Resul
+
+                mov     [esi], eax
+
+                popa
+
+
+
+Hasp_Skip:                              ; CODE XREF: Hasp_+A&#24;j
+
+                lea     esi, HaspFFFFFFFF
+
+                cmp     dword ptr [esi], 0FFFFFFFFh
+
+                jnz     Hasp_Exit
+
+                lea     eax, aKernel32_dll
+
+                push    eax
+
+                call    j_GetModuleHandleA
+
+                lea     esi, ModHandle_Resul
+
+                mov     [esi], eax
+
+                call    ModProcAddy
+
+                lea     esi, GetEnvStrings
+
+                call    dword ptr [esi]
+
+                lea     esi, GetEnvStr_Resul
+
+                mov     [esi], eax
+
+                lea     esi, H_Version
+
+                mov     dword ptr [esi], 94h
+
+                push    esi
+
+                lea     esi, GetVersExA
+
+                call    dword ptr [esi]
+
+                lea     esi, H_Version
+
+                mov     eax, [esi+10h]
+
+                lea     esi, HaspFFFFFFFF
+
+                mov     [esi], eax
+
+                cmp     eax, 2
+
+                jz      loc_469908
+
+                cmp     eax, 1
+
+                jz      loc_469908
+
+                lea     eax, aUtregister
+
+                push    eax
+
+                lea     esi, ModHandle_Resul
+
+                mov     eax, [esi]
+
+                push    eax
+
+                call    j_GetProcAddress
+
+                cmp     eax, 0
+
+                jnz     short ProcNotFnd
+
+                lea     esi, HaspFFFFFFFF
+
+                mov     dword ptr [esi], 1
+
+                jmp     loc_469908
+
+; -----------------------------------------------------------------
+
+
+
+ProcNotFnd:                             ; CODE XREF: Hasp_+A6&#24;j
+
+                lea     esi, dword_4D9175
+
+                mov     [esi], eax
+
+                lea     esi, ModHandle_Resul
+
+                mov     eax, [esi]
+
+                lea     esi, aUtunregister
+
+                push    esi
+
+                push    eax
+
+                call    j_GetProcAddress
+
+                lea     esi, dword_4D9171
+
+                mov     [esi], eax
+
+                mov     eax, 4000h
+
+                push    eax
+
+                lea     eax, byte_4D90E1
+
+                push    eax
+
+                lea     eax, HaspUt16Dll        ;
+
+                push    eax                     ;
+
+                lea     esi, OpnFile            ;Open Hasp NOT a real file.
+
+                call    dword ptr [esi]
+
+                cmp     eax, 0FFFFFFFFh
+
+                jz      short loc_469908
+
+                lea     esi, HaspFFFFFFFF
+
+                mov     dword ptr [esi], 0Bh
+
+                push    0
+
+                lea     esi, dword_4D9011
+
+                call    dword ptr [esi]
+
+                lea     esi, dword_4D91AA
+
+                mov     [esi], eax
+
+                push    0
+
+                push    0
+
+                lea     eax, dword_4D941C
+
+                push    eax
+
+                push    3
+
+                push    2
+
+                lea     eax, HaspUt16Dll
+
+                push    eax
+
+                lea     esi, dword_4D91AA
+
+                mov     eax, [esi]
+
+                push    eax
+
+                lea     esi, dword_4D9175
+
+                call    dword ptr [esi]
+
+                push    0
+
+                push    2
+
+                lea     esi, MessagBoxA_2
+
+                push    esi
+
+                lea     esi, dword_4D941C
+
+                call    dword ptr [esi]
+
+                lea     esi, MessagBoxA_2
+
+                cmp     word ptr [esi], 0
+
+                jz      short loc_469908
+
+                lea     esi, HaspFFFFFFFF
+
+                mov     dword ptr [esi], 0Ah
+
+
+
+loc_469908:                             ; CODE XREF: Hasp_+7F&#24;j 
+
+Hasp_+88&#24;j ...
+
+                call    MovEmAll
+
+
+
+Hasp_Exit:                              ; CODE XREF: Hasp_+27&#24;j
+
+                popa
+
+                lea     ebp, H_JmpAdy
+
+                call    dword ptr [ebp+0]
+
+                pusha
+
+                lea     esi, GetEnvStr_Resul
+
+                push    dword ptr [esi]
+
+                lea     esi, FreeEnvStrA ; Free Envs
+
+                call    dword ptr [esi]
+
+                popa
+
+                retn
+
+Hasp_           endp ; sp = -40h
+
+
+
+
+
+	and let's see the data parts
+
+
+
+
+
+seg002          segment para public 'DATA' use32
+
+                assume cs:seg002
+
+                ;org 4D9000h
+
+aGetmodulehandl db 'GetModuleHandleA',0 ; DATA XREF: ModProcAddy&#24;o
+
+dword_4D9011    dd 0                    ; DATA XREF: ModProcAddy+12&#24;w
+
+..........
+
+a_Hasp95        db '\\.\HASP95',0       ; DATA XREF: CODE:004691EE&#24;o
+
+aDeviceiocontro db 'DeviceIoControl',0  ; DATA XREF: ModProcAddy+17&#24;o
+
+dword_4D9030    dd 0                    ; DATA XREF: ModProcAddy+29&#24;w
+
+..........
+
+aLoadlibrarya   db 'LoadLibraryA',0     ; DATA XREF: ModProcAddy+170&#24;o
+
+..........
+
+H_Version       db 94h dup(0)           ; DATA XREF: Hasp_+56&#24;o 
+
+Hasp_+6B&#24;o
+
+..........
+
+HaspUt16Dll     db 'HASPUT16.DLL',0     ; DATA XREF: Hasp_+EB&#24;o 
+
+Hasp_+12C&#24;o
+
+aNetapi32_dll   db 'NETAPI32.DLL',0     ; DATA XREF: CODE:00469392&#24;o
+
+..........
+
+a_Hasp          db '\\.\HASP',0
+
+..........
+
+
+
+i removed the `....` parts since i don't want this text to be long and 
+
+we don't need to know them for this program. but the removed parts 
+
+included NetApi32 functions for the NetHasp dongle checking which is 
+
+in fact important if  you're cracking a program using NetHasp.
+
+
+
+
+
+2) Our Second Victim &quot;MTH Psikrometrik Hesabi&quot;
+
+ this program is a kinda addon for acad13.. when you run the program
+
+ a msgbox saying &quot;no dongle or wrong dongle&quot; appears.
+
+
+
+        notes:
+
+1.1) this program is a VB4 program.. (damn) It uses hasp95.vxd and 
+
+haspvb32.dll
+
+1.2) dodi's vb4tools (4.10 sept '97) can't disasm with error message 
+
+&quot;can't handle bla bla)
+
+
+
+ 	ok.. since we can't ida/vb4disasm the program so what?.. well, 
+
+here is what i did.. I installed the vb40.. wrote a simple program like
+
+	a=10
+
+	if a=0 then c=1
+
+	if a=&amp;hffff then c=1
+
+	if a<>0 then .... etc etc
+
+
+
+	and examined the result exe trying to figure what the 
+
+&quot;basic cmp&quot;'s hex form is. And found that
+
+	07 xx xx xx xx YY 00 e8 03
+
+	xx..xx=is the number you compare (ie. if a=0  (x..x=0)) 
+
+	yy=comparison (ie. equal, smaller, greater etc.)
+
+
+
+	then using bpio -h 378 i tried to find which part checked for 
+
+dongle... after some &quot;p ret&quot;'ing i found myself in vb40032.dll and found 
+
+that there is a part by which your basic code is executed, esi=your basic 
+
+code address. for my example esi=4d2cf8 was IsHasp, 4d2d5b was HaspStatus 
+
+etc. and here is how that looks in the exe file.
+
+
+
+
+
+004D2CF8:                          B8 15 4A 00 FE 07 84 05
+
+                                   -----------&gt; offset Jumper (IsHasp)
+
+004D2D00:  08 00 0C 00 50 07 00 00-00 00 56 00 E8 03 6C 03 ;07 (00.00.00.00) cmp 0
+
+                          -- ----------- -----------&gt; (56) equal
+
+004D2D10:  94 02 A2 05 08 00 00 00-9C 02 A2 05 08 00 06 00
+
+004D2D20:  98 05 08 00 18 00 98 05-08 00 14 00 98 05 08 00
+
+004D2D30:  10 00 98 05 08 00 0C 00-84 05 08 00 34 04 84 05
+
+004D2D40:  08 00 30 04 50 07 00 00-00 00 50 07 2C 01 00 00
+
+004D2D50:  82 05 08 00 06 00 1E 02-38 06 B8 15 4A 00 FE 07
+
+                                         -----------&gt; offset Jumper 
+
+(HaspStatus)
+
+004D2D60:  84 05 08 00 10 00 50 07-03 00 00 00 56 00 E8 03 ;07 (00..03) cmp 3
+
+                                -- ----------- -----------&gt; (56) equal
+
+004D2D70:  CE 03 94 02 A2 05 08 00-00 00 9E 02 A2 05 08 00
+
+004D2D80:  06 00 98 05 08 00 18 00-98 05 08 00 14 00 98 05
+
+004D2D90:  08 00 10 00 98 05 08 00-0C 00 84 05 08 00 34 04
+
+004D2DA0:  84 05 08 00 30 04 50 07-00 00 00 00 50 07 2C 01
+
+004D2DB0:  00 00 82 05 08 00 06 00-1E 02 38 06 B8 15 4A 00
+
+                                               -----------&gt; offset 
+
+Jumper (GetHaspID)
+
+004D2DC0:  FE 07 84 05 08 00 14 00-50 07 00 00 00 00 6C 00 ;07 (00..00) cmp 0                                      -- ----------- -----    
+
+004D2DD0:  E8 03 34 04 94 02 A2 05-08 00 00 00 E6 03 20 05
+
+           -----&gt; (6c) different
+
+004D2DE0:  84 05 08 00 10 00 50 07-00 00 00 00 AE 00 E8 03 ;07 (00..00) cmp 0
+
+                                -- ----------- -----------&gt; (ae) smaller
+
+004D2DF0:  B0 04 84 05 08 00 0C 00-50 07 00 00 00 00 AE 00 ;07 (00..00) cmp 0
+
+                                      -- ----------- ----- 
+
+004D2E00:  E8 03 88 04 50 07 00 00-01 00 84 05 08 00 10 00
+
+           -----&gt; (ae) smaller
+
+004D2E10:  04 01 50 07 00 00 01 00-44 01 50 07 FF FF 00 00
+
+
+
+	and here is what i call &quot;Jumper&quot;
+
+
+
+004A15B8 Jumper:         mov     edx, ds:BSS_JmpDat2
+
+004A15BE                 add     edx, 74h
+
+004A15C4                 mov     eax, [edx]
+
+004A15C6                 or      eax, eax
+
+004A15C8                 jz      short JumperSk
+
+004A15CA                 jmp     eax
+
+004A15CC JumperSk:       push    edx
+
+004A15CD                 call    j_DllFunctionCall
+
+004A15D2                 jmp     eax
+
+
+
+
+
+	ok now, i'll skip the other hex code and try to give you a basic code..
+
+        (note: i tried to generate the basic code myself, so real code can be
+
+        different, but anyway this will give you an idea.)
+
+
+
+	Service = IS_HASP
+
+	Call hasp(Service, SeedCode, LptNum, Passw1, Passw2, p1&amp;, p2&amp;, p3&amp;, p4&amp;)
+
+    	If p1&amp; = 0 Then
+
+    		'if p1&amp;(ret code1) =0 then No Hasp Found
+
+    	End If
+
+
+
+    	Service = GET_HASP_STATUS
+
+	Call hasp(Service, SeedCode, LptNum, Passw1, Passw2, p1&amp;, p2&amp;, p3&amp;, p4&amp;)
+
+    	'If ??? = 3 Then
+
+    		'can be p1&amp;+p2&amp;+p3&amp;=3 ??
+
+    	'End If
+
+
+
+    	Service = GET_ID_NUM
+
+	Call hasp(Service, SeedCode, LptNum, Passw1, Passw2, p1&amp;, p2&amp;, p3&amp;, p4&amp;)
+
+    	If p3&amp; <> 0 Then
+
+      		'if p3&amp;(ret code3 (status))<>0 then No Hasp ID returned.
+
+    	Else
+
+    	'The ID number is a 32 bit integer constructed from the following 
+
+        'equation : p2*65536+p1
+
+	'The following computation converts the two 16 bit integers returned 
+
+        'from the hasp routine to a 32 bit integer.
+
+      	If p2&amp; <0 Then If p1& < 0 Then ID&="(65536" + p2&) * 65536 + 65535 + p1& Else ID&="(65536" + p2&) * 65536 + p1& End If Else If p1& < 0 Then ID&="p2&amp;" * 65536 + 65536 + p1& Else ID&="p2&amp;" * 65536 + p1& End If If ID&="MyID" then 'Heyo.... :)))) End IF End If ok.. to crack this program just change "56"(equal)'s to "6c"(not equal) and vice versa. and you're done.. :) X) Conclusion Part ok, since we're finished with cracking here are some more notes from your fav. cracker. 0) Remember many hasp protected programs have the codes given above. So when you get a hasped program, just search the code.. comment some and you're done.. :) 1) don't ever worry about the garbage codes. our aim is the haspreg call. after the haspreg call, we'll have registers loaded with return codes which we can modify. 2) if the program uses memohasp also check the haspreg call, since the memory contents will be soon returned to an address thus we can gain the info. (you must have the dongle to read the memory contents) 3) Animadeus and I was working on a HaspEmulator but we found a HaspEmulator by MeteO/UCL for DOS. (well done MeteO) but we may release our WinHaspEmulator. :))) 4) Get MeteO's programs, too. He seems to have spent hell a lot of time reverse engineering Hasp. (#ucl'97 @ Efnet and http://ucl.homepage.ru) 5) Keep my introduction to hasp doc handy. You'll need it to understand what your target program is doing. 6) si3.21 and ida 3.7 rocks.. :) (consider buying them) 7) cracking a program, i use Camel, Pepsi, Sepultura, Slayer. (for deeper code "analysis,.class" tppabs="http://fravia.org/analysis,.class" Pantera is also fine) 8) very special greets go to Animadeus (thanx for morale support), The Owl (thanx for morale support. btw, i'm still thinkin' about that 1k chess, eheh) Razzia (thanx for the loong chats), eMX! (nice to see you back in town) 9) and the ppl in #cracking/#crackers.. hii pals.. A) watch out for my sentinel, fast-eye (hardlock) docs.. soon.. Until next time, have fun! Zafer/BSCA End of part C, added 19 October1997<hR>
+
+
+
+1.0 InCall
+
+
+
+2.0 VxD</PRE>
+
+<HR size="6">
+
+<A NAME="fourth_part"></A><CENTER>
+
+<PRE><HR size="4"><FONT size="+3"><FONT color="blue">TIPS AND TRICKS</FONT></FONT>
+
+</CENTER>
+
+1.0 Tip1: Hardware
+
+
+
+ Until i finish this doc, here is a quick tip. When you do a &quot;bpio 378&quot;
+
+to see the dongle checking you may find yourself very deep in the code.
+
+then you must trace back to find the call etc.
+
+
+
+ But instead of this breakpoint usage, here is what i use for the dongles
+
+i haven't seen before. I've built a hardware to plug the parallel port.
+
+it's just a series of &quot;led&quot; (i recommend red ones) which are connected
+
+to parallel port's d0-d7 (you may also put leds to other pins but d0-d7
+
+are enough). So when i trace through the code, when bypass'ing a call
+
+i see the leds flashing. (ahaa!! this call checked for dongle) :)) *evil grin*
+
+
+
+ then you can act accordingly. (real check can be another call in that call
+
+so go in that call to find it out)
+
+<CENTER>
+
+<HR size="4"><FONT size="+3"><FONT color="blue">Zafer's GREETINGS</FONT></FONT>
+
+ </CENTER>                               Until next time, have fun!  -Zafer/BSCA
+
+
+
+GreETz for this doc:
+
+        FatalicA, eMX!, Razzia, xOANON, Rasel, Bonito, Cophiber, Section Jaguar
+
+        and my partners in reversing.      
+
+
+
+GreETz for part C:
+
+ FatalicA, eMX!, Razzia, Animadeus, The Owl, xOANON, Rasel, Bonito, 
+
+Cophiber
+
+ Mad Jester, LordByte, Doc-Man and my partners in reverse enginering.
+
+
+
+
+
+
+
+</PRE><FONT color="green">
+
+(c) Zafer, 1997. All rights reversed.</FONT>
+
+		<HR size="2">
+
+<CENTER><I>You are deep inside fravia's page of reverse
+
+engineering, choose your way out:</I></CENTER>
+
+
+
+
+
+<P><CENTER>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="project3.htm" tppabs="http://www.anticrack.de/fravia/project3.htm">Back to project 3 </A><BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage </A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"> <A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links
+
+</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0" NATURALSIZEFLAG="0"> <A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity
+
+</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools
+
+</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails </A><BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database </A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia
+
+</A><BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">is reverse engineering legal? </A></FONT></CENTER></P>
+
+
+
+<P><CENTER><FONT SIZE="-1"><HR></FONT></CENTER>
+
+</BODY>
+
+</HTML>
+

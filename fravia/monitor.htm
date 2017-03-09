@@ -1,0 +1,687 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>Monitor.htm: Monitor/RA v1.80 and the 'hidden protection' idea</TITLE>
+
+</HEAD>
+
+<BODY  bgcolor="C0C0C0" text="#001010" vlink="#405040 Alink=#00FF50">
+
+
+
+<CENTER><B><FONT  SIZE=+3>Keyfiles: Monitor/RA v1.80 and the 'hidden protection' idea</FONT></B>
+
+<BR>
+
+Written by <A HREF="mailto:MisterE@freemail.nl">MisterE</A>
+
+<BR>
+
+<FONT  SIZE=-1>31 July 1998</FONT>
+
+<HR>
+
+<I>Cortesy of fravia's page of reverse engineering
+
+<P>
+
+Well this is a very simple, yet interesting essay about the reconstruction of a 
+
+needed keyfile. Of course there are hundred different ways to crack this target (nopping 
+
+the evil compares, reversing jumps, etcetera), yet the correct cracking technique, when dealing with 
+
+keyfile protections, is exactly this one: reconstructing the missing file... just in case.<BR>The 
+
+target is moreover an interesting tool <I>per se</I><P>
+
+
+
+Shareware programmers should deal with these problems implementing random checks (say 
+
+once every four or five days or once every ten runs of their program) that trigger - not immediately! - a COMPLETELY UNRELATED "real" 
+
+protection scheme if 
+
+the code has been patched or if the keyfile is corrupted or, simply enough and VERY effective, if softice and 
+
+wdasm are on the same harddisk as the target :-)<BR>Best choice 
+
+is - as usual - an auto-crippling scheme  <U>and</U> 
+
+an automated email once on line (this scares the hell out of a newbie :-)<BR>No strings in this part of the protection: everything should 
+
+be build dynamically ONLY IF THE SCHEME HAS BEEN TRIGGERED. Crackers that have found 
+
+strings in the 'smoke' protection part will judge the shareware author a moron and 
+
+won't usually (unless they zen the code) seek dynamically created strings elsewhere.
+
+</I><HR></CENTER>
+
+<CENTER><B><FONT  SIZE=+3>Keyfiles: Monitor/RA v1.80 - *THE* monitoring tool</FONT></B>
+
+<BR>
+
+Written by <A HREF="mailto:MisterE@freemail.nl">MisterE</A>
+
+<BR>
+
+<FONT  SIZE=-1>31 July 1998</FONT></CENTER>
+
+<PRE>
+
+.----------------------------------------------------------------------------------------------.
+
+|                                          <FONT  SIZE=+2><B>INTRODUCTION</B></FONT>                                    |
+
+`----------------------------------------------------------------------------------------------'
+
+
+
+Someone asked me to crack this program. That is nothing special. I opened the program and 
+
+started to search for a registration box. But I couldn't find one!! Huh, is this a crippleware 
+
+program? Nope. When I checked the monitor.wri it said the program needed a KEYFILE!! Wow, this 
+
+IS cool. I had never cracked such a program before. There aren't many tutorial about KEYFILES 
+
+so I decided to write one (you're reading it). 
+
+This is my story about how the crack Monitor/RA v1.80 - *THE* monitoring tool.
+
+Hope you enjoy it.
+
+
+
+.----------------------------------------------------------------------------------------------.
+
+|                                             <FONT  SIZE=+2><B>PROGRAMS</B></FONT>                                      |
+
+`----------------------------------------------------------------------------------------------'
+
+
+
+Programs I have used:
+
+
+
+- SoftIce V3.2
+
+- W32dasm V8.9
+
+- Hex Workshop Version 2.5
+
+- Monitor/RA v1.80 (<A HREF="javascript:if(confirm('http://www.envytech.co.uk/monitorra.html  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.envytech.co.uk/monitorra.html'" tppabs="http://www.envytech.co.uk/monitorra.html">http://www.envytech.co.uk/monitorra.html</A>)
+
+
+
+
+
+.----------------------------------------------------------------------------------------------.
+
+|                                     <FONT size=+2><B>Getting the right name</B></FONT>                           |
+
+`----------------------------------------------------------------------------------------------'
+
+
+
+OK, we know the program needs a keyfile. The first thing to do is ofcourse search for the 
+
+filename of the keyfile. Open w32dasm and click on Refs - String Data References. Look for a 
+
+filename. You should notice the <FONT color=red>monitor.key</FONT>. Well I say this is the right file. Let's check it.
+
+In the same directory as monitor.exe perform this copy command:
+
+
+
+Copy monitor.txt monitor.key
+
+
+
+Start Monitor.exe and the programs say the keyfile isn't an Envy Technologies keyfile.
+
+Well, they are right about that. Our keyfile isn't from Envy Technologies YET. Let's change that.
+
+
+
+.----------------------------------------------------------------------------------------------.
+
+|                        <FONT size=+2><B>Getting an Envy Technologies keyfile</B></FONT>                     |
+
+`----------------------------------------------------------------------------------------------'
+
+
+
+We are going to use softice now. When do we want SoftIce to stop the program?. I would say when
+
+it wants to read the file. Well, there are several API's for this. Here they are:
+
+
+
+<FONT color=purple> for 16-bit win apps:
+
+
+
+GetPrivateProfileString
+
+GetPrivateProfileInt
+
+WritePrivateProfileString
+
+WritePrivateProfileInt</FONT>
+
+
+
+  for 32-bit win apps:
+
+
+
+<FONT color=purple>
+
+CreateFileA
+
+GetPrivateProfileStringA
+
+GetPrivateProfileIntA
+
+WritePrivateProfileStringA   
+
+WritePrivateProfileIntA
+
+ReadFile</FONT>
+
+
+
+
+
+Let's try the ReadFile first. Enter the breakpoint in Softice and start <FONT color=green>Monitor.exe</FONT>.
+
+BLAM, kicked back into SoftIce. Trace (F11 one time then F12 one time) till you get here:
+
+
+
+<FONT color=blue>:00452354 A1D4564500              mov eax, dword ptr [004556D4]</FONT>  ;; import from our keyfile
+
+<FONT color=blue>:00452359 E8123AFBFF              call 00405D70
+
+:0045235E 8BC3                    mov eax, ebx
+
+:00452360 BA80244500              mov edx, 00452480             
+
+:00452365 33C9                    xor ecx, ecx
+
+:00452367 8A08                    mov cl, byte ptr [eax]
+
+:00452369 41                      inc ecx
+
+:0045236A E82D05FBFF              call 0040289C
+
+:0045236F 7509                    jne 0045237A
+
+:00452371 83BB9600000000          cmp dword ptr [ebx+00000096], 00000000
+
+:00452378 750F                    jne 00452389</FONT>
+
+
+
+If you type '<FONT color=green>d eax</FONT>' at <FONT color=red>452354</FONT>, you'll see a part of our KEYFILE. Well, you can't deny: our 
+
+keyfile is a mess. Get out of SoftIce and open our keyfile with notepad and remove some lines, 
+
+I removed all lines but the 1st one. Now we can go on. Start monitor.exe again and trace until
+
+you get at 452354. The call at 452359 isn't important. If you don't believe me, check it out 
+
+yourself by tracing through it. Place a breakpoint at <FONT color=red>45235E</FONT>. Continue till you get at there.
+
+Hmm, that compare at <FONT color=red>45236F</FONT> might be important, place a breakpoint here and continue.
+
+BUT you never get at the compare, you get the 'wrong keyfile' error, then something must go 
+
+wrong in the call function at <FONT color=red>45236A</FONT>. So let's check out this call. Here is our call:
+
+
+
+<FONT color=blue>:0040289C 53                      push ebx
+
+:0040289D 56                      push esi
+
+:0040289E 51                      push ecx
+
+:0040289F 89CE                    mov esi, ecx
+
+:004028A1 C1EE02                  shr esi, 02
+
+:004028A4 7426                    je 004028CC
+
+:004028A6 8B08                    mov ecx, dword ptr [eax] </FONT>    ;; the 1st line of our keyfile
+
+<FONT color=blue>:004028A8 8B1A                    mov ebx, dword ptr [edx] </FONT>    ;; what the 1st line should be
+
+<FONT color=blue>:004028AA 39D9                    cmp ecx, ebx             </FONT>    ;; compare lines
+
+<FONT color=blue>:004028AC 7545                    jne 004028F3             </FONT>    ;; jump to the 
+
+<FONT color=blue>:004028AE 4E                      dec esi                  </FONT>       'no Envykey' message
+
+<FONT color=blue>:004028AF 7415                    je 004028C6
+
+:004028B1 8B4804                  mov ecx, dword ptr [eax+04]
+
+:004028B4 8B5A04                  mov ebx, dword ptr [edx+04]
+
+:004028B7 39D9                    cmp ecx, ebx
+
+:004028B9 7538                    jne 004028F3
+
+:004028BB 83C008                  add eax, 00000008
+
+:004028BE 83C208                  add edx, 00000008
+
+:004028C1 4E                      dec esi
+
+:004028C2 75E2                    jne 004028A6
+
+:004028C4 EB06                    jmp 004028CC</FONT>
+
+
+
+
+
+At <FONT color=red>4028A8</FONT> type '<FONT color=green>d edx</FONT>' Now we know what the first line should be. Open a hexeditor and edit our
+
+keyfile. It should look like this:
+
+
+
+         ||
+
+         \/
+
+<FONT color=brown>00000000 0745 6E76 794B 6579 0000 0000 0000 0000 .EnvyKey........
+
+00000010 0000 0000 0000 0000 00                  .........</FONT>
+
+
+
+Note: you HAVE to use a hexedit, because you can't type the 07 in notepad.
+
+
+
+Now continue running the program till you get here:
+
+
+
+<FONT color=blue>:0045236A E82D05FBFF              call 0040289C</FONT>   ;; this is our last call
+
+<FONT color=blue>:0045236F 7509                    jne 0045237A
+
+:00452371 83BB9600000000          cmp dword ptr [ebx+00000096], 00000000</FONT>   ;; check if keyfile
+
+<FONT color=blue>:00452378 750F                    jne 00452389</FONT>                                contains a zero
+
+                                                                              at ebx+96
+
+
+
+Time to make our keyfile a little bigger. Something like this:
+
+
+
+<FONT color=brown>
+
+00000000 0745 6E76 794B 6579 0000 0000 0000 0000 .EnvyKey........
+
+00000010 0000 0000 0000 0000 0000 0000 0000 0000 ................
+
+00000020 0000 0000 0000 0000 0000 0000 0000 0000 ................
+
+00000030 0000 0000 0000 0000 0000 0000 0000 0000 ................
+
+00000040 0000 0000 0000 0000 0000 0000 0000 0000 ................
+
+00000050 0000 0000 0000 0000 0000 0000 0000 0000 ................
+
+00000060 0000 0000 0000 0000 0000 0000 0000 0000 ................
+
+00000070 0000 0000 0000 0000 0000 0000 0000 0000 ................
+
+00000080 0000 0000 0000 0000 0000 0000 0000 0000 ................
+
+00000090 0000 0000 0000 FF                       .......</FONT>
+
+                        /\
+
+                        ||
+
+
+
+The value at 96 may NOT contain a zero, otherwise you get an error. So fill it with FF
+
+Now continue our running the program, till we get here:
+
+
+
+<FONT color=blue>:00452389 8D437F                  lea eax, dword ptr [ebx+7F]
+
+:0045238C 8B8B8A000000            mov ecx, dword ptr [ebx+0000008A]
+
+:00452392 66BA0200                mov dx, 0002
+
+:00452396 E89517FFFF              call 00443B30
+
+:0045239B 3B838E000000            cmp eax, dword ptr [ebx+0000008E]</FONT>       ;; no problem they
+
+<FONT color=blue>:004523A1 751B                    jne 004523BE</FONT>                               are the same
+
+<FONT color=blue>:004523A3 33D2                    xor edx, edx
+
+:004523A5 8A5309                  mov dl, byte ptr [ebx+09]
+
+:004523A8 8D430A                  lea eax, dword ptr [ebx+0A]
+
+:004523AB 8B8B82000000            mov ecx, dword ptr [ebx+00000082]
+
+:004523B1 E87A17FFFF              call 00443B30
+
+:004523B6 3B8392000000            cmp eax, dword ptr [ebx+00000092]</FONT>       ;; no problem they
+
+<FONT color=blue>:004523BC 740C                    je 004523CA</FONT>                                are the same
+
+
+
+<FONT color=blue>:004523BE B8C8244500              mov eax, 004524C8</FONT>                      \  If not the same:
+
+<FONT color=blue>:004523C3 E894DEFDFF              call 0043025C</FONT>                          |  say keyfile is  
+
+<FONT color=blue>:004523C8 EB7C                    jmp 00452446</FONT>                           /  corrupt
+
+
+
+<FONT color=blue>:004523CA 33D2                    xor edx, edx
+
+:004523CC 8A533D                  mov dl, byte ptr [ebx+3D]
+
+:004523CF 8D433E                  lea eax, dword ptr [ebx+3E]
+
+:004523D2 B9E6250200              mov ecx, 000225E6
+
+:004523D7 E85417FFFF              call 00443B30
+
+:004523DC 3B8382000000            cmp eax, dword ptr [ebx+00000082]</FONT>      ;; ebx+82 must contain
+
+<FONT color=blue>:004523E2 7418                    je 004523FC</FONT>                               0225E6 as value
+
+
+
+ebx+82 must contain 0225E6.
+
+Remember: values get pushed in reverse order, so your keyfile must look like this:
+
+
+
+<FONT color=brown>00000000 0745 6E76 794B 6579 0000 0000 0000 0000 .EnvyKey........
+
+00000010 0000 0000 0000 0000 0000 0000 0000 0000 ................
+
+00000020 0000 0000 0000 0000 0000 0000 0000 0000 ................
+
+00000030 0000 0000 0000 0000 0000 0000 0000 0000 ................
+
+00000040 0000 0000 0000 0000 0000 0000 0000 0000 ................
+
+00000050 0000 0000 0000 0000 0000 0000 0000 0000 ................
+
+00000060 0000 0000 0000 0000 0000 0000 0000 0000 ................
+
+00000070 0000 0000 0000 0000 0000 0000 0000 0000 ................
+
+00000080 0000 E625 0200 0000 0000 0000 0000 0000 ...%............  
+
+00000090 0000 0000 0000 FF                       .......</FONT>
+
+
+
+Continue the program. 
+
+
+
+<FONT color=blue>:004523B1 E87A17FFFF              call 00443B30
+
+:004523B6 3B8392000000            cmp eax, dword ptr [ebx+00000092]</FONT>     ;; A problem, 
+
+<FONT color=blue>:004523BC 740C                    je 004523CA</FONT>                              value must be 0225E6
+
+
+
+<FONT color=blue>:004523BE B8C8244500              mov eax, 004524C8</FONT>                      \  If not the same:
+
+<FONT color=blue>:004523C3 E894DEFDFF              call 0043025C</FONT>                          |  say keyfile is  
+
+<FONT color=blue>:004523C8 EB7C                    jmp 00452446</FONT>                           /  corrupt
+
+
+
+Notice that a problem has arisen at 4523B6, simply remove this problem
+
+by putting this value in your keyfile. Like this:
+
+
+
+<FONT color=brown>00000000 0745 6E76 794B 6579 0000 0000 0000 0000 .EnvyKey........
+
+00000010 0000 0000 0000 0000 0000 0000 0000 0000 ................
+
+00000020 0000 0000 0000 0000 0000 0000 0000 0000 ................
+
+00000030 0000 0000 0000 0000 0000 0000 0000 0000 ................
+
+00000040 0000 0000 0000 0000 0000 0000 0000 0000 ................
+
+00000050 0000 0000 0000 0000 0000 0000 0000 0000 ................
+
+00000060 0000 0000 0000 0000 0000 0000 0000 0000 ................
+
+00000070 0000 0000 0000 0000 0000 0000 0000 0000 ................
+
+00000080 0000 E625 0200 0000 0000 0000 0000 0000 ...%............  
+
+00000090 0000 E625 0200 FF                       ...X...</FONT>
+
+
+
+
+
+Continue the program. You don't GET ANY ERRORS ANYMORE, we have CRACKED the program.
+
+Clear all your breakpoints and start the program. YES!! WE DID IT!!!
+
+I've attached my keyfile to this essay, I hope it is still there when you read this.
+
+You can edit your keyfile, making a nice logo in it at the locations that Monitor/RA doesn't
+
+use. 
+
+
+
+.----------------------------------------------------------------------------------------------.
+
+|                                           <FONT SIZE=+2><B>Final Notes: </B></FONT>                                 |
+
+`----------------------------------------------------------------------------------------------'
+
+
+
+
+
+Well, I hope you learned SOMETHING from this tutor.
+
+
+
+If you have any comments, questions, need help or whatever, mail me at <A HREF="mailto:MisterE@freemail.nl">MisterE@freemail.nl</A>
+
+
+
+OR
+
+
+
+look for me at EFNET => #cracking4newbies or #cracking
+
+
+
+
+
+.----------------------------------------------------------------------------------------------.
+
+`----------------------------------------------------------------------------------------------'
+
+</PRE>
+
+
+
+<!-- WAY OUT STARTS HERE -->
+
+<HR>
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</I></CENTER>
+
+<BR><CENTER>
+
+<!-- EITHER A NICE GIF LIKE THIS -->
+
+
+
+
+
+<A href="progcor.htm" tppabs="http://www.anticrack.de/fravia/progcor.htm"><IMG SRC="progcor.gif" tppabs="http://www.anticrack.de/fravia/progcor.gif" 
+
+ALT="progcor" ALIGN=CENTER WIDTH=114 HEIGHT=43 BORDER=0 
+
+VSPACE=0 HSPACE=0></A>
+
+<BR>
+
+<FONT color=gray>Back to progcor</FONT>
+
+<BR><BR>
+
+
+
+
+
+<!-- OR JUST A LINK LIKE THIS -->
+
+
+
+<!--
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="project1.htm" tppabs="http://www.anticrack.de/fravia/project1.htm">Back to 
+
+Your_chosen_project</A> 
+
+<hr width=33%>
+
+-->
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A 
+
+HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' 
+
+essays</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy 
+
+database</A>
+
+<BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="realicra.htm" tppabs="http://www.anticrack.de/fravia/realicra.htm">reality 
+
+cracking</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="howtosea.htm" tppabs="http://www.anticrack.de/fravia/howtosea.htm">how to 
+
+search</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="javascri.htm" tppabs="http://www.anticrack.de/fravia/javascri.htm">javascript 
+
+wars</A>
+
+<BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity 
+
+academy</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A 
+
+HREF="ahref/index.html" tppabs="http://www.anticrack.de/fravia/ahref/index.html"http://fravia.org/ideale.htm">antismut CGI-scripts</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia+</A>
+
+<br>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse 
+
+engineering legal?</A>
+
+</CENTER>
+
+<hr></BODY>
+
+</HTML>"

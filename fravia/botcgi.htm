@@ -1,0 +1,463 @@
+<HTML>
+<HEAD>
+<META Name="Voluntary Content Rating" content="it's fravia's: great!">
+<TITLE>botcgi.htm: a very special kind of a Robot</TITLE>
+</HEAD>
+<BODY BGCOLOR=#C0C0C0 TEXT=#001010 ALINK=#405040 VLINK=#8850AA>
+<CENTER><A href="botstart.htm" tppabs="http://www.anticrack.de/fravia/botstart.htm"><IMG SRC="botstart.gif" tppabs="http://www.anticrack.de/fravia/botstart.gif"
+ALT="bots" ALIGN=CENTER WIDTH=114 HEIGHT=43 BORDER=0
+VSPACE=0
+HSPACE=0></A><BR><FONT color=gray>Bots section</FONT><HR>
+<FONT size=+3>
+MIRBOT 1.0<BR>
+by <BR>
+The Mystical Friend  <BR></FONT>
+September 1999
+<HR>
+
+courtesy of fravia's pages of reverse engineering<BR>
+<HR>
+<I>I'm happy to present you another kind of perl-bot, that should be a valuable addition 
+to our bot-section. I thank Bernd and/or The Mystical Friend  
+for this excellent contribution.<BR>
+Please send all feedback and amelioration proposals to both The Mystical Friend  (mystend(at)yahoo(point)com) and myself, 
+I'll publish if worth.</I>.
+<HR>
+</CENTER>
+<PRE>
+
+#!/usr/local/bin/perl -I.  ## -I. stands for Include . (you understand later why)
+## This is a very special kind of a Robot. You can start
+## ---------------------------------------------------------------
+##                    M I R B O T   1. 0
+## ---------------------------------------------------------------
+## this one from a free cgi-bin service like virtualave or netfirms remotly
+## with a browser. You need only a start_cgi script, which opens a new shell
+## e.g.    #!/usr/bin/perl -I.
+##         system(./bot.cgi?xyz); #xyz stands for the parameters
+## So and here is how it works:
+##         You give the bot an URL (e.g. http://129.105.116.5/fravia/index.html),
+## Username and Password for a FTP-Account, and an E-mail Adress for statisical
+## reasons. First the bot downloads the index.html, then he parses the doc. and
+## after that, he loads the docoment up to the Ftp Server. This can be
+## used for automatical mirroring. When the bot has finished, he sends you an
+## E-mail (over sendmail). This Mail tells you about the errors, how many and 
+## which kind of files has been uploaded.
+## Installation: Upload all standard perl modules into the cgi-bin Directory,
+## then upload the bot, and finally upload a little File and rename it to "live"
+## (read the source and the comments why).
+##
+## Hmm the bot worked fine after programming; He is tested
+## well, and no bugs has been found.
+## Tips for newbies: Learn Perl, and you can write bots like this one.
+##
+##                              The Mystical Friend    mystend@yahoo.com
+ 
+ 
+
+   
+
+###########################################################################
+#Include of packages
+
+@INC = ($INC[0], $INC[1], $INC[2]);
+
+# use CGI::Carp qw(fatalsToBrowser); # uncomment this, if the bot causes an Internal Server Error 500.
+use strict;
+use vars qw($FtpServer $Username $Password $Site2mirror $Email);
+
+use LWP::RobotUA;  
+use URI::URL;
+use HTML::TreeBuilder;
+use Net::FTP;
+use File::Basename;
+
+print "Content-type: text/html\n\n<BR><BR>"; 
+
+###########################################################################
+#Start of main routine
+
+package main;
+
+$| = 1;
+print "\n\nScript $0 successfully initialized.\n\n";
+print "Content-type: text/plain\nPragma: no-cache\n";
+print '_' x 100;
+print "@INC \n";   #only for debugging reasons, just to show you the Include pathes. If you are using the bot on a free service, you have to upload the whole modules-directroy to get it work
+
+#($FtpServer, $Username, $Password, $Site2mirror, $Email) = GetFormData();  # you can use this, if you want to start the bot with a HTML
+                                                                             ##page (POST!). This works with URL-Coding.
+                                                                            ## e.g. bot.cgi?FtpServer .....
+($FtpServer, $Username, $Password, $Site2mirror, $Email) = ("ftp.server", "username", "password", "site2mirror", "email\@adress.com");
+
+my $domain = URI::URL -> new ($Site2mirror) -> host();
+
+
+###########################################################################
+#Initialization of FTP-connection
+
+#print "\n\nInitializing FTP-connection to $FtpServer ..... ";
+my $FtpAccess = Net::FTP -> new($FtpServer, Timeout => 200) || print
+"ERROR while connecting to $FtpServer, $!"; 
+$FtpAccess->login($Username, $Password) || print "LOGIN ERROR";
+$FtpAccess->cwd("public_html") || print "Directory ERROR";
+my @filelist = $FtpAccess -> dir();
+print "DONE \n";                                                              t
+
+
+###########################################################################
+#Initialization of User Agent as RobotUA
+
+print "Initializing robot ...... ";
+my $MirBo = new LWP::RobotUA ("Mirror-Bot\/1\.0", "MirBo\@hotmail\.com"); # Change Mirror-Bot\/1/.0 to something like Mozilla
+$MirBo -> delay(0,15); 
+print "DONE. \n";
+
+
+###########################################################################
+#Initialization of global variables
+
+#my %SEEN = (); # For Hash mode. But I think an Array is better.
+
+my @URLs = ($Site2mirror);
+my @SEEN = ($URLs[0]);
+# $SEEN{$URLs[0]} = $URLs[0];
+my ($TotalRequests, $HTMLDocs, $Binaries, $Uploads, $TotalBytes, $Errors);
+
+print "\nStart main recursive routine ..... \n\n";
+recursiv ();
+print "\nMain routine finished.\n\n";
+
+
+###########################################################################
+#Some statistics
+
+$Errors = $TotalRequests - ($HTMLDocs + $Binaries);
+Sendmail ("$TotalRequests requests done \(Binaries: $Binaries, Docs: $HTMLDocs, Errors: $Errors\)\n\n $Uploads files retrieved and uploaded. \($TotalBytes bytes\).\n\n");
+
+
+###########################################################################
+#Program exit
+
+print "Exit.... \n\n";
+$FtpAccess -> quit();
+exit 0;
+
+
+###########################################################################
+#Begin of main routine
+
+sub recursiv {
+
+    foreach (@URLs) {
+        open(LIVE, "<LIVE") || die "ARGHHHHHHHHHHHHH!"; #we need this to stop the bot, if something goes wrong... takes some time, but the bot will be saver to control
+# how this works: you only have to upload a file called live into the Directroy where the bot is installed. Now the bot works as long as the
+# file live exists. Delete it, and the bot will stop!
+        close(LIVE);
+
+       
+       
+	my $URL = $_;
+	my $file = GetFilename($URL);
+	
+        my $response = SendRequest ("HEAD", $URL);
+	
+	my ($ct, $cl) = ($response->header("Content-Type"), $response->header("Content-Length"));	
+	my $unchanged = grep {/$cl.{1,}$file/s} @filelist;
+	print "\t$URL is being requested..... ";
+      
+      
+   # debugging starts here
+      #     open(ERRORF, ">>errors") || print "Cannot make a log-File";
+      #     print ERRORF $response->code();
+           
+           
+      #     close(ERRORF); #debugging ends here
+           
+             
+            if ($response->is_success() && $ct =~ "text\/html" || $ct =~ "text\/plain") {
+	    $HTMLDocs++;
+	    print "SUCCESSFUL. \n";
+
+	    my $response = SendRequest ("GET", $URL);		    
+    	    my $doc = LinxParser ($response->content(), $URL);
+	    
+	    SaveDoc ($file, $doc);
+	    FTPUpload ("ascii", $file, $cl);
+	}
+	elsif ($response->is_success() && $ct !~ "text\/html" && $ct !~ "text\/plain") {
+	    $Binaries++;
+	    print "SUCCESSFUL. \n";
+	    	    
+	    unless ($unchanged) {
+		my $response = SendRequest ("GET", $URL, $file);	
+	       	FTPUpload ("binary", $file, $cl);
+	    } else {
+	   	print "\t\t> We already have it!\n\n"; }
+	}
+	elsif ($response->is_error()) {
+	    print "ERROR. \n";
+	    print "\t\t> File not found!\n\n";
+	}
+	
+    }
+}
+
+
+###########################################################################
+#GetFilename routine
+
+sub GetFilename {
+    my $URL = shift;
+    my $path = URI::URL -> new ($URL) -> path();
+    $path =~ s,/$,/index.html,g;
+    $path =~ s,^/,,g;    
+    my $file = basename($path);
+    
+    
+    
+    return $file; 
+}
+
+
+###########################################################################
+#FTPUpload routine
+
+sub FTPUpload {
+    my ($method, $file, $bytes) = @_;
+
+    print "\t\t> Uploading $file via FTP to $FtpServer ..... ";
+    $FtpAccess -> $method();
+    $FtpAccess -> put ($file, $file) || print "ERROR while trying to upload $file";
+    unlink $file;
+   print "DONE. \n\n";
+
+    $TotalBytes += $bytes;
+    $Uploads++;
+ }
+
+
+###########################################################################
+#SaveDoc routine
+
+sub SaveDoc {
+    my ($file, $doc) = @_;
+
+    print "\t\t> Saving HTML-DOC $file ..... ";
+    open (FILE, ">$file");
+    print FILE "$doc";
+    close (FILE);
+   print "DONE. \n"; 
+}
+
+
+###########################################################################
+#SendRequest routine
+
+sub SendRequest {
+    $TotalRequests++;
+    my ($type, $URL, $file) = @_;
+    my $req = HTTP::Request->new($type,$URL);
+    my $res = $MirBo->request($req, $file);
+    
+    
+    return $res;
+ }
+
+
+###########################################################################
+#Linx-parser routine
+
+sub LinxParser {
+    my ($doc, $URL) = @_;
+
+    print "\t\t> Substituting absolute links .....  ";
+    my $tree = HTML::TreeBuilder->new->parse($doc);
+
+    for (@{$tree->extract_links(qw/a area img/)}) {
+	my $l = URI::URL->new($_->[0]);
+    
+	unless ($l =~ /javascript:/ || $l =~ /mailto:/) {
+	    (my $s = $l->abs($URL)) =~ s/#.*//g;
+	    my $host = URI::URL -> new ($s) -> host;
+	    
+
+             if ($host eq $domain) {
+		# my @ALREADYSEEN = $SEEN {$s}; # this is for the Hash-Mode.
+		my @ALREADYSEEN = grep { /$s/ } @SEEN;
+                push (@URLs, $s) unless @ALREADYSEEN;			
+		push (@SEEN, $s);
+                # $SEEN {$s} = $s;  # Hash-Mode		
+		
+                my $linkfile = GetFilename($l);
+	      if ($l =~ /:\/\// || $l =~ /www./) {
+        	$doc =~ s/\=\"$l/\=\"$linkfile/;
+	        }
+           }
+	}
+    }
+
+    $tree->delete;	
+    print "DONE. \n";
+    return $doc; 
+}
+
+
+###########################################################################
+#Sendmail routine
+
+sub Sendmail {
+    my $BODY = shift;
+    
+    open(SENDMAIL, "|/usr/sbin/sendmail -t") || print "ERROR while opening sendmail\n";
+    print SENDMAIL "From: Bill Gate\$ <BIGGEST\_sucker\@nerds.com>\n";       # Of course you can change this to what you want
+    print SENDMAIL "To: Mirbot <EMAIL>\n";
+    print SENDMAIL "Subject: Re:Status report\n\n";
+    print SENDMAIL "$BODY";
+    close(SENDMAIL);
+}
+
+
+###########################################################################
+#Get_form_data routine
+ 
+sub GetFormData {
+    my ($buffer, @pairs, @FORM, $name, $value) = ();
+    $buffer = $ENV{'QUERY_STRING'};
+    @pairs = split(/&/, $buffer);
+
+    foreach (@pairs) {
+	my ($name, $value) = split(/=/, $_);
+	$value =~ tr/+/ /;
+	$value =~ s/%([a-fA-F0-9][a-fA-F0-9])/pack("C", hex($1))/eg;
+	$value =~ s/<!--(.|\n)*-->//g;	
+	push (@FORM, $value);	
+    }
+    return @FORM;
+}
+
+#The end
+###########################################################################
+</PRE><HR>
+<BR><CENTER><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+ALT="red" ALIGN=BOTTOM WIDTH=88% HEIGHT=6 BORDER=0
+VSPACE=0 HSPACE=0><BR><BR>
+<!-- Begin Javascript relocator <font color=gray><b>~</b></fonT> Javascript code by fravia+ -->
+<FORM name="FraviasForm">
+<SCRIPT LANGUAGE="javascript">
+<!--
+
+function FravPage(list) {
+	      location.href = list.options[list.selectedIndex].value
+}
+
+// -->
+</SCRIPT>
+<DIV align="center">
+<CENTER>
+<P center="&lt;center&gt;&lt;/center&gt;">&nbsp;<SELECT name="fraviale" size="1">
+
+<OPTION>Choose another page!</OPTION>
+<OPTION value="index.htm">Main page</OPTION>
+<OPTION value="academy.htm">Software reversing Lab</OPTION>
+<OPTION value="realicra.htm">Reality cracking Lab</OPTION>
+<OPTION value="noanon.htm">Anonymity Lab</OPTION>
+<OPTION value="ideale.htm">Site busting Lab</OPTION>
+<OPTION value="howtosea.htm">How to search Lab</OPTION>
+<OPTION value="sealight.htm">--Search engines (light)</OPTION>
+<OPTION value="searengi.htm">--Search engines (heavy)</OPTION>
+<OPTION value="links.htm">Links</OPTION>
+<OPTION value="tools.htm">Tools</OPTION>
+<OPTION value="javascri.htm">Javascript reversing</OPTION>
+<OPTION value="screamin.htm">Screaming truth</OPTION>
+<OPTION value="entran.htm">Main entrance</OPTION>
+<OPTION value="new_what.htm">What's new on fravia's</OPTION>
+<OPTION value="info.htm">Mail fravia+</OPTION>
+<OPTION value="http://greythorne.home.ml.org">+Greythorne's</OPTION>
+<OPTION value="http://www.InsideTheWeb.com/mbs.cgi/mb186724">Tools of our trade msgboard</OPTION>
+<OPTION value="http://www.InsideTheWeb.com/mbs.cgi/mb155985">Main msgboard</OPTION>
+</SELECT>
+
+<INPUT type="button" value="Let's go!" onclick="FravPage(this.form.elements[0])">
+<BR>
+</DIV>
+
+</FORM>
+<!-- end Javascript relocator -->
+<BR><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+ALT="red" ALIGN=BOTTOM WIDTH=88% HEIGHT=6 BORDER=0
+VSPACE=0 HSPACE=0><BR><BR>
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0
+VSPACE=0 HSPACE=0><A
+HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0
+VSPACE=0 HSPACE=0>
+<A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links </A>
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0>
+<A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity </A>
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC </A>
+
+<IMG
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays </A>
+
+<IMG
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database </A>
+
+<IMG
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+HREF="botstart.htm" tppabs="http://www.anticrack.de/fravia/botstart.htm">bots wars</A>
+
+<BR>
+<IMG
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut </A>
+
+<IMG
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+HEIGHT=13 BORDER=0
+VSPACE=0 HSPACE=0><A
+HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools </A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+HEIGHT=13
+BORDER=0 VSPACE=0 HSPACE=0><A
+HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails </A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+HEIGHT=13
+BORDER=0 VSPACE=0 HSPACE=0><A
+HREF="javascri.htm" tppabs="http://www.anticrack.de/fravia/javascri.htm">javascript wars </A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0
+VSPACE=0 HSPACE=0><A
+HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms </A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0
+VSPACE=0 HSPACE=0><A
+HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia </A><BR>
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0
+VSPACE=0 HSPACE=0><A
+HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering illegal?
+</A></CENTER>
+
+</BODY>
+</HTML>
+
+
+
+
+

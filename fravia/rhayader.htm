@@ -1,0 +1,893 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>rhayader.htm Rhayader's SoftICE
+
+conditional breakpoints</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR=#C0C0C0 TEXT=#001010 VLINK=#405040><P><CENTER>
+
+<CENTER><H2>
+
+Softice's conditional breakpoints settings and macros<BR>
+
+by Rhayader<BR>
+
+30 October 1998</FONT>
+
+<BR></H2>
+
+<HR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0>Courtesy of Fravia's page 
+
+of reverse engineering
+
+<HR></CENTER>
+
+<FONT FACE="Arial,Helvetica">&nbsp;</FONT>
+
+<BR><FONT FACE="Arial,Helvetica">&nbsp;</FONT>
+
+<BR><B><FONT FACE="Arial,Helvetica"><FONT COLOR=blue><FONT SIZE=+1>SoftICE
+
+conditional breakpoints</FONT></FONT></FONT></B>
+
+
+
+<P><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; In my early
+
+cracking experience, I usually set a BPX for GetDlgItemTexta and</FONT>
+
+<BR><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; GetWindowTexta
+
+inside SoftIce, whenever I found a program that ask for serial. Entering</FONT>
+
+<BR><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; dummy code,
+
+and 'hoping' that SoftIce would pop up. Most of the time it works. Problem</FONT>
+
+<BR><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; is, after
+
+I hit F12 (P RET), I usually get lost inside the code. Wondering where's
+
+that</FONT>
+
+<BR><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; bloody
+
+text buffer that I can set a BPR with.</FONT>
+
+
+
+<P><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; After digging
+
+into SoftIce docs, I finally found a better way to do it (It's in Chapter
+
+7 of the</FONT>
+
+<BR><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; User Guide).
+
+IMHO, you should read it too. Some of the terms there might be hard to</FONT>
+
+<BR><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; understand
+
+if you were just started. But, hey, that's what The Forum is for, isn't
+
+it? :)</FONT>
+
+
+
+<P><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -----</FONT>
+
+
+
+<P><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; My aim here
+
+is to get SoftIce show us the text buffer for the two Win32 APIs mentioned</FONT>
+
+<BR><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; above.
+
+I'll use breakpoint "action" to do that.</FONT>
+
+
+
+<P><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Let's take
+
+a look at GetWindowTexta first. It's declared as:</FONT>
+
+
+
+<P><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; int GetWindowText(
+
+HWND hWnd, LPTSTR lpString, int nMaxCount );</FONT>
+
+
+
+<P><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; GetWindowText
+
+use stdcall calling convention. That means that argument will be pushed</FONT>
+
+<BR><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; right to
+
+left. Since SoftIce pop up before the prologue code is executed, the EBP
+
+stack</FONT>
+
+<BR><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; frame isn't
+
+set up yet. So we had to use ESP to adressed the argument. Here's how the</FONT>
+
+<BR><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; stack will
+
+look like when SoftIce pop up:</FONT>
+
+
+
+<P><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ...</FONT>
+
+<BR><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; [ESP+0Ch]
+
+- nMaxCount</FONT>
+
+<BR><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; [ESP+08h]
+
+- lpString</FONT>
+
+<BR><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; [ESP+04h]
+
+- hwnd</FONT>
+
+<BR><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; [ESP+00h]
+
+- return EIP</FONT>
+
+
+
+<P><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; When the
+
+function return, GetWindowTexta will put the text it retrieved to the location</FONT>
+
+<BR><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; pointed
+
+to by lpString (LPTSTR is a long pointer to a null terminated string).
+
+Thus, we</FONT>
+
+<BR><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; had to
+
+use SoftIce's indirection operator (it's the * character, same as C language,
+
+see</FONT>
+
+<BR><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Chapter
+
+8 ;). For example, the command:</FONT>
+
+
+
+<P><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; D *(esp+8)</FONT>
+
+
+
+<P><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; means, "show
+
+in data window, the location pointed to by the content of esp+8". Since,</FONT>
+
+<BR><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; this is
+
+a very common operation, SoftIce had a shorthand for it: esp->8. Allright
+
+then,</FONT>
+
+<BR><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; now we
+
+can set the breakpoint such as this:</FONT>
+
+
+
+<P><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; BPX getwindowtexta
+
+DO "D esp->8;"</FONT>
+
+
+
+<P><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; And when
+
+we hit F12, we return to the caller and the text we entered will sit nicely
+
+at the</FONT>
+
+<BR><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; top of
+
+the data window, waiting for us to set up a BPR with it :) Why don't we
+
+do a return</FONT>
+
+<BR><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; to the
+
+caller automatically? Well, in my case, the screen flashes, and I hate
+
+it. But, if you</FONT>
+
+<BR><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; want to
+
+try, you can set the breakpoint as:</FONT>
+
+
+
+<P><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; BPX getwindowtexta
+
+DO "D esp->8;P RET;"</FONT>
+
+
+
+<P><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Now, let's
+
+take a look at GetDlgItemTexta. It is declared as:</FONT>
+
+
+
+<P><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; UINT GetDlgItemText(
+
+HWND hDlg, int nIDDlgItem, LPTSTR lpString, int nMaxCount );</FONT>
+
+
+
+<P><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; The only
+
+difference is nIDDlgItem, which is the ID of the control to get the text
+
+from. The</FONT>
+
+<BR><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; stack will
+
+look like this:</FONT>
+
+
+
+<P><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ...</FONT>
+
+<BR><FONT FACE="Courier New,Courier">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; [ESP+10h]
+
+- nMaxCount</FONT>
+
+<BR><FONT FACE="Courier New,Courier">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; [ESP+0Ch]
+
+- lpString &lt;&lt; here it is</FONT>
+
+<BR><FONT FACE="Courier New,Courier">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; [ESP+08h]
+
+- nIDDlgItem</FONT>
+
+<BR><FONT FACE="Courier New,Courier">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; [ESP+04h]
+
+- hwnd</FONT>
+
+<BR><FONT FACE="Courier New,Courier">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; [ESP+00h]
+
+- return EIP</FONT>
+
+
+
+<P><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; And the
+
+breakpoint to set (I had a feeling that you already find out ;)</FONT>
+
+
+
+<P><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; BPX getdlgitemtexta
+
+DO "D esp->C;"</FONT>
+
+
+
+<P><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Well, that's
+
+all my friends. If you didn't want to type it everytime you want to use
+
+it, then</FONT>
+
+<BR><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; you had
+
+to set up a macro for it. Read chapter 11 :D I'd like to tell you, but
+
+this became a</FONT>
+
+<BR><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; looong
+
+post already. See ya...</FONT>
+
+<BR>&nbsp;
+
+<BR>&nbsp;
+
+
+
+<P>
+
+<HR SIZE=5 WIDTH="75%">
+
+
+
+<P><FONT FACE="Arial,Helvetica">&nbsp;</FONT>
+
+<BR><B><FONT FACE="Arial,Helvetica"><FONT COLOR=blue><FONT SIZE=+1>Setting
+
+breakpoint action in SoftICE...</FONT></FONT></FONT></B>
+
+
+
+<P><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp; You probably knew
+
+that GetWindowTexta and GetDlgItemtTexta will fail in a Delphi</FONT>
+
+<BR><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; program.
+
+Yet, putting a breakpoint on Windows message (BMSG) will placed you too
+
+far</FONT>
+
+<BR><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; from the
+
+calculation routine. So, I usually put a breakpoint when the program need
+
+to</FONT>
+
+<BR><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; find out,
+
+whether we are a registered user or not. For most programs this registration</FONT>
+
+<BR><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; information
+
+is usually stored in Windows' registry, some use ini file, and sometimes,</FONT>
+
+<BR><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; programs
+
+use a regfile. In this post I only tackles the registry. I'm sure you can
+
+extend</FONT>
+
+<BR><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; this to
+
+include the .INI and regfile.</FONT>
+
+
+
+<P><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Putting
+
+the breakpoint in registry's API is easy. First, you must make sure that</FONT>
+
+<BR><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ADVAPI32.DLL
+
+is loaded by SoftIce. You can check it with the "EXP regqueryvalueex"</FONT>
+
+<BR><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; command.
+
+If SoftIce already load ADVAPI32.DLL, it will respond with the address
+
+of the</FONT>
+
+<BR><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; routine.
+
+To set a breakpoint on registry read, we use the command:</FONT>
+
+
+
+<P><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; BPX RegQueryValueExA</FONT>
+
+
+
+<P><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; After that,
+
+you can start the program that you want to break and SoftIce will break</FONT>
+
+<BR><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; everytime
+
+the program read the registry. The problem here lies in "everytime". There
+
+will</FONT>
+
+<BR><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; be hundreds
+
+of calls that read the registry. And it's not fun to hit Ctrl+D several
+
+time. So,</FONT>
+
+<BR><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; we had
+
+to find a way, to make SoftIce stops only on the value that we are interested
+
+with.</FONT>
+
+<BR><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; We're gonna
+
+use conditional breakpoint to do that (User Guide Chapter 7, sub:</FONT>
+
+<BR><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Conditional
+
+Breakpoints).</FONT>
+
+
+
+<P><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -----</FONT>
+
+
+
+<P><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; We'll do
+
+a quick review for the API first. RegQueryValueEx is declared like this:</FONT>
+
+
+
+<P><FONT FACE="Courier New,Courier">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; LONG
+
+RegQueryValueEx(</FONT>
+
+<BR><FONT FACE="Courier New,Courier">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; HKEY
+
+hKey, // handle of key to query</FONT>
+
+<BR><FONT FACE="Courier New,Courier">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; LPTSTR
+
+lpValueName, // address of name of value to query</FONT>
+
+<BR><FONT FACE="Courier New,Courier">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; LPDWORD
+
+lpReserved, // reserved</FONT>
+
+<BR><FONT FACE="Courier New,Courier">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; LPDWORD
+
+lpType, // address of buffer for value type</FONT>
+
+<BR><FONT FACE="Courier New,Courier">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; LPBYTE
+
+lpData, // address of data buffer</FONT>
+
+<BR><FONT FACE="Courier New,Courier">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; LPDWORD
+
+lpcbData // address of data buffer size</FONT>
+
+<BR><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; );</FONT>
+
+
+
+<P><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; When SoftIce
+
+break, the stack will look like this:</FONT>
+
+
+
+<P><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ...</FONT>
+
+<BR><FONT FACE="Courier New,Courier"><FONT SIZE=-1>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+[ESP+18h] - lpcbData</FONT></FONT>
+
+<BR><FONT FACE="Courier New,Courier"><FONT SIZE=-1>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+[ESP+14h] - lpData &lt;&lt; this is where the return data will be put by
+
+Windoze</FONT></FONT>
+
+<BR><FONT FACE="Courier New,Courier"><FONT SIZE=-1>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+[ESP+10h] - lpType</FONT></FONT>
+
+<BR><FONT FACE="Courier New,Courier"><FONT SIZE=-1>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+[ESP+0Ch] - lpReserved</FONT></FONT>
+
+<BR><FONT FACE="Courier New,Courier"><FONT SIZE=-1>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+[ESP+08h] - lpValueName &lt;&lt; this is the name of the data that will
+
+be retrieve</FONT></FONT>
+
+<BR><FONT FACE="Courier New,Courier"><FONT SIZE=-1>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+[ESP+04h] - hKey</FONT></FONT>
+
+<BR><FONT FACE="Courier New,Courier"><FONT SIZE=-1>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+[ESP+00h] - return EIP</FONT></FONT>
+
+
+
+<P><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; I guess
+
+you already knew that using a breakpoint action DO "D ESP->14;" will show
+
+the</FONT>
+
+<BR><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; retrieved
+
+data in SoftIce's data window after the function return.</FONT>
+
+
+
+<P><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Now, say
+
+for example, Regmon (http://www.sysinternals.com) telling us that the program</FONT>
+
+<BR><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; read the
+
+info from:</FONT>
+
+
+
+<P><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; HKEY_CURRENT_USER\Software\Microsoft\Developer\Setup\RegisteredOwner</FONT>
+
+<BR><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; HKEY_CURRENT_USER\Software\Microsoft\Developer\Setup\RegisteredOrganization</FONT>
+
+
+
+<P><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Then, we
+
+can put a breakpoint in SoftIce such as this:</FONT>
+
+
+
+<P><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; BPX RegQueryValueExA
+
+IF *(ESP->8) == 'Regi' DO "D ESP->14;"</FONT>
+
+
+
+<P><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; And SoftIce
+
+will only break when the registry read the ones that start with "Regi".
+
+Here is</FONT>
+
+<BR><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; the explanation:</FONT>
+
+
+
+<P><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1. You knew
+
+what ESP->8 is. Since Windoze passed an LPTSTR (pointer to</FONT>
+
+<BR><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; null-terminated
+
+string) to RegQueryValueExA, ESP->8 will evaluate to "the address</FONT>
+
+<BR><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; pointed
+
+to by the content of [ESP+8]". For more information with the operator,
+
+see User</FONT>
+
+<BR><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Guide Chapter
+
+8, sub: Operators. Also, see User Guide Chapter 7, sub: Referencing the</FONT>
+
+<BR><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Stack in
+
+Conditional Breakpoint.</FONT>
+
+
+
+<P><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 2. The SoftIce
+
+indirection operator * in *(ESP->8) will retrieve the content. Thus, the</FONT>
+
+<BR><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; expression
+
+*(ESP->8) will tell SoftIce that we need "the value stored in the address</FONT>
+
+<BR><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; pointed
+
+to by the content of [ESP+8]".</FONT>
+
+
+
+<P><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 3. Now,
+
+the expression *(ESP->8) == 'Regi' means that the expression will evaluate
+
+to</FONT>
+
+<BR><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; TRUE, only
+
+if "the value stored in the address pointed to by the content of [ESP+8]"
+
+is</FONT>
+
+<BR><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "equal"
+
+to "Regi". Why only use four character? Well, the * operator, only return</FONT>
+
+<BR><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; DWORD value
+
+(32-bit). So, we can only use the first 32-bit which is equal to four</FONT>
+
+<BR><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; character.
+
+Also, SoftIce will convert 'Regi' to 0x69676552 (it's Regi in little endian
+
+format</FONT>
+
+<BR><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ;). So,
+
+it's case-sensitive. I probably should note that, there is two equal sign,
+
+and it's a</FONT>
+
+<BR><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; single
+
+quote. The use of two equal sign and single quote is the same as C language.</FONT>
+
+
+
+<P><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Since the
+
+* operator return DWORD value, there will be a problem if we want to retrieve</FONT>
+
+<BR><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; only a
+
+WORD (16-bit) value. We had to use the SoftIce Word() function. You can
+
+see</FONT>
+
+<BR><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; User Guide
+
+Chapter 8, sub Forming Expressions, sub Built-in Functions, for the Word()</FONT>
+
+<BR><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; function.
+
+But, since most program align values/structures in 4-byte boundary, the
+
+use of</FONT>
+
+<BR><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Word()
+
+function is quiet rare. The example that will follow is retrieve 16-bit
+
+value, yet we</FONT>
+
+<BR><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; can safely
+
+use it without the Word() function.</FONT>
+
+
+
+<P><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -----</FONT>
+
+
+
+<P><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; If you can
+
+understand the above breakpoint, you probably began to wonder, "How</FONT>
+
+<BR><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; should
+
+I write the breakpoint if the program read a key and a name, and the first
+
+four</FONT>
+
+<BR><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; char is
+
+not equal?" Say, for example, it read from:</FONT>
+
+
+
+<P><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; HKEY_CURRENT_USER\Software\Applied
+
+Insights\AI Explorer\UN</FONT>
+
+<BR><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; HKEY_CURRENT_USER\Software\Applied
+
+Insights\AI Explorer\SN</FONT>
+
+
+
+<P><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; for the
+
+username and serial respectively. Issuing another breakpoint in</FONT>
+
+<BR><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; RegQueryValueExA
+
+won't work (duplicate breakpoint). But, we can add more conditions</FONT>
+
+<BR><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; to SoftIce.
+
+And we can set our breakpoint like this:</FONT>
+
+
+
+<P><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; BPX RegQueryValueExA
+
+IF (*(ESP->8) == 'UN') || (*(ESP->8) == 'SN') DO "D ESP->14;"</FONT>
+
+
+
+<P><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; The logical
+
+OR operator (||, two pipe characters) will make the expression evaluate
+
+to</FONT>
+
+<BR><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; TRUE if
+
+one of the condition (or both) is TRUE. Problem is, when you try to write
+
+it in</FONT>
+
+<BR><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; SoftIce,
+
+you will hit the SoftIce 80 characters command line limitation. Thus, we
+
+had to</FONT>
+
+<BR><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; create
+
+a macro for it (User Guide Chapter 11, sub: Working with Persistent Macros).
+
+We</FONT>
+
+<BR><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; can declare
+
+the macro such as:</FONT>
+
+
+
+<P><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; BPX RegQueryValueExA
+
+IF (*(ESP->8) == '%1') || (*(ESP->8) == '%2') DO "D ESP->14;"</FONT>
+
+
+
+<P><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; And, name
+
+it to something like bpregqv. And when we want to use it, we just use:</FONT>
+
+
+
+<P><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; BPREGQV
+
+UN SN</FONT>
+
+
+
+<P><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; We can safely
+
+leave the single quote there in the macro. Because the value name will</FONT>
+
+<BR><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; always
+
+be a string (Unlike the return value which can be an integer).</FONT>
+
+
+
+<P><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ------</FONT>
+
+
+
+<P><FONT FACE="Arial,Helvetica">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; That's all
+
+I guess. Hope this can help you.</FONT>
+
+
+
+<P><FONT FACE="Arial,Helvetica">Rhayader</FONT>
+
+
+
+<HR ALIGN=CENTER WIDTH=100% SIZE=3>
+
+
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</I></CENTER><BR>
+
+<BR><CENTER><H2><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A href="howtouse.htm" tppabs="http://www.anticrack.de/fravia/howtouse.htm">How to use our tools</A></H2>
+
+<HR width=44%>
+
+
+
+
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0> 
+
+<A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links </A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0>
+
+<A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity </A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN=BOTTOM
+
+BORDER=0 VSPACE=0 HSPACE=0 width="13" height="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC </A>
+
+
+
+<IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays </A>
+
+
+
+<IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database </A><BR>
+
+<IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut </A>
+
+
+
+<IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 
+
+VSPACE=0 HSPACE=0><A
+
+HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13
+
+BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia </A><BR>
+
+
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering illegal? </A></CENTER>
+
+<HR size=4></FONT>
+
+
+
+</BODY>
+
+</HTML>

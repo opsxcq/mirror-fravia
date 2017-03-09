@@ -1,0 +1,2200 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>koxpara</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+<CENTER><FONT size="+3">A &quot;Laying Eggs&quot; target<BR></FONT>
+
+  (reverse engineering a paranoid and tough protection scheme) <BR>
+
+  <BR>
+
+    <IMG SRC="tough.gif" tppabs="http://www.anticrack.de/fravia/tough.gif" ALT="tough" ALIGN="BOTTOM" WIDTH="114" HEIGHT="43" BORDER="0" VSPACE="0" HSPACE="0">
+
+
+
+<H4>by Kox<BR>
+
+<BR>
+
+(30 August 1997)</H4>
+
+<HR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">Courtesy of fravia's page 
+
+of reverse engineering<BR><BR><I>Well, a paranoid  and tough protection scheme cracked by a young +cracker!
+
+And some work to DO for all +HCU's &quot;old hands&quot;. Nice essay, Kox!<BR><BR>
+
+</I><HR size="7"><PRE>
+
+</CENTER>
+
+
+
+A &quot;Laying Eggs&quot; target by Kox (Laying Eggs is a Kox's tm Expression)
+
+
+
+
+
+First i would like everybody to execuse me.I am just a newbie
+
+(started learning x86 asm. 2 months ago).
+
+
+
+And i would like to welcome back +ORC (nice having you back +ORC)	
+
+and thank him for such great essays.
+
+
+
+And to thank +Fravia for such a great job on a wonderful site.
+
+(Hey Fravia: Can't wait to see Filmon VxD part, so far the 4 parts are GREAT !!)
+
+
+
+After reading through Frog's Print essay about MeltICE, i decided to go and 
+
+search the net on the subject... I found the home page of the author (David 
+
+Eriksson) And with no surprises i found that the author of this is a shareware 
+
+programmer. He contibuted writing a shareware program called &quot;Shell Wizard&quot;.
+
+
+
+Since it is always a good thing to study our enemy's behaviour.. I decided
+
+to have a look at that prog..
+
+
+
+&quot;Shell Wizard&quot; is a &quot;tweaking&quot; program, which has much in common with 
+
+&quot;Winhacker95 v2&quot; except that it has more so called &quot;clever hacks&quot; to the system.
+
+(Believe it or not!! It removes startup (NAG) screens from some programs!!)
+
+It even has a filesplit tool, an SFX explorer and a Program doctor.
+
+
+
+The latest version is v3 and can be found at http://www.shellwizard.com
+
+
+
+
+
+Tools you will need:
+
+1.SoftICE v3 (Thank god there exist such wonderful tools) http://www.numega.com
+
+2.Your favourite text-hex editor (UltraEdit recommended)
+
+3.Your favourite assembler (MASM or TASM)
+
+4.Filemon3 by Mark Russinovich and Bryce Cogswell  http://www.ntinternals.com
+
+5.Brain power
+
+6.Some ZeN
+
+7.Loadsa NEScafe.(Any kinda coffee will do) -- (sorry +ORC and Coktail lovers, &gt;&gt; doctor's orders)
+
+
+
+Tools you will not need:
+
+1.W32DASM 8.9 (You will find out soon why we don't need it)
+
+
+
+Well ,before starting the crack .. i knew what i was gonna face, a missing file
+
+registration system.
+
+
+
+I had a key file made by Killer+Bee of Phrozen Crew 97 (just to give credits were they
+
+belong),so i wasn't the first one. But this is just an exercise.
+
+
+
+But that key file i had does not show who the program is registered to.
+
+(just shows trash at the &quot;Registered to:&quot; dialog)
+
+
+
+And keyfiles are just like serial numbers .. (not acceptable to use them
+
+for someone in our trade)
+
+
+
+I started up the prog without using the keyfile..
+
+the prog. says it has 20 days remaining of evaluation.
+
+
+
+Well i looked at the prog. folder .. It has the following files:
+
+
+
+ART            &lt;DIR&gt;
+
+16BIT          &lt;DIR&gt;
+
+PLUGINS        &lt;DIR&gt;
+
+swres.dll
+
+_DEISREG.ISR
+
+ShellWizard.exe					;  main program (target)
+
+sw30gsui.dll
+
+swclear.exe					;  helper program
+
+swexpex.exe					;  helper program
+
+_ISREG32.DLL
+
+ShellWizard Extra Desktop Backgrounds.exe 	;  helper program
+
+ShellWizard File Split.exe			;  helper program
+
+ShellWizard Program Doctor.exe
+
+SfxExplorer.exe					;  helper program
+
+
+
+
+
+As you can see this has five executables. each of them having their own 
+
+registration check. So a patch was not like an elegant solution.
+
+(and they are checksumed too.. too much trouble to patch)
+
+
+
+Well, we will choose one target ,the ShellWizard.exe and all the others should
+
+follow the path..
+
+
+
+Fire &quot;FileMon&quot; (version 3 recommended)
+
+
+
+Startup Shellwizard.exe
+
+
+
+Observe what happens before the days remaining NAG screen.
+
+
+
+(abreviated &quot;Filemon&quot; log)
+
+131   Shellwiz   Write		C:\WINDOWS\TEMP\PER2.PER   SUCCESS	Offset: 0 Length: 11776	
+
+132   Shellwiz   Close		C:\WINDOWS\TEMP\PER2.PER   SUCCESS	132	Shellwiz	Close	C:\WINDOWS\TEMP\PER2.PER	SUCCESS	
+
+135   Shellwiz   Open		C:\WINDOWS\TEMP\PER2.PER   SUCCESS	OPENEXISTING OPENALWAYS 	
+
+136   Shellwiz   Read		C:\WINDOWS\TEMP\PER2.PER   SUCCESS	Offset: 0 Length: 64	
+
+160   Shellwiz   Attributes	C:\WINDOWS\SYSTEM\SW30.LIC NOTFOUND	GetAttributes	
+
+194   Shellwiz   Delete		C:\WINDOWS\TEMP\PER2.PER   SUCCESS	
+
+
+
+what is this ??
+
+
+
+I knew before the registration filename was SW30.lic so that was ok..
+
+
+
+but what is PER2.PER ?
+
+
+
+Hold on. Lets inspect this even more .
+
+That PER2.PER gets created before the check for SW30.lic and after that 
+
+it gets deleted ... Looks very weird !!
+
+
+
+So,let's go on with the known tactic.
+
+
+
+Create a bogus file SW30.lic and put it in the windows\system dir.
+
+
+
+Just fill it with anything .. Let's see what happens to it ..
+
+
+
+Fire softice
+
+
+
+:bpx Kernel32!CreateFileA
+
+
+
+Well, soft ice pops up.
+
+
+
+(from now on the segment addresses on your machine may be different)
+
+
+
+:F12 (couple of times till we get out of MFC42 )
+
+
+
+0137:00420DBF  8BF1                MOV     ESI,ECX
+
+0137:00420DC1  FF7510              PUSH    DWORD PTR [EBP+10]
+
+0137:00420DC4  FF7508              PUSH    DWORD PTR [EBP+08]	; 'PER2.PER' pushed 
+
+0137:00420DC7  E824E7FFFF          CALL    0041F4F0		;this calls an MFC function
+
+0137:00420DCC  33DB                XOR     EBX,EBX		;that called Kernel32!CreateFileA	
+
+0137:00420DCE  8BCF                MOV     ECX,EDI
+
+0137:00420DD0  53                  PUSH    EBX
+
+0137:00420DD1  895DFC              MOV     [EBP-04],EBX
+
+
+
+well we go trace a little bit and find data being writen to that file.
+
+
+
+:F12
+
+
+
+0137:0040C478  8D4DCC              LEA     ECX,[EBP-34]
+
+0137:0040C47B  68C0AA4300          PUSH    0043AAC0
+
+0137:0040C480  50                  PUSH    EAX
+
+0137:0040C481  E823490100          CALL    00420DA9	;this called the previous snippet
+
+0137:0040C486  C745FC01000000      MOV     DWORD PTR [EBP-04],00000001	;we land here
+
+0137:0040C48D  53                  PUSH    EBX				; 'PER2.PER'
+
+0137:0040C48E  6A00                PUSH    00
+
+0137:0040C490  FF15D40A4700        CALL    [KERNEL32!GetModuleHandleA]	; hahaha, so that's what PER2.PER is
+
+0137:0040C496  50                  PUSH    EAX
+
+0137:0040C497  FFD6                CALL    ESI
+
+0137:0040C499  50                  PUSH    EAX
+
+0137:0040C49A  8D4DCC              LEA     ECX,[EBP-34]
+
+0137:0040C49D  8B45EC              MOV     EAX,[EBP-14]
+
+0137:0040C4A0  50                  PUSH    EAX
+
+0137:0040C4A1  E8534A0100          CALL    00420EF9
+
+0137:0040C4A6  8D4DCC              LEA     ECX,[EBP-34]
+
+0137:0040C4A9  E82A300100          CALL    0041F4D8
+
+0137:0040C4AE  8D85C8FEFFFF        LEA     EAX,[EBP-0138]
+
+
+
+
+
+
+
+YOU see that KERNEL32!GetModuleHandleA call ..
+
+
+
+The following is from Borland C 4.5 API reference Help file
+
+-----------------------------------------------------------
+
+The GetModuleHandle function returns a module handle for the specified module 
+
+if the file has been mapped into the address space of the calling process. 
+
+
+
+
+
+HMODULE GetModuleHandle(
+
+
+
+    LPCTSTR  lpModuleName 	// address of module name to return handle for );
+
+-----------------------------------------------------------
+
+
+
+hahaha , so that PER2.PER is just a mer .dll file that the SHELLWIZARD.EXE
+
+&quot;Lays Eggs&quot; into..
+
+
+
+Ladies and gentelmen, hereby i hold the trademark for the &quot;Laying Eggs&quot; expression :)
+
+
+
+
+
+That PER2.PER is  encrypted in the ShellWizard.exe file.
+
+Then, on execution, it gets decrypted and written to the hard drive.
+
+Then it gets loaded as a normal .dll 
+
+Then, functions within it are called from the main ShellWizard.exe
+
+Clever ,Eh...
+
+(Too many hassles for a 20 US $$ program :)
+
+
+
+I bet that's where our registration check is.
+
+
+
+
+
+===============	To:	Senior +HCU members      	==================
+
+(I did a bpx on DeleteFileA to prevent the program from deleting that file
+
+after executing it.. And i got a copy of it, which i disassembled with
+
+W32DASM 8.9, but i found out that it has nothing to do with what i found
+
+out in SoftICE... some instructions are missing... maybe some senior +HCU
+
+member can tell us why? N.B. it is not encrypted twice (at least i think so)  
+
+It has the following text written inside:
+
+&quot;SECCryptoFile cannot be opened in both Output Feedback (OFB) mode and 
+
+CFile::modeReadWrite&quot;
+
+This must be a joke..&quot;SECCrypto&quot; ,eh.
+
+==========================================================================
+
+
+
+
+
+
+
+so we continue with our investigation..
+
+we want to get to the point where this PER2.PER reads the registration file.
+
+so we continue with
+
+:bpx Kernel32!CreateFileA
+
+:x
+
+
+
+well, nothing .. SoftICE doesn't pop again
+
+I try 
+
+:bpx CreateFile
+
+too, but no luck..
+
+
+
+whats wrong ? Maybe it's checking for the filesize.
+
+
+
+so. we start this time with 
+
+
+
+:bpx Kernel32!GetFileSize
+
+
+
+Well, nothing again..
+
+
+
+Damn .. i must be forgetting something..
+
+
+
+Well, remember the Filemonitor log:
+
+
+
+160	Shellwiz	Attributes	C:\WINDOWS\SYSTEM\SW30.LIC	NOTFOUND	GetAttributes	
+
+
+
+So that's why . it is using the Kernel32!GetFileAttributesA function .
+
+and that sure can get the size of the file without using the very common
+
+Kernel32!GetFileSize function..
+
+
+
+So we set a bpx in softice and start again...
+
+
+
+:BPX Kernel32!GetFileAttributesA 
+
+
+
+
+
+Softice breaks several time for many files..
+
+
+
+(The next snippet included)
+
+
+
+0137:0040C3F9  8D85C8FEFFFF        LEA     EAX,[EBP-0138]		; 'PER2.PER'
+
+0137:0040C3FF  8B35E00A4700        MOV     ESI,[KERNEL32!GetFileAttributesA]
+
+0137:0040C405  50                  PUSH    EAX
+
+0137:0040C406  FFD6                CALL    ESI
+
+0137:0040C408  83F8FF              CMP     EAX,-01		
+
+0137:0040C40B  744C                JZ      0040C459			;file exists
+
+0137:0040C40D  6880000000          PUSH    00000080
+
+0137:0040C412  8D85C8FEFFFF        LEA     EAX,[EBP-0138]
+
+0137:0040C418  50                  PUSH    EAX
+
+0137:0040C419  FF15C00A4700        CALL    [KERNEL32!SetFileAttributesA] ;set attributes
+
+0137:0040C41F  8D8DC8FEFFFF        LEA     ECX,[EBP-0138]
+
+0137:0040C425  51                  PUSH    ECX
+
+0137:0040C426  FF15AC0A4700        CALL    [KERNEL32!DeleteFileA]	;to delete a prevoius copy	
+
+0137:0040C42C  8D8DC8FEFFFF        LEA     ECX,[EBP-0138]
+
+0137:0040C432  51                  PUSH    ECX
+
+0137:0040C433  FFD6                CALL    ESI
+
+0137:0040C435  83F8FF              CMP     EAX,-01	
+
+0137:0040C438  741F                JZ      0040C459		;Could not delete
+
+0137:0040C43A  6A10                PUSH    10
+
+0137:0040C43C  68F8AB4300          PUSH    0043ABF8
+
+0137:0040C441  68D8AB4300          PUSH    0043ABD8
+
+0137:0040C446  6A00                PUSH    00
+
+0137:0040C448  FF15F4114700        CALL    [USER32!MessageBoxA]	;display error message
+
+0137:0040C44E  6A00                PUSH    00
+
+
+
+
+
+the program is checking for a prevoius copy of PER2.PER ,that a cracker may have 
+
+patched and placed in the windows\temp folder... and deletes it to create an untampered 
+
+one just in case.
+
+
+
+So a patch to the PER2.PER is not easily applicable.
+
+
+
+we continue
+
+
+
+:x
+
+
+
+We break here, too. (this is PER2.PER context)
+
+
+
+0137:00C310F8  8D85D0FEFFFF        LEA     EAX,[EBP-0130]  ; windows\system\sw30.lic
+
+0137:00C310FE  50                  PUSH    EAX
+
+0137:00C310FF  FF15F871C300        CALL    [KERNEL32!GetFileAttributesA]
+
+0137:00C31105  83F8FF              CMP     EAX,-01
+
+0137:00C31108  0F84BF000000        JZ      00C311CD
+
+0137:00C3110E  8D8550FDFFFF        LEA     EAX,[EBP-02B0]
+
+0137:00C31114  8D8DD0FEFFFF        LEA     ECX,[EBP-0130] 
+
+0137:00C3111A  50                  PUSH    EAX
+
+0137:00C3111B  51                  PUSH    ECX
+
+0137:00C3111C  E8D1120000          CALL    00C323F2     ;an MFC function that calls
+
+                                                        ;calls FindFirstFile
+
+                                                        ;and FindOpen
+
+0137:00C31121  81BD5CFDFFFF00080000CMP     DWORD PTR [EBP-02A4],00000800 ;file size!!	
+
+0137:00C3112B  0F859C000000        JNZ     00C311CD     ;not correct &gt;&gt; buzz off	
+
+0137:00C31131  6A01                PUSH    01
+
+0137:00C31133  8D85D0FEFFFF        LEA     EAX,[EBP-0130]
+
+0137:00C31139  6A00                PUSH    00
+
+0137:00C3113B  8D4DD4              LEA     ECX,[EBP-2C]
+
+
+
+
+
+if we inspect [ebp-02a4] we find our bogus file size.
+
+so we now know that the file size should be 0x800 or 2048 bytes.
+
+
+
+Back to the drawing board! Let's correct our bogus &quot;sw30.lic&quot; file size to 2048 bytes.
+
+
+
+Remove the Kernel32!GetFileAttributesA breakpoint
+
+
+
+and set
+
+:bpx Kernel32!CreateFileA
+
+
+
+then start ShellWizard again.
+
+
+
+SoftICE breaks for the PER2.PER file.
+
+:X
+
+
+
+SoftICE breaks again
+
+
+
+:F12 (till we get out of MFC42)
+
+
+
+
+
+0137:00C32A63  53                  PUSH    EBX
+
+0137:00C32A64  56                  PUSH    ESI
+
+0137:00C32A65  894DF0              MOV     [EBP-10],ECX
+
+0137:00C32A68  57                  PUSH    EDI
+
+0137:00C32A69  8D7910              LEA     EDI,[ECX+10]
+
+0137:00C32A6C  8BF1                MOV     ESI,ECX
+
+0137:00C32A6E  FF7510              PUSH    DWORD PTR [EBP+10]	
+
+0137:00C32A71  FF7508              PUSH    DWORD PTR [EBP+08]	; &quot;windows\system\sw30.lic&quot;
+
+0137:00C32A74  E8E5050000          CALL    00C3305E		;MFC42 function to 
+
+0137:00C32A79  33DB                XOR     EBX,EBX		;that calles Kernel32!CreateFilea
+
+0137:00C32A7B  8BCF                MOV     ECX,EDI
+
+
+
+Great, so our bait is on.
+
+
+
+so let's disable the previous BP and set
+
+:bpx Kernel32!ReadFile
+
+:x
+
+
+
+We land here
+
+
+
+:F12 (till we get out of MFC42)
+
+
+
+0137:00C32B76  8D7110              LEA     ESI,[ECX+10]
+
+0137:00C32B79  8BF9                MOV     EDI,ECX
+
+0137:00C32B7B  8BCE                MOV     ECX,ESI
+
+0137:00C32B7D  E8E0010000          CALL    00C32D62
+
+0137:00C32B82  FF750C              PUSH    DWORD PTR [EBP+0C]	; 0xA bytes
+
+0137:00C32B85  FF7508              PUSH    DWORD PTR [EBP+08]	; buffer to read into
+
+0137:00C32B88  8BCF                MOV     ECX,EDI
+
+0137:00C32B8A  E8D5040000          CALL    00C33064		;A MFC42 function that calls
+
+								;Kernel32!ReadFile
+
+
+
+Setting the usual BPMD on [ebp+08]
+
+
+
+:x
+
+
+
+SoftICE lands us here
+
+
+
+;First decryption routine 
+
+;Used for block X (you will know what is block X later)
+
+
+
+0137:00C32D9F  55                  PUSH    EBP
+
+0137:00C32DA0  8BEC                MOV     EBP,ESP
+
+0137:00C32DA2  83EC08              SUB     ESP,08
+
+0137:00C32DA5  53                  PUSH    EBX
+
+0137:00C32DA6  8B450C              MOV     EAX,[EBP+0C]
+
+0137:00C32DA9  56                  PUSH    ESI
+
+0137:00C32DAA  57                  PUSH    EDI
+
+0137:00C32DAB  83790800            CMP     DWORD PTR [ECX+08],00 ;do we want
+
+                                                                 ;1st or 2nd dercryptor
+
+0137:00C32DAF  8BF1                MOV     ESI,ECX
+
+0137:00C32DB1  7569                JNZ     00C32E1C              ;second? then go there
+
+0137:00C32DB3  85C0                TEST    EAX,EAX
+
+0137:00C32DB5  0F8EC6000000        JLE     00C32E81
+
+0137:00C32DBB  8945F8              MOV     [EBP-08],EAX
+
+0137:00C32DBE  8B7D08              MOV     EDI,[EBP+08]          ;block X buffer
+
+0137:00C32DC1  33DB                XOR     EBX,EBX
+
+0137:00C32DC3  C6055451C30000      MOV     BYTE PTR [00C35154],00
+
+0137:00C32DCA  FF4508              INC     DWORD PTR [EBP+08]
+
+0137:00C32DCD  391E                CMP     [ESI],EBX
+
+0137:00C32DCF  7E1F                JLE     00C32DF0
+
+0137:00C32DD1  895DFC              MOV     [EBP-04],EBX
+
+0137:00C32DD4  6A00                PUSH    00
+
+0137:00C32DD6  8B4E04              MOV     ECX,[ESI+04]
+
+0137:00C32DD9  034DFC              ADD     ECX,[EBP-04]		;new look up table
+
+0137:00C32DDC  43                  INC     EBX
+
+0137:00C32DDD  E87D010000          CALL    00C32F5F		;IMPORTANT 
+
+								;MAGIC generator
+
+								
+
+0137:00C32DE2  8345FC0C            ADD     DWORD PTR [EBP-04],0C	;adjust new entry for look up 
+
+									;tables.
+
+0137:00C32DE6  30055451C300        XOR     [00C35154],AL	;xor new magic with old magic
+
+0137:00C32DEC  391E                CMP     [ESI],EBX
+
+0137:00C32DEE  7FE4                JG      00C32DD4		;magic loop ,executed 3 times each run
+
+
+
+0137:00C32DF0  8A07                MOV     AL,[EDI]		;Read encrypted byte
+
+0137:00C32DF2  32055451C300        XOR     AL,[00C35154]	;xor with magic
+
+0137:00C32DF8  32055C51C300        XOR     AL,[00C3515C]	;xor with prevoius decrypted byte
+
+0137:00C32DFE  A20463C300          MOV     [00C36304],AL	;save decrypted
+
+0137:00C32E03  837E0C01            CMP     DWORD PTR [ESI+0C],01
+
+0137:00C32E07  7505                JNZ     00C32E0E
+
+0137:00C32E09  A25C51C300          MOV     [00C3515C],AL	;
+
+0137:00C32E0E  A00463C300          MOV     AL,[00C36304]	;restore decrypted byte 
+
+0137:00C32E13  FF4DF8              DEC     DWORD PTR [EBP-08]	;counter
+
+0137:00C32E16  8807                MOV     [EDI],AL		;save decrypted value in block
+
+0137:00C32E18  75A4                JNZ     00C32DBE		;go on
+
+0137:00C32E1A  EB65                JMP     00C32E81
+
+0137:00C32E1C  85C0                TEST    EAX,EAX
+
+0137:00C32E1E  7E61                JLE     00C32E81
+
+
+
+;Second decryption routine (much the same like the 1st one) 
+
+;Used for block Y (you will know what is block Y later)
+
+
+
+0137:00C32E20  8945F8              MOV     [EBP-08],EAX
+
+0137:00C32E23  8B7D08              MOV     EDI,[EBP+08]
+
+0137:00C32E26  33DB                XOR     EBX,EBX
+
+0137:00C32E28  C6055451C30000      MOV     BYTE PTR [00C35154],00
+
+0137:00C32E2F  FF4508              INC     DWORD PTR [EBP+08]
+
+0137:00C32E32  391E                CMP     [ESI],EBX
+
+0137:00C32E34  7E1F                JLE     00C32E55
+
+0137:00C32E36  895DFC              MOV     [EBP-04],EBX
+
+0137:00C32E39  6A00                PUSH    00
+
+0137:00C32E3B  8B4E04              MOV     ECX,[ESI+04]
+
+0137:00C32E3E  034DFC              ADD     ECX,[EBP-04]
+
+0137:00C32E41  43                  INC     EBX
+
+0137:00C32E42  E818010000          CALL    00C32F5F
+
+0137:00C32E47  8345FC0C            ADD     DWORD PTR [EBP-04],0C
+
+0137:00C32E4B  30055451C300        XOR     [00C35154],AL
+
+0137:00C32E51  391E                CMP     [ESI],EBX
+
+0137:00C32E53  7FE4                JG      00C32E39
+
+0137:00C32E55  8A07                MOV     AL,[EDI]
+
+0137:00C32E57  32055451C300        XOR     AL,[00C35154]
+
+0137:00C32E5D  32055851C300        XOR     AL,[00C35158]
+
+0137:00C32E63  A20563C300          MOV     [00C36305],AL
+
+0137:00C32E68  837E0C01            CMP     DWORD PTR [ESI+0C],01
+
+0137:00C32E6C  7507                JNZ     00C32E75
+
+0137:00C32E6E  8A07                MOV     AL,[EDI]
+
+0137:00C32E70  A25851C300          MOV     [00C35158],AL
+
+0137:00C32E75  A00563C300          MOV     AL,[00C36305]
+
+0137:00C32E7A  FF4DF8              DEC     DWORD PTR [EBP-08]
+
+0137:00C32E7D  8807                MOV     [EDI],AL
+
+0137:00C32E7F  75A2                JNZ     00C32E23
+
+0137:00C32E81  5F                  POP     EDI
+
+0137:00C32E82  5E                  POP     ESI
+
+0137:00C32E83  5B                  POP     EBX
+
+0137:00C32E84  8BE5                MOV     ESP,EBP
+
+0137:00C32E86  5D                  POP     EBP
+
+0137:00C32E87  C20800              RET     0008
+
+0137:00C32E8A  55                  PUSH    EBP
+
+0137:00C32E8B  8BEC                MOV     EBP,ESP
+
+0137:00C32E8D  83EC08              SUB     ESP,08
+
+0137:00C32E90  C645FF00            MOV     BYTE PTR [EBP-01],00
+
+0137:00C32E94  53                  PUSH    EBX
+
+0137:00C32E95  56                  PUSH    ESI
+
+0137:00C32E96  33DB                XOR     EBX,EBX
+
+0137:00C32E98  395D14              CMP     [EBP+14],EBX
+
+0137:00C32E9B  7E3B                JLE     00C32ED8
+
+0137:00C32E9D  8B7508              MOV     ESI,[EBP+08]
+
+
+
+
+
+The above is self explainatory.
+
+
+
+it decrypts the buffer as follows:
+
+
+
+decrypted_byte = (magic_value) xor (current byte) xor (prevoius decrypted byte)
+
+
+
+
+
+;Magic generator
+
+
+
+0137:00C32F5F  56                  PUSH    ESI
+
+0137:00C32F60  8B01                MOV     EAX,[ECX]  	;table entry in eax
+
+0137:00C32F62  8D7108              LEA     ESI,[ECX+08]	;element number
+
+0137:00C32F65  8B16                MOV     EDX,[ESI]	;element number
+
+0137:00C32F67  8A0410              MOV     AL,[EDX+EAX]	;get magic element
+
+0137:00C32F6A  42                  INC     EDX
+
+0137:00C32F6B  8916                MOV     [ESI],EDX
+
+0137:00C32F6D  395104              CMP     [ECX+04],EDX
+
+0137:00C32F70  7506                JNZ     00C32F78
+
+0137:00C32F72  C70600000000        MOV     DWORD PTR [ESI],00000000
+
+0137:00C32F78  5E                  POP     ESI
+
+0137:00C32F79  C20400              RET     0004
+
+
+
+The magic generator is really a mess....
+
+
+
+It uses 6 or so tables... with their pointers held at 0xC offsets from each
+
+others and it gets the magic value by xoring 3 entries from different tables..
+
+(yet i found a back door, read on :)
+
+
+
+
+
+Well what calls this ?
+
+
+
+:F12 (twice)
+
+
+
+0137:00C310FF  FF15F871C300        CALL    [KERNEL32!GetFileAttributesA]
+
+0137:00C31105  83F8FF              CMP     EAX,-01
+
+0137:00C31108  0F84BF000000        JZ      00C311CD
+
+0137:00C3110E  8D8550FDFFFF        LEA     EAX,[EBP-02B0]
+
+0137:00C31114  8D8DD0FEFFFF        LEA     ECX,[EBP-0130]
+
+0137:00C3111A  50                  PUSH    EAX
+
+0137:00C3111B  51                  PUSH    ECX
+
+0137:00C3111C  E8D1120000          CALL    00C323F2		;MFC function for FindFirstFile and FindOpen
+
+0137:00C31121  81BD5CFDFFFF00080000CMP     DWORD PTR [EBP-02A4],00000800	;check for file size
+
+0137:00C3112B  0F859C000000        JNZ     00C311CD
+
+0137:00C31131  6A01                PUSH    01
+
+0137:00C31133  8D85D0FEFFFF        LEA     EAX,[EBP-0130]
+
+0137:00C31139  6A00                PUSH    00
+
+0137:00C3113B  8D4DD4              LEA     ECX,[EBP-2C]
+
+0137:00C3113E  684450C300          PUSH    00C35044
+
+0137:00C31143  50                  PUSH    EAX
+
+0137:00C31144  E80D190000          CALL    00C32A56
+
+0137:00C31149  6A0A                PUSH    0A		; 0xA  bytes please
+
+0137:00C3114B  8D8568FEFFFF        LEA     EAX,[EBP-0198]	;in here
+
+0137:00C31151  50                  PUSH    EAX
+
+0137:00C31152  8D4DD4              LEA     ECX,[EBP-2C]
+
+0137:00C31155  C745FC00000000      MOV     DWORD PTR [EBP-04],00000000
+
+0137:00C3115C  E80E1A0000          CALL    00C32B6F	;yes please, decrypt
+
+
+
+							;the above call is where we landed in
+
+							;when we set the Kernel32!ReadFile the 1st time							
+
+0137:00C31161  68A8030000          PUSH    000003A8	; 0x3a8 bytes please
+
+0137:00C31166  A12C52C300          MOV     EAX,[00C3522C]
+
+0137:00C3116B  50                  PUSH    EAX		;in here
+
+0137:00C3116C  8D4DD4              LEA     ECX,[EBP-2C]
+
+0137:00C3116F  E8FB190000          CALL    00C32B6F	;decrypt
+
+0137:00C31174  6A0A                PUSH    0A		;0xA 
+
+0137:00C31176  8D8568FEFFFF        LEA     EAX,[EBP-0198]; in here	
+
+0137:00C3117C  50                  PUSH    EAX
+
+0137:00C3117D  8D4DD4              LEA     ECX,[EBP-2C]
+
+0137:00C31180  E8EA190000          CALL    00C32B6F	;go decrypt
+
+0137:00C31185  68A8030000          PUSH    000003A8	; 0x3a8
+
+0137:00C3118A  8D4DD4              LEA     ECX,[EBP-2C]
+
+0137:00C3118D  53                  PUSH    EBX
+
+0137:00C3118E  8BFB                MOV     EDI,EBX	;Y block
+
+0137:00C31190  E8DA190000          CALL    00C32B6F	;go decrypt
+
+0137:00C31195  8D4DD4              LEA     ECX,[EBP-2C]
+
+0137:00C31198  E84F120000          CALL    00C323EC	;close file (mfc42 call)
+
+0137:00C3119D  B9A8030000          MOV     ECX,000003A8		;compare 0x3a8 bytes
+
+0137:00C311A2  8B352C52C300        MOV     ESI,[00C3522C]; X  0x3a8 bytes block	
+
+0137:00C311A8  F3A6                REPZ CMPSB		;compare the X and Y blocks
+
+0137:00C311AA  B801000000          MOV     EAX,00000001
+
+0137:00C311AF  7402                JZ      00C311B3	;equal ?
+
+0137:00C311B1  33C0                XOR     EAX,EAX	;no.. &gt;bad guy
+
+0137:00C311B3  53                  PUSH    EBX
+
+0137:00C311B4  A34050C300          MOV     [00C35040],EAX ;save for later
+
+0137:00C311B9  E822120000          CALL    00C323E0
+
+0137:00C311BE  C745FCFFFFFFFF      MOV     DWORD PTR [EBP-04],FFFFFFFF
+
+0137:00C311C5  83C404              ADD     ESP,04
+
+0137:00C311C8  E810000000          CALL    00C311DD
+
+0137:00C311CD  8B45F4              MOV     EAX,[EBP-0C]
+
+0137:00C311D0  5F                  POP     EDI
+
+0137:00C311D1  64A300000000        MOV     FS:[00000000],EAX
+
+0137:00C311D7  5E                  POP     ESI
+
+0137:00C311D8  5B                  POP     EBX
+
+0137:00C311D9  8BE5                MOV     ESP,EBP
+
+0137:00C311DB  5D                  POP     EBP
+
+0137:00C311DC  C3                  RET
+
+
+
+
+
+(The above code is called THREE times from ShellWizard.exe)
+
+Those programmers are sure paranoid about the safety of their apps.)
+
+
+
+The above code does the following:
+
+
+
+1.Check for sw30.lic filesize = 2048 bytes.
+
+
+
+2.Read 0xA bytes and decrypts them with the CALL    00C32B6F
+
+
+
+3.Read 0x3A8 bytes and decrypts them with the CALL    00C32B6F
+
+
+
+4.Read 0xA bytes and decrypts them with the CALL    00C32B6F
+
+
+
+5.Read 0x3A8 bytes and decrypts them with the CALL    00C32B6F
+
+
+
+6.Point ESI to the decrypted X block
+
+
+
+7.Point EDI to the decrypted Y block
+
+
+
+8.Compare them	  REPZ CMPSB	
+
+
+
+9.If identical -&gt; Good guy
+
+
+
+10.If Different -&gt; Bad guy
+
+
+
+
+
+
+
+Set a bpx on SetFilePointerA (to know which offsets in the key file are read
+
+in what order).
+
+Tracing through the above code SoftICE 
+
+pops only on the Kernel32!ReadFile function
+
+
+
+So we know the blocks read are consecutive.
+
+
+
+Well the file structure of the key file is exposed now:
+
+
+
+0xA	bytes	; not used (zero all for simplicity)
+
+0x3a8	bytes	;  first block to decrypt (block X)
+
+0xA	bytes	; not used (zero all for simplicity)
+
+0x3a8	bytes   ; second block to decrypt (block Y)	
+
+0x9c	bytes	; never used (you could write your grandma's recipe for stew in here :-)
+
+-------
+
+0x800	bytes total (i.e. 2048 bytes=2 KB)
+
+
+
+To be a good buy the following should be True
+
+
+
+The decryption of block X  =  the decryption of block Y
+
+
+
+
+
+All of this is very simple but the magic numbers are the real pain.
+
+
+
+To me dwelving through the magic number generator was not easy..
+
+
+
+(decrypting 0x3a8 bytes times 2 = 0x750 bytes is not easy for any one)
+
+
+
+So let's ZEN a little bit..
+
+
+
+Those magic numbers look to me like independant of what gets encrypted.
+
+
+
+So if we can get hold of them we can make our own key file generator.
+
+
+
+But how can we get them ? (sure not by handwriting them :)
+
+
+
+Well , the answer is easy...
+
+
+
+(Any_value) xor (zero) = (Any_value)
+
+
+
+i.e. (0x2a) xor (zero) = (0x2a)
+
+
+
+So if we zero all our key file ... the program will kindly give us the magic numbers.
+
+Cause when it xors all magic numbers with zeros ,the result will be magic numbers only.
+
+
+
+
+
+so back to our hex editor..
+
+edit the key file so that it all becomes zeros.
+
+
+
+then set a bpx at:
+
+
+
+0137:00C311A8  F3A6                REPZ CMPSB		;compare the 0x3a8 bytes blocks 
+
+
+
+then we will have in ESI the X block magic numbers.
+
+and in EDI the Y block magic numbers ready for us to dump to disk..
+
+
+
+
+
+voila ..
+
+(I got those dumps by disabling the data window ( :wd ) in softice then saving the
+
+command history from the SymbolLoader... Just in case someone was wondering)
+
+
+
+
+
+:d esi
+
+013F:00720078 75 9B 99 54 58 92 01 82-E3 E7 29 85 76 BE 5E 55  u..TX.....).v.^U
+
+013F:00720088 81 1D 3E 89 37 97 28 94-CD 2C F0 A2 7D 02 09 67  ..&gt;.7.(..,..}..g
+
+----- abreviated -----
+
+013F:00720408 93 A6 D6 38 6E 12 D1 91-17 0E E3 1E 84 F8 BE AB  ...8n...........
+
+013F:00720418 DF 4E 3B AD 67 08 73 F7                          .N;.g.s.........
+
+
+
+
+
+
+
+:d edi
+
+013F:0072042C 43 3F FF 19 07 BB 67 46-25 0C C2 53 9C 00 C5 59  C?....gF%..S...Y
+
+013F:0072043C 22 66 35 90 F0 36 E4 C0-C6 26 31 81 31 57 9A D1  &quot;f5..6...&amp;1.1W..
+
+----- abreviated -----
+
+013F:007207BC 08 E9 F6 4A 53 DB 33 86-83 52 C5 26 36 82 41 4F  ...JS.3..R.&amp;6.AO
+
+013F:007207CC 92 54 5F 35 23 4E 97 98                          .T_5#N..........
+
+
+
+
+
+Then writing our registration key generator is just a matter of some time spent at 
+
+our assembler editor..
+
+
+
+Observe the following... In the key generator you start backwords.
+
+i.e. you should start with 2 equal X and Y block. Then each of them gets
+
+encrypted with it's own magic values.
+
+So we end up with a registration file that has 2 diferent X , Y blocks
+
+But after decryption by ShellWizard they become identical again (the way 
+
+they started in our key generator)
+
+
+
+Just one thing to notice..
+
+We still had the problem of having trash at the &quot;Registered to:&quot; dialog
+
+in ShellWizard ..by i found out that those values are read from the decrypted
+
+blocks X and Y (This is logic,isn't it ?)
+
+
+
+To know the exact offsets of the &quot;Registered to:&quot; dialog strings.
+
+Just use a fill command in softice at
+
+
+
+0137:00C311A8  F3A6                REPZ CMPSB		;compare the 0x3a8 bytes blocks 
+
+ 
+
+and 
+
+
+
+:F edi L 0f 'Kox',0
+
+:F esi L 0f 'Kox',0
+
+
+
+Repeat the above for 7-8 times while raising the values 0x0f by 0x10 bytes each time
+
+then observe the &quot;Registered to:&quot; dialog
+
+
+
+I already did that,and i found out that:
+
+
+
+The name offset:
+
+relative to the begining of 0x3a8 blocks = 0x00
+
+
+
+The organization offset:
+
+relative to the begining of 0x3a8 blocks = 0x65
+
+
+
+---------------------------------------
+
+Lessons learned:
+
+
+
+1.The &quot;Laying Eggs&quot; technique.
+
+2.The zero input to get magic values trick.
+
+3.That shareware programmers are reading our essays. (They are observing the enemy too :)
+
+4.The programmers of ShellWizard are paranoid about protections.
+
+5.God save the Qween and &quot;SoftICE&quot;.
+
+6.NEScafe sucks (i'll switch to ICE Tea :)
+
+
+
+Well that's it. C U
+
+
+
+Kox 
+
+
+
+What follows is the source code for the keyfile generator.
+
+The two buffers are filled with 0x20 values (space).
+
+Or you could fill it with whatever you like.
+
+
+
+Remember that:
+
+encrypted_byte = (magic_value) xor (current_byte) xor (prevoius_encrypted_byte)
+
+
+
+;+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+;+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+;ShellWizard 3 Pro. Key generator by Kox
+
+;excuse my assembley skill (i am only a newbie )
+
+
+
+.model  small
+
+.code
+
+ORG     100H
+
+
+
+start:   JMP begin
+
+
+
+
+
+print	PROC near			;a normal print prodecure
+
+					;accessed with DX=buffer to print
+
+        MOV  ah,09
+
+        INT  21h                	; Show text
+
+	RET
+
+print	ENDP
+
+
+
+
+
+write_it PROC  	near			;procedure to write
+
+					;buffers to file
+
+
+
+        MOV   	DX,offset file_name     ;setup to create file
+
+        MOV   	AX,3c00H                
+
+	XOR 	CX,CX
+
+	INT   	21H
+
+	JC 	done_writing		;Error? go away.
+
+
+
+	MOV 	handle,AX
+
+	MOV     AH,40H                  ;setup to write the file
+
+        MOV     BX,handle               ;load file handle
+
+        MOV     CX,0800h                ;write 2048 bytes.
+
+        MOV     DX,offset file_data    	;point to file data
+
+        INT     21H                     ;make the write
+
+close_it:
+
+       	MOV     AH,3EH                  ;write was successful
+
+       	INT     21H                     ;close file and return
+
+
+
+
+
+               
+
+
+
+done_writing:
+
+
+
+	RET
+
+write_it	ENDP          
+
+
+
+prepare_encrypt	PROC near		;This procedure copies the user input
+
+					;name and organisation to block
+
+					; X and buffer Y
+
+	mov si,offset name_store+2
+
+	mov di,offset name1
+
+	xor cx,cx
+
+	mov cl,[si-1]			;number of characters entered
+
+        rep movsb
+
+        xor cx,cx
+
+        mov [di],cl			;terminate the string with (null)
+
+
+
+	mov si,offset name_store+2
+
+	mov di,offset name2
+
+	xor cx,cx
+
+	mov cl,[si-1]			;number of characters entered
+
+        rep movsb
+
+        xor cx,cx
+
+        mov [di],cl			;terminate the string with (null)
+
+
+
+	mov si,offset org_store+2
+
+	mov di,offset company1
+
+	xor cx,cx
+
+	mov cl,[si-1]			;number of characters entered
+
+        rep movsb
+
+        xor cx,cx
+
+        mov [di],cl			;terminate the string in buffer with (null)
+
+
+
+	mov si,offset org_store+2
+
+	mov di,offset company2
+
+	xor cx,cx
+
+	mov cl,[si-1]			;number of characters entered
+
+        rep movsb
+
+        xor cx,cx
+
+        mov [di],cl			;terminate the string in buffer with (null)
+
+
+
+	RET
+
+prepare_encrypt	ENDP	
+
+
+
+encrypt_it	PROC near
+
+	xor bx,bx
+
+	mov si,offset table1		;magic table1 for X block in si
+
+	mov di,offset name1		;to be encrypted X block in di
+
+	xor cx,cx
+
+phase1:					;phase1 for block X
+
+	
+
+	mov al,bl			;prev char
+
+	xor al,[si]			;xor it with magic
+
+	xor [di],al			;xor with current char and save
+
+	mov bl,[di]			;get current encrypted char for next run
+
+	inc di
+
+	inc si
+
+	inc cx
+
+	cmp cx,03a8H			;are we finished?
+
+	jl phase1			;no. then loop again
+
+
+
+	
+
+	
+
+	xor bx,bx
+
+	mov si,offset table2		;magic table2 for Y block in si
+
+	mov di,offset name2		;to be encrypted Y block in di
+
+	xor cx,cx
+
+
+
+
+
+phase2:					;phase 2 for block Y
+
+	mov al,bl			;prev char
+
+	xor al,[si]			;xor with magic
+
+	xor [di],al			;xor with current char and save
+
+	mov bl,[di]			;get current encrypted char for next run
+
+	inc di
+
+	inc si
+
+	inc cx
+
+	cmp cx,03a8H			;are we finished?
+
+	jl phase2			;no. then loop again
+
+
+
+        RET
+
+encrypt_it	ENDP
+
+
+
+;==================================================
+
+;===			Main body		===
+
+;==================================================
+
+begin 	PROC near
+
+
+
+	mov dx,offset banner
+
+	Call print
+
+
+
+	mov dx,offset enter_name
+
+	call print
+
+
+
+        mov  ah,0Ah
+
+        mov  dx,offset name_store
+
+        int  21h                	; Get name
+
+
+
+	
+
+	mov dx,offset enter_org
+
+	call print
+
+
+
+        mov  ah,0Ah
+
+        mov  dx,offset org_store
+
+        int  21h                	; Get organization
+
+
+
+	Call prepare_encrypt		;copy name and organisation to buffers
+
+
+
+	Call encrypt_it			;encrypt X and Y blocks
+
+
+
+	Call write_it			;write the file sw30.lic
+
+
+
+	mov dx,offset instructions	;give user instructions
+
+	Call print
+
+
+
+exit:   MOV     AX,4C00H                ;and exit
+
+        INT     21H
+
+
+
+begin	ENDP
+
+;==================================================
+
+;===		End of	Main body		===
+
+;==================================================
+
+
+
+
+
+file_name: DB 'sw30.lic',0
+
+
+
+handle: DW 0
+
+
+
+name_store:	DB 18h,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+
+org_store:	DB 18h,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+
+
+
+banner:     DB 13,10,'Shell Wizard 3.0 Pro Regfile generator by Kox'
+
+            DB 13,10,'N.B.: This prog. had a &quot;paranoia&quot; protection rating of 9/10 (VERY Paranoid)'
+
+		    DB 13,10,'$'
+
+enter_name: DB 13,10,'Enter your Name (max 20 char) :  '
+
+		    DB '$'
+
+
+
+enter_org:	DB 13,10,'Enter your Organization (max 20 char) :  '
+
+		    DB '$'
+
+		
+
+instructions:   DB 13,10
+
+                DB 13,10,'Now copy the file sw30.lic to your windows\system dir'
+
+                DB 13,10,'Thank you for using Kox Products'
+
+                DB '$'
+
+
+
+
+
+table1:		;magic numbers for block Y
+
+			;remember? we go them by
+
+            ; :d edi  in SoftICE at the REPZ CMPSB line
+
+            ;Then i just trimmed them in UltraEdit
+
+			;with some Search and Replace commands
+
+
+
+DB 075h,09Bh,099h,054h,058h,092h,001h,082h,0E3h,0E7h,029h,085h,076h,0BEh,05Eh,055h
+
+DB 081h,01Dh,03Eh,089h,037h,097h,028h,094h,0CDh,02Ch,0F0h,0A2h,07Dh,002h,009h,067h
+
+DB 0F9h,052h,04Ah,067h,056h,08Bh,035h,002h,0B1h,01Eh,0E8h,0C2h,04Eh,058h,05Dh,003h
+
+DB 05Bh,063h,052h,072h,064h,0C4h,04Eh,03Ah,0F1h,067h,098h,01Dh,009h,05Ch,0FAh,04Dh
+
+DB 025h,099h,0D9h,06Eh,04Bh,0D3h,06Eh,0F7h,03Bh,0E0h,0A4h,03Fh,057h,00Ah,0DDh,090h
+
+DB 083h,008h,0B4h,072h,084h,0F9h,009h,041h,0DDh,03Fh,024h,011h,015h,02Ah,064h,033h
+
+DB 0DAh,039h,0C8h,02Ah,0CDh,06Ch,0FEh,02Ch,04Eh,063h,066h,0A9h,011h,050h,06Fh,005h
+
+DB 0E3h,0BDh,0CCh,01Eh,096h,0F5h,06Ah,02Ch,0A7h,037h,0F2h,091h,08Dh,01Bh,0B7h,068h
+
+DB 0EBh,013h,0FAh,081h,0EEh,006h,071h,051h,0DDh,0CDh,0BCh,00Ah,018h,081h,0A0h,09Bh
+
+DB 057h,0A9h,02Bh,0FEh,0DBh,074h,0A7h,038h,012h,041h,070h,039h,005h,04Eh,015h,035h
+
+DB 0C7h,001h,030h,0FBh,0FBh,01Ah,06Dh,0BEh,003h,08Eh,0E0h,0CAh,09Bh,045h,0D1h,095h
+
+DB 0B5h,042h,006h,070h,00Ah,097h,027h,01Fh,051h,0E7h,07Dh,080h,01Fh,040h,019h,090h
+
+DB 0F1h,08Fh,02Ah,02Eh,0C8h,01Ch,05Dh,014h,0E2h,0C1h,0C6h,0B1h,071h,0E2h,0B0h,0DFh
+
+DB 087h,0F0h,06Ch,0D8h,0DDh,04Bh,0A0h,033h,08Ah,090h,004h,083h,035h,0F2h,0F3h,062h
+
+DB 047h,055h,0F2h,043h,0CAh,0D7h,037h,0B4h,0C6h,0D1h,06Eh,070h,06Ah,06Ah,07Ch,0DFh
+
+DB 0C4h,0C4h,07Ch,0B4h,025h,0F8h,0E7h,0E8h,0F2h,047h,054h,00Dh,076h,09Eh,0FEh,0B2h
+
+DB 05Ah,085h,0F6h,09Dh,021h,00Ah,008h,0EEh,007h,0EDh,031h,071h,0E5h,012h,0C9h,03Fh
+
+DB 0CFh,0C0h,03Ch,0E5h,0CAh,0DEh,036h,08Ch,049h,0A0h,04Dh,0E6h,01Bh,014h,085h,0B5h
+
+DB 051h,037h,0A5h,0CBh,0DAh,0F6h,0E0h,0A6h,02Ah,087h,0F5h,07Fh,0DEh,0E3h,081h,051h
+
+DB 0CEh,05Ch,08Bh,08Ah,035h,0C3h,0B4h,05Fh,013h,0DCh,088h,0A5h,044h,00Ah,0B3h,0BDh
+
+DB 0C9h,02Ch,040h,04Ah,0C5h,000h,0A9h,05Fh,0FCh,038h,0A0h,019h,0B4h,0C2h,004h,077h
+
+DB 044h,069h,099h,0ACh,0E9h,023h,07Dh,094h,09Ch,03Dh,017h,07Eh,007h,00Eh,0F3h,098h
+
+DB 011h,0DDh,091h,0DFh,008h,024h,01Ch,07Ah,09Bh,0C4h,008h,07Eh,057h,0BCh,02Eh,014h
+
+DB 047h,094h,087h,0DEh,026h,075h,012h,021h,001h,065h,099h,0C1h,0A9h,081h,047h,095h
+
+DB 06Ch,03Fh,066h,058h,0B7h,078h,0FFh,0B5h,03Bh,0CEh,0D9h,05Bh,03Fh,0BBh,08Ah,017h
+
+DB 0EDh,098h,00Eh,0AEh,0AEh,09Dh,015h,034h,0A7h,00Bh,02Ah,004h,0EBh,0D6h,0C9h,098h
+
+DB 01Bh,045h,096h,0BCh,055h,041h,093h,0DAh,036h,05Bh,094h,020h,07Ch,06Dh,0F3h,042h
+
+DB 0C5h,077h,02Ch,032h,0F9h,078h,09Bh,02Fh,0C1h,070h,0A4h,01Ch,051h,0FCh,03Ch,02Eh
+
+DB 0D4h,0E7h,04Eh,007h,005h,045h,027h,067h,004h,027h,02Ah,07Ah,03Dh,096h,0B4h,08Ah
+
+DB 063h,013h,07Eh,0CDh,026h,0ADh,06Ch,0AEh,047h,01Ch,04Fh,02Ah,0D8h,018h,0CCh,004h
+
+DB 013h,09Ch,034h,08Eh,089h,0D3h,0ADh,0B0h,07Fh,05Eh,0FEh,0C0h,0A2h,037h,012h,099h
+
+DB 0DEh,032h,043h,0D1h,0D1h,006h,026h,0DDh,00Ah,0C5h,07Dh,06Ch,0FCh,090h,0FDh,010h
+
+DB 0AAh,0A1h,064h,015h,042h,09Ch,0EFh,0FEh,054h,05Ch,097h,0F9h,0E9h,0B8h,00Ah,04Dh
+
+DB 09Dh,02Eh,0D8h,0A4h,0E9h,0F0h,007h,0AFh,0E9h,0A3h,0CEh,062h,0B8h,01Bh,05Dh,0BEh
+
+DB 0C4h,02Ch,0DDh,0EEh,076h,0B2h,0CEh,02Fh,0FFh,045h,0B2h,0F6h,034h,05Ch,088h,0B6h
+
+DB 081h,0B5h,021h,0E7h,0A8h,0F8h,067h,0FBh,07Eh,098h,06Eh,013h,053h,057h,08Ah,019h
+
+DB 061h,0A6h,02Eh,089h,0DFh,06Eh,0C7h,0EEh,0CDh,030h,018h,06Fh,034h,055h,073h,03Bh
+
+DB 01Fh,0E1h,06Dh,092h,0D4h,03Ch,09Dh,0A1h,0D6h,0CFh,0D8h,0ACh,04Fh,066h,022h,0F4h
+
+DB 078h,053h,0FAh,04Fh,001h,03Eh,024h,00Bh,01Ch,037h,026h,0EBh,01Bh,049h,00Ah,037h
+
+DB 099h,06Dh,008h,0B5h,089h,021h,07Fh,0FCh,04Dh,081h,080h,010h,0D6h,0F1h,06Bh,09Fh
+
+DB 09Bh,006h,08Ah,0EEh,090h,07Ah,0FEh,057h,01Ah,09Bh,045h,086h,047h,0B2h,0D5h,08Eh
+
+DB 022h,0ADh,0EFh,09Dh,073h,002h,067h,067h,03Dh,0FBh,0F5h,0B0h,069h,070h,03Ah,0B6h
+
+DB 0C3h,0F7h,050h,01Ch,021h,091h,069h,043h,049h,07Fh,034h,008h,0DAh,064h,023h,059h
+
+DB 0BFh,013h,0FAh,033h,0B6h,07Eh,025h,0CBh,0CDh,0CDh,0EBh,05Ch,056h,0D8h,02Dh,0E6h
+
+DB 039h,0E3h,01Ch,0F7h,08Ch,07Ah,077h,067h,0CFh,063h,0EEh,0BDh,0C2h,0B4h,092h,03Bh
+
+DB 053h,014h,084h,00Ah,039h,0C8h,07Dh,01Fh,06Bh,069h,0A4h,01Ch,0C4h,01Eh,013h,07Dh
+
+DB 003h,0EFh,01Fh,05Eh,059h,079h,0B7h,06Fh,074h,0DFh,0B0h,04Ah,008h,0BEh,0D0h,0B8h
+
+DB 068h,01Fh,0EDh,013h,01Dh,02Ch,039h,0EBh,0E5h,0A2h,064h,0BAh,003h,00Dh,099h,09Dh
+
+DB 075h,015h,054h,019h,051h,032h,051h,0EFh,0EBh,0DFh,02Ch,068h,068h,0BBh,0F9h,03Dh
+
+DB 0F2h,0B3h,03Ch,078h,008h,0B4h,03Ah,0E6h,06Ah,03Bh,0F9h,0E4h,0BFh,09Ch,027h,04Ah
+
+DB 07Fh,0EBh,0DEh,0D3h,05Dh,03Ch,092h,07Ch,0D3h,0B1h,094h,0CFh,029h,068h,0D6h,0A8h
+
+DB 03Eh,043h,0CEh,0F4h,0B5h,088h,0ADh,0FFh,06Dh,04Dh,090h,06Fh,014h,0F5h,094h,0E0h
+
+DB 087h,029h,079h,084h,049h,01Ch,0E7h,06Bh,017h,00Eh,00Bh,034h,05Fh,0A6h,07Ah,0C2h
+
+DB 0EAh,025h,078h,0D3h,054h,03Dh,0AAh,0F3h,0A2h,092h,002h,0BEh,057h,091h,0BCh,03Dh
+
+DB 0CDh,09Ah,0B1h,00Bh,0BBh,08Fh,0E3h,027h,0ADh,0ECh,0E2h,0C7h,069h,08Ah,077h,074h
+
+DB 05Eh,054h,06Eh,090h,080h,0A0h,056h,07Fh,026h,0B7h,0DFh,095h,047h,0DCh,0F8h,0C4h
+
+DB 006h,059h,0D7h,0DCh,08Ah,0A2h,079h,046h,03Ah,07Fh,0FDh,011h,081h,010h,07Eh,028h
+
+DB 093h,0A6h,0D6h,038h,06Eh,012h,0D1h,091h,017h,00Eh,0E3h,01Eh,084h,0F8h,0BEh,0ABh
+
+DB 0DFh,04Eh,03Bh,0ADh,067h,008h,073h,0F7h
+
+
+
+table2:    ;magic numbers for block Y
+
+           ;remember? we go them by
+
+           ; :d edi in SoftICE at the REPZ CMPSB line
+
+           ;Then i just trimmed them in UltraEdit
+
+           ;with some Search and Replace commands
+
+
+
+DB 043h,03Fh,0FFh,019h,007h,0BBh,067h,046h,025h,00Ch,0C2h,053h,09Ch,000h,0C5h,059h
+
+DB 022h,066h,035h,090h,0F0h,036h,0E4h,0C0h,0C6h,026h,031h,081h,031h,057h,09Ah,0D1h
+
+DB 04Ah,00Bh,0DEh,001h,03Dh,0CBh,0F1h,015h,07Eh,03Ah,09Bh,0A6h,0DDh,016h,06Fh,08Fh
+
+DB 021h,04Ch,0CBh,098h,0FCh,08Ch,059h,04Bh,0C4h,0D9h,02Eh,0E7h,04Bh,0A9h,08Dh,013h
+
+DB 048h,028h,035h,0F4h,06Ah,0CCh,05Ah,0BDh,081h,048h,076h,037h,008h,06Eh,0E5h,091h
+
+DB 0E3h,0A0h,006h,033h,06Eh,068h,0DDh,015h,000h,0ECh,0DBh,0DBh,0CFh,06Eh,039h,067h
+
+DB 050h,03Fh,027h,067h,088h,0FDh,01Eh,090h,0CEh,07Dh,05Bh,0D8h,00Dh,07Fh,066h,00Bh
+
+DB 0F4h,058h,09Eh,0C2h,0F5h,072h,074h,0E7h,05Dh,0BBh,0BDh,019h,0BFh,064h,030h,09Ch
+
+DB 035h,074h,045h,032h,0D4h,066h,03Fh,042h,016h,02Dh,0DDh,092h,055h,0A7h,08Bh,07Dh
+
+DB 088h,05Bh,016h,0E4h,0D8h,0EEh,05Eh,048h,01Dh,04Ch,0FBh,01Eh,044h,0F1h,0D4h,0E7h
+
+DB 0DEh,038h,0BDh,068h,0EAh,0E4h,089h,0D7h,0FFh,0A1h,091h,056h,098h,07Eh,02Eh,002h
+
+DB 00Ah,0D3h,0F1h,0DAh,026h,093h,0BFh,08Dh,08Ch,0E5h,011h,0E7h,0F3h,08Ch,09Fh,038h
+
+DB 07Ah,0B1h,072h,06Ch,0DDh,0C4h,09Ah,0B1h,0F7h,0F6h,014h,09Eh,010h,00Dh,05Ch,011h
+
+DB 0F3h,00Eh,023h,0A8h,0ABh,0C0h,01Ah,001h,0F2h,02Dh,0DFh,078h,01Dh,0A5h,0E3h,0B2h
+
+DB 076h,071h,07Fh,089h,0A8h,0BAh,035h,0E7h,0D6h,09Eh,02Bh,04Dh,0B1h,075h,079h,0E3h
+
+DB 0D2h,018h,0B4h,02Fh,02Dh,0A6h,035h,0F9h,00Fh,0BEh,00Ah,01Eh,03Eh,0F5h,097h,037h
+
+DB 0CFh,058h,06Ch,010h,0B9h,040h,0ABh,099h,08Dh,0CFh,07Bh,060h,0B9h,021h,004h,055h
+
+DB 00Ah,035h,039h,0EAh,05Eh,076h,061h,07Ah,0FCh,096h,0FFh,0BAh,0CBh,02Fh,087h,0F6h
+
+DB 000h,06Ah,088h,06Ch,041h,087h,0F9h,02Ah,054h,0CCh,033h,02Eh,0BFh,0AFh,00Dh,06Fh
+
+DB 066h,0F0h,0DCh,006h,006h,044h,055h,02Dh,095h,0C3h,0EEh,028h,07Fh,005h,011h,025h
+
+DB 0D7h,013h,03Dh,031h,0C2h,0A1h,037h,0D4h,026h,087h,095h,042h,0A3h,034h,0C9h,005h
+
+DB 06Ah,095h,0F0h,07Ch,041h,075h,061h,031h,059h,067h,0F7h,086h,032h,03Fh,0EEh,0BBh
+
+DB 070h,0E8h,085h,012h,05Ah,066h,043h,0BDh,081h,0DDh,094h,018h,05Bh,0B9h,0EDh,0C0h
+
+DB 0BAh,0FCh,03Ah,0A3h,066h,018h,025h,08Fh,030h,0D9h,0F3h,0BFh,0FDh,065h,035h,0F4h
+
+DB 08Eh,004h,0A6h,032h,0CDh,05Fh,0A0h,0BBh,05Eh,0A6h,04Eh,08Dh,094h,019h,0EFh,06Bh
+
+DB 063h,080h,07Fh,03Eh,0AAh,0E6h,0F5h,035h,0F5h,071h,031h,0F2h,01Bh,048h,0B1h,0E3h
+
+DB 09Ch,0ADh,0F7h,02Eh,0EFh,006h,0C1h,0C6h,09Eh,06Eh,0D1h,048h,00Fh,072h,0C1h,0C7h
+
+DB 04Eh,044h,0B6h,099h,05Ah,069h,0B3h,04Bh,02Bh,08Ch,02Bh,0C2h,0A1h,052h,0B9h,0F1h
+
+DB 08Eh,064h,0C5h,0C2h,0BAh,060h,067h,089h,0F2h,00Dh,07Fh,09Fh,0C6h,03Dh,02Bh,0A6h
+
+DB 060h,0ECh,05Fh,0F3h,062h,07Bh,0F4h,034h,04Eh,08Eh,0EBh,015h,087h,0E7h,00Fh,061h
+
+DB 04Eh,04Dh,0B7h,0A1h,0D5h,018h,090h,0DDh,05Ah,0F2h,0D2h,0A8h,034h,0A1h,060h,08Eh
+
+DB 071h,06Ah,0C2h,08Ch,062h,0A0h,0C6h,0FBh,05Ah,070h,000h,07Ch,052h,0E4h,056h,0B1h
+
+DB 074h,025h,0E3h,042h,076h,04Ah,04Dh,0E0h,0EFh,096h,091h,097h,081h,00Bh,073h,0CEh
+
+DB 041h,093h,028h,072h,060h,080h,07Dh,022h,0F5h,024h,053h,06Ah,021h,0FFh,05Ch,0E9h
+
+DB 042h,0BFh,05Fh,0BEh,0D4h,01Ah,024h,0FAh,083h,09Dh,072h,0B5h,08Dh,065h,04Ch,0E4h
+
+DB 049h,0C2h,04Bh,067h,0FEh,052h,0CDh,03Bh,0FCh,020h,00Ch,03Eh,00Fh,0B3h,0B4h,05Ah
+
+DB 0A2h,0E6h,093h,00Ch,09Dh,0DDh,044h,0FAh,0E8h,067h,010h,088h,009h,0A9h,0A3h,01Dh
+
+DB 01Ch,0E4h,0DDh,09Fh,073h,0E9h,0EAh,0DFh,0BBh,028h,00Bh,03Ah,071h,020h,0D3h,095h
+
+DB 0EFh,07Bh,042h,029h,0C2h,09Dh,0EFh,041h,040h,04Ah,0EBh,0B2h,053h,062h,0A5h,038h
+
+DB 0D1h,0D2h,012h,0F7h,0AAh,0E3h,049h,01Bh,03Dh,08Bh,0A4h,05Fh,0A0h,0E1h,0E9h,077h
+
+DB 052h,0E4h,0B9h,005h,089h,057h,097h,098h,0D5h,06Fh,0BDh,003h,048h,05Fh,093h,03Ch
+
+DB 044h,0A3h,070h,07Ah,061h,0B1h,0EFh,03Fh,096h,00Ah,096h,0A0h,02Bh,034h,04Dh,049h
+
+DB 0A2h,03Eh,0EDh,083h,0DBh,0A4h,092h,011h,099h,0FEh,09Bh,019h,076h,00Ah,0F1h,0CBh
+
+DB 022h,04Fh,08Fh,09Ah,037h,079h,0CDh,044h,026h,0A4h,093h,0B4h,042h,08Ah,09Eh,0EAh
+
+DB 090h,0E0h,071h,0C0h,06Fh,053h,0B8h,029h,057h,00Ch,0DFh,03Ah,0E2h,086h,057h,091h
+
+DB 0C6h,00Fh,06Eh,0D3h,0C8h,0E4h,04Ah,0C2h,0A8h,05Eh,05Dh,050h,0F8h,0B8h,01Dh,0E1h
+
+DB 042h,06Ch,025h,085h,0A1h,084h,0FDh,0E6h,03Ch,088h,0DCh,093h,058h,094h,000h,0D5h
+
+DB 037h,054h,099h,032h,09Ah,0D3h,077h,0B3h,09Fh,0C0h,0AAh,09Ch,0C9h,092h,012h,063h
+
+DB 02Ch,06Bh,0E6h,0D6h,0E2h,020h,0B3h,028h,012h,0B1h,0DDh,004h,004h,030h,0EBh,0CCh
+
+DB 074h,0F2h,0E5h,0C4h,085h,017h,02Bh,0EBh,0B0h,0C6h,0F2h,016h,083h,059h,0B0h,0A9h
+
+DB 095h,0DAh,0CAh,0BCh,0B3h,059h,01Dh,0E9h,0E4h,0FAh,000h,0DEh,030h,074h,0C9h,0CBh
+
+DB 085h,0ADh,0A5h,026h,080h,08Fh,0FBh,0D0h,05Ah,0AFh,05Dh,02Ah,0FCh,0FBh,0CDh,0F0h
+
+DB 022h,0BDh,05Dh,0D6h,005h,0A6h,0B3h,094h,052h,062h,0EAh,0B2h,007h,0BEh,057h,0D5h
+
+DB 0D1h,09Ch,0A9h,04Ah,07Fh,00Dh,080h,0C3h,0ECh,02Eh,0F7h,0A4h,06Ah,08Ah,0DCh,019h
+
+DB 0F7h,091h,0E6h,04Ah,0A1h,043h,028h,08Bh,028h,096h,06Dh,0ABh,0A6h,061h,095h,059h
+
+DB 08Ah,00Dh,04Bh,069h,001h,058h,007h,08Ch,05Eh,0F7h,0A2h,074h,023h,0ABh,027h,008h
+
+DB 0F7h,098h,072h,0D6h,0A8h,05Bh,02Eh,019h,0FDh,044h,00Fh,0CCh,071h,0C4h,02Fh,073h
+
+DB 008h,0E9h,0F6h,04Ah,053h,0DBh,033h,086h,083h,052h,0C5h,026h,036h,082h,041h,04Fh
+
+DB 092h,054h,05Fh,035h,023h,04Eh,097h,098h
+
+
+
+
+
+;I was too lazy to do memory allocation so i used direct buffers
+
+;sorry assembly gurus
+
+
+
+file_data:
+
+            DB 0aH DUP()         ;first 0xA bytes (set to zeros)
+
+name1:      DB 65H DUP(' ')      ;start of Block X and user name
+
+company1:   DB 0343H DUP(' ')    ;start of organisation name in block X
+
+            DB 0aH DUP()         ;second 0xA bytes (set to zeros)
+
+name2:      DB 65H DUP(' ')      ;start of Block Y and user name 
+
+company2:   DB 0343H DUP(' ')    ;start of organisation name in block Y
+
+            DB 027H DUP('Kox ')  ;Your Granma's recipe (4 bytes * 0x27 =0x9c bytes)
+
+
+
+END	START
+
+</PRE>
+
+ <FONT color="green">(c) Kox 1997. All rights reversed</FONT>
+
+<HR ALIGN="CENTER" WIDTH="100%" SIZE="3">
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</I></CENTER>
+
+<BR><CENTER>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">
+
+<A HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"> 
+
+<A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0">
+
+<A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut CGI-scripts</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering illegal?</A></CENTER>
+
+<CENTER><HR ALIGN="CENTER" WIDTH="100%" SIZE="2"></CENTER>
+
+</BODY>
+
+</HTML>
+

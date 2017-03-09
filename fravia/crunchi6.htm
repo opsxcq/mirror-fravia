@@ -1,0 +1,1814 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>crunchi6.htm: Little essay about the various methods and viewpoints of crunching</TITLE>
+
+</HEAD>
+
+
+
+<BODY BGCOLOR=#C0C0C0 TEXT=#001010 VLINK=#405040>
+
+<CENTER><CENTER><A href="papers.htm" tppabs="http://www.anticrack.de/fravia/papers.htm"><IMG SRC="papers.gif" tppabs="http://www.anticrack.de/fravia/papers.gif" ALT="papers" ALIGN=BOTTOM WIDTH=114 
+
+EIGHT=43 BORDER=0 VSPACE=0 HSPACE=0></A><BR><FONT color=gray>+HCU papers</FONT><BR><BR>
+
+<FONT size=+6><FONT color=blue>Little essay about the various methods and viewpoints of crunching</FONT></FONT>
+
+<BR>
+
+~ version September 1998 ~<BR>
+
+by Joa Part VI
+
+<BR>
+
+
+
+
+
+<HR>Courtesy of fravia's page of reverse engineering<BR>
+
+<HR></CENTER><P>
+
+<P>
+
+
+
+Well, Joa continues his fundamental paper on crunching, this is part VI<BR>enjoy!<P>
+
+<TABLE border=1>
+
+<TR><TD HEIGHT="33">10 July 98</TD><TD>
+
+Joa
+
+</TD><TD>~</TD><TD>
+
+<A href="crunchi1.htm" tppabs="http://www.anticrack.de/fravia/crunchi1.htm">crunchi1.htm</A>
+
+</TD><TD>Little essay about the various methods and viewpoints of crunching
+
+</TD><TD VALIGN="center" bgcolor="#E2A221"><A HREF="papers.htm" tppabs="http://www.anticrack.de/fravia/papers.htm">papers</A>
+
+</TD><TD>~</TD><TD>fra_0126</TD></TR>
+
+
+
+<TR><TD HEIGHT="33">10 June 98</TD><TD>
+
+Joa
+
+</TD><TD>~</TD><TD>
+
+<A href="crunchi2.htm" tppabs="http://www.anticrack.de/fravia/crunchi2.htm">crunchi2.htm</A>
+
+</TD><TD>Little essay about the various methods and viewpoints of crunching II
+
+</TD><TD VALIGN="center" bgcolor="#E2A221"><A HREF="papers.htm" tppabs="http://www.anticrack.de/fravia/papers.htm">papers</A>
+
+</TD><TD>~</TD><TD>fra_0129</TD></TR>
+
+
+
+<TR><TD HEIGHT="33">17 June 98</TD><TD>
+
+Joa
+
+</TD><TD>~</TD><TD>
+
+<A href="crunchi3.htm" tppabs="http://www.anticrack.de/fravia/crunchi3.htm">crunchi3.htm</A>
+
+</TD><TD>Little essay about the various methods and viewpoints of crunching III
+
+</TD><TD VALIGN="center" bgcolor="#E2A221"><A HREF="papers.htm" tppabs="http://www.anticrack.de/fravia/papers.htm">papers</A>
+
+</TD><TD>~</TD><TD>fra_012E</TD></TR>
+
+
+
+<TR><TD HEIGHT="33">17 June 98</TD><TD>
+
+Joa
+
+</TD><TD>~</TD><TD>
+
+<A href="crunchi4.htm" tppabs="http://www.anticrack.de/fravia/crunchi4.htm">crunchi4.htm</A>
+
+</TD><TD>Little essay about the various methods and viewpoints of crunching IV
+
+</TD><TD VALIGN="center" bgcolor="#E2A221"><A HREF="papers.htm" tppabs="http://www.anticrack.de/fravia/papers.htm">papers</A>
+
+</TD><TD>~</TD><TD>fra_012F</TD></TR>
+
+
+
+
+
+
+
+<TR><TD HEIGHT="33">10 July 98</TD><TD>
+
+Joa
+
+</TD><TD>~</TD><TD>
+
+<A href="crunchi5.htm" tppabs="http://www.anticrack.de/fravia/crunchi5.htm">crunchi5.htm</A>
+
+</TD><TD>Little essay about the various methods and viewpoints of crunching V
+
+</TD><TD VALIGN="center" bgcolor="#E2A221"><A HREF="papers.htm" tppabs="http://www.anticrack.de/fravia/papers.htm">papers</A>
+
+</TD><TD>~</TD><TD>fra_0133</TD></TR>
+
+
+
+
+
+<TR><TD HEIGHT="33">16 September 98</TD><TD>
+
+Joa
+
+</TD><TD>~</TD><TD>
+
+<A href="crunchi6.htm" tppabs="http://www.anticrack.de/fravia/crunchi6.htm">crunchi6.htm</A>
+
+</TD><TD>Little essay about the various methods and viewpoints of crunching VI
+
+</TD><TD VALIGN="center" bgcolor="#E2A221"><A HREF="papers.htm" tppabs="http://www.anticrack.de/fravia/papers.htm">papers</A>
+
+</TD><TD>~</TD><TD>fra_0133</TD></TR>
+
+
+
+
+
+
+
+</TABLE></CENTER>
+
+<HR><PRE>
+
+Little essay about the various methods and viewpoints of crunching.
+
+
+
+Part VI: The secret of Zip and Rar (LZW explained)
+
+
+
+
+
+
+
+By Joa Koester (JoKo2000@HotMail.Com)
+
+This essay is free to be copied and read and spread as long as
+
+you are decent enough to leave my name in it.
+
+If you have corrections, comments, better examples than the ones used
+
+in this essay etc. - drop me a line.
+
+
+
+
+
+Last time i showed you how you could reach enormous crunch-ratios using the
+
+LZ77-technique. I wouldn't wonder if someone would build a protection system
+
+upon it. You'd just have to allocate some stackspace for your routine, decrunch
+
+it into the stack and execute it. You'd would have to switch to a
+
+decrunch-from-behind version and just by copying the decrunching routine into
+
+the stack the final crunches would overwrite the last decrunch-loop part
+
+thus immediately executing the decrunched routine afterwards.
+
+
+
+But back to crunching. Soon after publishing the LZ77 alg Lempel and Ziv
+
+fumbled a little bit around and came up with another table-oriented crunching
+
+alg. While LZ77 used a Offset-Length pair to implement a reference to some
+
+already passed data, LZ78 walked a completely different path. Lempel and Ziv
+
+came up with an idea of directly addressing a table. In this table there would
+
+be the strings they passed. The only thing you'd have to do would be to
+
+derefernce the table entries down to the strings and you would have a crunch.
+
+
+
+The table would start with a null-string. One Byte would be read ahead. One
+
+acutal string would be initialized with this read-ahead byte. Then you'd check
+
+if you already had this string in your table. If not, you would output it and
+
+afterwards you'd add this string to your table. If you already had this string
+
+in your table you'd read another byte and add it to your string. It is
+
+important to notice that the last string to be output build up from a known
+
+string in the table plus a new char.
+
+Mark Nelson, a good source for crunching (next to Charles Bloom),
+
+shows this alg quite clear:
+
+
+
+for (;;)    //until the end of the file
+
+{
+
+  act_phrase = 0;   //the zero string
+
+  act_len = 0;
+
+  memset (test_string, 0x00, MAX_STRING);
+
+
+
+  //...........................................................................
+
+  for (;;)
+
+  {
+
+    test_string[act_len++] = getc(input);
+
+    new_phrase = search_phrase_in_table(test_string); // is test_string in
+
+                                                      // table?
+
+
+
+    if (new_phrase == -1)   // no
+
+    {
+
+      break;                // then break out of inner loop
+
+    }
+
+    //else
+
+    act_phrase = new_phrase // else set new actual phrase
+
+  }
+
+  //...........................................................................
+
+  //Here we breaked out of the inner loop. This could happen, because of EOF or
+
+  //because a string could not be found in the table (in case of EOF this will
+
+  //happen, too, of course ;)
+
+  output(act_phrase);            //output the reference of the table
+
+  output(test_string[act_len -1] ); //afterwards output the difference char
+
+  add_string_to_table(test_string); //and actualize table
+
+}
+
+
+
+Let's crunch the following term together:
+
+
+
+0123456789a iwobiwoiwoi
+
+
+
+
+
+Our table is empty in the beginning except for a null-string at pos 1.
+
+
+
+pos:  0
+
+act_phrase = 0;
+
+act_len = 0;
+
+test_string = [0x00, 0x00, 0x00...]
+
+
+
+
+
+Ok, we enter the first char: i
+
+
+
+                ...test_string[act_len++] = getc(input);...
+
+char: 'i'
+
+pos:  0
+
+act_phrase = 0;
+
+act_len = 1;
+
+test_string = ['i', 0x00, 0x00...]
+
+table = [ {"", 0} ]
+
+
+
+
+
+                After the search, new_phrase is -1, so we break
+
+
+
+
+
+  output(act_phrase);            //output the reference of the table
+
+  output(test_string[act_len -1] ); //afterwards output the difference char
+
+  add_string_to_table(test_string); //and actualize table
+
+
+
+our output is: {0}i
+
+
+
+We output the act_phrase (0) and output the 'i' afterwards. Then we update the
+
+table with the 'i'-entry and jump back to our loop.
+
+
+
+pos:  1
+
+act_phrase = 0;
+
+act_len = 0;
+
+test_string = [0x00, 0x00, 0x00...]
+
+
+
+enter char (w)
+
+
+
+char: 'w'
+
+pos:  1
+
+act_phrase = 0;
+
+act_len = 1;
+
+test_string = ['w', 0x00, 0x00...]
+
+table = [ {"", 0}, {"i", 1} ]
+
+
+
+                After the search, new_phrase is -1, so we break
+
+
+
+  output(act_phrase);            //output the reference of the table
+
+  output(test_string[act_len -1] ); //afterwards output the difference char
+
+  add_string_to_table(test_string); //and actualize table
+
+
+
+We output the act_phrase (0) and output the 'w' afterwards. Then we update the
+
+table with the 'w'-entry and jump back to our loop.
+
+
+
+[...]
+
+for the chars 'o' and 'b' it's the same. We reenter on the next 'i'
+
+
+
+pos:  4
+
+act_phrase = 0;
+
+act_len = 0;
+
+test_string = [0x00, 0x00, 0x00...]
+
+
+
+enter char (i)
+
+
+
+char: 'i'
+
+pos:  4
+
+act_phrase = 0;
+
+act_len = 1;
+
+test_string = ['i', 0x00, 0x00...]
+
+table = [ {"", 0}, {"i", 1}, {"w", 2}, {"o", 3}, {"b", 4} ]
+
+
+
+    new_phrase = search_phrase_in_table(test_string); // is test_string in
+
+                                                      // table?
+
+
+
+    yes, it is, so
+
+
+
+            act_phrase = new_phrase (1 in this case)
+
+
+
+    and back to our inner loop.
+
+
+
+char: 'w'
+
+pos:  5
+
+act_phrase = 1;
+
+act_len = 2;
+
+test_string = ['i', 'w', 0x00...]
+
+table = [ {"", 0}, {"i", 1}, {"w", 2}, {"o", 3}, {"b", 4} ]
+
+
+
+    Do we have a 'iw' in our table? don't think so. That means next step we
+
+    break.
+
+
+
+  output(act_phrase);               // (1 in this case)
+
+  output(test_string[act_len -1] ); // (w in this case)
+
+  add_string_to_table(test_string);
+
+
+
+and to the next char...
+
+
+
+
+
+char: 'o'
+
+pos:  6
+
+act_phrase = 0;
+
+act_len = 1;
+
+test_string = ['o', 0x00, 0x00...]
+
+table = [ {"", 0}, {"i", 1}, {"w", 2}, {"o", 3}, {"b", 4}, {"iw", 5} ]
+
+
+
+    well, we have an 'o' in our table, so the string is extended with the
+
+    next char: 'i'.
+
+
+
+char: 'i'
+
+pos:  7
+
+act_phrase = 3;
+
+act_len = 1;
+
+test_string = ['o', 'i', 0x00...]
+
+table = [ {"", 0}, {"i", 1}, {"w", 2}, {"o", 3}, {"b", 4}, {"iw", 5} ]
+
+
+
+
+
+    Some 'oi' here? No, sir. no 'oi' here. We break and write:
+
+
+
+  output(act_phrase);               // (3 in this case)
+
+  output(test_string[act_len -1] ); // (i in this case)
+
+  add_string_to_table(test_string);
+
+
+
+the next char is the 'w':
+
+
+
+char: 'w'
+
+pos:  8
+
+act_phrase = 0;
+
+act_len = 1;
+
+test_string = ['w', 0x00, 0x00...]
+
+table = [ {"", 0}  , {"i", 1}, {"w", 2}, {"o", 3}, {"b", 4}, {"iw", 5},
+
+          {"oi", 6} ]
+
+
+
+after adding the next char (coz 'w' is in our table) we have:
+
+
+
+char: 'o'
+
+pos:  9
+
+act_phrase = 3;
+
+act_len = 1;
+
+test_string = ['w', 'o', 0x00...]
+
+table = [ {"", 0}, {"i", 1}, {"w", 2}, {"o", 3}, {"b", 4}, {"iw", 5},
+
+          {"oi", 6} ]
+
+
+
+    Some 'wo' here? Nope. We break and write:
+
+
+
+  output(act_phrase);               // (2 in this case)
+
+  output(test_string[act_len -1] ); // (o in this case)
+
+  add_string_to_table(test_string);
+
+
+
+The final char (plus EOF) is confronted with the following table:
+
+
+
+table = [ {"", 0}  , {"i", 1}, {"w", 2}, {"o", 3}, {"b", 4}, {"iw", 5},
+
+          {"oi", 6}, {"wo", 7} ]
+
+
+
+then the i+EOF is added to the table.
+
+
+
+
+
+The output we produced so far (spaces inserted for clarity):
+
+
+
+{0}i {0}w {0}o {0}b {1}w {3}i {2}o {1}EOF
+
+
+
+Hmm. This doesn't look like an algorithm which produces good results in small
+
+files. But think about this: if there would have been another "iwo" at the end
+
+of the file instead the 'i' we would have coded {5}o thus saving us two bytes.
+
+And for the next 'iwo' we would have had a new table entry ready. This means
+
+that the algorithm manages inequally long strings with just one entry
+
+reference. If our reference is shorter than the string, we crunch. Normally we
+
+achieve an increasing crunch-ratio after ca. 100 bytes. From that moment on our
+
+table begins to fill with strings longer than one byte and from that moment on
+
+we save bits with every reference we write.
+
+
+
+I have a question, sir...
+
+
+
+Yes, Watson?
+
+
+
+This table-reference - how big should that table be and how do we code the
+
+reference? And while i'm at the point: How do we search the table? This will be
+
+the most time-consuming part, i think. And, oh yes, what if the table is full?
+
+
+
+
+
+You are absolutely right, Watson.
+
+Good questions!
+
+
+
+OK!
+
+
+
+How do we search the table FAST? Well, to be honest, i do not prefer one method
+
+over the other. One good method would be to implement a hash-table. In C++ you
+
+would implment a Set of Strings and hope that the implementation from your
+
+compiler vendor is fast enough to handle some 100 Kbyte Strings. Another way
+
+would be to allocate a biiiiig amount of memory (premise: size MOD 256 == 0),
+
+divide it by 256 and reserve these chunks for the according ascii-values). With
+
+this method you would have equally long maximumsized strings ready for
+
+binary-searching and overwriting. These chunks would then be filled with the
+
+string and a timestamp. if our chunk was full, the next time we would have to
+
+add a string we would delete the earliest one (or maybe two or three) and could
+
+add the new string.
+
+I know that this method screams "RAM WASTE!!! RAM WASTE!!!", but let me tell
+
+you that the ACB-cruncher from George Buyanovsky needs 16 MByte RAM in one
+
+chunk to work. We will deal with 256 MByte RAM on every average PC within the
+
+next 5 years. Not just because RAM gets cheaper every minute, but because the
+
+average user wants to scan and digitize things (in 1998: buy three CDs or a
+
+scanner. What do you think we will be in 5 years?).
+
+A good tablesearch-algorithm is the stand-or-fall part of the cruncher.
+
+
+
+As far as i'm concerned: Let the cruncher take as much memory as possible.
+
+
+
+If you have 32 MB reserved in one piece and you want a maximum stringlen of 128
+
+Byte per string you will have 33554432 / 256 =  131072 Bytes per chunk.
+
+And 131072 / 128 = 1024 Strings per chunk. The more you reduce your stringlen,
+
+the more strings you can pack into the chunk. Reducing the maximum stringlen
+
+down to 64 brings you 4096 strings per chunk. This is quite good. 4096 strings
+
+just for one ascii-slot.
+
+
+
+Well, the way we code the reference is completely ours. We should take a look
+
+back to our LZ77 essay and let our phantasy roam. From the most stupid 8+12 bit
+
+reference (gives us crunching only at minimum 4 byte strinlen) to unary +
+
+your_stuff - everything is possible. However it should be fast.
+
+
+
+
+
+The coding part is pretty easy, isn't it? You could theoretically write a LZ78
+
+cruncher in Visual Basic in a few hours and it would actually work.
+
+And what about the decoding part? Well, no problems here, too. The decruncher
+
+starts with the same emptied model (emptied table) as the cruncher:
+
+
+
+
+
+  New_String = Take the first code from decoding a bit_input
+
+  output NewString
+
+  take the next char
+
+  output it
+
+  add char to New_String
+
+  add New_String into table.
+
+repeat until EOF
+
+
+
+
+
+
+
+//.............................................................................
+
+While this method is pretty good and pretty easy to implement, 1984 Terry
+
+Welch came up with a fundamental improvement of this algorithm. Since then the
+
+term LZW is also common. Welch had the idea that one could pre-create a table
+
+(with the first 256 possible chars) and that the algorithm would only output
+
+table-references.
+
+
+
+With this trick one could create a huffman-tree for all those codes one writes
+
+thus letting us write even fewer bits (there is a method of writing even fewer
+
+bits than Huffman - arithmetic coding, but we'll come to this later).
+
+
+
+So, how does this LZW work? Let's have a look:
+
+
+
+The basic LZW-algorithm:
+
+
+
+//Read ahead because we definitively know every single char
+
+oldString[0] = getc(input);
+
+oldString[1] = 0x00;
+
+
+
+while (! eof(input))
+
+{
+
+  c = getc(input);                //We get the second string from our input
+
+  strcpy(newString, oldString);   //and save the oldstring into the search
+
+                                  //string. The first time the oldstring is
+
+                                  //our very first char of our input. But
+
+                                  //later it will be longer strings.
+
+
+
+  strncat (newString, &c, 1);     //add the actual read char to the
+
+                                  //actual string
+
+
+
+  if (stringInTable(newString))   //when the string is already in the table
+
+  {
+
+    strcpy (oldString, newString) //take it as oldString and read the next char
+
+  }
+
+  else                            //else
+
+  {
+
+    code = searchTable(oldString);//get the code for the last known String
+
+    output (code);                //and output it
+
+    addStringToTable(newString);  //add the new String for the next time
+
+    oldString[0] = c;             //and start again with the latest unknown
+
+    oldString[1] = 0x00;          //char
+
+  }
+
+}
+
+
+
+Looks pretty easy, ain't it? Well, it is. Let's crunch the our little 
+
+source again (this time a little longer):
+
+
+
+
+
+                                  0123456789abcde
+
+                                  iwobiwoiwoiwoix
+
+
+
+
+
+           
+
+(We have a table, where the first 256 (0 - 255) entries are occupied with the 
+
+corresponding values)
+
+Let's trace the steps of the cruncher. Maybe you should print the above
+
+typed source for checking.
+
+
+
+  oldstring = ( 'i', 0x00 )
+
+  
+
+(we enter the loop) (Pos = 0)
+
+
+
+  c = 'w'
+
+  newString = ( 'i', 0x00 )
+
+  newString = ( 'iw', 0x00 )
+
+  
+
+(no, we don't have 'iw' in our table yet)
+
+
+
+  code = searchTable(oldString)   //oldString = 'i', 0x00
+
+  output (code)                   //i
+
+  addString (newString)
+
+  oldString[0] = 'w'
+
+  oldString[1] = 0x00
+
+  
+
+(back to the top of the loop) (Pos = 1)
+
+(our table has the 256 entries plus [ {256, 'iw'} ]
+
+
+
+  oldstring = ( 'w', 0x00 )
+
+  c = 'o'
+
+  newString = ( 'w', 0x00 )  
+
+  newString = ( 'wo', 0x00 )  
+
+
+
+(no, we don't have 'wo' in our table yet)
+
+
+
+  code = searchTable(oldString)   //oldString = 'w', 0x00
+
+  output (code)                   //w
+
+  addString (newString)
+
+  oldString[0] = 'o'
+
+  oldString[1] = 0x00
+
+
+
+(back to the top of the loop) (Pos = 2)
+
+(our table has the 256 entries plus [ {256, 'iw'}, {257, 'wo'} ]
+
+
+
+  oldstring = ( 'o', 0x00 )
+
+  c = 'o'
+
+  newString = ( 'b', 0x00 )  
+
+  newString = ( 'ob', 0x00 )  
+
+
+
+(no, we don't have 'ob' in our table yet)
+
+
+
+  code = searchTable(oldString)   //oldString = 'o', 0x00
+
+  output (code)                   //o
+
+  addString (newString)
+
+  oldString[0] = 'b'
+
+  oldString[1] = 0x00
+
+
+
+(back to the top of the loop) (Pos = 3)
+
+(our table has the 256 entries plus [ {256, 'iw'}, {257, 'wo'}, {258, 'ob'} ]
+
+
+
+  oldstring = ( 'b', 0x00 )
+
+  c = 'i'
+
+  newString = ( 'b', 0x00 )  
+
+  newString = ( 'bi', 0x00 )  
+
+
+
+(no, we don't have 'bi' in our table yet)
+
+
+
+  code = searchTable(oldString)   //oldString = 'b', 0x00
+
+  output (code)                   //i
+
+  addString (newString)
+
+  oldString[0] = 'i'
+
+  oldString[1] = 0x00
+
+
+
+(Now we will have something to crunch :)
+
+(back to the top of the loop) (Pos = 4)
+
+(our table has the 256 entries 
+
+plus [ {256, 'iw'}, {257, 'wo'}, {258, 'ob'}, {259, 'bi'}  ]
+
+
+
+  oldstring = ( 'i', 0x00 )
+
+  c = 'w'
+
+  newString = ( 'i', 0x00 )  
+
+  newString = ( 'iw', 0x00 )  
+
+
+
+(YES, we have 'iw' in our table )
+
+
+
+  oldString = ( 'iw', 0x00)
+
+(back to the top of the loop)
+
+  oldString = ( 'iw', 0x00)
+
+  c = 'o'  
+
+
+
+  newString = ( 'iw', 0x00 )  
+
+  newString = ( 'iwo', 0x00 )  
+
+
+
+
+
+(no, we don't have 'iwo' in our table yet)
+
+
+
+  code = searchTable(oldString)   //oldString = 'iw', 0x00
+
+  output (code)                   //[256]
+
+  addString (newString)
+
+  oldString[0] = 'o'
+
+  oldString[1] = 0x00
+
+
+
+
+
+(back to the top of the loop) (Pos = 6)
+
+(our table has the 256 entries 
+
+plus [ {256, 'iw'}, {257, 'wo'}, {258, 'ob'}, {259, 'bi'}, {260, 'iwo'}  ]
+
+
+
+  oldstring = ( 'o', 0x00 )
+
+  c = 'i'
+
+  newString = ( 'o', 0x00 )  
+
+  newString = ( 'oi', 0x00 )  
+
+
+
+(no, we don't have 'oi' in our table yet)
+
+
+
+  code = searchTable(oldString)   //oldString = 'o', 0x00
+
+  output (code)                   //o
+
+  addString (newString)
+
+  oldString[0] = 'i'
+
+  oldString[1] = 0x00
+
+
+
+
+
+(back to the top of the loop) (Pos = 7)
+
+(our table has the 256 entries 
+
+plus [ 
+
+       {256, 'iw'}, {257, 'wo'}, {258, 'ob'}, {259, 'bi'}, {260, 'iwo'},
+
+       {261, 'oi'}  
+
+     ]  
+
+
+
+  oldstring = ( 'i', 0x00 )
+
+  c = 'w'
+
+  newString = ( 'i', 0x00 )  
+
+  newString = ( 'iw', 0x00 )  
+
+
+
+(YES, we have a 'iw' in our table)
+
+  oldString = ( 'iw', 0x00)
+
+(back to the top of the loop)
+
+  oldString = ( 'iw', 0x00)
+
+  c = 'o'  
+
+
+
+  newString = ( 'iw', 0x00 )  
+
+  newString = ( 'iwo', 0x00 )  
+
+
+
+(YES, we have a 'iwo' in our table)
+
+  oldString = ( 'iwo', 0x00)
+
+(back to the top of the loop)
+
+  oldString = ( 'iwo', 0x00)
+
+  c = 'i'  
+
+
+
+  newString = ( 'iwo', 0x00 )  
+
+  newString = ( 'iwoi', 0x00 )  
+
+
+
+
+
+(no, we don't have 'iwoi' in our table yet)
+
+
+
+  code = searchTable(oldString)   //oldString = 'iwo', 0x00
+
+  output (code)                   //260
+
+  addString (newString)
+
+  oldString[0] = 'i'
+
+  oldString[1] = 0x00
+
+
+
+
+
+(back to the top of the loop) (Pos = a)
+
+(our table has the 256 entries 
+
+plus [ 
+
+       {256, 'iw'}, {257, 'wo'}, {258, 'ob'}, {259, 'bi'}, {260, 'iwo'},
+
+       {261, 'oi'}, {262, 'iwoi'}    
+
+     ]  
+
+
+
+  oldstring = ( 'i', 0x00 )
+
+  c = 'w'
+
+  newString = ( 'i', 0x00 )  
+
+  newString = ( 'iw', 0x00 )  
+
+
+
+(YES, we have a 'iw' in our table)
+
+  oldString = ( 'iw', 0x00)
+
+(back to the top of the loop)
+
+  oldString = ( 'iw', 0x00)
+
+  c = 'o'  
+
+
+
+  newString = ( 'iw', 0x00 )  
+
+  newString = ( 'iwo', 0x00 )  
+
+
+
+(YES, we have a 'iwo' in our table)
+
+  oldString = ( 'iwo', 0x00)
+
+(back to the top of the loop)
+
+  oldString = ( 'iwo', 0x00)
+
+  c = 'i'  
+
+
+
+  newString = ( 'iwo', 0x00 )  
+
+  newString = ( 'iwoi', 0x00 )  
+
+
+
+(YES, we have a 'iwoi' in our table)
+
+  oldString = ( 'iwoi', 0x00)
+
+(back to the top of the loop)
+
+  oldString = ( 'iwoix', 0x00)
+
+  c = 'x'  
+
+
+
+  newString = ( 'iwoi', 0x00 )  
+
+  newString = ( 'iwoix', 0x00 )  
+
+
+
+
+
+(no, we don't have 'iwoix' in our table yet)
+
+
+
+  code = searchTable(oldString)   //oldString = 'iwo', 0x00
+
+  output (code)                   //262
+
+  addString (newString)
+
+  oldString[0] = 'x'
+
+  oldString[1] = 0x00
+
+
+
+So, our output would look something like this:
+
+
+
+ iwob[256]o[260][262]
+
+
+
+
+
+Hey, we have two codes directly. Does this make trouble when decrunching?
+
+
+
+Well, let's see how we would decrunch our little baby:
+
+
+
+
+
+//Well, we know that the first character is uncrunchable, so let's output it
+
+//directly
+
+oldString[0] = decode(input())
+
+oldString[1] = 0x00;
+
+
+
+putString(oldString);      
+
+
+
+newCode = input()                         //We get a new inputCode
+
+while (newCode != EOF)
+
+{
+
+  newString = searchInTable(newCode);     //We have to have it in our table
+
+  putString(newString);                   //then we output it
+
+  strncat (oldString, &newString[0], 1);  //the oldstring is concatenated by 
+
+                                          //the first char of the freshly read
+
+                                          //string
+
+  addString (oldString);                  //this string is then added to the
+
+                                          //table
+
+  strcpy (oldString, newString);          //then the freshly read string is
+
+                                          //from now on our new base 
+
+  newCode = input()                       //We get a new inputCode
+
+}
+
+
+
+
+
+OK, let's trace this alg when we decrunch our crunch:
+
+
+
+ iwob[256]o[260][262]
+
+
+
+Our table has the table entries 0 - 255 filled with the corresponding values.
+
+
+
+oldString[0] = 'i';
+
+oldString[1] = 0x00;
+
+putString(oldString);       //i is output
+
+
+
+newCode = 'w';
+
+
+
+(enter loop)
+
+  newString = 'w'
+
+  Output 'w'                //w is output
+
+  
+
+  oldString = 'iw'          //build up new String
+
+  //                        //and add it to the table
+
+
+
+  oldString = 'w'    
+
+  newCode = 'o'
+
+
+
+our table has the 256 entries 
+
+plus [ 
+
+       {256, 'iw'}
+
+     ]  
+
+(enter loop)
+
+  newString = 'o'
+
+  Output 'o'                //o is output
+
+  
+
+  oldString = 'wo'          //build up new String
+
+  //                        //and add it to the table
+
+
+
+  oldString = 'o'    
+
+  newCode = 'b'
+
+
+
+our table has the 256 entries 
+
+plus [ 
+
+      {256, 'iw'}, {257, 'wo'}
+
+     ]  
+
+(enter loop)
+
+  newString = 'b'
+
+  Output 'b'                //b is output
+
+  
+
+  oldString = 'ob'          //build up new String
+
+  //                        //and add it to the table
+
+
+
+  oldString = 'b'    
+
+  newCode = [256]
+
+
+
+our table has the 256 entries 
+
+plus [ 
+
+      {256, 'iw'}, {257, 'wo'}, {258, 'ob'}
+
+     ]  
+
+(enter loop)
+
+  newString = 'iw'
+
+  Output 'iw'               //iw is output
+
+  
+
+  oldString = 'bi'          //build up new String (just the first char from the
+
+                            //new String)
+
+  //                        //and add it to the table
+
+
+
+  oldString = 'iw'    
+
+  newCode = 'o'
+
+
+
+
+
+our table has the 256 entries 
+
+plus [ 
+
+      {256, 'iw'}, {257, 'wo'}, {258, 'ob'}, {259, 'bi'}
+
+     ]  
+
+(enter loop)
+
+  newString = 'o'
+
+  Output 'o'                //o is output
+
+  
+
+  oldString = 'iwo'         //build up new String
+
+  //                        //and add it to the table
+
+
+
+  oldString = 'o'    
+
+  newCode = [260]
+
+  
+
+
+
+our table has the 256 entries 
+
+plus [ 
+
+      {256, 'iw'}, {257, 'wo'}, {258, 'ob'}, {259, 'bi'}, {260, 'iwo'}
+
+     ]  
+
+(enter loop)
+
+  newString = 'iwo'
+
+  Output 'iwo'              //o is output
+
+  
+
+  oldString = 'oi'          //build up new String (just the first char)
+
+  //                        //and add it to the table
+
+
+
+  oldString = 'iwo'    
+
+  newCode = [262]
+
+  
+
+
+
+our table has the 256 entries 
+
+plus [ 
+
+      {256, 'iw'}, {257, 'wo'}, {258, 'ob'}, {259, 'bi'}, {260, 'iwo'}
+
+      {261, 'oi'}
+
+     ]  
+
+(enter loop)
+
+  newString = CRASH !!! CRASH
+
+  
+
+Damn. I knew it. The cruncher added a code and used it immediately and the
+
+decruncher can't use it as it doesn't know how to create it. Or does it???
+
+
+
+Hmmmm....
+
+
+
+Ok, ok, i lied. I knew it all the time that this constellation was deadly for 
+
+our decruncher. This behaviour appears, whenever the cruncher meets a 
+
+constellation like (iwo b iwo iwo iwo) where the last character of a crunch is 
+
+the beginning of the next sequence. This leads to creating table-entries which 
+
+the decruncher can not foresee. But lucky us - this is the only case when this 
+
+happens. A little if-clause will just catch the null-pointer and just fetch the 
+
+oldString and copy it to newString. Then we add the first char of newString to 
+
+the end of newString. Then we continue as always. The if-clause could look like 
+
+this:
+
+
+
+  if (newString == null)
+
+  { 
+
+    char c[2]
+
+    //we still know oldString
+
+    strcpy (newString, oldString)
+
+    char c[0] = newString[0];
+
+    char c[1] = 0x00;
+
+    strcat (newString, c);    
+
+  }
+
+
+
+With this clause let's restart from the last part:
+
+
+
+our table has the 256 entries 
+
+plus [ 
+
+      {256, 'iw'}, {257, 'wo'}, {258, 'ob'}, {259, 'bi'}, {260, 'iwo'}
+
+     ]  
+
+(enter loop)
+
+  newString = 'iwo'
+
+  Output 'iwo'              //o is output
+
+  
+
+  oldString = 'oi'          //build up new String (just the first char)
+
+  //                        //and add it to the table
+
+
+
+  oldString = 'iwo'    newCode = [262]
+
+
+
+
+
+our table has the 256 entries 
+
+plus [ 
+
+      {256, 'iw'}, {257, 'wo'}, {258, 'ob'}, 
+
+      {259, 'bi'}, {260, 'iwo'} {261, 'oi'} 
+
+     ]  
+
+(enter loop) 
+
+  newString = null
+
+  if (newString = null)
+
+  {
+
+    newString = 'iwo'
+
+    newString = 'iwoi'      //First character added again
+
+  }
+
+  Output 'iwoi'             //iwoi is output
+
+  
+
+  oldString = 'iwoi'        //build up new String (just the first char)
+
+  //                        //and add it to the table
+
+...
+
+and then we have our entry 262.
+
+
+
+Phew.
+
+
+
+You see when you try this on your own, that there is a lot of room for 
+
+improvement. 
+
+But this is the basic algorithm and as now know the secrets of LZW you know 
+
+what RAR and ZIP are doing. I have some sources i can mail you, if you want.
+
+
+
+
+
+All right, next time i'll explain something related to Huffman - 
+
+
+
+                The Arithmetic Crunching Method (tataaa... :-)
+
+                (how can i crunch 0.74 bits ???)
+
+
+
+
+
+Greetings from a programmer,
+
+
+
+Joa
+
+
+
+</PRE>
+
+<CENTER>
+
+<HR size=3><A href="mailto:JoKo2000@hotmail.com">
+
+<IMG SRC="tellme.gif" tppabs="http://www.anticrack.de/fravia/tellme.gif" width="140" height="21"></A>
+
+<BR><BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links</A> 
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm"> anonymity</A> 
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC</A> 
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays</A> 
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database</A>
+
+ <BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="coumes.htm" tppabs="http://www.anticrack.de/fravia/coumes.htm">counter measures</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="botstart.htm" tppabs="http://www.anticrack.de/fravia/botstart.htm">bots wars</A> 
+
+ 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia</A>
+
+<BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering legal?</A>
+
+</CENTER></CENTER>
+
+<HR SIZE=2>
+
+
+
+</BODY>
+
+</HTML>
+
+
+

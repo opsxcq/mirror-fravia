@@ -1,0 +1,646 @@
+<html><HEAD>
+
+<TITLE>filemon5</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+<CENTER><FONT size="+3">How to reverse engineer a Windows 95 target<BR>
+
+(filemon)<BR></FONT>
+
+<FONT size="+2">
+
+REVERSE ENGINEERING EXERCISES FOR THE MASSES - (2e)</FONT><BR>
+
+Version 0.01<BR>
+
+
+
+<BR>
+
+<FONT Size="+2">by fravia+ (MSRE), 1997<BR><BR>
+
+<IMG SRC="hcu1.gif" tppabs="http://www.anticrack.de/fravia/hcu1.gif" ALT="HCU" ALIGN="BOTTOM" WIDTH="114" HEIGHT="43" BORDER="0" VSPACE="0" HSPACE="0">
+
+<BR>Part E: <FONT color="purple"> VXD vagaries and mysteries </FONT> - 01 September 1997</FONT>
+
+
+
+<HR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">
+
+Courtesy of Fravia's page of reverse engineering<BR>
+
+<HR>
+
+<BR>
+
+<FONT size="+1"><I>Well, a very interesting essay... I wrote it myself! :-) 
+
+This essay will be divided in 
+
+five (or more) parts:</I><PRE>
+
+ A = Introduction to filemon
+
+B = reverse engineering without source code 
+
+C = Filemon reversed 
+
+D = Back to Main
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><U><B>E = VXD vagaries and mysteries</B></U>
+
+</PRE><I>
+
+Although already disponible, this essay is still under construction
+
+and will be modified and ameliorated until the wording below will disappear (I reckon 
+
+until mid-October)</I></FONT>
+
+<BR><BR><FONT size="+3"><FONT color="magenta">UNDER CONSTRUCTION</FONT></FONT><BR>
+
+</CENTER>
+
+<HR size="2">
+
+<CENTER>
+
+<FONT size="+2">
+
+REVERSE ENGINEERING EXERCISES FOR THE MASSES - (2e)<BR>
+
+</FONT><FONT size="+1">
+
+How to reverse engineer a Windows 95 program: filemon<BR>~<BR><FONT><FONT size="+1"><U>Part E: VxD vagaries and mysteries </U><BR><BR>
+
+(c) Fravia (MSRE), 1997. All rights reversed<BR><BR><FONT size="-1">Print as html document, else use courier 8</FONT></CENTER>
+
+</FONT><HR>
+
+<BR>
+
+<B>VxDs or the &quot;black art&quot; in Windows</B><BR>
+
+	Well, notwithstanding the banner &quot;Under construction&quot; above, many of you have emailed me asking where did remain this fifth part of my filemon tutorial (the one about VxD reverse engineering). A first explanation of the delay can be condensed in this short sentence:  <FONT color="blue"><U>VxD reverse engineering is difficult because VxD programming seems to have been a sort of &quot;black art&quot;, reserved to few &quot;afecionados&quot;</U>...</FONT> remember that back in the times of Windows 3.0. you where not even ALLOWED to program VxD unless you where Micro$oft certified... I'm not jocking... Micro$oft always loved to keep knowledge of its Oss &quot;guts&quot; half secret...<BR>
+
+	Let's start from the beginning... it's all a question of <U>hooks</U> by the way... remember the good old DOS hooks? You intercepted some interrupts (hooked them) and wrote your routines. The intercepted pointers pointed to your code, which executed and, at the end, returned control to the &quot;correct&quot; interrupt... many protections (and many viruses) where based on this hooking, have a look at +ORC's (very old) example for UniversalMilitarySimulator_I or at any disassembled virus of the early '90 and you'll immediately see what I mean.<BR> 
+
+	Well, the new hooks for Windows 95 have been placed at the <U>lowest</U> level possible: the virtual device (VxD) level... and this gives programmers (and reverse engineers :-) quite a lot of input and output control, as you will see.<BR>
+
+ (Please don't take all too seriously my jokes -in this part of the tutorial- about &quot;white&quot; VxD reversing and &quot;black&quot; VxD writing)<BR> 
+
+<BR>
+
+<B>VMM_ Get_System_Time_Address... an idea for a very tough protection</B><BR>
+
+BTW, a side product of this VxD hooking is the possibility of writing VERY TOUGH protections (shareware programmers, are you reading this?). I'm not aware that somebody has used until now the following trick (that we'll deeply examine in this part of my tutorial): There is a VMM (Virtual Machine Manager) service Get_System_Time_Address, which returns a pointer to a memory location where Windows keeps track of the number of milliseconds since Windows booted. Accessing this location directly avoids the overhead of calling a service like Get_System_Time.<BR> Btw, as you will see examining the VMM.vxd (see below HOW to do it and wich tools to use), there are many other interesting services, like for instance the following two:<PRE>1003F @ 00002970 Get_System_Time 
+
+100CF @ 00002976 Get_Last_Updated_System_Time</PRE>
+
+<B>History: mother of all reverse engineers</B><BR>
+
+	How did I tackle the task of reverse engineering the VxD in filemon, once I noticed that it was quite complicated for me to reverse engineer? Simple: I did a RESEARCH. See, Mark Russinovich and Bryce Cogswell have not pulled filemon out of an empty hat... they must have worked on similar projects before, and it was probable that they had implemented their first VxD &quot;essays&quot; in a much easier way. If you know how to search the web, the rest is easy (and if you don't know how to search effectively the web, just leave this cracking stuff alone for a while and go learn &quot;searching&quot;, come back when you are finished).<BR>
+
+	On Dr Dobb's Journal, issue 245, March 1996,<CENTER> 
+
+<A href="javascript:if(confirm('http://www.ddj.com/  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.ddj.com/'" tppabs="http://www.ddj.com/">http://www.ddj.com</A></CENTER>
+
+there is an interesting article by Mark Russinovich and Bryce Cogswell: Windows 95 journaling and playback, which is useful to understand how VxDs are implemented and, even better given our reverse engineering target, how the same Mark Russinovich and Bryce Cogswell use to implement them. I'll use a lot of the code and of the text of that article in this part of my tutorial... I believe that it is worth reading.<BR>Basically the point was to underline the difference in &quot;hooking&quot; between Windows 3.1. and Windows 95, using a &quot;recorder&quot; program, like the one inside the main utility group of Windows 3.1., which disappeared in windows 95 (Mark Russinovich and Bryce Cogswell give the code for a Windows 95 recorder in that same article).<BR>
+
+<BR>
+
+<B>Old hooking, new hooking</B><BR>
+
+Windows 3.1. hooks worked at the APPLICATION-MESSAGE level, like most of our patches when we de-protect, btw, and have been carried forward inside Windows 95, generally unchanged (although Micro$oft no longer provides a recorder program). <BR>
+
+	While these hooks are sufficient for many applications, they have significant shortcomings, for example they do not &quot;journal&quot; keyboard input going into DOS windows, or input going into a DOS full-screen session (many games). Another problem is that the old hooks force all input coming from the mouse and keyboard to be funneled into a journaling program for it to save, before being passed on to the target application. The inverse happens in playback (remember that we are speaking here of a &quot;recorder&quot; program), with Windows asking the journaler for input to simulate.<BR>
+
+	Windows 95 has a decentralized input scheme: Windows 95 feeds input directly to the INPUT QUEUE of applications. It is therefore no more necessary that a windows program participate ACTIVELY in the journaling process, with the consequence of a performance degrading in Windows 3.1., because these programs had to &quot;wake up&quot; at every mouse or keyboard input, using up cycles that other programs might have needed (so Windows 95 <U>is</U> sort of an &quot;improvement&quot;, after all :-)<BR>
+
+	Since the new hooks have NO windows application-level API, they are inaccessible to most developers, which is exactly what Micro$oft likes: &quot;toy applications for the stupid slaves and rentable programs &quot;that sell&quot; for Micro$oft's  so called &quot;programmers&quot;.<BR>
+
+	But let's be clear: the new VxD hooking techniques are only an amelioration (history &quot;docet&quot;, as always) of the old<FONT color="purple"><PRE>
+
+SetWindowsHookEx(idHook, hkprc, hinst, htask) procedure,
+
+int idHook;                      /* type of hook to install	*/
+
+HOOKPROC hkprc;                  /* procedure-instance address of filter function	*/
+
+HINSTANCE hinst;                 /* handle of application instance	*/
+
+HTASK htask;                     /* task to install the hook for	*/
+
+
+
+The SetWindowsHookEx function installs an application-defined hook function into 
+
+a hook chain. This function is an extended version of the older SetWindowsHook
+
+function, which in turn derived from the Windows 3.0 DefHookProc function, which 
+
+calls the next function in a chain of hook functions. A hook function is a 
+
+function that processes events before they are sent to an application's 
+
+message-processing loop in the WinMain function. When an application defines 
+
+more than one hook function by using the SetWindowsHook function, Windows 
+
+forms a linked list or hook chain. Windows places functions of the same 
+
+type in a chain</PRE></FONT>As you can see... we are just following the development of our good old DOS interrupt hooks. Back to the &quot;new&quot; VxD hooking...<BR>
+
+<BR>
+
+<B>Keyboard hooks and mouse hooks</B><BR>
+
+	Two different separate hooks, for the mouse and for the keyboard are necessary since SEPARATE VxDs deal with each type of input. Both VxDs have a VxD level API, allowing other VxDs to request to see inputs as they are received BY THE SYSTEM, as well as to generate simulated input from a device.<BR>
+
+	One year before our target filemon and its companion regmon, Mark Russinovich and Bryce Cogswell have developed &quot;recorder&quot;, a macro recorder application, which consists of a Windows 95 32-bit GUI as user interface and a VxD that serves as the recording and playback controller... you see that the layout of all their programs, past and present (and probably future) is always the same... history matters a lot in our trade, as +ORC teach us. You'll find the source code (complete with the very nice notice &quot;<I>You have the right to take this code and use it in whatever  way you wish</I>&quot;, which in our case is not really necessary, since that is exactly what we usually do anyway with all the programs we put our hands on :-) at Dr Dobb's, an American pretty expensive magazine &quot;for real programmers&quot; that publishes at times well written articles, many of them about &quot;minor&quot; languages. Unfortunately the articles ARE NOT on-line (as usual there is a &quot;commercial&quot; catch somewhere), yet the source code is. Have a look at <A href="javascript:if(confirm('http://www.ddj.com/  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.ddj.com/'" tppabs="http://www.ddj.com/">http://www.ddj.com</A>, and fetch &quot;March 1996&quot; source code, you'll find record.zip... btw you'll find a LOT of interesting code peeking around there.<BR>
+
+<BR>
+
+<B>How does recorder record?</B><BR>
+
+	Let's see how Recorder VxD simulates input from the mouse and the keyboard... I know, I know, your brain is still full of filemon's code, and now fravia takes you on a boat ride on ANOTHER, completely different target. But you want to understand VxDs  don't you? And you would like to reverse engineer them as much as I do, don't you? Therefore shut up and follow me, you'll be eventually rewarded.<BR>
+
+	Mark Russinovich and Bryce Cogswell's recorder sees system input via &quot;service hooking&quot;, an obscure feature of the Windows VxD architecture that let's you see JUST ABOUT EVERYTHING GOING ON INSIDE THE GUTS OF WINDOWS and gives you the control to completely change its behavior.<BR>
+
+	Just like old DOS interrupt hooking, once  a service is hooked, any VxD or application calling the service <U>gets redirected</U> to the hooker VxD first. So your hooking VxD takes control: you can choose to pass the request on to the next VxD of the chain, CHANGE THE PARAMETERS to the request and pass the same request on &quot;MAGICALLY ALTERED&quot;, or service the request itself yourself... yes, yes, your +cracker brain begins now to perceive the huge power that this can give us (and not only in reverse engineering and patching targets... future windows virii writers, are you reading this? :-)<BR>
+
+<BR>
+
+<B>How do I hook VxDs, man?</B><BR>
+
+	Well, I'm not going to transform you in Micro$oft's programmers with my tutorial, VxD programming needs the SDK, so they say to trap you in... that's the dark path +ORC warned us about, my readers, from there you would never come back... 
+
+	Yet I hope, through some simple tools, to impart you the ability to reverse engineer most VxDs WITHOUT much knowledge of Windoze's programming techniques... you'll be able to do it in name of the &quot;white magical power&quot; conferred to us by our superior assembly understanding... just follow on, at the end it will be indeed wizards against wizards.
+
+	To make hooking VxD services possible, each VxD has a memory location assigned for each of its services that points to the top of a hook chain. When a new hooker is &quot;registered&quot; for a service, the appropriate address is modified in order to point to the NEW hook routine.<BR>
+
+	The hook routine itself must be declared as a Hook_Proc in its assembly language declaration like this:<PRE>BeginProc Hook_routine
+
+                 Hook_Proc Chain_Save</PRE>
+
+Chain_Save is a double word variable that YOU assign, and to which Hook_Device_Service stores the PREVIOUS top of the hook chain. The Hook_Proc tag causes the code in this example to appear at the START of the procedure:<FONT color="purple"><PRE>
+
+jmp Hook_routine       ;skip over the book-keeping info
+
+jmp Chain_Save         ;bogus code, its just here to point windows at
+
+                       ;the variable storing the previous service address
+
+dd 0                   ;not used
+
+Hook_routine:          ;your home made hooking routine is here</PRE></FONT>
+
+So the above code appears every time you use the Hook_Proc tag.<BR>
+
+	When a hook is removed from the chain, the link to the next service in the chain is obtained from the Chain_Save location above, making hooking and unhooking transparent to the VxD programmer. The Chain_Save variable can also be used by the hooking routine to chain to the previous hooker if it wants to pass the request (modified or &quot;pure&quot;) on.<BR>
+
+	Mark Russinovich and Bryce Cogswell's recorder must hook the <U>V</U>irtual <U>K</U>eyboard <U>D</U>river VxD service <FONT color="red">D0012 @ 00000E00 VKD_Filter_Keyboard_Input</FONT> (we'll see very soon how to get these VxDs disassembled and how to get these data out of them :-). This service is called by the VKD itself (VKD.vxd) upon keyboard input. The service was written with the sole intention that some other VxD would hook it to record, and possibly alter, keyboard input. Let's have a look at the VKD call to the service and to the service itself:<FONT color="purple"><PRE>
+
+<B>ONE</B>
+
+...
+
+; VKD calls its own service with input
+
+mov		cl, scancode                ;scancode is the keyboard input
+
+VxDCall  	VKD_Filter_Keyboard_Input   ;call the service
+
+jc		noinput                     ;if carry set kill the input
+
+...</PRE></FONT>
+
+And this is the disassembly (wdasm89) from VKD.vxd: <FONT color="purple"><PRE>
+
+:00000E00 F8                      clc      ;clear carry flag
+
+:00000E01 C3                      ret      ;ret</PRE></FONT>
+
+Note that we are at :E00, would you have been interested in<PRE>
+
+D0001 @ 0000416B VKD_Define_Hot_Key</PRE>
+
+Then you would have had this code snippet: <FONT color="purple"><PRE>
+
+:0000416B 51                      push ecx
+
+:0000416C 57                      push edi
+
+:0000416D 33FF                    xor edi, edi
+
+:0000416F F6C180                  test cl, 80
+
+:00004172 741A                    je 0000418E
+
+:00004174 80E17F                  and cl, 7F
+
+:00004177 0FBC3D4D120000          bsf edi, dword ptr [0000124D]
+
+:0000417E 740B                    je 0000418B
+
+:00004180 0FB33D4D120000          btr dword ptr [0000124D], edi
+
+:00004187 73EE                    jnb 00004177
+
+:00004189 EB03                    jmp 0000418E
+
+...</PRE></FONT>
+
+Have a little patience, please, you'll soon learn how to reverse engineer VxD code WITHOUT any Micro$oft SDK... let's go on to the second interesting listing from our &quot;historical&quot; target record... <FONT color="purple"><PRE>
+
+<B>TWO</B>
+
+; default filter service
+
+BeginProc		VKD_Filter_Keyboard_Input
+
+
+
+GetVxDServiceOrdinal 	eax, VKD_Filter_Keyboard_Input ;get the ID of the filter service
+
+mov esi, offset 32	Record_keyboard                ;address of our hook routine
+
+VMM Call 	Hook_Device_Service                    ;hook
+
+mov		Keyboard_Proc, esi                     ;save previous hook
+
+
+
+<B>THREE</B>
+
+;=============================================================
+
+; Record_Keyboard - Records keyboard input into the input buffer.
+
+; Entry: CL - Scancode of key pressed.
+
+;==============================================================
+
+Public Record_Keyboard
+
+BeginProc Record_Keyboard, Hook_Proc Keyboard_Proc
+
+	push	eax
+
+	push	ebx
+
+; record the input
+
+	mov	ebx, Buffer_ptr
+
+	cmp	ebx, offset32 Buffer + BUFFER_SIZE - sizeof REC_mouse_entry
+
+	jae	rk_done
+
+	mov	[ebx].rectype, KEYBDTYPE
+
+	mov	[ebx].scancode, cl		; scancode is in cl
+
+	push	eax
+
+	mov	eax, System_Time
+
+	mov     eax, [eax]			; get the timestamp
+
+	mov	[ebx].timestamp, eax
+
+	pop	eax
+
+	add	ebx, sizeof REC_kbd_entry	; move forward in buffer
+
+	mov	Buffer_ptr, ebx
+
+	mov	[ebx].rectype, INVALIDTYPE	; mark end of macro
+
+; call the previous hooker
+
+rk_done:
+
+	call	Keyboard_Proc
+
+	pop	ebx
+
+	pop	eax
+
+	clc					; let the key through
+
+	ret
+
+EndProc Record_Keyboard</PRE></FONT>
+
+We'll later examine more deeply the above code, for the moment just get a &quot;feeling&quot; for this stuff. Let's go on.<BR>
+
+	To alter input, a hooking VxD simply changes here the value of the CL register to a new scancode, to kill input, the hooking routine sets the <U>carry</U> flag before it returns. The recorder VxD hook procedure saves the value of the CL register (and the current time) into a buffer. Listing TWO, above, hooks the service, while listing THREE, above, is a keyboard-recording routine (that you may also find useful for incorporating in your own probes... in order to trap keyboard input... should you ever need to do something like that :-)<BR>
+
+<BR>
+
+<B>Some VMM32.VXD snooping</B><BR>
+
+Have a look at your Windows/system directory... you'll see there vmm32.vxd, an 807.975 bytes long VxDs &quot;collection&quot;, let's have a look at it, we want to examine the VKD, don't we. Hay! This is a compressed and encrypted file! Oh poor crackers! Will they not even be able to get a sound dead listing out of it?<BR>Yes, we will! Good old +ORC did teach us how to get at the VxDs, didn't he? So let's follow +his instructions and then we will be able to have a look at Micro$oft hidden and encrypted VKD.vxd (please don't confuse <FONT color="blue">VKD</FONT>, virtual keyboard driver, with <FONT color="blue">VxD</FONT>, virtual Device driver :-). Let's recall +ORC's words:<FONT color="purple">
+
+<PRE>...and you'll need a special tool to extract Windows Virtual Device Drivers
+
+(VxDs) from W3 (WIN386.EXE) &amp; W4 (VMM32.VXD) format archive files. 
+
+You see... inside these archives dwell all the virtual devices drivers currently
+
+used by your machine, which have been (as usual) purposely HIDDEN there by 
+
+Micro$oft... but I'll explain you how to fetch them using a couple of tools that have
+
+been written by a man I have met some years ago, a master of executable 
+
+unpacking...</PRE></FONT>
+
+Well, since the very first tool to use is the vxdlib extractor, in our case, searching for VKD.vxd,  just do the following:<PRE>
+
+1) get VXDLIB v.1.01                         ;get <A href="javascript:if(confirm('http://129.105.116.5/fravia/vxdlib.zip  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://129.105.116.5/fravia/vxdlib.zip'" tppabs="http://129.105.116.5/fravia/vxdlib.zip">vxdlib.zip</A>
+
+2) c:\windows\system\VXDLIB -u vmm32.vxd     ;unpack this vxd huge archive
+
+3) c:\windows\system\VXDLIB -l vmm32.vxd     ;gives you 45 total VxDs
+
+4) c:\windows\system\VXDLIB -u vmm32.vxd VKD ;extract your target VKD
+
+result -&gt;   VKD.vxd 001EB000 001F7000 0000C000</PRE>
+
+   and you'll get the file VKD.vxd, 49280 (0xC080) bytes, inside your windows/system directory, use W3map to have a look at this VxD, or, even better, just disassemble it (now) with wdasm89, you'll notice the many &quot;objects&quot; (LCOD, MCOD, VMCR... etc) inside it... Another (quicker) possibility is to use another fine utility: <A href="javascript:if(confirm('http://fravia.org/dumplx.zip  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/dumplx.zip'" tppabs="http://fravia.org/dumplx.zip">dumplx.zip</A>, by Clive Turvey, the same Author of  vxdlib.exe. Btw, Clive Turvey is the &quot;successor&quot; of Andrew Schulman at the &quot;Windows Source&quot; project (Version three and following versions)... so the tools that +ORC has pointed out for us have been made by the &quot;top gurus&quot; of this planet.<BR><BR>
+
+If you do, you'll see at the bottom the following very interesting &quot;DDB&quot; table:<PRE>
+
+DDB Service Table
+
+
+
+	   D0000 @ 00004164 VKD_Get_Version
+
+	   D0001 @ 0000416B VKD_Define_Hot_Key
+
+	   D0002 @ 000041EA VKD_Remove_Hot_Key
+
+	   D0003 @ 0000422E VKD_Local_Enable_Hot_Key
+
+	   D0004 @ 00004245 VKD_Local_Disable_Hot_Key
+
+	   D0005 @ 0000425C VKD_Reflect_Hot_Key
+
+	   D0006 @ 0000429E VKD_Cancel_Hot_Key_State
+
+	   D0007 @ 000000DA VKD_Force_Keys
+
+	   D0008 @ 00000124 VKD_Get_Kbd_Owner
+
+	   D0009 @ 00006000 VKD_Define_Paste_Mode
+
+	   D000A @ 00006019 VKD_Start_Paste
+
+	   D000B @ 000060B8 VKD_Cancel_Paste
+
+	   D000C @ 0000012B VKD_Get_Msg_Key
+
+	   D000D @ 00000158 VKD_Peek_Msg_Key
+
+	   D000E @ 00000180 VKD_Flush_Msg_Key_Queue
+
+	   D000F @ 0000403C VKD_Enable_Keyboard
+
+	   D0010 @ 00004000 VKD_Disable_KeyBoard
+
+	   D0011 @ 0000005C VKD_Get_Shift_State
+
+	   D0012 @ 00000E00 VKD_Filter_Keyboard_Input
+
+	   D0013 @ 00000F79 VKD_Put_Byte
+
+	   D0014 @ 00000068 VKD_Set_Shift_State</PRE>
+
+
+
+Here the comment by Clive Turvey:<PRE>
+
+    Windows does not use imports but instead uses INT 20h dynamic
+
+    links that are fixed up on the fly. In assembler these calls are in
+
+    the form VMMCall, VMMJmp, VxDCall &amp; VxDJmp. Windows only exports a
+
+    single pointer to the DDB a device driver header, this header contains
+
+    function exports that other VxDs can call with the dynamic linking
+
+    described above. When known the name associated with a dynamic function
+
+    number is displayed (by dumplx.exe)</PRE>
+
+ 
+
+Yes, we begin to understand... we are now almost ready to begin our holy VxDs reversing... let's see if we really have all the necessary weapons...<BR>
+
+<BR>
+
+<B>VxD reversing &quot;white&quot; tools (as alternative to the &quot;black&quot; SDK suite :-)</B><BR>
+
+Let's resume the VERY important tools that you'll need on your VxDs endeavour:<BR>
+
+The <FONT color="blue">vxdlib.exe</FONT> unpacker/extractor (otherwise there is no &quot;dead listing&quot; of Micro$oft's VxDs)<BR>
+
+The <FONT color="blue">dumplx.exe</FONT> dumper (otherwise you won't get the DDB service table)<BR>
+
+<A href="javascript:if(confirm('http://129.105.116.5/fravia/vxdmon.zip  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://129.105.116.5/fravia/vxdmon.zip'" tppabs="http://129.105.116.5/fravia/vxdmon.zip">vxdmon.zip</A> (60.260 bytes) by &quot;our&quot; duo: Mark Russinovich and Bryce Cogswell another important tool to study &quot;alive&quot; the working of VxDs<BR>
+
+Obviously there is a <FONT color="blue">SoftIce</FONT> approach as well (SoftIce has <U>everything</U>)...<BR>
+
+<FONT color="purple">VXD</FONT>	This command displays the VxD map in the command window, you may use the VxD names to set breakpoints at the entry points of the VxD service routines you are interested in (you may also use VXD WINICE to see Softice own VxD :-)<BR>
+
+<BR>
+
+<FONT color="purple">VCALL</FONT> display the names and addresses of VxD callable routines (note that the addresses displayed are NOT valid until the VMM VxD has been initialized. Here an example:<PRE>VCALL Call*<BR><BR>
+
+<FONT color="purple">VM</FONT> Displays information on virtual machines, if you specify a VM-ID parameter, then the register values of this VxD are displayed (may be unvalid, study the VM instructions). VM is the command you'll most use when you crack VxD, DPMI applications and DOS programs running in VMs.</PRE>
+
+
+
+
+
+
+
+<PRE>
+
+
+
+
+
+
+
+
+
+</PRE>
+
+<HR size="7">
+
+<B>TO BE CONTINUED</B><BR>
+
+I showed you two examples above. Now let's see how register's code calls these services: (you'll find the code inside the file &quot;record.asm&quot; For instance this snippet, that we have already seen above:<PRE>
+
+; first hook the keyboard input
+
+
+
+	GetVxDServiceOrdinal eax, VKD_Filter_Keyboard_Input
+
+	mov	esi, offset32 Record_Keyboard
+
+	VMMCall	Hook_Device_Service
+
+	jnc	installmouse</PRE>
+
+Now do the following:<BR>
+
+1) Disassemble record.vxd with wdasm89 and save the *.asm file<BR>
+
+2) dumplx record.vxd and look at the DBB entry:<PRE>
+
+DDB Entry
+
+
+
+	00000000 DDB_Next
+
+	0400     DDB_SDK_Version
+
+	0000     DDB_Req_Device_Number
+
+	 1.00    DDB_Device_Version
+
+	0000     DDB_Flags
+
+	RECORD   DDB_Name
+
+	80000000 DDB_Init_Order
+
+	00002080 DDB_Control_Proc
+
+	00000000 DDB_V86_API_Proc
+
+	00000000 DDB_PM_API_Proc
+
+	00000000 DDB_V86_API_CSIP
+
+	00000000 DDB_PM_API_CSIP
+
+	00000000 DDB_Reference_Data
+
+	00000000 DDB_Service_Table_Ptr
+
+	00000000 DDB_Service_Table_Size
+
+	00000000 DDB_Win32_Service_Table_Ptr
+
+	50726576 DDB_Prev
+
+	00000050 DDB_Size
+
+	52737631 DDB_Reserved1
+
+	52737631 DDB_Reserved2
+
+	52737631 DDB_Reserved3</PRE>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<HR>
+
+<FONT color="blue">(c) fravia+ 1997.</FONT> All rights reserved.
+
+   </PRE>
+
+
+
+<HR ALIGN="CENTER" WIDTH="100%" SIZE="3">
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</I><BR><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A href="filemon1.htm" tppabs="http://www.anticrack.de/fravia/filemon1.htm">filemon1</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A href="filemon2.htm" tppabs="http://www.anticrack.de/fravia/filemon2.htm">filemon2</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A href="filemon3.htm" tppabs="http://www.anticrack.de/fravia/filemon3.htm">filemon3</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A href="filemon4.htm" tppabs="http://www.anticrack.de/fravia/filemon4.htm">filemon4</A>
+
+
+
+<BR><BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"> 
+
+<A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links </A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0">
+
+<A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity </A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays </A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails </A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia </A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">is reverse engineering legal? </A></CENTER>
+
+<CENTER><HR ALIGN="CENTER" WIDTH="100%" SIZE="2"></CENTER>
+
+
+
+</BODY>
+
+</HTML>
+

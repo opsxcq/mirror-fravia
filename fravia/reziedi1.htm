@@ -1,0 +1,558 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>reziedi1</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+<CENTER><FONT size="+3">Reverse Engineering UltraEdit-32 4.40a<BR></FONT><FONT size="+2">
+
+(Cracking  &quot;blacklisted&quot; Hex/Text Editors)</FONT>
+
+
+
+<H4>by ReZiDeNt<BR>
+
+<BR>
+
+(22 August 1997)</H4>
+
+<HR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">Courtesy of fravia's page 
+
+of reverse engineering<BR><BR><I>Well, ReZiDeNt crack is NOT just 
+
+the same of Aesculapius' one, it could on the countrary, I believe, 
+
+be quite interesting for our readers to compare and use both sessions 
+
+in their own Ultraedit session. Our &quot;science&quot; is still in an embryonale 
+
+phase, and I believe that a well reversed target (and the more people 
+
+work with different or slightly different approaches on a target the 
+
+better this target will be reversed) can go quite a long way in letting 
+
+readers understand the deep &quot;black&quot; power that a reverse engineer can acquire.</I>
+
+</CENTER><HR size="7"><PRE><CENTER><FONT size="+3">
+
+Reverse Engineering UltraEdit-32 4.40a
+
+by ReZiDeNt
+
+</FONT><FONT size="+2">
+
+Cracking  &quot;blacklisted&quot; Hex/Text Editors</FONT></CENTER>
+
+
+
+<B>NOTE</B>: I know I'm not the only one to have cracked this - <A href="ueditcrk.htm" tppabs="http://www.anticrack.de/fravia/ueditcrk.htm">Aesculapius</A>  
+
+(hi!) and others have also done the same - but I saw there was a new 
+
++HCU section on hex editors, so I thought I'd contribute and hope it helps 
+
+someone anyway...
+
+
+
+<B>Tools needed:</B>
+
+
+
+SoftICE 3 for Windows 95
+
+W32Dasm (I used 8.9, but any version should do)
+
+A hex editor (eg UltraEdit itself :-)
+
+
+
+
+
+UltraEdit is a very useful text/hex editor with a variety of nice  features
+
+(eg syntax highlighting, macros, spell checking etc). It's  particularly
+
+useful when searching large text files (much faster than any commercial 
+
+and bloated word processor) such as dead listings, and can also be used 
+
+to patch your target on the fly!
+
+
+
+UltraEdit-32 4.40a (the versions are constantly changing) may be 
+
+downloaded from: <A href="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#77 tppabs='" tppabs="http://fravia.org/tppmsgs/msgs0.htm#77 tppabs=" http://www.idmcomp.co/"m">http://www.idmcomp.com</A> 
+
+or <A href="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#78 tppabs='" tppabs="http://fravia.org/tppmsgs/msgs0.htm#78 tppabs=" http://www.ultraedit.co/"m"> http://www.ultraedit.com</A>
+
+
+
+I've been using various versions of UltraEdit for quite a while now, 
+
+and I have cracked earlier versions using a number of different approaches. 
+
+Fravia has written one very interesting <A href="ultrae2.htm" tppabs="http://www.anticrack.de/fravia/ultrae2.htm">essay</A> on using Borland's Resource 
+
+Workshop as a cracking tool, in which he shows how to crack a version of 
+
+UltraEdit using only the BRW. Anyway, the other day I downloaded the latest 
+
+version of UltraEdit (4.40a) and installed it. I had rather foolishly lost all 
+
+my cracking notes relating to the previous versions of UltraEdit, so in 
+
+order to crack it I would have to start from a 'clean slate'. The 
+
+install progr informs you that the serial codes used in the last version of 
+
+UltraEdit are no longer valid, and that you'll have to contact the distributor to 
+
+get an updated serial number. This meant that grabbing any old serial off 
+
+the Internet would not have worked (as if I would entertain such a lame idea in the 
+
+first place).
+
+
+
+So to work. First of all I tried to take a look at the target with 
+
+the BRW. This ingenious program can often reveal to you many hidden 
+
+surprises concealed within modern 'bloatware'. But arrgghhh! It does not work :-( 
+
+The BRW informs us that it has encountered an unknown file format - so 
+
+we're going to have to crack this properly.
+
+
+
+Before attempting to crack a target, it is *essential* that you apply a
+
+little 'Zen' (courtesy of +ORC), and *think* about how the protection scheme
+
+must work. Observe the target in action, read the docs and help files
+
+carefully, and try out the registration options, making a note of the
+
+messages you get (eg 'Invalid code' etc). In the case of UltraEdit, upon
+
+starting the program, we are shown a a delayed nag screen which is shown
+
+while UltraEdit loads and for a few more seconds thereafter. 
+
+This nag screen tells us the number of days left within our 45-day evaluation 
+
+period, and offers us the chance to input a registration code. If you choose to 
+
+input a registration code you will find that, rather unusually, a message box 
+
+is displayed telling us that UltraEdit will need to be restarted in order to
+
+validate the code. If you look in the UltraEdit directory, you will very
+
+quickly see that there is a file named 'UEDIT32.REG', which contains 
+
+the name and number you input, eg:
+
+
+
+[UserID]
+
+User Name=ReZiDeNt
+
+User Code=1212121212121212
+
+
+
+So we can deduce that UltraEdit reads the name/code combination from the
+
+'UEDIT32.REG' file at startup (use the excellent 'FileMon' utility if  you
+
+want to make certain of this) - it then checks the code and if it is 
+
+invalid, the 45-day time limit nag is shown.
+
+
+
+Now, when I first got this program I was in such a hurry to use it that I
+
+didn't bother to investigate it properly; I simply set a breakpoint on
+
+GetLocalTime and started from there, cracking the 45-day time 
+
+limitation. But later when I had more time I realised that this was a 
+
+sorry state of affairs, I simply had to crack it properly and/or 
+
+generate a working name and code combination. So I disassembled it 
+
+using W32Dasm, and took a look at the String Data References. Well, 
+
+well, what do we see? If you look down right toward the end of the 
+
+list of string references you will come across quite a few strings 
+
+that look like user names (eg 'tHATDUDE', 'Kermu!' etc) and one that 
+
+looks very much like a code ('X(wL13G+zW,d9r&amp;A')! This program
+
+seems to incorporate yet another <FONT color="red">'black list'</FONT> protection scheme, 
+
+whereby the handles of well-known crackers (such as 'tHATDUDE') and 
+
+widely-distributed serial numbers are 'black listed'. If you enter 
+
+'tHATDUDE' as your user name, or 'X(wL13G+zW,d9r&amp;A' as your serial 
+
+number, you will find that upon restarting UltraEdit, 25 days have 
+
+been subtracted from your trial period...
+
+
+
+Anyway, back to the crack...searching through the disassembled listing for
+
+strings such as 'Thank you for supporting Shareware' or 'UltraEdit 45 Day
+
+Evaluation time expired!!!!' doesn't work, as you'll find hundreds of
+
+possible references. To do this crack we need to locate where 
+
+UltraEdit reads the name/code combination from the 'UEDIT32.REG' 
+
+file. The following function is used by UltraEdit to retrieve the name
+
+and code:
+
+
+
+
+
+/*
+
+GetPrivateProfileString
+
+
+
+The GetPrivateProfileString function retrieves a string from the specified
+
+section in an initialization file. This function is provided for
+
+compatibility with 16-bit Windows-based applications. Win32-based
+
+applications should store initialization information in the registry jungle.
+
+
+
+DWORD GetPrivateProfileString(
+
+
+
+    LPCTSTR lpAppName,	// points to section name
+
+    LPCTSTR lpKeyName,	// points to key name
+
+    LPCTSTR lpDefault,	// points to default string
+
+    LPTSTR lpReturnedString,	// points to destination buffer
+
+    DWORD nSize,        // size of destination buffer
+
+    LPCTSTR lpFileName 	// points to initialization filename
+
+   );	
+
+
+
+*/
+
+
+
+OK, so we set a breakpoint on GetPrivateProfileStringA ('bpx
+
+GetPrivateProfileStringA') and run UltraEdit. SoftICE will break and 
+
+you should see the following
+
+
+
+* Reference To: KERNEL32.GetPrivateProfileStringA, Ord:0112h
+
+                                  |
+
+:00405CA6 FF150C0C4A00  Call dword ptr [004A0C0C]
+
+:00405CAC 8D862A020000  lea eax, dword ptr [esi+22A] ;load username address into eax
+
+
+
+Type 'db eax' to see the user name you entered. Now set a breakpoint 
+
+on the memory location where the name is stored (we want to try and 
+
+see how/where it is manipulated/compared):
+
+
+
+bpm eax
+
+
+
+Now remove the breakpoint on GetPrivateProfileStringA and let 
+
+UltraEdit run. SoftICE will snap *three* times - each of these 
+
+three times the name is being manipulated and copied etc. 
+
+IGNORE these for now and wait until the *fourth* (and final) 
+
+time SoftICE snaps. 
+
+Now press 'P RET' to get back to the code that called this 
+
+routine. You'll see the following:
+
+
+
+:00405697 E8D4900300   call 0043E770 ; this is where SoftICE snaps
+
+:0040569C 59           pop ecx
+
+:0040569D 85C0         test eax, eax
+
+:0040569F 59           pop ecx
+
+:004056A0 7520         jne 004056C2 ; jumps from here...
+
+
+
+* Referenced by a Jump at Address:004056A0(C)
+
+|
+
+:004056C2 85DB          test ebx, ebx ; to here!
+
+:004056C4 743C          je 00405702
+
+:004056C6 8D45C0  ***** lea eax, dword ptr [ebp-40] ;load good code
+
+:004056C9 50            push eax
+
+:004056CA 8D4580  ***** lea eax, dword ptr [ebp-80] ;load(cleaned) 
+
+                                                    ;code you entered
+
+:004056CD 50            push eax
+
+:004056CE E89D900300    call 0043E770 ;compares the codes
+
+:004056D3 59            pop ecx
+
+:004056D4 85C0          test eax, eax
+
+:004056D6 59            pop ecx
+
+:004056D7 741E    ***** je 004056F7   ;jump nice buyer!
+
+:004056D9 8D8540FFFFFF  lea eax, dword ptr [ebp-00C0] ;load alternative code
+
+:004056DF 50            push eax
+
+:004056E0 8D4580        lea eax, dword ptr [ebp-80]   ;load(cleaned) 
+
+                                                      ;code you entered
+
+:004056E3 50            push eax
+
+:004056E4 E887900300    call 0043E770 ;compare the codes
+
+:004056E9 59            pop ecx
+
+:004056EA 85C0          test eax, eax
+
+:004056EC 59            pop ecx
+
+:004056ED 7408          je 004056F7   ;jump nice buyer!
+
+:004056EF 8935088D4900  mov dword ptr [00498D08], esi
+
+:004056F5 EB0B          jmp 00405702  ; else beggar-off
+
+
+
+Interesting! So there are actually *two* valid code for the user name 
+
+that you entered: one that consists of jumbles ASCII characters and one 
+
+that looks more like a traditional registration code. The first valid 
+
+code is located at [ebp-40], while the second code is locate
+
+at [ebp-00C0]. So to find a valid name/code combination, simply 
+
+enter your name (over 6 chars) and enter any number. 
+
+Then break above and type:
+
+
+
+db ebp-40            ; this will show the first valid code
+
+db ebp-00C0          ; this will show the second valid code
+
+
+
+Doing this we can see that valid name/code combinations are:
+
+
+
+Name: ReZiDeNt
+
+Code: Y5?k!#:G;}cR6$/C
+
+
+
+Or
+
+
+
+Name: ReZiDeNt
+
+Code: JZCBXAXR63921627
+
+
+
+Alternatively, we can also patch the target to make it accept any 
+
+name/code. Simply replace
+
+
+
+:004056D7 741E    je 004056F7   ;jump if valid code
+
+
+
+with
+
+
+
+:004056D7 EB1E    jmp 004056F7  ;jump always!
+
+
+
+
+
+search for:   0x59741E8D8540FFFFFF
+
+replace with: 0x59EB1E8D8540FFFFFF
+
+                  ^^
+
+
+
+
+
+BTW, remember I said that the name/code is stored in a file named
+
+'UEDIT32.REG'? It is also stored in the 'UEDIT32.INI' file located 
+
+in the Windows directory. 
+
+Interestingly, you can't simply rip the name/code out of
+
+these files - the code in encrypted, so that if you just copy the 
+
+code out of the INI or REG file and try to enter it into your own 
+
+copy, it will not work. This was probably intended to deter lamer
+
+from copying codes, but it offers little protection against us 
+
++crackers! :-)
+
+
+
+Keep cracking!
+
+ReZiDeNt - 1997	</PRE>
+
+ <FONT color="green">(c) ReZiDeNt 1997. All rights reserved</FONT>
+
+<HR ALIGN="CENTER" WIDTH="100%" SIZE="3">
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</I></CENTER>
+
+<BR><CENTER>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">
+
+<A HREF="project1.htm" tppabs="http://www.anticrack.de/fravia/project1.htm">project 1</A><BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">
+
+<A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#84'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#84">homepage</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"> 
+
+<A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#73'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#73">links</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0">
+
+<A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#82'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#82">students' essays</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut CGI-scripts</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia</A><BR>
+
+
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering illegal?</A></CENTER>
+
+<CENTER><HR ALIGN="CENTER" WIDTH="100%" SIZE="2"></CENTER>
+
+</BODY>
+
+</HTML>
+

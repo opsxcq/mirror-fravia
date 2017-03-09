@@ -1,0 +1,4805 @@
+<HTML>
+<HEAD>
+<META Name="Voluntary Content Rating" content="great!">
+
+
+<TITLE>int0com.htm +HCU 1999 ~ The 1999 STRAINER's solutions</TITLE>
+</HEAD>
+<BODY BGCOLOR=#C0C0C0 TEXT=#001010 VLINK=#405040><CENTER>
+<PRE>
+Solution for Part I of +HCU Strainer 99.
+Solved by iNT_03h.
+</CENTER>
+TARGET: Terminate 5.00
+        terminat.exe - 1,475,650 bytes long.
+
+Where to get target: www.terminate.com
+
+TOOLS: SoftIce 3.22 for W95, IDA PRO 3.75 Full, Turbo Pascal 6.0,
+       Asm Edit 1.82a, Borland C++ 4.5.
+
+SOLUTION:
+
+ First, English is not my motherlanguage, so please excuse my mistakes...
+
+ I've spent a lot of time cracking Terminate. So now, when I write this
+ solution I can't remember all steps and details.
+
+ I've used SoftIce for understand how key file should looks like and IDA
+ for comment all I found. Also without IDA it would be almost impossible
+ (at least for me) crack target, because IDA 3.75 gave names for library subs,
+ it was great help for understanding those math subs, like Real2Long, etc,
+ coz without knowing sub name it was almost imposible to understand what
+ this sub does. Also I had to learn some Pascal (I didn't know it before)
+ in order to understand what the hell is going on in key validating sub
+ (I even rewrote it in pascal , it was great help to understand that almost
+ all of those floating point operations were fakes :))
+
+ Ok, I won't write step by step how I crack target, just say, that I
+ began with bpint 21 if ah==3d in SoftIce, then I saw that handle for
+ keyfile is always =6 so I begun to use bpint 21 if bx==6...
+
+ I begin my solution in back order, i.e. first I explain protection
+ scheme and after that I'll explain what kind of keyfile T wants.
+
+ Very important info stored at offset 1614FEh-1615F9h in terminat.exe.
+ First seven bytes 06, ad, 5d, 47, 17, 20, 77 used by T to determine is
+ it already registered or not. Or, if be more exact, only last byte is
+ really usefull for us: 77 means registered, BD - unregistered.
+
+ 161505h-1615D0h - contains randomly encrypted reginfo, i.e. name, city,
+                   address, country (if we are already registered).
+ 1615D1h-1615D9h - CRC of reginfo, converted to ASCII form(first byte = length of ASCII string)
+ 1615DAh-1615E2h - 32 bit value, xored and converted to ASCII form,
+                   used as mask for decrypt reginfo (first byte = length of ASCII string)
+ 1615E3h-1615E6h - 4 bytes 01,x,01,y. Where x,y are bytes set by key
+                   validating sub. These bytes depends of some values
+                   from keyfile. I'll explain this later.
+ 1615E7h-1615EEh - only if we are already registered this offset contains
+                   ASCII form some date, 1/08/98.
+                   (first byte = length of ASCII string)
+ 1615F1h-1615F9h - only if we are already registered this offset contains
+                   32 bit value, xored and converted to ASCII form,
+                   this value taken from offsets 152h, 154h of block 4
+                   of key file. I'll explain this later.
+                   (first byte = length of ASCII string)
+
+ Protection scheme in two words:
+ T reads seven bytes from offset 1614FEh of terminat.exe, and if last
+ of seven bytes = 77, it "thinks" that its registered and set byte_192f_12d8
+ to BB (by default it = 8B). This is core of protection, because in all further
+ checks T refers to that byte_192f_12d8 ( I named it "_pro_or_not_byte") and
+ check it for 8B (unregistered) or BB (registered).
+
+ Full explantation:
+ Everything begin from 1000:0099 (I use IDA PRO 3.75 for create dead listing)
+ from CALL SUB_B_FCC -> call far ptr sub_813_1797 -> call sub_2A8_115 ->
+ call sub_29C_43 -> call  sub_7A91_1EE4 ->call sub_298_20( I named it "Check_reginfo").
+ Last sub decides if BB already registered by reading 1614FEh-1615F9h from
+ terminat.exe and compare first 7 bytes from 1614FEh-1615F9h with 06, ad,
+ 5d, 47, 17, 20, 77. If last byte doesnt =77  sub_77A8_3FD( I named it
+ "Validate_key") called to read and validate keyfile (if it exist in
+ terminate directory). So:
+
+87A8:2309 Check_reginfo   proc far   ; CODE XREF: j_Check_reginfo
+....  vars
+....  args
+87A8:2309
+87A8:2309   push    bp
+87A8:230A   mov     bp, sp
+87A8:230C   sub     sp, 544h
+87A8:2310   cmp     byte_192F_50, 0 ; we always have 0 here
+87A8:2315   jz      loc_77A8_231A  ; jump
+87A8:2317   jmp     loc_77A8_280D
+87A8:231A ; ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+87A8:231A
+87A8:231A loc_77A8_231A:     ; CODE XREF: Check_reginfo+C
+87A8:231A    mov     di, offset unk_192F_5798               ÄÄÄÄÄÄ¿
+87A8:231D    push    ds                                           ³
+87A8:231E    push    di                                           ³
+87A8:231F    lea     di, [bp+var_240]                             ³
+87A8:2323    push    ss                                           ³
+87A8:2324    push    di                                           ³
+87A8:2325    lea     di, [bp+var_140]                             ³
+87A8:2329    push    ss                                           ³
+87A8:232A    push    di                                           ³
+87A8:232B    mov     di, offset aEu ; offset of encrypted string  ³
+87A8:232E    push    cs                                           ÃÄÄÄ¿
+87A8:232F    push    di                                           ³   ³
+87A8:2330    call    @$basg$qm6Stringt1 ; Load string             ³   ³
+87A8:2335    mov     ax, 0B3ACh                                   ³   ³
+87A8:2338    xor     dx, dx                                       ³   ³
+87A8:233A    push    dx                                           ³   ³
+87A8:233B    push    ax                                           ³   ³
+87A8:233C    mov     ax, 25D1h                                    ³   ³
+87A8:233F    mov     dx, 0BABEh                                   ³   ³
+87A8:2342    push    dx                                           ³   ³
+87A8:2343    push    ax                                           ³   ³
+87A8:2344    call    decrypt_string_and_verify_it                ÄÙ   ³
+87A8:2349    call    @$bsub$qm6Stringt1 ; compare two magic strings   ³
+87A8:234E    jz      loc_77A8_2353     06, ad, 5d, 47, 17, 20, 77     ³
+87A8:2350    jmp     loc_77A8_2801            this is common code sequence in Terminate
+ it used for decrypt strings, those paranoid developers encrypted all
+ protection related strings. call decrypt_string_and_verify_it was originally
+ call sub_10F1_1A72.
+
+ So, after decrypting T compares those strings and if byte sequence from
+ terminat.exe =  06, ad, 5d, 47, 17, 20, 77 ,i.e. if Term registered ,
+ then we go here:
+87A8:2353 ; ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+87A8:2353
+87A8:2353 loc_77A8_2353:                   ; CODE XREF: Check_reginfo+45j
+87A8:2353   mov     [bp+var_AX_MAGIC], 0FFFFh    ; some kind of "seed"
+87A8:2359   mov     [bp+var_DX_MAGIC], 0FFFFh    ; for calc CRC
+87A8:235F   xor     ax, ax
+87A8:2361   mov     some_counter_for_CRC_calc_word, ax
+87A8:2364   jmp     short loc_77A8_236A
+87A8:2366 ; ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+87A8:2366
+87A8:2366 loc_77A8_2366:          ; CODE XREF: Check_reginfo+180j  Ä¿
+87A8:2366   inc     some_counter_for_CRC_calc_word?                  ³
+87A8:236A                                                            ³
+87A8:236A loc_77A8_236A:          ; CODE XREF: Check_reginfo+5Bj    ³
+87A8:236A    mov     di, some_counter_for_CRC_calc_word?             ³
+87A8:236E    mov     al, [di+57A0h]                                  ³
+87A8:2372    push    ax                                              ³
+87A8:2373    push    [bp+var_DX_MAGIC]                               ³
+87A8:2377    push    [bp+var_AX_MAGIC]                               ³
+87A8:237B    pop     bx                                              ³
+87A8:237C    pop     dx                                              ³
+87A8:237D    pop     cx                                              ³
+87A8:237E    push    dx                                              ³
+87A8:237F    push    bx                                              ³
+87A8:2380    xor     bx, cx                                          ÃÄÄ¿
+87A8:2382    xor     bh, bh                                          ³  ³
+87A8:2384    shl     bx, 1                                           ³  ³
+87A8:2386    shl     bx, 1                                           ³  ³
+87A8:2388    add     bx, word_192F_E320                              ³  ³
+87A8:238C    mov     ax, [bx]                                        ³  ³
+87A8:238E    mov     cx, [bx+2]                                      ³  ³
+87A8:2391    pop     bx                                              ³  ³
+87A8:2392    pop     dx                                              ³  ³
+87A8:2393    push    cx                                              ³  ³
+87A8:2394    mov     cx, 8                                           ³  ³
+87A8:2397                                                            ³  ³
+87A8:2397 loc_77A8_2397:       ; CODE XREF: Check_reginfo+9          ³  ³
+87A8:2397    shr     dx, 1                                           ³  ³
+87A8:2399    rcr     bx, 1                                           ³  ³
+87A8:239B    loop    loc_77A8_2397                                   ³  ³
+87A8:239D    and     dx, 0FFh                                        ³  ³
+87A8:23A1    pop     cx                                              ³  ³
+87A8:23A2    xor     ax, bx                                          ³  ³
+87A8:23A4    mov     bx, cx                                          ³  ³
+87A8:23A6    xor     dx, bx                                          ³  ³
+87A8:23A8    mov     [bp+var_AX_MAGIC], ax                           ³  ³
+87A8:23AC    mov     [bp+var_DX_MAGIC], dx                           ³  ³
+                                                                 ÄÄÄÄÙ  ³
+  ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+ this code block is very often in Terminate. It checks CRC.
+...
+...
+
+ So T calcs CRC for reginfo, which was read from terminate.exe and then
+ compare it with "ASCII" CRC written at offset 1615D1h-1615D9h ( it convert just
+ calculated CRC into ASCII):
+
+87A8:248C loc_77A8_248C:     ; CODE XREF: Check_reginfo+17Ej
+87A8:248C   mov     ax, [bp+var_AX_MAGIC]
+87A8:2490   mov     dx, [bp+var_DX_MAGIC]
+87A8:2494   xor     ax, 34FFh
+87A8:2497   xor     dx, 12FFh
+87A8:249B   mov     [bp+var_AX_MAGIC], ax   ; save just calculated CRC
+87A8:249F   mov     [bp+var_DX_MAGIC], dx
+87A8:24A3   lea     di, [bp+var_340]
+87A8:24A7   push    ss
+87A8:24A8   push    di
+87A8:24A9   push    [bp+var_DX_MAGIC]
+87A8:24AD   push    [bp+var_AX_MAGIC]
+87A8:24B1   call    j_convert_32bit_to_ASCII ; originally: sub_139A_20
+87A8:24B6   mov     di, offset unk_192F_5870
+87A8:24B9   push    ds
+87A8:24BA   push    di
+87A8:24BB   call    @$bsub$qm6Stringt1 ; compare "ascii" crc from reginfo with just calculated
+87A8:24C0   jz      loc_77A8_24C5   ; =
+87A8:24C2   jmp     loc_77A8_27F5   ;  if we go there - we have unreg. T
+87A8:24C5 ;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+87A8:24C5 loc_77A8_24C5:           ; CODE XREF: Check_reginfo+1B7j
+87A8:24C5   cmp     byte_192F_587A, 0 ;if length of next 32bit "ASCII" value
+87A8:24CA   jnz     loc_77A8_24CF ;from reginfo doesnt = 0, then it exist
+87A8:24CC   jmp     loc_77A8_25D4 ; and we go to loc_77A8_24CF
+87A8:24CF ;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+87A8:24CF loc_77A8_24CF:     ; CODE XREF: Check_reginfo+1C1j
+87A8:24CF   mov     di, offset byte_192F_587A
+87A8:24D2   push    ds
+87A8:24D3   push    di
+87A8:24D4   call    j_Ascii_to_Hex
+87A8:24D9   mov     [bp+var_AX_MAGIC], ax
+87A8:24DD   mov     [bp+var_DX_MAGIC], dx
+87A8:24E1   mov     ax, [bp+var_AX_MAGIC]
+87A8:24E5   mov     dx, [bp+var_DX_MAGIC]
+87A8:24E9   xor     ax, 0FFFFh
+87A8:24EC   xor     dx, 0D941h
+87A8:24F0   mov     [bp+var_AX_MAGIC], ax
+87A8:24F4   mov     [bp+var_DX_MAGIC], dx
+87A8:24F8   mov     ax, [bp+var_AX_MAGIC]
+87A8:24FC   mov     dx, [bp+var_DX_MAGIC]
+87A8:2500   mov     magic1_for_calc_xor_mask_1_word, ax
+87A8:2503   mov     magic2_for_calc_xor_mask_1_word, dx
+87A8:2507   mov     some_counter_for_CRC_calc_word?, 1
+87A8:250D   jmp     short loc_77A8_2513
+87A8:250F ; ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+87A8:250F loc_77A8_250F:      ; CODE XREF: Check_reginfo+22Ej
+87A8:250F   inc     some_counter_for_CRC_calc_word?
+87A8:2513
+87A8:2513 loc_77A8_2513:      ; CODE XREF: Check_reginfo+2
+87A8:2513   mov     ax, 100h
+87A8:2516   push    ax
+87A8:2517   call    calc_xor_mask_1 ; part of encryption system
+
+; this sub calculates mask for next xor operation. Originally its sub_10F1_2053
+
+87A8:251C   mov     dx, ax
+87A8:251E   mov     di, some_counter_for_CRC_calc_word
+87A8:2522   mov     al, [di+57A0h]  ; take encrypted byte
+87A8:2526   xor     ah, ah
+87A8:2528   xor     ax, dx      ; decrypt with just calced mask
+87A8:252A   mov     di, some_counter_for_CRC_calc_word
+87A8:252E   mov     [di+57A0h], al    ; save decrypted byte instead encrypted one
+87A8:2532   cmp     some_counter_for_CRC_calc_word?, 32h ; 32h - length of one field of
+87A8:2537   jnz     loc_77A8_250F  ; reginfo, e.g. name.
+87A8:2539   mov     some_counter_for_CRC_calc_word?, 1
+87A8:253F   jmp     short loc_77A8_2545
+87A8:2541 ; ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+87A8:2541 loc_77A8_2541:  ; CODE XREF: Check_reginfo+
+87A8:2541   inc     some_counter_for_CRC_calc_word?
+....
+and so on
+....
+
+ so, T decrypts four parts of reginfo, i.e. name,addres,city,country.
+
+ After that T "thinks" that its registered:
+
+87A8:25D4 loc_77A8_25D4:      ; CODE XREF: Check_reginfo+1C3j
+87A8:25D4 mov  _pro_or_not_byte, 0BBh ;  BB means registered Terminate
+
+ But then Terminate looks for terminat.key:
+
+87A8:26CA loc_77A8_26CA:       ; CODE XREF: Check_reginfo+3B1j
+87A8:26CA   mov     di, offset unk_192F_D1CC
+87A8:26CD   push    ds
+87A8:26CE   push    di
+87A8:26CF   mov     di, offset byte_192F_1806
+87A8:26D2   push    ds
+87A8:26D3   push    di
+87A8:26D4   call    @Assign$qm4Filem6String ;
+87A8:26D9   mov     di, offset unk_192F_D1CC
+87A8:26DC   push    ds
+87A8:26DD   push    di
+87A8:26DE   mov     ax, 1
+87A8:26E1   push    ax
+87A8:26E2   call    @Reset$qm4File4Word                ; open key file
+87A8:26E7   call    @IOResult$qv    ; IOResult: Word{AX}
+87A8:26EC   or      ax, ax
+87A8:26EE   jnz     loc_77A8_271D
+87A8:26F0   mov     di, offset unk_192F_D1CC
+87A8:26F3   push    ds
+87A8:26F4   push    di
+87A8:26F5   les     di, dword_192F_46
+87A8:26F9   push    es
+87A8:26FA   push    di
+87A8:26FB   mov     ax, 0F41h       ; read 3905 bytes of key
+87A8:26FE   push    ax
+87A8:26FF   xor     ax, ax
+87A8:2701   push    ax
+87A8:2702   push    ax
+87A8:2703   call    @BlockRead$qm4Filem3Any4Wordm4Word ; BlockRead
+87A8:2708   mov     di, offset unk_192F_D1CC
+87A8:270B   push    ds
+87A8:270C   push    di
+87A8:270D   call    @Close$qm4File  ; Close(var f: File)
+87A8:2712   call    @IOResult$qv    ; IOResult: Word{AX}
+87A8:2717   mov     file_pointer_word, ax
+87A8:271A   jmp     loc_77A8_27F3
+
+ Here Terminate doesnt check key, it simply opens it and tries to read 3905
+ bytes, you can put file of any content and length to Terminate directory
+ and rename it to "terminat.key" and Terminate won't reject it.
+
+ Then Terminate returns from "Check_reginfo".
+
+ Everything go to very different way when we have unregistered Terminate:
+
+...
+87A8:2344    call    decrypt_string_and_verify_it
+87A8:2349    call    @$bsub$qm6Stringt1 ; compare two magic strings: 06, ad, 5d, 47, 17, 20, 77
+87A8:234E    jz      loc_77A8_2353  ;  with one which was read from terminat.exe
+87A8:2350    jmp     loc_77A8_2801 ; WE GO HERE, BECAUSE TERM UNREGISTERED
+                                   ; and therefore last byte =BD, not 77
+...
+87A8:2801 loc_77A8_2801:                  ; CODE XREF: Check_reginfo+47j
+87A8:2801    cmp     byte_192F_52, 0 ; this byte =0 by default
+87A8:2806    jnz     loc_77A8_280D ; it sets to 1 only in "validate_key"
+87A8:2808    push    bp
+87A8:2809    push    cs
+87A8:280A    call    near ptr validate_key ; originaly sub_77A8_3FD
+ ; This is key validating sub.
+
+ I'll explain how this sub works.
+
+ It decrypts "key" string, appends it to "terminat." string antd tries to
+ open file "terminat.key":
+
+87A8:03FD validate_key proc far         ; CODE XREF: Check_reginfo+501p
+.... vars
+87A8:03FD
+87A8:03FD   push  bp
+87A8:03FE   mov   bp, sp
+87A8:0400   sub   sp, 366h
+87A8:0404   mov   [bp+var_FLAG_1_byte], 0
+87A8:0408   lea   di, [bp+var_206]
+87A8:040C   push  ss
+87A8:040D   push  di
+87A8:040E   mov   di, offset byte_192F_153A
+87A8:0411   push  ds
+87A8:0412   push  di
+87A8:0413   call  @$basg$qm6Stringt1    ; Load string
+87A8:0418   lea   di, [bp+var_106]
+87A8:041C   push  ss
+87A8:041D   push  di
+87A8:041E   lea   di, [bp+var_6]
+87A8:0421   push  ss
+87A8:0422   push  di
+87A8:0423   mov   di, offset aZ_2 ; offset of encrypted "key"
+87A8:0426   push  cs
+87A8:0427   push  di
+87A8:0428   call  @$basg$qm6Stringt1    ; Load string
+87A8:042D   mov   ax, 79C1h
+87A8:0430   xor   dx, dx
+87A8:0432   push  dx
+87A8:0433   push  ax
+87A8:0434   mov   ax, 2D79h
+87A8:0437   mov   dx, 0BABEh
+87A8:043A   push  dx
+87A8:043B   push  ax
+87A8:043C   call  decrypt_string_and_verify_it ; decrypt string "key"
+87A8:0441   call  @Concat$qm6Stringt1   ; Concat(dst, src: String): String
+87A8:0446   mov   di, offset unk_192F_58EA
+87A8:0449   push  ds
+87A8:044A   push  di
+87A8:044B   mov   ax, 45h ; 'E'
+87A8:044E   push  ax
+87A8:044F   call  @$basg$qm6Stringt14Byte ; Store string
+87A8:0454   mov   byte_192F_52, 1
+87A8:0459   mov   di, offset unk_192F_58EA
+87A8:0454   mov   byte_192F_52, 1
+87A8:0459   mov   di, offset unk_192F_58EA
+87A8:045C   push  ds
+87A8:045D   push  di
+87A8:045E   mov   ax, 20h ; ' '
+87A8:0461   push  ax
+87A8:0462   mov   di, offset unk_192F_BF20
+87A8:0465   push  ds
+87A8:0466   push  di
+87A8:0467   call  @FindFirst$q7PathStr4Wordm9SearchRec ; FindFirst
+87A8:046C   cmp   word_192F_E482, 0
+87A8:0471   jnz   loc_77A8_481
+87A8:0473   mov   ax, word_192F_BF3A
+87A8:0476   mov   dx, word_192F_BF3C
+87A8:047A   mov   word_192F_54, ax
+87A8:047D   mov   word_192F_56, dx
+87A8:0481 loc_77A8_481:                 ; CODE XREF: validate_key+74j
+87A8:0481   mov   di, [bp+arg_0]
+87A8:0484   add   di, 0FEFEh
+87A8:0488   push  ss
+87A8:0489   push  di
+87A8:048A   mov   di, offset unk_192F_58EA
+87A8:048D   push  ds
+87A8:048E   push  di
+87A8:048F   call  @Assign$qm4Filem6String ; Assign(var f: File; name: String)
+87A8:0494   mov   di, [bp+arg_0]
+87A8:0497   add   di, 0FEFEh
+87A8:049B   push  ss
+87A8:049C   push  di
+87A8:049D   mov   ax, 20h ; ' '
+87A8:04A0   push  ax
+87A8:04A1   call  @SetFAttr$qm3Any4Word ; SetFAttr(Any &,Word)
+87A8:04A6   call  @IOResult$qv          ; IOResult: Word{AX}
+87A8:04AB   mov   file_pointer_word, ax
+87A8:04AE   mov   di, [bp+arg_0]
+87A8:04B1   add   di, 0FEFEh
+87A8:04B5   push  ss
+87A8:04B6   push  di
+87A8:04B7   mov   ax, 162h
+87A8:04BA   push  ax
+87A8:04BB   call  @Reset$qm4File4Word   ; open "terminat.key"
+87A8:04C0   call  @IOResult$qv          ; IOResult: Word{AX}
+87A8:04C5   mov   file_pointer_word, ax ;  save filepointer
+87A8:04C8   cmp   file_pointer_word, 0
+87A8:04CD   jz    loc_77A8_4D2
+
+ Then it begins to read blocks of keyfile each 162h bytes long. Before that
+ sub clears place for keyfile's block:
+
+87A8:04D2 loc_77A8_4D2:       ; CODE XREF: validate_key+D0j
+87A8:04D2   mov   ax, 162h
+87A8:04D5   push  ax
+87A8:04D6   call  @GetMem$q4Word ; Alloc 162h bytes
+87A8:04DB   mov   di, [bp+arg_0]
+87A8:04DE   mov   word ptr ss:[di+var_106], ax
+87A8:04E3   mov   word ptr ss:[di+var_106+2], dx
+87A8:04E8   mov   ss:[di+var_AX_CRC32_MAGIC], 0FFFFh ; init CRC "seed"
+87A8:04EF   mov   ss:[di+var_DX_CRC32_MAGIC], 0FFFFh
+87A8:04F6   xor   ax, ax
+87A8:04F8   mov   ss:[di+var_12C], ax
+87A8:04FD   mov   ss:[di+var_12A], ax
+87A8:0502   mov   keyfile_loaded_blocks_counter_word, 1 ; counter of loaded
+87A8:0508   jmp   short loc_77A8_50E ;  keyfile's blocks
+87A8:050A ; ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+87A8:050A
+87A8:050A loc_77A8_50A:       ; CODE XREF: validate_key+503j
+87A8:050A   inc   keyfile_loaded_blocks_counter_word
+87A8:050E loc_77A8_50E:       ; CODE XREF: validate_key+10Bj
+87A8:050E   mov   di, [bp+arg_0]
+87A8:0511   les   di, ss:[di+var_106]
+87A8:0516   push  es
+87A8:0517   push  di
+87A8:0518   mov   ax, 162h
+87A8:051B   push  ax
+87A8:051C   mov   al, 0    ; fill memory with 00h
+87A8:051E   push  ax
+87A8:051F   call  @FillChar$qm3Any4Word4Byte ;  prepare place for key
+87A8:0524   mov   di, [bp+arg_0]
+87A8:0527   add   di, 0FEFEh
+87A8:052B   push  ss
+87A8:052C   push  di
+87A8:052D   mov   di, [bp+arg_0]
+87A8:0530   les   di, ss:[di+var_106]
+87A8:0535   push  es
+87A8:0536   push  di
+87A8:0537   call  @Read$qm4Filem3Any ;read curent block of keyfile
+87A8:053C   add   sp, 4
+87A8:053F   call  @IOResult$qv ; check for error
+87A8:0544   mov   word_192F_17D6, ax
+87A8:0547   mov   di, [bp+arg_0]
+
+ It reads 11 blocks. It calcs CRC for every block. When CRC for
+ all 11 block calculated sub compares calculated CRC with one stored in last
+ block of keyfile. Also there are some "special" block of keyfile: block 1,
+ block 2, block 4,block 5 and block 11.
+
+87A8:054A   les   di, ss:[di+var_106]
+87A8:054F   seges
+87A8:054F   lea   ax, [di+15Dh] ; end offset in kf's block to calc CRC for
+87A8:0554   mov   [bp+var_end_offset_of_CRC_calc?], ax ; so, CRC calculated
+87A8:0557   mov   di, [bp+arg_0] ; for 0-15dh in each block
+87A8:055A   les   di, ss:[di+var_106]
+87A8:055F   mov   ax, di
+87A8:0561   cmp   ax, [bp+var_end_offset_of_CRC_calc?]
+87A8:0564   ja    loc_77A8_5D2
+87A8:0566   mov   some_counter_for_CRC_calc_word?, ax
+87A8:0569   jmp   short loc_77A8_56F
+87A8:056B ; ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+87A8:056B loc_77A8_56B:       ; CODE XREF: validate_key+1D3j
+87A8:056B   inc   some_counter_for_CRC_calc_word?
+87A8:056F loc_77A8_56F:       ; CODE XREF: validate_key+16Cj
+87A8:056F   mov   di, [bp+arg_0]                                  Ä¿
+87A8:0572   les   di, ss:[di+var_106]                              ³
+87A8:0577   mov   ax, es                                           ³
+87A8:0579   push  ax                                               ³
+87A8:057A   mov   di, some_counter_for_CRC_calc_word?              ³
+87A8:057E   pop   es                                               ³
+87A8:057F   mov   al, es:[di]                                      ³
+87A8:0582   push  ax                                               ³
+87A8:0583   mov   di, [bp+arg_0]                                   ³
+87A8:0586   push  ss:[di+var_DX_CRC32_MAGIC]                       ³
+87A8:058B   push  ss:[di+var_AX_CRC32_MAGIC]                       ³
+87A8:0590   pop   bx                                               ³
+87A8:0591   pop   dx                                               ³
+87A8:0592   pop   cx                                               ³
+87A8:0593   push  dx                                               ³
+87A8:0594   push  bx                                               ³
+87A8:0595   xor   bx, cx                                           ³
+87A8:0597   xor   bh, bh                                           ³
+87A8:0599   shl   bx, 1                                            ³
+87A8:059B   shl   bx, 1                                            ³
+87A8:059D   add   bx, word_192F_E320                               ³
+87A8:05A1   mov   ax, [bx]                                         ³
+87A8:05A3   mov   cx, [bx+2]                                       ³
+87A8:05A6   pop   bx                                               ³
+87A8:05A7   pop   dx                                               ³
+87A8:05A8   push  cx                                               ³
+87A8:05A9   mov   cx, 8                                            ÃÄÄ calc CRC
+87A8:05AC loc_77A8_5AC:       ; CODE XREF: validate_key+1B3j      ³
+87A8:05AC   shr   dx, 1                                            ³
+87A8:05AE   rcr   bx, 1                                            ³
+87A8:05B0   loop  loc_77A8_5AC                                     ³
+87A8:05B2   and   dx, 0FFh                                         ³
+87A8:05B6   pop   cx                                               ³
+87A8:05B7   xor   ax, bx                                           ³
+87A8:05B9   mov   bx, cx                                           ³
+87A8:05BB   xor   dx, bx                                           ³
+87A8:05BB   xor   dx, bx                                           ³
+87A8:05BD   mov   di, [bp+arg_0]                                   ³
+87A8:05C0   mov   ss:[di+var_AX_CRC32_MAGIC], ax ; store CRC       ³
+87A8:05C5   mov   ss:[di+var_DX_CRC32_MAGIC], dx                   ³
+87A8:05CA   mov   ax, some_counter_for_CRC_calc_word?              ³
+87A8:05CD   cmp   ax, [bp+var_end_offset_of_CRC_calc?] ; enough?   ³
+87A8:05D0   jnz   loc_77A8_56B ; if no, again                      ³
+87A8:05D2                                                        ÄÄÙ
+
+
+ Block 1 checked for bytes 46h,2Fh,2Eh at offsets 0bh, 1bh , 14h because
+ there is old keygenerator for Terminate version 1 or even earlier (I dont
+ remember now, I saw this keygen one day) and this keygen creates key
+ with string at block 1 like "Terminate HAKE-KEY for all outlaws all
+ around the world". So now Terminate checks for this header.
+
+87A8:05D2 loc_77A8_5D2:       ; CODE XREF: validate_key+167j
+87A8:05D2   cmp   keyfile_loaded_blocks_counter_word, 1
+87A8:05D7   jnz   loc_77A8_63B
+87A8:05D9   mov   di, [bp+arg_0]
+87A8:05DC   les   di, ss:[di+var_106]
+87A8:05E1   mov   ax, es
+87A8:05E3   push  ax
+87A8:05E4   mov   di, [bp+arg_0]
+87A8:05E7   les   di, ss:[di+var_106]
+87A8:05EC   seges
+87A8:05EC   lea   di, [di+0Bh] ; here it begins to check first block of keyfile
+87A8:05F0   pop   es
+87A8:05F1   cmp   byte ptr es:[di], 46h ; 'F'
+87A8:05F5   jnz   loc_77A8_638 ;
+87A8:05F7   mov   di, [bp+arg_0]
+87A8:05FA   les   di, ss:[di+var_106]
+87A8:05FF   mov   ax, es
+87A8:0601   push  ax
+87A8:0602   mov   di, [bp+arg_0]
+87A8:0605   les   di, ss:[di+var_106]
+87A8:060A   seges
+87A8:060A   lea   di, [di+1Bh]
+87A8:060E   pop   es
+87A8:060F   cmp   byte ptr es:[di], 2Fh ; '/'
+87A8:0613   jnz   loc_77A8_638
+87A8:0615   mov   di, [bp+arg_0]
+87A8:0618   les   di, ss:[di+var_106]
+87A8:0613   jnz   loc_77A8_638
+87A8:0615   mov   di, [bp+arg_0]
+87A8:0618   les   di, ss:[di+var_106]
+87A8:061D   mov   ax, es
+87A8:061F   push  ax
+87A8:0620   mov   di, [bp+arg_0]
+87A8:0623   les   di, ss:[di+var_106]
+87A8:0628   seges
+87A8:0628   lea   di, [di+14h]
+87A8:062C   pop   es
+87A8:062D   cmp   byte ptr es:[di], 2Eh ; '.'
+87A8:0631   jnz   loc_77A8_638
+87A8:0633   call  sub_2A8_4D  ; here T display error msg, like "Runtime error..."
+; and gives choice: reboot or return to dos
+87A8:0638 loc_77A8_638:       ; CODE XREF: validate_key+1F8j validate_key+216
+87A8:0638   jmp   loc_77A8_8F9
+
+ Block 2: if first 5 bytes of this block = each other , then Terminate
+ adjusts current CRC values:
+87A8:06E5  mov  di, [bp+arg_0]
+87A8:06E8  add  ss:[di+var_AX_CRC32_MAGIC], 329h
+87A8:06EF  adc  ss:[di+var_DX_CRC32_MAGIC], 0
+
+ Block 4 is a core of keyfile. It contains encrypted reginfo and several
+ very important values. I'll explain this later.
+
+ Block 5 is also very important for us. It contains values which used
+ to verify if key valid:
+
+87A8:06F8   cmp   keyfile_loaded_blocks_counter_word, 5 ; block 5 ?
+87A8:06FD   jz    loc_77A8_702 ; yes
+87A8:06FF   jmp   loc_77A8_79F
+87A8:0702 ; ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+87A8:0702 loc_77A8_702:       ; CODE XREF: validate_key+300j
+87A8:0702   mov   di, [bp+arg_0]
+87A8:0705   les   di, ss:[di+var_106]
+87A8:070A   mov   ax, es:[di+15Eh] ; in AX - 16 bit value from offset 15e of block 5
+87A8:070F   mov   dx, es:[di+160h] ; in DX - 16 bit value from offset 160 of block 5
+87A8:0714   call  @Real$q7Longint ; Real(x: Longint{DX:AX}): Real
+87A8:0719   mov   di, [bp+arg_0] ; call above convert 32bit value from ax:dx
+87A8:071C   mov   ss:[di+var_temp_AX], ax ; to 48 bit real value in ax:bx:dx
+87A8:0721   mov   ss:[di+var_temp_BX], bx
+87A8:0726   mov   ss:[di+var_temp_DX], dx
+
+ It was very hard for me to understand what the hell is that, because I didn't
+ know Pascal and that kind of floating point format. So I found good old ;-)
+ Turbo Pascal 6.0 for DOS, took book from friend and learned some Pascal.
+ I wrote several smalls programms in Pascal which use floating points numbers,
+ perform some operations with them, and I look at these programms in IDA.
+ It was great help. I began to understand whats going on and how to handle
+ those ax:bx:dx stuffs. I wrote little programm on Pascal which convert hex
+ values from ax,bx,dx into floating point number, and several small programs
+ to perform math operations with values from ax,bx,dx, i.e. I enter values1
+ from ax,bx,dx, then value2 from ax,bx,dx and my program returns me result
+ as floating point number. So I converted all such numbers from Terminate
+ and commented them in IDA.
+
+87A8:072B   mov   ax, ss:[di+var_temp_AX] ; converted to real value
+87A8:0730   mov   bx, ss:[di+var_temp_BX] ; "magic" from block5
+87A8:0735   mov   dx, ss:[di+var_temp_DX]; will be compare
+87A8:073A   xor   cx, cx  ; with 0
+87A8:073C   xor   si, si
+87A8:073E   xor   di, di
+87A8:0740   call  @__Cmp$q4Realt1 ; So terminate checks if "magic" from block 5 is below zero
+87A8:0745   jnb   loc_77A8_778 ; jump here if "magic" is above zero
+87A8:0747   mov   di, [bp+arg_0]
+87A8:074A   mov   ax, ss:[di+var_temp_AX] ; else T gonna change sign
+87A8:074F   mov   bx, ss:[di+var_temp_BX] ; of that "magic"
+87A8:0754   mov   dx, ss:[di+var_temp_DX]
+87A8:0759   mov   cx, 81h  ; this  means -1
+87A8:075C   xor   si, si   ;
+87A8:075E   mov   di, 8000h
+87A8:0761   call  @$brmul$q4Realt1 ; magic*=-1;
+87A8:0766   mov   di, [bp+arg_0]
+87A8:0769   mov   ss:[di+var_temp_AX], ax  ; store "magic"
+87A8:076E   mov   ss:[di+var_temp_BX], bx
+87A8:0773   mov   ss:[di+var_temp_DX], dx
+87A8:0778 loc_77A8_778:       ; CODE XREF: validate_key+348j
+87A8:0778   mov   di, [bp+arg_0]
+87A8:077B   mov   ax, ss:[di+var_temp_AX]
+87A8:0780   mov   bx, ss:[di+var_temp_BX]
+87A8:0785   mov   dx, ss:[di+var_temp_DX]
+87A8:078A   mov   di, [bp+arg_0]
+87A8:078D   mov   ss:[di+var_real_AX_bl5], ax ; move "magic" from temp vars
+87A8:0792   mov   ss:[di+var_real_BX_bl5], bx ; into their permanet loc
+87A8:0797   mov   ss:[di+var_real_DX_bl5], dx
+87A8:079C   jmp   loc_77A8_8F9 ; go ot check if all blocks of keyfile loaded?
+
+
+ Block 11: if 5 bytes at offsets 12c,12d,12e,12f,130 = each other
+ then Term. adjusts current CRC values:
+87A8:0850  mov     di, [bp+arg_0]
+87A8:0853  add     ss:[di+var_AX_CRC32_MAGIC], 192h
+87A8:085A  adc     ss:[di+var_DX_CRC32_MAGIC], 0
+
+  Also this block checked for bytes DC,64,D9,E9 at offsets 15a,15b,15c,15d
+  because that old "HAKE-KEY" keygen writes these bytes in every key
+  it produces.
+  Also this block contains global CRC of keyfile at offsets 15eh,160h and
+  T compares calculated CRC  with one stored in block 11:
+
+87A8:08E1                     ; validate_key+4BEj validate_key+4DDj
+87A8:08E1   mov   di, [bp+arg_0]
+87A8:08E4   mov   ss:[di+var_11C], 4890h ;  57544.23
+87A8:08EB   mov   ss:[di+var_11A], 3AE1h ; this value used furhter
+87A8:08F2   mov   ss:[di+var_118], 60C8h ; I'll explain it later
+87A8:08F9
+87A8:08F9 loc_77A8_8F9:       ; CODE XREF: validate_key+23Bj validate_key+2F
+87A8:08F9                     ; validate_key+39Fj validate_key+3A9j
+87A8:08F9   cmp   keyfile_loaded_blocks_counter_word, 0Bh ; last block ?
+87A8:08FE   jz    loc_77A8_903 ; yes
+87A8:0900   jmp   loc_77A8_50A ; else again
+87A8:0903 ; ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+87A8:0903
+87A8:0903 loc_77A8_903:       ; CODE XREF: validate_key+501j
+87A8:0903   mov   di, [bp+arg_0]
+87A8:0906   mov   ax, ss:[di+var_AX_CRC32_MAGIC] ; take just calced CRC
+87A8:090B   mov   dx, ss:[di+var_DX_CRC32_MAGIC]
+87A8:0910   les   di, ss:[di+var_106] ; di=0
+87A8:0915   cmp   dx, es:[di+160h] ; here is compares calculated CRC with one
+; stored in block 11 of kf
+87A8:091A   jnz   loc_77A8_92A ; this jump means "damaged key"
+87A8:091C   cmp   ax, es:[di+15Eh]
+87A8:0921   jnz   loc_77A8_92A ; this jump means "damaged key"
+87A8:0923   cmp   word_192F_17D6, 0 ; this flag =1 when kf opened successfuly
+87A8:0928   jz    loc_77A8_92D
+87A8:092A loc_77A8_92A:       ; CODE XREF: validate_key+51Dj validate_key+52
+87A8:092A   jmp   loc_77A8_22A7 ; this jump means "damaged key"
+
+ After T completed first check of keyfile, it begins to decrypt main block -
+ block 4:
+
+87A8:092D loc_77A8_92D:       ; CODE XREF: validate_key+52Bj
+87A8:092D   mov   di, [bp+arg_0]
+87A8:0930   mov   ax, ss:[di+var_AX_CRC32_MAGIC]
+87A8:0935   mov   dx, ss:[di+var_DX_CRC32_MAGIC]
+87A8:093A   mov   CRC_AX_WORD, ax
+87A8:093D   mov   CRC_DX_WORD, dx
+87A8:0941   add   di, 0FEFEh
+87A8:0945   push  ss
+87A8:0946   push  di          ; close keyfile
+87A8:0947   call  @Close$qm4File ; Close(var f: File)
+87A8:094C   call  @__IOCheck$qv ; Exit if error
+87A8:0951   mov   di, [bp+arg_0]
+87A8:0954   add   di, 0FEFEh
+87A8:0958   push  ss
+87A8:0959   push  di
+87A8:095A   mov   ax, 162h
+87A8:095D   push  ax
+87A8:095E   call  @Reset$qm4File4Word ; open it again
+87A8:0963   call  @__IOCheck$qv ; Exit if error
+87A8:0968   mov   some_counter_for_CRC_calc_word?, 1
+87A8:096E   jmp   short loc_77A8_974
+87A8:0970 ; ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+87A8:0970 loc_77A8_970:       ; CODE XREF: validate_key+59Cj
+87A8:0970   inc   some_counter_for_CRC_calc_word?
+87A8:0974 loc_77A8_974:       ; CODE XREF: validate_key+571j
+87A8:0974   mov   di, [bp+arg_0]
+87A8:0977   add   di, 0FEFEh
+87A8:097B   push  ss
+87A8:097C   push  di
+87A8:097D   mov   di, [bp+arg_0]
+87A8:0980   les   di, ss:[di+var_106]
+87A8:0985   push  es
+87A8:0986   push  di
+87A8:0987   call  @Read$qm4Filem3Any ; Read block
+87A8:098C   add   sp, 4
+87A8:098F   call  @__IOCheck$qv ; Exit if error
+87A8:0994   cmp   some_counter_for_CRC_calc_word?, 4 ; we need block 4
+87A8:0999   jnz   loc_77A8_970            ; rather stupid way to get block 4
+87A8:099B   mov   di, [bp+arg_0]    ; T doesnt wanna use Seek function
+87A8:099E   add   di, 0FEFEh  ; it prefer to read blocks of keyfile
+87A8:09A2   push  ss  ; until block 4 reached
+87A8:09A3   push  di
+87A8:09A4   call  @Close$qm4File ; Close(var f: File)
+87A8:09A9   call  @__IOCheck$qv ; Exit if error
+87A8:09AE   mov   di, [bp+arg_0]
+87A8:09B1   les   di, ss:[di+var_106]
+87A8:09B6   seges
+87A8:09B6   lea   ax, [di+161h]
+87A8:09BB   mov   [bp+var_end_offset_of_CRC_calc?], ax
+87A8:09BE   mov   di, [bp+arg_0]
+87A8:09C1   les   di, ss:[di+var_106]
+87A8:09C6   seges
+87A8:09C6   lea   ax, [di+5Bh]
+87A8:09CA   cmp   ax, [bp+var_end_offset_of_CRC_calc?]
+87A8:09CD   ja    loc_77A8_A0A
+87A8:09CF   mov   some_counter_for_CRC_calc_word?, ax
+87A8:09D2   jmp   short loc_77A8_9D8
+87A8:09D4 ; ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+
+ Then T begins to decrypt block 4 ( not whole block, only 5b-161h range).
+ It encrypted 4 times (nice, isn't it ;-) First, simple xor with FF:
+
+87A8:09D8 loc_77A8_9D8:       ; CODE XREF: validate_key+5D5j
+87A8:09D8   mov   di, [bp+arg_0]
+87A8:09DB   les   di, ss:[di+var_106]
+87A8:09E0   mov   ax, es
+87A8:09E2   push  ax
+87A8:09E3   mov   di, some_counter_for_CRC_calc_word?
+87A8:09E7   pop   es
+87A8:09E8   mov   al, es:[di]
+87A8:09EB   xor   al, 0FFh       ; decrypt byte
+87A8:09ED   mov   dl, al
+87A8:09EF   mov   di, [bp+arg_0]
+87A8:09F2   les   di, ss:[di+var_106]
+87A8:09F7   mov   ax, es
+87A8:09F9   push  ax
+87A8:09FA   mov   di, some_counter_for_CRC_calc_word?
+87A8:09FE   pop   es
+87A8:09FF   mov   es:[di], dl
+87A8:0A02   mov   ax, some_counter_for_CRC_calc_word?
+87A8:0A05   cmp   ax, [bp+var_end_offset_of_CRC_calc?]
+87A8:0A08   jnz   loc_77A8_9D4
+
+  Then goes more complex decryption which calculates dexor mask for
+  every byte. For this it uses sub "calc_xor_mask_1":
+
+20F1:2053 calc_xor_mask_1 proc far
+20F1:2053 arg_0= word ptr  6
+20F1:2053   push  bp
+20F1:2054   mov   bp, sp
+20F1:2056   mov   ax, magic1_for_calc_xor_mask_1_word ; some kind of "seed"
+20F1:2059   mov   bx, magic2_for_calc_xor_mask_1_word
+20F1:205D   mov   cx, ax
+20F1:205F   mul   word_192F_12BC
+20F1:2063   shl   cx, 1
+20F1:2065   shl   cx, 1
+20F1:2067   shl   cx, 1
+20F1:2069   add   ch, cl
+20F1:206B   add   dx, cx
+20F1:206D   add   dx, bx
+20F1:206F   shl   bx, 1
+20F1:2071   shl   bx, 1
+20F1:2073   add   dx, bx
+20F1:2075   add   dh, bl
+20F1:2077   mov   cl, 5
+20F1:2079   shl   bx, cl
+20F1:207B   add   dh, bl
+20F1:207D   add   ax, 1
+20F1:2080   adc   dx, 0
+20F1:2083   mov   magic1_for_calc_xor_mask_1_word, ax
+20F1:2086   mov   magic2_for_calc_xor_mask_1_word, dx
+20F1:208A   xor   ax, ax
+20F1:208C   mov   bx, [bp+arg_0]
+20F1:208F   or    bx, bx
+20F1:2091   jz    loc_10F1_2097
+20F1:2093   xchg  ax, dx
+20F1:2094   div   bx
+20F1:2096   xchg  ax, dx
+20F1:2097 loc_10F1_2097:      ; CODE XREF: calc_xor_mask_1+3Ej
+20F1:2097   pop   bp
+20F1:2098   retf  2
+20F1:2098 calc_xor_mask_1 endp
+
+ So, for second decryption T uses values 7,0 as seed for "calc_xor_mask1":
+
+87A8:0A0A loc_77A8_A0A:       ; CODE XREF: validate_key+5D0j
+87A8:0A0A   mov   magic1_for_calc_xor_mask_1_word, 7  ; init mask "seed"
+87A8:0A10   mov   magic2_for_calc_xor_mask_1_word, 0
+87A8:0A16   mov   di, [bp+arg_0]
+87A8:0A19   les   di, ss:[di+var_106]
+87A8:0A1E   seges
+87A8:0A1E   lea   ax, [di+161h] ; set end offset for decrypting - 161h
+87A8:0A23   mov   [bp+var_end_offset_of_CRC_calc?], ax
+87A8:0A26   mov   di, [bp+arg_0]
+87A8:0A29   les   di, ss:[di+var_106]
+87A8:0A2E   seges
+87A8:0A2E   lea   ax, [di+5Bh]   ; set begining offset for decrypting - 5bh
+87A8:0A32   cmp   ax, [bp+var_end_offset_of_CRC_calc?]
+87A8:0A35   ja    loc_77A8_A7F
+87A8:0A37   mov   some_counter_for_CRC_calc_word?, ax
+87A8:0A3A   jmp   short loc_77A8_A40
+87A8:0A3C ; ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+87A8:0A3C loc_77A8_A3C:       ; CODE XREF: validate_key+680j
+87A8:0A3C   inc   some_counter_for_CRC_calc_word?
+87A8:0A40 loc_77A8_A40:       ; CODE XREF: validate_key+63Dj
+87A8:0A40   mov   ax, 100h      ; arg for sub below
+87A8:0A43   push  ax
+87A8:0A44   call  calc_xor_mask_1   ; calculates xor mask
+87A8:0A49   mov   dx, ax
+87A8:0A4B   mov   di, [bp+arg_0]
+87A8:0A4E   les   di, ss:[di+var_106]
+87A8:0A53   mov   ax, es
+87A8:0A55   push  ax
+87A8:0A56   mov   di, some_counter_for_CRC_calc_word?
+87A8:0A5A   pop   es
+87A8:0A5B   mov   al, es:[di]    ; takes encrypted byte
+87A8:0A5E   xor   ah, ah
+87A8:0A60   xor   ax, dx         ; decrypts it
+87A8:0A62   mov   dl, al
+87A8:0A64   mov   di, [bp+arg_0]
+87A8:0A67   les   di, ss:[di+var_106]
+87A8:0A6C   mov   ax, es
+87A8:0A6E   push  ax
+87A8:0A6F   mov   di, some_counter_for_CRC_calc_word?
+87A8:0A73   pop   es
+87A8:0A74   mov   es:[di], dl    ; store it
+87A8:0A77   mov   ax, some_counter_for_CRC_calc_word?
+87A8:0A7A   cmp   ax, [bp+var_end_offset_of_CRC_calc?] ; enough ?
+87A8:0A7D   jnz   loc_77A8_A3C
+
+ For third decryption T uses values 325Ch,0 as seed for "calc_xor_mask1":
+
+87A8:0A7F loc_77A8_A7F:       ; CODE XREF: validate_key+638j
+87A8:0A7F   mov   magic1_for_calc_xor_mask_1_word, 325Ch
+87A8:0A85   mov   magic2_for_calc_xor_mask_1_word, 0
+....
+ same decrypting
+.....
+
+ For last decryption T uses values 904h,33EEh as seed for "calc_xor_mask1":
+87A8:0AF4 loc_77A8_AF4:       ; CODE XREF: validate_key+6ADj
+87A8:0AF4   mov   magic1_for_calc_xor_mask_1_word, 904h
+87A8:0AFA   mov   magic2_for_calc_xor_mask_1_word, 33EEh
+....
+ same decrypting
+.....
+
+ After decrypting T calcs CRC for decrypted block 4(5b-15e range) and compares
+ it with CRC stored at offsets 15Eh,160h in decrypted block 4.
+87A8:0C04 loc_77A8_C04:       ; CODE XREF: validate_key+799j
+87A8:0C04   mov   di, [bp+arg_0]
+87A8:0C07   les   di, ss:[di+var_106]
+87A8:0C0C   mov   ax, es:[di+15Eh]  ; take CRC stored in decrypted block 4
+87A8:0C11   mov   dx, es:[di+160h]
+87A8:0C16   mov   di, [bp+arg_0]
+87A8:0C19   cmp   dx, ss:[di+var_DX_CRC32_MAGIC] ; compare it with just calculated
+87A8:0C1E   jnz   loc_77A8_C27
+87A8:0C20   cmp   ax, ss:[di+var_AX_CRC32_MAGIC]
+87A8:0C25   jz    loc_77A8_C2D  ; CRC ok
+87A8:0C27 loc_77A8_C27:     ; CODE XREF: validate_key+821j
+87A8:0C27   jmp   loc_77A8_22A7  ; bad keyfile
+
+  After CRC checked T begins prepare for main check. It takes 32bit CRC
+  values from decrypted block 4, convert it to real format, change sign
+  if "real" CRC <0.
+87A8:0C2D loc_77A8_C2D:       ; CODE XREF: validate_key+828j
+87A8:0C2D   mov   di, [bp+arg_0]
+87A8:0C30   mov   ax, ss:[di+var_AX_CRC32_MAGIC] ; take CRC from decrypted
+87A8:0C35   mov   dx, ss:[di+var_DX_CRC32_MAGIC] ; block 4
+87A8:0C3A   call  @Real$q7Longint ; convert it to real number
+87A8:0C3F   mov   di, [bp+arg_0]
+87A8:0C42   mov   ss:[di+var_temp_AX], ax ; store it to temp var
+87A8:0C47   mov   ss:[di+var_temp_BX], bx ;
+87A8:0C4C   mov   ss:[di+var_temp_DX], dx ;
+87A8:0C51   mov   ax, ss:[di+var_temp_AX]
+87A8:0C56   mov   bx, ss:[di+var_temp_BX]
+87A8:0C5B   mov   dx, ss:[di+var_temp_DX]
+87A8:0C60   xor   cx, cx  ;0
+87A8:0C62   xor   si, si
+87A8:0C64   xor   di, di
+87A8:0C66   call  @__Cmp$q4Realt1 ; "real" CRC <0 ?
+87A8:0C6B   jnb   loc_77A8_C9E     ; no
+87A8:0C6D   mov   di, [bp+arg_0]            ; yes, change sign
+87A8:0C70   mov   ax, ss:[di+var_temp_AX]
+87A8:0C75   mov   bx, ss:[di+var_temp_BX]
+87A8:0C7A   mov   dx, ss:[di+var_temp_DX]
+87A8:0C7F   mov   cx, 81h ; '' ; -1
+87A8:0C82   xor   si, si
+87A8:0C84   mov   di, 8000h
+87A8:0C87   call  @$brmul$q4Realt1 ; Real(AX:BX:DX)*=Real(CX:SI:DI)
+87A8:0C8C   mov   di, [bp+arg_0]
+87A8:0C8F   mov   ss:[di+var_temp_AX], ax
+87A8:0C94   mov   ss:[di+var_temp_BX], bx
+87A8:0C99   mov   ss:[di+var_temp_DX], dx
+87A8:0C9E loc_77A8_C9E:       ; CODE XREF: validate_key+86Ej
+87A8:0C9E   mov   di, [bp+arg_0]
+87A8:0CA1   mov   ax, ss:[di+var_temp_AX]
+87A8:0CA6   mov   bx, ss:[di+var_temp_BX]
+87A8:0CAB   mov   dx, ss:[di+var_temp_DX]
+87A8:0CB0   mov   di, [bp+arg_0]
+87A8:0CB3   mov   ss:[di+var_real_AX_bl4], ax ; store "real" CRC from
+87A8:0CB8   mov   ss:[di+var_real_BX_bl4], bx ; decrypted block 4
+87A8:0CBD   mov   ss:[di+var_real_DX_bl4], dx ; to it permanent var
+...
+  Add to "real" CRC 10 and compares this value with
+  "magic" from block5.  If they don't = then T sub 10 from "real" CRC of
+  block 4 and again compare this value with "magic" from block5.
+
+87A8:0D10   mov   ax, ss:[di+var_real_AX_bl4] ;
+87A8:0D15   mov   bx, ss:[di+var_real_BX_bl4] ;
+87A8:0D1A   mov   dx, ss:[di+var_real_DX_bl4] ;
+87A8:0D1F   mov   cx, 84h ;  10
+87A8:0D22   xor   si, si
+87A8:0D24   mov   di, 2000h
+87A8:0D27   call  @$brplu$q4Realt1 ; add 10
+87A8:0D2C   mov   di, [bp+arg_0]
+87A8:0D2F   mov   cx, ss:[di+var_real_AX_bl5] ;compare value we got after +
+87A8:0D34   mov   si, ss:[di+var_real_BX_bl5] ; with "magic" from block 5
+87A8:0D39   mov   di, ss:[di+var_real_DX_bl5]
+87A8:0D3E   call  @__Cmp$q4Realt1 ; Compare two reals
+87A8:0D43   jz    loc_77A8_D7D ; jump if they equal
+87A8:0D45   mov   di, [bp+arg_0]
+87A8:0D48   mov   ax, ss:[di+var_real_AX_bl4]
+87A8:0D4D   mov   bx, ss:[di+var_real_BX_bl4]
+87A8:0D52   mov   dx, ss:[di+var_real_DX_bl4]
+87A8:0D57   mov   cx, 84h ;   10
+87A8:0D5A   xor   si, si
+87A8:0D5C   mov   di, 2000h
+87A8:0D5F   call  @$brmin$q4Realt1 ; else try to sub 10
+87A8:0D64   mov   di, [bp+arg_0]
+87A8:0D67   mov   cx, ss:[di+var_real_AX_bl5]
+87A8:0D6C   mov   si, ss:[di+var_real_BX_bl5]
+87A8:0D71   mov   di, ss:[di+var_real_DX_bl5]
+87A8:0D76   call  @__Cmp$q4Realt1 ; compare again
+87A8:0D7B   jnz   loc_77A8_DC6  ; jump if dont =  ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+87A8:0D7D loc_77A8_D7D:       ; CODE XREF: validate_key+946j       ³
+87A8:0D7D   mov   di, [bp+arg_0]                                    ³
+...     junk                                                        ³
+87A8:0DC4   jmp   short loc_77A8_DF8ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄ¿
+                                                                    ³    ³
+7A8:0DC6 loc_77A8_DC6:       ; CODE XREF: validate_key+97Ej     <ÄÄÙ    ³
+7A8:0DC6   mov   di, [bp+arg_0]                                          ³
+7A8:0DC9   mov   ax, ss:[di+var_11C] ; this value was set above in sub   ³
+7A8:0DCE   mov   bx, ss:[di+var_11A] ; it was 57544.23                   ³
+7A8:0DD3   mov   dx, ss:[di+var_118] ; It will be used in future check   ³
+7A8:0DD8   mov   cx, 1F8Eh   ;  9823.23                                  ³
+7A8:0DDB   mov   si, 0EB85h  ; so if we multiply it here we won't        ³
+7A8:0DDE   mov   di, 197Ch  ; bypass next check( I'll explain this later)³
+7A8:0DE1   call  @$brmul$q4Realt1 ; So this is very smart way to set flag³
+7A8:0DE6   mov   di, [bp+arg_0]                                          ³
+7A8:0DE9   mov   ss:[di+var_11C], ax                                     ³
+7A8:0DEE   mov   ss:[di+var_11A], bx                                     ³
+7A8:0DF3   mov   ss:[di+var_118], dx                                     ³
+7A8:0DF8                                                                 ³
+7A8:0DF8 loc_77A8_DF8:       ; CODE XREF: validate_key+9C7j         <ÄÄÄÙ
+7A8:0DF8   mov   di, [bp+arg_0]
+7A8:0DFB   add   di, 0FF80h
+7A8:0DFF   push  ss
+7A8:0E00   push  di
+7A8:0E01   mov   di, [bp+arg_0]
+7A8:0E04   push  ss:[di+var_real_DX_bl5] ; push "magic" from block 5
+7A8:0E09   push  ss:[di+var_real_BX_bl5] ;
+7A8:0E0E   push  ss:[di+var_real_AX_bl5] ;
+7A8:0E13   push  ss:[di+var_118] ;  flag , by default =57544.23
+7A8:0E18   push  ss:[di+var_11A] ; but if "magic" from block 5 doesn't =("real" CRC from block4 + 10)
+7A8:0E1D   push  ss:[di+var_11C] ; and doesn't=("real" CRC from block4-10) then var118*=9823.23 and
+7A8:0E22   push  ss:[di+var_real_DX_bl4] ; this won't let us to bypass next checks
+7A8:0E27   push  ss:[di+var_real_BX_bl4] ;
+7A8:0E2C   push  ss:[di+var_real_AX_bl4] ; push "real" CRC from decrypted block 4
+7A8:0E31   call  j_check_integrity  ; here in very tricky way "real" CRC and
+"magic" compared.
+
+ This sub uses many fakes to stop us, it was really mess untill I rewrote
+ math part of this sub in pascal and simplify it - only then I was able
+ to see which operations were fakes and which were real and used.
+ And whats more funny, there are several decrypted "motivation" messages
+ in this sub, T decrypts them during other job, doesn't print, only
+ decrypts, its specially  made for crackers which will explore code :))
+
+ Just for example:
+97E8:16B1   lea   di, [bp+var_218]
+97E8:16B5   push  ss
+97E8:16B6   push  di
+97E8:16B7   lea   di, [bp+var_118]
+97E8:16BB   push  ss
+97E8:16BC   push  di
+97E8:16BD   mov   di, offset unk_87E8_F23
+97E8:16C0   push  cs
+97E8:16C1   push  di
+97E8:16C2   call  @$basg$qm6Stringt1 ; Load string
+97E8:16C7   mov   ax, 8374h
+97E8:16CA   xor   dx, dx
+97E8:16CC   push  dx
+97E8:16CD   push  ax
+97E8:16CE   mov   ax, 0FCEBh
+97E8:16D1   mov   dx, 0BABEh
+97E8:16D4   push  dx
+97E8:16D5   push  ax
+97E8:16D6   call  decrypt_string_and_verify_it ; "You are a weak lamer...."
+97E8:16DB   lea   di, [bp+var_CA]
+97E8:16DF   push  ss
+97E8:16E0   push  di
+97E8:16E1   mov   ax, 32h ; '2'
+97E8:16E4   push  ax
+97E8:16E5   call  @$basg$qm6Stringt14Byte ; Store string
+
+ And so on, like "I would not go there if i were you...",
+ "I also HATE debugging floating point op..",
+ "Why does an inteligent guy like you...",
+ "Wizard your time is running out...", and T even begins to count seconds
+  left before my death :))
+ Then it decrypts last one "End of motivation messages.Thank you for
+ support good product...".   Very funny and I must admit that those msgs
+ were really very motivating and helped me not to stop exploring this boring
+ procedure :)
+
+ Ok, lets get back to "check_integrity" itself:
+
+97E8:1085 check_integrity proc far ; CODE XREF: j_check_integrityJ
+; I include all vars here specially coz I used same vars names in my
+; Pascal program
+97E8:1085 var_418= byte ptr -418h
+97E8:1085 var_318= byte ptr -318h
+97E8:1085 var_30C= byte ptr -30Ch
+97E8:1085 var_2D0= byte ptr -2D0h
+97E8:1085 var_21C= byte ptr -21Ch
+97E8:1085 var_218= byte ptr -218h
+97E8:1085 var_214= byte ptr -214h
+97E8:1085 var_210= byte ptr -210h
+97E8:1085 var_20C= byte ptr -20Ch
+97E8:1085 var_20A= byte ptr -20Ah
+97E8:1085 var_208= byte ptr -208h
+97E8:1085 var_1DC= byte ptr -1DCh
+97E8:1085 var_1D0= byte ptr -1D0h
+97E8:1085 var_11C= byte ptr -11Ch
+97E8:1085 var_118= byte ptr -118h
+97E8:1085 var_114= byte ptr -114h
+97E8:1085 var_110= byte ptr -110h
+97E8:1085 var_10C= byte ptr -10Ch
+97E8:1085 var_10A= byte ptr -10Ah
+97E8:1085 var_108= byte ptr -108h
+97E8:1085 var_DC= byte ptr -0DCh
+97E8:1085 var_D0= byte ptr -0D0h
+97E8:1085 var_CB= byte ptr -0CBh
+97E8:1085 var_CA= byte ptr -0CAh
+97E8:1085 var_96= word ptr -96h
+97E8:1085 var_94= word ptr -94h
+97E8:1085 var_92= word ptr -92h
+97E8:1085 var_90= word ptr -90h
+97E8:1085 var_8E= word ptr -8Eh
+97E8:1085 var_8C= word ptr -8Ch
+97E8:1085 var_AX_bl_4= word ptr -8Ah
+97E8:1085 var_BX_bl_4= word ptr -88h
+97E8:1085 var_DX_bl_4= word ptr -86h
+97E8:1085 var_84= word ptr -84h
+97E8:1085 var_82= word ptr -82h
+97E8:1085 var_80= word ptr -80h
+97E8:1085 var_7E= word ptr -7Eh
+97E8:1085 var_7C= word ptr -7Ch
+97E8:1085 var_7A= word ptr -7Ah
+97E8:1085 var_Date_AX= word ptr -78h
+97E8:1085 var_Date_BX= word ptr -76h
+97E8:1085 var_Date_DX= word ptr -74h
+97E8:1085 var_X4_AX= word ptr -72h
+97E8:1085 var_X4_BX= word ptr -70h
+97E8:1085 var_X4_DX= word ptr -6Eh
+97E8:1085 var_6C= word ptr -6Ch
+97E8:1085 var_6A= word ptr -6Ah
+97E8:1085 var_68= word ptr -68h
+97E8:1085 var_X5_AX= word ptr -66h
+97E8:1085 var_X5_BX= word ptr -64h
+97E8:1085 var_X5_DX= word ptr -62h
+97E8:1085 var_X3_AX= word ptr -60h
+97E8:1085 var_X3_BX= word ptr -5Eh
+97E8:1085 var_X3_DX= word ptr -5Ch
+97E8:1085 var_AX_bl_5= word ptr -5Ah
+97E8:1085 var_AX_bl_5= word ptr -5Ah
+97E8:1085 var_BX_bl_5= word ptr -58h
+97E8:1085 var_DX_bl_5= word ptr -56h
+97E8:1085 var_X2_AX= word ptr -54h
+97E8:1085 var_X2_BX= word ptr -52h
+97E8:1085 var_X2_DX= word ptr -50h
+97E8:1085 var_X1_AX= word ptr -4Eh
+97E8:1085 var_X1_BX= word ptr -4Ch
+97E8:1085 var_X1_DX= word ptr -4Ah
+97E8:1085 var_47= byte ptr -47h
+97E8:1085 var_46= word ptr -46h
+97E8:1085 var_44= word ptr -44h
+97E8:1085 var_42= word ptr -42h
+97E8:1085 var_40= word ptr -40h
+97E8:1085 var_3E= word ptr -3Eh
+97E8:1085 var_3C= word ptr -3Ch
+97E8:1085 var_AX_11c= word ptr -3Ah
+97E8:1085 var_BX_11c= word ptr -38h
+97E8:1085 var_DX_11c= word ptr -36h
+97E8:1085 var_34= word ptr -34h
+97E8:1085 var_32= word ptr -32h
+97E8:1085 var_30= word ptr -30h
+97E8:1085 var_2E= word ptr -2Eh
+97E8:1085 var_2C= word ptr -2Ch
+97E8:1085 var_2A= word ptr -2Ah
+97E8:1085 var_28= word ptr -28h
+97E8:1085 var_26= word ptr -26h
+97E8:1085 var_24= word ptr -24h
+97E8:1085 var_22= word ptr -22h
+97E8:1085 var_20= word ptr -20h
+97E8:1085 var_1E= word ptr -1Eh
+97E8:1085 var_1C= word ptr -1Ch
+97E8:1085 var_1A= word ptr -1Ah
+97E8:1085 var_18= word ptr -18h
+97E8:1085 var_16= word ptr -16h
+97E8:1085 var_14= word ptr -14h
+97E8:1085 var_12= word ptr -12h
+97E8:1085 var_10= word ptr -10h
+97E8:1085 var_E= word ptr -0Eh
+97E8:1085 var_mul_const_AX_1= word ptr -0Ch
+97E8:1085 var_mul_const_BX_1= word ptr -0Ah
+97E8:1085 var_mul_const_DX_1= word ptr -8
+97E8:1085 var_6= word ptr -6
+97E8:1085 var_4= word ptr -4
+97E8:1085 var_2= word ptr -2
+97E8:1085 arg_AX_bl_4= word ptr  6
+97E8:1085 arg_BX_bl_4= word ptr  8
+97E8:1085 arg_DX_bl_4= word ptr  0Ah
+97E8:1085 arg_AX_11c= word ptr  0Ch
+97E8:1085 arg_BX_11c= word ptr  0Eh
+97E8:1085 arg_DX_11c= word ptr  10h
+97E8:1085 arg_AX_bl_5= word ptr  12h
+97E8:1085 arg_BX_bl_5= word ptr  14h
+97E8:1085 arg_DX_bl_5= word ptr  16h
+97E8:1085 arg_x= dword ptr  18h
+97E8:1085
+97E8:1085   push  bp
+97E8:1086   mov   bp, sp
+97E8:1088   sub   sp, 418h
+97E8:108C   mov   byte_192F_23E, 1
+97E8:1091   mov   al, 1
+97E8:1093   push  ax
+97E8:1094   call  j_get_time_and_some_shet
+97E8:1099   mov   [bp+var_6], 94h ;   look at those MF'ers hehehe
+97E8:109E   mov   [bp+var_4], 0A000h ; this stuff = 666666.0
+97E8:10A3   mov   [bp+var_2], 22C2h
+97E8:10A8   mov   ax, [bp+var_6]         ; init a lot of vars
+97E8:10AB   mov   bx, [bp+var_4]         ; with 666666.0
+97E8:10AE   mov   dx, [bp+var_2]
+97E8:10B1   mov   [bp+var_mul_const_AX_1], ax
+97E8:10B4   mov   [bp+var_mul_const_BX_1], bx
+97E8:10B7   mov   [bp+var_mul_const_DX_1], dx
+97E8:10BA   mov   ax, [bp+var_6]
+97E8:10BD   mov   bx, [bp+var_4]
+97E8:10C0   mov   dx, [bp+var_2]
+97E8:10C3   mov   [bp+var_12], ax
+97E8:10C6   mov   [bp+var_10], bx
+97E8:10C9   mov   [bp+var_E], dx
+.... and so on
+
+ Then go a lot of floating point operations. I included almost all of
+ them here. After that I included my program in Pascal which emulates
+ work of math part of this sub.
+
+97E8:13D0                     ; check_integrity+318j
+97E8:13D0   mov   [bp+var_6], 0B95h
+97E8:13D5   mov   [bp+var_4], 7622h ;  1559918.7666
+97E8:13DA   mov   [bp+var_2], 3E6Bh
+97E8:13DF   mov   ax, [bp+arg_AX_bl_4] ;
+97E8:13E2   mov   bx, [bp+arg_BX_bl_4] ;
+97E8:13E5   mov   dx, [bp+arg_DX_bl_4] ;
+97E8:13E8   mov   [bp+var_AX_bl_4], ax
+97E8:13EC   mov   [bp+var_BX_bl_4], bx
+97E8:13F0   mov   [bp+var_DX_bl_4], dx
+.....
+97E8:1428   call  @$basg$qm6Stringt14Byte ; Store string
+97E8:142D   mov   ax, 0DA95h  ;  1485845.7817
+97E8:1430   mov   bx, 0AE40h
+97E8:1433   mov   dx, 3560h
+97E8:1436   mov   cx, [bp+var_6] ;  1559918.7666
+97E8:1439   mov   si, [bp+var_4]
+97E8:143C   mov   di, [bp+var_2]
+97E8:143F   call  @$brmul$q4Realt1 ;  mul them = 2317798719100.0
+97E8:1444   mov   cx, 508Ch   ; and mul them on 2313.412 =
+97E8:1447   mov   si, 978Dh
+97E8:144A   mov   di, 1096h
+97E8:144D   call  @$brmul$q4Realt1 ; Real(AX:BX:DX)*=Real(CX:SI:DI)
+97E8:1452   mov   cx, [bp+var_12] ; and mul them on 666666.0 =
+97E8:1455   mov   si, [bp+var_10]
+97E8:1458   mov   di, [bp+var_E]
+97E8:145B   call  @$brmul$q4Realt1 ; Real(AX:BX:DX)*=Real(CX:SI:DI)
+97E8:1460   mov   [bp+var_mul_const_AX_1], ax
+97E8:1463   mov   [bp+var_mul_const_BX_1], bx
+97E8:1466   mov   [bp+var_mul_const_DX_1], dx
+97E8:1469   mov   [bp+var_X1_AX], 0E8Ch ;  2738.231
+97E8:146E   mov   [bp+var_X1_BX], 0B22Dh
+97E8:1473   mov   [bp+var_X1_DX], 2B23h
+97E8:1478   mov   [bp+var_X4_AX], 508Ch ;  2313.412
+97E8:147D   mov   [bp+var_X4_BX], 978Dh ;  -|-|-
+97E8:1482   mov   [bp+var_X4_DX], 1096h ;  -|-|-
+97E8:1487   mov   [bp+var_X2_AX], 0C98Eh ;  9823.436
+97E8:148C   mov   [bp+var_X2_BX], 0BE76h
+97E8:1491   mov   [bp+var_X2_DX], 197Dh
+....
+97E8:14CF   mov   [bp+var_X3_AX], 6D8Dh ;  7863.123
+97E8:14D4   mov   [bp+var_X3_BX], 0FBE7h
+97E8:14D9   mov   [bp+var_X3_DX], 75B8h
+97E8:14DE   mov   [bp+var_X5_AX], 0BE8Ch ;  2313.444
+97E8:14E3   mov   [bp+var_X5_BX], 1A9Fh
+97E8:14E8   mov   [bp+var_X5_DX], 1097h
+97E8:14ED   mov   ax, [bp+arg_AX_11c] ;
+97E8:14F0   mov   bx, [bp+arg_BX_11c] ;
+97E8:14F3   mov   dx, [bp+arg_DX_11c] ;
+97E8:14F6   mov   [bp+var_AX_11c], ax
+97E8:14F9   mov   [bp+var_BX_11c], bx
+97E8:14FC   mov   [bp+var_DX_11c], dx
+97E8:14FF   mov   [bp+var_22], 666Fh
+97E8:1504   mov   [bp+var_20], 0FFFFh
+97E8:1509   mov   ax, [bp+arg_AX_bl_5] ;
+97E8:150C   mov   bx, [bp+arg_BX_bl_5] ;
+97E8:150F   mov   dx, [bp+arg_DX_bl_5] ;
+97E8:1512   mov   [bp+var_AX_bl_5], ax
+97E8:1515   mov   [bp+var_BX_bl_5], bx
+97E8:1518   mov   [bp+var_DX_bl_5], dx
+97E8:151B   mov   [bp+var_12], 0BF94h ;  989856.94159
+97E8:1520   mov   [bp+var_10], 0F10h
+...
+97E8:1564   mov   ax, [bp+var_AX_bl_4] ; here we mul values from block4 with
+97E8:1568   mov   bx, [bp+var_BX_bl_4]
+97E8:156C   mov   dx, [bp+var_DX_bl_4]
+97E8:1570   mov   cx, [bp+var_X4_AX] ; 508c
+97E8:1573   mov   si, [bp+var_X4_BX] ; 978d
+97E8:1576   mov   di, [bp+var_X4_DX] ; 1096
+97E8:1579   call  @$brmul$q4Realt1 ; Real(AX:BX:DX)*=Real(CX:SI:DI)
+97E8:157E   mov   cx, [bp+var_AX_bl_5] ; then sub values from block 5
+97E8:1581   mov   si, [bp+var_BX_bl_5]
+97E8:1584   mov   di, [bp+var_DX_bl_5]
+97E8:1587   call  @$brmin$q4Realt1 ; Real(AX:BX:DX)-=Real(CX:SI:DI)
+97E8:158C   mov   [bp+var_AX_bl_4], ax ; save results
+97E8:1590   mov   [bp+var_BX_bl_4], bx
+97E8:1594   mov   [bp+var_DX_bl_4], dx
+97E8:1598   mov   ax, 392h    ;  235845.76666
+97E8:159B   mov   bx, 7111h
+97E8:159E   mov   dx, 6651h
+97E8:15A1   mov   cx, [bp+var_X4_AX] ; constants
+97E8:15A4   mov   si, [bp+var_X4_BX]
+97E8:15A7   mov   di, [bp+var_X4_DX]
+97E8:15AA   call  @$brmul$q4Realt1 ; Real(AX:BX:DX)*=Real(CX:SI:DI)
+97E8:15AF   mov   cx, [bp+arg_AX_bl_4] ; again use values from block 4
+97E8:15B2   mov   si, [bp+arg_BX_bl_4]
+97E8:15B5   mov   di, [bp+arg_DX_bl_4]
+97E8:15B8   call  @$brmul$q4Realt1 ; Real(AX:BX:DX)*=Real(CX:SI:DI)
+97E8:15BD   mov   [bp+var_18], ax
+97E8:15C0   mov   [bp+var_16], bx
+97E8:15C3   mov   [bp+var_14], dx
+97E8:15C6   mov   ax, 4890h   ;  44545.781666
+97E8:15C9   mov   bx, 0C81Bh
+97E8:15CC   mov   dx, 2E01h
+97E8:15CF   mov   cx, [bp+var_18]
+97E8:15D2   mov   si, [bp+var_16]
+97E8:15D5   mov   di, [bp+var_14]
+97E8:15D8   call  @$brdiv$q4Realt1 ; Real(AX:BX:DX)/=Real(CX:SI:DI)
+97E8:15D8                     ; Real(CX:SI:DI)=Real(AX:BX:DX)%Real(CX:SI:DI)
+97E8:15DD   mov   cx, [bp+var_mul_const_AX_1]
+97E8:15E0   mov   si, [bp+var_mul_const_BX_1]
+97E8:15E3   mov   di, [bp+var_mul_const_DX_1]
+97E8:15E6   call  @$brmul$q4Realt1 ; Real(AX:BX:DX)*=Real(CX:SI:DI)
+97E8:15EB   mov   cx, [bp+var_12]
+97E8:15EE   mov   si, [bp+var_10]
+97E8:15F1   mov   di, [bp+var_E]
+97E8:15F4   call  @$brplu$q4Realt1 ; Real(AX:BX:DX)+=Real(CX:SI:DI)
+97E8:15F9   mov   [bp+var_1E], ax
+97E8:15FC   mov   [bp+var_1C], bx
+97E8:15FF   mov   [bp+var_1A], dx
+97E8:1602   mov   ax, [bp+var_6]
+97E8:1605   mov   bx, [bp+var_4]
+97E8:1608   mov   dx, [bp+var_2]
+97E8:160B   mov   cx, [bp+var_AX_bl_4]
+97E8:160F   mov   si, [bp+var_BX_bl_4]
+97E8:1613   mov   di, [bp+var_DX_bl_4]
+97E8:1617   call  @$brplu$q4Realt1 ; Real(AX:BX:DX)+=Real(CX:SI:DI)
+97E8:161C   mov   cx, [bp+var_18]
+97E8:161F   mov   si, [bp+var_16]
+97E8:1622   mov   di, [bp+var_14]
+97E8:1625   call  @__Cmp$q4Realt1 ; Compare two reals
+97E8:162A   ja    loc_87E8_164E ;
+97E8:162C   mov   ax, [bp+var_18]
+97E8:162F   mov   bx, [bp+var_16]
+97E8:1632   mov   dx, [bp+var_14]
+97E8:1635   mov   cx, [bp+var_1E]
+97E8:1638   mov   si, [bp+var_1C]
+97E8:163B   mov   di, [bp+var_1A]
+97E8:163E   call  @$brplu$q4Realt1 ; Real(AX:BX:DX)+=Real(CX:SI:DI)
+97E8:1643   mov   [bp+var_2E], ax
+97E8:1646   mov   [bp+var_2C], bx
+97E8:1649   mov   [bp+var_2A], dx
+97E8:164C   jmp   short loc_87E8_168A
+97E8:164E ; ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+97E8:164E loc_87E8_164E:      ; CODE XREF: check_integrity+5A5j
+97E8:164E   mov   ax, [bp+var_mul_const_AX_1]
+97E8:1651   mov   bx, [bp+var_mul_const_BX_1]
+97E8:1654   mov   dx, [bp+var_mul_const_DX_1]
+97E8:1657   mov   cx, [bp+var_18]
+97E8:165A   mov   si, [bp+var_16]
+97E8:165D   mov   di, [bp+var_14]
+97E8:1660   call  @$brmul$q4Realt1 ; Real(AX:BX:DX)*=Real(CX:SI:DI)
+97E8:1665   mov   cx, [bp+var_X4_AX]
+97E8:1668   mov   si, [bp+var_X4_BX]
+97E8:166B   mov   di, [bp+var_X4_DX]
+97E8:166E   call  @$brmin$q4Realt1 ; Real(AX:BX:DX)-=Real(CX:SI:DI)
+97E8:1673   mov   cx, [bp+arg_AX_bl_4]
+97E8:1676   mov   si, [bp+arg_BX_bl_4]
+97E8:1679   mov   di, [bp+arg_DX_bl_4]
+97E8:167C   call  @$brplu$q4Realt1 ; Real(AX:BX:DX)+=Real(CX:SI:DI)
+97E8:1681   mov   [bp+var_mul_const_AX_1], ax
+97E8:1684   mov   [bp+var_mul_const_BX_1], bx
+97E8:1687   mov   [bp+var_mul_const_DX_1], dx
+97E8:168A
+97E8:168A loc_87E8_168A:      ; CODE XREF: check_integrity+5C7j
+97E8:168A   mov   ax, 0E925h
+97E8:168D   push  ax
+97E8:168E   call  @Random$q4Word ; Random(range: Word): Word{AX}
+97E8:1693   xor   dx, dx
+97E8:1695   call  @Real$q7Longint ; Real(x: Longint{DX:AX}): Real
+97E8:169A   mov   cx, [bp+var_1E]
+97E8:169D   mov   si, [bp+var_1C]
+97E8:16A0   mov   di, [bp+var_1A]
+97E8:16A3   call  @$brmul$q4Realt1 ; Real(AX:BX:DX)*=Real(CX:SI:DI)
+97E8:16A8   mov   [bp+var_6C], ax
+97E8:16AB   mov   [bp+var_6A], bx
+97E8:16AE   mov   [bp+var_68], dx
+....
+97E8:16EA   mov   ax, [bp+var_AX_11c]
+97E8:16ED   mov   bx, [bp+var_BX_11c]
+97E8:16F0   mov   dx, [bp+var_DX_11c]
+97E8:16F3   mov   cx, 0CD91h  ;  89873.12948
+97E8:16F6   mov   si, 9092h
+97E8:16F9   mov   di, 2F88h
+97E8:16FC   call  @__Cmp$q4Realt1 ; Compare two reals
+97E8:1701   jbe   loc_87E8_1712 ; no jump for our kf
+97E8:1703   mov   [bp+var_X4_AX], 0F494h ;  876478.312
+97E8:1708   mov   [bp+var_X4_BX], 0E4FDh
+97E8:170D   mov   [bp+var_X4_DX], 55FBh
+97E8:1712
+97E8:1712 loc_87E8_1712:      ; CODE XREF: check_integrity+67Cj
+97E8:1712   mov   ax, [bp+var_AX_bl_4]
+97E8:1716   mov   bx, [bp+var_BX_bl_4]
+97E8:171A   mov   dx, [bp+var_DX_bl_4]
+97E8:171E   mov   cx, [bp+var_X4_AX]
+97E8:1721   mov   si, [bp+var_X4_BX]
+97E8:1724   mov   di, [bp+var_X4_DX]
+97E8:1727   call  @$brmul$q4Realt1 ; Real(AX:BX:DX)*=Real(CX:SI:DI)
+97E8:172C   mov   cx, [bp+arg_AX_bl_4]
+97E8:172F   mov   si, [bp+arg_BX_bl_4]
+97E8:1732   mov   di, [bp+arg_DX_bl_4]
+97E8:1735   call  @$brmin$q4Realt1 ; Real(AX:BX:DX)-=Real(CX:SI:DI)
+97E8:173A   mov   [bp+var_AX_bl_5], ax
+97E8:173D   mov   [bp+var_BX_bl_5], bx
+97E8:1740   mov   [bp+var_DX_bl_5], dx
+97E8:1743   mov   ax, [bp+var_AX_bl_5]
+97E8:1746   mov   bx, [bp+var_BX_bl_5]
+97E8:1749   mov   dx, [bp+var_DX_bl_5]
+97E8:174C   mov   [bp+var_X2_AX], ax
+97E8:174F   mov   [bp+var_X2_BX], bx
+97E8:1752   mov   [bp+var_X2_DX], dx
+...
+ After this goes some kind of CRC check on terminat.exe which will
+ stop only if several conditions will be true:
+97E8:1ADC loc_87E8_1ADC:      ; CODE XREF: check_integrity+A42j
+97E8:1ADC                     ; check_integrity+A4Bj check_integrity+A52j
+97E8:1ADC   mov   ax, [bp+var_X1_AX]
+97E8:1ADF   mov   bx, [bp+var_X1_BX]
+97E8:1AE2   mov   dx, [bp+var_X1_DX]
+97E8:1AE5   mov   cx, 0DB94h  ;  553745.561
+97E8:1AE8   mov   si, 18F9h
+97E8:1AEB   mov   di, 731h
+97E8:1AEE   call  @__Cmp$q4Realt1 ; Compare two reals
+97E8:1AF3   jb    loc_87E8_1AF8 ; we must bypass all checks here in order to
+97E8:1AF5   jmp   loc_87E8_191C  ; return from this sub
+97E8:1AF8 ; ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+97E8:1AF8 loc_87E8_1AF8:      ; CODE XREF: check_integrity+A6Ej
+97E8:1AF8   mov   ax, [bp+var_X2_AX]
+97E8:1AFB   mov   bx, [bp+var_X2_BX]
+97E8:1AFE   mov   dx, [bp+var_X2_DX]
+97E8:1B01   mov   cx, 358Dh   ;  7823.466
+97E8:1B04   mov   si, 0BA5Eh
+97E8:1B07   mov   di, 747Bh
+97E8:1B0A   call  @__Cmp$q4Realt1 ; Compare two reals
+97E8:1B0F   ja    loc_87E8_1B14
+97E8:1B11   jmp   loc_87E8_191C ; back to check integrity on terminat.exe
+97E8:1B14 ; ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+97E8:1B14 loc_87E8_1B14:      ; CODE XREF: check_integrity+A8Aj
+97E8:1B14   mov   ax, [bp+var_X3_AX]
+97E8:1B17   mov   bx, [bp+var_X3_BX]
+97E8:1B1A   mov   dx, [bp+var_X3_DX]
+97E8:1B1D   mov   cx, 9C94h   ;  587863.173
+97E8:1B20   mov   si, 72C4h
+97E8:1B23   mov   di, 0F85h
+97E8:1B26   call  @__Cmp$q4Realt1 ; Compare two reals
+97E8:1B2B   jb    loc_87E8_1B30
+97E8:1B2D   jmp   loc_87E8_191C
+97E8:1B30 ; ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+97E8:1B30 loc_87E8_1B30:      ; CODE XREF: check_integrity+AA6j
+97E8:1B30   mov   ax, [bp+var_X4_AX]
+97E8:1B33   mov   bx, [bp+var_X4_BX]
+97E8:1B36   mov   dx, [bp+var_X4_DX]
+97E8:1B39   mov   cx, 5294h   ;  575498.545
+97E8:1B3C   mov   si, 0A8B8h
+97E8:1B3F   mov   di, 0C80h
+97E8:1B42   call  @__Cmp$q4Realt1 ; Compare two reals
+97E8:1B47   jb    loc_87E8_1B4C
+97E8:1B49   jmp   loc_87E8_191C
+97E8:1B4C ; ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+97E8:1B4C loc_87E8_1B4C:      ; CODE XREF: check_integrity+AC2j
+97E8:1B4C   mov   ax, [bp+var_X5_AX]
+97E8:1B4F   mov   bx, [bp+var_X5_BX]
+97E8:1B52   mov   dx, [bp+var_X5_DX]
+97E8:1B55   mov   cx, 8B8Ch   ;  2213.494
+97E8:1B58   mov   si, 0E76Ch
+97E8:1B5B   mov   di, 0A57h
+97E8:1B5E   call  @__Cmp$q4Realt1 ; Compare two reals
+97E8:1B63   ja    loc_87E8_1B68
+97E8:1B65   jmp   loc_87E8_191C
+97E8:1B68 ; ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+97E8:1B68 loc_87E8_1B68:      ; CODE XREF: check_integrity+ADEj
+97E8:1B68   mov   byte_192F_112D, 1
+97E8:1B6D   call  j_some_check_n_bad_noise
+97E8:1B72   mov   byte_192F_E414, 7
+97E8:1B77   call  sub_153E_E09
+97E8:1B7C   mov   byte_192F_23E, 0
+97E8:1B81 loc_87E8_1B81:      ; CODE XREF: check_integrity+348j
+97E8:1B81   mov   sp, bp
+97E8:1B83   pop   bp
+97E8:1B84   retf  16h
+97E8:1B84 check_integrity endp
+
+ Here is my proggy in Pascal. You can compile it with TP6 and run.
+ It will write "Key is valid", because by default I use values which lead
+ us to valid key. You can change g_bl4 to whatever you want (this var
+ emulates "real" CRC from decrypted block 4), g_bl5 is calculated in
+ right way. If you try to add someting other than 10 or sub or whatever
+ you get "Key is not valid". For full explantation see comments in source.
+
+I use same vars names as in Ida listing,e.g.
+97E8:1743   mov   ax, [bp+var_AX_bl_5]  ;
+97E8:1746   mov   bx, [bp+var_BX_bl_5]
+97E8:1749   mov   dx, [bp+var_DX_bl_5]
+97E8:174C   mov   [bp+var_X2_AX], ax
+97E8:174F   mov   [bp+var_X2_BX], bx
+97E8:1752   mov   [bp+var_X2_DX], dx
+
+    will be:
+      X2:=bl_5;
+ Anyway, here is pascal source:
+
+{--------------------------- cut ---------------------------------------}
+{ global vars}
+Var
+   g_bl_4,g_bl_5,g_var118:Real;
+
+
+{ "check_integrity" emulation ;-) }
+{ it takes as args 3 values: "real" crc from decrypted block4,
+  "real" "magic" from block5 and "real" var118 - its "floating point" flag }
+function check_integrity(arg_bl4,arg_bl5,arg_var118:Real):Integer;
+Var
+   X1,X2,X3,X4,X5:Real;
+   bl_4,bl_5,mul_const:Real;
+   var6,var12,var18,var1E,var2E,var6C,var118:Real;
+   flag:Integer;
+begin
+{ vars init }
+     flag:=0;        { "bad key" by default }
+     X1:=2738.231;
+     X2:=9823.436;
+     X4:=2313.412;
+     X3:=7863.123;
+     X5:=2313.444;
+     var18:=666666.0;
+     var12:=666666.0;
+     var6:=1559918.7666;
+     mul_const:=666666.0;
+     bl_4:=arg_bl4;
+     bl_5:=arg_bl5;
+     var118:=arg_var118;
+
+  bl_4:=bl_4*X4-bl_5;                        {<-------------- !!!! }
+  var18:=X4*235845.76666*arg_bl4;                { fake }
+  var1E:=44545.781666/var18*mul_const+var12;     { fake }
+  if (var6+bl_4<=var18) then           {fake}
+       begin
+         var2E:=var18+var1E;            { don't used in future }
+       end
+       else
+       begin
+         mul_const:=mul_const*var18-X4+arg_bl4;  { don't used in future }
+       end;
+       var6C:=var1E*random($E925);      { don't used in future }
+
+        if (var118>89873.12948) then     { <!!! }
+            X4:=876478.312;
+
+      bl_5:=bl_4*X4-arg_bl4;            { <-------------- !!! }
+      X2:=bl_5;   { x2 must be > 7823.466 }  { <!!! }
+
+      { therefore: (arg_bl4*X4-arg_bl5)*X4-arg_bl4>7823.466
+
+        arg_bl4*X4*X4-arg_bl5*X4-arg_bl4>7823.466
+        arg_bl4(X4*X4-1)-arg_bl5*X4>7823.466
+        arg_bl4*5351874.0817-arg_bl5*2313.412>7823.466
+        Left part of this expression is always > right part whatever arg_bl4
+        and arg_bl5 we have, because arg_bl5=arg_bl4+10 or =arg_bl4-10, i.e.
+        arg_bl5 is only slightly bigger or less than arg_bl4 and
+        constant near arg_bl4(5351874.0817) is MUCH bigger than
+        constant near arg_bl5(2313.412). So whatever arg_bl4 and arg_bl5 we
+        have X2 always >7823.466
+        There is only one var left to explore - X4. It must be <575498.545.
+        By default X4=2313.412. So, by default it bypasses check. But
+        it can be changed if var118(arg pushed to j_check_integrity) >
+        89873.12948. By default var118=57544.23. So by default it
+        <89873.12948 and therefore X4 doesnt changed and it bypasses check.
+        But var118 also can be changed in sub "validate key" if
+        "magic" from block 5 doesn't ="real"CRC from block4 + 10 and
+        if "magic" from block 5 doesn't ="real"CRC from block4 - 10.
+
+        So, to bypass all checks in "j_check_integrity" we need to do
+        next steps:
+          -take CRC from decrypted block 4;
+          -convert it to real
+          -check if it <0 and change sign then
+          -if it<10 we must add 10
+          -if it>10 we must sub 10
+          -convert it back to Longint (i.e. 32bit value)
+          -put calculated value to block5 at offsets 15eh,160h.
+        }
+
+     if X1<553745 then     { doesn't change }
+        begin
+        if X2>7823.466  then      { changes }
+           begin
+           if X3<587863.173  then { doesn't change }
+              begin
+              if X4<575498.545   then      { changes - most important !!! }
+                 begin
+                 if X5>2213.494      then        { doesn't change }
+                    flag:=1   { valid key }
+                 end
+              end
+           end
+        end;
+     check_integrity:=flag;
+end;
+
+{-------------------------------- MAIN ------------------------------------}
+
+begin
+  g_bl_4:=50000.0;      { simulate CRC from decrypted block 4}
+  g_var118:=57544.23;     { by default - don't change }
+
+{ simulate Terminate's check}
+  if(g_bl_4<0) then g_bl_4:=g_bl_4*(-1);
+  if(g_bl_5<0) then g_bl_5:=g_bl_5*(-1);
+
+  {calc "magic" for block 5}
+  g_bl_5:=g_bl_4+10;       { try to add other value or sub or whatever else}
+
+  if(g_bl_4+10<>g_bl_5) then
+     begin
+     if(g_bl_4-10<>g_bl_5) then
+        g_var118:=g_var118*9823.23     { set "bad key" flag }
+     end;
+
+  if(check_integrity(g_bl_4,g_bl_5,g_var118)=0) then   { call integrity_check }
+    begin
+     writeln(' Key is not valid ');
+    end
+    else
+    begin
+     writeln(' Key is valid ');
+    end;
+end.
+{--------------------------- cut ---------------------------------------}
+
+ This proggy is very helpfull to understand that key file logic is very
+ simple. I was disappointed ;-))
+
+ Ok, lets imagine that we bypassed all checks in "check_integrity" (and
+ if we didn't - we will never return from "check_integrity", it
+ will produce very bad noise on PC speaker and go to infinite?? loop )
+ but it ain't over. Now T begins to check name from decrypted block 4
+ with several names, which were probably in bogus keys. See complete
+ list of these bad names in source of my keygen. Just for example:
+...
+87A8:0E74   mov   di, offset unk_77A8_4
+87A8:0E77   push  cs
+87A8:0E78   push  di
+87A8:0E79   call  @$basg$qm6Stringt1 ; Load string
+87A8:0E7E   mov   ax, 2711h
+87A8:0E81   xor   dx, dx
+87A8:0E83   push  dx
+87A8:0E84   push  ax
+87A8:0E85   call  decryptor1  ; decrypt  "Peter Thompson"
+87A8:0E8A   call  @$bsub$qm6Stringt1 ; Compare two strings
+87A8:0E8F   jnz   loc_77A8_E9A
+
+ After that T performs last and most tricky check. It checks decrypted
+ block 4 at certain offsets for specific values and decide if key authentic
+ or not. Offsets in block 4 which are checked by T:
+   72h,74h
+   14eh,150h - most important, coz T rejects keys with certain values at this
+               offset
+   156h,158h
+
+87A8:138C loc_77A8_138C:      ; CODE XREF: validate_key+F5Bj
+87A8:138C   mov   di, [bp+arg_0]
+87A8:138F   mov   ss:[di+var_138], 0D51Bh
+87A8:1396   mov   ss:[di+var_136], 6660h
+87A8:139D   mov   ax, ss:[di+var_138]
+87A8:13A2   mov   dx, ss:[di+var_136]
+87A8:13A7   xor   ax, 6660h                 ; ax=b37b
+87A8:13AA   xor   dx, 6660h                 ; dx=0
+87A8:13AE   les   di, ss:[di+var_106]
+87A8:13B3   cmp   dx, es:[di+150h]
+87A8:13B8   jnz   loc_77A8_13F3
+87A8:13BA   cmp   ax, es:[di+14Eh]
+87A8:13BF   jnz   loc_77A8_13F3
+87A8:13C1   mov   di, [bp+arg_0]
+87A8:13C4   les   di, ss:[di+var_106]
+87A8:13C9   cmp   word ptr es:[di+158h], 0E14Dh
+87A8:13D0   jnz   loc_77A8_13F3
+87A8:13D2   cmp   word ptr es:[di+156h], 2E1Ah
+87A8:13D9   jnz   loc_77A8_13F3
+87A8:13DB   mov   di, [bp+arg_0]
+87A8:13DE   mov   ss:[di+var_FLAG_ax], 5292h ;   234666.23
+87A8:13E5   mov   ss:[di+var_FLAG_bx], 8EB8h
+87A8:13EC   mov   ss:[di+var_FLAG_dx], 652Ah
+...
+87A8:14C7 loc_77A8_14C7:      ; CODE XREF: validate_key+1072j
+87A8:14C7   mov   di, [bp+arg_0]
+87A8:14CA   les   di, ss:[di+var_106]
+87A8:14CF   cmp   word ptr es:[di+158h], 0FA98h
+87A8:14D6   jz    loc_77A8_14DB
+87A8:14D8   jmp   loc_77A8_1598
+87A8:14DB ; ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+87A8:14DB
+87A8:14DB loc_77A8_14DB:      ; CODE XREF: validate_key+10D9j
+87A8:14DB   cmp   word ptr es:[di+156h], 12FDh
+87A8:14E2   jz    loc_77A8_14E7
+87A8:14E4   jmp   loc_77A8_1598
+87A8:14E7 ; ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+87A8:14E7
+87A8:14E7 loc_77A8_14E7:      ; CODE XREF: validate_key+10E5j
+87A8:14E7   mov   di, [bp+arg_0]
+87A8:14EA   les   di, ss:[di+var_106]
+87A8:14EF   mov   al, es:[di+76h]         ; bit 0 of this byte must be 0
+87A8:14F3   and   al, 1                 ; else we get message that this
+87A8:14F5   cmp   al, 1                 ; key created for other platform
+87A8:14F7   jnz   loc_77A8_1545          ; or something like this
+....
+87A8:1545 loc_77A8_1545:      ; CODE XREF: validate_key+10FAj
+87A8:1545   mov   di, [bp+arg_0]
+87A8:1548   les   di, ss:[di+var_106]
+87A8:154D   cmp   word ptr es:[di+74h], 4638h
+87A8:1553   jnz   loc_77A8_155D
+87A8:1555   cmp   word ptr es:[di+72h], 2391h
+87A8:155B   jz    loc_77A8_1561
+87A8:155D loc_77A8_155D:      ; CODE XREF: validate_key+1156j
+87A8:155D   mov   al, 0
+87A8:155F   jmp   short loc_77A8_1563
+87A8:1561 ; ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+87A8:1561 loc_77A8_1561:      ; CODE XREF: validate_key+115Ej
+87A8:1561   mov   al, 1
+87A8:1563 loc_77A8_1563:      ; CODE XREF: validate_key+1162j
+87A8:1563   mov   [bp+var_FLAG_1_byte], al
+87A8:1566   mov   di, [bp+arg_0]
+87A8:1569   mov   ax, ss:[di+var_110]
+87A8:156E   sub   ax, 2C92h               ;  3ef
+87A8:1571   xor   dx, dx                  ; 0
+87A8:1573   les   di, ss:[di+var_106]
+87A8:1578   cmp   dx, es:[di+150h]
+87A8:157D   jnz   loc_77A8_1598
+87A8:157F   cmp   ax, es:[di+14Eh]
+87A8:1584   jnz   loc_77A8_1598
+87A8:1586   mov   word_192F_4A, 3D91h ;  102394.93
+87A8:158C   mov   word_192F_4C, 770Ah
+87A8:1592   mov   word_192F_4E, 47FDh
+87A8:1598 loc_77A8_1598:      ; CODE XREF: validate_key+10DBj
+87A8:1598   mov   di, [bp+arg_0]
+87A8:159B   les   di, ss:[di+var_106]
+87A8:15A0   mov   ax, es:[di+14Eh]
+87A8:15A5   mov   dx, es:[di+150h]
+87A8:15AA   mov   Bl4_14e_AX, ax
+87A8:15AD   mov   Bl4_150_DX, dx
+87A8:15B1   mov   di, [bp+arg_0]
+87A8:15B4   les   di, ss:[di+var_106]
+
+ Developers of T are very smart. They don't check for good values. They
+ check for "bad" ones, i.e. values from keys , generated by crackers for
+ previous version of T. This strategy allows them to hide "picture" of
+ authentic key. Cracker just couldn't know how valid key should looks like.
+ He can only see how this key shouldn't looks like :)) This is a big difference.
+ Cracker looks here, chooses values at offsets 15e,160 which are not STILL
+ checked and makes new keygen. Developers analyse that keygen and include
+ check for it it next version of T. Very smart move. So how can we produce
+ valid key for all future version of T ? There are several ways:
+  1) these keys must not contain values checked below at offsets 15eh,160h
+     So what could they contain there:
+  a) some fixed values, not checked in
+     current version of T. But this will lead us nowhere. Developers of T
+     will include check for these values in future ver of T.
+  b) random values, which will be different for every key our keygen will
+     produce. We only need to check it for "bad" ones as T does and regene
+     rate if need. This is good way but there is posibility that one day
+     our keygen will generate key, which will contain values, which will
+     be checked  in future ver of T. And there is another posibility:
+     developers of T begins to check for "good" values, i.e. values which
+     exist in authentic keys - then our keys won't be valid.
+  c) We can make our keys look like old authentic keys, because T must
+     accept old authentic keys. T checks for such keys in very "softly"
+     and hidden way. First, it checks offsets 156h,158h for 0FA98h,12FDh:
+87A8:14CF   cmp   word ptr es:[di+158h], 0FA98h
+87A8:14D6   jz    loc_77A8_14DB
+87A8:14D8   jmp   loc_77A8_1598
+87A8:14DB loc_77A8_14DB:      ; CODE XREF: validate_key+10D9j
+87A8:14DB   cmp   word ptr es:[di+156h], 12FDh
+87A8:14E2   jz    loc_77A8_14E7
+87A8:14E4   jmp   loc_77A8_1598
+
+     If T founds these values then it checks if byte at offset 76h have
+     bit 0 set to 1.
+
+87A8:14EF   mov   al, es:[di+76h]         ; bit 0 of this byte must be 0
+87A8:14F3   and   al, 1                 ; else we get message that this
+87A8:14F5   cmp   al, 1                 ; key created for other platform
+87A8:14F7   jnz   loc_77A8_1545          ; or something like this
+
+     If bit0 set to 0 then T perform next check:
+
+87A8:154D   cmp   word ptr es:[di+74h], 4638h  ;
+87A8:1553   jnz   loc_77A8_155D
+87A8:1555   cmp   word ptr es:[di+72h], 2391h  ;
+87A8:155B   jz    loc_77A8_1561
+87A8:155D loc_77A8_155D:      ; CODE XREF: validate_key+1156j
+87A8:155D   mov   al, 0            ; some flag, used when T patch itself
+87A8:155F   jmp   short loc_77A8_1563
+87A8:1561 ; ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+87A8:1561 loc_77A8_1561:      ; CODE XREF: validate_key+115Ej
+87A8:1561   mov   al, 1
+87A8:1563 loc_77A8_1563:      ; CODE XREF: validate_key+1162j
+87A8:1563   mov   [bp+var_FLAG_1_byte], al
+87A8:1566   mov   di, [bp+arg_0]
+
+ And finally T checks offset 14eh,150h for 3ef, 0. If such values found
+ T set its beloved "floating point" flag.
+
+87A8:1569   mov   ax, ss:[di+var_110]
+87A8:156E   sub   ax, 2C92h               ;  3ef
+87A8:1571   xor   dx, dx                  ; 0
+87A8:1573   les   di, ss:[di+var_106]
+87A8:1578   cmp   dx, es:[di+150h]
+87A8:157D   jnz   loc_77A8_1598
+87A8:157F   cmp   ax, es:[di+14Eh]
+87A8:1584   jnz   loc_77A8_1598
+87A8:1586   mov   word_192F_4A, 3D91h ;  102394.93
+87A8:158C   mov   word_192F_4C, 770Ah  ;"floating point" flag
+87A8:1592   mov   word_192F_4E, 47FDh
+
+ And thats all! After that T begins check offsets 14eh,150h for "bad"
+ values even if it found 3ef,0 there earlier. But it we have 3ef,0 at
+ offsets 14e,150 - we bypass those checks for sure !!!
+
+87A8:15B9   cmp   word ptr es:[di+150h], 0FE6Fh
+87A8:15C0   jnz   loc_77A8_15CB
+87A8:15C0   jnz   loc_77A8_15CB
+87A8:15C2   cmp   word ptr es:[di+14Eh], 0DF92h
+87A8:15C9   jz    loc_77A8_161E                  ; "unauthorized key"
+87A8:15CB loc_77A8_15CB:      ; CODE XREF: validate_key+11C3j
+87A8:15CB   mov   di, [bp+arg_0]
+87A8:15CE   les   di, ss:[di+var_106]
+87A8:15D3   cmp   word ptr es:[di+150h], 0C740h
+87A8:15DA   jnz   loc_77A8_15E5
+87A8:15DC   cmp   word ptr es:[di+14Eh], 0AE99h
+87A8:15E3   jz    loc_77A8_161E
+87A8:15E5 loc_77A8_15E5:      ; CODE XREF: validate_key+11DDj
+87A8:15E5   mov   di, [bp+arg_0]
+87A8:15E8   les   di, ss:[di+var_106]
+87A8:15ED   cmp   word ptr es:[di+150h], 0
+87A8:15F3   jnz   loc_77A8_15FE
+87A8:15F5   cmp   word ptr es:[di+14Eh], 0B37Bh
+87A8:15FC   jz    loc_77A8_161E
+87A8:15FE loc_77A8_15FE:      ; CODE XREF: validate_key+11F6j
+87A8:15FE   mov   di, [bp+arg_0]
+87A8:1601   les   di, ss:[di+var_106]
+87A8:1606   cmp   word ptr es:[di+150h], 0C740h
+87A8:160D   jz    loc_77A8_1612
+87A8:160F   jmp   loc_77A8_1704
+87A8:1612 ; ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+87A8:1612 loc_77A8_1612:      ; CODE XREF: validate_key+1210j
+87A8:1612   cmp   word ptr es:[di+14Eh], 0AE66h
+87A8:1619   jz    loc_77A8_161E
+87A8:161B   jmp   loc_77A8_1704
+87A8:161E ; ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+87A8:161E loc_77A8_161E:      ; CODE XREF: validate_key+11CCj
+87A8:161E                     ; validate_key+11E6j validate_key+11FFj
+87A8:161E       ; here T display msg like "You are using unautorised key..."
+
+ So, we must put to decrypted block4:  0,3ef at offsets 14eh,150h;
+ 0fa98h,12fdh at offsets 156h,158h;  set to 0 bit0 of byte at offset 76h.
+ Such kind of key will be valid in any future ver of T.
+ My idea about these keys was confirmed when I saw old keygen for Terminate 3
+ by PREDATOR 666. I decrypted keys it creates and saw that is also uses such
+ strategy, i.e. 0,3ef to 14e,150 and so on as I described earlier. And what more
+ important that this keygen based on knowledge about original keys. After
+ it creates key it displays message like "thank to well known guy for
+ giving us 3 original keys". So as I thougth authentic keys looks like I described
+ above. Also this keygen gave me some other important info about original
+ key, i.e. key header; blocks 6-10 at offsets 15e,160 contains CRC of previous
+ blocks. So I wrote my keygen using this info. But if you think that its
+ CHEATING I made several command line switches which let generates valid
+ keys without header and CRC stored in blocks 6-10.
+
+ Ok, lets get back to T. After key at last checked T begins to create reginfo
+ and patch terminat.exe. See begining of me solution to look at reginfo format.
+ Here I'll explain how 4 bytes at offsets 1615E3h-1615E6h set.
+
+1615E3h-1615E6h - 4 bytes 01,x,01,y.
+
+    x=84h by default
+    x=79h  if offsets 72h,74h of decr. block 4 contains 2391h,4638h
+
+    y=DBh if offs. 14eh,150h contains 0,3ef
+    y=EAh if values at offs. 14eh,150h doesn't = 0,b37b and doesn't = 0,3ef
+          or values at offs. 156h,158h doesn't = 2e1a,e14d and doesn't = 12fd,fa98
+    y=6Dh if 14eh,150h contains 0,b37b and offs. 156h,158h contains 2e1a,e14d.
+     But this value cannot be set because such key won't bypass earlier check.
+
+ I don't know why T store these bytes, it doesn't even check it later. May be
+ all these made for checks in future versions of Terminate.
+
+ T takes values from offsets 154h,156h, xor them with FFFF,FFFF, convert
+ to ASCII string and put them at offsets 1615F1h-1615F9h in terminat.exe
+ This is also doesn't have any point for me now, may be it also one of
+ traps, may be they will check reginfo in future version of T. Anyway, I
+ made switch "i" in my keygen that allow you specify values you want at
+ offsets 152h,154h at decrypted block 4.
+
+87A8:21E4   mov   ax, es:[di+152h] ;  take bytes from unpacked block4
+87A8:21E9   mov   dx, es:[di+154h] ;  xor them and convert to ASCII
+87A8:21EE   xor   ax, 0FFFFh
+87A8:21F1   xor   dx, 0FFFFh
+87A8:21F5   push  dx
+87A8:21F6   push  ax
+87A8:21F7   call  j_convert_32bit_to_ASCII
+
+ Also T xor , converts to ASCII and saves to terminat.exe at offsets
+ 1615DAh-1615E2h some kind of seed used by encrypt/decrypt subs.
+ So then T can read this ASCII string, convert it to 32 bit value,
+ xor it and decrypt reginfo.
+
+87A8:1D8F   mov   ax, ss:[di+var_AX_XOR_MAGIC]
+87A8:1D94   mov   dx, ss:[di+var_DX_XOR_MAGIC]
+87A8:1D99   xor   ax, 34FFh
+87A8:1D9C   xor   dx, 12FFh
+87A8:1DA0   mov   ss:[di+var_AX_XOR_MAGIC], ax
+87A8:1DA5   mov   ss:[di+var_DX_XOR_MAGIC], dx
+
+ After everything done T display message and exit.
+
+87A8:2279 loc_77A8_2279:
+87A8:2279   mov   di, [bp+arg_0]
+87A8:227C   push  word ptr ss:[di+var_106+2]
+87A8:2281   push  word ptr ss:[di+var_106]
+87A8:2286   mov   ax, 162h
+87A8:2289   push  ax
+87A8:228A   call  @FreeMem$qm7Pointer4Word ; Free mem allocated for key block
+87A8:228F   call  sub_267_57  ;  print "Terminat.reg" generated ....
+87A8:2294   call  call_write_to_screen
+87A8:2299   xor   ax, ax
+87A8:229B   call  @Halt$q4Word ; Halt(Word)
+
+ Ok, at last. My powerfull advanced Terminate 3,4,5+ keygen :))
+
+;-------------------------------- term_akg.asm ------------------------------
+; Terminate 3,4,5+ Advanced Key Generator.
+; (C)oded by iNT_03h in 1998.
+; tasm 5.0r
+; compile: tasm.exe term_akg.asm
+; link: tlink.exe term_akg.obj
+
+.286p
+.MODEL Small
+.Code
+
+;----------------------------- macros ---------------------------------
+
+        PRINTF Macro               ; macro for display string
+                mov AH,09                ; ds:dx must point to string
+                int 21h
+               Endm
+        GETCH  Macro                            ; wait for press key
+               xor AH,AH
+               int 16h
+               Endm
+
+        SCANF  Macro     ; macro for enter string from kbd
+               mov AH,0Ah       ; ds:dx must points to buffer
+               int 21h
+               Endm
+        WRT_BLOCK  Macro      ; write current block of key to keyfile
+               mov AH,40h
+               mov BX,Handle
+               mov CX,Blk_len
+               mov DX, Offset Temp_blk
+               int 21h
+               Endm
+        STORE_CRC  Macro            ; put crc in block
+               mov BX, Crc_ax
+               mov DI, Offset Temp_blk+15Eh
+               mov DS:[DI],BX
+               inc DI
+               inc DI
+               mov BX, Crc_dx
+               mov DS:[DI],BX
+               Endm
+
+;================================ CODE_SEG ==============================
+
+START:                  .Startup
+                ;set mode 3
+                mov     AX,3
+                int     10h
+                mov     DX, Offset Start_msg  ; display start message
+                PRINTF
+                mov     CL,Byte Ptr  ES:[80h] ; number+1 of char in cmd line
+                or      CL,CL
+                jne     LABEL1        ; damn, "relative jump out of range"
+                jmp      GET_REGINFO
+LABEL1:
+                inc     CL    ; +1 because we dec it at first step of loop
+                mov     DI,80h  ; start offset-1 of cmd line in PSP
+CHECK_CMD_LINE:
+                inc     DI
+                dec     CL
+                jne     LABEL2     ; damn, "relative jump out of range"
+                jmp      GET_REGINFO
+LABEL2:
+                mov     AL, ES:[DI]
+                cmp     AL,' '         ; dont notice spaces
+               je      CHECK_CMD_LINE
+               cmp     AL,'?'        ;  "?"
+              jne     CHECK_SW2
+
+               mov DX,Offset Help       ; display help
+               PRINTF
+               jmp QUIT
+                                                                                ; set flags depending on cmd line
+CHECK_SW2:      cmp     AL,'s'                  ; switches
+                je      RND_SIG
+                cmp     AL,'S'
+                jne     CHECK_SW3
+RND_SIG:
+                mov     Rnd_sig_flag,1
+                jmp     CHECK_CMD_LINE
+CHECK_SW3:      cmp     AL,'z'
+                je      Z_FIL
+                cmp     AL,'Z'
+                jne     CHECK_SW4
+Z_FIL:
+                mov     Z_fil_flag,1
+                jmp     CHECK_CMD_LINE
+CHECK_SW4:      cmp     AL,'l'
+                je      FIX_LEN1
+                cmp     AL,'L'
+                jne     CHECK_SW5
+FIX_LEN1:
+                mov     Fixed_len_flag,1
+                jmp     CHECK_CMD_LINE
+CHECK_SW5:      cmp     AL,'a'
+                je      FIX_LEN2
+                cmp     AL,'A'
+                jne     CHECK_SW6
+FIX_LEN2:
+                mov     Fixed_len_flag,2
+                jmp     CHECK_CMD_LINE
+
+CHECK_SW6:      cmp     AL,'c'
+                je      NO_CRC
+                cmp     AL,'C'
+                jne     CHECK_SW7
+NO_CRC:
+                mov     No_crc_flag,1
+                jmp     CHECK_CMD_LINE
+
+CHECK_SW7:      cmp     AL,'o'
+                je      OFF_72
+                cmp     AL,'O'
+                jne     CHECK_SW8
+OFF_72:         mov     Off_72_flag,1
+                jmp     CHECK_CMD_LINE
+
+CHECK_SW8:      cmp     AL,'i'
+                je      OFF_152__
+                cmp     AL,'I'
+                jne     CHECK_SW9
+OFF_152__:      call    CONVERT
+
+
+CHECK_SW9:      cmp     AL,'r'
+                je      NO_HDR
+                cmp     AL,'R'
+                je      NO_HDR           ; damn, "relative jump out of range"
+                jmp     CHECK_CMD_LINE
+NO_HDR:
+                mov     No_hdr_flag,1
+                jmp     CHECK_CMD_LINE
+
+GET_REGINFO:
+; -------------------------- get reginfo ----------------------------
+                push    DS  ; we dont need PSP anymore
+                pop     ES
+
+                mov     DX, Offset Start_msg1  ; display start message
+                PRINTF
+GET_REGINFO1:
+                mov     DX, Offset Name_
+                PRINTF
+                mov     DX, Offset Nam        ; get name
+                SCANF
+                mov     DX, Offset Addr_ask
+                PRINTF
+                mov     DX, Offset Addres     ; get addres
+                SCANF
+                mov     DX, Offset City_ask
+                PRINTF
+                mov     DX, Offset City
+                SCANF
+                mov     DX, Offset Country_ask
+                PRINTF
+                mov     DX, Offset Country
+                SCANF
+                mov     DX, Offset Nl
+                PRINTF
+;------------------------------- check for bad names and city ----------
+                mov     Counter1,21    ; number of names to check
+                xor     DH,DH
+                xor     CH,CH
+                mov     DI,Offset Bad_names
+AGAIN:
+                cmp     Counter1,1       ; last one in list of bad name
+                jnz     CHECK_NAME       ; is acctualy city ( checked at "city" field)
+                mov     SI,Offset City+2
+                jmp     GET_LEN
+CHECK_NAME:
+                mov     SI,Offset Nam+2        ; bypass buffer len and num
+
+GET_LEN:
+                mov     Byte Ptr CL,[DI]       ; length of bad name
+                mov     Byte Ptr AL,[SI-1]  ; length of entered name
+                cmp     AL,CL               ; if len of nam>len of bad name
+                jae     USE_BAD_NAM_LEN     ; use len if bad name as counter
+                xchg    CL,AL               ; else use nam len
+USE_BAD_NAM_LEN:
+                mov     DL,CL               ; save for future use
+                inc     DI                  ; bypass len. of bad name
+                repz    cmpsb
+                jz      BAD_NAME_FOUND
+                dec     Counter1
+                jz              CREAT_KEY
+                dec     DI
+                sub     DX,CX
+                sub     DI,DX           ; find next bad name
+                mov     Byte Ptr DL,[DI]
+                add     DI,DX
+                inc     DI
+                jmp     AGAIN
+
+BAD_NAME_FOUND:
+                mov     DX,Offset Bad_name_msg
+                PRINTF
+                GETCH
+                jmp     GET_REGINFO1
+
+;------------------------------- create key file -----------------------
+CREAT_KEY:
+                mov     AX, 3C00h
+                mov     CX, 32           ; "archive" file
+                mov     DX, Offset Keyfile
+                int     21h                      ; create keyfile
+
+                jnb     NO_ERROR1
+
+                mov     DX, Offset Error_1
+                PRINTF
+                jmp QUIT
+NO_ERROR1:
+                mov    Handle,AX;
+
+                call RANDOMIZE        ; init "seed"
+
+MAIN_LOOP:
+                mov     AX,Crc_ax
+                mov     Temp_ax,AX
+                mov     AX,Crc_dx
+                mov     Temp_dx,AX
+
+                inc     Counter1
+                call    FILL_BLK      ; fill block with random words or 0
+
+                cmp     Counter1,1    ; first block ?
+                jne     CHECK4
+                cmp     No_hdr_flag,1
+                je      CHECK_BAD_BYTE
+                call    FILL_1ST_BLK   ; Write header to 1st block
+                jmp     CRC
+CHECK_BAD_BYTE:                                 ; bypass Terminate check
+                cmp     Byte Ptr [Offset Temp_blk+0Bh],46h
+                jne     CRC
+BAD_BYTE:
+                call    RANDOM
+                cmp     AL,46h
+                je      BAD_BYTE
+                mov     Byte Ptr [Offset Temp_blk+0Bh],AL
+CHECK4:         cmp     Counter1,4    ; block 4?
+                jne     CRC
+                call    MAKE_BLK4    ; write reginfo, signatures, pak block4
+CRC:
+                mov     DI,Offset Temp_blk
+                and     Word Ptr Counter,0       ; start offset in block =0
+                call    CRC_CALC
+
+                ; check if we need to adjust CRC in block 2,11
+                cmp     Counter1,2           ;block 2?
+                jne     CHECK11
+                mov     DI, Offset Temp_blk
+                call    CHK_5  ; check if first 5 bytes of block 2
+                or      AL,AL  ; = each other then modify CRC_AX,
+                jne     ADJUST_CRC  ; CRC_DX as Terminate does
+                jmp     WRITE
+ADJUST_CRC:
+                add     Crc_ax,329h   ; adjust CRC
+                adc     Crc_dx,0h
+                jmp     WRITE
+
+CHECK11:        cmp     Counter1,0Bh
+                jne     STORE_CHK
+                lea     DI, Temp_blk[12Ch]
+                call    CHK_5         ; check if 5 bytes of block 11
+                                      ; = each other then modify CRC_AX,
+                                      ; CRC_DX as Terminate does
+                or      AL,AL
+                je          CURENT_STORE
+                add     Crc_ax,192h
+                adc     Crc_dx,0h
+                jmp     CURENT_STORE
+
+                ; store CRC if needed
+STORE_CHK:
+                cmp     Counter1,5         ; we need to save magic values
+                jne     CHECK6
+
+                mov     BX, Bl5_ax         ; to block 5
+                mov     DI, Offset Temp_blk+15Eh
+                mov     DS:[DI],BX
+                mov     BX, Bl5_dx
+                inc     DI
+                inc     DI
+                mov     DS:[DI],BX
+                jmp     WRITE
+
+CHECK6:
+                cmp     Counter1,6     ; dont store crc in blocks 1-5
+                jb      WRITE
+
+                cmp     No_crc_flag,1
+                je      CLEAR_CRC
+STORE:                      ; previous block CRC store
+                mov     BX, Temp_ax
+                mov     DI, Offset Temp_blk+15Eh
+                mov     DS:[DI],BX
+                inc     DI
+                inc     DI
+                mov     BX, Temp_dx
+                mov     DS:[DI],BX
+                jmp     WRITE
+CURENT_STORE:                         ; in block 11 we must save
+                STORE_CRC                   ; current block CRC
+                jmp     WRITE
+CLEAR_CRC:
+                lea     DI, Temp_blk[15Eh]
+                and     Word Ptr [DI],0                 ; clear CRC place
+                inc     DI
+                inc     DI
+                and     Word Ptr [DI],0
+WRITE:
+                WRT_BLOCK
+                jnb  NO_ERROR2
+
+                mov     DX, Offset Error_2
+                PRINTF
+                jmp     CLOSE_KF
+
+NO_ERROR2:
+                cmp     Counter1,Num_blk
+                je      DONE
+                jmp     MAIN_LOOP
+
+DONE:
+                mov    DX, Offset Done_msg
+                PRINTF
+                cmp    Fixed_len_flag,1
+                je     CLOSE_KF
+
+                inc    Counter1     ;bypass own check for 0DCh in fill_blk
+                call   FILL_BLK
+                call   RANDOMIZE
+RND_LEN:
+                call   RANDOM            ; get random length
+
+                cmp    Fixed_len_flag,2
+                jne    chk_rnd_part
+                mov    AL,3905-3894        ;make fixed len = 3905
+                jmp    ADD_RND_PART
+
+CHK_RND_PART:
+                cmp    AL,1         ; it should be from 1 to 105
+                jb     RND_LEN
+                cmp    AL,105
+                ja     RND_LEN
+ADD_RND_PART:                      ; write random size block
+                xor    AH,AH       ; to the end of keyfile
+
+                mov CX,AX
+                mov AH,40h
+                mov BX,Handle
+                mov DX, Offset Temp_blk
+                int 21h
+
+CLOSE_KF:
+                mov     AH,3Eh
+                mov     BX,Handle
+                int     21h
+
+QUIT:
+                mov     AX,4C00h
+                int     21h
+
+;------------------------------- CRC calc ---------------------------------
+CRC_CALC        Proc
+; proc calc crc for current block of key in Temp_Block
+; kills di,ax,bx,cx,dx
+; di - start offset
+; counter - number of bytes to proceed
+; this sub taken from terminate, modified a little
+;               mov di, offset Temp_Blk
+
+LOOP1:
+                mov Byte Ptr AL,DS:[DI]
+                mov Word Ptr BX,Crc_ax
+                mov Word Ptr DX,Crc_dx
+                mov CX,AX
+                push DX
+                push BX
+                xor BX,CX
+                xor BH,BH
+                shl BX,1
+                shl BX,1
+                add BX, Offset Crc_table
+                mov AX,DS:[BX]
+                mov CX,DS:[BX+2]
+                pop BX
+                pop DX
+                push CX
+                mov CX,8
+LOOP2:
+                shr DX,1
+                rcr BX,1
+                loop LOOP2
+                and DX,0FFh
+                pop CX
+                xor AX,BX
+                mov BX,CX
+                xor DX,BX
+                mov Word Ptr Crc_ax,AX
+                mov Word Ptr Crc_dx,DX
+                inc DI
+                inc Counter
+                cmp Word Ptr Counter,15Eh
+                jne LOOP1
+                ret
+CRC_CALC    Endp
+
+;------------------------------ Random -----------------------------
+RANDOM Proc
+; proc generate pseudo-random number
+; kill ax
+; return random num in ax
+     ; after several experiments I found combination of math operations
+     ; that lets create random numbers rather well
+                mul Rnd_word1
+                xchg AH,AL
+                xor AX,Rnd_word2
+                add Rnd_word1,AX
+                push AX
+                mov AX,Rnd_word1
+                xor Rnd_word2,AX
+                pop AX
+;               and ax,0ffh
+
+                ret
+RANDOM      Endp
+
+;----------------------------- Randomize ----------------------------
+RANDOMIZE       Proc
+; kill ax,dx
+; modify "seed"
+                push DS
+                mov  AX, 40h ; segment of timer counter
+                mov  DS,AX
+                cli
+                mov  AX, DS:[6Ch]  ; offset of timer counter low word
+                mov  DX, DS:[6Eh]  ; high word
+                sti
+                pop DS
+                sub Rnd_word1,AX
+                add Rnd_word2,DX
+                ret
+RANDOMIZE   Endp
+
+;--------------------------------- Fill block with random bytes or 0 ---
+FILL_BLK        Proc
+
+; kill di,cx,ax,es
+               cld
+                mov Word Ptr CX,Blk_len/2
+                dec CX                     ; dont fill CRC place
+                dec CX
+                mov DI, Offset Temp_blk
+                cmp Z_fil_flag,1        ; if =0 then fill block with random
+                jne LOOP3               ; words
+                xor AX,AX               ; else - with 0
+                push DS
+                pop ES
+
+                rep stosw
+                ret
+LOOP3:
+                call   RANDOM
+                mov    Word Ptr DS:[DI],AX       ; fill with random words
+                inc    DI
+                inc    DI
+                loop   LOOP3
+
+                cmp     Counter1,0Bh  ; we need to check in block 11
+                             ; offset 15ah for value 0DCh
+                             ; because Terminate also does
+                             ; this check, but Term looks
+                             ; for whole signature  DC,64,D9,E9
+                             ; Although its very small posibility
+                             ; to get that signature in our block 11
+                             ; after filling it with random values,
+                             ; I decided to check for first byte
+                             ; and randomly change it if it = DC
+                jne     RET_
+                cmp     Byte Ptr [Offset Temp_blk+15Ah],0DCh
+                jne     RET_
+BAD_BYTE1:
+                call    RANDOM
+                cmp     AL,0DCh
+                je      BAD_BYTE1
+                mov     Byte Ptr [Offset Temp_blk+15Ah],AL
+
+RET_:
+                ret
+FILL_BLK        Endp
+
+;----------------------------- Write header to 1st block ----------------
+FILL_1ST_BLK Proc
+;kill di,si,cx
+
+        cld
+
+        mov     SI, Offset Key_header1
+        mov     DI, Offset Temp_blk
+        mov     CX,33                     ; length of header1
+        rep movsb
+
+        xor     CX,CX                        ;copy name
+        mov     SI, Offset Nam+2
+        mov     DI, Offset Temp_blk+33
+        mov     CL, Nam_len             ; length of Name
+        rep     movsb
+
+        mov     SI, Offset Key_header2
+        mov     DI, Offset Temp_blk+33
+        mov     CL, Nam_len
+        add     DI, CX
+        mov     CX,5                     ; length of header2
+        rep movsb
+                         ret
+FILL_1ST_BLK Endp
+
+;------------------------------- Check for 5 = bytes -----------
+CHK_5 Proc
+; di must point to start offset
+; proc check 5 consecutive bytes, begin from es:[di]
+; return al=1 if they equal each other
+; else al=0
+; kill cx
+              mov CX,4
+              mov Byte Ptr AL,[DI]
+LOOP4:
+              inc DI
+              mov Byte Ptr AH,[DI]
+              cmp AL,AH
+              jne RET_1
+              xchg AL,AH
+              loop LOOP4
+              mov AL,1
+              ret
+
+RET_1:
+              xor AL,AL
+              ret
+CHK_5       Endp
+
+;---------------------------- make block 4 ---------------------------
+MAKE_BLK4       Proc
+
+            cld                   ; set direction - forward
+
+            xor     CH,CH
+            lea     SI, Nam[1]           ; points to len of name
+            lea     DI, Temp_blk[7Ah]    ; points to offset of name in blk4
+            mov     CL, Nam_len          ; length of name
+            inc     CL
+            rep movsb                    ; copy
+
+            lea     SI, Addres[1]        ;addres
+            lea     DI, Temp_blk[0ADh]
+            mov     CL, Addres_len
+            inc     CL
+            rep movsb
+
+            lea     SI, City[1]         ;city
+            lea     DI, Temp_blk[0E0h]
+            mov     CL, City_len
+            inc     CL
+            rep movsb
+
+            lea     SI, Country[1]      ;country
+            lea     DI, Temp_blk[113h]
+            mov     CL, Country_len
+            inc     CL
+            rep movsb
+
+            cmp     word ptr Off_152_Flag,0
+            je      CHECK_OFF_72
+
+            lea     di,Temp_blk[154h]
+            mov     ax,Off_154_word
+            mov     word ptr [di],ax
+            mov     ax,Off_152_word
+            mov     word ptr [di-2],ax
+
+CHECK_OFF_72:
+            cmp     Off_72_flag,1
+            je      Off_72_Fill
+            jmp     CHECK_RND_SIG
+
+Off_72_Fill:
+            lea     DI,Temp_blk[74h]
+            mov     Word ptr [DI],4638h
+            mov     Word ptr [DI-2],2391h
+
+CHECK_RND_SIG:
+            cmp Byte Ptr Rnd_sig_flag,1
+            je     RANDOM_SIG
+
+            ; this set of constants create valid key
+            ; for ver 3.0, 4.0 and 5.0
+            ; future versions also should accept keys
+            ; with these constants in order to accept old authentic keys
+
+            lea     DI,Temp_blk[150h]
+            mov     Word Ptr [DI],0
+            mov     Word Ptr [DI-2],3EFh
+
+            lea     DI,Temp_blk[158h]
+            mov     Word Ptr [DI],0FA98h
+            mov     Word Ptr [DI-2],12FDh
+
+            lea     DI,Temp_blk[76h]
+            and     Byte Ptr [DI],0FEh      ;clear bit 0
+            jmp         CRC_N_PACK
+
+RANDOM_SIG: cmp     Z_fil_flag,1    ; if we filled key with 0
+            jne     CHECK_SIG         ; we must fill signatures' offsets
+                                      ; with random values
+            call    RANDOMIZE
+
+            cmp     Off_72_flag,1
+            je      NO_RANDOM_72
+
+            call    RANDOM
+            lea     DI,Temp_blk[74h]
+            mov     Word Ptr [DI],AX
+            call    RANDOM
+            mov     Word Ptr [DI-2],AX
+
+NO_RANDOM_72:
+            call    RANDOM
+            lea     DI,Temp_blk[150h]
+            mov     Word Ptr [DI],AX
+            call    RANDOM
+            mov     Word Ptr [DI-2],AX
+            call    RANDOM
+            lea     DI,Temp_blk[158h]
+            mov     Word Ptr [DI],AX
+            call    RANDOM
+            mov     Word Ptr [DI-2],AX
+
+CHECK_SIG:
+            lea     DI,Temp_blk[150h]       ; else we already have random sig
+            cmp     Word Ptr [DI],0         ; but we need check them for
+            jnz     NEXT_CHK1               ; "bad" ones
+            cmp     Word Ptr [DI-2],0B37Bh  ; "thanx" to Predator666
+            jz      BAD_SIG               ; he used this const in Term4 keygen
+            cmp     Word Ptr [DI-2],0B47Bh  ; "thanx" to Predator666
+            jz      BAD_SIG            ; he used this const in Term5 keygen
+                                     ; and for sure this value will be
+                                     ;checked in next ver of Terminate
+
+NEXT_CHK1:  cmp     Word Ptr [DI],0FE6Fh    ; these constants checked
+            jnz     NEXT_CHK2       ; in Term 4,5
+            cmp             Word Ptr [DI-2],0DF92h  ;
+            jz      BAD_SIG
+
+NEXT_CHK2:  cmp     Word Ptr [DI],0C740h        ; these constants checked
+            jnz     SIG_OK                                  ; in Term 4,5
+            cmp             Word Ptr [DI-2],0AE99h  ;
+            jz      BAD_SIG
+            cmp     Word Ptr [DI-2],0AE66h
+            jz      BAD_SIG
+SIG_OK:                             ; lets check offsets 156h,158h
+            lea     DI,Temp_blk[158h]
+            cmp     Word Ptr [DI],0FA98h    ; we need really random signatures
+            jnz     NEXT_CHK3               ; which dont checked in Terminate
+            cmp     Word Ptr [DI-2],12FDh   ; at all
+            jz      BAD_SIG1
+NEXT_CHK3:
+            cmp     Word Ptr [DI],0E14Dh
+            jnz     NEXT_CHK4
+            cmp     Word Ptr [DI-2],2E1Ah
+            jz      BAD_SIG1
+NEXT_CHK4:
+            cmp     Off_72_flag,1
+            je      CRC_N_PACK
+
+            lea         DI,Temp_blk[74h]
+            cmp     Word Ptr [DI],04638h    ; we need really random signatures
+            jnz     CRC_N_PACK              ; which dont checked in Terminate
+            cmp     Word Ptr [DI-2],2391h   ; at all
+            jz      BAD_SIG2
+
+BAD_SIG:    call    RANDOMIZE
+            call    RANDOM
+            lea     DI,Temp_blk[150h]
+            mov     Word Ptr [DI],AX
+            call    RANDOM
+            mov     Word Ptr [DI-2],AX
+            jmp     RANDOM_SIG            ; check again
+
+BAD_SIG1:   call    RANDOMIZE
+            call    RANDOM
+            lea     DI,Temp_blk[158h]
+            mov     Word Ptr [DI],AX
+            call    RANDOM
+            mov     Word Ptr [DI-2],AX
+            jmp     RANDOM_SIG            ; check again
+
+BAD_SIG2:   call    RANDOMIZE
+            call    RANDOM
+            lea     DI,Temp_blk[74h]
+            mov     Word Ptr [DI],AX
+            call    RANDOM
+            mov     Word Ptr [DI-2],AX
+            jmp     RANDOM_SIG            ; check again
+
+CRC_N_PACK:
+            push    Crc_ax
+            push    Crc_dx
+            or      Word Ptr Crc_ax,0FFFFh
+            or      Word Ptr Crc_dx,0FFFFh
+
+            lea     DI,Temp_blk[5Bh]
+            mov     Counter,5Bh
+            call    CRC_CALC          ;calc crc of unpacked blk4
+            STORE_CRC                 ; from 5bh to 15eh
+            pop     Crc_dx
+            pop             Crc_ax
+
+            test    DX,8000h            ; if 32 bit value in dx:ax <0
+            je      SIGN_PLUS          ; then change sign
+            not     DX
+            neg     AX
+
+SIGN_PLUS:  cmp     DX,0      ; this checks need because off:
+                              ; if dx:ax<0 and abs val of dx:ax<10
+                              ; after we change it sign
+                              ; and sub 10 we again get value <0
+                              ; example:  CRC of unp block 4 is dx:ax=-9
+                              ; we change sign and get dx:ax=9
+                              ; lets dont check abs value and simply
+                              ; sub 10, we get dx:ax=-1 and store it to blk5
+                              ; then when Terminate begin to check key
+                              ; it take CRC of unpacked blk4 and
+                              ; change sign and get dx:ax=9
+                              ; it also take values from block5 and
+                              ; change their sign too: =1
+                              ; Term try to add 10 to CRC of blk4 and get 19
+                              ; not = 1
+                              ; Term try to sub 10 and get -1
+                              ; this also not = 1   => bad key
+                              ; so we must look for abs value of CRC
+                              ; of unpacked block4 and add 10 if it<10
+
+            jne     MINUS_10
+            cmp     AX,0Ah
+            ja      MINUS_10
+            add             AX,0Ah
+            jmp     PAK
+
+MINUS_10:                   ; dx:ax - 0ah , where 0ah in cx:bx
+            xor     CX,CX
+            mov     BX,0Ah
+
+            sub     AX,BX
+            sbb     DX,CX
+
+PAK:        push    AX
+            push    DX
+
+            mov     CX,161h-5Ah                  ; encrypt reginfo 3 times
+            lea     DI, Temp_blk[5Bh]    ; in back order
+            mov     Temp_ax,904h
+            mov     Temp_dx,33EEh
+            call    ED_XOR
+
+            mov     CX,161h-5Ah
+            lea             DI, Temp_blk[5Bh]
+            mov     Temp_ax,325Ch
+            mov     Temp_dx,0
+            call    ED_XOR
+
+            mov     CX,161h-5Ah
+            lea             DI, Temp_blk[5Bh]
+            mov     Temp_ax,7
+            mov     Temp_dx,0
+            call    ED_XOR
+
+                                   ; simple xor with 0ffh
+            mov     CX,161h-5Ah
+            lea     DI, Temp_blk[5Bh]
+LOOP6:
+            xor     Byte Ptr DS:[DI],0FFh
+            inc     DI
+            loop    LOOP6
+
+            pop     DX
+            pop     AX
+            mov     Bl5_ax,AX         ; save values for future store
+            mov     Bl5_dx,DX         ; in block 5
+
+            ret
+MAKE_BLK4       Endp
+
+;-------------------------------- encrypt/decrypt ------------------------
+ED_XOR  Proc
+; input:  di must points to offset of place to encrypt/decrypt
+;         cx - number of bytes to encrypt/decrypt
+; kills dx,ax,bx,cx,di
+; this  proc taken from Terminate, modified a little
+
+       mov     Counter,CX
+LOOP5:
+       ;               call    CALC_XOR_MASK
+
+       mov     AX,Temp_ax
+       mov     BX,Temp_dx
+       mov     CX, AX
+       mul    Word Ptr Mul_val
+                 ; shl     CX, 1
+                 ; shl     CX, 1
+                 ; shl     CX, 1
+       shl     CX, 3
+       add     CH, CL
+       add     DX, CX
+       add     DX, BX
+       shl     BX, 1
+       shl     BX, 1
+       add     DX, BX
+       add     DH, BL
+       mov     CL, 5
+       shl     BX, CL
+       add     DH, BL
+       add     AX, 1
+       adc     DX, 0
+       mov Word Ptr Temp_ax,AX
+       mov Word Ptr Temp_dx,DX
+       xor     AX, AX
+       xchg    AX, DX
+       mov     BX,X_val
+       div     BX
+       xor     Byte Ptr DS:[DI],DL
+       inc     DI
+       dec     Counter
+       jnz     LOOP5
+       ret
+ED_XOR  Endp
+;-------------------------- Convert ASCII to 32 bit --------------------
+CONVERT proc
+; kills ax ,bx
+
+BEGIN:
+                xor     BX,BX
+                xor     ah,ah
+                mov     counter1,4
+LOOP10:
+                inc     di
+                mov     al, byte ptr ES:[DI]
+                cmp     al,'0'
+                jb      RET__
+                cmp     al,'9'
+                ja      CHECK_CAPS
+                sub     al,'0'
+DEC_C:          shl     bx,4                 ; convert and dec counter
+                add     bx,ax
+                dec     counter1
+                jz      SAVE_
+                jmp     LOOP10
+CHECK_CAPS:     cmp     al,'A'
+                jb      RET__
+                cmp     al,'F'
+                ja      CHECK_LOW
+                sub     al,37h
+                jmp     DEC_C
+
+CHECK_LOW:
+                cmp     al,'a'
+                jb      RET__
+                cmp     al,'f'
+                ja      RET__
+                sub     al,57h
+                jmp     DEC_C
+SAVE_:
+                cmp    word ptr Off_152_Flag,0
+                jnz    SECOND_WORD
+                mov    Off_152_word,BX
+                mov    Off_152_Flag,1
+                jmp    BEGIN
+SECOND_WORD:    mov    Off_154_word,BX
+
+RET__:
+                ret
+
+CONVERT Endp
+
+
+;--------------------------- STACK ------------------------------------
+
+
+STACK_SEG       Segment Para Stack 'STACK'
+                Db 256 Dup ('S')
+STACK_SEG       Ends
+;------------------------------ DATA ----------------------------------
+
+.Data
+;-------------------------------- constants -----------------------------
+Bb                              Equ 0FEh
+Blk_len         Equ 162h       ; keyfile block's length
+Num_blk         Equ 0Bh        ; number of block in kf
+X_val           Equ 100h           ; constant, used in calc xor mask
+
+;-------------------------------- common variables ----------------------
+
+Mul_val         Dw 8405h    ; constant, used in calc xor mask
+Counter         Dw 0
+Counter1        Db 0
+Temp_byte       Db 0
+Rnd_word1       Dw 1234h  ; "seed" for pseudo-random number generator
+Rnd_word2       Dw 5678h
+
+;----------------------- flags, affected by command line switches --------
+
+Z_fil_flag     Db 0 ; if =1 then blocks of key will be filled with 0
+                    ; bytes before calc crc, write reginfo, pak, etc.
+                    ; else they will be filled with random bytes
+                    ; but with check for "bad" bytes in certain blocks
+
+Rnd_sig_flag    Db 0 ; if =1 then random signatures will be used
+Fixed_len_flag  Db 0 ; if =1 then length of key will be = 3894
+                     ; else 3894+rnd_len,where rnd_len is value in range 1-105
+                     ; if =2 then length of key will be = 3905
+No_hdr_flag     Db 0 ; if=1 then dont write key header in block 1
+No_crc_flag     Db 0 ; if=1 then dont store CRC in blocks 6-10
+
+Off_72_flag     db 0 ; if =1 then values 2391h and 4638h will be written
+                     ; at offsets 72h and 74h in block 4
+Off_152_Word    dw 0 ; these words will be written at off 152
+Off_154_Word    dw 0 ; and 154 in block 4 if Off_152_Flag not = 0
+Off_152_Flag    db 0
+
+Temp_ax         Dw 0 ; temp vars
+Temp_dx         Dw 0
+
+Bl5_ax          Dw 0  ; values , calculated from CRC of block4
+Bl5_dx          Dw 0  ; and written to block 5
+
+;-------------------------------- text data ------------------------------
+Nl        Db 0Dh,0Ah,'$' ; next line
+Start_msg Db 0Dh,0Ah,Bb,' TERMINATE 3,4,5+ Advanced Key Generator ',BB,0dh,0ah
+          Db 43 Dup ('Ä'),0dh,0ah
+          Db 'Coded by iNT_03h in hot summer of 1998.',0dh,0ah,0dh,0ah,'$'
+Start_msg1 Db 'Use: term_akg /? to get list of advanced options.',0dh,0ah,0dh,0ah
+           Db 'Enter info needed for create key',0dh,0ah,'$'
+
+Name_      Db 0Dh,0Ah,0Dh,0Ah,Bb,' First and last name:$'
+
+Addr_ask    Db 0Dh,0Ah,0Dh,0Ah,Bb,' Addres:$'
+City_ask    Db 0Dh,0Ah,0Dh,0Ah,Bb,' City:$'
+Country_ask Db 0Dh,0Ah,0Dh,0Ah,Bb,' Country:$'
+
+Error_1      Db 0Dh,0Ah,Bb,' Could not create Terminat.key !!!$'
+Error_2      Db 0Dh,0Ah,Bb,' Could not write Terminat.key !!!$'
+
+Help         Db  0Dh,0Ah,Bb,' Command line syntax: term_akg [option1][option2][...]',0Dh,0Ah,0Dh,0Ah
+             Db  '  options:',0dh,0ah
+             Db  '  ? - get this help',0dh,0ah
+             Db  '  s - use random, but valid "magic" values in block 4 ( else use constant',0dh,0ah
+             Db  '      "magic" values, which provide valid key for Terminate 3,4,5+ )',0dh,0ah
+             db  '  o - write 2391h,4638h to offset 72h,74h in block 4 ( else random values )',0dh,0ah
+             db  '  i - enter value to put at offset 152h,154h ( else fill with 0 ),',0dh,0ah
+             db  '  e.g. i00ef3445 - 00efh will be written to offset 152h, 3445 - to offset 154h.',0dh,0ah
+             Db  '  z - fill unimportant part of key with 0 ( else with random bytes )',0dh,0ah
+             Db  '  l - fixed length (3894 bytes) of key ( else add random length block )',0dh,0ah
+             Db  '  a - fixed length (3905 bytes) of key ( else add random length block )',0dh,0ah
+             Db  '  c - dont store CRC in blocks 6-10',0dh,0ah
+             Db  '  r - dont write key header in block 1',0dh,0ah,0dh,0ah
+             Db Bb,' Use these advanced settings only if you know what are you doing. Default',0dh,0ah
+             Db    '  settings will create 100% valid key for Terminate 3,4,5 and all future',0dh,0ah
+             Db    '  versions too if encryption remains same.$'
+Done_msg     Db 0Dh,0Ah,0Dh,0Ah,Bb,' Done. Key succesfully created.$'
+Bad_names    Db 13,'Peter Thomsen',18,'Terry Rossid / BAI',10,'Tom Nelson',3,'N/A'
+             Db 15,'TIMUCIN KIZILAY',8,'JIKO A.S',17,'Heiner Marczewski'
+             Db 14,'Joshua Schultz',14,'John McCormick',17,'Stephen B. Browne'
+             Db 8,'R NATHAN',14,'Angela G Dubin',16,'Per Angelo Camia'
+             Db 19,'William R. Rininger',34,'Velibor Cagalj / Zeit.Systeme GmbH'
+             Db 16,'Louvier Bertrand',11,'Jenny Hines',10,'Gilad Avni'
+             Db 24,'mic-mega industries gmbh',30,'Marcus Pullen / Computer Buyer'
+             Db 20,'Herr Erland Lorenzen' ;bad city
+Bad_name_msg Db 7,0Dh,0Ah,0Dh,0Ah,'*** You''ve entered name and/or city that TERMINATE won''t accept ***',0dh,0ah
+             Db Bb,' Press any key to reenter reg info...$'
+
+;--------------------------------- reg info ------------------------------
+
+Nam                     Db 51
+Nam_len                 Db 52 Dup (0)
+Addres                  Db 51
+Addres_len              Db 52 Dup (0)
+City                    Db 51
+City_len                Db 52 Dup (0)
+Country                 Db 51
+Country_len             Db 52 Dup (0)
+
+;--------------------------------- key specific info --------------------
+
+Keyfile        Db 'terminat.key',0
+Handle         Dw 0
+Key_header1    Db 0Dh,1Bh,5Bh,32h,4Ah,0Dh,'Terminat personal keyfile',0dh,0ah
+Key_header2    Db 0Dh,0Ah,7,7,1Ah
+
+Temp_blk      Db 162h Dup(0)
+
+Crc_ax        Dw 0FFFFh
+Crc_dx        Dw 0FFFFh
+
+; table, used for calculate CRC, I took it from terminat.exe. I used my
+; own C programm to convert binary file to what you see below.
+
+Crc_table Db 0,0,0,0,96h,30h,7,77h,2Ch,61h,0Eh,0EEh,0BAh,51h,9,99h,19h,0C4h
+Db 6Dh,7,8Fh,0F4h,6Ah,70h,35h,0A5h,63h,0E9h,0A3h,95h,64h,9Eh,32h,88h,0DBh
+Db 0Eh,0A4h,0B8h,0DCh,79h,1Eh,0E9h,0D5h,0E0h,88h,0D9h,0D2h,97h,2Bh,4Ch
+Db 0B6h,9,0BDh,7Ch,0B1h,7Eh,7,2Dh,0B8h,0E7h,91h,1Dh,0BFh,90h,64h,10h,0B7h
+Db 1Dh,0F2h,20h,0B0h,6Ah,48h,71h,0B9h,0F3h,0DEh,41h,0BEh,84h,7Dh,0D4h,0DAh
+Db 1Ah,0EBh,0E4h,0DDh,6Dh,51h,0B5h,0D4h,0F4h,0C7h,85h,0D3h,83h,56h,98h,6Ch
+Db 13h,0C0h,0A8h,6Bh,64h,7Ah,0F9h,62h,0FDh,0ECh,0C9h,65h,8Ah,4Fh,5Ch,1
+Db 14h,0D9h,6Ch,6,63h,63h,3Dh,0Fh,0FAh,0F5h,0Dh,8,8Dh,0C8h,20h,6Eh,3Bh
+Db 5Eh,10h,69h,4Ch,0E4h,41h,60h,0D5h,72h,71h,67h,0A2h,0D1h,0E4h,3,3Ch,47h
+Db 0D4h,4,4Bh,0FDh,85h,0Dh,0D2h,6Bh,0B5h,0Ah,0A5h,0FAh,0A8h,0B5h,35h
+Db 6Ch,98h,0B2h,42h,0D6h,0C9h,0BBh,0DBh,40h,0F9h,0BCh,0ACh,0E3h,6Ch,0D8h
+Db 32h,75h,5Ch,0DFh,45h,0CFh,0Dh,0D6h,0DCh,59h,3Dh,0D1h,0ABh,0ACh,30h,0D9h
+Db 26h,3Ah,0,0DEh,51h,80h,51h,0D7h,0C8h,16h,61h,0D0h,0BFh,0B5h,0F4h,0B4h
+Db 21h,23h,0C4h,0B3h,56h,99h,95h,0BAh,0CFh,0Fh,0A5h,0BDh,0B8h,9Eh,0B8h
+Db 2,28h,8,88h,5,5Fh,0B2h,0D9h,0Ch,0C6h,24h,0E9h,0Bh,0B1h,87h,7Ch,6Fh
+Db 2Fh,11h,4Ch,68h,58h,0ABh,1Dh,61h,0C1h,3Dh,2Dh,66h,0B6h,90h,41h,0DCh,76h
+Db 6,71h,0DBh,1,0BCh,20h,0D2h,98h,2Ah,10h,0D5h,0EFh,89h,85h,0B1h,71h,1Fh
+Db 0B5h,0B6h,6,0A5h,0E4h,0BFh,9Fh,33h,0D4h,0B8h,0E8h,0A2h,0C9h,7,78h,34h
+Db 0F9h,0,0Fh,8Eh,0A8h,9,96h,18h,98h,0Eh,0E1h,0BBh,0Dh,6Ah,7Fh,2Dh
+Db 3Dh,6Dh,8,97h,6Ch,64h,91h,1,5Ch,63h,0E6h,0F4h,51h,6Bh,6Bh,62h,61h,6Ch
+Db 1Ch,0D8h,30h,65h,85h,4Eh,0,62h,0F2h,0EDh,95h,6,6Ch,7Bh,0A5h,1,1Bh
+Db 0C1h,0F4h,8,82h,57h,0C4h,0Fh,0F5h,0C6h,0D9h,0B0h,65h,50h,0E9h,0B7h
+Db 12h,0EAh,0B8h,0BEh,8Bh,7Ch,88h,0B9h,0FCh,0DFh,1Dh,0DDh,62h,49h,2Dh,0DAh
+Db 15h,0F3h,7Ch,0D3h,8Ch,65h,4Ch,0D4h,0FBh,58h,61h,0B2h,4Dh,0CEh,51h,0B5h
+Db 3Ah,74h,0,0BCh,0A3h,0E2h,30h,0BBh,0D4h,41h,0A5h,0DFh,4Ah,0D7h,95h,0D8h
+Db 3Dh,6Dh,0C4h,0D1h,0A4h,0FBh,0F4h,0D6h,0D3h,6Ah,0E9h,69h,43h,0FCh,0D9h
+Db 6Eh,34h,46h,88h,67h,0ADh,0D0h,0B8h,60h,0DAh,73h,2Dh,4,44h,0E5h,1Dh,3
+Db 33h,5Fh,4Ch,0Ah,0AAh,0C9h,7Ch,0Dh,0DDh,3Ch,71h,5,50h,0AAh,41h,2,27h
+Db 10h,10h,0Bh,0BEh,86h,20h,0Ch,0C9h,25h,0B5h,68h,57h,0B3h,85h,6Fh,20h
+Db 9,0D4h,66h,0B9h,9Fh,0E4h,61h,0CEh,0Eh,0F9h,0DEh,5Eh,98h,0C9h,0D9h,29h
+Db 22h,98h,0D0h,0B0h,0B4h,0A8h,0D7h,0C7h,17h,3Dh,0B3h,59h,81h,0Dh,0B4h
+Db 2Eh,3Bh,5Ch,0BDh,0B7h,0ADh,6Ch,0BAh,0C0h,20h,83h,0B8h,0EDh,0B6h,0B3h
+Db 0BFh,9Ah,0Ch,0E2h,0B6h,3,9Ah,0D2h,0B1h,74h,39h,47h,0D5h,0EAh,0AFh,77h
+Db 0D2h,9Dh,15h,26h,0DBh,4,83h,16h,0DCh,73h,12h,0Bh,63h,0E3h,84h,3Bh,64h
+Db 94h,3Eh,6Ah,6Dh,0Dh,0A8h,5Ah,6Ah,7Ah,0Bh,0CFh,0Eh,0E4h,9Dh,0FFh,9
+Db 93h,27h,0AEh,0,0Ah,0B1h,9Eh,7,7Dh,44h,93h,0Fh,0F0h,0D2h,0A3h,8,87h
+Db 68h,0F2h,1,1Eh,0FEh,0C2h,6,69h,5Dh,57h,62h,0F7h,0CBh,67h,65h,80h,71h
+Db 36h,6Ch,19h,0E7h,6,6Bh,6Eh,76h,1Bh,0D4h,0FEh,0E0h,2Bh,0D3h,89h,5Ah,7Ah
+Db 0DAh,10h,0CCh,4Ah,0DDh,67h,6Fh,0DFh,0B9h,0F9h,0F9h,0EFh,0BEh,8Eh,43h
+Db 0BEh,0B7h,17h,0D5h,8Eh,0B0h,60h,0E8h,0A3h,0D6h,0D6h,7Eh,93h,0D1h,0A1h
+Db 0C4h,0C2h,0D8h,38h,52h,0F2h,0DFh,4Fh,0F1h,67h,0BBh,0D1h,67h,57h,0BCh
+Db 0A6h,0DDh,6,0B5h,3Fh,4Bh,36h,0B2h,48h,0DAh,2Bh,0Dh,0D8h,4Ch,1Bh,0Ah
+Db 0AFh,0F6h,4Ah,3,36h,60h,7Ah,4,41h,0C3h,0EFh,60h,0DFh,55h,0DFh,67h,0A8h
+Db 0EFh,8Eh,6Eh,31h,79h,0BEh,69h,46h,8Ch,0B3h,61h,0CBh,1Ah,83h,66h,0BCh
+Db 0A0h,0D2h,6Fh,25h,36h,0E2h,68h,52h,95h,77h,0Ch,0CCh,3,47h,0Bh,0BBh
+Db 0B9h,16h,2,22h,2Fh,26h,5,55h,0BEh,3Bh,0BAh,0C5h,28h,0Bh,0BDh,0B2h
+Db 92h,5Ah,0B4h,2Bh,4,6Ah,0B3h,5Ch,0A7h,0FFh,0D7h,0C2h,31h,0CFh,0D0h,0B5h
+Db 8Bh,9Eh,0D9h,2Ch,1Dh,0AEh,0DEh,5Bh,0B0h,0C2h,64h,9Bh,26h,0F2h,63h,0ECh
+Db 9Ch,0A3h,6Ah,75h,0Ah,93h,6Dh,2,0A9h,6,9,9Ch,3Fh,36h,0Eh,0EBh,85h
+Db 67h,7,72h,13h,57h,0,5,82h,4Ah,0BFh,95h,14h,7Ah,0B8h,0E2h,0AEh,2Bh
+Db 0B1h,7Bh,38h,1Bh,0B6h,0Ch,9Bh,8Eh,0D2h,92h,0Dh,0BEh,0D5h,0E5h,0B7h
+Db 0EFh,0DCh,7Ch,21h,0DFh,0DBh,0Bh,0D4h,0D2h,0D3h,86h,42h,0E2h,0D4h,0F1h
+Db 0F8h,0B3h,0DDh,68h,6Eh,83h,0DAh,1Fh,0CDh,16h,0BEh,81h,5Bh,26h,0B9h,0F6h
+Db 0E1h,77h,0B0h,6Fh,77h,47h,0B7h,18h,0E6h,5Ah,8,88h,70h,6Ah,0Fh,0FFh
+Db 0CAh,3Bh,6,66h,5Ch,0Bh,1,11h,0FFh,9Eh,65h,8Fh,69h,0AEh,62h,0F8h,0D3h
+Db 0FFh,6Bh,61h,45h,0CFh,6Ch,16h,78h,0E2h,0Ah,0A0h,0EEh,0D2h,0Dh,0D7h
+Db 54h,83h,4,4Eh,0C2h,0B3h,3,39h,61h,26h,67h,0A7h,0F7h,16h,60h,0D0h,4Dh
+Db 47h,69h,49h,0DBh,77h,6Eh,3Eh,4Ah,6Ah,0D1h,0AEh,0DCh,5Ah,0D6h,0D9h,66h
+Db 0Bh,0DFh,40h,0F0h,3Bh,0D8h,37h,53h,0AEh,0BCh,0A9h,0C5h,9Eh,0BBh,0DEh
+Db 7Fh,0CFh,0B2h,47h,0E9h,0FFh,0B5h,30h,1Ch,0F2h,0BDh,0BDh,8Ah,0C2h,0BAh
+Db 0CAh,30h,93h,0B3h,53h,0A6h,0A3h,0B4h,24h,5,36h,0D0h,0BAh,93h,6,0D7h
+Db 0CDh,29h,57h,0DEh,54h,0BFh,67h,0D9h,23h,2Eh,7Ah,66h,0B3h,0B8h,4Ah,61h
+Db 0C4h,2,1Bh,68h,5Dh,94h,2Bh,6Fh,2Ah,37h,0BEh,0Bh,0B4h,0A1h,8Eh,0Ch
+Db 0C3h,1Bh,0DFh,5,5Ah,8Dh,0EFh,2,2Dh
+
+End     START
+;-------------------------------- cut --------------------------------------
+
+ As I said before if you think that info I get about original keys from
+ PREDATOR 666's keygen for Term 3 is cheat, use:
+     term_akg.exe c r
+ And my keygen will generate _valid_ key based only on my knowledge I got
+ from terminate.exe , it will be key without header and CRC stored in
+ block 6-10. But in this case we cannot be sure that this key will be valid
+ in all future ver of T, because developers can begin to check for key
+ header, or CRC stored in block 6-10...
+
+ More about keygen switches:
+  s - will put random values at offsets 14Eh,150h instead of values 3ef,0.
+      Of course, values 3ef,0 are very good and they are from authentic keys
+      I think, but I decided to make this switch in case developers will
+      change keyfile logic and just for fun. "Design your own key!!!"
+  o - will put 2391h,4638h to offset 72h,74h in block 4. This values doesn't
+      means much, they only used for set bytes x ( see 1615E3h-1615E6h -
+      4 bytes 01,x,01,y ) to 79h (instead of 84h) also only if offsets
+      156h,158h contains values 12FD, FA98.
+  i - let you put your values to offsets 152h,154h in decrypted block 4.
+      These values then will be xored ,converted to ASCII and stored in
+      terminat.exe at offsets 1615F1h-1615F9h. These values not checked
+      in Term 5, but who knows about future versions?
+  z - fill unimportant areas in keyfile with 0. Else this areas will be
+      filled with random values. Of course, filling blocks with 0 is not very
+      good idea, because future vers of T can check for it, but "D.y.o.k!!!"
+  l - length of keyfile will be 3894 bytes, i.e. length only really needed.
+      162h=384, 384*11=3894. Also not good idea to create such keys,
+      coz they can begin to check length of key.
+  a - length of kf will be 3905. I decided to make this switch coz when T
+      already registered and T search for keyfile in its directory, it
+      tries to open and read 3905 bytes from kf.( See IDA listing )
+      May be this is fake or trap (i.e. make your key 3905 bytes long , stupid
+      cracker, we will reject such keys in future ver of T :)), but who
+      knows.
+
+      I think we should create keys with as many random parametrs as
+      possible, i.e. random keys length, unimportant areas filled with
+      random values. Any fixed values crackers use in their keygens will
+      only creates problems with futures versions of Terminate, because
+      developers of T include check for those values in Terminate.
+      Of course, creating keys with random params can force developers to
+      begin to check for real params, i.e. params they use in their original
+      keys, but then we will able to create our keys absolutely like original
+      ones :)) infinite war. I think there is only one way for developers:
+      they must completely change protection scheme, keyfile logic (even if
+      good honest users which paid money for keys will have to get new ones).
+
+ Several things I forgot to tell about:
+
+ T uses next sub to calc how many days you have in your evaluation period:
+
+97E8:71C8 Calc_remained_days_in_eval proc far ; CODE XREF: j_Calc_remained_da
+... vars
+97E8:71C8   push  bp
+97E8:71C9   mov   bp, sp
+97E8:71CB   sub   sp, 0Ah
+97E8:71CE   mov   ax, CURRENT_DATE_word  ; word_192F_1766
+97E8:71D1   xor   dx, dx
+97E8:71D3   mov   [bp+var_6], ax
+97E8:71D6   mov   [bp+var_4], dx
+97E8:71D9   mov   ax, DATE_OF_INSTALL_word ; word_192F_61C4
+97E8:71DC   xor   dx, dx
+97E8:71DE   mov   [bp+var_A], ax
+97E8:71E1   mov   [bp+var_8], dx
+97E8:71E4   mov   ax, [bp+var_6]
+97E8:71E7   mov   dx, [bp+var_4]
+97E8:71EA   sub   ax, [bp+var_A]
+97E8:71ED   sbb   dx, [bp+var_8]
+97E8:71F0   mov   [bp+var_6], ax
+97E8:71F3   mov   [bp+var_4], dx
+97E8:71F6   cmp   [bp+var_4], 0
+97E8:71FA   jl    loc_87E8_7204
+97E8:71FC   jg    loc_87E8_720E
+97E8:71FE   cmp   [bp+var_6], 0
+97E8:7202   jnb   loc_87E8_720E
+97E8:7204 loc_87E8_7204:      ; CODE XREF: Calc_remained_days_in_eval+32j
+97E8:7204   mov   [bp+var_6], 16h
+97E8:7209   mov   [bp+var_4], 0
+97E8:720E loc_87E8_720E:      ; CODE XREF: Calc_remained_days_in_eval+34j
+97E8:720E                     ; Calc_remained_days_in_eval+3Aj
+97E8:720E   mov   ax, [bp+var_6]
+97E8:7211   mov   [bp+var_2], ax ; return number of days left in eval period
+97E8:7214   mov   ax, [bp+var_2] ;  return them in ax
+97E8:7217   mov   sp, bp
+97E8:7219   pop   bp
+97E8:721A   retf
+97E8:721A Calc_remained_days_in_eval endp
+
+ About files which needed by T:
+  - terminat.dat - contains encrypted "Unbranded version" msg
+  - terminat.reg - contains encrypted reginfo you entered when
+    Terminate was installing. Terminate needs this file not every time
+    you run it, but only if some conditions become true:
+
+87A8:2D0B something_with_T_REG proc far ; CODE XREF: j_something_with_T_REGJ
+87A8:2D0B                     ; validate_key+1E79p
+87A8:2D0B var_206= byte ptr -206h
+87A8:2D0B var_12A= byte ptr -12Ah
+87A8:2D0B var_106= byte ptr -106h
+87A8:2D0B var_2A= byte ptr -2Ah
+87A8:2D0B var_6= byte ptr -6
+87A8:2D0B var_1= byte ptr -1
+87A8:2D0B arg_0= byte ptr  6
+87A8:2D0B
+87A8:2D0B   push  bp
+87A8:2D0C   mov   bp, sp
+87A8:2D0E   sub   sp, 206h
+87A8:2D12   call  @Randomize$qv ; Randomize
+87A8:2D17   mov   ax, 19h
+87A8:2D1A   push  ax
+87A8:2D1B   call  calc_xor_mask_1
+87A8:2D20   cmp   ax, 3              ; only if calc_xor_mask1 return 3
+87A8:2D23   jz    loc_77A8_2D28  ; T begins to do something with terminat.reg
+87A8:2D25   jmp   loc_77A8_2E7F ; else just return
+
+loc_77A8_2D28:  here T reads terminat.reg and encrypts it again or
+ something like that, I don't really care about this.
+
+ - terminat.dis -- this file is not requiered by Terminate, but it contains
+   encrypted list of authors of Terminate, or may be those ppl are not authors
+   hell knows...
+
+
+PS. By the way, there is another posibility to get registered Terminate.
+    It possible to write not keygenerator, but reginfo generator, i.e.
+    user enter name,address,city,country, and reggen encrypts it like
+    T does and patch terminat.exe. After that we only need to put some
+    file to Terminate directory and rename it to terminat.key :))
+
+PPS. Another way: rough patch ;-). I.e. we can change byte at offset
+     161504h in terminat.exe from BDh to 77h and patch:
+
+87A8:24BB   call    @$bsub$qm6Stringt1 ; compare "ascii" crc from reginfo with just calculated
+offset 69ac3h in terminat.exe -  87A8:24C0 jz loc_77A8_24C5 ;HERE WE NEED JMP
+87A8:24C2   jmp     loc_77A8_27F5   ;  if we go there - we have unreg. T
+
+     and Terminate registered!!! But its not very good way, because
+     instead of our name,city,etc we'll get complete mess for some
+     reason, may be because of T use other mask for decrypt reginfo
+     when it registered? So reginfo decrypted incorrectly and even
+     if it would decrypted correctlly it doesn't contain our name,city,
+     etc. So this way is most rough and useless, but possible.
+
+End of the solution.
+<hR>
+Solution for Part II of +HCU Strainer 99.
+Solved by iNT_03h.
+
+TARGET: 32 bit Windows based byte patcher.
+TARGET of previous target: screen saver VoodooLights v.1.1 (beta 9)  ;)
+Note: VoodooLights requires 3Dfx card.
+
+URL: http://asc.di.fct.unl.pt/~smd/voodoolights/download.html
+
+TOOLS: Asm Edit 1.82a, SoftIce 3.22 for W95, IDA PRO 3.75 Full
+
+SOLUTION:
+
+ First, English is not my motherlanguage, so please excuse my mistakes...
+
+ VoodooLights is a great screensaver, but its shareware and works
+ only 30 days. So I decided to crack it. At first look target uses
+ tough (RSA !!!) keybased protection scheme. It uses ADVAPI32.DLL
+ for check keys. After understanding this I decided that I don't
+ want to mess with such kind of encryption system (Terminate was enough
+ for me for a while ;), and tried to find other, easier way.
+ And of course it exist!
+
+ This listing was created by IDA for VoodooLights v1.1 beta 8 ,
+ because I cracked target month ago, and several days ago I
+ downloaded BETA 9, and of course protection remains same, only
+ offsets of this sub are little different. So I didnt recreate listing.
+
+00412034 Validate_Key?   proc near               ; CODE XREF: sub_4089D8+
+00412034                                         ; sub_408FC8+23Bp
+00412034                                         ; sub_40924C+FDp
+00412034 var_4           = dword ptr -4
+00412034 arg_0           = dword ptr  8
+00412034 arg_4           = dword ptr  0Ch
+00412034 arg_8           = dword ptr  10h
+00412034 arg_C           = dword ptr  14h
+00412034                 push    ebp
+00412035                 mov     ebp, esp
+00412037                 push    ecx
+00412038                 push    ebx
+00412039                 push    esi
+0041203A                 xor     eax, eax
+0041203C                 mov     esi, [ebp+arg_C]
+0041203F                 mov     ebx, [ebp+arg_8]
+00412042                 mov     [ebp+var_4], eax
+00412045                 call    sub_411DFC
+0041204A                 push    offset aCryptcreatehas
+0041204F                 lea     edx, [ebp+var_4]
+00412052                 push    edx
+00412053                 push    0
+00412055                 push    0
+00412057                 push    8003h
+0041205C                 mov     ecx, dword_457ADC
+00412062                 push    ecx
+00412063                 call    j_CryptCreateHash
+00412068                 test    eax, eax
+0041206A                 setnz   al
+0041206D                 and     eax, 1
+00412070                 push    eax
+00412071                 call    sub_411D70
+00412076                 add     esp, 8
+00412079                 push    offset aCrypthashdataF
+0041207E                 push    0
+00412080                 push    esi
+00412081                 push    ebx
+00412082                 mov     edx, [ebp+var_4]
+00412085                 push    edx
+00412086                 call    j_CryptHashData
+0041208B                 test    eax, eax
+0041208D                 setnz   cl
+00412090                 and     ecx, 1
+00412090                 and     ecx, 1
+00412093                 push    ecx
+00412094                 call    sub_411D70
+00412099                 add     esp, 8
+0041209C                 push    offset aCrypthashdataF
+004120A1                 push    0
+004120A3                 push    esi
+004120A4                 push    ebx
+004120A5                 mov     eax, [ebp+var_4]
+004120A8                 push    eax
+004120A9                 call    j_CryptHashData
+004120AE                 test    eax, eax
+004120B0                 setnz   dl
+004120B3                 and     edx, 1
+004120B6                 push    edx
+004120B7                 call    sub_411D70
+004120BC                 add     esp, 8
+004120BF                 push    offset dword_46D4F8
+004120C4                 mov     ecx, dword_46D500
+004120CA                 push    ecx
+004120CB                 mov     eax, dword_46D4FC
+004120D0                 push    eax
+004120D1                 call    sub_411DC4
+004120D6                 add     esp, 0Ch
+004120D9                 mov     edx, dword_46D4F8
+004120DF                 push    0
+004120E1                 push    0
+004120E3                 push    edx
+004120E4                 mov     ecx, [ebp+arg_4]
+004120E7                 push    ecx
+004120E8                 mov     eax, [ebp+arg_0]
+004120EB                 push    eax
+004120EC                 mov     edx, [ebp+var_4]
+004120EF                 push    edx
+004120F0                 call    j_CryptVerifySignatureA
+004120F5                 test    eax, eax
+004120F7                 push    offset aCryptdestroyFa
+004120FC                 setnz   bl
+004120FF                 mov     eax, [ebp+var_4]
+00412102                 and     ebx, 1
+00412105                 push    eax
+00412106                 call    j_CryptDestroyHash
+0041210B                 test    eax, eax
+0041210D                 setnz   dl
+00412110                 and     edx, 1
+00412113                 push    edx
+00412114                 call    sub_411D70
+00412119                 add     esp, 8
+0041211C                 push    offset aCryptdestroyke
+00412121                 mov     ecx, dword_46D4F8
+00412127                 push    ecx
+00412128                 call    j_CryptDestroyKey
+0041212D                 test    eax, eax
+0041212F                 setnz   al
+00412132                 and     eax, 1
+00412135                 push    eax
+00412136                 call    sub_411D70
+0041213B                 add     esp, 8
+0041213E                 call    sub_411E40
+00412143                 mov     eax, ebx ;  <HERE
+00412145                 pop     esi    ;  if ebx=1 - VL registered
+00412146                 pop     ebx
+00412147                 pop     ecx
+00412148                 pop     ebp
+00412149                 retn
+00412149 Validate_Key?   endp
+
+ How stupid can be authors of shareware !!! So cool encryption and after
+ all stupid flag, and only in one place ....
+
+ After I ran patched screen saver, and opened Registration window,
+ I saw "Thank you .... blah blah Registered to: not registered".
+ "It aint nice", thought I and searched registry for "Voodool".
+ I found its key and subkey "Registration" with "Owner" value set
+ to "not registered". I decided make patcher which will not only
+ patch target but also can restore target back to its original state, i.e.
+ depatch, also my patcher changes "Owner" value in registry to string
+ entered by user.
+ For creating patcher I used AsmEdit 1.82a - great tool. Btw, I had to
+ crack it first, because UCF crack that came with archive doesn't seem
+ to work on my PII (powerfull, but strange cpu's , they don't run well
+ many old dos programms in W95, especially protected or encrypted ones).
+ As soon as I depacked asmshell.exe everything became clear for me.
+ Several integrity checks ("Error in REALITY.SYS..."),
+ check for length of asmshell.exe, check for expiration,
+ check for name of asmshell ("ALAS, HACKER , YOU MUST NOT RENAME THIS
+ LITTLE CUTE PROGRAM " :)).
+
+ Anyway, heres the patcher:
+
+;------------------------- vl_crk.asm --------------------------------
+; Voodoo Lights v1.1(beta 9) crack-patch
+;
+; TASM 5.0r FULL
+; compile: tasm32.exe -ml -m5 -q vl_crk
+; link: tlink32.exe -Tpe -aa -c -x vl_crk.obj ,,, import32 ,, vl_crk.res
+; resource: use BRW 4.5 to compile vl_crk.rc
+;
+; (C)oded by iNT_03h in 1998.
+
+.386p
+.model  flat,stdCALL
+
+;---------------------------extrn---------------------
+Extrn    RegCreateKeyExA:proc
+Extrn    RegSetValueExA:proc
+Extrn    RegDeleteKeyA:proc
+Extrn    RegOpenKeyExA:proc
+Extrn    RegCloseKey:proc
+Extrn    RegDeleteValueA:proc
+Extrn    GetDlgItemTextA:proc
+Extrn    MessageBoxA:proc
+Extrn    EndDialog:proc
+Extrn    GetDlgItem:proc
+Extrn    SetFocus:proc
+Extrn    SendMessageA:proc
+Extrn    ExitProcess:proc
+Extrn    DialogBoxParamA:proc
+Extrn    GetModuleHandleA:proc
+Extrn    GetFileSize:proc
+Extrn    CreateFileA:proc
+Extrn    ReadFile:proc
+Extrn    WriteFile:proc
+Extrn    CloseFile:proc
+Extrn    SetFileAttributesA:proc
+Extrn    SetFilePointer:proc
+Extrn    CloseHandle:proc
+
+Include windows.inc
+
+; ---------------------------- def stuff -----------------------
+
+Id_restore       Equ 101
+Id_edit          Equ 102
+
+False           Equ 0
+True            Equ 1
+Dialog1         Equ 103
+
+; defs for CreateFileA
+Generic_write                equ 40000000h
+Generic_read                 equ 80000000h
+Gr_gw                        equ 40000000h or 80000000h
+File_attribute_normal        equ 00000080h
+Open_existing                equ 00000003h
+
+;defs for RegCreateKeyA
+REG_CREATED_NEW_KEY          equ 1
+REG_OPENED_EXISTING_KEY      equ 2
+
+
+;---------------------------------------data -----------------------
+.data
+
+;Tempword     Dd      0
+
+; for RegCreateKeyEx
+
+Disposition  dd ?
+Result       dd ?
+Reg_key      db 'SOFTWARE\Smd\VoodooLights\1.1\Registration',0
+Reg_val      db 'Owner',0
+
+Dlg_handle   Dd 0
+Title2       Db    'Success',0
+Title1       Db    'Error',0
+
+
+Handle       Dd ?            ; file handle
+Filename     Db 'VoodooLights.scr',0 ; our target
+
+Error_msg1   Db 'The file "VoodooLights.scr" is not found in current directory.',0AH,0DH,0
+
+Error_msg2  Db 'The VoodooLights is already cracked!',0AH,0DH,0
+
+Error_msg3  Db 'Probably this is a different version '
+            Db 'of VoodooLights.',0AH,0DH,0
+
+Error_msg4  Db 'Wrong file size. It must be 1,593,344 bytes.',0ah,0dh,0
+
+Error_msg5  Db 'Can`t restore. The VoodooLights is not cracked yet!',0ah,0dh,0
+
+Error_msg6  Db 'Can`t patch file!',0ah,0dh,0
+
+Error_msg7  Db 'Can`t read from file!',0ah,0dh,0
+
+Error_msg8  Db 'Can`t move file pointer!',0ah,0dh,0
+
+Reg_msg     db 'Can`t create registry key!',0AH,0DH,0
+Reg_msg1    db 'Can`t delete registry key!',0AH,0DH,0
+Done_msg    Db '        Patching... Done.',0AH,0DH,0
+Restore_msg db 'Restoring VoodooLights... Done.',0AH,0DH,0
+
+Patch_size      Dd 2
+
+;File_size       Dd 17CA00h ;for beta 8
+File_size       Dd 185000h ;for beta 8
+
+
+;Patch_loc      Dd 11743h      ; loc of "reg" flag set for Beta 8
+Patch_loc      Dd 12113h      ; loc of  "reg" flag set for Beta 9
+
+Orig_bytes     Db 8Bh,0C3h    ; mov eax,ebx
+
+Cracked_bytes   Db 0B0h,01     ; mov al,1
+
+Bytes_writen    Dd 2 Dup (0)
+
+Byte_read       Dd ?
+
+Read_buf        Dd 2 Dup (0)
+
+Buff         Db      (64) Dup(0)  ; set lenght of ur input + 1
+Buff_len     Equ     64
+Hinst        Dd      0
+
+;------------------------------------ code "---------------.class" tppabs="http://fravia.org/99solu/---------------.class"
+.code
+START:
+
+         call GetModuleHandleA ;get hmod (in eax)
+         mov [Hinst],EAX
+
+         push    Offset Buff  ;LPARAM to pass to dialog
+         push    Offset MYDLG ;DLGPROC lpDialogFunc
+         push    0            ;window handle of this window
+         push    Dialog1      ;Dialog ID
+         push    [Hinst]      ;Module Instance
+         call    DialogBoxParamA  ;Invoke Dialog
+
+         call    ExitProcess
+
+; ----------------------------- Dlg proc --------------------------
+
+MYDLG Proc    Hdlg:Dword, wmsg:Dword, wparam:Dword, lparam:Dword
+
+         cmp     [wmsg],WM_INITDIALOG ;if message is INITDIALOG then
+         jne     Return_              ;just return
+         mov     EAX, Offset Buff
+         push    Id_edit       ;get handle
+         push    [Hdlg]          ;of the edit
+         call    GetDlgItem      ;field
+         push    EAX             ;push handle of edit1
+         push    EAX             ;and save for LIMITTEXT
+         call    SetFocus        ;set focus to this field
+         pop     EAX
+         push    0
+         push    Buff_len-1      ; don count 0
+         push    EM_LIMITTEXT
+         push    EAX
+         call    SendMessageA    ;limit text size
+         mov     EAX,False       ;FALSE because we set the focus
+         jmp     DLG_RET        ;go and return
+Return_:
+         cmp     [wmsg],WM_COMMAND ;Is message is a WM_COMMAND?
+         jne     DLG_DONE       ;No, then just return
+
+         mov     EAX,[wparam]
+         cmp     EAX,IDCANCEL
+         je      CANCEL
+
+
+         cmp     EAX,Id_restore
+         jne     CHECKOK
+
+;------------------------------ DEPATCHING ---------------------------------
+         push    Buff_len       ; BUT HERE WE TAKE ALL BUFFER WITH 0 AT END
+         push    Offset Buff
+         push    Id_edit      ;Contents of the edit field
+         push    [Hdlg]         ;handle to the dialog
+         call    GetDlgItemTextA ;Get the text from edit field
+
+
+         call    OPEN_N_READ
+         test    eax,eax  ; error?
+         jz      Exit_
+
+         mov     ESI, Offset Read_buf
+         mov     EDI, Offset Cracked_bytes  ; check if target already cracked
+         mov     ECX, [Patch_size]
+         rep     cmpsb
+         jz      GO_ON3
+
+         mov     ESI, Offset Read_buf
+         mov     EDI, Offset Orig_bytes  ;check for original bytes
+         mov     ECX, [Patch_size]
+         rep     cmpsb
+         jz      GO_ON3_1
+
+         push    MB_OK or MB_ICONHAND
+         push    Offset Title1
+         push    Offset Error_msg3   ; diferent version of voodoo lights
+         push    NULL
+         call    MessageBoxA
+         jmp     Exit_
+
+GO_ON3_1:
+         push    MB_OK or MB_ICONHAND
+         push    Offset Title1
+         push    Offset Error_msg5   ; target is not cracked yet
+         push    NULL
+         call    MessageBoxA
+         jmp     Exit_
+
+GO_ON3:
+
+         push    NULL
+         push    NULL
+         push    Dword Ptr [Patch_loc]
+         push    Handle
+         call    SetFilePointer ; move file pointer to offset we need to depatch
+         cmp     EAX,-1
+         jnz     GO_ON4
+
+         push    MB_OK or MB_ICONHAND
+         push    Offset Title1
+         push    Offset Error_msg8
+         push    NULL
+         call    MessageBoxA           ; can't move file pointer
+         jmp     Exit_
+
+GO_ON4:
+         push    NULL
+         push    Offset Bytes_writen
+         push    Dword Ptr [Patch_size]
+         push    Offset Orig_bytes
+         push    Handle
+         call    WriteFile     ; restore cracked target to original state
+         cmp     EAX,0
+         jnz     Done1
+
+         push    MB_OK or MB_ICONHAND
+         push    Offset Title1
+         push    Offset Error_msg6
+         push    NULL
+         call    MessageBoxA           ; can't write to file
+         jmp     Exit_
+
+Done1:
+         push    MB_OK
+         push    Offset Title2
+         push    Offset Restore_msg
+         push    NULL
+         call    MessageBoxA           ; done
+
+         push    offset Reg_key
+         push    80000002h      ; HKEY_LOCAL_MACHINE
+         Call    RegDeleteKeyA   ; delete "Registration" key
+         cmp     eax,0
+         jz      Exit_
+
+         push    MB_OK or MB_ICONHAND
+         push    Offset Title1
+         push    Offset Reg_msg1
+         push    NULL
+         call    MessageBoxA       ; can't delete key
+         jmp     Exit_
+
+;Closekey:
+  ;       push    Result
+   ;      call    RegCloseKey
+         jmp     Exit_
+;------------------------------ PATCHING ---------------------------------
+CHECKOK:
+         cmp     EAX,IDOK
+         jne     DLG_DONE
+
+         push    Buff_len       ; BUT HERE WE TAKE ALL BUFFER WITH 0 AT END
+         push    Offset Buff
+         push    Id_edit      ;Contents of the edit field
+         push    [Hdlg]         ;handle to the dialog
+         call    GetDlgItemTextA ;Get the text from edit field
+
+
+         call    OPEN_N_READ       ; open and read target
+         test    eax,eax          ; error ?
+         jz      Exit_
+
+         mov     ESI, Offset Read_buf
+         mov     EDI, Offset Orig_bytes
+         mov     ECX, [Patch_size]
+         rep     cmpsb                    ; check if its our uncracked target
+         jz      GO_ON2
+
+         mov     ESI, Offset Read_buf
+         mov     EDI, Offset Cracked_bytes
+         mov     ECX, [Patch_size]
+         rep     cmpsb              ; check if target already patched
+         jz      GO_ON2_1
+
+                                      ;    so if we land here
+         push    MB_OK or MB_ICONHAND
+         push    Offset Title1
+         push    Offset Error_msg3   ; diferent version of voodoo lights
+         push    NULL
+         call    MessageBoxA
+         jmp     Exit_
+
+GO_ON2_1:
+         push    MB_OK or MB_ICONHAND
+         push    Offset Title1
+         push    Offset Error_msg2   ; already cracked
+         push    NULL
+         call    MessageBoxA
+         jmp     Exit_
+
+GO_ON2:
+         push    NULL
+         push    NULL
+         push    Dword Ptr [Patch_loc]
+         push    Handle
+         call    SetFilePointer ; move file pointer to offset we need to patch
+
+         cmp     EAX,-1
+         jnz     GO_ON5
+
+         push    MB_OK or MB_ICONHAND
+         push    Offset Title1
+         push    Offset Error_msg8
+         push    NULL
+         call    MessageBoxA           ; can't move file pointer
+         jmp     Exit_
+
+GO_ON5:
+
+         push    NULL
+         push    Offset Bytes_writen
+         push    Dword Ptr [Patch_size]
+         push    Offset Cracked_bytes
+         push    Handle
+         call    WriteFile  ; patch target
+
+         cmp     EAX,0
+         jnz     Done2
+
+         push    MB_OK or MB_ICONHAND
+         push    Offset Title1
+         push    Offset Error_msg6
+         push    NULL
+         call    MessageBoxA           ; can't write to file
+         jmp     Exit_
+
+Done2:
+         push    MB_OK
+         push    Offset Title2
+         push    Offset Done_msg
+         push    NULL
+         call    MessageBoxA       ; done
+
+;         LONG RegCreateKeyEx(
+;         HKEY  hKey,    // handle of an open key
+;         LPCTSTR  lpszSubKey,   // address of subkey name
+;         DWORD  dwReserved, // reserved
+;         LPTSTR  lpszClass, // address of class string
+;         DWORD  fdwOptions, // special options flag
+;         REGSAM  samDesired,    // desired security access
+;         LPSECURITY_ATTRIBUTES  lpSecurityAttributes, // address of key security structure
+;         PHKEY  phkResult,   // address of buffer for opened handle
+;         LPDWORD  lpdwDisposition    // address of disposition value buffer
+;         );
+
+         push   offset Disposition
+         push   offset Result
+         push   NULL   ; we dont want any security at all
+         push   0f003fh  ; KEY_ALL_ACCCESS
+         push   0
+         push   0
+         push   0
+         push   offset Reg_key
+         push   80000002h   ; HKEY_LOCAL_MACHINE
+         call   RegCreateKeyExA   ; create or open (if it already exist)
+         cmp    eax,0             ; key "Registration"
+         je     Set_Val
+
+         push    MB_OK or MB_ICONHAND
+         push    Offset Title1
+         push    Offset Reg_msg
+         push    NULL
+         call    MessageBoxA          ; can't create key
+         jmp     Exit_
+
+Set_Val:
+         mov    ebx,offset Buff     ; calc len of entered string
+         call   STRLEN
+
+;LONG RegSetValueEx(hkey, lpszValueName, dwReserved, fdwType, lpbData, cbData)
+;HKEY hkey;  /* handle of key to set value for   */
+;LPCTSTR lpszValueName;  /* address of value to set  */
+;DWORD dwReserved;   /* reserved */
+;DWORD fdwType;  /* flag for value type  */
+;CONST BYTE * lpbData;   /* address of value data    */
+;DWORD cbData;   /* size of value data   */
+         inc     ECX ; count 0
+         push    ECX    ; len of string
+         push    offset Buff
+         push    1 ; REG_SZ
+         push    NULL
+         push    offset Reg_val   ; "owner"
+         push    Result
+         call    RegSetValueExA      ; set "Owner" value to string
+                                     ; entered by user
+         push    Result
+         call    RegCloseKey        ; close key
+
+Exit_:   push    Handle
+         call    CloseHandle
+         jmp     DLG_DONE
+
+CANCEL:
+         push    [wparam]       ; terminate with wparam as the return
+         push    [Hdlg]         ; handle of the dialog
+         call    EndDialog      ; end dialog
+         mov     EAX,True
+         jmp     DLG_RET
+
+DLG_DONE:
+         mov     EAX,False
+DLG_RET:
+         ret
+MYDLG Endp
+
+;  STRLEN
+;  ebx = input string pointer
+;  returns ecx with the string length
+STRLEN   Proc
+         xor     ECX,ECX          ;clear count
+loop:    mov     AL,Byte Ptr[EBX] ;get char of string
+         cmp     AL,0             ;is it zero?
+         je      DONE             ;done if zero term char
+         inc     ECX              ;increment count
+         inc     EBX              ;increment pointer
+         jmp     loop             ;continue
+DONE:    ret
+STRLEN   Endp
+
+
+OPEN_N_READ    Proc
+; I decided to put next code sequence to sub because we need it twice
+
+   ;HANDLE CreateFile(
+   ;  LPCTSTR  lpFileName,        // address of name of the file
+   ; DWORD  dwDesiredAccess,     // access (read-write) mode
+   ; DWORD  dwShareMode, // share mode
+   ; LPSECURITY_ATTRIBUTES  lpSecurityAttributes,        // address of security descriptor
+
+   ; DWORD  dwCreationDistribution,      // how to create
+   ; DWORD  dwFlagsAndAttributes,        // file attributes
+   ; HANDLE  hTemplateFile       // handle of file with attributes to copy
+  ; );
+
+AGAIN:
+         push   NULL  ; no template
+         push   File_attribute_normal
+         push   Open_existing
+         push   NULL   ; no security atr
+         push   NULL  ; no sharing
+         push   Gr_gw
+         push   Offset Filename
+         call   CreateFileA       ; open our target
+         mov    Handle, EAX
+         cmp    EAX, -1      ; error ?
+         jnz    GO_ON1
+
+; if there was an error while opening file
+; lets try to set of READ_ONLY attribute
+; and only if this is not work then we assume that file not found
+
+         push   80h       ;FILE_ATRIBUTES_NORMAL
+         push   offset Filename
+         call   SetFileAttributesA    ; set attributes
+         cmp    eax,1
+         jz     AGAIN       ; and try to open target again
+
+         push    MB_OK or MB_ICONHAND     ; file open error
+         push    Offset Title1
+         push    Offset Error_msg1
+         push    NULL
+         call    MessageBoxA
+         jmp     Exit1
+
+GO_ON1:
+         push   NULL
+         push   Handle
+         call   GetFileSize        ; check target's file size
+         cmp    EAX,File_size
+         jz     GO_ON1_1
+
+         push    MB_OK or MB_ICONHAND
+         push    Offset Title1
+         push    Offset Error_msg4   ; wrong file size
+         push    NULL
+         call    MessageBoxA
+         jmp     Exit1                          ; Exit
+
+GO_ON1_1:
+         push    NULL
+         push    NULL
+         push    Dword Ptr [Patch_loc]
+         push    Handle
+         call    SetFilePointer   ; move file pointer to offset we gonna read from
+
+         cmp     EAX,-1   ; error?
+         jnz     GO_ON6
+
+         push    MB_OK or MB_ICONHAND
+         push    Offset Title1
+         push    Offset Error_msg8
+         push    NULL
+         call    MessageBoxA           ; can't move file pointer
+         jmp     Exit1
+
+GO_ON6:
+         push    NULL
+         push    Offset Byte_read
+         push    Dword Ptr [Patch_size]
+         push    Offset Read_buf
+         push    Handle
+         call    ReadFile ; read from patch location Patch_size bytes
+         cmp     eax,0
+         jnz     Ret_ok
+
+         push    MB_OK or MB_ICONHAND
+         push    Offset Title1
+         push    Offset Error_msg7
+         push    NULL
+         call    MessageBoxA           ; can't move file pointer
+         jmp     Exit1
+
+Ret_ok:
+         mov     eax,1
+         ret
+Exit1:
+         xor     eax,eax
+         ret
+OPEN_N_READ      Endp
+
+End     START
+;----------------------------- end of vl_crk.asm ----------------------------
+
+;------------------- vl_crk.rc,  cut ---------------------------------------
+/****************************************************************************
+
+
+vl_crc.rc
+
+produced by Borland Resource Workshop
+
+
+*****************************************************************************/
+
+
+103 DIALOG 160, 97, 194, 119
+STYLE DS_ABSALIGN | DS_MODALFRAME | 0x4L | WS_POPUP | WS_VISIBLE | WS_CAPTION | WS_SYSMENU
+CAPTION "Voodoo Lights 1.1(beta 9) Crack-Patch"
+FONT 8, "MS Sans Serif"
+{
+ CONTROL "not registered", 102, "EDIT", WS_BORDER | WS_TABSTOP, 10, 68, 173, 12
+ DEFPUSHBUTTON "Patch", IDOK, 14, 95, 50, 14
+ PUSHBUTTON "Restore", 101, 72, 95, 50, 14
+ PUSHBUTTON "Exit", IDCANCEL, 130, 95, 50, 14
+ CTEXT "(C)oded by iNT_03h in 1998.", -1, 49, 9, 96, 12
+ CTEXT "String bellow will be displayed in Voodoo Lights ""Registered to:"" message. You can change it to whatever you want.", -1, 21, 34, 152, 28
+}
+;---------------------------- cut ------------------------------------
+
+End of the solution.
+<hR>
+Solution for Part III of +HCU Strainer 99.
+Solved by iNT_03h.
+
+TARGET: Brains Breaker ver 2.1b (32bits)
+
+TOOLS: SoftIce 3.22 for W95, IDA PRO 3.75 Full
+
+SOLUTION:
+
+ First, English is not my motherlanguage, so please excuse my mistakes...
+
+ Second, I dont remember all way I went to fully understand protection
+ scheme of target in details, because it took me about month, I began
+ to crack target, then leaved it due to other problems, returned to
+ cracking again and again, so I'll try describe as many details as
+ posible, but I cant promice all steps would be described.
+
+// See end of solution if you want summary of patch and summary of
+// the protection scheme instead of reading way to them step by step.
+
+ I began with loading bbrk32.exe (593,920 bytes) into IDA. I tried to
+ find usual strings, like "Thank for registering", or "Invalid registration
+ code","Warning, programm running in demo mode for evaluation...".No luck.
+ Encrypted, thought I. So I decided to useà live approach and ran SoftIce.
+ After BB ran, CTRL-D, and I tried to find those strings. That time strings
+ were found. I looked at their location and saw a lot of strings that can't
+ be found in dead listing. I set BPM 4a1418 (in my case) - addres of string
+ "Warning: The program running in demo...", which appeared when I tried to
+ play "DEMO" puzzles. SoftIce poped up at 43989c, I pressed F12 (return
+ from proc) several times, and finally stopped at 444493. I looked at *EAX,
+ and I saw my beloved string "Warning: The ...". Aha, so CALL 4397AF at address
+ 444493 returned addres of string in EAX, taking as param some value,
+ for our string its 258h.
+
+ All my founds I commented in IDA, named CALL 4397AF as "Ret_Addres_Of_Decrypted_Msg".
+
+ I played a little with param of "Ret_Addres_Of_Decrypted_Msg", and got params
+ value for all protection related strings.
+ For example, 26c - "Registration code detected!"
+ 22e - "Seems that data you've entered is incorect....."
+ and so on.
+
+ After that it was much easier to work with IDA. I looked how BB decide
+ display NAG or not, when I play "DEMO" puzzles.
+ At 444467 it called sub_46aa6c( later I named it "Check_1") and if it
+ returned 0 BB display NAG. I looked at that sub, hmm, it simply
+ compares arg_0 with dword_489990, I looked at dword_489990, it accessed
+ from sub_44283a (later I named it "Set_Protection_Flags"). This sub,
+ as I understand later, set several protection-related flags. dword_489990
+ contains offset of dword_489970, and dword_489970=15a4, this value returned
+ by sub_414257. So, BB compare 15a4 with some value (argument for Check_1),
+ which calculated somehow, and only if that value also =15a4, Check_1
+ returned 1 - program registered.
+
+ So I forced Check_1 to always return 1 and ran BB.
+ Message box appeared "Program was altered blah blah...", aha, integrity
+ check. I found param for this encrypted message to Ret_Addres_Of_Decrypted_Msg
+ its 0be, and found (using binary search in IDA: 24,be,00) all place in dead
+ listing where this value used as arg. for Ret_Addres_Of_Decrypted_Msg,
+ example:
+
+00442CC0  push    0
+00442CC2  call    Check_Integrity
+00442CC7  cmp     eax, 55443322h ; if dont equal then BB patched :)
+00442CCC  jz      short loc_442D40 ; else all ok
+00442CCE  push    12010h
+00442CD3  push    ds:off_483B84
+00442CD9  add     esp, 0FFFFFFFCh
+00442CDC ... 24 be 00   mov     [esp+2C0h+var_2C0], 0BEh ; some kind of pointer
+00442CE2  call    Call_return_addr_of_decr_msg
+00442CE7  push    eax
+00442CE8  push    0
+00442CEA  call    j_MessageBoxA  ; "Program altered..."
+
+ There are 6 places in BB where integrity checked, so we need to
+ force six jumps :)
+ 41fb69 jz -> jmp
+ 442ccc jz -> jmp
+ 443edb jnb -> jmp
+ 44ba73 jnb -> jmp
+ 451d76 jnb -> jmp
+ 45a2f0 jnb -> jmp
+
+ After integrity checks were killed, I returned to my Check_1 (I patched
+ it, so it always returns 1) and ran BB. hmmm, strange, "demo" puzzles
+ which came with BB still had "demo" nag on them, but puzzles created by
+ me were without that writing. I started one of BB's "demo" puzzles and
+ "Waring: The programm ..." message didn't appear ! Good, thought I.
+ I pressed F5 (auto solve) several times, completed puzzle - no nags.
+ But when I decided to solve puzzle by myself and tried to move pieces of
+ puzzle by myself, strange thing happened - pieces only rotated and
+ didnt want to move. I tried to create puzzle - NAG appeared.
+
+ So, patch I made doesnt decide all problems,and whats worse, it seems
+ to me that BB uses Check_1 not only for protection purposes.
+
+ Then I decide to find how BB allow user to enter reginfo.
+ Some imagination gave me several ideas:
+    1) BB can check command line for some switches
+    2) BB can check Clipboard for reginfo
+    3) BB waits some keys combination
+    4) keyfile
+    5) drag 'n' drop file to BB
+
+1) For checking cmd line BB uses sub_4428e3, BB calls it from WinMain
+(addres 43a0c4). I named this sub "Check_CMD_line_and_etc", coz this
+sub , by the way, is main game loop :)
+
+  At 442e7f in "Check_CMD_line_and_etc" BB check for word "@INSTALLPOGMAN"
+  At 442eb8 - for "@INSTALLPACK"
+  ...
+  At        - for "@jttestreg" - some stuff, that I didnt really understand.
+  Test registration?
+
+  So, no luck with command line.
+
+2) I put several words to clipboard, like "User:Name UserID:123 Key:12345",
+ set bpx GetClipboardData and ran BB. SoftIce poped up in user32, F12,
+ and I'm at 4566d7. BB checks text from clipboard for word "Puzzler",
+ "BrainsBreaker","BrainBreaker 2". Only if last two words are in that text
+ then sub_456af5( I named it "Validate_reg_info") from addres 456782 called.
+ I went trough code...
+ In this sub BB moved and moved reginfo from place to place after finally
+ stop at 456d23. Here two subs called, these subs validate key:
+
+456D23 loc_456D23:                             ; CODE XREF: Validate_reg_info
+456D23                 lea     edx, [ebp+var_40]
+456D26                 push    edx
+456D27                 push    ebx
+456D28                 mov     ecx, [ebx]
+456D2A                 call    dword ptr [ecx+8] ;  459ac1   <CALL 1
+456D2D                 lea     eax, [ebp+var_40]
+456D30                 push    eax             ;  push result of previous sub
+456D31                 call    Check_1         ;  compare it with 15a4
+456D36                 test    eax, eax
+456D38                 jz      short loc_456D55    ; NOPS here
+456D3A                 lea     edx, [ebp+var_44]
+456D3D                 push    edx
+456D3E                 push    0
+456D40                 push    0
+456D42                 push    ebx
+456D43                 mov     ecx, [ebx]
+456D45                 call    dword ptr [ecx+10h] ; 459c3a <-- CALL 2
+456D48                 lea     eax, [ebp+var_44]
+456D4B                 push    eax             ;  the same
+456D4C                 call    Check_1
+456D51                 test    eax, eax
+456D53                 jnz     short loc_456D59     ;JMP here
+456D55
+456D55 loc_456D55:                             ; CODE XREF: Validate_reg_inf
+456D55                 xor     eax, eax
+456D57                 jmp     short loc_456D5E
+456D59 ; ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+456D59
+456D59 loc_456D59:                             ; CODE XREF: Validate_reg_inf
+456D59                 mov     eax, 1
+
+ So if entered key valid , CALL 1 and CALL 2 must return 15a4, I didn't
+ want to explore those two subs, FPU comands inside didnt look funny,
+ and afterall why care about valid key if author of BB let us patch proggy ;-)
+
+ As I found later (when explored case 3) reginfo must have exactly next form:
+
+ BrainsBreaker 2./Pack:Full;User:CRACKER;UserID:ID;Key:$L23456;
+
+ BrainsBreaker 2 - must be this.
+ Pack - can be Full,Entry,Upgrade.
+ User - your name here.
+ UserID - your ID.
+ Key - still dont know what form key must be.
+
+ So I patched BB at 456D38 (2 nops) and at 456D53 (jmp instead jnz), plus
+ remember check integrity kill patch, put
+
+ BrainsBreaker 2Pack:Full;User:Name;UserID:MyID;Key:$L23456;
+
+ at clipboard and ran BB. Fanfare and message box appeared "Registration
+ code detected. Thank for ...." and BB became registered. I checked
+ all "bad" places, i.e. played "demo" puzzles, created own puzzles,
+ looked at Program Options, where "Name" was instead of "Unregistered" -
+ it seemed to me thats all ok, BB really became registered. But when
+ I exited and restarted BB - all those NAGS appeared again. Why? Because
+ BB stored invalid reginfo somewhere (coz I forced it to do so) and
+ when BB starts it begin to check reginfo again in some other place,
+ which was unknown for me that time, and of course reject invalid key.
+
+ But where BB stored reginfo?
+ I looked at bbrk.ini and:
+
+[PACKFull]
+0=Name
+1=MyID
+2=4874c06e580dc4     ; encrypted and converted to ASCII key
+3=2100               ; I think it means version of BB
+4=22599f38           ; encrypted and converted to ASCII name
+5=2141bb19           ; encrypted and converted to ASCII id
+
+ I bpx GetPrivateProfileStringA and after several tries I found sub
+ which checks reginfo from bbrk.ini. It sub_469743, called only
+ once from "Check_CMD_line_and_etc" at 4433b8.
+ I named sub_469743 as "Check_reginfo_from_bbrk_ini".
+ In this sub after reading and decrypting reginfo, again those CALL 1
+ and CALL 2:
+
+469D4D loc_469D4D:                             ; CODE XREF: Check_Reginfo_fr
+469D4D  lea     edx, [ebp+var_CC]
+469D53  push    edx
+469D54  push    ebx
+469D55  mov     ecx, [ebx]
+469D57  call    dword ptr [ecx+8]; CALL 1
+469D5A  lea     eax, [ebp+var_CC]
+469D60  push    eax
+469D61  call    Check_1                 ; compare result of CALL 1 with 15a4
+469D66  test    eax, eax
+469D68  jz      short loc_469DA4
+469D6A  lea     edx, [ebp+var_D0]
+469D70  push    edx
+469D71  push    0
+469D73  push    0
+469D75  push    ebx
+469D76  mov     ecx, [ebx]
+469D78  call    dword ptr [ecx+10h] ; CALL 2
+469D7B  lea     eax, [ebp+var_D0]
+469D81  push    eax
+469D82  call    Check_1                 ; compare result of CALL 2 with 15a4
+469D87  test    eax, eax
+469D89  jz      short loc_469DA4
+469D8B  mov     [ebp+var_D4], ebx
+469D91  lea     edx, [ebp+var_D4]
+469D97  push    edx
+469D98  push    1
+469D9A  push    [ebp+arg_0]     ; VERY IMPORTANT:
+469D9D  call    sub_41C8FF      ;  here BB set dword_489aa2 to 1
+469DA2  jmp     short loc_469DDB ; this dword then used by protection
+
+ So I patched 469D68 and 469D89 too (2 nops and 2 nops) and ran BB again.
+ This time everything was ok, no nags, no problems :))
+
+ But I decided to check another way of registering.
+
+3) To be honest I found this way of registering absolutely accidental
+ when looked trough code in IDA. I saw switch case construction
+ and after some thinking (call it zen :)) I decided that its switch
+ for several key combination, I tried all Fn - no luck, I tried all
+ CTRL-Fn and BINGO !!!  When I pressed CTRL-F8 dialog box appeared
+ asked me to enter reginfo: Pack, Name, Id, Key.
+
+ This case is at 44c864:
+44C864 loc_44C864:                             ; CODE XREF: 0000:0044B964j
+44C864                                         ; DATA XREF: 0000:0044B96Bo
+44C864                 push    1Ch             ; case 0x456 - Ctrl-F8
+44C866                 call    call_2_lib_func ; call memset and newoperator?
+44C86B                 mov     [ebp-170h], eax ;
+44C871                 test    eax, eax
+44C873                 jz      loc_44D54F
+44C879                 push    0
+44C87B                 push    dword ptr [ebp-170h]
+44C881                 call    Registration    ; <------ 46ace5
+44C886                 jmp     loc_44D54F
+
+ I explored sub_Registration. It calls other, well hidden sub, which
+ validate entered reginfo:
+
+46ACE5  push    ebp
+46ACE6  mov     ebp, esp
+46ACE8  add     esp, 0FFFFFE00h
+46ACEE  push    ebx
+46ACEF  push    esi
+46ACF0  push    edi
+46ACF1  mov     ebx, [ebp+arg_0]
+46ACF4  lea     esi, [ebp+var_30]
+46ACF7  push    ds:dword_489A88
+46ACFD  push    8
+46ACFF  push    ebx
+46AD00  call    sub_420CDE
+46AD05  mov     dword ptr [ebx], offset off_4858BC ; pointers, pointers...
+
+       4858BC off_4858BC dd offset loc_46B1AD ; DATA XREF: Registration+20
+        ; this loc_46b1ad is that well hidden sub :)
+        ; I named it Validate_Reginfo_CTRL_F8
+
+46AD0B  push    1
+46AD0D  push    offset unk_4899CE
+46AD12  call    sub_46B6E9
+......
+46AD4F  push    20003h
+46AD54  push    80C00000h
+46AD59  push    1
+46AD5B  lea     edx, [ebp+var_8]
+46AD5E  push    edx
+46AD5F  push    0
+46AD61  push    ebx
+46AD62  call    sub_4209DD ; deep inside BB calls Validate_Reginfo_CTRL_F8
+
+ Funny, that this "Validate_Reginfo_CTRL_F8" used not only to check reginfo
+ entered using CTRL_F8,but also for draw registering dialog box, how tricky :)
+
+46B1AD Validate_Reginfo_CTRL_F8:               ; DATA XREF: 0000:004858BCo
+46B1AD push    ebp
+46B1AE mov     ebp, esp
+46B1B0 add     esp, 0FFFFFF8Ch
+46B1B3 push    ebx
+46B1B4 push    esi
+46B1B5 push    edi
+46B1B6 mov     ebx, [ebp+8]
+46B1B9 mov     esi, [ebp+0Ch]
+46B1BC mov     eax, esi
+46B1BE mov     dx, [eax]
+46B1C1 sub     dx, 65h
+46B1C5 jz      loc_46B51A
+46B1CB sub     dx, 2
+46B1CF jnz     loc_46B543
+46B1D5 or      byte ptr [eax+6], 2
+46B1D9 mov     ecx, [eax+7]
+46B1DC dec     ecx
+46B1DD jz      short loc_46B1F3
+46B1DF dec     ecx
+46B1E0 jnz     loc_46B514       <-- there BB begins check reginfo
+46B1E6 push    2
+46B1E8 push    ebx
+46B1E9 mov     eax, [ebx]
+46B1EB call    dword ptr [eax+20h]
+46B1EE jmp     loc_46B543
+......
+
+ At 46b514 BB begins to create from entered reginfo string like
+
+ BrainsBreaker 2Pack:Full;User:Name;UserID:MyID;Key:$L23456;
+
+ and then calls "Validate_Reginfo", sub, used for validating
+ reginfo from clipboard too. And coz I patched "Validate_Reginfo"
+ earlier, it accepts any reginfo too.
+
+---------------------------------------------------------------------------
+---------------------------------------------------------------------------
+Summary of the patch:
+
+   Original: Cracked:
+                     ÄÄÄÄÄ¿
+0001F169: 0F E9           ³
+0001F16A: 84 A2           ³
+0001F16B: A1 00           ³
+0001F16E: 00 90           ³
+000422CC: 74 EB           ÀÄ¿
+000434DB: 73 EB           ÚÄÙ  check integrity kill
+0004B073: 0F E9           ³
+0004B074: 83 86           ³
+0004B075: 85 00           ³
+0004B078: 00 90           ³
+00051376: 73 EB           ³
+                     ÄÄÄÄÄÙ
+                    ÄÄÄÄÄÄ¿
+00056338: 74 90           ³
+00056339: 1B 90           ÃÄ   allow any reginfo
+00056353: 75 EB           ³
+                    ÄÄÄÄÄÄÙ
+000598F0: 73 EB          ; check integrity kill
+
+                   ÄÄÄÄÄÄ¿
+00069368: 74 90          ³
+00069369: 3A 90          ÀÄ¿  allow any reginfo
+00069389: 74 90          ÚÄÙ
+0006938A: 19 90          ³
+                   ÄÄÄÄÄÄÙ
+
+ After this patch we need press CTRL-F8, enter pack "Full"( to get all features on)
+ any name, any ID, any key and BB becomes registered with all features on.
+ Or we can put reginfo to clipboard in next format:
+
+ BrainsBreaker 2./Pack:Full;User:CRACKER;UserID:ID;Key:$123456;
+
+ and run BB.
+----------------------------------------------------------------------------
+----------------------------------------------------------------------------
+ Summary of the protection scheme:
+
+1) In WinMain:
+a)
+
+439F6E loc_439F6E:                             ; CODE XREF: WinMain+5Aj
+439F6E                 mov     ds:dword_4898A8, eax
+439F73                 call    j_GetVersion
+439F78                 call    Set_Protection_Flags  ; this sub does next:
+        Set dword_489990=dword_489970=15a4 - then used in Check_1
+        dword_489980=offset_of_dword_489970
+b)
+at 43a0c4 call "Check_CMD_line_n_etc":
+
+2) in "Check_CMD_line_n_etc":
+  * I wont include here places where integrity of BB checked *
+
+a)
+4433AE loc_4433AE:                             ; CODE XREF: Check_CMD_Line_a
+4433AE                 push    offset dword_48980A
+4433B3                 push    offset unk_489A8E
+4433B8                 call    Check_Reginfo_from_bbrk_ini ; if
+
+         we already registered and bbrk.ini contains valid reginfo
+         (or if we patched "Check_Reginfo_from_bbrk_ini" before ;) then
+         dword_489aa2=1 - very important flag !!!, else dword_489aa2=0.
+
+b)
+4437FC                 lea     edx, [ebp+var_294]
+443802                 push    edx
+443803                 call    sub_425AD8      ; in this call BB get reginfo
+
+         from clipboard and check it, using "Validate_reginfo" sub
+
+3) There are several subs which used not only by protection (very
+ smart move of author):
+
+a) Check_1:
+
+46AA6C arg_0           = dword ptr  8
+46AA6C
+46AA6C                 push    ebp
+46AA6D                 mov     ebp, esp
+46AA6F                 mov     eax, [ebp+arg_0]
+46AA72                 mov     eax, [eax]
+46AA74                 cmp     eax, ds:dword_489990 ; compare arg_0 with 15a4
+46AA7A                 setz    dl
+46AA7D                 and     edx, 1
+46AA80                 mov     eax, edx  ; if arg_0=15a4 then eax=1
+46AA82                 pop     ebp
+46AA83                 retn    4
+46AA83 Check_1         endp
+
+b) Check_2 - sub_469e31
+   This sub calls Check_1
+
+c) Check_3 - sub_46aa1e
+Its not really check, its some kind of flag set
+
+If arg_0=0, then sub put to [arg_4],0
+If arg_0=1, then sub put to [arg_4],15a4
+
+46AA1E arg_0           = dword ptr  8
+46AA1E arg_4           = dword ptr  0Ch
+46AA1E
+46AA1E                 push    ebp
+46AA1F                 mov     ebp, esp
+46AA21                 mov     eax, [ebp+arg_0]
+46AA24                 mov     edx, ds:dword_489978
+46AA2A                 mov     ecx, [edx]      ; edx=489980
+46AA2C                 mov     edx, [ecx]      ; ecx=489970,edx=[ecx]=15a4
+46AA2E                 mov     ecx, 1          ; if arg_4=0
+46AA33                 cmp     [ebp+arg_4], 0  ; then ecx-1=0
+46AA37                 jnz     short loc_46AA3C ; else ecx=1
+46AA39                 add     ecx, 0FFFFFFFEh
+46AA3C loc_46AA3C:                             ; CODE XREF: Check_3+19j
+46AA3C                 imul    edx, ecx    ; 15a4*ecx
+46AA3F                 mov     [eax], edx
+46AA41                 pop     ebp
+46AA42                 retn    8
+
+d) Check_4:
+
+46AA86 arg_0           = dword ptr  8
+46AA86
+46AA86                 push    ebp
+46AA87                 mov     ebp, esp
+46AA89                 mov     eax, [ebp+arg_0]
+46AA8C                 xor     edx, edx
+46AA8E                 mov     ecx, ds:dword_489980 ; offset of 489970
+46AA94                 mov     ecx, [ecx] ; [ecx]=15a4
+46AA96                 cmp     ecx, [eax]  ; compare 15a4 with arg_0
+46AA98                 jz      short loc_46AA9B ; if = then return 0
+46AA9A                 inc     edx                 ; else 1
+46AA9B loc_46AA9B:                             ; CODE XREF: Check_4+12j
+46AA9B                 mov     eax, edx
+46AA9D                 pop     ebp
+46AA9E                 retn    4
+46AA9E Check_4         endp
+
+e) Return_15a4_in_EAX_? - sub_4138ac
+
+Very important sub
+
+4138AC var_1C          = byte ptr -1Ch
+4138AC var_18          = byte ptr -18h
+4138AC var_14          = dword ptr -14h
+4138AC var_10          = byte ptr -10h
+4138AC var_C           = byte ptr -0Ch
+4138AC var_8           = dword ptr -8
+4138AC var_4           = dword ptr -4
+4138AC arg_0           = dword ptr  8
+4138AC arg_4           = dword ptr  0Ch
+4138AC
+4138AC                 push    ebp
+4138AD                 mov     ebp, esp
+4138AF                 add     esp, 0FFFFFFE4h
+4138B2                 push    ebx
+4138B3                 push    esi
+4138B4                 push    edi
+4138B5                 mov     esi, [ebp+arg_0]
+4138B8                 xor     ebx, ebx                ; clear ebx
+4138BA                 jmp     loc_41397C
+4138BF ; ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+4138BF loc_4138BF:                             ; CODE XREF: Return_15a4_in_E
+4138BF                 mov     [ebp+var_4], ebx
+4138C2                 mov     eax, [esi+1Dh]
+4138C5                 mov     edx, [ebp+var_4]
+4138C8                 mov     edi, [eax+edx*4]
+4138CB                 push    edi
+4138CC                 mov     eax, [edi]
+......
+41397C loc_41397C:                             ; CODE XREF: Return_15a4_in_E
+41397C                 cmp     ebx, [esi+14h]  ; [esi+14]=489aa2
+
+                  so here we check if dword_489aa2 = 0
+                  this dword_489aa2 set to 1 when BB registered
+                  so if BB unregistered we wont go at loc_4138BF
+                  instead we go at 4139b4 and then to loc_4139CE
+                  where Check_3 (wrong name I've  choosen for this
+                  sub, I must admit) set arg_4 to 0, coz arg_0=0
+                  so "Return_15a4_in_EAX?" returns 0.
+
+                  And, if dword_489aa2 set to 1, we go at loc_4138BF,
+                  some calcualtion there and "Return_15a4_in_EAX?"
+                  returns 15a4 whatever reginfo we have( valid or
+                  not). THIS IS VERY IMPORTANT, BECAUSE almost all of
+                  those "Check_X" subs compare result of this "Return_15a4_
+                  _in_EAX?" with 15a4 and in this way BB decide registered
+                  it or not.
+
+                  When I understand how this sub works I realized
+                  that its enough to push 1 instead push 0
+                  at loc_4139ce and we always get 15a4 as return value.
+                  And now we even dont need to register, I thought.
+
+                  But this patch didn't help much, because this sub, probably,
+                  used for other purposes too and therefore this patch won't
+                  let us get all feautres on in BB.  More, when I tried
+                  to create own puzzle, BB crashes with pagefault
+                  coz it tried access Name of user which simply
+                  didnt exist.
+
+41397F                 jl      loc_4138BF
+413985                 push    esi
+413986                 call    sub_413D91
+41398B                 test    eax, eax
+41398D                 jle     short loc_4139B4
+41398F                 cmp     dword ptr [esi+14h], 3
+413993                 jl      short loc_4139B4
+413995                 push    0
+413997                 lea     edx, [ebp+var_1C]
+41399A                 push    edx
+41399B                 call    Check_3
+4139A0                 push    eax
+4139A1                 call    Check_4
+4139A6                 push    eax
+4139A7                 push    [ebp+arg_4]
+4139AA                 call    Check_3
+4139AF                 mov     eax, [ebp+arg_4]
+4139B2                 jmp     short loc_4139DB
+4139B4 ; ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+4139B4
+4139B4 loc_4139B4:                             ; CODE XREF: Return_15a4_in_E
+4139B4                                         ; Return_15a4_in_EAX?+E7j
+4139B4                 cmp     eax, 2
+4139B7                 jl      short loc_4139CE
+4139B9                 cmp     dword ptr [esi+14h], 2
+4139BD                 jl      short loc_4139CE
+4139BF                 push    1
+4139C1                 push    [ebp+arg_4]
+4139C4                 call    Check_3
+4139C9                 mov     eax, [ebp+arg_4]
+4139CC                 jmp     short loc_4139DB
+4139CE ; ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+4139CE
+4139CE loc_4139CE:                             ; CODE XREF: Return_15a4_in_E
+4139CE                                         ; Return_15a4_in_EAX?+111j
+4139CE                 push    0               ; with this arg
+4139D0                 push    [ebp+arg_4]     ; Check_3
+4139D3                 call    Check_3         ; set arg_4 to 0
+4139D8                 mov     eax, [ebp+arg_4] ; eax=0
+4139DB
+4139DB loc_4139DB:                             ; CODE XREF: Return_15a4_in_E
+4139DB                                         ; Return_15a4_in_EAX?+106j
+4139DB                                         ; Return_15a4_in_EAX?+120j
+4139DB                 pop     edi
+
+
+4) bb21eng.dix is used to keep crypted strings? , "UNREGISTERED" bitmap?
+   or some tables to decrypt strings
+
+5) BB decrypt those "invisible" in dead listing strings in rather
+ tricky way. It uses xor with name of author as mask, decrypt
+ in several passes... Paranoid guy.
+
+419223 Encryption??    proc near
+419223 var_8           = dword ptr -8
+419223 var_4           = dword ptr -4
+419223 arg_0           = dword ptr  8
+419223 arg_4           = dword ptr  0Ch
+419223 arg_8           = dword ptr  10h
+419223
+419223  push    ebp
+419224  mov     ebp, esp
+419226  add     esp, 0FFFFFFF8h
+419229  push    ebx
+41922A  push    esi
+41922B  push    edi
+41922C  mov     ebx, [ebp+arg_0]
+41922F  mov     edi, [ebp+arg_4]
+419232  mov     esi, [ebp+arg_8]
+419235  push    ebx
+419236  call    L_seek        ; seek some offsets in bb21eng.dix
+41923B  mov     [ebp+var_4], eax
+41923E  push    esi
+41923F  push    edi
+419240  push    ebx
+419241  call    sub_418867 ; call h_read
+419246  mov     [ebp+var_8], eax
+419249  push    [ebp+var_4]
+41924C  push    esi
+41924D  push    edi
+41924E  push    ebx
+41924F  call    Tricky_xor       ; decrypt strings, sub_4190fc
+419254  mov     eax, [ebp+var_8]
+419257  pop     edi
+419258  pop     esi
+419259  pop     ebx
+41925A  pop     ecx
+41925B  pop     ecx
+41925C  pop     ebp
+41925D  retn    0Ch
+41925D Encryption??    endp
+
+6) There are two subs which validate reginfo:
+
+a) "Validate_reginfo" - sub_456af5
+
+ This sub takes as argument pointer to reginfo in format I described
+ above, i.e. :
+
+  BrainsBreaker 2./Pack:Full;User:CRACKER;UserID:ID;Key:$123456;
+
+b) "Validate_reginfo_CTRL_F8" - loc_46b1ad
+
+  This sub called when CTRL_F8 pressed, this sub convert entered reginfo
+  to format which "Validate_reginfo" accepts and then call it:
+
+46B438  call    sub_41553E
+46B43D  xor     edi, edi        ; after that we have formed reginfo
+46B43F  lea     eax, [ebp-3Ch]  ; in format for Validate_reginfo
+46B442  push    eax
+46B443  call    sub_415867
+46B448  test    eax, eax
+46B44A  jnz     short loc_46B45C
+46B44C  push    dword ptr [ebp-20h] ;  offset of reginfo pushed
+46B44F  push    ds:dword_489A88
+46B455  call    Validate_reginfo        ; <---------here
+46B45A  mov     edi, eax
+46B45C
+46B45C loc_46B45C:          ; CODE XREF: 0000:0046B44Aj
+46B45C  test    edi, edi
+46B45E  jnz     loc_46B4E9
+
+
+7) CALL 1 - sub_459ac1
+   CALL 2 - sub_459c3a
+
+   both subs used by "Validate_reginfo", "Check_Reginfo_From_bbrk.ini"
+
+   These subs validate key.
+
+9) So, BB compare result of sub "Return_15a4_in_EAX_?"  with 15a4 , using
+   Check_1,Check_2,Check_4 subs. In this way BB decides registered it
+   or not and set on or set off features of registered version.
+
+   Sub "Return_15a4_in_EAX_?" checks dword_489aa2 .
+   If dword_489aa2=0, this sub return 0 .
+   If dword_489aa2=1, this sub return 15a4 after some calculation - good value.
+
+   dword_489aa2 sets to 1 if key taken from bbrk.ini or entered by user
+   or taken from Clipboard is valid.
+
+---------------------------------------------------------------------------
+End of the solution.
+<hr>
+Solution for Part IV of +HCU Strainer 99.
+Solved by iNT_03h.
+
+TARGET: Brains Breaker ver 2.1b (32bits)
+
+TOOLS: SoftIce 3.22 for W95, IDA PRO 3.75 Full, Borland C++ 4.5
+
+SOLUTION:
+
+ First, English is not my motherlanguage, so please excuse my mistakes...
+
+ To understand how BB draws that sparkle I started BB, completed puzzle
+ and pressed CTRL-D while BB was drawing sparkles. After several F12 I
+ landed at 42eadb, exactly after CALL 42eeb0. There was loop and this sub
+ was called again and with every call sparkle changed form step by step.
+
+ So I saw and understand how sparkles created and decided to code program
+ on C to reproduce that sparkle. I choose 640x480x16 color video mode -
+ its standart in BC, and won't require any special bgi.
+ I used standart graphics functions from gfaphics.lib.
+
+ I decided not to make CPU speed check and allowed to enter
+ delay value manually, so you can see sparkle creation process step
+ by step if you choose big delay (100 and more), or see it in normal
+ speed (delay 13-15 for PII 233).
+
+ Of course, I could create same program in asm, but it would take me
+ much more time, coz its rather dificult to code all those graphics
+ functions (like ellipse) in asm, and it wouldn't be funny I think :))
+
+ Usually sparkle created in 16 steps: 8 steps used to increase size
+ of sparkle and 8 steps used to decrease size of sparkle.
+
+ 0) choose color for sparkle
+ 1) draw white small +, its size is about x=2,y=4
+ 2) increase +
+ 3) draw small ellipse using choosen color and draw increased +
+ 4) increase ellipse (color), then draw smaller ellipse with bright color,
+    and even smaller ellipse an center using white color
+ 5),6),7),8) - same
+
+ 9) begin the process in back order, i.e decrease size of ellipses and +
+ 10) same, but begin to draw 3 very small white points around sparkle
+
+ 11) continue to decrease sparkle, but increase small points, they become +,
+ change their color from white to color of sparkle
+
+ 12) continue to decrease sparkle, but decrease small +, they become points
+     and randomly add several (0-2) small points around sparkle
+
+ 13) continue to decrease sparkle, first 3 small + disapper,randomly added
+     several (0-2) small points increased and become +
+ 14) continue to decrease sparkle, randomly added several (0-2) small
+     points decreased and become points
+ 15) continue to decrease sparkle, randomly added several (0-2) small
+     points dont change
+ 16) whole sparkle disappear.
+
+
+//---------------------- sparkle.c----------------------------------------
+//compile: bcc sparkle.c graphics.lib
+// sparkle.exe need egavga.bgi ro run
+// I used bcc 4.5 , but I'm sure, BC 3.1 also will work
+#include<CONIO.h>
+#include<DOS.h>
+#include<STDLIB.h>
+#include<GRAPHICS.h>
+#include<TIME.h>
+#include<STDIO.h>
+
+void draw_plus(int xc,int yc,int xp,int yp)
+{
+// draw + at xc,yc with xp,yp sizes
+setcolor(WHITE);
+moveto(xc-xp/2,yc);
+lineto(xc+xp/2,yc);
+moveto(xc,yc-yp/2);
+lineto(xc,yc+yp/2);
+}
+
+void main(void)
+{
+int xc,yc,color,xrad,yrad,xp,yp,i,i1,num_ss,xs1,ys1,color2,ys[6],xs[6],nss;
+int gd=VGA,gm=VGAHI,xs2,xs3,ys2,ys3,t,i2,beg,end,color3,t1,del,rnd_s,error;
+unsigned char *bmap;
+
+  printf("\n\n Brains Breaker sparkle reproducer. (C)oded by iNT_03h in 1998.");
+  printf("\n\n Enter draw delay(msec):");
+  scanf("%d",&del);
+  initgraph(&gd,&gm,"");
+
+  error=graphresult();
+
+  if (error!=grOk)
+  {
+    printf("Graphics error: %s\n", grapherrormsg(error));
+    printf("Press any key to halt:");
+    getch();
+    exit(1);
+  }
+
+  bmap=malloc(20*20/2); // alloc memory for store bitmap
+
+  randomize();
+//      for(i1=0;i1<=20;i1++)
+  while(!kbhit())
+   {
+again1:
+     xc=random(620);       // xc - center of sparkle
+     if(xc<=20)
+     goto again1;
+again2:
+     yc=random(460);      // yc - center of sparkle
+     if(yc<=20)
+     goto again2;
+again3:
+     color=random(9);    // random color from first 8 of 16 colors
+     rnd_s=random(3);    // this provide random size of sparkle
+     if(color==0||color==8)
+         goto again3;
+     getimage(xc-16,yc-16,xc+16,yc+16,bmap); // save background "before" tppabs="http://www.anticrack.de/fravia/99solu/before" draw
+                                             // sparkle
+     for(i=5;i<=18+rnd_s;i++)       // begin to increase sparkle
+       {
+       delay(del);
+/*        asm {                     here I tried to make delay depends
+//       mov ah,0                   on clock, doesnt work well, too slow
+  //     int 0x1a
+      mov ax,0x40
+      mov es,ax
+      mov dx,es:[0x6c]
+      add dx,1
+      mov bx,dx
+       }
+       repeat:
+       asm{
+      mov dx,es:[0x6c]
+      cmp dx,bx
+      jne repeat
+      }*/
+
+     putimage(xc-16,yc-16,bmap,COPY_PUT);
+
+     setcolor(color);
+
+     setfillstyle(SOLID_FILL,color);
+     fillellipse(xc,yc,i/2-4,i/2-2);  // draw ellipse with color
+     setfillstyle(SOLID_FILL,color+8);
+     fillellipse(xc,yc,i/2-5,i/2-3); // draw smaller ellipse with bright color
+     setfillstyle(SOLID_FILL,WHITE);
+     draw_plus(xc,yc,i-4,i);    // draw white PLUS
+     setcolor(WHITE);
+     fillellipse(xc,yc,i/2-7,i/2-5);  // draw smallest ellipse with WHITE color
+     }
+
+     t=t1=0;   // flags
+     color2=color3=WHITE;
+     for(i=18+rnd_s;i>=5;i--)   // loop for decrease sparkle
+       {
+       delay(del-1);
+/* asm {    mov ah,0
+  //        int 0x1a
+       mov ax,0x40
+       mov es,ax
+       mov dx,es:[0x6c]
+       add dx,1
+       mov bx,dx
+       }
+       repeat1:
+       asm{
+       mov dx,es:[0x6c]
+       cmp dx,bx
+       jne repeat1
+       }
+*/
+
+    putimage(xc-16,yc-16,bmap,COPY_PUT);
+    setcolor(color);
+    setfillstyle(SOLID_FILL,color);     // all same as above
+    fillellipse(xc,yc,i/2-4,i/2-2);
+    setfillstyle(SOLID_FILL,color+8);
+    fillellipse(xc,yc,i/2-5,i/2-3);
+    setfillstyle(SOLID_FILL,WHITE);
+    draw_plus(xc,yc,i-4,i);
+    setcolor(WHITE);
+    fillellipse(xc,yc,i/2-7,i/2-5);
+
+
+    if(i>16+rnd_s)      //if sparkle big enough just continue to decrease it
+           continue;
+    if(i==16+rnd_s)   //else begin to draw very small sparkle around main
+            {        // sparkle
+    nss=2+random(4);  // number of small sparkles , at least 2, maximum 5
+    setcolor(WHITE);
+      for(i2=0;i2<NSS;i2++)
+              {
+              xs[i2]=xc-8+random(19);    // fill array with coords of small
+              ys[i2]=yc-8+random(19); // sparkles which will be drawn futher
+              }
+    }
+    if(t==0)          // if flag t=0 then its time to draw first 2 sparkles
+      {                 // as point around main sparkle
+       for(i2=0;i2<2;i2++)
+           putpixel(xs[i2],ys[i2],color2);
+       }
+       else{           // else its time to increase them and draw as very
+           setcolor(color2);  // small ellipses
+           setfillstyle(SOLID_FILL,color2);
+           for(i2=0;i2<2;i2++)
+               fillellipse(xs[i2],ys[i2],t,t);
+           }
+
+     if(t1==0)     // if flag t1=0 its time to draw as points aditional
+           {           // small sparkles
+           for(i2=2;i2<nss;i2++)
+              putpixel(xs[i2],ys[i2],color3);
+           }
+           else{    // else its time to draw additional sparkles as very
+                setcolor(color3);   // small ellipses
+                setfillstyle(SOLID_FILL,color3);
+                for(i2=2;i2<nss;i2++)
+                    fillellipse(xs[i2],ys[i2],t,t);
+               }
+      if(i==14+rnd_s)      // steps at which flag t=1
+          t++;
+      if(i==12+rnd_s)   // steps at which flag t=1
+          {
+          color2=color+8; // change color of first 2 small sparkles
+          t1++;         // to bright color of main sparkle
+          }
+      if(i==10+rnd_s)  // change color of additopnal small sparkles
+          color3=color+8; // to bright color of main sparkle
+      if(i<6+rnd_s)   // time to decrease first 2 small sparkles
+          t1--;
+      if(i<8+rnd_s)   // time to decrease additional small sparkles
+          t--;
+  //          getch();
+         delay(1);
+         }
+         putimage(xc-16,yc-16,bmap,COPY_PUT);
+         }
+      closegraph();
+      free(bmap);
+}
+//---------------------------------------------------------------------------
+
+End of the solution.
+
+</prE>
+</BODY>
+</HTML>

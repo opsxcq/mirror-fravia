@@ -1,0 +1,418 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>heres1</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+<CENTER><FONT size="+3">How to register HexWorkshop v2.52 (32bit)<BR></FONT><FONT size="+2">
+
+(Missing file reconstruction)</FONT>
+
+
+
+<H4>by Heres<BR>
+
+<BR>
+
+(17 August 1997, slightly edited by Fravia)</H4>
+
+<HR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">Courtesy of Fravia's page 
+
+of reverse engineering<BR><BR><I>Well, this essay is published with great 
+
+delay because Heres sent it to me only on 14 August 1997, it is another approach 
+
+to Hexworkshop reverse engineering, worth reading</I></CENTER><HR size="2"><PRE>
+
+        <FON size="+2"><CENTER>   How to register HexWorkshop v2.52 (32bit)
+
+
+
+                                          - by Heres - </FONT>
+
+
+
+         [You should use Courier New 8 in order to view and print correctly this essay]
+
+</CENTER>
+
+
+
+This is a different dead listing approach, based on search of registration 
+
+filename.
+
+As you can see, in the target's directory, there is a file HEXWORKS.REG 
+
+(0 bytes), so go to search the string...
+
+
+
+* Possible StringData Ref from Data Obj -&gt;&quot;HEXWORKS.REG&quot;        ; Good...
+
+                                  |
+
+:0043B10C BAC05B4800              mov edx, 00485BC0
+
+:0043B111 83E103                  and ecx, 00000003
+
+:0043B114 F3                      repz
+
+:0043B115 A4                      movsb
+
+:0043B116 8D7C240C                lea edi, [esp + 0C]
+
+:0043B11A B9FFFFFFFF              mov ecx, FFFFFFFF
+
+:0043B11F 2BC0                    sub eax, eax
+
+:0043B121 F2                      repnz
+
+:0043B122 AE                      scasb
+
+:0043B123 4F                      dec edi
+
+:0043B124 8B02                    mov eax, [edx]
+
+:0043B126 8B4A04                  mov ecx, [edx+04]
+
+:0043B129 8B5A08                  mov ebx, [edx+08]
+
+:0043B12C 6A00                    push 00000000
+
+:0043B12E 8907                    mov [edi], eax
+
+:0043B130 8A420C                  mov al , [edx+0C]
+
+:0043B133 894F04                  mov [edi+04], ecx
+
+:0043B136 8D4C2410                lea ecx, [esp + 10]
+
+:0043B13A 895F08                  mov [edi+08], ebx
+
+:0043B13D 51                      push ecx
+
+:0043B13E 88470C                  mov [edi+0C], al 
+
+
+
+* Reference To: KERNEL32._lopen, Ord:0262h                      ; Go to open...
+
+                                  |
+
+:0043B141 FF15C85A4900            Call dword ptr [00495AC8]
+
+:0043B147 83F8FF                  cmp eax, FFFFFFFF
+
+:0043B14A 8BF0                    mov esi, eax
+
+:0043B14C 0F84D7000000            je 0043B229
+
+:0043B152 8B9C2418010000          mov ebx, [esp + 00000118]
+
+:0043B159 68D2000000              push 000000D2                 ; At least 210 bytes
+
+:0043B15E 53                      push ebx                      ; to read from file 
+
+:0043B15F 56                      push esi
+
+
+
+* Reference To: KERNEL32._lread, Ord:0263h                      ; Go to read...
+
+                                  |
+
+:0043B160 FF15CC5A4900            Call dword ptr [00495ACC]
+
+:0043B166 8BF8                    mov edi, eax
+
+:0043B168 56                      push esi
+
+
+
+* Reference To: KERNEL32._lclose, Ord:025Fh                     ; Close now...
+
+                                  |
+
+:0043B169 FF15D05A4900            Call dword ptr [00495AD0]
+
+:0043B16F 81FFD2000000            cmp edi, 000000D2             ; really 210 bytes ?
+
+:0043B175 752A                    jne 0043B1A1
+
+:0043B177 81ECD4000000            sub esp, 000000D4
+
+:0043B17D 8BF3                    mov esi, ebx
+
+:0043B17F 8BFC                    mov edi, esp
+
+:0043B181 B934000000              mov ecx, 00000034
+
+:0043B186 F3                      repz
+
+:0043B187 A5                      movsd
+
+:0043B188 66A5                    movsw
+
+:0043B18A E861020000              call 0043B3F0                 ; Check Routine
+
+:0043B18F 81C4D4000000            add esp, 000000D4
+
+:0043B195 3B83CE000000            cmp eax, [ebx+000000CE]       ; Oh,Oh... The Key!
+
+:0043B19B 0F8418010000            je 0043B2B9                   ; Jump if Registered
+
+
+
+* Referenced by a Jump at Address:0043B175(C)
+
+|
+
+:0043B1A1 66C7030000              mov word ptr [ebx], 0000
+
+:0043B1A6 BFD05B4800              mov edi, 00485BD0
+
+:0043B1AB B9FFFFFFFF              mov ecx, FFFFFFFF
+
+:0043B1B0 2BC0                    sub eax, eax
+
+:0043B1B2 F2                      repnz
+
+:0043B1B3 AE                      scasb
+
+:0043B1B4 F7D1                    not ecx
+
+:0043B1B6 2BF9                    sub edi, ecx
+
+:0043B1B8 8BC1                    mov eax, ecx
+
+:0043B1BA C1E902                  shr ecx, 02
+
+:0043B1BD 8BF7                    mov esi, edi
+
+:0043B1BF 8D7B02                  lea edi, [ebx+02]
+
+:0043B1C2 F3                      repz
+
+:0043B1C3 A5                      movsd
+
+:0043B1C4 8BC8                    mov ecx, eax
+
+:0043B1C6 83E103                  and ecx, 00000003
+
+:0043B1C9 F3                      repz
+
+:0043B1CA A4                      movsb
+
+
+
+* Possible StringData Ref from Data Obj -&gt;&quot;Unregistered&quot;     ; +ORC's SearchString
+
+                                  |
+
+:0043B1CB BFD45B4800              mov edi, 00485BD4
+
+
+
+
+
+THE CRACK
+
+
+
+Ok... Now try to create a file of at least 210 bytes, called HEXWORKS.REG, in the 
+
+target directory. My one, below, is particular (completed after 3 attempts, 
+
+launching the program byte-cracked in the first way), but only the length is 
+
+important for now...
+
+
+
+xx0000000000
+
+Heres
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+
+
+With 0Dh,0Ah at the end of each line (yes, I wrote it with a simple editor).
+
+
+
+Now we have two ways to crack this program...
+
+
+
+
+
+1. Making a byte crack
+
+
+
+First make a backup of HWORKS32.EXE (es. HWORKS32.ORI)
+
+
+
+OFFSET:         -OLD-
+
+0003A59B   0F8418010000        je 0043B2B9              ; Jump if Registered
+
+
+
+OFFSET:         -NEW-
+
+0003A59B   E919010000          jmp 0043B2B9             ; Jump however
+
+0003A5A0   90                  nop                      ; :-o
+
+
+
+
+
+2. Finding the key using Softice 2.0+
+
+
+
+Load the target (Softice Loader) and set
+
+bpx cs:43B195
+
+then strike (F5)... Ok you are at the key point:
+
+:0043B195 3B83CE000000            cmp eax, [ebx+000000CE]  ; Oh,Oh... The Key!
+
+Mmmm... Interesting...
+
+The value of EAX should be stored in reverse order at the end of your 
+
+HEXWORKS.REG.
+
+
+
+So I modified my regfile using the first-way cracked program :-), and changed the 
+
+4 bytes at the end from:
+
+78h, 78h, 0Dh, 0Ah
+
+to:
+
+36h, E8h, 0Fh, C8h
+
+
+
+Finally I restored HWORKS32.EXE using the previous backup file: HWORKS32.ORI
+
+
+
+
+
+Ok... A speed crack... If you have more time, you can analyze the Check Routine 
+
+and you'll easily be able to prepare a keymaker for this program.
+
+
+
+Note: 
+
+Sorry for my English, I am an Italian cracker, and I learned with the 
+
+superb +ORC tutorial...
+
+
+
+Heres, June 3th 1997
+
+   </PRE>
+
+ <FONT color="green">(c) Heres 1997. All rights reserved</FONT>
+
+<HR ALIGN="CENTER" WIDTH="100%" SIZE="3">
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</I></CENTER>
+
+<BR><CENTER>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">
+
+<A HREF="project1.htm" tppabs="http://www.anticrack.de/fravia/project1.htm">Project 1</A><BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">
+
+<A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#84'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#84">homepage </A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"> 
+
+<A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#73'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#73">links </A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0">
+
+<A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity </A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#82'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#82">students' essays </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">Academy database </A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut CGI-scripts </A>
+
+
+
+
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_Fravia </A><BR>
+
+
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering illegal? </A></CENTER>
+
+<CENTER><HR ALIGN="CENTER" WIDTH="100%" SIZE="2"></CENTER>
+
+</BODY>
+
+</HTML>
+

@@ -1,0 +1,1053 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>aescul6</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+
+
+<P><CENTER><FONT SIZE="+3">Fido2Int mailer v. 2.00 Key Generator<BR>
+
+</FONT><FONT SIZE="+2">A tough Key File Based Protection Scheme</FONT>
+
+<BR>
+
+</CENTER>
+
+
+
+<H4><CENTER><I>by Aesculapius</I><BR>
+
+(13 September 1997)</CENTER></H4>
+
+
+
+<CENTER><HR><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"> Courtesy of Fravia's page of reverse engineering<BR>
+
+<HR> <I>Well, a very solid reverse engineering essay by a very 
+
+solid cracker! Enjoy!</I></CENTER><HR size="6">
+
+
+
+<PRE>
+
+		   Fido2Int mailer v. 2.00 Key Generator
+
+		 A tough Key File Based Protection Scheme
+
+			      By Aesculapius
+
+
+
+
+
+	This essay deals with a tough key file based protection scheme. 
+
+Key file based schemes are those, where certain file, containing encrypted 
+
+data unlocks all registered functions of the target program when it is valid 
+
+and present. The name of this file could be different, but the file name 
+
+extension is very frequently the word 'key' (*.key). To defeat these 
+
+schemes, you must first find out which is the name of the valid key file. 
+
+Some String Search utility (as Search and Replace for Windows 95/NT) could 
+
+be used to gather the key file name. Search for the word 'key'. If you can't 
+
+find it, then, load the main executable of the target program in SoftICE and 
+
+set a breakpoint on BPINT 21H IF AH == 3DH (DOS target) or BPX CreateFile, 
+
+BPX ReadFile (Windows target). You could also disassemble the target program 
+
+with wdsm89 and search for relevant phrases: Unregistered, Registered, key, 
+
+etc. Once you have figured out the key file name, it is time to seek the 
+
+target code locations where this file is opened, read, and how this 
+
+information is manipulated. Sometimes, you'll have the great advantage of 
+
+having a valid key file (a legal valid key file or some key file another 
+
+cracker created before you). If this is the case, you can study the key, to 
+
+learn what's inside it, how many bytes are allocated in the key, what happen 
+
+if you modify the key, etc. In this essay we wont have the great advantage 
+
+of having a valid key. We must figure out everything (the key file name, how 
+
+many bytes it has, how the information is stored inside it, the encryption 
+
+process, etc.).
+
+
+
+	
+
+	Fido2Int, is a very interesting target, I choose it, because the 
+
+encryption process is extremely clever. It took me more than two hours to 
+
+generate a valid key file. You can find the target program at 
+
+www.terminate.com, the file is 328 Kb long. You'll need the following tools: 
+
+Wdsm89, SoftICE for Windows 95 and TASM 5.0.
+
+
+
+	Proceed to disassemble the file with wdsm89. Now search for the 
+
+following word: 'UNREGISTERED'. We land here:
+
+
+
+
+
+
+
+ * Referenced by a CALL at Address:00436F5F   
+
+|
+
+:00434578 55                      push ebp
+
+:00434579 8BEC                    mov ebp, esp
+
+:0043457B 83C4A0                  add esp, FFFFFFA0
+
+:0043457E 803D68D8430000          cmp byte ptr [0043D868], 00; Flag Reg Byte
+
+                                                             ; = 01 Reg.
+
+                                                             ; = 00 Unreg.
+
+:00434585 742F                    je 004345B6		     ; Beggar off!
+
+                                                             
+
+* Possible StringData Ref from Code Obj -&gt;&quot;!- FIDO2INT 2.00 - REGISTERED &quot;
+
+                                        -&gt;&quot;TO: &quot;
+
+                                  |
+
+:00434587 BAF4454300              mov edx, 004345F4
+
+:0043458C 8D45A0                  lea eax, dword ptr [ebp-60]
+
+:0043458F E8A4E4FCFF              call 00402A38
+
+:00434594 BAACD94300              mov edx, 0043D9AC
+
+:00434599 8D45A0                  lea eax, dword ptr [ebp-60]
+
+:0043459C B15D                    mov cl, 5D
+
+:0043459E E865E4FCFF              call 00402A08
+
+:004345A3 8D55A0                  lea edx, dword ptr [ebp-60]
+
+:004345A6 8B4508                  mov eax, dword ptr [ebp+08]
+
+:004345A9 8B80B0FDFFFF            mov eax, dword ptr [eax+FFFFFDB0]
+
+:004345AF E828FAFFFF              call 00433FDC
+
+:004345B4 EB26                    jmp 004345DC
+
+
+
+* Referenced by a Jump at Address:00434585(C)
+
+|
+
+
+
+* Possible StringData Ref from Code Obj -&gt;&quot;?- FIDO2INT 2.00 - UNREGISTERED &quot;
+
+                                        -&gt;&quot;EVALUATION COPY, PLEASE REGISTER&gt;- &quot;
+
+                                        -&gt;&quot;USE BEYOND THE EVALUATION PERIOD &quot;
+
+                                        -&gt;&quot;OF 21 DAYS IS NOT PERMITTED&quot;
+
+                                  |
+
+:004345B6 BA18464300              mov edx, 00434618
+
+:004345BB 8B4508                  mov eax, dword ptr [ebp+08]
+
+:004345BE 8B80B0FDFFFF            mov eax, dword ptr [eax+FFFFFDB0]
+
+:004345C4 E813FAFFFF              call 00433FDC
+
+:004345C9 BA58464300              mov edx, 00434658
+
+:004345CE 8B4508                  mov eax, dword ptr [ebp+08]
+
+:004345D1 8B80B0FDFFFF            mov eax, dword ptr [eax+FFFFFDB0]
+
+:004345D7 E800FAFFFF              call 00433FDC
+
+
+
+* Referenced by a Jump at Address:004345B4(U) 
+
+| 
+
+:004345DC BA98464300              mov edx, 00434698 
+
+:004345E1 8B4508                  mov eax, dword ptr [ebp+08] 
+
+:004345E4 8B80B0FDFFFF            mov eax, dword ptr [eax+FFFFFDB0] 
+
+:004345EA E8EDF9FFFF              call 00433FDC 
+
+:004345EF 8BE5                    mov esp, ebp 
+
+:004345F1 5D                      pop ebp 
+
+:004345F2 C3                      ret
+
+
+
+	Pretty obvious, doesn't it? if byte at memory location [0043D868]  
+
+contains 00H then the software is Unregistered, if it contains 01H it is a 
+
+Registered Copy. According to this, appropriate messages are written. 
+
+Patching at this point is so evident that I wont discuss it, however, you 
+
+should notice, that &quot;a patch&quot; is not acceptable in this case, because 
+
+this software objective is to create mail packets that will travel around 
+
+the world, therefore, all packets will contain a 'Registered to: Empty 
+
+space--&gt;Lamer sighted' Sentence!!! Yes, an elegant and massive way to inform 
+
+millions of people that you DIDN'T PAY THE RIGHTS TO USE THIS APP!!!
+
+
+
+	At this point, we know that the valid registration flag is stored at 
+
+memory location CS:0043D868 and it will contain 01H if registered, so lets 
+
+search where in the code a 01H is stored in the flag. At wdsm89 search for: 
+
+'[0043D868], 01'. You land inside the key file decryption process itself:
+
+
+
+
+
+:0042BF2E 66BAE00A      mov dx, 0AE0	; Load 2784 bytes from the key file
+
+:0042BF32 8D8534EAFFFF  lea eax, dword ptr [ebp+FFFFEA34]; Point to first
+
+							 ; Byte of memory
+
+							 ; copy of the key
+
+							 ; File
+
+
+
+* Referenced by a Jump at Address:0042BF3F(C)
+
+|
+
+:0042BF38 8030FF        xor byte ptr [eax], FF		 ; XOR first byte of
+
+							 ; the key file with
+
+							 ; 0FFh
+
+:0042BF3B 40            inc eax				 ; Move pointer
+
+							 ; ahead
+
+:0042BF3C 66FFCA        dec dx				 ; Decrement counter
+
+:0042BF3F 75F7          jne 0042BF38			 ; Repeat Cycle
+
+							 ; 
+
+:0042BF41 66BA7105      mov dx, 0571			 ; Load 1393 bytes
+
+							  
+
+:0042BF45 8D85A5EFFFFF  lea eax, dword ptr [ebp+FFFFEFA5]; Set pointer at
+
+						         ; byte 1394 of the
+
+							 ; key file
+
+
+
+* Referenced by a Jump at Address:0042BF57(C)
+
+|
+
+:0042BF4B 8A08          mov cl, byte ptr [eax]		 ; Move byte 1394
+
+							 ; to CL
+
+
+
+:0042BF4D 30888FFAFFFF  xor byte ptr [eax+FFFFFA8F], cl  ;(First byte XORed
+
+							 ; with 0FFh) XORed
+
+							 ; with (Byte 1394
+
+							 ; XORed with 0FFh)
+
+                                                         
+
+:0042BF53 40            inc eax				 ;Move Pointer ahead	
+
+:0042BF54 66FFCA        dec dx				 ; Decrement counter
+
+:0042BF57 75F2          jne 0042BF4B			 ; Repeat cycle 
+
+:0042BF59 66BB2102      mov bx, 0221			 ; Move 221H to BX
+
+:0042BF5D 66BAE00A      mov dx, 0AE0			 ; 1393 bytes to 
+
+							 ; load
+
+:0042BF61 8D8534EAFFFF  lea eax, dword ptr [ebp+FFFFEA34]; Points to first
+
+							 ; byte of the key
+
+							 ; file
+
+							
+
+
+
+
+
+	The Decryption process has ended. We must explain what happened.
+
+	The first 2784 bytes of the key files are XORed with 0FFh. Only 
+
+the last four bytes of the initially encrypted file are not XORed. 
+
+Immediately after this, next 1393 bytes of the key file (which were 
+
+previously XORed with 0FFh) are now XORed with 1393 bytes from the beginning 
+
+of the key file (which were also previously XORed with 0FFh). In other 
+
+words: Byte 1 is XORed with 0FFh, the resulting byte is XORed with byte 1394 
+
+which previously was also XORed with 0FFh, then, byte 2 is XORed with 0FFh, 
+
+the result is XORed with byte 1395 which was previously XORed with 0FFh, and 
+
+so on.
+
+
+
+	The process is a little messy but not in anyway impossible to 
+
+defeat, nevertheless, the most important fact of this decryption system is 
+
+(as you probably already noticed) that the magic numbers necessary to 
+
+complete the decryption process are located in the key file itself, which 
+
+off course you wont have. This is a very important concept for the +HCU. 
+
++ORC refers that the basic weak point of any protection scheme using 
+
+encrypted data is the presence of the decryptor inside the target itself 
+
+(the decryptor must be there because otherwise the program wouldn't be able 
+
+to check if the key file is valid). This could help to revert the encryption 
+
+process. However, in this case, all important data is absent. Lets analyze 
+
+the code a little further when a checksum is finally carried out:
+
+
+
+
+
+
+
+* Referenced by a Jump at Address:0042BF72(C)
+
+|
+
+:0042BF67 33C9          xor ecx, ecx			 ; Delete ECX
+
+:0042BF69 8A08          mov cl, byte ptr [eax]		 ; Move First
+
+						 	 ; decrypted byte
+
+							 ; to CL 
+
+:0042BF6B 6603D9        add bx, cx			 ; ADD first byte
+
+							 ; to CX=0h	
+
+:0042BF6E 40            inc eax				 ; Move pointer 
+
+:0042BF6F 66FFCA        dec dx				 ; Decrement counter
+
+:0042BF72 75F3          jne 0042BF67			 ; Repeat Process
+
+							 ; Checksum result
+
+							 ; in BX
+
+
+
+:0042BF74 8D9518F5FFFF  lea edx, dword ptr [ebp+FFFFF518]
+
+:0042BF7A 8D8534EAFFFF  lea eax, dword ptr [ebp+FFFFEA34]
+
+:0042BF80 B9E40A0000    mov ecx, 00000AE4 **		 ; The key file is
+
+							 ; 2788 bytes long!
+
+:0042BF85 E8AA68FDFF    call 00402834
+
+:0042BF8A 33C0          xor eax, eax
+
+:0042BF8C 8A45FA        mov al, byte ptr [ebp-06] 	 ; Move byte 2788
+
+							 ; to AL
+
+:0042BF8F 33D2          xor edx, edx
+
+:0042BF91 8A55FB        mov dl, byte ptr [ebp-05]	 ; Move byte 2787
+
+							 ; to DL
+
+
+
+:0042BF94 C1E208        shl edx, 08			 ; Move value at EDX
+
+							 ; to H.O.B.
+
+:0042BF97 03C2          add eax, edx			 ; H.O.B. to EAX	
+
+:0042BF99 0FB7D3        movzx edx, bx			 ; Checksum to EDX
+
+:0042BF9C 3BC2          cmp eax, edx			 ; Final Checksum
+
+:0042BF9E 7573          jne 0042C013			 ; Is checksum OK?
+
+:0042BFA0 C60568D8430001mov byte ptr [0043D868], 01	 ; Yes, Flag= 01 Reg
+
+
+
+
+
+As you can see, once the key file has been decrypted a checksum is carried 
+
+out with the first 2784 bytes. The result + 221H is stored in EDX. The 
+
+last 2 bytes of the decrypted file (these bytes are not touched in anyway 
+
+during the encryption-decryption process) contain the reference checksum. 
+
+Off course, you cannot know this value until the file is decrypted and you 
+
+cannot decrypt it, because the magic numbers are absent. The decrypted data 
+
+will contain the registration info (Your name, BBS System Name, etc.), 
+
+and all this data will alter the result of the checksum. Tough, ain't it?
+
+
+
+	Considering that we will never have access to the magic numbers, 
+
+the following question stabs our mind: How can we open a safe box if we 
+
+don't have the combination?
+
+
+
+	This is the solution: If you XOR a byte 00h with 0FFH the result is 
+
+0FFH, if you XOR the result with 0FFH again, you get the original value back 
+
+(0FFH). If you create a key file filled with 00H, the decryption process (if 
+
+you recall) will XOR the first 2784 bytes with 0FFH (so the data is now 
+
+encrypted with 0FFh), from byte 1394 to 2784, XORing 00H with 0FFH will fill 
+
+these bytes with 0FFH, then, the program decrypts again byte 1 with 1394, 2 
+
+with 1395, 3 with 1396 and so on. If the first 1393 bytes were 
+
+initially encrypted with 0FFH, the second attempt will revert the process 
+
+because the last 1393 bytes are filled with 0FFh. The effect is XORing with 
+
+0FFh twice, thereby the encryption system is defeated and the magic numbers 
+
+are no longer necessary.
+
+
+
+	Finally a BPX CreateFileA on SoftICE, pressing Ctrl-D twice and 
+
+finally executing d eax, will inform you that the key file name is 
+
+fido2int.key.
+
+
+
+
+
+	Now, we'll proceed to create our Key Generator ...
+
+
+
+
+
+;**************************************************************
+
+;*	Key File Generator for Fido2Int v. 2.00               *
+
+;*	Use TASM to compile as a *.COM file                   *
+
+;**************************************************************
+
+
+
+.MODEL SMALL
+
+.CODE
+
+ORG     100H
+
+START:  JMP BEGIN
+
+
+
+
+
+; The following array data is divided for didactic purposes.
+
+; The space between 'quotes' is not empty, it must be filled in
+
+; your text editor (edit.com will do) with character 00H (alt-0)
+
+
+
+; The first 1393 bytes of the key contain your registration data and
+
+; lots of bogus bytes to create the checksum
+
+
+
+KEYMEMLOC    DB 1393 DUP (' ') ; Space between quotes filled with 00H
+
+
+
+; Next 1393 bytes contain the magic numbers
+
+
+
+MAGICNUMB    DB 1393 DUP (' ') ; Space between quotes filled with 00H
+
+
+
+; Last two bytes contain the checksum reference value
+
+
+
+CHECKS       DB 2    DUP (' ')
+
+
+
+HANDLE       DW 0 ; Handle definition
+
+
+
+LF           EQU 0AH ; Line Feed Declaration
+
+
+
+CR           EQU 0DH ; Carriage Return Declaration
+
+
+
+BEEP         EQU 07H ; Internal Speaker Sound Declaration
+
+
+
+FILENAME     DB 'fido2int.key',0 ; Key file name
+
+
+
+GETNAME      DB CR,LF,'Fido2Int v. 2.00 Key Generator'
+
+             DB CR,LF,'Coded by Aesculapius - September 1997'
+
+             DB CR,LF,'Home Page: aesculapius.home.ml.org'      
+
+             DB CR,LF,'Email Box: aesculapius@cryogen.com',CR,LF
+
+             DB CR,LF,'Please, Type Your First and Last Name: '
+
+             DB '$'
+
+
+
+BBSNAME      DB CR,LF
+
+             DB CR,LF,'Please, Type Your BBS System Name: '
+
+             DB '$'
+
+
+
+FINALMESS    DB CR,LF
+
+             DB CR,LF,'Key file fido2int.key successfully created!'
+
+             DB CR,LF,'Now, you must copy it to Fido2int directory.',BEEP
+
+             DB CR,LF,'$'
+
+
+
+NAMESTOR     DB 18H,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+
+
+
+BBSSTOR      DB 18H,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+
+
+
+ERRORM1      DB CR,LF,'The key file could not be created!',BEEP,'$'
+
+
+
+ERRORM2      DB CR,LF,'The key file could not be opened!',BEEP,'$'
+
+
+
+ERRORM3      DB CR,LF,'I could not write the key file!',BEEP,'$'
+
+
+
+ERRORM4      DB CR,LF,'The key file could not be closed!',BEEP,'$'
+
+
+
+CREATE_FILE     PROC    NEAR
+
+
+
+        MOV     DX, OFFSET FILENAME ; Create key file
+
+        XOR     CX, CX
+
+        MOV     AH, 3CH
+
+        INT     21H
+
+        JC      ERROR1
+
+        MOV     DX, OFFSET FILENAME ; Open Key File
+
+        MOV     AH, 3DH
+
+        MOV     AL, 2
+
+        INT     21H
+
+        JC      ERROR2
+
+        MOV     HANDLE, AX	    ; Save Handle
+
+        JMP     RETURN
+
+
+
+ERROR1:
+
+
+
+        MOV     AH, 09H
+
+        MOV     DX, OFFSET ERRORM1
+
+        INT     21H
+
+
+
+        JMP     EXIT
+
+
+
+ERROR2:
+
+
+
+        MOV     AH, 09H
+
+        MOV     DX, OFFSET ERRORM2
+
+        INT     21H
+
+        JMP     EXIT
+
+
+
+RETURN: RET
+
+
+
+CREATE_FILE     ENDP
+
+
+
+GET_NAME        PROC    NEAR
+
+
+
+        MOV     AH, 09H
+
+        MOV     DX, OFFSET GETNAME  ; Type your Name Message
+
+        INT     21H
+
+
+
+        MOV     AH, 0AH
+
+        MOV     DX, OFFSET NAMESTOR ; Move name to memory storage location
+
+        INT     21H
+
+
+
+        MOV     SI, OFFSET NAMESTOR+1; Plus 1 byte (not two) on purpose
+
+				     ; because the registration system
+
+				     ; requires a byte different from
+
+				     ; 00H right before the Name string
+
+
+
+        MOV     DI, OFFSET KEYMEMLOC+3FBH ; Location to store user's name
+
+        XOR     CX, CX			  ; Delete CX
+
+        MOV     CL, [SI-1]	  	  ; Number of bytes in your name
+
+        REP     MOVSB			  ; Move string to storage location
+
+        XOR     CX, CX			 
+
+        MOV     [DI], CL		  ; Terminate your name with 00H
+
+
+
+        MOV     AH, 09H
+
+        MOV     DX, OFFSET BBSNAME    ; Ask for BBS System Name
+
+        INT     21H
+
+
+
+        MOV     AH, 0AH
+
+        MOV     DX, OFFSET BBSSTOR    ; Move it to storage location
+
+        INT     21H
+
+
+
+        MOV     SI, OFFSET BBSSTOR+1      ; Move it to SI
+
+        MOV     DI, OFFSET KEYMEMLOC+438H ; Store it in the key file
+
+					  ; memory location
+
+        XOR     CX, CX
+
+        MOV     CL, [SI-1]
+
+        REP     MOVSB			  ; Move string to storage location
+
+        XOR     CX, CX
+
+        MOV     [DI], CL		  ; Terminate BBS Name with 00H
+
+
+
+        RET
+
+
+
+GET_NAME ENDP
+
+
+
+CHECKSUM        PROC    NEAR              ; Calculate checksum
+
+
+
+        XOR     AX, AX
+
+        XOR     BX, BX
+
+        XOR     CX, CX
+
+        XOR     DX, DX
+
+        ADD     DX, 221H
+
+        MOV     CX, 0AE0H	          ; 2784 bytes to add
+
+        MOV     SI, OFFSET KEYMEMLOC
+
+AGAIN:  MOV     BL, [SI]
+
+        ADD     DX, BX
+
+        DEC     CX
+
+        INC     SI
+
+        XOR     BX, BX
+
+        CMP     CX, 0H
+
+        JNZ     AGAIN
+
+
+
+; The gadget I deviced works perfectly with the first 1393 bytes,
+
+; however, it wont work with the last 1393 bytes, so you must compensate
+
+; the checksum with 6B8FH bytes
+
+
+
+        ADD     DX, 6B8FH
+
+        MOV     SI, OFFSET KEYMEMLOC
+
+        MOV     [SI+0AE2H], DX		; Store the checksum at the last two
+
+					; bytes of key file
+
+
+
+        RET
+
+
+
+CHECKSUM        ENDP
+
+
+
+FILL_IT         PROC    NEAR            ; Fill key file with the data
+
+
+
+        MOV     AH, 40H
+
+        MOV     BX, HANDLE
+
+        MOV     CX, 0AE4H
+
+        MOV     DX, OFFSET KEYMEMLOC
+
+        INT     21H
+
+        JC      WRITEERROR
+
+        JMP     DONE
+
+
+
+WRITEERROR:
+
+
+
+        MOV     AH, 09H
+
+        MOV     DX, OFFSET ERRORM3
+
+        INT     21H
+
+
+
+DONE:   RET
+
+
+
+FILL_IT         ENDP
+
+
+
+CLOSE_IT        PROC    NEAR 	; Close File
+
+
+
+        MOV     AH, 3EH
+
+        MOV     BX, HANDLE
+
+        INT     21H
+
+        JC      CLOSEERROR
+
+        JMP     OK
+
+
+
+CLOSEERROR:
+
+
+
+        MOV     AH, 09H
+
+        MOV     DX, OFFSET ERRORM4
+
+        INT     21H
+
+
+
+OK:     RET
+
+
+
+CLOSE_IT        ENDP
+
+
+
+BEGIN           PROC    NEAR	; Main Program Engine
+
+
+
+        CALL    CREATE_FILE
+
+        CALL    GET_NAME
+
+        CALL    CHECKSUM
+
+        CALL    FILL_IT
+
+        CALL    CLOSE_IT
+
+
+
+        MOV     AH, 09H
+
+        MOV     DX, OFFSET FINALMESS
+
+        INT     21H
+
+
+
+EXIT:   MOV     AX, 4C00H
+
+        INT     21H
+
+
+
+BEGIN           ENDP        
+
+
+
+        END     START
+
+
+
+
+
+	
+
+	As always, if you have any doubt or question, don't hesitate to 
+
+	email me.
+
+
+
+
+
+					Aesculapius - September 1997
+
+					Email Box: aesculapius@cryogen.com
+
+					Home Page: aesculapius.home.ml.org     
+
+
+
+</PRE><FONT color="green">
+
+(c) Aesculapius, 1997. All rights reversed.</FONT>
+
+		<HR size="2">
+
+<CENTER><I>You are deep inside fravia's page of reverse
+
+engineering, choose your way out:</I></CENTER>
+
+
+
+
+
+<P><CENTER>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#84'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#84">homepage </A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"> <A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#73'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#73">links
+
+</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0" NATURALSIZEFLAG="0"> <A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity
+
+</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#82'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#82">students' essays </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools
+
+</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails </A><BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database </A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia
+
+</A><BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">is reverse engineering legal? </A></FONT></CENTER></P>
+
+
+
+<P><CENTER><FONT SIZE="-1"><HR></FONT></CENTER>
+
+</BODY>
+
+</HTML>

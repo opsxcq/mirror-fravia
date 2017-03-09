@@ -1,0 +1,1849 @@
+<HTML>
+
+<HEAD>
+
+<META Name="Voluntary Content Rating" content="it's fravia's: great!">
+
+
+
+
+
+<TITLE>mre2.htm: About keyfiles, generators and protections</TITLE></TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR=#C0C0C0 TEXT=#001010 ALINK=#405040 VLINK=#8850AA><CENTER>
+
+<TD valign=center>
+
+<FONT size=+3>About keyfiles, generators and protections<BR></FONT>
+
+06 September 1998
+
+<P>
+
+<H2>
+
+by MisterE</H2><HR>Courtesy of fravia's pages of reverse engineering
+
+<P><I>
+
+Well, I publish this essay because I think that it is a very good introduction, 
+
+for beginners, to some simple reversing methods and 
+
+techniques that can be applied for OTHER PURPOSES, and not only 
+
+in order to build keygenerators... funny: I still do not understand, after all these years, 
+
+why people actually WRITE keygenerators... I mean, I understand if someone wants 
+
+to use an application without limits whatsoever 
+
+before registering it, but it beats me why on the 
+
+world a good reverser may enjoy giving ready made cracks to the drooling 
+
+zombies... instead of helping 
+
+them to grow up and learn reversing themselves.<BR>Anyway I believe that the knowledge that 
+
+beginners will gain reading this essay may 
+
+also be used, on a much more higher level, in order 
+
+to understand, modify and ameliorate alien (or long-forgotten) code snippets.<BR>
+
+Programmers beware: MisterE is quite right: if you have to write somewhere a warning 
+
+like "DO NOT REMOVE FILE SO-AND-SO" try to do it (dynamically of course) only AFTER the 
+
+client has registered, duh.
+
+<P>
+
+
+
+<FONT color=blue>
+
+Now, please: no more keygenerator essays (that is, unless you have really found something 
+
+new, which I doubt you will do writing keygens :-)</FONT>
+
+</I><HR>
+
+This is MisterE's comment to my comment:</CENTER><FONT color=purple><PRE>
+
+Hi Fravia
+
+
+
+I read your comments added to my essay (www.fravia.org/mre2.htm).
+
+I disagree with you that keygens aren't useful. If one
+
+wants to create a keygen, one has to FULLY UNDERSTAND
+
+the protection scheme. One can use this knowledge to
+
+discover new breakpoints (like lstrlenA for getting the
+
+length of a serial, which is the only breakpoint that works 
+
+well on the GoScreen programs).
+
+And even if one understands the protection scheme, it is also 
+
+a challenge (the reason why I crack) to write a generator.
+
+
+
+I also disagree with you that cracks shouldn't be
+
+published (for the zombies). OK, i also dislike the
+
+people who only COLLECT serials, just for the fun of
+
+it. But maybe that reverse engineers (like us), will only
+
+survive IF those crack are published. 
+
+Imagine: if those cracks wouldn't be published, the cracking
+
+scene and the whole reverse engineering wouldn't be known to anyone. 
+
+Most crackers would just be alone, not sharing
+
+other thoughts with other crackers, not in a group,
+
+cracking just for themselves. I think it is much more fun to 
+
+be in a group (cracking groups or channels, like #cracking4newbies, 
+
+etc.) sharing thoughts, and helping each other out.
+
+Second thought: Crackers like to damage Micro$oft, how
+
+can they do that if they  don't publish cracks targeted on 
+
+specific M$ products?
+
+Another thought: +ORC said in one of his tutorials: The
+
+best things should be free. But even that isn't
+
+completely true, cause he also said: Give a crack to a
+
+man, and he'll be hungry tomorrow, teach him how to
+
+crack and he'll never be hungry again.
+
+So +ORC actually means this: The best things should be
+
+free... for those who want to work for them. Sound fair to me.
+
+
+
+Waiting for your reply,
+
+
+
+MisterE
+
+MisterE@freemail.nl
+
+
+
+BTW: it's a combination of giving out cracks, <U>and</U>
+
+helping people. I do both.</PRE></FONT>
+
+<HR>
+
+<PRE>
+
+<CENTER><B><FONT  SIZE=+3>Keyfiles: WinCtrl v1.41</FONT></B>
+
+
+
+Written by <A HREF="mailto:MisterE@freemail.nl">MisterE</A>
+
+<FONT  SIZE=-1>10th August 1998</FONT></CENTER>
+
+
+
+.----------------------------------------------------------------------------------------------.
+
+|                                        <FONT  SIZE=+2><B>Introduction</B></FONT>                                      |
+
+`----------------------------------------------------------------------------------------------'
+
+
+
+Hello, here's another essay about keyfiles. You might want to check out <A HREF="javascript:if(confirm('http://www.fravia.org/monitor.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.fravia.org/monitor.htm'" tppabs="http://www.fravia.org/monitor.htm">my other essay</A> about 
+
+keyfiles. In this essay i'll try to show most problems that can occur when you want to 
+
+reconstruct a keyfile. In order to do this we'll make a <B>keyfile generator</B>, quite a challenge, eh? 
+
+We'll even <I>protect</I> our generator from lamers, <I>using the programs protection scheme</I>!!
+
+
+
+.----------------------------------------------------------------------------------------------.
+
+|                                          <FONT  SIZE=+2><B>Programs</B></FONT>                                         |
+
+`----------------------------------------------------------------------------------------------'
+
+
+
+Programs I have used:
+
+
+
+- SoftIce V3.22
+
+- W32dasm V8.9
+
+- A Hexeditor (HexWorkShop v2.54)
+
+- WinCtrl v1.41 (<A HREF="javascript:if(confirm('http://titan.fpz.hr/~foetus/  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://titan.fpz.hr/~foetus/'" tppabs="http://titan.fpz.hr/~foetus/">http://titan.fpz.hr/~foetus</A>)
+
+- not necessary: Filemon
+
+  
+
+.----------------------------------------------------------------------------------------------.
+
+|                          <FONT  SIZE=+2><B>Getting the name of the keyfile</B></FONT></CENTER>                          |
+
+`----------------------------------------------------------------------------------------------'
+
+
+
+When you want to download WinCtrl from the url above, you get a warning: 
+
+<FONT color=red>DO NOT REMOVE WINCTRL.KEY</FONT>
+
+How stupid...they could better have said that when you REALLY registered. Anyway, if had run 
+
+good ol' Filemon, you would have seen the program trying to access winctrl.key.
+
+
+
+.----------------------------------------------------------------------------------------------.
+
+|                              <FONT  SIZE=+2><B>Getting a working keyfile</B></FONT>                              |
+
+`----------------------------------------------------------------------------------------------'
+
+
+
+First I want you to create a keyfile using your Hexeditor. Make the keyfile look this way:
+
+
+
+<FONT color=brown>00000000 0000 0000 0000 0000 0000 0000 0000 0000 ................
+
+00000010 1000 0000 0000 0000 0000 0000 0000 0000 ................
+
+00000020 2000 0000 0000 0000 0000 0000 0000 0000  ...............
+
+00000030 3000 0000 0000 0000 0000 0000 0000 0000 0...............</FONT>
+
+
+
+We're going to place a breakpoint (using SoftIce) at CreateFileA, looking in your win32.hlp, you
+
+get this information on the 16-bit version of this API: 
+
+
+
+<FONT color=purple>The CreateFile function creates, opens, or truncates a file, pipe, communications resource, disk
+
+device, or console. It returns a handle that can be used to access the object. It can also open
+
+and return a handle to a directory.
+
+
+
+HANDLE CreateFile( 
+
+
+
+  LPCTSTR  lpFileName,	 	                       // address of name of the file 
+
+  DWORD  dwDesiredAccess,	                       // access (read-write) mode 
+
+  DWORD  dwShareMode,	            	               // share mode 
+
+  LPSECURITY_ATTRIBUTES  lpSecurityAttributes,	       // address of security descriptor 
+
+  DWORD  dwCreationDistribution,	               // how to create 
+
+  DWORD  dwFlagsAndAttributes,	                       // file attributes 
+
+  HANDLE  hTemplateFile                 	       // handle of file with attributes to copy
+
+   );</FONT>
+
+
+
+These value's (lpFileName, dwDesiredAccess, etc.) get pushed in reverse order in assembly, so 
+
+you will have to look at the last value that get's pushed to get to know the filename.
+
+
+
+Now fire SoftIce, place a breakpoint at CreateFileA and look for winctrl.key. 
+
+
+
+
+
+<FONT color=blue>:004042DE 6A00                    push 00000000
+
+:004042E0 6880000000              push 00000080
+
+:004042E5 51                      push ecx
+
+:004042E6 6A00                    push 00000000
+
+:004042E8 52                      push edx
+
+:004042E9 50                      push eax
+
+:004042EA 8D4348                  lea eax, dword ptr [ebx+48] </FONT><== put address of filename in eax
+
+<font color=blue>:004042ED 50                      push eax      </FONT>              <== push it!
+
+<font color=blue>:004042EE E83DCFFFFF              Call kernel32!CreateFileA
+
+:004042F3 83F8FF                  cmp eax, FFFFFFFF          </FONT> <== Does the file exist?
+
+<font color=blue>:004042F6 7429                    je 00404321   </FONT>              <== If not..jump
+
+
+
+
+
+The 5th time you get get back into SoftIce (CreateFileA) is the one where WinCtrl looks for the 
+
+keyfile, you can check this by looking at the contents of [ebx+48].
+
+Now do some tracing...until you arrive here:
+
+
+
+<font color=blue>:00437ABE E871C8FCFF              call 00404334    </FONT>            <== Check if winctrl.key exists
+
+<font color=blue>:00437AC3 E850ACFCFF              call 00402718
+
+:00437AC8 85C0                    test eax, eax                
+
+:00437ACA 0F85D1010000            jne 00437CA1      </FONT>           <== If so, continue checking
+
+<font color=blue>:00437AD0 8BD7                    mov edx, edi
+
+:00437AD2 8D85B0FEFFFF            lea eax, dword ptr [ebp+FFFFFEB0]
+
+:00437AD8 E8E7C6FCFF              call 004041C4        </FONT>        <== Important call I
+
+<font color=blue>:00437ADD E836ACFCFF              call 00402718   </FONT>             <== Not important
+
+<font color=blue>:00437AE2 85C0                    test eax, eax         </FONT>       <== check something...
+
+<font color=blue>:00437AE4 0F85A7010000            jne 00437C91    </FONT>             
+
+
+
+Now trace into the first important call until you arrive at a call to ReadFile: 
+
+
+
+<FONT color=blue>:004041D7 6A00                    push 00000000
+
+:004041D9 8BC4                    mov eax, esp
+
+:004041DB 6A00                    push 00000000
+
+:004041DD 50                      push eax
+
+:004041DE FF7308                  push [ebx+08]       </FONT>         <== [ebx+08] = E8h
+
+<font color=blue>:004041E1 52                      push edx
+
+:004041E2 FF33                    push dword ptr [ebx] 
+
+
+
+* Reference To: kernel32.ReadFile, Ord:0000h
+
+                                  |
+
+:004041E4 E887D0FFFF              Call 00401270      </FONT>          <== call ReadFile
+
+<font color=blue>:004041E9 5A                      pop edx
+
+:004041EA 48                      dec eax
+
+:004041EB 7507                    jne 004041F4
+
+:004041ED 3B5308                  cmp edx, dword ptr [ebx+08]
+
+:004041F0 7515                    jne 00404207
+
+
+
+* Referenced by a (U)nconditional or (C)onditional Jump at Address:
+
+|:004041FE(U)
+
+|
+
+:004041F2 5B                      pop ebx
+
+:004041F3 C3                      ret
+
+
+
+* Referenced by a (U)nconditional or (C)onditional Jump at Address:
+
+|:004041F0(C)
+
+|
+
+:00404207 B864000000              mov eax, 00000064
+
+:0040420C EBEB                    jmp 004041F9 </FONT>
+
+
+
+
+
+OK, this part gave me some problems. Remember the 'text eax, eax' at 00437AE2? Every time eax 
+
+had the value 64h, which caused me to get an unregistered message.... Now I'll show you again 
+
+how important your win32.hlp is. Here's some information about ReadFile:
+
+
+
+<FONT color=purple>The ReadFile function reads data from a file, starting at the position indicated by the 
+
+file pointer. After the read operation has been completed, the file pointer is adjusted by the 
+
+number of bytes actually read, unless the file handle is created with the overlapped attribute. 
+
+If the file handle is created for overlapped input and output (I/O), the application must adjust 
+
+the position of the file pointer after the read operation. 
+
+
+
+BOOL ReadFile(
+
+
+
+    HANDLE  hFile,	                // handle of file to read 
+
+    LPVOID  lpBuffer,	                // address of buffer that receives data  
+
+    DWORD  nNumberOfBytesToRead,	// number of bytes to read 
+
+    LPDWORD  lpNumberOfBytesRead,	// address of number of bytes read 
+
+    LPOVERLAPPED  lpOverlapped 	        // address of structure for data 
+
+   );</FONT>
+
+
+
+Now take a look at the 'nNumberOfBytesToRead' ... The program wants to read E8h bytes, and take
+
+a look at the size of our keyfile. You see it? Our keyfile is 40h bytes long and the program 
+
+wants to read E8h bytes...Let's solve that! Change your keyfile till it looks like this:
+
+
+
+<FONT color=brown>00000000 0000 0000 0000 0000 0000 0000 0000 0000 ................
+
+00000010 1000 0000 0000 0000 0000 0000 0000 0000 ................
+
+00000020 2000 0000 0000 0000 0000 0000 0000 0000  ...............
+
+00000030 3000 0000 0000 0000 0000 0000 0000 0000 0...............
+
+00000040 4000 0000 0000 0000 0000 0000 0000 0000 @...............
+
+00000050 5000 0000 0000 0000 0000 0000 0000 0000 P...............
+
+00000060 6000 0000 0000 0000 0000 0000 0000 0000 `...............
+
+00000070 7000 0000 0000 0000 0000 0000 0000 0000 p...............
+
+00000080 8000 0000 0000 0000 0000 0000 0000 0000 ................
+
+00000090 9000 0000 0000 0000 0000 0000 0000 0000 ................
+
+000000A0 A000 0000 0000 0000 0000 0000 0000 0000 ................
+
+000000B0 B000 0000 0000 0000 0000 0000 0000 0000 ................
+
+000000C0 C000 0000 0000 0000 0000 0000 0000 0000 ................
+
+000000D0 D000 0000 0000 0000 0000 0000 0000 0000 ................
+
+000000E0 E000 0000 0000 0000 0000 0000 0000 0000 ................</FONT>
+
+
+
+
+
+Now continue tracing...You should pass the 'test eax, eax' this time.
+
+
+
+<FONT color=blue>:00437AE2 85C0                    test eax, eax   </FONT>             <== we have just passed this one
+
+<font color=blue>:00437AE4 0F85A7010000            jne 00437C91
+
+:00437AEA 8D85A8FDFFFF            lea eax, dword ptr [ebp+FFFFFDA8]
+
+:00437AF0 8BD7                    mov edx, edi </FONT>
+
+
+
+... some calls... and some more calls...
+
+
+
+<FONT color=blue>:00437BBF 8D95ACFDFFFF            lea edx, dword ptr [ebp+FFFFFDAC]
+
+:00437BC5 8D87C2000000            lea eax, dword ptr [edi+000000C2]
+
+:00437BCB B120                    mov cl, 20
+
+:00437BCD E81EADFCFF              call 004028F0
+
+:00437BD2 33DB                    xor ebx, ebx
+
+:00437BD4 8A1F                    mov bl, byte ptr [edi]
+
+:00437BD6 85DB                    test ebx, ebx    </FONT>            <== another test...
+
+<font color=blue>:00437BD8 7E10                    jle 00437BEA </FONT>
+
+
+
+OK, by now you should have noticed that must NOT jump in order to get the right keyfile...
+
+So at 00437BD6 ebx should be 1 or higher... If you take a look at [edi] you see a part of our
+
+keyfile. [edi] contains the first byte, which happens to be 00h, change it to 10h, and continue.
+
+
+
+The program is reading the 2nd till the 11th byte of our keyfile...you might already guess what
+
+this is for. We'll get back at it later. Continue tracing.
+
+
+
+<FONT color=blue>:00437BDD 55                      push ebp
+
+:00437BDE 8A06                    mov al, byte ptr [esi]
+
+:00437BE0 E807FEFFFF              call 004379EC         </FONT>       <== a call...we'll get back at it
+
+<font color=blue>:00437BE5 59                      pop ecx               </FONT>                                 LATER!
+
+<FONT color=blue>:00437BE6 46                      inc esi
+
+:00437BE7 4B                      dec ebx
+
+:00437BE8 75F3                    jne 00437BDD 
+
+
+
+* Referenced by a (U)nconditional or (C)onditional Jump at Address:
+
+|:00437BD8(C)
+
+|
+
+
+
+:00437BEA 33DB                    xor ebx, ebx
+
+:00437BEC 8A5F41                  mov bl, byte ptr [edi+41] </FONT>   <== load the 41st in bl
+
+<font color=blue>:00437BEF 85DB                    test ebx, ebx    </FONT>            <== guess what? Another test...
+
+<font color=blue>:00437BF1 7E10                    jle 00437C03
+
+:00437BF3 8D7742                  lea esi, dword ptr [edi+42] </FONT>
+
+
+
+This test is unimportant (for now) just check if the 41th (hex) byte has the value 00h. 
+
+At 00437C0B you get the same thing. Continue tracing.
+
+
+
+<FONT color=blue>:00437C32 668B87E6000000          mov ax, word ptr [edi+000000E6] </FONT> <== get the E6th byte
+
+<font color=blue>:00437C39 66C1E808                shr ax, 08           </FONT>            <== divide e6th byte by 100h  
+
+<font color=blue>:00437C3D E8AAFDFFFF              call 004379EC         </FONT>           <== again that call..
+
+<font color=blue>:00437C42 59                      pop ecx
+
+:00437C43 8A87E3000000            mov al, byte ptr [edi+000000E3] </FONT> <== get the E3rd byte
+
+<font color=blue>:00437C49 3A45FF                  cmp al, byte ptr [ebp-01]   </FONT>     <== compare them I!
+
+<font color=blue>:00437C4C 750B                    jne 00437C59
+
+:00437C4E 8A87E4000000            mov al, byte ptr [edi+000000E4] </FONT> <== get the E3rd byte
+
+<font color=blue>:00437C54 3A45FE                  cmp al, byte ptr [ebp-02]   </FONT>     <== compare them II!
+
+<font color=blue>:00437C57 7404                    je 00437C5D
+
+
+
+* Referenced by a (U)nconditional or (C)onditional Jump at Address:
+
+|:00437C4C(C)
+
+|
+
+:00437C59 33DB                    xor ebx, ebx
+
+:00437C5B EB02                    jmp 00437C5F
+
+
+
+* Referenced by a (U)nconditional or (C)onditional Jump at Address:
+
+|:00437C57(C)
+
+|
+
+:00437C5D B301                    mov bl, 01
+
+
+
+* Referenced by a (U)nconditional or (C)onditional Jump at Address:
+
+|:00437C5B(U)
+
+|
+
+:00437C5F 84DB                    test bl, bl
+
+:00437C61 742E                    je 00437C91 </FONT>
+
+
+
+OK, let's go on. First change your keyfile, add e0, e1 ... e9. At 00437C49 yo can see a CMP. 
+
+The E3rd byte should be 22h, some lines below we see another check..the E4th byte should be F7h.
+
+By now our keyfile should look like this:
+
+
+
+<FONT color=brown>00000000 1000 0000 0000 0000 0000 0000 0000 0000 ................
+
+00000010 1000 0000 0000 0000 0000 0000 0000 0000 ................
+
+00000020 2000 0000 0000 0000 0000 0000 0000 0000  ...............
+
+00000030 3000 0000 0000 0000 0000 0000 0000 0000 0...............
+
+00000040 4000 0000 0000 0000 0000 0000 0000 0000 @...............
+
+00000050 5000 0000 0000 0000 0000 0000 0000 0000 P...............
+
+00000060 6000 0000 0000 0000 0000 0000 0000 0000 `...............
+
+00000070 7000 0000 0000 0000 0000 0000 0000 0000 p...............
+
+00000080 8000 0000 0000 0000 0000 0000 0000 0000 ................
+
+00000090 9000 0000 0000 0000 0000 0000 0000 0000 ................
+
+000000A0 A000 0000 0000 0000 0000 0000 0000 0000 ................
+
+000000B0 B000 0000 0000 0000 0000 0000 0000 0000 ................
+
+000000C0 C000 0000 0000 0000 0000 0000 0000 0000 ................
+
+000000D0 D000 0000 0000 0000 0000 0000 0000 0000 ................
+
+000000E0 E0E1 E222 F7E5 E6E7 E8E9 0000 0000 0000 ..."............</FONT>
+
+
+
+
+
+DISABLE, DO NOT CLEAR, your breakpoints and continue running the program. You might have to 
+
+close to program completely (using CTRL-ALT-DEL or close the icon right-under on your screen).
+
+
+
+Now we can see it: WE'RE REGISTERED!!! 
+
+But you might think: Didn't you said we would create a <B>keyfile generator</B>???
+
+Yes, that's right! So read on....
+
+
+
+
+
+.----------------------------------------------------------------------------------------------.
+
+|                             <FONT  SIZE=+2><B>Getting a Keyfile-Generator</B></FONT>                            |
+
+|                                   <FONT  SIZE=+2><B>part 1: decryption</B></FONT>                                  |
+
+`----------------------------------------------------------------------------------------------'
+
+
+
+OK, let's start here: 
+
+
+
+<FONT color=blue>:00437AE2 85C0                    test eax, eax  </FONT>       <= the 'readfile' test
+
+<font color=blue>:00437AE4 0F85A7010000            jne 00437C91
+
+:00437AEA 8D85A8FDFFFF            lea eax, dword ptr [ebp+FFFFFDA8]
+
+:00437AF0 8BD7                    mov edx, edi
+
+:00437AF2 E8EDB9FCFF              call 004034E4    </FONT>     <= This call isn't important 
+
+<font color=blue>:00437AF7 8B85A8FDFFFF            mov eax, dword ptr [ebp+FFFFFDA8]
+
+:00437AFD 8D8DACFEFFFF            lea ecx, dword ptr [ebp+FFFFFEAC]
+
+:00437B03 668B97E6000000          mov dx, word ptr [edi+000000E6]
+
+:00437B0A E81DF5FFFF              call 0043702C    </FONT>     <= Very important call!!!
+
+
+
+
+
+Now check out that important call...
+
+
+
+
+
+<font color=blue>* Referenced by a CALL at Addresses:
+
+|:00437B0A   , :00437B55   , :00437BA4   , :004388CA   , :004388E5   
+
+|:00438900   , :00438919   , :00445113   
+
+|
+
+:0043702C 55                      push ebp                      
+
+:0043702D 8BEC                    mov ebp, esp
+
+:0043702F 83C4F0                  add esp, FFFFFFF0
+
+:00437032 53                      push ebx </FONT>
+
+
+
+ .... boring stuff...
+
+ only thing that happens is that esi gets the value of the E6-th byte + E7-th byte * 256
+
+ here starts the interesting part:
+
+
+
+<FONT color=blue>:0043706A 8D45F0                  lea eax, dword ptr [ebp-10]
+
+:0043706D 33D2                    xor edx, edx
+
+:0043706F 8AD3                    mov dl, bl
+
+:00437071 8A5417FF                mov dl, byte ptr [edi+edx-01] </FONT>   <= HERE,load a byte from .key
+
+<font color=blue>:00437075 0FB7CE                  movzx ecx, si       </FONT>             <= Put word of esi into ecx    
+
+<font color=blue>:00437078 C1E908                  shr ecx, 08                      
+
+:0043707B 32D1                    xor dl, cl        </FONT>               <= perform decryption
+
+<font color=blue>:0043707D E852C4FCFF              call 004034D4       </FONT>             <= start unimportant stuff
+
+<font color=blue>:00437082 8B55F0                  mov edx, dword ptr [ebp-10]
+
+:00437085 8D45F8                  lea eax, dword ptr [ebp-08]
+
+:00437088 E8B3C4FCFF              call 00403540         </FONT>           <= end unimportant stuff
+
+<font color=blue>:0043708D 33C0                    xor eax, eax
+
+:0043708F 8AC3                    mov al, bl
+
+:00437091 0FB64407FF              movzx eax, byte ptr [edi+eax-01]</FONT> <= load byte from the keyfile
+
+<font color=blue>:00437096 6603F0                  add si, ax             </FONT>          <= do some arithmetic
+
+<font color=blue>:00437099 6669C66DCE              imul ax, si, CE6D
+
+:0043709E 6605BF58                add ax, 58BF
+
+:004370A2 8BF0                    mov esi, eax
+
+:004370A4 43                      inc ebx
+
+:004370A5 FE4DF7                  dec [ebp-09]         </FONT>            <= decrease counter =1st byte
+
+<font color=blue>:004370A8 75C0                    jne 0043706A       </FONT>              <= did all decryption? |.key
+
+
+
+
+
+OK, this needs some explaination. This part is a decryption routine. It decrypts your name.
+
+Like this:
+
+
+
+<font color=brown>00000000 0700 4804 4CE0 BAB0 0000 0000 0000 0000 ..H.L........... </FONT>  (encrypted)
+
+      to 
+
+<FONT color=brown>00000000 074D 6973 7465 7245 0000 0000 0000 0000 .MisterE........ </FONT>  (decrypted)
+
+
+
+Now lets me try to explain the decrytion routine, starting from :00437071.
+
+Esi is our en/decrytion-key. It is the value of the E6-th byte + E7-th byte * 256. Using our old
+
+keyfile, esi would be: E7E6h. The program loads a byte from our keyfile. After that ecx := esi.
+
+Then shift right ecx 8 times to get ch (This only applies to this program). Now comes the most 
+
+IMPORTANT part of the decryption scheme: The decryption. By XORRING dl, cl you get the decrypted
+
+value in dl!!! OK, some calls follow. These are MOSTLY unimportant, somewhere in these call, the
+
+program arranges your decrypted name, like the example above. 
+
+Some comments about :004370A5: [ebp-9] checks if the program has decrypted all the letters of 
+
+the name. If not, the program jumps to 0043706A to decrypt the next letter.
+
+
+
+
+
+.----------------------------------------------------------------------------------------------.
+
+|                             <FONT  SIZE=+2><B>Getting a Keyfile-Generator</B></FONT>                            |
+
+|                                     <FONT  SIZE=+2><B>part 2: checksum </B></FONT>                                  |
+
+`----------------------------------------------------------------------------------------------'
+
+
+
+This is gonna be quite easy. The program uses a kind of a checksum. The checksum gets called at: 
+
+
+
+<FONT color=blue>* Referenced by a (U)nconditional or (C)onditional Jump at Address:
+
+|:00437BE8(C)
+
+|
+
+:00437BDD 55                      push ebp
+
+:00437BDE 8A06                    mov al, byte ptr [esi]   </FONT> <= put byte from the keyfile in al
+
+<font color=blue>:00437BE0 E807FEFFFF              call 004379EC        </FONT>     <= call checksum routine
+
+<font color=blue>:00437BE5 59                      pop ecx
+
+:00437BE6 46                      inc esi             </FONT>      <= point to next byte
+
+<font color=blue>:00437BE7 4B                      dec ebx       </FONT>            <= ebx is the length of the name
+
+<font color=blue>:00437BE8 75F3                    jne 00437BDD      </FONT>        <= Did we do all the chars? 
+
+
+
+<font color=blue>* Referenced by a CALL at Addresses:
+
+|:00437BE0   , :00437BF9   , :00437C18   , :00437C2B   , :00437C3D   
+
+|
+
+:004379EC 55                      push ebp
+
+:004379ED 8BEC                    mov ebp, esp
+
+:004379EF 8B5508                  mov edx, dword ptr [ebp+08] </FONT>  <= point to address of checksum
+
+<font color=blue>:004379F2 0042FF                  add byte ptr [edx-01], al  </FONT>   <= add byte to checksum1
+
+<font color=blue>:004379F5 8B5508                  mov edx, dword ptr [ebp+08]
+
+:004379F8 3042FE                  xor byte ptr [edx-02], al   </FONT>  <= xor checksum2 by al
+
+<font color=blue>:004379FB 5D                      pop ebp
+
+:004379FC C3                      ret </FONT>
+
+
+
+
+
+OK, here's some explaination. Let's use this for an example:
+
+
+
+<FONT color=brown>00000000 0700 4804 4CE0 BAB0 0000 0000 0000 0000 ..H.L...........</FONT>   (encrypted)
+
+
+
+First the program puts 00h(2nd byte) in al. Then adds it to the value in [edx-1] (checksum1). 
+
+After that the program does a 'xor [edx-2], al' (checksum2). Note the start-values for
+
+checksum1(start-value = A5h) and checksum2(start-value = 5Ah). Ok, the program repeats this
+
+until it has done all the characters.
+
+
+
+These checksums occur some more times most are unimportant. They occur at 437BE9, 437C18 and
+
+437C2B. The first 2 mentioned are unimportant as long as the 41h and the C2h byte are 00h. 
+
+The last one is important, because the program will ALWAYS use the E6th byte to perform a 
+
+checksum on it. 
+
+
+
+Oh, yeah. I almost forgot. You might want to know where to program checks the checksum. 
+
+Well, here you are:
+
+
+
+<FONT color=blue>:00437C43 8A87E3000000            mov al, byte ptr [edi+000000E3] </FONT>load E3-rd byte into al
+
+<FONT color=blue>:00437C49 3A45FF                  cmp al, byte ptr [ebp-01]  </FONT>  <= check it!!
+
+<font color=blue>:00437C4C 750B                    jne 00437C59      
+
+:00437C4E 8A87E4000000            mov al, byte ptr [edi+000000E4]
+
+:00437C54 3A45FE                  cmp al, byte ptr [ebp-02]
+
+:00437C57 7404                    je 00437C5D </FONT>
+
+
+
+.----------------------------------------------------------------------------------------------.
+
+|                             <FONT  SIZE=+2><B>Getting a Keyfile-Generator</B></FONT>                            |
+
+|                    <FONT  SIZE=+2><B>part 3: Creating the generator in Pascal</B></FONT>                   |
+
+`----------------------------------------------------------------------------------------------'
+
+
+
+The first thing I did to create the keygen was to copy the DEcryption routine into Pascal.
+
+Here is my pascal DEcryptor:
+
+
+
+.----------------------------------------------------------------------------------------------.
+
+`----------------------------------------------------------------------------------------------'
+
+
+
+<B>program</B> KEYFILE_GENERATOR(input, output) ;
+
+<B>var</B> si, ax : word ;
+
+<B>var</B> hex_byte, check1, check2, counter, lengthname : byte ;
+
+<B>var</B> TableOut, name, temp : <B>string</B> ;
+
+<B>var</B> filename : <B>file of</B> byte ;
+
+
+
+
+
+<B>begin</B>
+
+  assign(filename, '<FONT color=blue>winctrl.key</FONT>') ;                       <I><FONT color= darkblue>(* assign 'winctrl.key' to filename *)</I></FONT>
+
+  reset(filename) ;                                       <I><FONT color= darkblue>(* point to 1st byte of the keyfile *)</I></FONT>
+
+  seek(filename, <FONT color=blue>$e7</FONT>) ;                                   <I><FONT color= darkblue>(* point to the e7-th byte          *)</I></FONT>
+
+  read(filename, hex_byte)  ;                             <I><FONT color= darkblue>(* get the info from e7-th byte     *)</I></FONT>
+
+  ax := hex_byte ;
+
+  ax := ax * <FONT color=blue>256</FONT> ;                                        <I><FONT color= darkblue>(* shl ax, 2                        *)</I></FONT>
+
+  seek(filename, <FONT color=blue>$e6</FONT>) ;
+
+  read(filename, hex_byte);
+
+  ax := ax + hex_byte ;                                   <I><FONT color= darkblue>(* ax = si = our en/decryption key  *)</I></FONT>
+
+  si := ax ;
+
+
+
+  check1 := <FONT color=blue>$a5</FONT> ;                                        <I><FONT color= darkblue> (* Start values for the checksum    *)</I></FONT>
+
+  check2 := <FONT color=blue>$5a</FONT> ;
+
+ <B> for</B> counter := <FONT color=blue>2</FONT> <B>to</B> <FONT color=blue>$8</FONT> <B>do</B>                              <I><FONT color= darkblue> (* Just do the first seven chars    *)</I></FONT>
+
+     seek(filename, (counter-<FONT color=blue>1</FONT>)) ;
+
+     read(filename, hex_byte) ;
+
+     ax := ax <B>div</B> <FONT color=blue>256</FONT> ;                                   <I><FONT color= darkblue>(* shr ax, 8                        *)</I></FONT>
+
+     ax := ax <B>xor</B> hex_byte ;                             <I><FONT color= darkblue> (* xor dl, cl                       *)</I></FONT>
+
+     writeln(<FONT color=blue>'decrypted value: '</FONT>, ax) ;                   <I><FONT color= darkblue>(* the result...should be our name  *)</I></FONT>
+
+     check1 := check1 + ax ;                             <I><FONT color= darkblue> (* Update Checksum                  *)</I></FONT>
+
+     check2 := check2 <B>xor</B> ax ;                          <I><FONT color= darkblue>  (*  ''       ''                     *)</I></FONT>
+
+     TableOut := TableOut + chr(ax) + <FONT color=blue>'.'</FONT> ;              <I><FONT color= darkblue> (* store decrypted text in TableOut *)</I></FONT>
+
+     si := si + hex_byte ;                                <I><FONT color= darkblue>(* Do some aritmetic (call to 43702C*)</I></FONT>
+
+     ax := si * <FONT color=blue>$ce6d</FONT> ;
+
+     ax := ax + <FONT color=blue>$58bf</FONT> ;
+
+     si := ax ;
+
+   <B>end</B> ;
+
+   seek(filename, <FONT color=blue>$e7</FONT>) ;
+
+   read(filename, hex_byte)  ;
+
+   ax := hex_byte ;                                     <I><FONT color= darkblue> (* update checksum for call at 437C2B*)</I></FONT>
+
+   check1 := check1 + ax ;
+
+   check2 := check2 <B>xor</B> ax ;
+
+   writeln(<FONT color=blue>'The Checksum: '</FONT>,check1,<FONT color=blue>' '</FONT>,check2) ;         <I><FONT color= darkblue>(* print checksum as it should be    *)</I></FONT>
+
+   writeln(TableOut) ;                                  <I><FONT color= darkblue> (* write decrypted name              *)</I></FONT>
+
+   close(filename) ;
+
+<B>end.</B>
+
+
+
+.----------------------------------------------------------------------------------------------.
+
+`----------------------------------------------------------------------------------------------'
+
+
+
+This program uses the winctrl.key to get the needed data for the DEcryption routine, it also
+
+provided you with the correct checksum. Now we must reverse it this way it provides is with the
+
+ENCRYPTED name. Well, it quite easy.....when you know where to look. Take a look at this part of
+
+the Decryptor:
+
+
+
+   <B>for</B> counter := <FONT color=blue>2</FONT> <B>to</B> <FONT color=blue>$8</FONT> </B>do</B>                              <I><FONT color= darkblue>(* Just do the first seven chars    *)</I></FONT>
+
+   <B>begin</B>
+
+     seek(filename, (counter-<FONT color=blue>1</FONT>)) ;
+
+     read(filename, hex_byte) ;
+
+     ax := ax <B>div</B> <FONT color=blue>256</FONT> ;                                  <I><FONT color= darkblue> (* shr ax, 8                        *)</I></FONT>
+
+     ax := ax <B>xor</B> hex_byte ;                             <I><FONT color= darkblue> (* xor dl, cl                       *)</I></FONT>
+
+     writeln(<FONT color=blue>'decrypted value: '</FONT>, ax) ;                  <I><FONT color= darkblue> (* the result...should be our name  *)</I></FONT>
+
+     check1 := check1 + ax ;                             <I><FONT color= darkblue> (* Update Chechsum                  *)</I></FONT>
+
+     check2 := check2 <B>xor</B> ax ;                           <I><FONT color= darkblue> (*  ''       ''                     *)</I></FONT>
+
+     TableOut := TableOut + chr(ax) + <FONT color=blue>'.'</FONT> ;               <I><FONT color= darkblue>(* store decrypted text in TableOut *)</I></FONT>
+
+     si := si + hex_byte ;                               <I><FONT color= darkblue> (* Do some aritmetic (call to 43702C*)</I></FONT>
+
+     ax := si * <FONT color=blue>$ce6d</FONT> ;
+
+     ax := ax + <FONT color=blue>$58bf</FONT> ;
+
+     si := ax ;
+
+   <B>end</B> ; 
+
+
+
+
+
+The easiest is to modify it after the 'ax := ax div 256'. AX is some value and AFTER it is 
+
+XORRED by the next byte from our keyfile it returns the decrypted letter. 
+
+Let's put it in a formula:
+
+
+
+ ax XOR encrypted letter = decrypted letter
+
+ 
+
+Well, we know what the decrypted letter should be: the x-th letter of the name.
+
+We also know ax, is is calculated for us. We only do NOT know what the encrypted letter should
+
+be. We shall know it within a few seconds. The mathematicians among us will probably know what 
+
+to do:
+
+
+
+ ax XOR encrypted letter = decrypted letter  --= SO =--  encrypted = decrypted XOR ax !!!!
+
+
+
+We only have to modify/add a few lines to get the ENCRYPTED value!!!!
+
+
+
+  name := <FONT color=blue>'MisterE'</FONT> ;
+
+  <B>for</B> counter := <FONT color=blue>2</FONT> <B>to</B> <FONT color=blue>$8</FONT> <B>do</B>                               <I><FONT color= darkblue>(* Just do the first seven chars    *)</I></FONT>
+
+   <B>begin</B>
+
+     seek(filename, (counter-<FONT color=blue>1</FONT>)) ;
+
+     read(filename, hex_byte) ;
+
+     ax := ax <B>div</B> <FONT color=blue>256</FONT> ;                                  <I><FONT color= darkblue> (* shr ax, 8                        *)</I></FONT>
+
+     hex_byte := ax <B>xor</B> ord(name[counter-<FONT color=blue>1</FONT>]) ;
+
+     writeln(<FONT color=blue>'ENcrypted value: '</FONT>, hex_byte) ;
+
+     ax := ax <B>xor</B> hex_byte ;                             <I><FONT color= darkblue> (* xor dl, cl                       *)</I></FONT>
+
+     writeln(<FONT color=blue>'DEcrypted value: '</FONT>, ax) ;                  <I><FONT color= darkblue> (* the result...should be our name  *)</I></FONT>
+
+     check1 := check1 + ax ;                             <I><FONT color= darkblue> (* Update Chechsum                  *)</I></FONT>
+
+     check2 := check2 <B>xor</B> ax ;                           <I><FONT color= darkblue> (*  ''       ''                     *)</I></FONT>
+
+     TableOut := TableOut + chr(ax) + <FONT color=blue>'.'</FONT> ;              <I><FONT color= darkblue> (* store decrypted text in TableOut *)</I></FONT>
+
+     si := si + hex_byte ;                               <I><FONT color= darkblue> (* Do some aritmetic (call to 43702C*)</I></FONT>
+
+     ax := si * <FONT color=blue>$ce6d</FONT> ;
+
+     ax := ax + <FONT color=blue>$58bf</FONT> ;
+
+     si := ax ;
+
+  <B>end</B> ;
+
+
+
+YEEHAAA, we did it!! Now we only have to write a keygenerator for it, that shouldn't be a
+
+problem because we know how the encrypted data. Here is my keyfile-generator!!
+
+
+
+.----------------------------------------------------------------------------------------------.
+
+`----------------------------------------------------------------------------------------------'
+
+
+
+<B>var</B> si, ax : word ;
+
+<B>var</B> var1, zero, bx, hex_byte, check1, check2, counter, lengthname : byte ;
+
+<B>var</B> string1, name, temp : <B>string</B> ;
+
+<B>var</B> filename : <B>file of</B> byte;
+
+
+
+<B>procedure</B> WriteInsideLogo ;
+
+<B>begin</B> ;
+
+  writeln(<FONT color=blue>''</FONT>);
+
+  writeln(<FONT color=blue>'   ÐÐÐ                                                               ¾Ð  Ð'</FONT>);
+
+  writeln(<FONT color=blue>'  þ¤¤¾þ        ¾          ¾ÐÐ Ð¾þþþ þ  ÐÐ  ¾ÐÐÐÐ¾           ¾ÐÐÐÐÐ¾þþþ ÐÐÐ'</FONT>);
+
+  writeln(<FONT color=blue>' ƒ  ÐÐÐ  ÐÐ¾þþþþ þþ¾ÐÐ ¾þþþ ÐÐÐÐÐ¤¤¤ð þ¤¤þ ÐÐÐÐ þ þ¾ÐÐ¾  ¾þþþ ÐÐÐÐÐÐ¤¤¤¾¤ð'</FONT>);
+
+  writeln(<FONT color=blue>'  þ¾¤¤ð ¾þ ÐÐ¤¤¤¤¤ÐÐ ¾  Ð¤¾¤¤¤¤þþ¤¤¤ ƒ ÐÐÐ Þ¤¤¤¤¤¤ÐÐÐ þþ¾þÞ¤¤¤¤¤þþþþ¤¤¤¤þ'</FONT>);
+
+  writeln(<FONT color=blue>'   ¤¤¤¤ œ ¤¤¤¤þ  þ¤¤¤Ð ¾¤¤¤¤Ð  ƒ þþ ¾ ¤¤¤¤ƒ ¤¾¤ð þþ¤¤¤¤ÐÐ  ¾¤¤¤ ƒ  þþþ'</FONT>);
+
+  writeln(<FONT color=blue>'  œÞ¤¤¤ð Þ¾¤¤ðƒ ¾ Þ¤¤¤ð þþ¤¤¤¤¤¤ÐÐÐÐ  Þ¤¾¤ð ¤¾¤ð Ð ƒ þþ¤¤¤Ð ¤¤¤ð ÐÐÐÐ'</FONT>);
+
+  writeln(<FONT color=blue>'  Ð ¤¤¾¤ ¤¤¤¤ðœ Þð ¤¾¤¤ ¾ÐÐÐ  þþþþ¤¤¤¾Ðþ¤¤¤ Þ¤¤¤ ¾    ƒ þ¤¤¾Ðþ¤ðþþþ   MtD! Ð'</FONT>);
+
+  writeln(<FONT color=blue>'  ¾ ¤¤¤¾ðþ¾¤¤ Ð  ¤ Þ¾¾¤ð   þþþþ  ÐÐ¤¤¤¾ð¤¤¤ðÞ¤¾¤ ÐÐþþ þ Ð¤¤¤¾ð¤¾  ƒ'</FONT>);
+
+  writeln(<FONT color=blue>'  ÞðÞ¤¤¤¤ þþþ Ð  ¾ Þ¤¾¤ðÞ¤¤¤ÐÐ¤¤¤¤¤¤¤¾þ ¤¤¾ðþþ ÐÐÐÐÐ¤¤¤¤¤¤¾þþÐ¤¤ÐÐÐÐÐ¤¤¾¾ð þ'</FONT>);
+
+  writeln(<FONT color=blue>'  ¤ þþþ ÐÐ¾ þþ¾  ¾ þþþþ ¾¤¤¤þþþþþ ÐÐÐ  þþþþ þ¤¤¤¤¤þþþþþ Ð Ð ¤¤¤¤¤þþþþþ¤¤¾¤ ¤'</FONT>);
+
+  writeln(<FONT color=blue>' þ¾ þþþþ¾   þ   þþ þþþ¾ÐÐÐ ÐÐ¾þþþþ¾   ¾þþþ þ  þþ¤Ð þþþþþ¾þ¾ÐÐÐ ÐÐÐ¾þ¾Ð ÐÐÐÐ¾'</FONT>);
+
+  writeln(<FONT color=blue>'                                                   þ                þ      þ'</FONT>);
+
+<B>end</B> ;
+
+
+
+<B>begin</B>
+
+  assign(filename, <FONT color=blue>'winctrl.key'</FONT>) ;             <I><FONT color= darkblue>(* assign the name of our keyfile to filename *)</I></FONT>
+
+  rewrite(filename) ;                          <I><FONT color= darkblue> (* Destroy old keyfile and create a new one   *)</I></FONT>
+
+  WriteInsideLogo ;                             <I><FONT color= darkblue>(* Write the iNSiDE logo                      *)</I></FONT>
+
+  writeln(<FONT color=blue>' Keyfile Generator for WinCtrl v1.41'</FONT>);
+
+  writeln(<FONT color=blue>' Written by MisterE (8th August 1998)'</FONT>);
+
+  writeln(<FONT color=blue>''</FONT>) ;
+
+  write(<FONT color=blue>' Enter your name: '</FONT>) ;                 <I><FONT color= darkblue>(* Enter your name....                        *)</I></FONT>
+
+  readln(name) ;                                <I><FONT color= darkblue>(* read the name                              *)</I></FONT>
+
+  lengthname := length(name) ;                  <I><FONT color= darkblue>(* get the lenght of the name                 *)</I></FONT>
+
+  write(filename, lengthname) ;                 <I><FONT color= darkblue>(* write the length of the name to the keyfile*)</I></FONT>
+
+  si := <FONT color=blue>$4d00</FONT> ;                                 <I><FONT color= darkblue>(* start-value for our encryption key ...     *)</I></FONT>
+
+  ax := <FONT color=blue>$4d00</FONT> ;                                <I><FONT color= darkblue> (* BTW: if you would modify 4d (not the 00)   *)</I></FONT>
+
+                                               <I><FONT color= darkblue> (* the KeyFileGenerator should still work     *)</I></FONT>
+
+                                             <I><FONT color= darkblue>   (* but then you also must modify line 66      *)</I></FONT>
+
+
+
+
+
+  check1 := <FONT color=blue>$a5</FONT> ;                              <I><FONT color= darkblue> (* Start-value for our checksum               *)</I></FONT>
+
+  check2 := <FONT color=blue>$5a</FONT> ;                              <I><FONT color= darkblue> (* Start-value for our checksum               *)</I></FONT>
+
+  <B>for</B> counter := <FONT color=blue>2</FONT> <B>to</B> (lengthname+<FONT color=blue>1</FONT>) <B>do</B>        <I><FONT color= darkblue> (* Our modified call to 43702C                *)</I></FONT>
+
+   <B>begin</B>                                        <I><FONT color= darkblue>(* This routine encrypts your name...         *)</I></FONT>
+
+                                               <I><FONT color= darkblue> (* ..and writes the info to winctrl.key       *)</I></FONT>
+
+     ax := ax <B>div</B> <FONT color=blue>256</FONT> ;                        <I><FONT color= darkblue> (* shr ax, 8                                  *)</I></FONT>
+
+     bx := ax <B>xor</B> ord(name[counter-<FONT color=blue>1</FONT>]) ;        <I><FONT color= darkblue>(* get the encrypted value of the ...         *)</I></FONT>
+
+                                               <I><FONT color= darkblue> (* counter-th letter of your name            *)</I></FONT>
+
+     write(filename, bx) ;                     <I><FONT color= darkblue> (* Write it to the keyfile                    *)</I></FONT>
+
+     ax := ax <B>xor</B> bx ;                         <I><FONT color= darkblue> (* encrypt the counter-th letter              *)</I></FONT>
+
+     check1 := check1 + ax ;                  <I><FONT color= darkblue>  (* update checksum for the call at 437BE0     *)</I></FONT>
+
+     check2 := check2 <B>xor</B> ax ;               <I><FONT color= darkblue>   (*  ''                       ''               *)</I></FONT>
+
+     si := si + bx ;                           <I><FONT color= darkblue> (* arithmetic part of the generator           *)</I></FONT>
+
+     ax := si * <FONT color=blue>$ce6d</FONT> ;                        <I><FONT color= darkblue> (*  ''                       ''               *)</I></FONT>
+
+     ax := ax + <FONT color=blue>$58bf</FONT> ;                        <I><FONT color= darkblue> (*  ''                       ''               *)</I></FONT>
+
+     si := ax ;                                 <I><FONT color= darkblue>(*  ''                       ''               *)</I></FONT>
+
+   <B>end</B> ;
+
+   ax := <FONT color=blue>$4d</FONT> ;                                 <I><FONT color= darkblue> (* start value                                *)</I></FONT>
+
+   check1 := check1 + ax ;                     <I><FONT color= darkblue> (* update checksum for the call at 437C2B     *)</I></FONT>
+
+   check2 := check2 <B>xor</B> ax ;                   <I><FONT color= darkblue> (*  ''                       ''               *)</I></FONT>
+
+   zero := <FONT color=blue>0</FONT> ;                                 <I><FONT color= darkblue> (* needed to write zeros                      *)</I></FONT>
+
+   seek(filename, (lengthname+<FONT color=blue>1</FONT>)) ;
+
+   <B>for</B> counter := <FONT color=blue>1</FONT> <B>to</B> (<FONT color=blue>$e3</FONT> - (lengthname+<FONT color=blue>1</FONT>)) <B>do</B> write(filename, zero) ; <I><FONT color= darkblue>(* write zeros till..*)</I></FONT>
+
+   write(filename, check1) ;                   <I><FONT color= darkblue> (* till we reach the e3-rd byte of the .key   *)</I></FONT>
+
+   write(filename, check2) ;                  <I><FONT color= darkblue>  (* Write those checksums!!!                   *)</I></FONT>
+
+   write(filename, zero);                     <I><FONT color= darkblue>  (* and write some more zeros ...              *)</I></FONT>
+
+   write(filename, zero);
+
+   zero := <FONT color=blue>$4d</FONT>;                                 <I><FONT color= darkblue>(* don't mail me about this...I didn't want   *)</I></FONT>
+
+                                               <I><FONT color= darkblue> (* to declare another variable                *)</I></FONT>
+
+   write(filename, zero);                     <I><FONT color= darkblue>  (* write out encryption key                   *)</I></FONT>
+
+
+
+
+
+   seek(filename, <FONT color=blue>$70</FONT>) ;                        <I><FONT color= darkblue>(* Write copyright message :-)                *)</I></FONT>
+
+   string1 := <FONT color=blue>'This Keyfile was'</FONT> ;
+
+   <B>for</B> counter := <FONT color=blue>1</FONT> <B>to</B> length(string1) <B>do</B>
+
+     <B>begin</B>
+
+      var1 := ord(string1[counter]) ;
+
+      write(filename, var1) ;
+
+     <B>end</B> ;
+
+   seek(filename, <FONT color=blue>$81</FONT>) ;
+
+   string1 := <FONT color=blue>'brought to you'</FONT> ;
+
+   <B>for</B> counter := <FONT color=blue>1</FONT> <B>to</B> length(string1) <B>do</B>
+
+     <B>begin</B>
+
+      var1 := ord(string1[counter]) ;
+
+      write(filename, var1) ;
+
+     <B>end</B> ;
+
+   seek(filename, <FONT color=blue>$97</FONT>) ;
+
+   string1 := <FONT color=blue>'by'</FONT> ;
+
+   <B>for</B> counter := <FONT color=blue>1</FONT> <B>to</B> length(string1) <B>do</B>
+
+     <B>begin</B>
+
+      var1 := ord(string1[counter]) ;
+
+      write(filename, var1) ;
+
+     <B>end</B> ;
+
+   seek(filename, <FONT color=blue>$a4</FONT>) ;
+
+   string1 :=<FONT color=blue> 'MisterE'</FONT> ;
+
+   <B>for</B> counter := <FONT color=blue>1</FONT> <B>to</B> length(string1) <B>do</B>
+
+     <B>begin</B>
+
+      var1 := ord(string1[counter]) ;
+
+      write(filename, var1) ;
+
+     <B>end</B> ;                                      <I><FONT color= darkblue>(* STOP THE WRITING!!                         *)</I></FONT>
+
+
+
+
+
+   close(filename) ;                            <I><FONT color= darkblue>(* Close the file, otherwise data loss could  *)</I></FONT>
+
+                                                <I><FONT color= darkblue>(* ... occur                                  *)</I></FONT>
+
+   writeln ;                                   <I><FONT color= darkblue> (* skip a few spaces                          *)</I></FONT>
+
+   writeln ;
+
+   writeln(<FONT color=blue>' Your Keyfile has successfully been created!!'</FONT>) ; <I><FONT color= darkblue>(* inform the user...           *)</I></FONT>
+
+   writeln(<FONT color=blue>' Copy the Keyfile(WinCtrl.key) to your WinCtrl program directory.'</FONT>);
+
+<B>end. </B>                                           <I><FONT color= darkblue>(* terminate the program                      *)</I></FONT>
+
+
+
+.----------------------------------------------------------------------------------------------.
+
+`----------------------------------------------------------------------------------------------'
+
+
+
+That is my generator. We're done. 
+
+
+
+.
+
+..
+
+...
+
+
+
+Well, we <FONT color = green><I>don't have</I></FONT> to be done with this. If you still aren't tired and want to go on some more,
+
+then this is your CHANCE. Here is another part. You don't need it to create a valid keyfile,
+
+but I thought it would be nice <B>to use the protection scheme to protect my keyfiles!!!</B>
+
+
+
+
+
+.----------------------------------------------------------------------------------------------.
+
+|                         <FONT  SIZE=+2><B>Protecting the Keyfile-Generator</B></FONT>                         |
+
+`----------------------------------------------------------------------------------------------'
+
+
+
+Wow, you're still reading!!!! That's cool! Did you try my soon-to-be-modified-generator and did 
+
+you take a look at the generated keyfile using your favorite hexeditor? You see that 'This 
+
+keyfile was brought to you by MisterE'? Well, there are some LOSERS on this world who like 
+
+CHANGE THE AUTHORS NAME!! Changing MisterE to Loser('s name). <FONT color=red>AARRGghh</FONT>, I can't stand these
+
+lamers. Let's PROTECT the keyfiles!! 
+
+
+
+Ok, remember there were some more checksum checks?
+
+For example the call at 437BF9. The code used for this checksum check gets decrypted at 437B55,
+
+but the decrypted data isn't used in the 'about box'. The encrypted data will be used for the 
+
+checksum. We only have to do a few things to protect to generator:
+
+
+
+<FONT color=green>a) include the copyright message in the checksum.
+
+b) adjust the checksum in the generator, because we added some other data.</FONT>
+
+
+
+OK, lets start with <FONT color=green>a)</FONT>, remember this?:
+
+
+
+<FONT color=blue>:00437BEC 8A5F41                  mov bl, byte ptr [edi+41]  </FONT>         <= load 41-st byte
+
+<font color=blue>:00437BEF 85DB                    test ebx, ebx
+
+:00437BF1 7E10                    jle 00437C03
+
+:00437BF3 8D7742                  lea esi, dword ptr [edi+42]
+
+
+
+* Referenced by a (U)nconditional or (C)onditional Jump at Address:
+
+|:00437C01(C)
+
+|
+
+:00437BF6 55                      push ebp
+
+:00437BF7 8A06                    mov al, byte ptr [esi]
+
+:00437BF9 E8EEFDFFFF              call 004379EC        </FONT>               <= update checksum
+
+<font color=blue>:00437BFE 59                      pop ecx
+
+:00437BFF 46                      inc esi
+
+:00437C00 4B                      dec ebx
+
+:00437C01 75F3                    jne 00437BF6</FONT>
+
+    
+
+We must modify the 41-st byte so that it includes the copyright message. Here's a keyfile that
+
+is registered to MisterE:
+
+
+
+<FONT color=brown>00000000 0700 4804 4CE0 BAB0 0000 0000 0000 0000 ..H.L...........
+
+00000010 0000 0000 0000 0000 0000 0000 0000 0000 ................
+
+00000020 0000 0000 0000 0000 0000 0000 0000 0000 ................
+
+00000030 0000 0000 0000 0000 0000 0000 0000 0000 ................
+
+00000040 0000 0000 0000 0000 0000 0000 0000 0000 ................
+
+00000050 0000 0000 0000 0000 0000 0000 0000 0000 ................
+
+00000060 0000 0000 0000 0000 0000 0000 0000 0000 ................
+
+00000070 5468 6973 204B 6579 6669 6C65 2077 6173 This Keyfile was
+
+00000080 0062 726F 7567 6874 2074 6F20 796F 7500 .brought to you.
+
+00000090 0000 0000 0000 0062 7900 0000 0000 0000 .......by.......
+
+000000A0 0000 0000 4D69 7374 6572 4500 0000 0000 ....MisterE.....
+
+000000B0 0000 0000 0000 0000 0000 0000 0000 0000 ................
+
+000000C0 0000 0000 0000 0000 0000 0000 0000 0000 ................
+
+000000D0 0000 0000 0000 0000 0000 0000 0000 0000 ................
+
+000000E0 0000 00AB 6600 004D                     ....f..M</FONT>
+
+
+
+If we change to 41-st byte to 70h it would include the copyright message.
+
+Now we have to <FONT color=green>b)</FONT> adjust the checksum for this.
+
+The easiest way is to run WinCtrl (with 41st byte = 70h) till the checksum check. Now take a 
+
+look at the checksum values. Checksum1 should be FBh and checksum2 should be C2h. 
+
+Adjust the pascal program:
+
+(only a part is printed here)
+
+
+
+     si := ax ;                                <I><FONT color= darkblue> (*  ''                       ''               *)</I></FONT>
+
+   end ;
+
+   ax := <FONT color=blue>$4d</FONT> ;                                <I><FONT color= darkblue>  (* start value                                *)</I></FONT>
+
+   check1 := check1 + ax ;                     <I><FONT color= darkblue> (* update checksum for the call at 437C2B     *)</I></FONT>
+
+   check2 := check2 <B>xor</B> ax ;                    <I><FONT color= darkblue>(*  ''                       ''               *)</I></FONT>
+
+<I><FONT color= darkblue>(* ADD THE FOLLOWING LINE *)</I></FONT>
+
+   writeln(check1,<FONT color=blue>' '</FONT>,check2) ;
+
+
+
+Run the program. Check1 = 171decimal and Check2 = 102dec.
+
+Calculation the adjustment needed for the checksum:
+
+
+
+Adjustment check1: FBh  -  171decimal = 50h
+
+Adjustment check2: C2h XOR 102decimal = A4h
+
+
+
+Change the generator:
+
+
+
+     si := ax ;                                <I><FONT color= darkblue> (*  ''                       ''               *)</I></FONT>
+
+   end ;
+
+   ax := <FONT color=blue>$4d</FONT> ;                                  <I><FONT color= darkblue>(* start value                                *)</I></FONT>
+
+   check1 := check1 + ax ;                     <I><FONT color= darkblue> (* update checksum for the call at 437C2B     *)</I></FONT>
+
+   check2 := check2 <B>xor</B> ax ;                   <I><FONT color= darkblue> (*  ''                       ''               *)</I></FONT>
+
+<I><FONT color= darkblue>(* ADD THE FOLLOWING LINES *)</I></FONT>
+
+   check1 := check1 + <FONT color=blue>$50</FONT> ;                     <I><FONT color= darkblue>(* protection *)</I></FONT>
+
+   check2 := check2 <B>xor</B> <FONT color=blue>$a4</FONT> ;                  <I><FONT color= darkblue> (* protection *)</I></FONT>
+
+
+
+So, that's that. We're almost done. ALMOST. We still have to write 70h to the 41-st byte.
+
+Below this part i'll print a part of the protected generator:
+
+
+
+.----------------------------------------------------------------------------------------------.
+
+`----------------------------------------------------------------------------------------------'
+
+
+
+   ax := <FONT color=blue>$4d</FONT> ;                                  <I><FONT color= darkblue>(* start value                                *)</I></FONT>
+
+   check1 := check1 + ax ;                     <I><FONT color= darkblue> (* update checksum for the call at 437C2B     *)</I></FONT>
+
+   check2 := check2 <B>xor</B> ax ;                   <I><FONT color= darkblue> (*  ''                       ''               *)</I></FONT>
+
+   check1 := check1 + <FONT color=blue>$50</FONT> ;                    <I><FONT color= darkblue> (* protection *)</I></FONT>
+
+   check2 := check2 <B>xor</B> <FONT color=blue>$a4</FONT> ;                  <I><FONT color= darkblue> (* protection *)</I></FONT>
+
+
+
+   zero := <FONT color=blue>0</FONT> ;                                 <I><FONT color= darkblue> (* needed to write zeros                      *)</I></FONT>
+
+   seek(filename, (lengthname+<FONT color=blue>1</FONT>)) ;
+
+   <B>for</B> counter := <FONT color=blue>1</FONT> <B>to</B> (<FONT color=blue>$e3</FONT> - (lengthname+<FONT color=blue>1</FONT>)) <B>do</B> write(filename, zero) ; <I><FONT color= darkblue>(* write zeros till..*)</I></FONT>
+
+   write(filename, check1) ;                    <I><FONT color= darkblue>(* till we reach the e3-rd byte of the .key   *)</I></FONT>
+
+   write(filename, check2) ;                    <I><FONT color= darkblue>(* Write those checksums!!!                   *)</I></FONT>
+
+   write(filename, zero);                      <I><FONT color= darkblue> (* and write some more zeros ...              *)</I></FONT>
+
+   write(filename, zero);
+
+   zero := <FONT color=blue>$4d</FONT>;                                 <I><FONT color= darkblue>(* don't mail me about this...I didn't want   *)</I></FONT>
+
+                                                <I><FONT color= darkblue>(* to declare another variable                *)</I></FONT>
+
+   write(filename, zero);                       <I><FONT color= darkblue>(* write out encryption key                   *)</I></FONT>
+
+
+
+   seek(filename, <FONT color=blue>$41</FONT>) ;
+
+   zero :=<FONT color=blue> $70</FONT> ;
+
+   write(filename, zero) ;                      <I><FONT color= darkblue>(* write 70h to the 41-st byte                *)</I></FONT>
+
+
+
+   seek(filename, <FONT color=blue>$70</FONT>) ;                       <I><FONT color= darkblue> (* Write copyright message :-)                *)</I></FONT>
+
+   string1 := 'This Keyfile was' ;
+
+
+
+.----------------------------------------------------------------------------------------------.
+
+`----------------------------------------------------------------------------------------------'
+
+
+
+OK, we're done, completely. I can't think of any more thing to do with this program. I'am glad 
+
+you made it this far. This is my longest tutorial (out of eleven). Even good ol' notepad
+
+couldn't handle the size of this tutorial :-(. Writing this tutorial was quite a challenge, 
+
+because I didn't know if I would make it to the end: I hadn't written the generator when I 
+
+started writing this tutorial. Anyway, I think it is quite complete. If you want to do some
+
+exercise then download <A HREF="javascript:if(confirm('http://titan.fpz.hr/~foetus/  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://titan.fpz.hr/~foetus/'" tppabs="http://titan.fpz.hr/~foetus/">MP3 Eden Tagger</A> from the same url as WinCtrl. MP3 Eden Tagger has <I>ALMOST</I>
+
+the same protection. It shouldn't be a problem for you....
+
+
+
+.----------------------------------------------------------------------------------------------.
+
+|                                        <FONT SIZE=+2><B>Final Notes</B></FONT>                                       |
+
+`----------------------------------------------------------------------------------------------'
+
+
+
+
+
+Well, I hope you learned SOMETHING from this tutor.
+
+
+
+If you have any comments, questions, need help or whatever, mail me at <A HREF="mailto:MisterE@freemail.nl">MisterE@freemail.nl</A>
+
+
+
+OR
+
+
+
+look for me at EFNET => #cracking4newbies or #cracking
+
+
+
+
+
+.----------------------------------------------------------------------------------------------.
+
+`----------------------------------------------------------------------------------------------'
+
+</PRE>
+
+<P>
+
+<HR size=3>
+
+<!-- Begin mover -->
+
+<CENTER>
+
+ <IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=CENTER WIDTH=13 
+
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage</A> 
+
+ <IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=CENTER WIDTH=13
+
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC</A> 
+
+ <IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=CENTER WIDTH=13
+
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonimity academy</A> 
+
+ <IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=CENTER WIDTH=13
+
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A HREF="coumes.htm" tppabs="http://www.anticrack.de/fravia/coumes.htm">counter measures</A> 
+
+ <IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=CENTER WIDTH=13
+
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools</A> 
+
+ <IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=CENTER WIDTH=13
+
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A HREF="botstart.htm" tppabs="http://www.anticrack.de/fravia/botstart.htm">bots' wars</A>
+
+<BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=CENTER WIDTH=13
+
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A HREF="javascri.htm" tppabs="http://www.anticrack.de/fravia/javascri.htm">javascript wars</A> 
+
+ <IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=CENTER WIDTH=13
+
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A HREF="realicra.htm" tppabs="http://www.anticrack.de/fravia/realicra.htm">reality cracking</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=CENTER WIDTH=13
+
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays</A> 
+
+ <IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=CENTER WIDTH=13
+
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database</A>
+
+ <IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=CENTER WIDTH=13
+
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A HREF="progcor.htm" tppabs="http://www.anticrack.de/fravia/progcor.htm">programmer's corner</A>
+
+<BR>
+
+ <IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=CENTER WIDTH=13
+
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut CGI-scripts</A> 
+
+ <IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=CENTER WIDTH=13
+
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails</A> 
+
+ <IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=CENTER WIDTH=13
+
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_page</A> 
+
+ <IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=CENTER WIDTH=13
+
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A HREF="howtosea.htm" tppabs="http://www.anticrack.de/fravia/howtosea.htm">how to search</A> 
+
+ <IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=CENTER WIDTH=13
+
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia+</A> 
+
+<BR>
+
+ <IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=CENTER WIDTH=13
+
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering legal?</A> 
+
+
+
+</CENTER>
+
+<!-- End mover -->
+
+
+
+<HR ALIGN=CENTER WIDTH=100% SIZE=2>
+
+
+
+</CENTER>
+
+</BODY>
+
+</BODY>
+
+</HTML>

@@ -1,0 +1,491 @@
+<html><TITLE>jonne1</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+<CENTER><FONT size="+3">Blowfish Advanced 97 beta 1</FONT><BR><FONT size="+2">
+
+(encryption decryption)</FONT><BR> <BR>
+
+<FONT size="+2">by Jon</FONT><BR>
+
+<BR>
+
+<FONT size="+1">(12 October 1997 - 1 January 1998)</FONT>
+
+<HR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">Courtesy of fravia's page 
+
+of reverse engineering<BR><BR>
+
+<I>Well, we'll have to open a special section of my site, dedicated 
+
+exclusively to encryption and decryption (or, better, decryption of 
+
+encryptions :-)<BR>In the mean time you'll find here a short, but important 
+
+essay by Jon (the protection scheme of this target is utterly stupid, but 
+
+the target itself is VERY important for our endeavours), <A href="#letmark">a letter to us 
+
+by Mark Rosen</A>, author of Kremlin, and my answer... short afterwards I got 
+
+<A href="#letmarH">a letter from Markus Hahn</A> (the author of this very target: Blowfish advanced), you'll 
+
+be able to find this too below, together with my answer.<BR>Enjoy and add any comments 
+
+you believe should figure in the new section... I hope to develop all this 
+
+in a full-fledged project as soon as I have the time</I><BR><BR>
+
+From the same Author (Jon):
+
+<A href="jonencr.htm" tppabs="http://www.anticrack.de/fravia/jonencr.htm">encryption tutorial</A> and <A href="jon1.htm" tppabs="http://www.anticrack.de/fravia/jon1.htm">kremlin 1</A> AND 
+
+<A href="jon__2-1.htm" tppabs="http://www.anticrack.de/fravia/jon__2.htm">kremlin 2</A><BR>
+
+
+
+</CENTER><HR size="6">
+
+<FONT size="+3">
+
+Blowfish Advanced 97 beta 1<BR>
+
+by Jon, October 4, 1997<BR>
+
+</FONT>
+
+<PRE>
+
+Tools needed:
+
+W32DASM 8.9 (any version will do)
+
+Hex Workshop 2.53 (or whatever you prefer)
+
+Fetch BFA97 at: <A href="javascript:if(confirm('http://www-hze.rz.fht-esslingen.de/~tis5maha/software.html  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www-hze.rz.fht-esslingen.de/~tis5maha/software.html'" tppabs="http://www-hze.rz.fht-esslingen.de/~tis5maha/software.html">
+
+http://www-hze.rz.fht-esslingen.de/~tis5maha/software.html</A>
+
+
+
+I've always liked the Blowfish Advanced series, since the '95 version was 
+
+released. Back then I just leeched it using the keyfile by Madmax!.
+
+But now there's a new version out: BFA '97 beta 1. This one has a LOT of 
+
+improvements and additions, so of course I loved it. Since this version 
+
+is a beta, there are some functions that are missing. For an example a 
+
+Register Dialog(!). I quickly realized that I wouldn't be able to easily 
+
+fetch a serial from memory using Softice. Bye bye &quot;live&quot; approach. 
+
+So I disassembled it with W32Dasm 8.9. 
+
+I noticed that in the about box (where there usually is a Register dialog...) 
+
+there was the nag text &quot;Unregistered evaluation copy&quot;, I searched for it
+
+in W32DASM and found it at line 218390. Disassembled text:
+
+
+
+* StringData Ref -&gt;&quot;The Hunt for Red October&quot; ;Weird name. Sounds like it's searching for a keyfile.
+
+                                  |
+
+:00461047 BA58154600              mov edx, 00461558
+
+:0046104C E85BE1FEFF              call 0044F1AC
+
+:00461051 84C0                    test al, al
+
+:00461053 7412                    je 00461067 ;Interesting! If true jump to Registered_release.
+
+
+
+* StringData Ref -&gt;&quot;Registered Release&quot; ;This is what we want the about box to say.
+
+                                  |
+
+:00461055 BA7C154600              mov edx, 0046157C
+
+:0046105A 8B83E8010000            mov eax, dword ptr [ebx+000001E8]
+
+:00461060 E8C3EFFBFF              call 00420028
+
+:00461065 EB10                    jmp 00461077    ;jmp unregistered cram
+
+
+
+* Referenced by a Jump at Address:00461053(C)
+
+* StringData Ref -&gt;&quot;Unregistered Evaluation Copy&quot; ;The nag text found in the about box.
+
+                                  |
+
+:00461067 BA98154600              mov edx, 00461598
+
+:0046106C 8B83E8010000            mov eax, dword ptr [ebx+000001E8]
+
+:00461072 E8B1EFFBFF              call 00420028   ;eat this before continuing
+
+
+
+I know that this program uses a keyfile named bfa97.usr for it's registration info 
+
+(the '95 version used the same concept, a file named bfa95.usr). And the function 
+
+named &quot;The Hunt for Red October&quot; is most likely the one that checks the keyfile.
+
+So lets examine this function... It will JE (jump if equal) to good_guy if the 
+
+keyfile's valid and to bad_guy otherwise...
+
+Why not change it to JNE (jump if not equal). This will make it jump to good_guy 
+
+if the keyfile's not valid! 
+
+To do this, highlight :00461053 7412 and you'll see in the status line that the 
+
+offset is 00060453h. Now open your favorite hex-editor and go there. Next you need
+
+to change 74 (JE) -&gt; 75 (JNE). Save the file, run BFA97 and check the about box... 
+
+It will now display &quot;Registered Release&quot;! Elementary stupid reversing!
+
+BTW, you don't need to make a fake bfa97.usr file. If the file doesn't exist it's
+
+also considered invalid :-)
+
+
+
+I find it quite strange that a author of an encryption program can't come up with 
+
+a stronger protection scheme... 
+
+It 's the same with Kremlin, that lets you select &quot;unselectable&quot; algorithms trough 
+
+the stupid (and huge) Window$ 95 registry (read my other essay about <A href="jon1.htm" tppabs="http://www.anticrack.de/fravia/jon1.htm">kremlin</A> ).
+
+Why don't these authors use their encryption skills to protect better?
+
+
+
+I hope you enjoyed (and possibly learned from) this essay :-)
+
+Greetings to +ORC, fravia+ all the +HCU'ers, PC '97, UCF and all +crackers!
+
+
+
+Jon </PRE><FONT color="green">(c) Jon 1997. All rights reversed</FONT><PRE><HR>
+
+&quot;I find it quite strange that a author of an encryption program can't come up with 
+
+a stronger protection scheme...&quot;</PRE><I><A name="letmark"></A>
+
+Well, I had a nice letter from the author of Kremlin himself (a state of the 
+
+art cryptographical program that you should by all means buy), Mark Rosen, 
+
+about this kind of stuff, so nice and interesting, that I'll publish it here, my 
+
+answer to Mark Rosen follows underneath</I>
+
+
+
+
+
+<PRE>
+
+
+
+    Hey. Nice reverse engineering page. I saw the thing on Kremlin... I'm
+
+the author of Kremlin! Oops! Well, I guess next time I'll spend more time on
+
+the protection scheme -- I concentrated on making a good program, not making
+
+a good protection scheme. Kremlin 2.0 will be really cool and will, now,
+
+have better security features and won't be as stupid. If the Jon guy who
+
+cracked the program wants a free copy, just tell him to e-mail
+
+mrosen@peganet.com and I'll give him one -- nice work.
+
+I thought up of a &quot;uncrackable&quot; mechanism. Not really, but it's mathematically
+
+unbreakable. It's pretty simple:
+
+    generate two large primes, p and q. Store the result of p*q (called c)
+
+in the program. Yoru registration keys are p or q. If the registration code
+
+goes evenly into c, then you have a correct registration system. The
+
+difficultly lies in factoring c. You might think factoring is easy, but try
+
+factoring a 128 digit number! That's actually the problem -- your reg codes
+
+will be 128 digits long! I guess if you store the number using letters and
+
+numbers (80 possbile chars instead of 10 possible), you can get a 16 digit
+
+reg code. Not bad. I think I'll do this.
+
+
+
+    Have you thought of any better ones? The only other thing I can think of
+
+to avoid cracking (assuming  you don't have a shitty system in the first
+
+place like me) is to include some sort of checksum. BTW, here's a cool
+
+checksum (fletcher checksum. in software, it's better than a CRC)
+
+    <FONT color="purple">
+
+    s1 = 0;
+
+    s2 = 0;
+
+    for (x=0;x&lt;len;x++) {
+
+        s1 += data[x];
+
+        s2 += s1;
+
+    }
+
+    checksum = s1+s2;  
+
+</FONT>
+
+    it works! think about it: a simple addition checkum would have a 1/256
+
+chance of having two errors cancel themselves out (for example 0x00 0x256
+
+would give the same checksum as 0x256 0x00). I can't figure out the chances
+
+needed to do that with the fletcher checksum, but it's really small!
+
+elegantly neat.
+
+
+
+Mark Rosen
+
+Mach5 Software (<A href="javascript:if(confirm('http://www.mach5.com/  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.mach5.com/'" tppabs="http://www.mach5.com/">http://www.mach5.com/</A>)</PRE><HR><I>And this is my answer to Mark Rosen:</I><HR><PRE>Dear Mark,    
+
+Thanks for your letters, hope you'll agree to see them published here together 
+
+with my answer to you (I know that you'll read this essay by Jon, as soon as I publish it...  
+
+btw, his &quot;encryption&quot; tutorial has been re-written and re-published as well).
+
+
+
+I actually believe that there are much SIMPLER ways of protecting effectively 
+
+your software than to use a 128 digit number, here some ideas that I (or others) 
+
+will develop in the next months:
+
+
+
+<B>checksums</B>
+
+Just use some of the HEADER data (you remember good old dos programs, don't you)
+
+that nobody remembers or uses nowadays. Alter one of them in a file that you 
+
+MUST open (no filemon easy track) and then use IT (with due &quot;feeling&quot;, i.e. not 
+
+obviously) as checksum (or, even better, as check-checksum). You get the idea?
+
+Should be pretty easy to implement.
+
+
+
+<B>crippled sharez</B>
+
+Well, cripple it EFFECTIVELY, don't just allow easy reenables... compile the
+
+sharez ANEW, without the routines you don't want lamers to use... they will 
+
+have to write them ex-novo, which is NOT what normal-level crackers do (yes, 
+
+we do it, but we are a race apart).
+
+
+
+<B>unregistered lamer nagging</B>
+
+Well, why don't you use some of the  most obscure values of the API functions?
+
+There are THOUSANDS of them, values that nobody uses or remembers or even knows
+
+exactly what they are supposed to mean... gosh, you could even open a &quot;commonly 
+
+found&quot; *.dll inside windows/system and modify its FIXED (unused) VALUES... normal 
+
+lamers will never understand what's going on...
+
+
+
+call funny_existing_API
+
+get  funny_existing_return_value
+
+use it to fire lotta useful things in your program AND THE NAG... you dig it? :-)
+
+
+
+later, hope my site was useful for you
+
+fravia+</PRE><HR size="6"><A name="letmarH"></A>
+
+<CENTER><I>Yet it was not yet finished: here is an email from Markus Hahn, the 
+
+author of Blowfish Advanced 97, a beautiful cryptographical program which is the target of THIS very essay by Jon:
+
+</I></CENTER><PRE>Hi,
+
+
+
+I see you really like Blowfish Advanced 97, and I was astonished how straight you
+
+found the registration routine.
+
+
+
+Ok, you wrote:
+
+&quot;I find it quite strange that a author of an encryption program can't come up with 
+
+a stronger protection scheme...&quot;
+
+
+
+Well, I don't spend much time on writing hard-to-break shareware-protection 
+
+schemes.
+
+I don't know how much you know about _real_ computer security, but for 
+
+myself it's just waisted time to try to write a super-software protection 
+
+scheme.
+
+Of course it might delay the cracking process for some weeks, but 
+
+then... Users who register my software are the ones who support me 
+
+and push me to continue improving the software. For crackers and illegal 
+
+&quot;serialz-users&quot;, well, you should know what you're doing. 
+
+For myself it's better to improve the quality of my software that 
+
+to join the &quot;hacker-warz&quot; :) 
+
+Sorry that the registration-code in BFA97 was so easy to break - 
+
+in comparison to the file encryption functions of the program.
+
+I'd like to hear your opinion...
+
+
+
+Markus
+
+-- 
+
+Markus Hahn</PRE>
+
+<I><CENTER>I have only one answer: Dear Markus, your program is VERY good, 
+
+it's the encryption program I like BEST (and I have tryed quite a lot of 
+
+them) and I'll buy it myself -it's a promise- as soon as your gamma or 
+
+delta versions, <U>without bugs</U> will be out... at the moment there are 
+
+some heavy bugs inside: the most annoying one, for me, is that if you keep 
+
+blowfishing and unblowfishing a WHOLE directory, where you have modified 
+
+only SOME files (say 12-13 out of a total of 250) there comes a moment 
+
+where you ARE NOT ALLOWED any more (by your beta) to unblow some files 
+
+UNLESS you copy them in another directory...<BR>
+
+Hope this will help you developing your smart product. fravia+ (January 1998)<BR> 
+
+
+
+<HR size="6">
+
+
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</I></CENTER>
+
+<BR><CENTER>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut CGI-scripts</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering legal?</A></CENTER>
+
+<CENTER><HR ALIGN="CENTER" WIDTH="100%" SIZE="2"></CENTER>
+
+</BODY>
+
+</HTML>

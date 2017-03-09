@@ -1,0 +1,1911 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>enh_ida.htm: How to use our tools: Jean-Marc's IDA enhancer</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR=#C0C0C0 TEXT=#001010 VLINK=#405040><CENTER><H1>IDA ENHANCER</H1>
+
+
+
+<A href="howtouse.htm" tppabs="http://www.anticrack.de/fravia/howtouse.htm"><IMG SRC="ourtools.gif" tppabs="http://www.anticrack.de/fravia/ourtools.gif" ALT="ourtools" ALIGN=BOTTOM 
+
+WIDTH=114 HEIGHT=43 BORDER=0 VSPACE=0 HSPACE=0></A><BR>
+
+<FONT color=gray>How to use our tools</FONT>
+
+<BR>
+
+(courtesy of fravia's pages of reverse engineering)<BR><BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=550 HEIGHT=8
+
+BORDER=0 VSPACE=0 HSPACE=0><BR><BR>
+
+
+
+<B>An IDA enhancer (patching the IDA.WLL)</B><BR>by Jean-Marc<BR>
+
+12 November 1998
+
+
+
+<HR><I>Definitely NOT for beginners. Read, understand, use, enjoy!
+
+</I><HR>
+
+</CENTER>
+
+<PRE>
+
+
+
+At this time, I plan to (as Quine) patch the IDA.WLL in order to add some new
+
+functions on IDC laguage. Nothing new you think, Quine just do it before!
+
+
+
+Yeah, I got a new IDA 3.75  version, which include the Exec command... And because 
+
+you know Ilfak is not a lazy guy, he could have take benefits on such enhancement to 
+
+change protection scheme.
+
+
+
+================ BEGINNER SECTION ==========================
+
+
+
+To ensure the feasibility of that (Everything is possible, but I'm too lazy to plan
+
+to crack such a protection before patching the prog which is a job (not 
+
+hard but long) enough.
+
+
+
+First find this array with those 3 pointers: 
+
+    ptr[0] -> string of the IDC command
+
+    ptr[1] -> pointer to the IDC function it-self
+
+    ptr[2] -> pointer to the argument description array.
+
+
+
+Create an IDA structure in order to hold array element (I can't imagine doing this 
+
+without the help of this amazing IDA )
+
+      IDCtoken  struc
+
+        ptr[3]  dd 3 dup(?)  &lt;- Apply offset attribute on this
+
+      IDCtoken  ends
+
+
+
+Take the first element of the array
+
+Name it something usefull e.g.: arrIDCtokens
+
+Apply the structure, now make as array of. !STOP!
+
+QUESTION: How long is this array?
+
+          Page down many times....
+
+          Find something different ... a dword dd 134h, plus an offset to arrIDCtokens
+
+          Name this offset again: lp_arrIDCtokens
+
+          Read the address
+
+          Jump to address -> arrIDCtokens
+
+          Calculator (IDA one) Enter: (0xBBB0 - 0xAD40) / 12
+
+                                                           ^- sizeof(void far *) * 3
+
+ANSWER: 308
+
+
+
+Have you payed any attention now? If yes you have certainly denote that 134h is absolutly
+
+equal to decimal value 308. IDA as just tell you few seconds ago. IDA is clever, IDA knows
+
+what you want, even before you know you want something.... :-))
+
+
+
+Name this dword ... let's try @arraysize$q12arrIDCtokens, and activate demangling on name.
+
+
+
+At this time jump to all of those XRefs that refer to either the dword and the offset, and 
+
+rename them something like deal_with_IDCtokens_####. (Could help subsequent reading)
+
+
+
+If you're stuck with message like .ERROR 'too many lines (more than 500)', just try
+
+to change margin to 120 on text representation.
+
+
+
+OK, now we got the array, a dword that we suppose (it is) represent the number of element into
+
+this array. So, it's time to quit IDA, and take your preferred HexEditor, refind this 0134h
+
+(this is reverse engeenering pages, not hexedito for dummies) patch it with some value...
+
+Patch with 0133h is a good idea...
+
+
+
+Start IDA with the IDA.WLL patched. Load some database.
+
+I works... (what a great crack you have done) ... which mean that Ilfak have not
+
+implement such CRC check or any other new protection on IDA.WLL
+
+
+
+Now open IDC command popup, and try
+
+    OpHigh(1,1,1);
+
+IDA complain 'Attempt to call undefined function ...'
+
+The patch works 1 function is missing now. 
+
+
+
+Recover now the genuine IDA.WLL, and start the next more interresting part.
+
+
+
+========================== NOVICE SECTION ======================================
+
+
+
+First problem to solve now, is to make grow the array. I don't plan to use such trick 
+
+that Quine as (well) describe. The idea, is to optimize some code, in order to got
+
+some extra byte free to implement some extra token. Each token (as previously view )
+
+as 12 bytes long ... Just following the array, we got the long that represent the size in
+
+number of element of this array, then the offset (pointer) to the array itself, then
+
+2 pointer on 2 functions, then start the data of the argument array (please refer
+
+to Quine essay II for explaination of values ). 
+
+
+
+For those beginners that haven't stop reading, you must make an enum to map thoses values
+
+as something readable...
+
+
+
+      enum VTYPE
+
+       VT_VOID  = 0
+
+       VT_STR   = 1
+
+       VT_LONG  = 2
+
+       VT_FLOAT = 3
+
+       VT_WILD  = 4
+
+
+
+At this time, if you pay attention, you will see that some offset for IDC token names 
+
+jump in a middle of some string already used for another tokens e.g. Dword & MakeDword
+
+The arg list array got same optimisation ( Ilfak or compiler ? If the M$ compiler was used,
+
+I would answer Ilfak, but I don't know enought Borland to answer that (interesting?)
+
+question...)
+
+Anyway I have made a list (handwrited) with the full serie of sslll0 (s for VT_STR,
+
+l for VT_LONG,... and so on) needed to fill all of thoses args array, and make some
+
+optimisation... (if I can do it, that certainly mean that initial optimisation have
+
+been made by such a compiler).
+
+
+
+The initial list use space from BBC0 to BC15 which represent 54h, subtract 7 because of 
+
+mixed string in this area equal 4Ch (76 bytes).
+
+Now my new table is:
+
+          lls0  5   
+
+       llllll0  7
+
+          lsw0  4
+
+         llsl0  5
+
+       llllls0  7
+
+          sll0  4
+
+       lsllll0  7
+
+               === 39 bytes (nice slim fat isn't it?)
+
+
+
+Make the first part of the patch mean save bytes by just optimizing the array of args,
+
+move the length Dword ( arraysize(arrIDCtokens) ) forward
+
+of ...?!?... 36 bytes (I guess we must respect the alignment), and adjust all the offset
+
+that refer to this pointer, plus adjust all the offset that refer to array of
+
+args into arrIDCtokens.
+
+
+
+  ************************************************
+
+    During this analysis, take a look on thoses
+
+    names...: _lpoke, _poke, _peek, _time, _call,
+
+    ____, GetVxdFuncName, AssignKey.
+
+    _call is really amazing (look on the code)
+
+  ************************************************
+
+
+
+  ************************************************
+
+    If you just want to implement 1 function, 
+
+    spend some time to re-read the array....
+
+    Have you seen that MakeStruct is referenced 
+
+    twice ?
+
+  ************************************************
+
+
+
+At this time, we don't manipulate those 3 offset (pointer) which are lp_arrIDCtokens, plus
+
+those 2 following pointer to function, because it involve manipulating fixup (aka reloc).
+
+
+
+If you have follow my structure definition, you can use the following IDC function
+
+to manipulate the offset.
+
+
+
+    static PatchXref()
+
+    {
+
+      auto nea, ea, xref, i, len, yn,w;
+
+    
+
+      ea = ScreenEA();
+
+      nea = ea;
+
+      nea = AskAddr(ea,"New Xref point to...");
+
+      nea = nea & 0x0FFFF;
+
+
+
+      for(xref = DfirstB(ea); xref != BADADDR; xref = DnextB(ea,xref))
+
+         {
+
+           Message("Patching at 0x%08x...",xref);
+
+           w = Word( xref+8 );
+
+           if (w == (ea & 0x0FFFF))
+
+              {
+
+                Message("done\n");
+
+                PatchWord(xref+8,nea);
+
+              }
+
+           else
+
+              {
+
+                Message("refused.(0x%04x)\n",w);
+
+              }
+
+         }
+
+    }
+
+
+
+Then assign a hotkey on such function... 
+
+
+
+As soon as you have finished this patching operations, under IDA, produce a DIF with 
+
+again IDA...and leave (we will come back soon :-)
+
+Use now tools like patch engine to apply thoses changes to IDA.WLL (personaly I use IDA
+
+it self, ... :))
+
+ Restart IDA now, you normally have no problem with any IDC function. Every of them 
+
+works fine as if we haven't change anything.
+
+
+
+We have exactly change nothing into the program at this time, but we have now some space
+
+to play with... Now to do something more interresting, start the next section...
+
+
+
+========================== INTERMEDIATE SECTION ======================================
+
+
+
+We now want to move thoses 3 pointer ( lp_arrIDCtokens, and 2 following function pointer),
+
+in order to move and change the arraysize(arrIDCtokens) long value, and then add our
+
+own IDC function.
+
+
+
+First thing to do is of course to move data them-selves, then adjust offset on thoses
+
+values, then ... adjust fixup of those 3 pointer. You can of course do that manually, 
+
+with all the risks of mistakes. But the question is can we do that IDA controlled.
+
+We known that IDA keep track of thoses fixup info, the question is did it produce diff
+
+if we change Fixup infos thru SetFixup/DelFixup function ?
+
+The answer seems to be no. Did IDA produce fixup informations when it produce the EXE?
+
+Unfortunatly I was not able to use such function (I wonder why).
+
+So...
+
+Let first move memory information... with such IDC script:
+
+    static MoveMem()
+
+    {
+
+      auto begin, end, sense, srcEA, tgtEA;
+
+      auto i, value, fillup, lim;
+
+      auto fxtyp, fxsel, fxoff, fxdispl;
+
+
+
+      begin = SelStart();
+
+      end   = SelEnd() - 1;
+
+      if (begin == BADADDR)
+
+         {
+
+           Warning("No memory range selected!\nAction aborted.");
+
+           return 0;
+
+         }
+
+
+
+      sense = 1;
+
+      srcEA = begin;
+
+      if (ScreenEA() == begin)
+
+         {
+
+           sense = -1;
+
+           srcEA = end;
+
+         }
+
+
+
+      tgtEA = AskAddr(srcEA,form("Enter new block address for %08Xh (%s)",sense==1?"normal":"REVERSE"));
+
+
+
+      if ((tgtEA > begin) && (tgtEA <= end))
+
+         {
+
+           Warning("Memory block overlap...\nTry use %s mode.",sense==1?"reverse":"forward");
+
+           return 0;
+
+         }
+
+
+
+      if (AskYN(0,form(form("%s\n%s\n%s\n \nSure you want to proceed?",
+
+                       "You are about to move memory block:",
+
+                       "   from: %08Xh - %08Xh",
+
+                       "     to: %08Xh - %08Xh (data will be lost)"),
+
+                       srcEA, srcEA + ((end - begin)*sense),
+
+                       tgtEA, tgtEA + ((end - begin)*sense))) != 1) return 0;
+
+
+
+      fillup = 0;
+
+      fillup = AskAddr(fillup,"Enter pattern for quitting region...");
+
+      fillup = fillup & 0x0FF;
+
+
+
+      lim = (end - begin) + 1;
+
+      for(i=0; i < lim; i++)
+
+         {
+
+           value = Byte(srcEA + (i*sense));
+
+           fxtyp   = GetFixupTgtType(srcEA + (i*sense));
+
+           fxsel   = GetFixupTgtSel(srcEA + (i*sense));
+
+           fxoff   = GetFixupTgtOff(srcEA + (i*sense));
+
+           fxdispl = GetFixupTgtDispl(srcEA + (i*sense));
+
+           if (fxsel != BADADDR) DelFixup(srcEA + (i*sense));
+
+           PatchByte(srcEA + (i*sense), fillup);
+
+           PatchByte(tgtEA + (i*sense),value);
+
+           if (fxsel != BADADDR) SetFixup(tgtEA + (i*sense),fxtyp, fxsel,fxoff,fxdispl);
+
+         }
+
+  
+
+    }  
+
+
+
+Now adjust any offset to refer to that area (long job!). We got a problem now if we want
+
+to create an IDC script. This is because IDA give us the begin address which refer to 
+
+a particular address, so it seems hard to automate offset adjustment.
+
+
+
+In fact if we are on address Z refered by addresses A,B,C, somewhere in the area of each
+
+of thoses addresses (A,B,C) it exists a fixup that refer to Z...
+
+So, let's change this PatchXref function that we have previously defined...
+
+
+
+    static PatchXref()
+
+    {
+
+      auto nea, ea, xref, i, len, yn, fxoff;
+
+
+
+      ea = ScreenEA();
+
+      nea = ea;
+
+      nea = AskAddr(nea,"New Xref point to...");
+
+
+
+      for(xref = RfirstB(ea); xref != BADADDR; xref = RnextB(ea,xref))
+
+         {
+
+           Message("Patching xref code "offset.class" tppabs="http://fravia.org/offset.class" at 0x%08x...",xref);
+
+           len = ItemSize(xref);
+
+           yn = 0;
+
+           for(i = 0; i < len; i++)
+
+              {
+
+                fxoff = GetFixupTgtOff(xref+i);
+
+                if (fxoff != ea) continue;
+
+                PatchWord(xref+i,nea & 0x0FFFF);
+
+                SetFixup(xref+i,GetFixupTgtType(xref+i), GetFixupTgtSel(xref+i),fxoff,GetFixupTgtDispl(xref+i));
+
+                Message("+");
+
+                i = i+1;
+
+                yn = 1;
+
+              }
+
+           if (yn)
+
+              {
+
+                Message("done.\n");
+
+                continue;
+
+              }
+
+           Message("fail due to offset not found!\n");
+
+         }
+
+
+
+      for(xref = DfirstB(ea); xref != BADADDR; xref = DnextB(ea,xref))
+
+         {
+
+           Message("Patching xref data offset at 0x%08x...",xref);
+
+           len = ItemSize(xref);
+
+           yn = 0;
+
+           for(i = 0; i < len; i++)
+
+              {
+
+                fxoff = GetFixupTgtOff(xref+i);
+
+                if (fxoff != ea) continue;
+
+                PatchWord(xref+i,nea & 0x0FFFF);
+
+                SetFixup(xref+i,GetFixupTgtType(xref+i), GetFixupTgtSel(xref+i),fxoff,GetFixupTgtDispl(xref+i));
+
+                Message("+");
+
+                i = i+1;
+
+                yn = 1;
+
+              }
+
+           if (yn)
+
+              {
+
+                Message("done.\n");
+
+                continue;
+
+              }
+
+           Message("fail due to offset not found!\n");
+
+         }
+
+    }
+
+
+
+According to those nice patch we have applyed, we normaly got something just like 
+
+the extraction from IDA dead-listing (LST file):
+
+.
+
+.
+
+.
+
+DATA:0048BB8C                      dd offset        aExec, offset idc_Exec,        offset vtyp_s                      ; lp[3]
+
+DATA:0048BB98                      dd offset        aGetidadirector, offset        idc_GetIdaDirectory, offset vtyp_0 ; lp[3]
+
+DATA:0048BBA4                      dd offset        aOphigh, offset        idc_OpHigh, offset vtyp_lll              ; lp[3]
+
+DATA:0048BBB0 HCU_space            db 28h dup(0)           ; <== The job we have just done... :-)
+
+DATA:0048BBD8 _Funcs               dd 134h                           ; wQty                               ; DATA XREF: deal_with_IDCtokens_4476D4+2E.r
+
+DATA:0048BBD8                                                                                        ; deal_with_IDCtokens_460464+5.r ...
+
+DATA:0048BBD8                      dd offset        arrIDCtokens.lp[3]    ; lp_functArr
+
+DATA:0048BBD8                      dd offset        startup_409664(void)  ; lpfnStartup
+
+DATA:0048BBD8                      dd offset        shutdown_409678(void) ;        lpfnShutdown
+
+DATA:0048BBE8 aLi                  db '%li',0                                                           ; DATA XREF: idc_MakeLocal+37.o
+
+DATA:0048BBEC aS_14                db '%s',0                                                            ; DATA XREF: idc_Warning+E.o idc_Fatal+E.o
+
+DATA:0048BBEF vtyp_llss            db VT_LONG                                                           ; DATA XREF: DATA:0048B5BC.o
+
+DATA:0048BBF0 vtyp_lss             db VT_LONG              ;        DATA XREF: DATA:0048B970.o
+
+DATA:0048BBF1 vtyp_ss              db VT_STR                      ;        DATA XREF: DATA:0048AFEC.o DATA:0048AFF8.o ...
+
+DATA:0048BBF2 vtyp_s               db VT_STR                      ;        DATA XREF: DATA:0048AD40.o DATA:0048AF20.o ...
+
+DATA:0048BBF3 vtyp_0               db VT_VOID              ;        DATA XREF: DATA:0048B058.o DATA:0048B10C.o ...
+
+DATA:0048BBF4 vtyp_llllll          db VT_LONG              ;        DATA XREF: DATA:0048B064.o
+
+DATA:0048BBF5 vtyp_lllll           db VT_LONG              ;        DATA XREF: DATA:0048B6C4.o DATA:0048B868.o
+
+DATA:0048BBF6 vtyp_llll            db VT_LONG              ;        DATA XREF: DATA:0048AF14.o DATA:0048B07C.o ...
+
+DATA:0048BBF7 vtyp_lll             db VT_LONG              ;        DATA XREF: DATA:0048ADD0.o DATA:0048AE3C.o ...
+
+DATA:0048BBF8 vtyp_ll              db VT_LONG              ;        DATA XREF: DATA:0048AD4C.o DATA:0048AD7C.o ...
+
+DATA:0048BBF9 vtyp_l               db VT_LONG, VT_VOID     ;        DATA XREF: DATA:0048AD58.o DATA:0048AD94.o ...
+
+DATA:0048BBFB vtyp_lsw             db VT_LONG              ;        DATA XREF: DATA:0048B37C.o
+
+DATA:0048BBFC vtyp_sw              db VT_STR, VT_WILD, VT_VOID ; DATA XREF: DATA:0048B034.o DATA:0048B040.o ...
+
+DATA:0048BBFF vtyp_llsl            db VT_LONG              ;        DATA XREF: DATA:0048B64C.o DATA:0048B874.o
+
+DATA:0048BC00 vtyp_lsl             db VT_LONG              ;        DATA XREF: DATA:0048AFC8.o DATA:0048AFE0.o ...
+
+DATA:0048BC01 vtyp_sl              db VT_STR, VT_LONG, VT_VOID ; DATA XREF: DATA:0048AEFC.o
+
+DATA:0048BC04 vtyp_llllls          db VT_LONG              ;        DATA XREF: DATA:0048B6DC.o
+
+DATA:0048BC05 vtyp_lllls           db VT_LONG              ;        DATA XREF: DATA:0048B418.o
+
+DATA:0048BC06 vtyp_llls            db VT_LONG
+
+DATA:0048BC07 vtyp_lls             db VT_LONG              ;        DATA XREF: DATA:0048AE24.o DATA:0048AECC.o ...
+
+DATA:0048BC08 vtyp_ls              db VT_LONG, VT_STR, VT_VOID ; DATA XREF: DATA:0048AD64.o DATA:0048AD70.o ...
+
+DATA:0048BC0B vtyp_sll             db VT_STR, VT_LONG, VT_LONG, VT_VOID ; DATA XREF:        DATA:0048AF2C.o        DATA:0048B124.o
+
+DATA:0048BC0F vtyp_lsllll          db VT_LONG, VT_STR, VT_LONG, VT_LONG, VT_LONG, VT_LONG, VT_VOID ;        DATA XREF: DATA:0048B844.o
+
+DATA:0048BC16 aIdc_arrayS          db '$ idc_array %s',0   ; DATA XREF: sub_7194+D.o
+
+DATA:0048BC25 aSegbyname           db 'SegBy'              ; DATA XREF: DATA:0048AD40.o
+
+.
+
+.
+
+.
+
+
+
+Now still the problem of thoses fixups... How to patch the EXE according thoses modifications?
+
+We known of course the theory about relocation tables on PE image file, but we need 
+
+now to make the step forward in order to fully adapt this table to our needs.
+
+
+
+In order to get a view of this relocation table (aka fixup), we need a powerfull tool.
+
+What's about IDA (again?). Start a new IDA (new work directory), and take IDA.WLL as file to
+
+disassemble, then choose manual loading for segment on the first screen.
+
+Answer yes to all the questions. Now stop auto-analisys (Alt-o, O, A) when IDA start thinking!
+
+Jump to segment '.reloc'. Now with our knowledge on PE file structure, we known that we find 
+
+on that segment list of fixup table organized as follow (for 32bit image file):
+
+   a DWORD that represent the preferred base address
+
+   a DWORD that represent the size of the table
+
+   a list of WORD organized as follow:
+
+             F E D C B A 9 8 7 6 5 4 3 2 1 0
+
+            | flag  |         offset        |
+
+            the flag can take value from 1 to 5 (actually 3)
+
+            the offset is the offset in the current 4K page
+
+
+
+   ************************************************
+
+    More informations on PE file structure at
+
+    <a href="javascript:if(confirm('http://www.wotsit.org/  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.wotsit.org/'" tppabs="http://www.wotsit.org/">http://www.wotsit.org</A>
+
+   ************************************************
+
+
+
+Just use our knowledge to organise data representation:
+
+.
+
+.
+
+.
+
+004AC000 ; Segment type: Pure data
+
+004AC000 _reloc                 segment para public 'DATA' use32
+
+004AC000                 assume        cs:_reloc
+
+004AC000                 ;org 4AC000h
+
+004AC000 org_01000 dd 1000h
+
+004AC004           dd 1A0h
+
+004AC008           dw 3001h, 3009h, 301Ah, 3027h,        3033h, 3047h, 3057h, 305Ch, 3073h
+
+004AC008           dw 307Bh, 3083h, 308Ch, 3099h,        30C2h, 30D2h, 30DAh, 30E3h, 30F0h
+
+004AC008           dw 30F9h, 310Dh, 3135h, 313Eh,        3167h, 317Eh, 318Dh, 3192h, 31A7h
+
+.
+
+.
+
+.
+
+You can easily make an IDC script that do the job for you (number of element into
+
+the array is size of the section / 2 minus 4.
+
+
+
+Now jump into the page org_8B000. Remember the first page refer to offset on first page
+
+of the first segment (.text) and IDA have implement this segment at 00401000h in it's
+
+own address space. On each offset we have the flag positioned to 3 specifying that
+
+this is a HILOW 32bits offset. Reloc data in page org_8B000 represent fixup in the
+
+range 0048B000h - 0048BFFFh in IDA address space. In order to got better representation
+
+just request IDA to present those WORD data as user defined offset...
+
+Press Ctrl-R, then enter the beginning IDA page address minus 3000h (because of the flag).
+
+Now if you apply name and structure definition into the area as we have applyed the 
+
+previous patch, you will certainly got something like this:
+
+.
+
+.
+
+.
+
+0048AD40                 dd offset aGetidadirector, offset sub_409C64, offset vtypArgTable+1 ; lp[3]
+
+0048BBA4                 dd offset aOphigh, offset loc_409AF8, offset vtypArgTable+0Ch       ; lp[3] ; DATA XREF: .reloc:004B25E0.o
+
+0048BBA4                                                                                             ; .reloc:004B25E0.o ...
+
+0048BBB0 arraysize(arr)         dd 308                       ; DATA XREF: CODE:00447704o CODE:0046046B.o ...
+
+0048BBB4 lp_arrIDCtokens dd offset arrIDCtokens.lp[3] ; DATA XREF: CODE:004476D8o CODE:00460474.o ...
+
+0048BBB8 lpfn_sub_409664 dd offset sub_409664              ; DATA XREF: CODE:00463025r CODE:0046302E.r ...
+
+0048BBBC lpfn_sub_409678 dd offset sub_409678              ; DATA XREF: CODE:004649E1r CODE:004649EA.r ...
+
+0048BBC0 vtypArgTable         db VT_STR, VT_VOID, 2 dup(VT_LONG), VT_VOID, VT_LONG, VT_STR, VT_VOID ; DATA XREF: DATA:arrIDCtokens.o
+
+0048BBC0                 db 2 dup(VT_LONG), VT_STR, VT_VOID, 3 dup(VT_LONG), VT_VOID, VT_STR   ; DATA:arrIDCtokens.o ...
+
+0048BBC0                 db VT_LONG, VT_VOID, 4        dup(VT_LONG), VT_VOID, VT_STR, 2 dup(VT_LONG)
+
+0048BBC0                 db VT_VOID, VT_LONG, VT_STR, VT_LONG, VT_VOID,        2 dup(VT_STR), VT_VOID
+
+.
+
+.
+
+.
+
+004B25D8 org_8B000         dd 8B000h
+
+004B25DC                 dd 5E8h
+
+004B25E0                 dw (offset arrIDCtokens+2C0h -        offset loc_488000), (offset arrIDCtokens+2C4h -        offset loc_488000)
+
+004B25E0                 dw (offset arrIDCtokens+2C8h -        offset loc_488000), (offset arrIDCtokens+2CCh -        offset loc_488000)
+
+004B25E0                 dw (offset arrIDCtokens+2D0h -        offset loc_488000), (offset arrIDCtokens+2D4h -        offset loc_488000)
+
+.
+
+.
+
+.
+
+004B448C org_99000       dd 99000h         ; file offset 0A2E8Ch (delta 00411600h ) ?? 10600h ??
+
+004B4490                 dd 90h
+
+004B4494                 dw (offset off_499004 - (offset aVDM+0Bh)), (offset off_49900A        - (offset aVDM+0Bh))
+
+.
+
+.
+
+.
+
+004B4494                 dw (offset off_499190 - (offset aVDM+0Bh)), (offset aVDM+0Bh -        (offset        aVDM+0Bh))
+
+004B451C                 db 0E4h dup(0) ; => 6Eh fixup free in 1 page
+
+004B4600 algn_4B4600:
+
+004B4600                 align 1000h    ; Unexplored
+
+004B4600 _reloc                 ends
+
+004B4600 
+
+004B4600 
+
+004B4600                 end start
+
+
+
+As you see, to calculate data offset into the raw file we need to do some calculations... Why?
+
+Let's figure out how image file is organized on disk:
+
+
+
+   +-------------------+
+
+   |       MS-DOS      | &lt;--^
+
+   |     MZ Header     |    |
+
+   +-------------------+    |
+
+   | MS-DOS Real mode  |    |
+
+   |    Stub program   |    |
+
+   +-------------------+    |
+
+   | PE File Signature |    |
+
+   +-------------------+    |
+
+   |   PE File Header  |    |
+
+   +-------------------+    |
+
+   |       PE File     |    |
+
+   |  Optional Header  |   600h
+
+   +-------------------+    |
+
+   | .text Section hdr |    |
+
+   +-------------------+    |
+
+   | .bss Section hdr  |    |
+
+   +-------------------+    |
+
+   | .rdata Section hdr|    |
+
+   +-------------------+    |
+
+   | .edata Section hdr|    |
+
+   +-------------------+    |
+
+   | .idata Section hdr|    |
+
+   +-------------------+    |
+
+   | .reloc Section hdr| &lt;--v
+
+   +===================+
+
+   | .text Section     |    ------> moved at loader CODE selected base address
+
+   +-------------------+
+
+   | .bss Section      |    ------> moved at loader DATA selected base address
+
+   +-------------------+
+
+   | .rdata Section    |
+
+   +-------------------+
+
+   | .edata Section    |
+
+   +-------------------+
+
+   | .idata Section    |
+
+   +-------------------+
+
+   | .reloc Section    |
+
+   +-------------------+
+
+
+
+Ok ok, for guys like you it's not a surprise, and then you all knew about that.
+
+So why have we create a new database just for viewing that?
+
+
+
+PAY ANY ATTENTION NOW:
+
+  Jump to ea 48BBB8, then request to patch word... at the popup enter 0000 ?!? (trust me).
+
+  Request now IDA to produce a DIF file...
+
+  Open this DIF file ... What are you thinking about that?
+
+  
+
+  Stop don't hurry answering previous question....
+
+
+
+  Go to your Window$ directory...
+
+  Copy file CALC.EXE to ZEN.EXE...
+
+  Start IDA and choose ZEN.EXE to disassemble...
+
+  When IDA start thinking, stop auto-analisys...
+
+  Mark current position to unknown, patch word (whatever you want..)
+
+  Back to you Window$ directory, and erase this cool ZEN.EXE
+
+  Back to the IDA, produce DIF file...
+
+
+
+  And now, what is the answer?
+
+
+
+
+
+Yeah, we (I) have just (re)discover that IDA cache the original segment data.
+
+
+
+The question is now, can we force IDA to make the ".reloc" segment, then
+
+path this segment on the fly when process memory move, then .... ZEN PATCH.
+
+
+
+Let's try Load Binary File, select the same file on whatever base you want, patch, then 
+
+request the DIF file... IDA warn about skipped data... blah blah...
+
+
+
+As far, it don't seems feasible to make and populate a IDA segment (using IDC), in order
+
+that IDA will use it for binary comparaison...
+
+
+
+BUT if we have load any segment when we have start disassemble this file, (which is 
+
+allways a good idea IMHO :), we can easilly create Zen tools, for Zen optimisations...
+
+
+
+   *********************************************************************
+
+     I tell you that it is a good idea to load all segment, BUT for
+
+     this IDA.WLL I HAVEN'T... :-((( Why? Because it's allways the same,
+
+     Do what I say, not what I do! (No truly it was because of disk space ;).
+
+     My problem is now, a huge*huge commented database that I can't save with 
+
+     such lame database dump as IDC. Oh yes I can dump, then awk this, that, ...
+
+     and then re-apply this schema to my database..., but if, you will never 
+
+     see the end of this essay....
+
+     BTW I use one of the most powerfull tools for reverse-engeneering (IDA), so
+
+     I just have to start a new disassembling process, and apply by hand 2/3
+
+     names... and then apply just the change into the ".reloc" segment, then 
+
+     make the DIF with the same name as previous IDA instance, and... IDA ask me
+
+     if I prefer to overwrite or append?...good boy
+
+                                    ^----- :-))
+
+   *********************************************************************
+
+
+
+Ok you got your file loaded with your ".reloc" segment appearing raw...
+
+We need to be able to patch it according to the modifications applied on fixups informations,
+
+thru DelFixup/SetFixup.
+
+
+
+Let's try first to put some organisation into this ".reloc" segment, using a IDC
+
+script...
+
+    static Unknown( ea, length )
+
+    {
+
+      auto i;
+
+
+
+      for(i=0; i <LENGTH; i++)
+
+         {
+
+           MakeUnkn(ea+i,0);
+
+         }
+
+    }
+
+
+
+    static cookSegReloc()
+
+    {
+
+      auto ea, i, siz;
+
+
+
+      ea = BADADDR;
+
+      for(i = FirstSeg(); i != BADADDR; i = NextSeg(i))
+
+         {
+
+           if (SegName(i) == ".reloc")
+
+              {
+
+                ea = i;
+
+                break;
+
+              }
+
+         }
+
+
+
+      for(; ea != BADADDR; )
+
+         {
+
+            Unknown(ea,4*2);
+
+            MakeDword(ea+4);
+
+            siz = Dword(ea+4);
+
+            if (siz == 0)
+
+               {
+
+                 ea = BADADDR;
+
+                 continue;
+
+               }
+
+            MakeDword(ea);
+
+            MakeName(ea,form("FIXUP_%08X",Dword(ea)));
+
+            Unknown(ea+8,siz-8);
+
+            MakeWord(ea+8);
+
+            MakeArray(ea+8,(siz-8)/2);
+
+            ea = ea + siz;
+
+         }
+
+    }
+
+
+
+Which command from those 2 is the entry point?
+
+DON'T be so lazy, read this script, and you'll known which function you need to 
+
+execute... If you don't... (remember you are reading INTERMEDIATE section!!!) => RTFM!
+
+
+
+Ok now we just need to create a clever memory block mover, which is able to patch the
+
+appropriate fixup table every time it encounter a IDA fixup.
+
+
+
+=======================================================================================
+
+WARNING - WARNING - WARNING - WARNING - WARNING - WARNING - WARNING - WARNING - WARNING 
+
+=======================================================================================
+
+In order to have to following function works, you need to take care of page boundary.
+
+This mean that this function is NOT ABLE to fix fixup if you move from one page to
+
+another... In that case human brain is much more clever than any programmatic gas-factory
+
+---------------------------------------------------------------------------------------
+
+
+
+    static MoveMemWithFixup()
+
+    {
+
+      auto begin, end, sense, srcEA, tgtEA;
+
+      auto i, value, fillup, lim;
+
+      auto fxtyp, fxsel, fxoff, fxdispl;
+
+      auto fxtable, fxwas, fxnow, j, sa, ta;
+
+
+
+      begin = SelStart();
+
+      end   = SelEnd() - 1;
+
+      if (begin == BADADDR)
+
+         {
+
+           Warning("No memory range selected!\nAction aborted.");
+
+           return 0;
+
+         }
+
+
+
+      sense = 1;
+
+      srcEA = begin;
+
+      if (ScreenEA() == begin)
+
+         {
+
+           sense = -1;
+
+           srcEA = end;
+
+         }
+
+
+
+      tgtEA = AskAddr(srcEA,form("Enter new block address for %08Xh (%s)",sense==1?"normal":"REVERSE"));
+
+
+
+      if ((tgtEA > begin) && (tgtEA <= end))
+
+         {
+
+           Warning("Memory block overlap...\nTry use %s mode.",sense==1?"reverse":"forward");
+
+           return 0;
+
+         }
+
+
+
+      if (AskYN(0,form(form("%s\n%s\n%s\n \nSure you want to proceed?",
+
+                       "You are about to move memory block:",
+
+                       "   from: %08Xh - %08Xh",
+
+                       "     to: %08Xh - %08Xh (data will be lost)"),
+
+                       srcEA, srcEA + ((end - begin)*sense),
+
+                       tgtEA, tgtEA + ((end - begin)*sense))) != 1) return 0;
+
+
+
+      fillup = 0;
+
+      fillup = AskAddr(fillup,"Enter pattern for quitting region...");
+
+      fillup = fillup & 0x0FF;
+
+
+
+      lim = (end - begin) + 1;
+
+      for(i=0; i < lim; i++)
+
+         {
+
+           value = Byte(srcEA + (i*sense));
+
+           fxtyp   = GetFixupTgtType(srcEA + (i*sense));
+
+           fxsel   = GetFixupTgtSel(srcEA + (i*sense));
+
+           fxoff   = GetFixupTgtOff(srcEA + (i*sense));
+
+           fxdispl = GetFixupTgtDispl(srcEA + (i*sense));
+
+           if (fxsel != BADADDR) DelFixup(srcEA + (i*sense));
+
+           PatchByte(srcEA + (i*sense), fillup);
+
+           PatchByte(tgtEA + (i*sense),value);
+
+           if (fxsel != BADADDR)
+
+              {
+
+                SetFixup(tgtEA + (i*sense),fxtyp, fxsel,fxoff,fxdispl);
+
+                sa = srcEA + (i*sense);
+
+                ta = tgtEA + (i*sense);
+
+                fxtable = LocByName(form("FIXUP_%08X",((sa & 0x00FFF000) - 0x00400000)));
+
+                fxwas = sa & 0x0FFF; fxnow = BADADDR;
+
+                for(j=fxtable+8; j < fxtable+Dword(fxtable+4); j = j+2)
+
+                   {
+
+                     if ( (Word(j) & 0x0FFF) == fxwas )
+
+                        {
+
+                           fxnow = (ta & 0x0FFF) | ( Word(j) & 0x0F000 );
+
+                           Message("fxtable=0x%08lXh, was:0x%04lXh, now:%04lXh\n",fxtable,fxwas,fxnow);
+
+                           PatchWord(j, fxnow );
+
+                           break;
+
+                        }
+
+                   }
+
+                if (fxnow == BADADDR)
+
+                   {
+
+                     Warning("Huh! I can't find fixup information for %08lXh / %08lXh", sa,ta);
+
+                   }
+
+              }
+
+         }
+
+  
+
+    }  
+
+
+
+Ok you now have many tools and knowledge to manipulate, crack, patch an EXE, in order
+
+to make it works as you like... But now it's time to do the real work... Are you ready?
+
+
+
+============================== EXPERT SECTION ========================================
+
+Still there?? Mean that you want to do your own IDC function? Yeah? Go...
+
+
+
+First, which function?? For study purpose, we'll implement the _getenv function.
+
+Second how we implement?? Jump to the beginning of this article, and start reading.
+
+Third  where to implement??         - Into magic holes... :-))
+
+Forth  and last how do we code??    - Be patient...
+
+
+
+The magic holes:
+
+    When the programmer create his own program, he use compiler and/or assembler to
+
+    create the EXE.. The EXE as a specific file format (in our case PE) which implement
+
+    some prerequisits. One is alignment, and some of you have already understand what 
+
+    does it mean. 
+
+    The most important thing to understand is that there are not one, but 2 sort of 
+
+    alignment in the case of PE image. One is the alignment of the segment when this one 
+
+    is in memory, the second (more interresting) is the alignment of sections into the 
+
+    image file it-self.
+
+    To be practicle, on PE file, usualy, alignment is 4K bytes in memory (1000h) when it
+
+    is 1K bytes in image file (400h).
+
+    Thoses 2 values are not constants, and can be changed as programmer request...
+
+    (We all of us expect that not most of them will do that otherwise, bye-bye easy HUGE
+
+    patching...  ;-? Remember, to protect your program against stupid cracker, you must
+
+    understand how they patch your programs... Re-read the full Fravia university NOW :)))
+
+
+
+    MESSAGE TO PROGRAMMERS
+
+    ======================
+
+    IMHO a programmer is not a good one 'til he knows how such wonderfull Xnth generation
+
+    tools make an EXE... Trust me, during porting operations, I discover that some compiler
+
+    generate wrong code "for.class" tppabs="http://fravia.org/for.class" well writed source code... If you have sometimes to do that
+
+    kind of job, you better knows at that moment what assembly language is... And how 
+
+    you would have write this by your own if you have no compiler... I don't claim you
+
+    have to program in assembly language (except for critical purpose (?anti-crack?)), but
+
+    if you don't know what assembly is, I bet you don't have the ability to understand
+
+    what exactly are convention call, memory models, shared-library/DLL...
+
+
+
+    So we got 2 alignment (in fact more). What a great information! What can we do with
+
+    that? Suppose you got an alignment of 8bytes on image file and 16bytes into memory...
+
+    Zoom now on the hexa dump of or code section:
+
+       SOMEWHERE+3F0: 5E 5B C3 90 00 00 00 00 ?? ?? ?? ?? ?? ?? ?? ??
+
+                             ^  ^  ^           ^
+
+                             |  |  |           + At load time, the loader will allocate 
+
+                             |  |  |             this area into memory, but normally 
+
+                             |  |  |             it didn't fill it
+
+                             |  |  |
+
+                             |  |  + Padding bytes to respect image section alignment
+
+                             |  |
+
+                             |  + The end of object block alignment (can be different
+
+                             |    than 90h. Most of the time CCh/00h on M$ compilers.
+
+                             |    Borland make such alignment by generating dummy code
+
+                             "|.class" tppabs="http://www.anticrack.de/fravia/|.class"    such as mov ax,ax,... )
+
+                             |
+
+                             + This is the last function op-code of this segment.
+
+
+
+    In this case there are nearly 5 bytes that can be changed without changing size
+
+    of the image body. This is what I have just called magic holes.
+
+ 
+
+    Of course, it can happens that there is no alignment padding on the image file,
+
+    but usually you would find some (and sometimes a lot).
+
+    
+
+    To terminate about alignment, know that every segments have some, even the ".reloc"
+
+    one....
+
+
+
+
+
+How do we code:
+
+    For many of you this will not represent a big issue, for the other, the most simple
+
+    to do, is to copy interresting part of already coded function from our IDA.WLL image.
+
+
+
+    Take for example the beginning of the idc_strlen function in order to push the first
+
+    argument into the stack ( our function is fastcall convention, and call the runtime
+
+    function _getenv which is cdecl convention ...)
+
+
+
+    Then take the end part of idc_Name in order to return the result in an IDC string.
+
+
+
+    To finish, you need to patch the arrIDCtokens array to add the appropriate entries, 
+
+    increment by one the arraysize, then patch fixup segment (move subsequent table far
+
+    enought (4 bytes aligned) in order to add as many entries (there 3) into the appropriate
+
+    table).
+
+
+
+    Of course, you do that under IDA it-self, then when the result is whatever you want,
+
+    you generate the DIF file, then patch the genuine image file...
+
+
+
+THE RESULT... (no all patched data reproduced)
+
+
+
+  .
+
+  .
+
+  .
+
+CODE:004892F5 90 90 90                       align 4                                                  ; We must think about alignment ( filled with NOP )
+
+CODE:004892F8             
+
+CODE:004892F8 ; --------------------------------------------------------------------------------------
+
+CODE:004892F8 ;            S u b r o u t i n e
+
+CODE:004892F8             
+
+CODE:004892F8                   idc__getenv  proc near
+
+CODE:004892F8 53                             push    ebx
+
+CODE:004892F9 8B D8                          mov     ebx, eax
+
+CODE:004892FB 56                             push    esi
+
+CODE:004892FC 8B F2                          mov     esi, edx
+
+CODE:004892FE 8B 43 01                       mov     eax, [ebx+1]
+
+CODE:00489301 50                             push    eax
+
+CODE:00489302 E8 D9 CB FA FF                 call    _getenv
+
+CODE:00489307 59                             pop     ecx
+
+CODE:00489308 8B D6                          mov     edx, esi
+
+CODE:0048930A E8 91 03 F8 FF                 call    make_an_idc_string(char *)
+
+CODE:0048930F 5E                             pop     esi
+
+CODE:00489310 5B                             pop     ebx
+
+CODE:00489311 C3                             retn    
+
+CODE:00489311                   idc__getenv  endp
+
+CODE:00489311
+
+CODE:00489311 ; -------------------------------------------------------------------------------------
+
+CODE:00489312 00 00 00 00 ...                db 0EEh dup(0)                                          ; TODO: Add your specialized functions there  :-))
+
+CODE:00489312 ; -------------------------------------------------------------------------------------
+
+CODE:00489311                                align 1000h 
+
+  .
+
+  .
+
+  .
+
+DATA:0048BBB0 D0 BB 48 00+                   dd offset a_getenv, offset idc__getenv, offset vtyp_s   ; <== This line added
+
+DATA:0048BBB0 F8 92 48 00+
+
+DATA:0048BBB0 F2 BB 48 00
+
+DATA:0048BBBC 00 00 00 00 ...                db 14h dup(0)                                           ; this is the remainder of space we have generated
+
+DATA:0048BBD0 5F 67 65 74 65+   a_getenv     db '_getenv',0                                          ; the IDC function name
+
+DATA:0048BBD0 76 00
+
+DATA:0048BBD8 34 01 00 00+      _Funcs       dd 135h                                                 ; Incremented by 1
+
+DATA:0048BBD8 40 AD 48 00+                   dd offset arrIDCtokens.lp[3]
+
+DATA:0048BBD8 64 96 40 00+                   dd offset startup_409664(void)
+
+DATA:0048BBD8 78 96 40 00                    dd offset shutdown_409678(void)
+
+DATA:0048BBE8 25 6C 69 00       aLi          db '%li',0
+
+DATA:0048BBEC 25 73 00          aS_14        db '%s',0
+
+DATA:0048BBEF 02                vtyp_llss    db VT_LONG
+
+DATA:0048BBF0 02                vtyp_lss     db VT_LONG
+
+DATA:0048BBF1 01                vtyp_ss      db VT_STR
+
+DATA:0048BBF2 01                vtyp_s       db VT_STR
+
+DATA:0048BBF3 00                vtyp_0       db VT_VOID
+
+DATA:0048BBF4 02                vtyp_llllll  db VT_LONG
+
+DATA:0048BBF5 02                vtyp_lllll   db VT_LONG
+
+DATA:0048BBF6 02                vtyp_llll    db VT_LONG
+
+DATA:0048BBF7 02                vtyp_lll     db VT_LONG
+
+DATA:0048BBF8 02                vtyp_ll      db VT_LONG
+
+DATA:0048BBF9 02 00             vtyp_l       db VT_LONG, VT_VOID
+
+DATA:0048BBFB 02                vtyp_lsw     db VT_LONG
+
+DATA:0048BBFC 01 04 00          vtyp_sw      db VT_STR,  VT_WILD, VT_VOID
+
+DATA:0048BBFF 02                vtyp_llsl    db VT_LONG
+
+DATA:0048BC00 02                vtyp_lsl     db VT_LONG
+
+DATA:0048BC01 01 02 00          vtyp_sl      db VT_STR,  VT_LONG, VT_VOID
+
+DATA:0048BC04 02                vtyp_llllls  db VT_LONG
+
+DATA:0048BC05 02                vtyp_lllls   db VT_LONG
+
+DATA:0048BC06 02                vtyp_llls    db VT_LONG
+
+DATA:0048BC07 02                vtyp_lls     db VT_LONG
+
+DATA:0048BC08 02 01 00          vtyp_ls      db VT_LONG, VT_STR, VT_VOID
+
+DATA:0048BC0B 01 02 02 00       vtyp_sll     db VT_STR,  VT_LONG, VT_LONG, VT_VOID
+
+DATA:0048BC0F 02 01 02 02 02+   vtyp_lsllll  db VT_LONG, VT_STR, VT_LONG, VT_LONG, VT_LONG, VT_LONG, VT_VOID
+
+DATA:0048BC0F 02 00
+
+  .
+
+  .
+
+  .
+
+RELO:004B25D8 00 B0 08 00 FIXUP_0008B000     dd 8B000h
+
+RELO:004B25DC F0 05 00 00                    dd 5F0h                                                         ; <== Incremented by  ...@+!#@ ...        8 (alignment is        4bytes for entry list)
+
+RELO:004B25E0 00 30 04 30 ...                dw (offset arrIDCtokens+2C0h - offset $org_00488000h), (offset arrIDCtokens+2C4h - offset $org_00488000h)
+
+  .
+
+  .
+
+  .
+
+RELO:004B25E0 B0 3B B4 3B+	               dw (offset addedToken - offset $org_00488000h), (offset addedToken+4 - offset $org_00488000h)       ; Thoses 3 entries added
+
+RELO:004B25E0 B8 3B DC 3B+                   dw (offset addedToken+8 - offset $org_00488000h), (offset lp_arrIDCtokens - offset $org_00488000h)  ; this come from move a previous EA+8 (reverse mode)
+
+RELO:004B25E0 E0 3B E4 3B+                   dw (offset lpfn_Shutdown_48BBE0 - offset $org_00488000h), (offset lpfn_Startup_48BBE4 - offset $org_00488000h)
+
+RELO:004B25E0 00 00 00 00                    dw 2 dup((offset $org_00488000h - offset $org_00488000h))
+
+RELO:004B2BC8 00 C0 08 00 FIXUP_0008C000     dd 8C000h
+
+RELO:004B2BCC 08 01 00 00                    dd 108h
+
+  .
+
+  .
+
+  .
+
+RELO:004B4524 00 00 00 00 ...                db 0DCh dup(0)
+
+RELO:004B4600 ?? ?? ?? ?? ...                align 1000h
+
+
+
+================================ END OF SECTIONS ===========================================================
+
+
+
+And you may want to have a look at these <a href="idawll.dif">idawll.dif</A> differencies...
+
+
+
+Before to let you play with this, I must apologize for my poor English...
+
+I hope that this have disturb you too much because of laugh  :-))
+
+
+
+           _      _
+
+           / mjm /
+
+</PRE>
+
+
+
+<HR ALIGN=CENTER WIDTH=100% SIZE=3>
+
+
+
+<CENTER><I>You are deep inside fravia's pages of reverse engineering,  
+
+choose your way out:</I><BR>
+
+<TABLE>
+
+<TR>
+
+<TD><CENTER>
+
+<A href="howtouse.htm" tppabs="http://www.anticrack.de/fravia/howtouse.htm"><IMG SRC="ourtools.gif" tppabs="http://www.anticrack.de/fravia/ourtools.gif" ALT="ourtools" ALIGN=BOTTOM 
+
+WIDTH=114 HEIGHT=43 BORDER=0 VSPACE=0 HSPACE=0></A><BR>
+
+<FONT color=gray>How to use our tools</FONT>
+
+</CENTER></TD>
+
+<TD><CENTER>
+
+<A href="ourtools.htm" tppabs="http://www.anticrack.de/fravia/ourtools.htm"><IMG SRC="ourtools.gif" tppabs="http://www.anticrack.de/fravia/ourtools.gif" ALT="ourtools" ALIGN=BOTTOM 
+
+WIDTH=114 HEIGHT=43 BORDER=0 VSPACE=0 HSPACE=0></A><BR>
+
+<FONT color=gray>Our tools</FONT>
+
+</CENTER></TD>
+
+
+
+</TR>
+
+</TABLE>
+
+<HR width=33%>
+
+
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0> 
+
+<A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links </A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0>
+
+<A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity </A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN=BOTTOM
+
+BORDER=0 VSPACE=0 HSPACE=0 width="13" height="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC </A>
+
+
+
+<IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays </A>
+
+
+
+<IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database </A><BR>
+
+<IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut </A>
+
+
+
+<IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 
+
+VSPACE=0 HSPACE=0><A
+
+HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13
+
+BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia </A><BR>
+
+
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering illegal? </A></CENTER>
+
+<HR size=4></FONT>
+
+<!-- Begin signet -->
+
+ <A href="awards.htm" tppabs="http://www.anticrack.de/fravia/awards.htm"><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN=CENTER 
+
+BORDER=0 HEIGHT=13 WIDTH=13 ALT= "red"></A><FONT color=green>(c) 
+
+Jean-Marc 1998. All rights reserved
+
+<!-- End signet -->
+
+</BODY>
+
+</HTML>

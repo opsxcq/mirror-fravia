@@ -1,0 +1,1060 @@
+<HTML>
+<HEAD>
+<TITLE>Solution for the 1999 +HCU strainer - written by Cruehead</TITLE>
+<BODY BGCOLOR=#C0C0C0 TEXT=#001010 VLINK=#405040>
+</HEAD>
+<BODY>
+<CENTER><BR><H2>Solution for the 1999 +HCU strainer<BR></H2>
+<H4>Written by Cruehead<P></H4>
+
+After having read +Aesculapius great challenge, I decided to give it a try because it's always fun 
+to sink your teeth into a new challenge. Most of the time you'll also end up having learned
+something new on the way, and this was defintly no exception!<BR>
+A good choice is problaby NOT to read it all at one time, instead read one part at a time. That way hopefully it wont be that confusing (trust me - it's confusing enough already :))<BR>
+So, enjoy (or dont) my answer to the 1999 HCU strainer!<P>
+(oh, and please excuse me for all spelling mistakes)</CENTER>
+<P><HR>
+<P><H3>* Chapter 1 : Terminate v5.0</H3>
+<B>Tools used: </B><FONT COLOR=#003FBF>Softice, HelpPC</FONT><P>
+<B>Output: </B><A HREF="javascript:if(confirm('http://fravia.org/99solu/t5keygen.zip  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/99solu/t5keygen.zip'" tppabs="http://fravia.org/99solu/t5keygen.zip">Terminate v5.0 keygen source and executable</A><P>
+Ah, this program sure brings back some memories! I myself used it quite alot in the good old days when calling BBS's. As I knew nothing about cracking at that time
+I used the shareware version, but now with my newly gained cracking skills I thought it was time for revenge! Look out Mr. Bo Bendtsen, I'm out to get you! Well, at second thought I think I'll just
+settle with cracking his program. :)<BR>
+Did +Aesculapius leave any hints when introducing the program in the strainer perhaps? Yes he did, he told us that Terminate uses a "missing key file" protection. Ouch, these are often
+pretty tough to crack (and this is no exception), but as long as you have patience, you'll do fine. So, let's start out by creating a bougs file called "TERMINAT.KEY". Fill it with some bogus
+text and we're off to cracking land! My fake file was around 5 kb.<BR>
+As we're dealing with a DOS program we'll have to put breakpoints on an interrupts and not API functions. Int 21, Function 3Dh is <I>"open file using handle"</I> and is used alot
+when opening files in DOS, so lets put a breakpoint on that one. "<FONT COLOR=#0000FF>bpint 21 if ah==3d</FONT>". There, now run the program and you'll find that softice pops up pretty soon.
+As you should know (otherwise you can look it up) dx holds the offset to the filename, so "<FONT COLOR=#0000FF>d dx</FONT>" and we'll see the name of the file beeing opened. Bah, no luck this time
+because as you see the name of the file beeing opened is called TERMINAT.EXE, and this is not the file we're interested in. Keep the breakpoint, and leave softice. Back again in softice,
+so type "d dx" again and look at the data window. Yeah! The name of the file that the program tries to open this time
+is called "TERMINAT.KEY" and this is the keyfile we're trying to reproduce. If this was a windows program we would have put a breakpoint on the "readfile" function by now, but as this is dos
+we'll have to use the interrupts once again. This time we'll be using Int 21, Function 3Fh which is <I>"read from file or device using handle"</I>.
+If you dont know these things, I recomend <I><B>HelpPC</B></I> - a great program where you can look up most of the interrupts.<BR>
+Ok, remove the old breakpoint and instead use "<FONT COLOR=#0000FF>bpint 21 if ah==3f</FONT>" this time. As this function will read data from file to ds:dx, type <FONT COLOR=#0000FF>d dx</FONT> again when sice breaks in.
+That way you'll see the data beeing read in the data window. Number of bytes beeing read is held in ax once the interupt has been called, so you can see that 162h (=354 dec) bytes has been read (that is if your file was big enough. Otherwise
+create a bigger one, around 4-5 kb's or so). Now these newly read bytes must be checked somehow, so let's place a BPR on them, and let the program run again.
+<P>
+<B>Step 1 - The first checksum check</B><BR>
+If everything went ok, you should now land in a code that looks like this:
+<PRE>
+; --- CHECKSUM function ---
+
+Checksum:
+inc	word ptr [17D2]		;Increase the counter
+mov	di,[bp+6]		;These couple of lines just increases di with one.
+les	di,ss:[di+FEFA]
+mov	ax,es
+push	ax
+mov	di,[17D2]
+pop	es
+*mov	al,es:[di]		;Get one byte from the read-buffer in al
+push	ax
+mov	di,[bp+6]
+push	word ptr ss:[di+fef8]	;Storage value 2 (first time this value will be FFFFh)
+push	word ptr ss:[di+fef6]	;Storage value 1 (same here, preset to FFFFh)
+
+pop	bx			;bx = Storage value 1
+pop	dx			;dx = Storage value 2
+pop	cx			;cl = the byte we got from the read buffer
+				and ch will be a bogus value (first part of ES actually)
+
+push	dx			;Save storage value 2
+push	bx			:Save storage value 1
+
+xor	bx,cx			;XOR storage value 1, with cx.
+xor	bh,bh			;Set bh to zero, that way we just keep the result 
+				from "xor bl,cl" which is : XOR the lower part of 
+				"storage value 1" with the byte we got from the
+				read-buffer. Result saved in BL, and BH will be 0.
+				So, BX will hold the result.				
+
+shl	bx,1			;Shift left one time, thus multiplying bx with 2
+shl	bx,1			;Shift left once again, multiplying bx with 2 again
+
+add	bx,[E320]		;The value at offset E320 is 2014h (atleast for me - 
+				most likely the same for you). Add that to BX
+
+mov	ax,[bx]			;Mov the word that BX points to to ax.
+mov	cx,[bx+2]		;Mov the word that BX+2 points to to cx
+				As you problaby understand, BX works as an offset
+				into a lookuptable. We have to include this lookuptable
+				in our keygen later on. We'll can call ax for
+				lookup value 1 and cx for lookup value 2.
+
+pop	bx			;bx = storage value 1
+pop	dx			;dx = storage value 2
+push	cx			;save cx so we dont destroy it.
+mov	cx,0008			
+*1:				;Here starts a small inner loop
+shr	dx,1			;shift right one time (divide dx with 2)
+rcr	bx,1			;rotate with carry bx one step
+loop	*1			;jump back to *1, decreaing cx. When cx=0 the loop is done 
+
+and	dx,00FF
+pop	cx			;Restore cx
+
+xor	ax,bx			;Xor ax (=lookup value 1) with bx
+				(this value comes originally from Storage value 1
+				The result is the new Storage value 1				
+
+mov	bx,cx			;move cx, which is lookup value 2, to bx
+
+xor	dx,bx			;xor dx (originally came from Storage value 2) with
+				bx which is lookup value 2.
+				The result is the new Storage value 2.
+mov	di,[bp+6]
+mov	ss:[di+FEF6],ax		;Save new storage value 1
+mov	ss:[di+FEF8],dx		;Save new storage value 2
+mov	ax,[17D2]		;The value at 17D2 works as a counter
+cmp	ax,[bp-4]		;bp-4 will point to the value 15D.
+jnz	checksum
+cmp	word ptr [17D4],01	;Another counter, we call it counter2
+jnz	...
+
+(* = You'll land here the first time)
+</PRE>
+Ok, hopefully you understand what this code does by looking at my comments. If not, dont worry to much about it and read on instead. Conclusion so far: <I>162h bytes is read, but only 15E bytes are beeing processed
+in this loop </I>(You must remember that the first value is zero, but that also counts, so 15D+1=15E), <I>thus leaving 4 bytes. The only output we got is two words, which
+I called "Storage value 1" and "Storage value 2". We also know that we have to include a lookuptable in our keygen!</I><P>
+
+Ok, so far so good. If you continue tracing through the code you'll see that counter2 is beeing compared with 1. Counter2 does equal 1 (because this is the first
+time we execute this checksum function), and so we're doing some more checks. You'll see that the B'th value in our read-buffer is compared to "46h". If it equals, you'll find that the
+1B'th byte is compared to 2F, and so on for a couple of bytes. You dont have to worry about this, as our bytes WONT be equal (that is if you havnt had an extreme bad luck when filling your keyfile), but
+please try changing these bytes so they do match and you'll see what happends.<P>
+
+Anyway, Let's continue. You'll see that counter2 is beeing increased by one, another 162 bytes is beeing read to our read-buffer (the old info in the read-buffer will thus be deleted), and that the checksum function above is beeing executed again.
+Trace through the code (I recomend a bpx on the "cmp word ptr [17D4]" line. What happends now is that the first byte in our read-buffer is compared to the second. It they matches, the third
+is also checked, and so on to the fifth byte. If the all matches we'll add 329h to the "Storage Value 1". This will be true if you for example just filled the whole keyfile with zero bytes.<P>
+
+After this the story repeats itself again - counter2 is beeing increased, 162h new bytes are beeing read and the checksum function is beeing executed again. Counter2 is compared to 5 this time, but counter2 is only
+equal to 3, so nothing strange happends. The same happends as before, until counter2 is equal to 5. Now something REALLY important happends, but we dont understand much of it yet. But trust me - 
+it will be very important later on. The two last words from the read-buffer is beeing moved into ax and dx (note as these are the two last bytes in the read-buffer, they havnt been processed in the function above).
+Then some calls are made, and depending on the values we had in ax and dx before the calls, three new bytes has been generated and saved. You dont really have to care about how they got generated, the important thing
+to remember is where they got saved, and that they got generated from these two values. But anyway, this doesnt concern us yet, so happily we continue!<P>
+Nothing strange will happend now for a while, the procedure goes on as usual until counter2 is equal to Bh. Now the 12C'd value in the read-buffer is compared to the 12D'th. If they matches, the 12E'th value are also compared
+and so on to the 130'th value. If they all match counter2 is beeing increased with 192h. After this a small check simular to the check that was made when counter2 was equal to 1 is executed. Same thing here - dont care about it
+as they WONT match unless you have one big bad unlucky day!<P>
+After this we have finally reached the first real check! Look at this:
+<PRE>
+mov	ax,ss:[di+FEF6]		;This is storage value 1
+mov	dx,ss:[di+FEF8]		;And this is storage value 2
+les	di,ss:[di+FEFA]		;This sets di to zero
+cmp	dx,es:[di+160]		;Yeah! the first check! Compares storage value 2 with
+				the last word in the read-buffer. They must match!
+jnz	nogood
+cmp	ax,es:[di+15E]		;Second check! Compares storage value 1 with
+				the 2'nd last word in the read-buffer. These must also match!
+jnz	nogood
+</PRE>
+Ok, now we can make some things a bit clearer. For starters we can figure out the filesize (well, not really, but we can make a very good
+guess). We know that 162 bytes are beeing read each time the "Checksum function" is beeing executed. We also know that this function will be executed B (=11 dec) times.
+So, a good guess of the filesize is 162*B=F36h = 3894 dec. Now, how to crack this first check? It's fairly easy actually. The last two words of the file must match
+these "storage values"! Because if we have a filesize of 3894 bytes, the last two words of the last read-buffer will be the last two words of the keyfile!<P>
+<B>Step 2 - The second checksum check</B><BR>
+Ok, now that you got the hang of it, I wont desribe HOW to get to the interesting places (it's a couple of BPINT's and some BPR's) as it's pretty easy. Instead I'll try to explain the different protections.<P>
+The next thing that happends (if you succesfully managed to get through the last check) is that the decryption algorithm starts. It starts by reading 162h bytes from the begining of our file into a read-buffer. You might think that
+these bytes are somehow processed later, but this is not the case! These bytes are overwritten with the next 162h bytes, and even they are untouched. So, also these
+values are overwritten with the next 162h bytes. Finally something happends. A byte from location 5Bh in the read-buffer is moved into al.
+By now you should be able to figure out what location this byte has in the real keyfile. 162h*3h+5bh=481h. So, 481h is the location in the keyfile of this byte.
+Anyway, this byte is XOR'ed with FFh, and moved back to the read-buffer again. The next byte is processed the same way, and so it all goes on like this until it has processed the 161'th byte in the read-buffer.
+A total of 106h bytes has then been processed.
+Then the next decrytion part begins. I'll describe that one as well, but I'll start by describing another
+function which I call the "getvalue" function. You might wonder why, but that's because the next decryption algorithm is using it.
+
+<PRE>
+; --- GETVALUE function ---
+
+push	bp
+mov	bp,sp
+mov	ax,[24E6]	;Seed value 1 (preset to 7)
+mov	bx,[24E8]	;Seed value 2 (preset to 0)
+mov	cx,ax		;Move Seed value 1 to cx
+mul	word ptr [12BC]	;The value at offset 12BC is always equal to 8405h
+			;Output will be in both ax and dx
+shl	cx,1		;shift left one time
+shl	cx,1		;same as above
+shl	cx,1		;same as above
+add	ch,cl		;ch+cl
+add	dx,cx
+add	dx,bx		;bx is seedvalue2
+shl	bx,1
+shl	bx,1
+add	dx,bx
+add	dh,bl
+mov	cl,05
+shl	bx,cl
+add	dh,bl
+add	ax,0001
+adx	dx,00
+mov	[24E6],ax	;the new seed value 1
+mov	[24E8],dx	;the new seed value 2
+xor	ax,ax
+mov	bx,[bp+6]	;[bp+6] will always be 100
+or	bx,bx
+jz	*1
+xchg	ax,dx
+div	bx
+xchg	ax,dx
+*1:
+pop	bp
+retf	0002	;End of the function
+</PRE>
+Alright! Now, it isnt very important to understand exactly what every little instruction does in this function. The
+important thing is that the output value is saved in ax, and that it's generated from two word variables which I called "seed value 1" and "seed value 2".
+<BR>
+Ok, now to the real decryption function. It looks like this:
+<PRE>
+; --- DECRYTION function ---
+
+inc	word ptr [17D2]	;Increase the counter
+mov	ax,0100
+push	ax
+call	getvalue	;The getvalue function. Output is in ax.
+mov	dx,ax		;Move output value from the function above to dx
+mov	di,[bp+6]
+mov	di,ss:[di+FEFA]
+mov	ax,es
+push	ax
+mov	di,[17D2]	;Works like a counter
+pop	es
+mov	al,es:[di]	;Get a byte from the read-buffer
+xor	ah,ah		;Set ah to zero so AX holds the byte
+xor	ax,dx		;Xor ax = the byte from the read-buffer
+			with dx = output from the "getvalue" function
+mov	dl,al		;al is the only interesting part, this is moved into dl
+mov	di,[bp+6]
+les	di,ss:[di+FEFA]
+mov	ax,es
+push	ax
+mov	di,[17D2]	;mov the counter to di
+pop	es
+mov	es:[di],dl	;Move new, decrypted value into the read-buffer again
+mov	ax,[17D2]	;17D2 is the counter, remember?
+cmp	ax,[bp-4]	;bp-4 = 161h
+jne...
+</PRE>
+There you have it! The output from the "getvalue" function is xor'ed with
+one byte from the read-buffer and saved again in the read-buffer. Then the counter is increased by one and the next byte is xor'ed with 
+the next output from the getvalue function and so on...<P>
+
+After this algorithm, there are two more that looks exactly the same. The only difference is that the "seed variables" that the getvalue function uses are preset to other values
+at each start of a new algorithm. At the start of the next algorithm they are preset like this:
+<BR>Seed value 1 = 325Ch<BR>
+Seed value 2 = 0<P>
+and at the start of the second algorithm that follows, they are set like this:
+<BR>Seed value 1 = 904h<BR>
+Seed value 2 = 33EEh<P>
+
+Apart from that, the functions are identical.<P>
+Ok, now we get yet another function that you might recognize. It's the old checksum function
+that was used for the first check. Both of the "storage values" are first of all preset to FFFFh
+(just like they were the first time). It works exactly the same way as before, but this time
+only the bytes from 5Bh to 15Dh in the readbuffer is processed.
+Just as before, the output will be the two word variables which I called "storage value 1 and 2".
+After all 15D-5B=102h bytes has been processed another check is done, you problaby recognize it:
+
+<PRE>
+mov	ax,es:[di+15E]		;Move the second last word of the read-buffer into ax
+mov	dx,es:[di+160]		;Move the last word of the read-buffer into dx
+mov	di,[bp+6]		;Sets di to zero
+cmp	dx,ss:[di+FEF8]		;Compare dx with Storage value 2
+jnz	nogood			;It they dont match, we take the jump
+cmp	ax,ss:[di+FEF6]		;Compare ax with Storage value 1
+je	good			;If they match, take the jump
+jmp nogood			;If they dont match, this jump will be taken
+</PRE>
+
+Hmm, this check is somewhat more difficult to crack than the first one, as all bytes from
+5B-161 in the read-buffer is decrypted. That means that the two last words in the read-buffer
+is also decrypted, and so we cant crack it like the first check. But dont worry - if we're making
+a keyfile generator (which we ARE going to do) it's pretty simple. As we're not decrypting anything
+in our keygen, quite the opposite - we're encrypting instead, we already have the decrypted information
+from start (the name, address, city and country in this case). <BR>Before I explain how to crack this check
+lets see what we got now:
+We know that the registration information begins at offset 481h (remeber? the byte at this offset in the keyfile
+was the first one to get decrypted) and ends at offset 481+102+4=587h in the keyfile. This is ofcourse very
+important to know when we're making our keygen. We also know that the registration info are stored on a total of
+102h bytes and there's a checksum of 4 bytes (which is not stored directly in the keyfile but encrypted).<P>
+So, how to crack it? Let's think a for a moment (yeah, sometimes that can be usefull). We want the two last words
+in the read-buffer <B>after</B> they have been decrypted to match the checksum values that are calculated from the decrypted
+bytes. It's really no big deal. In our keygen we'll just execute the checksum function on the registraion information
+(which we already know is 102h bytes, and stored begining at offset 481h in the keyfile) and we'll get as output these
+two words. We'll then save these words after the real registration information in the keyfile! As we in our keygen will later ENcrypt all the registraion
+information AND the four checksum bytes with the same (but in reverse order of course) algorithms that is used by Terminate to DEcrypt 
+the information, the checksums will match!<BR>
+Ok, I know it might sound a bit complicated, but it's really not so hard. Read the above lines a few times and you'll soon
+get it (or else you can email-bomb me or something). Another good thing is to check out my keygen source to see how it works.
+
+<P><B>Step 3 - The complicated final check</B><BR>
+Alright, we have one more check left, and this is the most complicated one. But fear not - As you will soon see it looks a whole lot more complicated than
+it really is.<BR>
+After the above check, we'll see that some other values are created using our two "storage values" as key source. This is done
+through a couple of different function, all of them features quite a lot of XOR's, SHL's and other bit manipulation
+instructions, trace them if you want. As we dont want to make our work any harder than it already is, let's just step over these functions for now as
+we first of all want to find where the check(s) is done. Then we can concentrate on how to crack the checks.
+We'll soon get to this piece of code:
+<PRE>
+push	word ptr ss:[di+FEE2]
+push	word ptr ss:[di+FEE0]
+push	word ptr ss:[di+FEDE]
+push	word ptr ss:[di+FEE8]
+push	word ptr ss:[di+FEE6]
+push	word ptr ss:[di+FEE4]
+push	word ptr ss:[di+FEDC]
+push	word ptr ss:[di+FEDA]
+push	word ptr ss:[di+FED8]
+call	Big_check
+</PRE>
+Hey! This must be interesting, so many push'es before a call. This just HAS to be interesting (can you feel it?).
+For now, lets just step over this call and see what happends.<P>
+<I>Performing integrity check on Terminate, before registering...</I><P>
+Hmm, nice, but one thing that isnt very nice is that we never get the control back. The "Big_check" call never finnishes!
+So, we can now guess that if the keyfile was valid the call would reach an "retf" instruction somewhere and thus letting us have control again.
+"Our mission, if we choose to except it, it to make the "Big_check" call reach the end (an "retf" function). This message will self destruct in 10 seconds..."
+<P>
+So, now it's time to trace the call. Geeez, that's one big happy function! If you step through all the calls you'll find that there are only three ways that we can
+reach the "retf" function...there are three checks:
+<PRE>
+cmp	byte ptr [17DC],0
+jz	perhaps_ready
+mov	ax,[17E4]
+or	ax,[17E6]
+jz	perhaps_ready
+cmp	byte ptr [1802],0
+jnz	perhaps_ready
+...
+
+perhaps_ready:
+mov	ax,[BP-4E]
+mov	bx,[BP-4C]
+mov	dx,[BP-4A]
+mov	cx,DB94
+mov	si,1894
+mov	di,0731
+call	checkit
+jb	alrighty
+jmp	loooser
+alrighty:
+mov	ax,[bp-54]
+mov	bx,[bp-52]
+mov	dx,[bp-50]
+mov	cx,358D
+mov	si,BA5E
+mov	di,747B
+call	checkit
+ja	alrighty2
+jmp	loooser
+alrighty2:
+...
+</PRE>
+You will see at the offset that I call "perhaps_ready" there will be 5 new checks (I only included 2 of them it above code snippet). If everythink went well
+here we would reach the end of this call, and that means that we (hopefully) will be fully registered!<P>
+But first of all lets concentrate on the first three checks. Do we have to care at all? Lets try to put a
+breakpoint on the "perhaps_ready" offset (for me this was cs:1ADC). If we dont break we have to fully investigate
+the whole function and as you know it's HUGE! On the other hand, if we DO break on this breakpoint there is a slim
+chance that we dont have care about the whole function, just the 5 later checks. So, place the bpx and cross your fingers!<P>
+The "bla bla, performing integrity check bla bla" shows up and we'll see the progress-meter doing its work. Hey! After a while
+we DO break on our breakpoint! Great, if we only would get through these last 5 checks we would reach the end of the function!
+Lets see what happends...first check went ok...so does the second and third...but oooh no...we fail at the fourth check
+(this could be a bit different for you depending on what kind of information you filled you keyfile with. I filled it with zero bytes)!
+To bad! Just to see if we are on the correct path, let's change the carry flag so we DO take the jump. WHOA! We get the "thanks for registering" message!<P>
+
+Lets take a moment or two to think about it (a moment of clarity perhaps? :)). As we know <B>9</B> word values are pushed
+right before this call. So - based on these 9 pushed values this routine decides if it's a valid key or not.
+At the "perhaps_ready" offset you'll see that for each check there are three constants (the cx,si and di regiters) and three
+variabels. A good and clever guess is that these varaibles have their origins in the 9 pushed values. 
+We can therefor draw a conclusion (one should'nt really draw conclusions based on guesses, but what the heck :)):
+<BR>
+<I>The nine values pushed right before the call is executed decides if it's a valid key or not.</I>
+<P>
+Of course, our next question will then be <I>How is the 9 word values created?</I>
+We already know that our two checksum values from check #2 is used, but in what way? What happends??? Let's investigate that!
+Here is what happends right after the second check has been made:
+<PRE>
+mov	ax,ss:[di+FEF6]		;Storage value 1
+mov	dx,ss:[di+FEF8]		;Storage value 2
+call	2CAE:170B		;What happends here?
+</PRE>
+If we trace the call we'll see that this is the interesting part:
+<PRE>
+mov	al,A0
+or	dx,dx
+jnz	dxnotzero
+...
+dxnotzero:
+or	dx,dx
+js	blah
+here:
+dec	al
+add	bx,bx		;bx = storage value 1
+adc	dx,dx		;dx = stroage value 2
+jns 	here
+or	ch,ch
+js	end
+and	dh,7F
+end:
+ret
+</PRE>
+Ax will hold a max value of 9Fh (A0-1). You can see for yourself whats happening to the storage values.
+Depending on the sign flag after the "adc dx,dx" instruction the loop may go on. At the end "AND DH,7F" will be executed.
+As you will see soon it's not very important to understand EVERY part of this call but it is important that you remeber the three
+output values and how they got created.<P>
+Let's continue browsing the code. You will see that the output from the previous call (ax,bx,dx) will be
+saved away and used in the next call. Cx, si and di is set to zero. If you trace this call you'll see that
+the output will be the same, no matter what! So, this call is just to confuse a cracker. The next piece of code
+we'll come to doesnt include our values (they are safly saved away) and thus we dont have to care about it (atleast not now).
+What we are doing now is truley zen - feeling what code is interesting for us and what is not.
+Finally we come to an interesting part again:
+<PRE>
+mov	ax,ss:[di+FED8]
+mov	bx,ss:[di+FEDA]
+mov	dx,ss:[di+FEDC]
+mov	cx,0084
+xor	si,si
+mov	di,2000
+call	2CAE:16E5
+...
+</PRE>
+Just as the previous interesting call, we dont really have to understand everything, we just need to know what the output is and how it got created.
+If you step over the call you'll see that the only value (that we're intersted in) that's changing is BX. How you might ask? By tracing the call you'll find that 14h (=20d) is added
+to the original value a number of times. The number of times depends on the value in al:<P>
+al=9F - add bx,014h<BR>
+al=9E - add bx,014h*2<BR>
+al=9D - add bx,014h*4<BR>
+...<P>
+
+Now we'll see this piece of code:
+<PRE>
+mov	di,[bp+6]
+mov	cx,ss:[di+FEDE]		;Where did these value come from??
+mov	si,ss:[di+FEE0]
+mov	di,ss:[di+FEE2]
+call	2CAE:1707		;Lets call this the "master-check"
+je	0D7D			;Hmm...a conditional jump here?
+...
+</PRE>
+If you trace this call you'll see that:<P>
+dx is compared with di<BR>
+al is compared with cl<BR>
+bx is compared with si<P>
+And as we know ax,bx and dx holds the output values from out previous call and cx,si and di hold some other values that we dont know where they came from (atleast not yet).
+It's always easier to relate to values if you give them names, so let's call ax,bx and dx for "final check values".<P>
+
+If all these values matches the jump after the call will be executed. If you arent extremely lucky the values will NOT match, so fake the carry flag and take the jump anyway and let the program run.
+<P>BOOM - The program is registered!<P>
+Great! We dont even have to bother about anything else but making the program take this jump in order to crack it! This jump will produce nine "good" values that are pushed before the "Big_check"
+call and therefor the program will be registered. First of all we have to figure out where
+the three values moved into cx,si and di came from. You can do this in a number of ways, I wont even bother to explain how (hint: a bpr is a good start).
+
+<P>Remember when I described the first checksum protection that terminate used I also said something like "this is very important, but we dont have do care about that right now"? Well, now it's time to care about that :).
+So, go back to where the first checksum function was executed and check out whats happening when "counter2" is equal to 5:
+<PRE>
+mov	di,[bp+6]
+les	di,es:[di+FEFA]
+mov	ax,es:[di+015E]		;Hey! This is interesting!
+mov	dx,es:[di+0160]		;And so is this :)
+call	2CAE:170B
+</PRE>
+As you see a word value from the good old "read-buffer" is moved into ax and another one into dx.
+Lets come up with a name for these two values as well. Lets call them "key values".
+These values has not been processed in any way
+and we can really easy find out what offset in the keyfile these values has.
+<B>4*162+15E=6E6h</B> (4*162 bytes has already been read and this is the 5'th time) is the the offset for the first one and <B>4*162+160=6E8h</B> the offset for the second.
+Then these values are used as input for the call. If you have a good memory (not RAM, we're talking brain here :)) you'll recognize
+the offset of the call. If you dont, trace it and you will problaby recognize it.
+
+It's the same call that is executed right after the second checksum check, but that time the input values was the two storage values.
+Continue stepping through the code and you'll see that nothing else happends: Another call is executed but that wont change
+the values (my guess is that it's only good for confusing crackers). A jump is taken and the three new values are saved away.
+
+<P>In case you havnt already figured it out - these are the three values that are used in the call I called "master check".
+So, we now know the final task - making these three values match the three "final check values". That way we will have a fully functional
+reg-key!<P>
+Ok, it's time to sum up what we already know:<BR>
+1 - The three "final check values" are created from the two storage values we got from the last checksum check.<BR>
+2 - Only two calls are executed on these these two storage values in order to create the three final check values.<BR>
+3 - The first call that is executed on the two storage values is also executed on the two "key values".<P>
+
+Ok, as you see there is not much that differs between how we get "final check values" and the "key values". The only difference
+is a call that is executed when we're dealing with the "final check values" but this call doesnt do that much. As we already know
+all that call does is that it add's 14h to bx a number of times depening on the value in AL. That's the only difference!<P>
+
+If that call wouldnt exist it would have been a VERY easy job for us - we would just have saved the two storage values that we got 
+after the second checksum check and used them as the two "key values". But fear not - the solution is pretty easy anyway.<P>
+We know that both the storage values will be multiplied with atleast 2 (this is the work of the first call).
+We also know that storage value 1*2 will be added with atleast 14h (the second call does this).
+The third thing we know is that also the "key values" is multiplied with atleast 2 (the first and only call for them).<BR>
+Our common sence tells us that we have to add something
+to "key value 1" in order to make is match with "storage value 1", and now we can make a simple equation:
+<PRE>
+x=storage value 1
+y=how much we must add to "key value 1" in order to make it match
+  storage value 1
+
+2x+14=(x+y)*2 = 2(x+A)=2(x+y) = x+A=x+y = <B>y=a</B>
+</PRE>
+There we have it! We just need to add Ah (=10dec) to the storage value we got from the second checksum check and save it as "key value 1".
+We also need to save the storage value 2 as "key value 2". We already know the offset of the keyfile where these key values must be stored and
+by knowing that <B>Terminate v5.0 has been cracked!</B> If you want to check out your registration info, just enter ctrl-O when you are in your newly
+cracked terminate. Hmm, just a bunch of garbage, but from this garbage it's easy to figure out where the offset in the keyfile where the registraion information
+should be saved. If you're lazy just check out the source for my keygen.
+
+<P><B>Step 4 - The old-cracked-keyfile check</B><BR>
++Aesculapius mentioned something about <I>"Design a technique to assure that your generated key will be valid in any futher version of terminate..."</I>
+Ah, yet another check then. What I did was that I downloaded an already made keygenerator for terminate v4.0 (made by UCF btw) and tried a key generated from
+that with terminate v5.0...oops, guess +Aesculapius knew what he was talking about. Terminate does recognize it as an old cracked keyfile and refuses to accept it.
+Let's see where the check is made!<P>
+Start debuging the program (you should know how it works by now). You'll see that it works just like it would with a normal key,
+every check is made and it looks like it works perfectly. What I did was that I stepped through the code after the call
+which I called the "big_check" (you know, the one with 9 values pushed before) keeping an eye open for any
+suspicious checks. Also I looked if anything was written to the screen by using the <FONT COLOR=#0000FF>rs</FONT> command in softice.
+It took a while but finally I saw what was going on, and hopefully so will you. Two words of the decrypted registration information is checked with a number of hardcoded values.
+If these two word values matches any of a number of hardcoded values terminate terminates (hehe) and says that's it's a cracked key.
+So, it wasnt really anything complicated with this - the author of terminate has problaby downloaded every single keygenerator or cracked keyfile
+he could find and then written down the word values at two locations of the decrypted registraion information (they are located near the end of the reg-info).
+Then he simply made a check to see if the word values of the current keyfile matches any of the "forbidden" values. If they do match - Exit with the error message!
+
+<P><B>Conclusion - Terminate:</B><BR>
+A very nice protection scheme! First a checksum of the whole keyfile, then a checksum of
+the decrypted registraion information. These values along with two other word sized values
+are then used to make sure that the keyfile is valid. Last but not least is an old-cracked keyfile check
+which is acomplished using a check of known cracked keyfiles. These four checks along with some code
+that only confuses a cracker makes this protection a very nice one!
+
+<P><HR>
+<P><H3>* Chapter 2 : The patcher</H3>
+<B>Tools used: </B><FONT COLOR=#003FBF>TASM v5.0, Win32 API reference guide</FONT><P>
+<B>Output: </B><A HREF="javascript:if(confirm('http://fravia.org/99solu/patcher.zip  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/99solu/patcher.zip'" tppabs="http://fravia.org/99solu/patcher.zip">Patcher source and executable</A><P>
+Ok, time for some real coding. I decided to use assembler even if +Aesculapius did include an asm example.
+The main reason for this was that I didnt have any other compiler than TASM that could generate win32 programs.
+I tried to use some other functions and methods in order to make it a bit different from +Aseculapius's.
+Not much else to say about this - take a look at the source code instead!<P><HR>
+
+<P><H3>* Chapter 3 : BrainsBreaker v2.1</H3>
+<B>Tools used: </B><FONT COLOR=#003FBF>Softice, Wdasm (or IDA)</FONT><P>
+<B>Output: </B><A HREF="javascript:if(confirm('http://fravia.org/99solu/bbcrack.zip  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/99solu/bbcrack.zip'" tppabs="http://fravia.org/99solu/bbcrack.zip">Brains Breaker v2.1 crack</A><P>
+
+Indeed a fun game to play! In fact I spent about 2-3 hours just playing the game before I started to crack it.
+It seems like some puzzles are only demos? Hmm, must be a nasty bug...but mr. Juan Trujillo Tarradas dont have to
+worry, we'll fix that for him! We'll just go to the "enter registraion name/serial" window and crack it like any other program... yeah...right...eh..only one problem...
+where is it?! At times like this I always go to the helpfile to try to find some usefull information, and look what I found:<P>
+<PRE>
+Once your payment is processed, you'll receive an e-mail message containing your
+registration code with the instructions to enter it in the program that makes
+fully playable all the puzzles (if registered the Full pack) or the puzzles in the Entry set.
+</PRE>
+Ah...The registration window is hidden! How to find it then?<P>
+<B>Step 1 - finding the registration window!</B><BR>
+I choosed to disasemble the program, and searched after some well-
+choosen strings like "registration". I found this hit (after disasming with Wdasm, no need to use IDA if we dont have to):
+<PRE>
+* Possible StringData Ref from Data Obj ->"Registration info. Program version "
+</PRE>
+Interesting indeed! I browsed down a bit through the code and found alot of even more interesting strings there, including
+<I>"Pack", "Name", "Your ID"</I> and <I>"Key:"</I>. Looks like this could be the place where we enter our registration details.
+Now we want to know how we execute this code, so we browse upwards through the code. We notice that this code is called from
+another location:
+<PRE>
+* Referenced by a CALL at Address:
+|:0044C881   
+</PRE>
+Now we know where this code was executed from. Go up to that location and have a look:
+<PRE>
+* Referenced by a (U)nconditional or (C)onditional Jump at Address:
+|:0044B8CF(C)
+|
+:0044C852 6A06                    push 00000006
+:0044C854 FFB381010000            push dword ptr [ebx+00000181]
+:0044C85A E8CF49FDFF              call 0042122E
+:0044C85F E9EB0C0000              jmp 0044D54F
+:0044C864 6A1C                    push 0000001C
+:0044C866 E8723FFDFF              call 004207DD
+:0044C86B 898590FEFFFF            mov dword ptr [ebp+FFFFFE90], eax
+:0044C871 85C0                    test eax, eax
+:0044C873 0F84D60C0000            je 0044D54F
+:0044C879 6A00                    push 00000000
+:0044C87B FFB590FEFFFF            push dword ptr [ebp+FFFFFE90]
+:0044C881 E85FE40100              call 0046ACE5		<HERE is the intersting call
+:0044C886 E9C40C0000              jmp 0044D54F
+</pre>
+Hmm, judging from this code, we'd say that the call to the interesting routine will never be executed because the program will
+jump at offset 44C85F, and we dont see any other jump references...Here is a good example of how bad wdasm disassembles sometimes.
+There ARE references to the interesting call, if you use IDA you'll see them. The problem is that it referenced through the instruction "jmp dword ptr [4*eax+0044B96B]"
+and that's why Wdasm doesnt find it. Go to offset 44B964, you'll find this offset using IDA. <BR>
+<I>(It is possible to find it using Wdasm as well but it takes some more work.
+As you can see from the code snippet above, we'd like to jump to either offset 44C864 or 44C879 to execute our "enter registraion information" call, so try a search
+on "44C864" and you'll land in a very intersting place!)</I><BR>
+<PRE>
+:0044B964 FF24856BB94400          jmp dword ptr [4*eax+0044B96B]
+
+:0044B96B C7C34400                DWORD 0044C3C7
+:0044B96F 5CC44400                DWORD 0044C45C
+:0044B973 CEC44400                DWORD 0044C4CE
+:0044B977 C0C84400                DWORD 0044C8C0
+:0044B97B 64C84400                DWORD 0044C864   <YOU'll land here if you're using Wdasm
+:0044B97F C0C84400                DWORD 0044C8C0
+:0044B983 8BC84400                DWORD 0044C88B
+:0044B987 C0C84400                DWORD 0044C8C0
+:0044B98B C0C84400                DWORD 0044C8C0
+:0044B98F C0C84400                DWORD 0044C8C0
+:0044B993 C0C84400                DWORD 0044C8C0
+:0044B997 C0C84400                DWORD 0044C8C0
+:0044B99B C0C84400                DWORD 0044C8C0
+:0044B99F C0C84400                DWORD 0044C8C0
+:0044B9A3 C0C84400                DWORD 0044C8C0
+:0044B9A7 C0C84400                DWORD 0044C8C0
+:0044B9AB C0C84400                DWORD 0044C8C0
+:0044B9AF C0C84400                DWORD 0044C8C0
+:0044B9B3 C0C84400                DWORD 0044C8C0
+:0044B9B7 FEC54400                DWORD 0044C5FE
+</pre>
+Ah - great! At offset 44B964, based on the value in eax, a jump is taken. So in order to execute our interesting call, eax should hold a 
+value of <B>4</B> (4h*4h = 10h. 44B96Bh+10h = 44B97Bh and that's the offset where the interesting jump address is stored).<BR>
+Now we need to know where anything gets saved in eax, so trace upwards through the dead-listing and you'll find that offset
+0044B8A2 is the one we're searching for.
+<PRE>
+:0044B8A2 8B4607                  mov eax, dword ptr [esi+07]   
+:0044B8A5 3D50040000              cmp eax, 00000450
+:0044B8AA 0F8F99000000            jg 0044B949
+:0044B8B0 0F849A0E0000            je 0044C750
+...
+:0044B949 3D68040000              cmp eax, 00000468
+:0044B94E 7F6B                    jg 0044B9BB
+:0044B950 0F84EB080000            je 0044C241
+:0044B956 05AEFBFFFF              add eax, FFFFFBAE	;Same as "sub eax,452"
+:0044B95B 83F813                  cmp eax, 00000013
+:0044B95E 0F875C0F0000            ja 0044C8C0
+:0044B964 FF24856BB94400          jmp dword ptr [4*eax+0044B96B]
+</PRE>
+There, now it's pretty easy to figure out what value we need to execute our "enter registation information" call. First of all it has to be over
+450h, becuase we want to take the jump at offset 44B8AA. It must be lower than 468h because we DONT want to take the jump at offset
+44B94E or at 44B950. Substract 452 from our value, and if the result is below or equal to 13h execute the jump at 44B964. We already know
+that we want eax to be 4 when the jump is beeing executed so therefor we want eax to be 452+4=<B>456h</B> at offset 44B8A2 in order
+to bring up the registraion window. To see if this theory is correct, lets test it in practice! Boot up the game, and put a breakpoint on
+<FONT COLOR=#0000FF>cs:44B8A2</FONT> (make sure that brainsbreaker has control when you set the breakpoint, otherwise CS wont point to brainsbreakers code).
+Now choose a menu item, and softice will break due to our breakpoint. You will see that a value is moved into eax (the value depends on
+what menu-item we choosed). Step over the instruction and edit the eax register using the <FONT COLOR=#0000FF>r</FONT> command. Change to value
+to 456 instaed and let it run...YES! The "enter registraion information" windows pops up!<P>
+<B>Step 2 - What pack do we want?</B><BR>
+Ok, we got four edit fields that we must fill in, where the first one is "Pack:". Remember what the help file said? There are two different
+registraion "packs", one called <I>Entry pack</I> and another one called <I>Full pack</I> so we can easily guess that we shall enter
+either "full pack", "full" or something. To find out if we are right, let's enter "full pack" in the first field, and just some bogus info in the other fields.
+Now we go on as we normally do when cracking a name/serial protection, set a breakpoint on a string fetching function (GetDlgItemTextA, GetWindowTextA, hmemcpy or whatever, you know them :))
+or try the breakpoint on windows message (<FONT COLOR=#0000FF>bmsg</FONT>) way...do whatever you want, just as long as you break in, I choosed to break on the windows message <I>wm_gettext</I>.
+<BR>You all problaby know how to proceed from now on. Find our entered string (Full pack), and put a breakpoing on memory range (<FONT COLOR=#0000FF>bpr</FONT>) on it and then feel the code.
+You'll see ALOT of "repnz scasb" function (used alot for length checking if al=0), and a few "repz movsb functions. Just step through them, and put a new bpr everytime the string is copied. Remove an old breakpoint
+only when you see that it's overwritten with something else. <BR>
+If you're having trouble telling the interesting code from the uninteresting I'll give you the offset where the interesting part begins, it's at offset <B>4012BD</B>:
+<PRE>
+:004012BD 0FBE06                  movsx eax, byte ptr [esi]
+:004012C0 50                      push eax
+:004012C1 E8EE560000              call 004069B4
+:004012C6 59                      pop ecx
+:004012C7 8BD8                    mov ebx, eax
+:004012C9 50                      push eax
+:004012CA 0FBE17                  movsx edx, byte ptr [edi]
+</PRE>
+We start out by moving the first letter in our entered string into eax (in our case it's 46h, 'F'). What the next few lines do is that it copies that value into other registers (not really interesting),
+but the last instruction is very interesting. It takes a byte from what edi is pointing to and moves it into edx. I wonder what edi points to, dont you? Let's find out! "<FONT COLOR=#0000FF>d edi</FONT>" in softice, and now look in the datawindow.
+"Entry Full Upgrade..." and so on. Weee! We now know (ok, not exactly know, but it's a VERY good guess) that we shall enter "<I>Full</I>" in the first edit field, because we do want the fully registered copy, dont we?
+<P><B>Step 3 - Examining the protection scheme</B>
+Time for the real pain, the real protection scheme. So, start out by entering something in the edit fields, I entered "Full", "Cruehead", "111", "1230123".
+Now we do like we did last time, but this time we're only interested in when the program is doing anything with our entered serial, so we choose to breakpoing on that string (1230123 in my case).
+Same story as before, a lot of length checking and string copying...I know it's pretty boring, but just hang in there. After some time you'll get to 
+offset <B>401440</B>. This is where its finally gets somewhat first interesting. What the program does is that it compares all characters in the serial with "-", but
+as our serial doesnt have a "-", we continue without any change. After some more uninteresting length checkings we get to the same offset again, but this time
+the program compares every character in our serial with "0". If it finds a match, the zero is removed and instead an O is put there. Our new code will be "123O123".
+We find ourself at this offset once again after some more time in softice. This time the program checks if any of the characters in the serial is '1'. If they are, replace them with a "L" instead.
+Our new code will be "L23OL23".
+After this, each of our characters in the serial will be compared to (in order and in hex): 00,3B,0D and 0A. We dont have to care about this because these bytes wont be found
+in our serial.<BR>
+Geez, so much debuging and yet nothing really interesting, but fear not - we are getting there. After a while we'll land at offset <B>46AC55</B>
+and here is where the fun part begins.
+<PRE>
+* Referenced by a (U)nconditional or (C)onditional Jump at Address:
+|:0046ACB3(C)
+|
+:0046AC4C FF35BC554800            push dword ptr [004855BC]
+:0046AC52 8B45E8                  mov eax, dword ptr [ebp-18]
+:0046AC55 0FBE10                  movsx edx, byte ptr [eax]	<WE'll land here
+:0046AC58 52                      push edx
+:0046AC59 E856BDF9FF              call 004069B4
+:0046AC5E 59                      pop ecx
+:0046AC5F 50                      push eax
+:0046AC60 E8BDBAFAFF              call 00416722
+:0046AC65 8845EF                  mov byte ptr [ebp-11], al
+:0046AC68 33C0                    xor eax, eax
+
+* Referenced by a (U)nconditional or (C)onditional Jump at Address:
+|:0046ACA5(C)
+|
+:0046AC6A 8BC8                    mov ecx, eax
+:0046AC6C BA01000000              mov edx, 00000001
+:0046AC71 D3E2                    shl edx, cl
+:0046AC73 33C9                    xor ecx, ecx
+:0046AC75 8A4DEF                  mov cl, byte ptr [ebp-11]
+:0046AC78 23D1                    and edx, ecx
+:0046AC7A 740E                    je 0046AC8A
+:0046AC7C 8BCB                    mov ecx, ebx
+:0046AC7E B201                    mov dl, 01
+:0046AC80 D2E2                    shl dl, cl
+:0046AC82 8B4DF6                  mov ecx, dword ptr [ebp-0A]
+:0046AC85 081431                  or byte ptr [ecx+esi], dl
+:0046AC88 EB0E                    jmp 0046AC98
+
+* Referenced by a (U)nconditional or (C)onditional Jump at Address:
+|:0046AC7A(C)
+|
+:0046AC8A 8BCB                    mov ecx, ebx
+:0046AC8C B201                    mov dl, 01
+:0046AC8E D2E2                    shl dl, cl
+:0046AC90 F6D2                    not dl
+:0046AC92 8B4DF6                  mov ecx, dword ptr [ebp-0A]
+:0046AC95 201431                  and byte ptr [ecx+esi], dl
+
+* Referenced by a (U)nconditional or (C)onditional Jump at Address:
+|:0046AC88(U)
+|
+:0046AC98 43                      inc ebx
+:0046AC99 83FB08                  cmp ebx, 00000008
+:0046AC9C 7503                    jne 0046ACA1
+:0046AC9E 46                      inc esi
+:0046AC9F 33DB                    xor ebx, ebx
+
+* Referenced by a (U)nconditional or (C)onditional Jump at Address:
+|:0046AC9C(C)
+|
+:0046ACA1 40                      inc eax
+:0046ACA2 83F805                  cmp eax, 00000005
+:0046ACA5 7CC3                    jl 0046AC6A
+:0046ACA7 FF45F0                  inc [ebp-10]
+:0046ACAA FF45E8                  inc [ebp-18]
+:0046ACAD 8B45F0                  mov eax, dword ptr [ebp-10]
+:0046ACB0 3B45FC                  cmp eax, dword ptr [ebp-04]
+:0046ACB3 7C97                    jl 0046AC4C
+</pre>
+Whoah, quite some code there! But dont worry, we really dont have to understand it (as you will see later), we just need to know where the output is stored.
+The code here isnt very hard to understand either, but we'll deal with it later. To save some time, I'll tell you now that output will be created
+at offset 46AC85 and 46AC95. You will see that after the loop, a few bytes (how many depends on the length of the serial entered) have been generated
+from our serial and saved at the address that ecx+esi points to at offset 46AC85.
+You can now remove all breakpoints and put one (breakpoint on memory range - bpr) on our nely created bytes (in our case it will be 5 of them). Just to make sure
+you got the correct spot, the bytes for "L23OL23" is 4B,6F,B7,F4,06. As you will see this string will be copied around a bit, but just follow
+the same procedure as last time (same procedure as every year, james).
+After a little while you'll land in the next interesting spot:
+<PRE>
+:00459B50 8BC1                    mov eax, ecx
+:00459B52 99                      cdq
+:00459B53 F7FB                    idiv ebx
+:00459B55 8B45E4                  mov eax, dword ptr [ebp-1C]
+:00459B58 03C2                    add eax, edx
+:00459B5A 8A16                    mov dl, byte ptr [esi]	<YOU'll be here
+:00459B5C 3010                    xor byte ptr [eax], dl
+:00459B5E 41                      inc ecx
+:00459B5F 46                      inc esi
+
+* Referenced by a (U)nconditional or (C)onditional Jump at Address:
+|:00459B4E(U)
+|
+:00459B60 8B45FC                  mov eax, dword ptr [ebp-04]
+:00459B63 2BC3                    sub eax, ebx
+:00459B65 3BC8                    cmp ecx, eax
+:00459B67 7CE7                    jl 00459B50
+</pre>
+Not that hard to understand. One byte will be XOR'd with each of our new bytes, and a few others as well (these are constants). This final byte will have a value of 0E in our case.
+You should always be very suspicious when you see an instruction that uses XOR.
+The only exception is when it's followed by two registers of the same kind, because then (as you all problaby already know) it just sets the register to zero.
+Now after this loop we'll get to the first check. If you start stepping through the code you'll soon see that the byte which were XOR'd with our "registraion bytes" will be compared to zero.
+If it matches, go on, otherwise it's a fake code. Finally we're getting somewhere! We now know that after quite a lot of different manipulations of our serial (remember that we had two different manipulations, the first
+created a couple of bytes based on our serial, and the other XOR'ed them together along with a few other constant bytes) we shall have a final value of zero! Remember this as we'll use it later, but for now, just
+change the program so it continues, preferable by changing the final byte from 0E to 00 (you should always try to patch as little as possible, atleast while investigating a protection scheme).
+One can almost guess that somewhere nearby there will be another (or more) checks, and therefor we start stepping through the next piece of code. This is pretty hard, you have to feel where something interesting
+happends, but I'll tell you that at offset 459d01 something is happening:
+<PRE>
+:00459D01 3B4DEC                  cmp ecx, dword ptr [ebp-14]
+:00459D04 7D4F                    jge 00459D55
+
+* Referenced by a (U)nconditional or (C)onditional Jump at Address:
+|:00459D53(C)
+|
+:00459D06 8BC1                    mov eax, ecx
+:00459D08 99                      cdq
+:00459D09 F7FF                    idiv edi
+:00459D0B 8B45E0                  mov eax, dword ptr [ebp-20]
+:00459D0E 8A1C10                  mov bl, byte ptr [eax+edx]
+:00459D11 0FB745F0                movzx eax, word ptr [ebp-10]
+:00459D15 3BC8                    cmp ecx, eax
+:00459D17 7D09                    jge 00459D22
+:00459D19 0FB7D1                  movzx edx, cx
+:00459D1C 8B45F4                  mov eax, dword ptr [ebp-0C]
+:00459D1F 321C10                  xor bl, byte ptr [eax+edx]
+
+* Referenced by a (U)nconditional or (C)onditional Jump at Address:
+|:00459D17(C)
+|
+:00459D22 0FB7560C                movzx edx, word ptr [esi+0C]
+:00459D26 3BCA                    cmp ecx, edx
+:00459D28 7D09                    jge 00459D33
+:00459D2A 0FB7C1                  movzx eax, cx
+:00459D2D 8B5610                  mov edx, dword ptr [esi+10]
+:00459D30 321C02                  xor bl, byte ptr [edx+eax]
+
+* Referenced by a (U)nconditional or (C)onditional Jump at Address:
+|:00459D28(C)
+|
+:00459D33 0FB74614                movzx eax, word ptr [esi+14]
+:00459D37 3BC8                    cmp ecx, eax
+:00459D39 7D09                    jge 00459D44
+:00459D3B 0FB7D1                  movzx edx, cx
+:00459D3E 8B4618                  mov eax, dword ptr [esi+18]
+:00459D41 321C10                  xor bl, byte ptr [eax+edx]
+
+* Referenced by a (U)nconditional or (C)onditional Jump at Address:
+|:00459D39(C)
+|
+:00459D44 8BC1                    mov eax, ecx
+:00459D46 99                      cdq
+:00459D47 F7FF                    idiv edi
+:00459D49 8B45E0                  mov eax, dword ptr [ebp-20]
+:00459D4C 881C10                  mov byte ptr [eax+edx], bl
+:00459D4F 41                      inc ecx
+:00459D50 3B4DEC                  cmp ecx, dword ptr [ebp-14]
+:00459D53 7CB1                    jl 00459D06
+</PRE>
+A pretty easy to understand protection here. Take the first char in the "pack" field, xor it with the first char in the "Username" field and finally xor this with
+the first char in the "ID" field. Save this byte and then proceed with the second character, the third and so on. I suppose a table will describe it better:<P>
+
+<TABLE Border=1>
+<TR><TD>Pack string:</TD><TD> 46</TD><TD> 75 </TD><TD> 6C </TD><TD> 6C </TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>
+<TR><TD>Username String:</TD><TD> 43</TD><TD> 72 </TD><TD> 75</TD><TD> 65 </TD><TD> 68 </TD><TD> 65 </TD><TD></TD></TR>
+<TR><TD>ID string:</TD><TD> 31 </TD><TD> 32 </TD><TD> 33</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>
+<TR><TD>Result after XOR:</TD><TD> <B>34 </TD><TD> <B>35 </TD><TD> <B>2A </TD><TD> <B>09 </TD><TD> <B>68 </TD><TD> <B>65 </TD><TD></TD><TD></TD></TR>
+</TABLE>
+<P>
+"Hey! You only got 6 characters in the table, but the strings can be longer (and one of them in fact is)!" Calm down, That's because something is happening after 6 bytes has been processed.
+Now the first byte in our "result string" (34 in our case) will also be included the scheme. So, 34 will be xor'ed to every 7'th char in the other strings, and in our case the "username" string
+will be the only one effected, as the others are too small. The result is written in the first position in the "result string", thus removing the old value. After 6 more bytes, it does the same again
+, thus keeping the size of the result string to 6 bytes. When 20h (=32 dec) characters has been processed the routine is done.
+<BR>Something has to be happening with these 6 bytes (why write that routine otherwise), so lets put a bpr on them. You will break in a string comparing routine. So...this string is compared to another string!
+Very interesting indeed... I wonder what happends if they matches??? let's see! Change one of the strings so it matches the other and let the program run...
+<P>
+<B>YEEEEES! Program registered!</B>
+<P>
+So, now all we have to do is to make the strings match...just one BIG problem...One would have thought that the string that our "pack, username, ID" string was compared with should be
+constant...but this is not true! It changes everytime, so there is not a chance to make these strings match eachother!
+First I thought this was some anti-cracking feature, but that is not true either. I changed the program so it would display a little messagebox with the first bytes of the string, and I ran it without softice
+(for the first time in months, softice wasnt loaded on my machine :)). No luck, it still changed! One alternative still remains...patching!
+<P><B>Step 4 - Cracking it!</B>
+First of all I'd like to say that I dont really like patches because one never knows what comes with a patch. It could be a nasty checksum, or even worse - a delayed checksum. That's why I always like
+to find/calculate a valid serial when cracking name/serial protections, but when you're out of ideas, I guess patching can be justified.
+But even if we are going to patch, let's patch as little as we have too. We dont have to patch the first check (remember? one byte is compared to zero...) as we can pretty easily find
+a serial that justifies that. As most crackers are lazy by nature (well, atleast I am :)), lets just write a quick and dirty bruteforcer. You can find my source and the executable for it <A HREF="javascript:if(confirm('http://fravia.org/99solu/bb.zip  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/99solu/bb.zip'" tppabs="http://fravia.org/99solu/bb.zip">here</A>.
+Run it, and we'll get the serial 125000. If our bruteforcer does what it's suppose to do we would now get by the first check by using this seriall, so let's test it! Go back to the register window, and enter the same
+information as before, but change the serial to 125000. Wow! It worked! Of course we didnt get the "thanks for registering" message, but we didnt expect that either, because the last check
+is still there. For reasons that I told you about earlier we have to patch that (or spend the next couple of weeks trying to figure out a way how to crack it without patching, but as I said - we're all lazy).<P>
+
+Of course the next question will be <I>Where shall we patch?</I> Before we can answer that we have to make sure
+we understand what we want to do. In this case we want two strings to match eachother (or atleast making the program think they do). If we investigate the comparision routine
+we see that the routine compares the number of bytes specified in edi. In our case edi=6 and therefor 6 bytes are compared. If we look at the code right after the comparison routine
+we will also see that dl is set to 1 if the strings matches. If they dont dl is set to zero. Now we can make a small list of possible patches:
+<PRE>
+1)   Action: Set edi to zero so that zero bytes will be compared.
+Consequence: The strings wont be compared.
+2)   Action: Overwrite the two strings with the same 6 bytes.
+Consequence: The strings will match.
+3)   Action: Fake the return value so dl will be set to one either way.
+Consequence: The program thinks that the strings matches.
+4)   Action: Fake a conditional jump
+Consequence: The program thinks that the strings matches.
+</PRE>
+There are even more possibilites but these are more than enough. We can choose any of these and the program would, in theory, think our entered serial is valid.
+Let's try for example to set edi to zero.
+First of all lets find where the program sets edi to 6:
+<PRE>
+:00459C43 8B7508                  mov esi, dword ptr [ebp+08]
+:00459C46 807E2400                cmp byte ptr [esi+24], 00
+:00459C4A 7415                    je 00459C61
+:00459C4C BF06000000              mov edi, 00000006
+</PRE>
+Can we change this into "mov edi,0" instead? Yes we can but the program would crash later due to a couple of "IDIV" instructions that relies
+on edi not beeing zero. So where can we change edi to zero then? Look at this:
+<PRE>
+:00459CFF 33C9                    xor ecx, ecx
+:00459D01 3B4DEC                  cmp ecx, dword ptr [ebp-14]
+:00459D04 7D4F                    jge 00459D55
+...
+</PRE>
+This is the begining of the code that creates the 6 bytes long string from our entered Name, ID and Pack. This code is completely useless
+if we change edi to zero (because zero bytes will be compared) so we can saftly patch here. Let's change the code so it looks like this instead:
+<PRE>
+:00459CFF 33FF                    xor edi,edi	;set edi to zero
+:00459D01 EB52                    jmp 00459D55	;Jump over the rest
+						;of the function
+</PRE>
+Oh yeah! This works very nicely! Patch it using your favourite hex-editor and run it.
+<P>
+<I>Integrity check:<BR>
+Program seems to be altered from his original contents<P></I>
+Of course...a checksum function as well. How can we crack this then?<P>
+In fact, the author has already done half the work for us. Notice how the message is presented - through a messagebox!
+Very good news for us crackers, we just have to put a bpx on MessageBoxA now in order to land right in the interesting code.
+So, do just that and trace upward and you'll see this:
+<PRE>
+:00442CC2 E870DBFFFF              call 00440837
+:00442CC7 3D22334455              cmp eax, 55443322	;Whoah! What a nice hardcoded value!
+:00442CCC 7472                    je 00442D40		;Take this jump if you want to jump
+							;over the messagebox!
+:00442CCE 6810200100              push 00012010
+:00442CD3 FF35843B4800            push dword ptr [00483B84]
+:00442CD9 83C4FC                  add esp, FFFFFFFC
+:00442CDC 66C70424BE00            mov word ptr [esp], 00BE
+:00442CE2 E8C16FFFFF              call 00439CA8
+:00442CE7 50                      push eax
+:00442CE8 6A00                    push 00000000
+:00442CEA E80AEF0300		  call USER32!MessageBoxA
+</PRE>
+You can see directly that something is fuzzy about the "cmp eax, 55443322" line. That looks VERY
+suspicious if you ask me (why not say "Hey Cracker! I'm here!!!" instead). Now we could quickly crack this just by changing the "je 00442D40" instruction
+to "jmp 00442D40" but we wont do that. The program might save the value returned in eax and use it later on for more checksum-checking (this is infact true for this program) so instead we want the above call to return 55443322. So, let's trace the call! You'll soon
+find this piece of code:
+<PRE>
+:00440DAE E8B504FCFF              call 00401268
+:00440DB3 83C40C                  add esp, 0000000C
+:00440DB6 85C0                    test eax, eax
+:00440DB8 752E                    jne 00440DE8
+:00440DBA A1803B4800              mov eax, dword ptr [00483B80]
+:00440DBF 8B10                    mov edx, dword ptr [eax]
+:00440DC1 8B0D243B4800            mov ecx, dword ptr [00483B24]
+:00440DC7 8911                    mov dword ptr [ecx], edx
+:00440DC9 B822334455              mov eax, 55443322	;We want this!
+:00440DCE 50                      push eax
+</PRE>
+Now, this isnt very hard either. As the program is already patched the call at line 440DAE will return eax<>0 and thus the jump will be taken.
+Btw that call is our good old "comparision" call. As you see it's used quite a lot in the program so it was a good idea not to patch there!
+Now just nop away the jump. 55443322 will be stored in eax and the checksum routine thinks that everything is alright and <B>we have a fully 
+functional registered copy of BrainsBreaker!</B>
+<P><B>Step 5 - Making a nice crack!</B><BR>
+You can skip this part if you want to. This step is not really necessary, but if we were to release a crack for this program we had to make a nice looking patcher.
+The problem is that we dont know how to bring up the "enter registraion info" window, and thus the user wouldnt have anywhere to enter his name.
+We can solve this by making our own little "registraion window" that asks for a username in our patcher.
+If you look where BrainsBreaker saves the registraion information you will see that all of the reg-info is saved in the "BBRK.INI" file. It will save both
+plaintext and encrypted values. It will look something like this:
+<PRE>
+[PackFull]			;What pack we're using
+0=Cruehead			;Username plain text
+1=123				;ID plain text
+2=7E15AB3D1516D6		;Serial encrypted
+3=2100				;Not sure. I believe it's version number 
+4=192BEC6D323CF86C		;Username encrypted
+5=6B6BAA			;ID encrypted
+</PRE>
+Of course I didnt know all of this before I fully examined the program. I started out by putting a breakpoint on
+GetPrivateProfileStringA and when the encrypted serial line was read I put a bpr on that so I would see what was happening to that string.
+I wont describe every step on how I did it because it's fairly easy. Instead I'll try to describe how it works:<P>
+Every two letters in '7E15AB3D1516D6' is in fact one byte. So first of all the string is transformed so it looks like this :
+7E 15 AB 3D 15 16 D6 . 7 bytes that is. Now this string is Xor'ed against a four byte long string that was "5A 59 99 08". This string caught my curiosity because
+it didnt look like a hardcoded value and neither could I find it in the .EXE file but I continued nevertheless, not worring aout it.
+The strings was xor'ed like this:<P>
+<TABLE Border=1>
+<TR><TD>String from INI file:</TD><TD> 7E</TD><TD> 15 </TD><TD> AB </TD><TD> 3D </TD><TD> 15 </TD><TD> 16 </TD><TD> D6 </TD></TR>
+<TR><TD>Four byte string:</TD><TD> 5A </TD><TD> 59 </TD><TD> 99 </TD><TD> 08 </TD><TD> 5A </TD><TD> 59 </TD><TD> 99 </TD></TR>
+<TR><TD>Result after XOR:</TD><TD> <B>24 </TD><TD><B> 4C</TD><TD><B> 32 </TD><TD><B> 35 </TD><TD><B> 4F </TD><TD><B> 4F </TD><TD><B> 4F</TD></TR></B>
+</TABLE><P>
+You see? The result is '$L25OOO'. Our entered serial string (somewhat transformed).
+The same procedure is done with the two other encrypted strings. If the decrypted username matches the username in plain text and if the decrypted
+ID matches the ID in plain text, then the program executes the registration check with the decrypted serial. The program will gladly accept it because
+we have patched the last check!<P>
+Ok, I sat down one night and coded this crack. It worked great on my computer but when I tried it on another computer it simply didnt work!
+Back to the drawing board again. It turned out that I was right when thinking that the 4 bytes xor string was strange. After some more examination
+I found out that this value was created from a special ID which is stored in the registry. The ID is created the first time brainsbreaker is installed and there is'nt
+much point in reversing the algorigthm for creating a BrainsBreaker ID becuase it uses the "TlsGetValue" function as source.
+The complete ID is about 50 bytes long but only 8 of these bytes are used to create the xor string (if you're really interested
+byte number 5,10,8,13,17,19,22,38 of the ID is used to make the xorstring). That's why my crack didnt work on the other machine -
+when I installed BrainsBreaker for the first time a different ID was created and thus also a different xorstring. So I sat down
+another night and re-coded the crack, this time for windows as we need to access the registry. This time the crack worked like a
+sharm on both machines! Oh joy oh joy!<P>
+<P><B>Thoughts about BrainsBreaker</B><BR>
+This is not important for the crack, but it's never the less very interesting. I'm not sure about this but it looks like every puzzle is a stand-alone part of the program.
+Every puzzle stores a number of things including the name of the author of the puzzle, if the main program has been altered, wether this puzzle is free/demo/registered
+and a number of other things. My guess is that these values (or flags) are stored directly after the mainprogram checks if it's registered or not. This way every puzzle can check
+if the main program has been cracked. But we dont have to care about all of this because the crack I presented above takes care of everything :).
+None of these flags are stored directly in the .exe file, instead they are stored in encrypted state. At startup these puzzles are decrypted using different keysources but the
+most common seems to be "(c)J. Trujillo T." I managed to get this info by stumbeling across a "xor [edi],al" function when the program was loading the startup screen with all the puzzles.
+That of course cought my interest and I started to examine it a bit more closer.<P>A small hint : It's a good idea
+to search the deadlisting for "MessageBoxA" functions as these can give
+you alot of usefull information sometimes. Fake a flag or something to make the program show the messagebox. For example I found out
+that every puzzle stores if the main program has been altered or not (if it has, a value of 12345 is stored in each of the puzzles) using this method.<P>
+But there are some things that remains a mystery for me still. I havnt been able to figure out how to bring up the registration-window yet and you can
+find a few very interesting functions if you look at the dead-listing:<P>
+<PRE>Addr:00487ABC Ord:  14 (000Eh) Name: __DebuggerHookData
+Addr:004035BC Ord:  15 (000Fh) Name: __lockDebuggerData(void)
+Addr:004035E4 Ord:  16 (0010h) Name: __unlockDebuggerData(void)
+</PRE>
+Antidebugging functions problaby but I havnt seen any marks of them. Pretty strange...
+<P><B>Conclusion - BrainsBreaker:</B><BR>
+A somewhat complicated protection scheme, but nothing that we havnt seen before. The hidden registraion
+window is a good idea but it's far to easy to find it using a dead-listing approach.
+</PRE>
+<P><HR>
+<P><H3>* Chapter 4 : The Sparkle program</H3>
+<B>Tools used: </B><FONT COLOR=#003FBF>Softice, TASM 5.0, Win32 API reference guide</FONT><P>
+<B>Output: </B><A HREF="javascript:if(confirm('http://fravia.org/99solu/sparkle.zip  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/99solu/sparkle.zip'" tppabs="http://fravia.org/99solu/sparkle.zip">Sparkle source and executable</A><P>
+A little different challenge to end the strainer. Graphical reversing? Nothing I have done
+before but hey - let's give a try! First of all I started by looking at the effect (wonder if
+anyone thought of that before me?). So, I played a puzzle (on my newly cracked copy 
+of BrainsBreaker) and when I connected two pieces to eachother I got a nice little sparkle
+effect. Ok, now we know what we're dealing with...The main part of it is some sort
+of ellipse, wouldnt you say? Looking through the Win32 API reference guide we'll try to
+find what function is used to draw an ellipse...and voila - we found one! 
+<PRE>
+Ellipse:
+
+The Ellipse function draws an ellipse. The center of
+the ellipse is the center of the specified bounding
+rectangle. The ellipse is outlined by using the
+current pen and is filled by using the current brush. 
+</PRE>
+Nice enough! So, in softice, set a breakpoint on Ellipse (<FONT COLOR=#0000FF>bpx ellpise</FONT>)
+and connect two other pieces together. Boom and we're in softice again. F12 once to give control back to the real
+program. Now I pressed F4 (the <FONT COLOR=#0000FF>rs</FONT> command that is) to see if anything had happened to the screen (like an ellipse has
+been drawn perhaps?) but nothing...strange...well, I continued to "p ret" my way and everytime
+checking if anything had been drawn to the screen. And after a while, something had been drawn!
+A small cross! Hey, great...we're going somewhere with all of this...I started tracing, but
+pretty soon I got to another "ret" function. And now I had landed in a quite interesting piece
+of code...take a look at this:
+<PRE>
+0042EACF    lea ecx, dword ptr [ebp+FFFFFE84]
+0042EAD5    push ecx
+0042EAD6    call 0042EEB0
+0042EADB    test eax, eax		<WE are here!
+0042EADD    jne 0042EACF
+</pre>
+So, that call to 42EEB0 drawed that little cross...if eax is zero then go on, otherwise
+we'll execute the call once again. Can you feel it? Something tells me that we have pinpointed
+a part of the interesting code! Start stepping through the loop, and every time you get to the
+call, step over it, and directly after that have a look if anything has
+been happening on the screen. You can see it now? We have indeed landed in an interesting piece
+of the code...that call on offset 42EAD6 draws the sparkle, bit by bit.<P>
+The rest is pretty straight forward...Trace the call and for all interesting functions write down all the parameters for each drawing function.
+This is exactly what I did, and I found out that there were three interesting drawing functions:<P>
+<H4><CENTER>Ellipse<BR>MoveToEx<BR>LineTo<P></H4></CENTER>
+As I said, I wrote down every singel parameter to these functions
+and than I simply made my own little program that used the same functions and parameters. And so, the fourth part was done! Look
+at the source code to see my comments on the code.<BR>
+I think they will help you out more than anything I write here.
+<P>Oh, I'd like to take this opportunity to excuse my bad spaghetti-coding style...I know it's quite messy, but you should be able to understand it
+if you read my comments.<P>
+<HR>
+<H3>The end (my only friend)</H3>So, we have finally reached the end...If you read this non-stop I suppose everything is just a big
+blur right now, but if you take some time to relax and fetch something to drink (take a look on +Fravias Coctail session if you're out of ideas)
+most of it will soon make sence...hopefully atleast :)<P>
+Greetings go out to <BR><B>+Aesculapius</B> (for giving me some real bad headaches trying to crack this strainer)
+<BR><B>+Fravia</B> (for his superb website)<BR>
+<B>+ORC</B> (for learning me how to crack through his great tutorials)<BR>
+All the members of <B>MiB</B> (<A HREF="javascript:if(confirm('http://www.messinginbytes.home.ml.org/  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.messinginbytes.home.ml.org/'" tppabs="http://www.messinginbytes.home.ml.org/">http://www.messinginbytes.home.ml.org</A>)<BR>
+and all the guys in <B>#Cracking4newbies</B><P>
+
+This is Cruehead, signing off...
+</BODY>
+</HTML>
+

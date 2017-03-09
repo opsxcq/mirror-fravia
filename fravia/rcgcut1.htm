@@ -1,0 +1,1036 @@
+<HTML>
+
+<HEAD><TITLE>Software history and cracking (CuteFTP)</TITLE></HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+<CENTER><FONT size="+3">Software history and cracking (CuteFTP)</FONT>
+
+<BR>(&quot;Regmon and Filemon and your cracking is almost don&quot; :-)<BR>
+
+<!--<a href="progcor.htm" tppabs="http://www.anticrack.de/fravia/progcor.htm"><IMG SRC="useful.gif" tppabs="http://www.anticrack.de/fravia/useful.gif" ALT="USEFUL" ALIGN=BOTTOM WIDTH=114 HEIGHT=43 BORDER=0 VSPACE=0 HSPACE=0></a><br>-->
+
+<BR><H4>by +Rcg<BR>
+
+<BR>
+
+(07 December 1997)</H4>
+
+<HR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">Courtesy of fravia's page 
+
+of reverse engineering<BR>
+
+<BR><I>Well, a nice example of the importance of Software history when you 
+
+want to reverse a target... and I like a lot +Rcg's important teaching 
+
+for all poor 
+
+shareware protectors:</I></CENTER><PRE>Look at this illogical approach:
+
+
+
+	Call 	The_Best_Protection_ever_created
+
+	test	eax,eax
+
+	jz	Bad_Guy</PRE><I><CENTER>Of course the problem is that 
+
+those protectors are NOT working in assembly and rely on their 'high level' 
+
+languages and 'high level' compilers. Would they have used good old C and Borland's 
+
+ancient (an SMALL, and QUICK, and POWERFUL) Turboc version 1 (for Dos) they would 
+
+have had the possibility to work out some sidepaths around the &quot;jz Bad_Guy&quot; :-)<BR>There are many 
+
+other little pearls inside this essay... read and enjoy!</I></CENTER><HR size="6">
+
+<PRE>
+
+How to reverse Cuteftp32 V2.0
+
+
+
+After installing this Program, a NagScreen tell us that
+
+the program is fully functional for a 30 day period, when
+
+it finished some functions will be disabled.
+
+Hit Cancel because we don't want to begin our trial period.
+
+
+
+
+
+Because we have a lot of experience with this kind of 
+
+protections we won't lose our time with Ida or with W32Dasm,
+
+neither with SoftIce (for the moment), let's use directly
+
+our 'tools'.
+
+
+
+Fire RegMonitor and apply &quot;Cutftp32&quot; at process filter, then
+
+fire again CuteFtp and hit 'Cancel' again on the NagScreen,
+
+and close CuteFtp.
+
+
+
+Now, let's see what Regmonitor reports:
+
+
+
+CloseKey	HKCU\C.Panel\Desktop			SUCCESS		
+
+OpenKey		HKCU\C.Panel\Mouse 			SUCCESS hKey: 0xC30CCC38	
+
+QueryValueEx	HKCU\C.Panel\Mouse\MouseHoverTime 	NOTFOUND		
+
+CloseKey	HKCU\Control Panel\Mouse		SUCCESS		
+
+DeleteKey	HKCR\WINHELP\CFK12			NOTFOUND		
+
+DeleteKey	HKCR\WINHELP\CFK13			NOTFOUND		
+
+DeleteKey	HKCR\WINHELP\CFK14			NOTFOUND		
+
+DeleteKey	HKCR\pfc\CFK12				NOTFOUND		
+
+DeleteKey	HKCR\pfc\CFK13				NOTFOUND		
+
+DeleteKey	HKCR\pfc\CFK14				NOTFOUND		
+
+DeleteKey	HKCR\pfc\CFK15				NOTFOUND		
+
+OpenKey		HKCR\pfc\CFK20				NOTFOUND		
+
+CreateKey	HKCR\pfc\CFK20				SUCCESS	hKey: 0xC30CCC38	
+
+CloseKey	HKCR\pfc\CFK20				SUCCESS		
+
+DeleteKey	HKCR\pfc\CFK20				SUCCESS		
+
+
+
+Repeating again the same process:
+
+
+
+OpenKey		HKCU\C.Panel\Mouse 			SUCCESS hKey: 0xC2F21934	
+
+..
+
+..
+
+CreateKey	HKCR\pfc\CFK20	SUCCESS	hKey: 0xC2F21934	
+
+CloseKey	HKCR\pfc\CFK20	SUCCESS		          		
+
+DeleteKey	HKCR\pfc\CFK20	SUCCESS		          
+
+
+
+All right, you can see something interesting, now lets fire
+
+again CuteFtp and press AGREE.
+
+
+
+We see:
+
+
+
+CreateKey	HKCR\pfc\CFK20	SUCCESS	hKey: 0xC2F21824	
+
+SetValue	HKCR\pfc\CFK20	SUCCESS	&quot;34884fe2,1&quot;	    
+
+CloseKey	HKCR\pfc\CFK20	SUCCESS		            
+
+
+
+Ok, now the key is not deleted, so it's suposed that key
+
+is our 'time left'.
+
+
+
+Fire again to be sure of that conclution:
+
+
+
+OpenKey		HKCR\pfc\CFK20	SUCCESS	hKey: 0xC2F21824	
+
+QueryValue	HKCR\pfc\CFK20	SUCCESS	&quot;34884fe2,1&quot;	
+
+SetValue	HKCR\pfc\CFK20	SUCCESS	&quot;34884fe2,2&quot;	
+
+CloseKey	HKCR\pfc\CFK20	SUCCESS	
+
+
+
+Ok!!, now we have 34884fe2 as a time check number and the
+
+number after the comma is the number of times we have used
+
+the program (maybe another protection mechanism).
+
+
+
+Put your clock one year ahead ==&gt; Your period is over.
+
+Now add one year to the date: ==&gt; Your period is over.
+
+Now return to the correct date: ==&gt; Nothing unusual.
+
+
+
+Deleting this key we see again the NagScreen, that means
+
+we could crack it simply deleting the Key every time our
+
+period is over (not elegant but effective).
+
+
+
+
+
+All right!!!, but now we want to resume downloads, but this
+
+option is only available on the Registered Version, so
+
+lets register it.
+
+
+
+Master +ORC told us about 'History', so following his
+
+words lets supose the protection works exactly as the 
+
+previous versions.
+
+
+
+Lets use FileMonitor:
+
+
+
+Fire CuteFtp, when loaded fire FileMonitor using Cutftp32 as
+
+process filter, lets see:
+
+
+
+Directory	D:	 	SUCCESS CHECK	
+
+FindOpen	\WIN.INI	SUCCESS WIN.INI	
+
+FindClose	\WIN.INI 	SUCCESS		
+
+Open		\WIN.INI 	SUCCESS OPENEXISTING OPENALWAYS 	
+
+Attributes	\WIN.INI 	SUCCESS Get Modify	
+
+Seek		\WIN.INI 	SUCCESS End Offset: 0	
+
+Seek		\WIN.INI 	SUCCESS Beginning Offset: 0	
+
+Read		\WIN.INI 	SUCCESS Offset: 0 Length: 11546	
+
+Close		\WIN.INI 	SUCCESS		
+
+Seek		\CUTFTP32.EXE 	SUCCESS Beginning Offset: 872448	
+
+Read		\CUTFTP32.EXE 	SUCCESS Offset: 872448 Length: 4096	
+
+Seek		\CUTFTP32.EXE 	SUCCESS Beginning Offset: 868352	
+
+Read		\CUTFTP32.EXE 	SUCCESS Offset: 868352 Length: 4096	
+
+Open		\CUTEFTP.KEY  	NOTFOUND OPENEXISTING OPENALWAYS 	
+
+Seek		\CUTFTP32.EXE 	SUCCESS Beginning Offset: 577536	
+
+Read		\CUTFTP32.EXE 	SUCCESS Offset: 577536 Length: 4096	
+
+	      
+
+Oh!!!! its again the same soup==&gt; the missing file.
+
+
+
+Lets use our old reginfo.dat but renaming it to cuteftp.key.
+
+
+
+And again FileMonitor:
+
+
+
+Open	\CUTEFTP\CUTEFTP.KEY	SUCCESS	OPENEXISTING OPENALWAYS 	
+
+Read	\CUTEFTP\CUTEFTP.KEY	SUCCESS	Offset: 0 Length: 4096	
+
+Read	\CUTEFTP\CUTEFTP.KEY	SUCCESS	Offset: 8 Length: 4096	
+
+Close	\CUTEFTP\CUTEFTP.KEY	SUCCESS		
+
+	
+
+We can extract some conclutions.
+
+
+
+	1. It is necessary for the Registered Version
+
+	2. Every time we see the About Dialog it checks
+
+	   the protection.
+
+	3. Our old file is not valid :-(
+
+
+
+It's time for dead listing ==&gt; we are going to use W32Dasm
+
+because we don't want &quot;to kill flies with cannonballs&quot; (this
+
+is a literal translated spanish expression) using IdaPro.
+
+
+
+Searching for CUTEFTP.KEY we get:
+
+
+
+* Possible StringData Ref from Data Obj -&gt;&quot;cuteftp.key&quot;
+
+                                  |
+
+:00411A4C BF684E4800              mov edi, 00484E68
+
+:00411A51 8BCD                    mov ecx, ebp
+
+:00411A53 33C0                    xor eax, eax
+
+
+
+Now lets copy the entire function:
+
+
+
+
+
+* Referenced by a CALL at Addresses:00401058   , :004132D9   , :0042CB46   
+
+|
+
+411970       push FFFFFFFF
+
+411972       push 0046923B
+
+411977       mov eax, dword ptr fs:[00000000]
+
+41197D       push eax
+
+41197E       mov dword ptr fs:[00000000], esp
+
+411985       sub esp, 00000640
+
+41198B       push ebp
+
+41198C       push esi
+
+41198D       mov esi, ecx
+
+41198F       push edi
+
+411990       lea ecx, dword ptr [esp+0000022C]
+
+411997       call 00427530
+
+41199C       mov eax, dword ptr [0048A55C]
+
+4119A1       mov dword ptr [esp+00000654], 00000000
+
+4119AC       test eax, eax
+
+4119AE       je 00411A02
+
+4119B0       mov edx, dword ptr [esp+0000065C]
+
+4119B7       test edx, edx
+
+4119B9       je 00411BCC
+
+4119BF       mov edi, 00484E74
+
+4119C4       or ecx, FFFFFFFF
+
+4119C7       xor eax, eax
+
+4119C9       mov dword ptr [esp+00000654], FFFFFFFF
+
+4119D4       repnz
+
+4119D5       scasb
+
+4119D6       not ecx
+
+4119D8       sub edi, ecx
+
+4119DA       mov eax, ecx
+
+4119DC       mov esi, edi
+
+4119DE       mov edi, edx
+
+4119E0       shr ecx, 02
+
+4119E3       repz
+
+4119E4       movsd
+
+4119E5       mov ecx, eax
+
+4119E7       and ecx, 00000003
+
+4119EA       repz
+
+4119EB       movsb
+
+4119EC       lea ecx, dword ptr [esp+0000022C]
+
+4119F3       call 00427840
+
+4119F8       mov eax, 00000001
+
+4119FD       jmp 00411C03
+
+411A02       mov edx, dword ptr [esi+68]
+
+411A05       lea ecx, dword ptr [esp+0000012C]
+
+411A0C       push 000000FA
+
+411A11       push ecx
+
+411A12       push edx
+
+411A13       Call dword ptr [0048EB70]       ;GetModuleFileNameA
+
+411A19       or ebp, FFFFFFFF
+
+411A1C       lea edi, dword ptr [esp+0000012C]
+
+411A23       mov ecx, ebp
+
+411A25       xor eax, eax
+
+411A27       repnz
+
+411A28       scasb
+
+411A29       not ecx
+
+411A2B       dec ecx
+
+411A2C       lea eax, dword ptr [esp+ecx+0000012C]
+
+411A33       mov cl, byte ptr [esp+ecx+0000012C]
+
+411A3A       cmp cl, 5C
+
+411A3D       je 00411A48
+
+411A3F       mov cl, byte ptr [eax-01]
+
+411A42       dec eax
+
+411A43       cmp cl, 5C
+
+411A46       jne 00411A3F
+
+411A48       mov [eax+01], 00
+
+411A4C       mov edi, 00484E68       ;&quot;cuteftp.key&quot; string
+
+411A51       mov ecx, ebp
+
+411A53       xor eax, eax
+
+411A55       repnz
+
+411A56       scasb
+
+411A57       not ecx
+
+411A59       sub edi, ecx
+
+411A5B       lea edx, dword ptr [esp+0000012C]
+
+411A62       mov esi, edi
+
+411A64       mov edi, edx
+
+411A66       mov edx, ecx
+
+411A68       mov ecx, ebp
+
+411A6A       repnz
+
+411A6B       scasb
+
+411A6C       mov ecx, edx
+
+411A6E       dec edi
+
+411A6F       shr ecx, 02
+
+411A72       repz
+
+411A73       movsd
+
+411A74       mov ecx, edx
+
+411A76       lea eax, dword ptr [esp+0000012C]
+
+411A7D       and ecx, 00000003
+
+411A80       push 00484E64
+
+411A85       repz
+
+411A86       movsb
+
+411A87       push eax
+
+411A88       call 00436F20
+
+411A8D       mov esi, eax
+
+411A8F       add esp, 00000008
+
+411A92       test esi, esi
+
+411A94       jne 00411AA2
+
+411A96       mov dword ptr [esp+00000654], ebp
+
+411A9D       jmp 00411BF5
+
+411AA2       push esi
+
+411AA3       push 00000100
+
+411AA8       lea ecx, dword ptr [esp+34]
+
+411AAC       push 00000001
+
+411AAE       push ecx
+
+411AAF       call 00436D60
+
+411AB4       add esp, 00000010
+
+411AB7       mov edi, eax
+
+411AB9       push esi
+
+411ABA       call 00436CB0
+
+411ABF       add esp, 00000004
+
+411AC2       cmp edi, 00000100
+
+411AC8       jge 00411AD6
+
+411ACA       mov dword ptr [esp+00000654], ebp
+
+411AD1       jmp 00411BF5
+
+411AD6       push 0000019F
+
+411ADB       call 00436C70
+
+411AE0       add esp, 00000004
+
+411AE3       xor esi, esi
+
+411AE5       lea edi, dword ptr [esp+0C]
+
+411AE9       call 00436C80
+
+411AEE       movsx edx, ax
+
+411AF1       xor edx, esi
+
+411AF3       inc esi
+
+411AF4       mov dword ptr [edi], edx
+
+411AF6       add edi, 00000004
+
+411AF9       cmp esi, 00000008
+
+411AFC       jl 00411AE9
+
+411AFE       lea eax, dword ptr [esp+0C]
+
+411B02       lea ecx, dword ptr [esp+0000022C]
+
+411B09       push eax
+
+411B0A       call 00427B10
+
+411B0F       lea ecx, dword ptr [esp+2C]
+
+411B13       push 00000004
+
+411B15       push ecx
+
+411B16       lea ecx, dword ptr [esp+00000234]
+
+411B1D       call 00427AE0
+
+411B22       lea edx, dword ptr [esp+2C]
+
+411B26       lea ecx, dword ptr [esp+0000022C]
+
+411B2D       push edx
+
+411B2E       call 00427B10
+
+411B33       lea eax, dword ptr [esp+4C]
+
+411B37       push 00000001
+
+411B39       push eax
+
+411B3A       lea ecx, dword ptr [esp+00000234]
+
+411B41       call 00427AE0
+
+411B46       mov ebp, dword ptr [esp+4C]
+
+411B4A       lea ecx, dword ptr [esp+54]
+
+411B4E       push 0000001B
+
+411B50       push ecx
+
+411B51       lea ecx, dword ptr [esp+00000234]
+
+411B58       call 00427AE0
+
+411B5D       lea edi, dword ptr [esp+54]
+
+411B61       or ecx, FFFFFFFF
+
+411B64       xor eax, eax
+
+411B66       lea edx, dword ptr [esp+0000012C]
+
+411B6D       repnz
+
+411B6E       scasb
+
+411B6F       not ecx
+
+411B71       sub edi, ecx
+
+411B73       mov eax, ecx
+
+411B75       mov esi, edi
+
+411B77       mov edi, edx
+
+411B79       shr ecx, 02
+
+411B7C       repz
+
+411B7D       movsd
+
+411B7E       mov ecx, eax
+
+411B80       mov eax, 00000028
+
+411B85       and ecx, 00000003
+
+411B88       repz
+
+411B89       movsb
+
+411B8A       xor ecx, ecx
+
+411B8C       movsx edx, byte ptr [esp+eax+2C]
+
+411B91       add ecx, edx
+
+411B93       inc eax
+
+411B94       cmp eax, 00000078
+
+411B97       jl 00411B8C
+
+411B99       cmp ecx, ebp
+
+411B9B       jne 00411BEA
+
+411B9D       mov edx, dword ptr [esp+0000065C]
+
+411BA4       test edx, edx
+
+411BA6       je 00411BCC
+
+411BA8       lea edi, dword ptr [esp+0000012C]	;decrypted username
+
+411BAF       or ecx, FFFFFFFF
+
+411BB2       xor eax, eax
+
+411BB4       repnz
+
+411BB5       scasb
+
+411BB6       not ecx
+
+411BB8       sub edi, ecx
+
+411BBA       mov eax, ecx
+
+411BBC       mov esi, edi
+
+411BBE       mov edi, edx
+
+411BC0       shr ecx, 02
+
+411BC3       repz
+
+411BC4       movsd
+
+411BC5       mov ecx, eax
+
+411BC7       and ecx, 00000003
+
+411BCA       repz
+
+411BCB       movsb
+
+411BCC       lea ecx, dword ptr [esp+0000022C]
+
+411BD3       mov dword ptr [esp+00000654], FFFFFFFF
+
+411BDE       call 00427840
+
+411BE3       mov eax, 00000001 ==&gt; Return true
+
+411BE8       jmp 00411C03
+
+411BEA       mov dword ptr [esp+00000654], FFFFFFFF
+
+411BF5       lea ecx, dword ptr [esp+0000022C]
+
+411BFC       call 00427840
+
+411C01       xor eax, eax ==&gt; Return false
+
+411C03       mov ecx, dword ptr [esp+0000064C]
+
+411C0A       pop edi
+
+411C0B       pop esi
+
+411C0C       mov dword ptr fs:[00000000], ecx
+
+411C13       pop ebp
+
+411C14       add esp, 0000064C
+
+411C1A       ret 0004
+
+
+
+First of all, look at 411C01 ==&gt; xor eax,eax ==&gt; that's all 
+
+we need ==&gt; oh no!!! not again!!!. Please Shareware writers,
+
+never do it again. 
+
+
+
+Look at this:
+
+
+
+	Call 	The_Best_Protection_ever_created
+
+	test	eax,eax
+
+	jz	Bad_Guy
+
+
+
+Don't you think it is ilogical, waste our time creating
+
+good protections and then use the 'test eax,eax'.
+
+
+
+
+
+And now, lets analize the function (if you have a little of
+
+intuition you will easily know what every call makes without
+
+any need to follw it).
+
+
+
+This part add the path to the name.
+
+411A42       dec eax
+
+411A43       cmp cl, 5C		;&quot;\&quot; ==&gt; this is a clue
+
+411A46       jne 00411A3F
+
+411A48       mov [eax+01], 00
+
+411A4C       mov edi, 00484E68       ;&quot;cuteftp.key&quot; string
+
+411A51       mov ecx, ebp
+
+411A53       xor eax, eax
+
+411A55       repnz
+
+411A56       scasb
+
+
+
+Check if Cuteftp.key exist.
+
+411A87       push eax
+
+411A88       call 00436F20	;open 'cuteftp.key'
+
+411A8D       mov esi, eax
+
+411A8F       add esp, 00000008
+
+411A92       test esi, esi	;exists?
+
+411A94       jne 00411AA2	
+
+411A96       mov dword ptr [esp+00000654], ebp
+
+411A9D       jmp 00411BF5	;bad guy
+
+
+
+Is file greater or igual than 100h (256 bytes)?
+
+411ABA       call 00436CB0
+
+411ABF       add esp, 00000004
+
+411AC2       cmp edi, 00000100   ;this is another clue
+
+411AC8       jge 00411AD6
+
+411ACA       mov dword ptr [esp+00000654], ebp
+
+411AD1       jmp 00411BF5  	;bad guy.
+
+
+
+Is checksum correct?
+
+411B41       call 00427AE0
+
+411B46       mov ebp, dword ptr [esp+4C]    ;correct ckecksum
+
+411B4A       lea ecx, dword ptr [esp+54]
+
+..
+
+..
+
+411B8A       xor ecx, ecx	
+
+411B8C       movsx edx, byte ptr [esp+eax+2C]
+
+411B91       add ecx, edx
+
+411B93       inc eax
+
+411B94       cmp eax, 00000078
+
+411B97       jl 00411B8C
+
+411B99       cmp ecx, ebp	;Is checksum ok?
+
+411B9B       jne 00411BEA	;bad guy
+
+
+
+
+
+
+
+Ok!!! its time for our Heditor.
+
+
+
+411ABA       call 00436CB0
+
+411ABF       add esp, 00000004
+
+411AC2       cmp edi, 00000100
+
+411AC8       jge 00411AD6	jmp to 411B9D always
+
+411ACA       mov dword ptr [esp+00000654], ebp
+
+..
+
+..
+
+411B9D       mov edx, dword ptr [esp+0000065C]
+
+411BA4       test edx, edx
+
+411BA6       je 00411BCC
+
+411BA8       lea edi, dword ptr [esp+0000012C]	;esp+2c points to 
+
+						;offset 0 of our
+
+						;file.
+
+..
+
+..
+
+411BCC       lea ecx, dword ptr [esp+0000022C]
+
+411BD3       mov dword ptr [esp+00000654], FFFFFFFF
+
+411BDE       call 00427840	;Print our username
+
+411BE3       mov eax, 00000001 ==&gt; Return true
+
+411BE8       jmp 00411C03
+
+
+
+
+
+Now, search for:
+
+
+
+060000E91F010000 and change it with 060000E9C7000000
+
+8DBC242C010000 with 8DBC242C000000.
+
+
+
+Finally, lets create a file named 'cuteftp.key' with:
+
+&quot;+HCU&quot;,0
+
+
+
+Last words
+
+
+
+You can see how the function is called 3 times, on the beginning,
+
+on the nagcreen and when you try to resume a broken download.
+
+
+
+You can also try to reverse enterely the function and create your
+
+own 'cuteftp.key' file without patching the program. I don't want 
+
+to do it, you may.
+
+
+
++rcg 1997
+
+</PRE>
+
+<FONT color="green">(c) +Rcg 1997. All rights reversed</FONT>
+
+<HR ALIGN="CENTER" WIDTH="100%" SIZE="3">
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</I></CENTER>
+
+<BR><CENTER> 
+
+<!--<a href="progcor.htm" tppabs="http://www.anticrack.de/fravia/progcor.htm"><IMG SRC="useful.gif" tppabs="http://www.anticrack.de/fravia/useful.gif" ALT="USEFUL" ALIGN=BOTTOM WIDTH=114 HEIGHT=43 BORDER=0 VSPACE=0 HSPACE=0></a><br><font color=gray>Back to the programmer's corner</FonT><hr width=33%>-->
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="progcor.htm" tppabs="http://www.anticrack.de/fravia/progcor.htm">protectionist's corner</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut CGI-scripts</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering legal?</A></CENTER>
+
+<CENTER><HR ALIGN="CENTER" WIDTH="100%" SIZE="2"></CENTER>
+
+</BODY>
+
+</HTML>
+

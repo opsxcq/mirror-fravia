@@ -1,0 +1,694 @@
+<HTML>
+
+<HEAD>
+
+<META Name="Voluntary Content Rating" content="it's fravia's: great!">
+
+<TITLE>kilbycd.htm: Thief and the current Eidos protection scheme</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR=#C0C0C0 TEXT=#001010 ALINK=#405040 VLINK=#8850AA>
+
+
+
+<CENTER>
+
+<H2>
+
+Reversing Thief and the current Eidos protection scheme<BR>by Kilby
+
+<BR>9 January 1999
+
+</H2>
+
+<HR><A href="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm"><IMG SRC="academy.gif" tppabs="http://www.anticrack.de/fravia/academy.gif" ALT="academy" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" 
+
+NATURALSIZEFLAG="0" WIDTH="114" HEIGHT="43"></A><BR><FONT color=Gray>
+
+Back to the academy</FONT><BR>
+
+
+
+<HR>
+
+</CENTER>
+
+I would like to say a few words at the start of this file as I feel
+
+that it
+
+is necessary to do so
+
+<BR><BR>
+
+Over the last year or so I have been looking at Fravia+'s site, and
+
+thinking
+
+that it was good thing that somebody has taken the effort to tutor the
+
+new
+
+generation.
+
+<BR><BR>
+
+I started taking other peoples code apart in 1983, yet 
+
+I have been retired for around five/six years... 
+
+Why did I decide to return ?
+
+<BR><BR>
+
+Well I think this will be a bit of a one off to be honest.
+
+<BR><BR>
+
+There seems to be a shortage of good information on reversing CD based
+
+protection systems, I don't know if this counts as good information but
+
+it
+
+may help somebody.
+
+<BR><BR>
+
+After checking out Fravia+'s site every once in a while I thought I
+
+should add
+
+a tutorial, to give something back for the pleasure I have had from
+
+reading
+
+some of the essays.
+
+<BR><BR>
+
+During the summer I finally moved on from my old 486 to a decent spec
+
+system, and also got myself a CD-R.
+
+<BR><BR>
+
+Well after playing about with it for a while, I started to look into
+
+what
+
+the best mastering software was, and found the CD-R discussion forum at
+
+www.cdrom-guide.com, where everybody had been complaining about how they
+
+couldn't copy certain games.
+
+<BR><BR>
+
+Well amongst the usual no brain postings there where a few interesting
+
+reports,
+
+such as about CDs over 75 minutes, illegal Table of Contents and large files
+
+on
+
+disk.
+
+<BR><BR>
+
+Whenever you saw a patch listed it seemed that the inhabitants of the
+
+message board, thought of the author as some sort of supernatural
+
+creature.
+
+<BR><BR>
+
+The reality is that our brains are wired a little differently, to
+
+everybody
+
+else.
+
+<BR><BR>
+
+Most of the protection schemes have the following simple structure:
+
+<BR>
+
+Is the drive a CD ?<BR>
+
+Does a file exist ?<BR>
+
+Can that drive be written to ?
+
+<BR><BR>
+
+That's about it, a bit lame really, perhaps even hiding this inside a DLL, if
+
+they are in an ugly mood.
+
+<BR><BR>
+
+Well considering I wanted Thief (I collect as much as I can afford by ex
+
+Infocom staff), and Eidos used what looked like a "mean" protection
+
+system. I bought Thief.
+
+<BR><BR>
+
+Well... it was quite a disappointment to tell the truth 
+
+(not the game, I may add it puts a whole new spin on the Doom/Quake
+
+genre, but the protection itself).
+
+<BR><BR>
+
+
+
+The protection system used for Thief relies upon :
+
+<BR><BR>
+
+1: More than 75 mins of data on the CD
+
+<BR>2: An invalid TOC, Data, Audio, Audio, Data
+
+<BR>3: Four Fake files on the first data track, each of approx. 515 MB,
+
+KXEP.AFP,  AZXP.AFP, TFJB.AFP & IGYQ.AFP.
+
+<BR>4: Mixed case in the CD Volume name.
+
+<BR><BR>
+
+Anyway the Eidos TOC is only to make a straight copy difficult, as the
+
+two
+
+audio tracks aren't used at all and the other tracks isn't even checked
+
+for.
+
+<BR><BR>
+
+This is real dumb as all the necessary functions are there in MSCDEX.
+
+<BR><BR>
+
+Without these three tracks, 74 minutes is more than enough to hold the
+
+real
+
+data track.
+
+<BR><BR>
+
+The four fake .AFP files are not used properly within the protection
+
+system,
+
+although they deter casual copying, there is a 4KB block loaded, and I
+
+think
+
+they even check it's the correct data, it is not necessary for the
+
+program
+
+to actually run.
+
+<BR><BR>
+
+Obviously it would have been easy enough to copy each of the 4096 byte
+
+blocks to separate files and simply seek to offset 0 (rather than
+
+696406016,
+
+496444928, 696514560 or 696346624, as actually used), and then read the
+
+4096
+
+bytes each time, but it would have slowed me down.
+
+<BR><BR>
+
+To be honest it did slow me down because I was convinced that they
+
+would not
+
+be so stupid and lazy not to use this data (I was wrong).
+
+<BR><BR>
+
+I don't even think they check for the mixed case in the CD volume label.
+
+<BR><BR>
+
+
+
+<B>Tools used:
+
+</B><BR>
+
+Filemon, W32Dasm and hiew
+
+<BR><BR>
+
+Using filemon, I watched as thief.exe opened each of these hidden .AFP
+
+files
+
+where opened and a seek was carried out to around 696496016 bytes into
+
+the
+
+file, 4096 bytes read and then the file closed.
+
+<BR><BR>
+
+This occurred for each of the .AFP files, with various (but similar seek
+
+values).
+
+<BR><BR>
+
+After that I cut a CD with all the files except the .AFP fakes, and as
+
+the
+
+software I was using wouldn't allow me to use mixed case volume labels
+
+<BR><BR>
+
+I used W32Dasm to disassemble thief.exe.
+
+<BR><BR>
+
+I searched for .AFP and found that one large subroutine was used to open
+
+them, this made life easier.
+
+<BR><BR>
+
+The routine was at 00526100 through to 526274 and was called from 3
+
+addresses, all within a 4KB region of RAM.
+
+<BR><BR>
+
+Then I searched for GetDriveTypeA which lives between 0050d720 to
+
+0050d735
+
+<BR><BR>
+
+It called from 0050d773 and 0050da5e
+
+<BR><BR>
+
+The  call to 0050d773 is placed within a routine (between 0050d740 to
+
+0050d78f)
+
+<BR><BR>
+
+Appeared to be reserved for scanning through drives D: to Z; looking
+
+for CD
+
+drives.
+
+<BR><BR>
+
+Not very interesting
+
+<BR><BR>
+
+The call from 0050da5e  looked much more interesting as it seemed to
+
+test
+
+the return value of GetDriveTypeA.
+
+<BR><BR>
+
+Six instructions after this call to GetDriveTypeA was a call to
+
+00526100 the
+
+.AFP read routine.
+
+<BR><BR>
+
+A few instructions further on a second call to the .AFP routine took
+
+place
+
+and some testing of  eax the routine did a ret
+
+<BR><BR>
+
+This routine is called from 0050dadc
+
+<BR><BR>
+
+The other call to the .AFP read appears to trace back to 0050dad5
+
+<BR><BR>
+
+This was the region that the tests on the invisible .AFP files are
+
+called
+
+from
+
+<BR><BR>
+
+This means that the all AFP reads and protection checks take place from
+
+an
+
+area separated by 2 bytes.
+
+<BR><BR>
+
+Just like this
+
+<PRE>
+
+:0050DAD5 E8E6FEFFFF  call 0050D9C0 ; First Call
+
+:0050DADA EB05   jmp 0050DAE1
+
+:0050DADC E82FFFFFFF  call 0050DA10; Second and third calls
+
+</PRE>
+
+To quote Homer Simpson DOH!
+
+<BR><BR>
+
+The Subroutine this is in looks just like this
+
+<PRE>
+
+* Referenced by a CALL at Address:00414FCC
+
+
+
+:0050DAC0 6A00   push 00000000
+
+:0050DAC2 6A00   push 00000000
+
+
+
+* Possible StringData Ref from Data Obj -&gt;"only_check_path"
+
+
+
+:0050DAC4 68E0BF6000  	push 0060BFE0
+
+:0050DAC9 E862AF0300  	call 00548A30
+
+:0050DACE 83C40C   	add esp, 0000000C
+
+:0050DAD1 84C0   	test al, al
+
+:0050DAD3 7507   	jne 0050DADC
+
+:0050DAD5 E8E6FEFFFF  	call 0050D9C0
+
+:0050DADA EB05   	jmp 0050DAE1
+
+
+
+* Referenced by a Jump at Address:0050DAD3(C)
+
+
+
+:0050DADC E82FFFFFFF  	call 0050DA10
+
+
+
+* Referenced by a Jump at Address: 0050DADA(U)
+
+
+
+:0050DAE1 85C0   	test eax, eax
+
+:0050DAE3 7405   	je 0050DAEA
+
+:0050DAE5 E986FBFFFF  	jmp 0050D670
+
+
+
+* Referenced by a Jump at Address: 0050DAE3(C)
+
+
+
+:0050DAEA 33C0   	xor eax, eax
+
+:0050DAEC C3   		ret
+
+</PRE>
+
+Well doesn't :00414FCC look a bit out of place in all this, and just
+
+look at
+
+this
+
+<PRE>
+
+:0050DAC0 6A00   push 00000000
+
+:0050DAC2 6A00   push 00000000
+
+</PRE>
+
+Looks like some .OBJ code has been linked, and they wanted to make sure
+
+of
+
+some free space on the stack.
+
+<BR><BR>
+
+Well if we look at 00414FCC, we could nop the call and see what happens.
+
+<BR><BR>
+
+But I wont.
+
+<BR><BR>
+
+Why ?
+
+<BR><BR>
+
+Well assuming that the protection code called is not written by Looking
+
+Glass (the authors of Thief), as all the Eidos stuff on release, has
+
+similar
+
+(if not the same) protection.
+
+<BR><BR>
+
+They won't check the internal code of the protection routines.
+
+<BR><BR>
+
+However they may check their own code, including the call to the disk
+
+protection.
+
+<BR><BR>
+
+So rather than using four NOPs to delete the call 0050DAC0, 
+
+I chose to add a RET (C3) at 0050DAC0, that way all the code by Looking
+
+Glass is totally intact.
+
+<BR><BR>
+
+So fire up a hex editor and search for
+
+<PRE>
+
+6A,00,6A,00,68,E0,BF,60,00
+
+</PRE>
+
+Change the (first) 6A to C3, it is the only occurrence of these hex
+
+values,
+
+and write the data back to disk.
+
+<BR><BR>
+
+The file offset is 10CEC0, (if you are using hiew then it is 50DAC0, in
+
+the
+
+other offset mode)
+
+<BR><HR width=44%>
+
+
+
+
+
+Feel free to skip the history section that follows.<BR>
+
+<BR><B>
+
+This is a bit of history:
+
+</B><BR>
+
+I have been retired from cracking for around five/six  years.
+
+<BR>
+
+I started cracking in 1983
+
+<BR>
+
+I worked my through a range of machines, from the VIC 20, Spectrum,
+
+Amstrad
+
+CPC, Atari ST, Amiga & PC, which I owned.
+
+<BR>
+
+I also cracked on machines that I didn't own for the challenge, such as
+
+the
+
+C64, Oric, and BBC (Acorn), just for the challenge.
+
+<BR>
+
+When I wasn't doing that, photocopiers, locks, phones, conjuring and
+
+juggling and anything I wasn't supposed to be able to do became targets.
+
+<BR>
+
+About five years ago I got bored, Windoze had turned up, games where
+
+boring
+
+and everything was being written in C, and DOS extenders just took the
+
+fun
+
+out of it all, it was just too easy to hide a small routine within the
+
+morass that C compilers created.
+
+<BR>
+
+Real life also caught up so since then I have been playing with Ultra
+
+Sparcs, and DEC Alphas, and trying to get enough time to sleep.
+
+<HR width=44%>
+
+This program took far to long to reverse because of never reversing a
+
+windows program, being totally out of practice, overestimating the
+
+enthusiasm of the protection authors and finally but not least real
+
+life.
+
+<BR><BR>
+
+Anyway I have now spilled a beer over some listings I have beside me, so
+
+it's time to send this small essay to fravia+ and fuck off to bed.
+
+<BR><BR>
+
+Regards to all
+
+<BR><BR>
+
+Kilby...
+
+
+
+<HR><CENTER>
+
+<I>You'r deep inside fravia's pages of reverse engineering, choose your way out</I><HR width=44%>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" ALT="red" WIDTH="13" HEIGHT="13" BORDER="0"
+
+VSPACE="0" HSPACE="0"><A HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage </A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALIGN="BOTTOM" ALT="red" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"> <A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links
+
+</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13"
+
+ALT="red" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0" NATURALSIZEFLAG="0"> <A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity
+
+</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" ALT="red" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A
+
+HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" ALT="red" WIDTH="13" HEIGHT="13" BORDER="0"
+
+VSPACE="0" HSPACE="0"><A HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays </A><IMG SRC=
+
+"bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" ALT="red" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools
+
+</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" ALT="red" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A
+
+HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails </A><BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" ALT="red" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A
+
+HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database </A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" ALT="red" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A
+
+HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER=
+
+"0" VSPACE="0" HSPACE="0" width="13" height="13"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms </A><IMG SRC=
+
+"bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" ALT="red" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia
+
+</A><BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" ALT="red" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A
+
+HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">is reverse engineering legal? </A></FONT></CENTER>
+
+<HR>
+
+</BODY>
+
+</HTML>
+
+
+
+
+
+
+
+
+

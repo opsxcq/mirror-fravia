@@ -1,0 +1,559 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>symbo_1.htm: sYmbol's; KeyLBE32.DLL, why would you use this to protect your program?</TITLE>
+
+<BODY bgcolor="C0C0C0" text="#001010" vlink="#405040 Alink=#00FF50">
+
+<PRE>
+
+
+
+              
+
+Here are my essays in revised form. They are gear more towards the
+
+newbies of assembly, with somewhat better written notes.
+
+
+
+An Essay by sYmbol
+
+KeyLBE32.DLL, why would you use this to protect your program? 
+
+
+
+(x) Intermediate
+
+
+
+Introduction
+
+
+
+This little dll uses two values (Dword in length or 8 characters long in
+
+otherwords) which are created by the dll. You are then presented these
+
+and asked for a reg code. Hmmm, all I can say is 'Thanks for the hint!'.
+
+
+
+Tools Required
+
+None
+
+
+
+Target History
+
+No longer included. For those of you who know what target uses
+
+KeyLBE32.DLL here is an explanation.
+
+
+
+
+
+Essay
+
+The KeyLBE32.DLL creates two values, Code Entry and Computer Number,
+
+which it uses to create a valid reg code. It then writes the code into a
+
+.lic file. Below you will find the code which I did not comment very
+
+well since it is all math. 
+
+
+
+10007810 8B54240C                mov edx, dword ptr [esp+0C]<COMPUTER Number
+
+10007814 53                      push ebx
+
+10007815 56                      push esi
+
+10007816 57                      push edi
+
+10007817 8B7C241C                mov edi, dword ptr [esp+1C]
+
+1000781B 83C734                  add edi, 00000034<--- EDI is always B8
+
+1000781E 83FA01                  cmp edx, 00000001<--- Checks if the
+
+						       Computer Number is greater than 1
+
+10007821 7D05                    jge 10007828
+
+10007823 BA01000000              mov edx, 00000001<--- Replaces with 1 if it is not
+
+10007828 8B4C2414                mov ecx, dword ptr [esp+14]<--- The Code "Entry.class" tppabs="http://fravia.org/Entry.class"
+
+1000782C 8BD9                    mov ebx, ecx
+
+
+
+Equation Section 1
+
+1000782E 81E3001F0000            and ebx, 00001F00<---A binary comparision. See footnote 1
+
+10007834 C1EB08                  shr ebx, 08<---Shift right. See footnote 2
+
+10007837 8D045B                  lea eax, dword ptr [ebx+2*ebx]
+
+1000783A 8D34C0                  lea esi, dword ptr [eax+8*eax]
+
+1000783D 8BC1                    mov eax, ecx
+
+
+
+Equation Section 2
+
+1000783F 2500E00700              and eax, 0007E000
+
+10007844 8D1CF6                  lea ebx, dword ptr [esi+8*esi]
+
+10007847 C1E80D                  shr eax, 0D
+
+1000784A 05BC070000              add eax, 000007BC
+
+1000784F 8BF0                    mov esi, eax
+
+10007851 C1E004                  shl eax, 04<---Shift left. See footnote 3
+
+10007854 03C6                    add eax, esi
+
+10007856 8D1C83                  lea ebx, dword ptr [ebx+4*eax]
+
+10007859 8BC1                    mov eax, ecx
+
+
+
+Equation Section 3
+
+1000785B 2500007800              and eax, 00780000
+
+10007860 C1E813                  shr eax, 13
+
+10007863 8BF0                    mov esi, eax
+
+10007865 C1E005                  shl eax, 05
+
+10007868 03C6                    add eax, esi
+
+1000786A 8D34C3                  lea esi, dword ptr [ebx+8*eax]
+
+1000786D 8BC1                    mov eax, ecx
+
+
+
+Equation Section 4
+
+1000786F 250000807F              and eax, 7F800000
+
+10007874 81E1FF000000            and ecx, 000000FF
+
+1000787A C1E80F                  shr eax, 0F
+
+1000787D 03C1                    add eax, ecx
+
+1000787F 8D0440                  lea eax, dword ptr [eax+2*eax]
+
+10007882 2BC7                    sub eax, edi
+
+10007884 8D1CF8                  lea ebx, dword ptr [eax+8*edi]
+
+10007887 B801000000              mov eax, 00000001
+
+1000788C 8D0C53                  lea ecx, dword ptr [ebx+2*edx]
+
+1000788F 8BD6                    mov edx, esi
+
+10007891 C1E205                  shl edx, 05
+
+10007894 2BD6                    sub edx, esi
+
+10007896 8D3C0A                  lea edi, dword ptr [edx+ecx]
+
+10007899 8D147500000000          lea edx, dword ptr [2*esi+00000000]
+
+100078A0 8B4C2410                mov ecx, dword ptr [esp+10]
+
+100078A4 8BF7                    mov esi, edi
+
+100078A6 81E6FFFFFF7F            and esi, 7FFFFFFF
+
+100078AC 3BF1                    cmp esi, ecx<--- Is ESI, your entered code, 
+
+						  equal to the valid code?
+
+100078AE 740A                    je 100078BA<--- Hip Hip Horay! 
+
+
+
+Sooo, if your Code entry were: 1342547B and your Computer Number were
+
+22DD89DA, EDX was > 1 then your key would be 45FF1CB9
+
+
+
+Or if EDX <1 as in Code entry: 1342547B and your Computer Number was 
+
+EFFAEFFF, EDX was < 1 then your key would be 440907
+
+
+
+Footnote 1
+
+AND Function: For those of you beginning in the world of assembly the
+
+AND statement is a binary comparison. Let's take the number 5 and 6 for
+
+example. If I were to say 5 and 6 it means you convert both numbers to
+
+binary and compare them.
+
+Binary table 8|4|2|1
+
+Number 5=    0|1|0|1    
+
+Number 6=    0|1|1|0
+
+
+
+Now were are comparing DIFFERENCES when using the AND statement. A 0 and
+
+1 would give a 0 while a 0 and 0 give a 0. The only time you get 1 is
+
+when you have a 1 and a 1. SO! with 5 and 6 you get 4.
+
+
+
+Binary table 8|4|2|1
+
+Number 5=    0|1|0|1    
+
+Number 6=    0|1|1|0
+
+--------------------
+
+New Value    0|1|0|0
+
+
+
+This is universal through all numbers. If you have a hex number it get's
+
+converted to binary, same for decimal or octdecimal. That little thing
+
+call 'Calculator' that comes with Windows. Great tool for this stuff!
+
+
+
+Footnote 2
+
+SHR Function: This is a logical function. It shifts, too the right, the
+
+value of the 'count' ?!?!What?!!? Let's take the hex value 10 for
+
+example. a SHR 10,1 gives a result of 8. This table may explain this
+
+better.
+
+
+
+SHR dest,count
+
+
+
+Count Table
+
+These are hex values---->1---2<THESE are decimal values 
+
+			 2---4
+
+			 3---8
+
+			 4---16
+
+			 5---32
+
+                  
+
+When you SHR you take your dest and do a, unsigned, divide by the count
+
+number. So a SHR 10,2 would result in 4 (10 in hex is 16 in decimal.
+
+16/4 is 4)
+
+
+
+Footnote 3
+
+SHL Function: This is a logical funtion. It shifts, too the left, the
+
+value of the 'count'. Any ideas yet? Instead of division you multiple.
+
+Using the same table from above you get get your answers. A SHL 10,1
+
+gives 20 (10*2) while SHL 20,2 gives 80 (20*4)
+
+
+
+What do SHR and SHL mean to me? The reverse? Well, besides understand
+
+the code "better.class" tppabs="http://fravia.org/better.class" SHL, SHR are used to chop off or add bits to a value and
+
+then stick that value in the register. 
+
+
+
+Final Notes:
+
+The main problem with this protection scheme is that the make of
+
+Keyleb32.DLL gave us too many clues! Just as programs that say 'Invalid
+
+reg code' when you enter the wrong reg code give you too many clues.
+
+I've run into main programs that do nothing or say 'Thanks!' regardless
+
+of a valid or invalid code entry. As well, note to programmers, do not
+
+give the reverser a straight line to your equations! If this equation
+
+had several calls in it, say to do this or do that most people would get
+
+confused or tired. Run that cracker around abit and see if they stay in
+
+the game. 
+
+
+
+Ob Duh 
+
+
+
+I wont even bother explaining you that you should BUY the target
+
+programs if you intend to use them for a longer period than the allowed
+
+one. Should you want to STEAL software instead, you don't need to crack
+
+the protection schemes at all: you'll find it on most Warez sites,
+
+complete and already regged, farewell. 
+
+
+
+
+
+An essay by sYmbol
+
+A much too simple protection scheme! Variety is the spice of life!
+
+
+
+Rating: (X)Intermediate
+
+
+
+Introduction:
+
+
+
+This 'target' is a program which can perform individually scheduled
+
+backups of your data. It can backup to a local drive, removable drive or
+
+network drive. 
+
+
+
+Tools Needed
+
+None!
+
+
+
+Essay
+
+This program uses a registration key that must be 14 characters long.
+
+The way it creates it's key is interesting and, unfortunately for the
+
+programmer, not hidden very well. The first 4 characters dictates how
+
+many licenses your reg key gives you and the remaining 10 characters are
+
+the reg key itself. The formula uses the first 4 characters plus your
+
+registration name to create the reg key. The assembly below is the
+
+routine which creates your reg key.
+
+
+
+00460D4E 33C0                    xor eax, eax
+
+00460D50 55                      push ebp
+
+00460D51 68410E4600              push 00460E41
+
+00460D56 64FF30                  push dword ptr fs:[eax]
+
+00460D59 648920                  mov dword ptr fs:[eax], esp
+
+00460D5C 8B1D90BC4700            mov ebx, dword ptr [0047BC90]<--- Move in magic 
+
+							           number. 7ECA
+
+00460D62 8B45FC                  mov eax, dword ptr [ebp-04]<--- 1st 4 characters in 
+
+								 reg key and your name 
+
+								 into EAX
+
+00460D65 E8D22EFAFF              call 00403C3C<---Routine to calculate the length of 
+
+                                                  your name + the first 4 characters 
+
+						  of the reg key
+
+00460D6A 85C0                    test eax, eax
+
+00460D6C 7E4E                    jle 00460DBC
+
+00460D6E 8945E8                  mov dword ptr [ebp-18], eax
+
+00460D71 C745F401000000          mov [ebp-0C], 00000001
+
+00460D78 33C0                    xor eax, eax
+
+00460D7A 55                      push ebp
+
+00460D7B 68A50D4600              push 00460DA5
+
+00460D80 64FF30                  push dword ptr fs:[eax]
+
+00460D83 648920                  mov dword ptr fs:[eax], esp
+
+00460D86 8B45FC                  mov eax, dword ptr [ebp-04]<--- 1st 4 characters in 
+
+								 reg key and your name 
+
+00460D89 8B55F4                  mov edx, dword ptr [ebp-0C]
+
+00460D8C 0FB64410FF              movzx eax, byte ptr [eax+edx-01]<--- Moves character's 
+
+								     (at the pointer) Hex 
+
+								      value at into EAXƒ
+
+00460D91 F7EB                    imul ebx<--- multiples character value by in EBX with 
+
+                                              EDX as an overflow. See footnote 1
+
+00460D93 030590BC4700            add eax, dword ptr [0047BC90]<--- Adds 7ECA to the 
+
+								   result in eax
+
+00460D99 8BD8                    mov ebx, eax
+
+00460D9B 33C0                    xor eax, eax
+
+00460D9D 5A                      pop edx
+
+00460D9E 59                      pop ecx
+
+00460D9F 59                      pop ecx
+
+00460DA0 648910                  mov dword ptr fs:[eax], edx
+
+00460DA3 EB0F                    jmp 00460DB4
+
+00460DA5 E93A24FAFF              jmp 004031E4
+
+00460DAA BBE7030000              mov ebx, 000003E7
+
+00460DAF E8D426FAFF              call 00403488
+
+00460DB4 FF45F4                  inc [ebp-0C]
+
+00460DB7 FF4DE8                  dec [ebp-18]
+
+00460DBA 75BC                    jne 00460D78<--- Loop until all characters in the 
+
+					          Name: are run through
+
+
+
+After all of the calculations are done the string is formatted as such:
+
+Use the value in EAX
+
+XXXX-YYYY-ZZZZ
+
+Where XXXX is the number of licenses you recieve. The way it calulates
+
+this is taking the value in XXXX and subtracting 237 from it. So a value
+
+of 0238 in XXXX will result in 1 license. While the upper limit FFFF
+
+gives you 64968 licenses.
+
+
+
+For instance, a reg key for sYmbol with 1 license is 0238-0F0D-4A6A
+
+While a reg key for sYmbol with 64968 licenses is FFFF-D789-D14A
+
+
+
+Footnote 1<--- to Newbies!
+
+IMUL function: This simply takes two values and multiplies them. BUT! If
+
+your value exceeds a DW (double word) then overflow is carried into the
+
+EDX register. MUL is similar to IMUL save the overflow.
+
+
+
+Final Notes:
+
+This program uses too SIMPLE of an equation to create a valid reg key.
+
+All you need is to know how to multiply and you are set. Some advice to
+
+the programer. Instead of using all of the letters in the users name,
+
+use what would seem like random letters from the person's name. For
+
+instance: sYmbol, only take the charaters which their ascii values are
+
+odd or prime or even. Your choice! Perhaps doing more than just
+
+multiplying! Or hiding your magic 'constant' value better. Say with a
+
+call that creates the magic value and instead of writing equation
+
+results to the registers put it in an obscure memory location. 
+
+
+
+Ob Duh.
+
+I wont even bother explaining you that you should BUY the target
+
+programs if you intend to use them for a longer period than the allowed
+
+one. Should you want to STEAL software instead, you don't need to crack
+
+the protection schemes at all: you'll find it on most Warez sites,
+
+complete and already regged, farewell.</prE>
+
+</BODY>
+
+</HTML>

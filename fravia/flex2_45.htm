@@ -1,0 +1,698 @@
+<html>
+<head>
+<title>flex2_45.htm: Reversing Globetrotter's Flexcrypt (Key Extraction and Encryption Algorithm Reversing)
+</title></head><body BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+<table CELLPADDING="1" CELLSPACING="2" BORDER="1" WIDTH="100%" HEIGHT="22">
+<tr><td></td><td>
+<!-- Choose  a TITLE and a subtitle, choose well! -->
+<center><font SIZE="+2">
+Reversing Globetrotter Flexcrypt
+</font><br><font SIZE="+1">
+Key Extraction and Encryption Algorithm Reversing
+</font></center></td><td>
+<!-- Choose  a PROJECT GIF, leave this if unsure -->
+<center><a href="advanced.htm" tppabs="http://www.anticrack.de/fravia/advanced.htm"><img SRC="xtranio.gif" tppabs="http://www.anticrack.de/fravia/xtranio.gif" ALT="advanced" ALIGN="CENTER" WIDTH="114" HEIGHT="43" BORDER="0" VSPACE="0" HSPACE="0"></a><br><font color="gray">Advanced</font>
+</center></td></tr><tr><td bgcolor="#FFFFEA"><center><font COLOR="890000">
+<!-- CHOOSE A DATE (will probably be changed) -->
+17 September 1999
+</font></center></td><td bgcolor="#FFFFEA"><center>by
+<font size="+3">
+<!-- CHOOSE A HANDLE , i.e. your pseudo (wont bechanged) -->
+Nolan Blender
+</font></center></td><td VALIGN="center" bgcolor="#FFFFEA">
+<!--<a href="hcu98_3.htm" tppabs="http://www.anticrack.de/fravia/hcu98_3.htm"><IMG SRC="hcu1.gif" tppabs="http://www.anticrack.de/fravia/hcu1.gif"ALT="+cracker" ALIGN=BOTTOM WIDTH=114 HEIGHT=43 BORDER=0 VSPACE=0 HSPACE=0></a>-->
+</td></tr><tr><td><center><a href="index.html" tppabs="http://www.anticrack.de/fravia/index.html"><img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"></a></center></td>
+<td BGCOLOR="898030"><center>Courtesy of Fravia's page
+of 
+reverse engineering</center> 
+</center></td><td BGCOLOR="898030"><center>
+
+</center></td></tr>
+<tr><td><font color="#C4C0CF">fra_00xx<br>980917<br>Nolan Blender<br>0110<br>AD<br>PC<br></font></td><td><i><center>
+Encryption Algorithm Reversing... yumm! And Nolan Blender is showing here 
+a very &quot;professional&quot; approach that will benefit all reversers (and all protectors) 
+alike: this is not a reading for the casual cracker, though. Newbies beware.<br>
+Even if Nolan Blender's didactic approach, with questions and answers, will be very useful for 
+ANYONE seriously interested in cryptoreversing.<br>Woa! &quot;<font color="blue">Cryptoreverser</font>&quot;... sounds 
+ like Cryptreverser, scary eh? <hr width="55%">On a sidenote: Many essays like this one 
+went evidently lost in 
+my &quot;great August floods&quot; of Yahoomail. Please re-send.
+
+</i></center></td><td></td></tr><tr><td></td>
+<!-- Leonard Coehn's old song, because we are poets,not only crackers -->
+<td BGCOLOR="898030"><center></i><b>There is a crack,
+a crack in everything 
+That's how the light gets in</b></center>
+<!-- Leonard Coehn's old song, because we are poets,not only crackers -->
+</center></td><td></td></tr><tr><td VALIGN="MIDDLE" bgcolor="#C6E7C6"><font color="blue"><center>Rating</font></font></center>
+</td><td VALIGN="MIDDLE" bgcolor="#C6E7C6"><font color="blue"><center>
+<!-- CHOOSE A RATING (may be changed) -->
+( )<b>Beginner</b> (X)<b>Intermediate</b> (X)<b>Advanced</b> ( )<b>Expert</b></font>
+</center></td><td></td></tr></table>
+<!-- END HEAD  --><br>
+<!-- CORPUS  -->
+<!-- CHOOSE A COMMENT (may be changed)  -->
+Here we extend the excellent work by Pilgrim (<a href="pilgrim2.htm" tppabs="http://www.anticrack.de/fravia/pilgrim2.htm">pilgrim2.htm</a>: Pilgrim's <i>Further FlexCrypt analysis</i>, see also <a href="flexm11.htm" tppabs="http://www.anticrack.de/fravia/flexm11.htm">flexm11.htm</a>: <i>FlexLm 
+handy hints</i> and <a href="pflexlo1.htm" tppabs="http://www.anticrack.de/fravia/pflexlo1.htm">pflexlo1.htm</a>: <i>FlexLock...less secure than the rest of FLEXlm</i>) on the
+workings of Flexcrypt.  The true
+value here is not in the keys or files that you will
+be able to generate after 
+reading this essay, but in understanding how weak
+algorithms can compromise 
+security.   I will provide information so
+that seekers of knowledge can understand and reproduce
+what has been revealed (for
+there is no substitute for doing) but this is not
+truly required for getting some
+value from this essay.
+<hr><center><font SIZE="+2">
+<!-- Repeat your TITLE  -->
+Reversing Globetrotter Software's Flexcrypt
+   </font><br>
+   <font SIZE="+2">
+<!-- Repeat your SUBTITLE -->
+Key Extraction and Encryption Algorithm Reversing.
+   </font><br><font COLOR="0B7FC1">
+<!-- REPEAT YOUR CHOSEN HANDLE HERE -->Written by 
+Nolan Blender
+</font></center><br><br>
+
+<!-- INTRO STARTS HERE -->
+<table CELLPADDING="1" CELLSPACING="2" BORDER="1" WIDTH="100%" HEIGHT="22">
+<tr><td bgcolor="#C6E7C6"><center><font size="+2"><font color="blue">Introduction</font>
+</font></center></td></tr></table>
+
+<p>
+Flexcrypt is used by Globetrotter to try to prevent
+unauthorized parties from acquiring
+information and examining it.  From a cryptographic
+point of view,  the capability of this software is not
+adaquate.   The &quot;key&quot; which
+is provided in most cases is an authorization code
+only, and does not contain cryptographic information
+required to decode the encrypted file - it is only an
+index into a table of existing keys which
+are stored within the executable.    Two methods of
+attacking this program will be described. The
+first method is an attack on the key generator.  The
+second method examines the algorithm used in
+the encryption.
+
+<!-- PASTE HERE YOUR INTRODUCTION -->
+<br><br>
+
+<!-- TOOLS STARTS HERE -->
+<table CELLPADDING="1" CELLSPACING="2" BORDER="1" WIDTH="100%" HEIGHT="22">
+<tr><td bgcolor="#C6E7C6"><center><font size="+2"><font color="blue">Tools required</font>
+</font></center></td></tr></table>
+dde | softice<br>
+Some patience.
+<!-- PASTE HERE YOUR REQUIRED TOOLS -->
+<br><br>
+
+<!-- TARGET URL STARTS HERE -->
+<table CELLPADDING="1" CELLSPACING="2" BORDER="1" WIDTH="100%" HEIGHT="22">
+<tr><td bgcolor="#C6E7C6"><center><font size="+2"><font color="blue">Target's URL/FTP</font>
+</font></center></td></tr></table>
+<!-- DON'T FORGET TO PASTE HERE THE URL/FTP OF YOURTARGET(S) -->
+<a href="javascript:if(confirm('ftp://ftp.globes.com/  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='ftp://ftp.globes.com/'" tppabs="ftp://ftp.globes.com/" target="_blank">ftp://ftp.globes.com</a>
+<br><br>
+
+<!-- PROGRAM HISTORY STARTS HERE -->
+<table CELLPADDING="1" CELLSPACING="2" BORDER="1" WIDTH="100%" HEIGHT="22">
+<tr><td bgcolor="#C6E7C6"><center><font size="+2"><font color="blue">Program History</font>
+</font></center></td></tr></table>
+<!-- PASTE HERE YOUR TARGET'S HISTORY (if any) -->
+Little is known about the origin of this program. 
+Analysis of the design of the program
+shows that it is a modification of the licensing
+software, and was probably used to 
+proved &quot;secure&quot; distribution of software to
+authorized customers and third parties.
+
+<br><br>
+
+<!-- REAL ESSAY  STARTS HERE -->
+<table CELLPADDING="1" CELLSPACING="2" BORDER="1" WIDTH="100%" HEIGHT="22">
+<tr><td bgcolor="#C6E7C6"><center><font size="+2"><font color="blue">Essay</font></font>
+</center></td></tr></table>
+
+<p>
+The information provided here doesn't provide much
+additional ability to decode over Pilgrim's essay on
+Flexcrypt.
+That essay provides enough information to decode
+flexcrypted files.  After reading this essay, it
+should
+be apparent that the security provided for the
+encrypted files is minimal, and this program should
+not
+be used for anything that requires even minimal
+security. Reading and understanding this essay will
+give
+you the ability to generate flexcrypt keys using
+makekey and to write programs that are capable of 
+automatically decoding flexcrypted files. 
+<p>
+The first attempt at building a key generator used
+vendor keys extracted from the global data area of
+the running program, and converted to version 6.  An
+area matching the fc_keytab was found, and an 
+fc_keytab table was generated that would produce an
+identical table to the one in core.  I could not
+get the Globetrotter version 6 makekey program to
+generate keys that would work with the version 5.11
+version of flexcrypt.  I decided that obtaining the
+correct version of flexcrypt would be required.
+<p>
+The version 5.11 flexcrypt kit is not encoded with
+that version of flexcrypt - an older variant is used.
+The methods that Pilgrim used to extract the keys,
+such as breaking in sprintf statements, was used
+to extract a set of possible keys.  There is no
+checksum confirmation process for that earlier version
+of flexcrypt, so a file for each of the decrypted
+strings was generated, then a decompression attempt
+was done on each of the files.  Two files passed the
+full decompression test, corresponding to entry
+32 in the decryption table.  One of the entries was
+for the specific host that I was decrypting on, the
+other key was for ANY host.
+<p>
+The key to decode the flexcrypt 5.11 kit is
+5537-2182-6912-6163-32 - I provide this so that
+interested
+parties can follow along.
+<p>
+The locations where the encryption keys xored with
+vendor_key5 were both 0, so I didn't worry about
+these yet.  I built a trial makekey program with the
+kit, using vendor keys extracted from the global
+memory area.  Vendor_key5 was derived from a custom
+program, although the standard technique of using
+l_svk to extract this key would work as well.
+<p>
+The compiler aligns the structure so that each element
+will start on a word boundary, and then pads the
+rest of the structure with nulls.  The pattern that I
+saw showed a pattern of xxxxxxxx xx000000 when
+I used my own data, so I looked for a similar pattern
+in core.  I used the pattern that they suggest in
+their mycode.c file.  The val1/val2 keys were
+extracted from the core file, and fed through the
+following
+program.  0xfe9f9a1d is actually vendorcode 5 for this
+product.
+<pre>
+40001560: 6E20746F  20737464  6F75740A  00000000
+
+
+Here we see the start of the vendorcode structure...
+          V
+          00040000  00000000  00000000  36448C29
+40001580: AFD74F22  875F072B  53EDC41B  00000000
+
+Start of fc_keytab structure.
+          V
+          16B658E8  F5000000  B590444E  56000000
+400015A0: FE239DE3  1D000000  8D0C8951  6E000000
+          2BE6A5B7  C8000000  C6DFD6E5  25000000
+
+</pre>
+<p>
+Once we have extracted the keys, they were organized into k1,k2 pairs, and then
+XORed with vendorkey5.
+<pre>
+
+#include&lt;stdio.h&gt;
+main()
+{
+    unsigned long val1;
+    unsigned long val2;
+    char instr[1024];
+    int i = 0;
+
+    while (fgets(instr,1024,stdin)) {
+        sscanf(instr,&quot;%x %x&quot;, &amp;val1, &amp;val2);
+        val1 = val1 ^ 0xfe9f9a1d;
+        val2 = val2 &amp; 0xff ^ 0x1d;
+        printf (&quot;     { 0x%08x ^ K1,  K2(0x%02x)}, /* Offset %d */\n&quot;, val1, val 2,i);
+        i++;
+
+    }
+}
+
+</pre>
+<p>
+The key table and the vendorcode values extracted from
+core are added to mycode.c, and then
+makekey generates correct decoding values. Vendor
+defined encryption is used to generate the
+decoding keys.  lc_crypt() is used to generate a key,
+then it appears that custom modifications
+are done to the result by fc_crypt(). It may be
+possible to completely reverse the key generation
+mechanism, however this isn't required to decode the
+files.
+<p>
+<h2> Attacking the FLEXcrypt algorithm itself. </h2>
+<p>
+The algorithms that encode data in FLEXcrypt are very
+weak.   There is a strong 
+relationship between input and output data, and it is
+possible to derive the 
+encryption key from a single plaintext/ciphertext
+pair.  The process used to 
+generate the real encryption keys use data more than
+once, making it possible
+to mostly verify whether a key is valid or not.  Very
+little additional functionality
+was gained by cracking the algorithm, except for some
+minor convenience in figuring
+out the encryption code offset.  It is satisfying to
+know exactly how something works, and to
+be able to reproduce the operation of a program
+completely.  The attack on this 
+part of the algorithm is independent of the attack on
+the makekey program.  To decode
+the files with this method, vendorkey5 and the values
+of fc_keytab aren't required, only
+the real encryption key, and this can be be extracted
+from the encrypted file.
+<p>
+<h3> The Approach </h3>
+<p>
+The first part to reversing flexcrypt was to write a
+test program that called the
+actual encryption routines.  The constituent files of
+the libraries were extracted,
+and encrypt.o was replaced by a test program which
+called the encryption code directly.
+This somewhat simplified the debugging process, and
+allowed modification of individual
+calls to library functions.  The first call of
+interest is to fc_string_crypt.
+<p>
+The first key derivation comes in the fc_split_code()
+routine.   This one was of interest
+as it took in data from fc_keytab, and the index into
+the encryption table.  This 
+indicated that it was involved in the key generation
+process.   This routine takes the
+40 bit key found in fc_keytab and merges them with
+VENDOR_CODE5 to produce a 64 bit key.
+The 64 bit key is the actual key used in the
+encryption operations.  l_svk (which extracts 
+VENDOR_CODE5 from the other 4 vendor codes) is
+actually called from within fc_split_code().
+Here is a subroutine that has the same functionality,
+but it takes vendorcode5 as an argument.
+<p>
+<pre>
+/*******************************************************************************
+ *
+ * my_split_code
+ *
+ * This routine generates a split code (a full 64 bit key) from
+ * vendorcode5 and the input key (first 5 bytes).
+ * this was modified from the original code, and doesn't
+ * reflect exactly how fc_split_code works, but the algorithm
+ * is the same.
+ *
+ * inkey (input) 40 bit input key.
+ * vc5 (input) 32 bit vendorcode5 key
+ * outval(output) 64 bit split code.
+
+********************************************************************************/
+int my_split_code(char *inkey, char *vc5,  char *outval)
+{
+    unsigned long keys[8];
+    unsigned long dbytes[5];
+    unsigned long xorbytes[4];
+    int i;
+
+
+    /* Load keys */
+    for (i = 0; i &lt; 4; i++) {
+        keys[i] = (unsigned long) (vc5[i] &amp; 0xff);
+    }
+    /* Load data */
+    for (i = 0; i &lt; 5; i++) {
+        dbytes[i] = (unsigned long) (inkey[i] &amp; 0xff);
+    }
+    /* Build XOR'ed values */
+    for (i = 0; i &lt; 4; i++) {
+        xorbytes[i] = dbytes[i] ^ keys[i];
+    }
+    outval[0] = xorbytes[3];
+    outval[5] = xorbytes[2];
+    outval[2] = xorbytes[1];
+    outval[7] = xorbytes[0];
+    outval[4] = dbytes[4];
+    outval[1] = xorbytes[1] ^ xorbytes[0]; /* Redundant rule 1 */
+    outval[6] = xorbytes[3] ^ dbytes[4];   /* Redundant rule 2 */
+    outval[3] = xorbytes[2] ^ xorbytes[1]; /* Redundant rule 3 */
+    return(0);
+}
+</pre>
+<p>
+The three redundant rules allow us to check to see if
+the split code is correct with
+a very high degree of certainty.  Why this is
+important will be demonstrated shortly.
+<p>
+The next interesting routine is fc_block_crypt.  Calls
+to this routine were intercepted, and
+the arguments before and after the call were examined.
+ The following observations were made.
+<p>
+<ul>
+<li> The routine was called with the split code as the
+key and an 8 byte mystery string.
+<li> The next call was called with the split code as
+the key, and split_code XORed with
+the first 8 byte data block as data.
+<li> The next call had the previous block XORed with
+the current data as input, and that
+was passed to encrypt block.
+<li> This was repeated until the end of the file.
+</ul>
+<p>
+The cipher is using cipher block chaining with the key
+as the initialization
+vector.  I suppose some improvement could be had by
+using a random IV, but other weaknesses
+are still there to be exploited.
+<p>
+A special flexcrypt header is written to the output
+file, then the encrypted blocks are written
+sequentially to the output file.
+<p>
+What was that mystery code?  As it turns out, it is
+the encryption offset turned into a
+string using this highly secret algorithm:
+<p>
+<pre>
+	sprintf(keystring, &quot;%02x%03d%03d&quot;, offsetval,
+offsetval, 255-offsetval);
+</pre>
+<p>
+What this means is that there are 256 possible
+plaintexts which can match the ciphertext.
+Since the encryption algorithm is so simple, it is a
+simple matter to extract the key
+given a plaintext/ciphertext pair.  here is the
+encryption algorithm.
+<pre>
+/*****************************************************************
+ *
+ * my_block_crypt:
+ * this routine is is a combination permute/xor
+transformation.
+ * inkey(input) input encryption key
+ * dval(input/output) block to be transformed.
+
+*****************************************************************/
+int my_block_crypt(char *inkey, char *dval)
+{
+	unsigned long keys[8];
+	unsigned long dbytes[8];
+	int i;
+
+	/* Load keys */
+	for (i = 0; i <8; i++) { keys[i]="(unsigned" long) (inkey[i] &amp; 0xff); } /* Load data */ for (i="0;" i < 8; i++) { dbytes[i]="(unsigned" long) (dval[i] &amp; 0xff); } dval[0]="dbytes[7]" ^ keys[3]; dval[1]="dbytes[5]" ^ keys[5]; dval[2]="dbytes[4]" ^ keys[1]; dval[3]="dbytes[2]" ^ keys[7]; dval[4]="dbytes[6]" ^ keys[2]; dval[5]="dbytes[3]" ^ keys[4]; dval[6]="dbytes[0]" ^ keys[0]; dval[7]="dbytes[1]" ^ keys[6]; return(0); } </pre>
+Therefore
+<pre>
+/*****************************************************************
+ *
+ * my_recover_key: 
+ * recover key from a plaintext/ciphertext pair.
+ *
+ * nfb 22-aug-1999 - initial coding.
+ *
+
+*****************************************************************/
+int my_recover_key(char *plaintext, char *ciphertext,
+char *outkey)
+{
+	unsigned long ptext[8];
+	unsigned long ctext[8];
+	int i;
+
+	/* Load plaintext */
+	for (i = 0; i <8; i++) { ptext[i]="(unsigned" long) (plaintext[i] &amp; 0xff); } /* Load data */ for (i="0;" i < 8; i++) { ctext[i]="(unsigned" long) (ciphertext[i] &amp; 0xff); } outkey[3]="ptext[7]" ^ ctext[0]; outkey[5]="ptext[5]" ^ ctext[1]; outkey[1]="ptext[4]" ^ ctext[2]; outkey[7]="ptext[2]" ^ ctext[3]; outkey[2]="ptext[6]" ^ ctext[4]; outkey[4]="ptext[3]" ^ ctext[5]; outkey[0]="ptext[0]" ^ ctext[6]; outkey[6]="ptext[1]" ^ ctext[7]; return(0); } </pre>
+<p>
+Once we have the key, we can see if it's valid.   This
+code validates
+the returned keys.
+<pre>
+ int my_validate_key(char *inval)
+ {
+	int i;
+	unsigned long dbytes[8];
+
+	/* Transfer bytes */
+	for (i = 0; i <8; i++) { dbytes[i]="(unsigned" long) (inval[i] &amp; 0xff); } /* Redundant rule 1 */ if (dbytes[1] !="(dbytes[2]" ^ dbytes[7])) { return(-1); } /* Redundant rule 2 */ if (dbytes[6] !="(dbytes[0]" ^ dbytes[4])) { return(-1); } /* Redundant rule 3 */ if (dbytes[3] !="(dbytes[5]" ^ dbytes[2])) { return(-1); } /* All OK, return 0 */ return(0); } </pre>
+
+<p>
+The real decryption key can be located by cycling
+through the 256 possible indexes, 
+checking to see if the resulting key passes
+validate_key, and using that key if
+one is found.   If multiple keys are found, try the
+keys and check the output
+data.   Most likely, one and only one key will be
+found.  From this point it is
+a simple matter to decrypt the file a block at a time,
+and you will have your plaintext
+data.
+
+<!-- FINAL NOTES STARTS HERE -->
+<table CELLPADDING="1" CELLSPACING="2" BORDER="1" WIDTH="100%" HEIGHT="22">
+<tr><td bgcolor="#C6E7C6"><center><font size="+2"><font color="blue">Final Notes</font>
+</font></center></td></tr></table>
+<br>
+Flexcrypt 5.11 does not offer very much protection to
+encrypted files. 
+Cracking the program and the algorithms that it uses
+to encode files
+provides some useful insight into methods that can be
+used to attack
+encryption programs.
+<br><br>
+FlexLM is only minimally involved in this product,
+providing only
+the authorization process, and part of the key used to
+decrypt
+or encrypt files.  
+<br><br>
+Here are some of my comments.
+<br><br>
+Decryption keys used to decode files should actually
+contain private
+information that is required to decode the file.  In
+this case, the
+keys are stored within the decryption executable,
+reducing the problem
+to one of pure cracking and some trial and error if
+the data is all
+that is required.
+<br><br>
+A combination of weak encryption and known data encrypted into the
+header makes it possible to write automatic decryptors for any file
+encrypted by this program.
+<br><br>
+If the designers of this program had not distributed the keys with
+the decryptor, used a random initialization vector, and used even
+a little bit stronger encryption algorithm, the program would be 
+much more resistant to direct attack.  
+
+<br><br>
+<pre>
+Questions:
+
+1.  Why should encryption algorithms rely on strong design rather
+    than design secrecy?
+
+2.  Why should encryption algorithms be resistant to known 
+    plaintext attacks?
+
+3.  Why should encryption programs avoid encrypting known data
+    such as headers into files?
+
+4.  Why did the NSA approve this program for export?
+
+5.  Describe the decrypt_block algorithm.
+
+Answers:
+
+1.  Since there is always the possibility that the encryption
+    process may be made available to cryptanalysists, it is
+    highly unlikely that the actual encryption algorithm will
+    remain secret.   Once the algorithm is known, any security
+    from algorithm secrecy is lost.
+
+2.  There is often a stereotyped beginning and/or ending to
+    a message.  If the algorithm isn't resistant to known plaintext
+    attacks, the encryption key can be derived from the 
+    plaintext/ciphertext pairs, and the message can be decoded.
+
+3.  This simplifies brute force attacks.  If a ciphertext/plaintext
+    pair is known,  it may be possible to extract the key, depending
+    on the strength of the algorithm.  Although encryption algorithms
+    should provide protection against this, weaknesses in implementation
+    may cause security weaknesses.  Questions 2 and 3 are closely 
+    related.
+
+4.  The real key length is short enough, and the algorithm weak 
+    enough that it can easily be broken, thus providing no 
+    secrecy advantage to foreign powers.
+
+5.  
+int my_block_crypt(char *inkey, char *dval)
+{
+	unsigned long keys[8];
+	unsigned long dbytes[8];
+	int i;
+
+	/* Load keys */
+	for (i = 0; i &lt; 8; i++) {
+		keys[i] = (unsigned long) (inkey[i] &amp; 0xff);
+	}
+	/* Load data */
+	for (i = 0; i &lt; 8; i++) {
+		dbytes[i] = (unsigned long) (dval[i] &amp; 0xff);
+	}
+
+	dval[0] = dbytes[7] ^ keys[3];
+	dval[1] = dbytes[5] ^ keys[5];
+	dval[2] = dbytes[4] ^ keys[1];
+	dval[3] = dbytes[2] ^ keys[7];
+	dval[4] = dbytes[6] ^ keys[2];
+	dval[5] = dbytes[3] ^ keys[4];
+	dval[6] = dbytes[0] ^ keys[0];
+	dval[7] = dbytes[1] ^ keys[6];
+	return(0);
+}
+
+Exercise:
+
+Write a program to decrypt any file encrypted with Flexcrypt 5.11.
+</pre>
+
+<h2> Other notes </h2>
+<p>
+Some of the code which seems wasteful of cycles is to
+deal with big endian/little endian issues.
+<p>
+Only limited testing was done.  It is possible that
+there are conditions which could 
+yield incorrect results.
+<p>
+<h3> Utilities </h3>
+<p>
+This code writes a file for chosen plaintext attacks. 
+It isn't really part of this project, 
+it is provided only for convenience and for
+verification.
+<pre>
+#include&lt;stdio.h&gt;
+#include&lt;fcntl.h&gt;
+#include&lt;unistd.h&gt;
+
+main(int argc, char *argv[])
+{
+	int fd;
+	unsigned long data[4];
+	int i;
+
+	data[0] = 0x00000001;
+	data[1] = 0x00000010;
+	data[2] = 0x00000200;
+	data[3] = 0x00000400;
+
+	if (argc != 2) {
+		fprintf(stderr, &quot;Usage: wrdata file\n&quot;);
+		exit(1);
+	}
+	if ((fd = open(argv[1], O_RDWR|O_CREAT, 0755)) &lt; 0) {
+		fprintf (stderr, &quot;Failed open of %s\n&quot;, argv[1]);
+		perror(&quot;open&quot;);
+		exit(1);
+	}
+	for (i = 0; i &lt; 1; i++) {
+	  if (write(fd,(void *) data, 16) != 16) {
+		fprintf (stderr, &quot;Failed writing block %d to %s\n&quot;, i, argv[1]);
+		perror(&quot;write&quot;);
+		exit(1);
+		 }
+	}
+	close(fd);
+	printf (&quot;Done.\n&quot;);
+}
+</pre>
+<p>
+<h2> Other notes </h2>
+<p>
+Version 6.1 of Flexcrypt uses the SAME algorithms,
+however the keys
+required for decrypt are different.  The real keys
+used to 
+encrypt the file are the same though.
+<p>
+
+<br><br>
+
+<!-- OB DUH STARTS HERE -->
+<table CELLPADDING="1" CELLSPACING="2" BORDER="1" WIDTH="100%" HEIGHT="22">
+<tr><td bgcolor="#C6E7C6"><center><font size="+2"><font color="blue">Ob Duh</font></font>
+</center></td></tr></table><center><i>I wont even
+bother explaining you 
+   that you should BUY programs if you
+intend to use them for a 
+   longer period than the allowed one. Should you want
+to STEAL  
+   software instead (unlikely in this case :-) you don't need to
+crack protection schemes at all: 
+   you'll find everything on most Warez sites, complete and
+already regged, 
+   farewell, don't come back.</i></center>
+
+<!-- WAY OUT STARTS HERE -->
+<hr><center><i>You are deep inside fravia's page of
+reverse engineering,  
+choose your way out:<br><br></i></center>
+<br><center>
+<!-- EITHER A NICE GIF LIKE THIS -->
+<!-- <a href="project3.htm" tppabs="http://www.anticrack.de/fravia/project3.htm"><IMG SRC="project3.gif" tppabs="http://www.anticrack.de/fravia/project3.gif" ALT="projecT3" ALIGN=CENTER WIDTH=114 HEIGHT=43BORDER=0 VSPACE=0 HSPACE=0></a><br><font color=gray>Back to project 3</FonT><br><bR>-->
+<!-- OR JUST A LINK LIKE THIS -->
+
+<!--<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A HREF="project1.htm" tppabs="http://www.anticrack.de/fravia/project1.htm">Backto Your_chosen_project</A> <hr width=33%>-->
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><a HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage</a>
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><a HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links</a> 
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><a HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms</a>
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><a HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC</a>
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><a HREF="protec.htm" tppabs="http://www.anticrack.de/fravia/protec.htm">how to
+protect</a>
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><a HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database</a>
+<br>
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><a HREF="realicra.htm" tppabs="http://www.anticrack.de/fravia/realicra.htm">reality cracking</a>
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><a HREF="howtosea.htm" tppabs="http://www.anticrack.de/fravia/howtosea.htm">how
+to search</a>
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><a HREF="javascri.htm" tppabs="http://www.anticrack.de/fravia/javascri.htm">javascript wars</a>
+<br>
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><a HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools</a>
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><a HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity academy</a> 
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><a HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails</a>
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><a HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut CGI-scripts</a>
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><a HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia+</a>
+<br>
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><a HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is
+reverse engineering legal?</a>
+</center>
+<hr>
+<!-- THAT'S ALL, THANKS A LOT this will allowautomated retrieval -->
+</body>
+</html>

@@ -1,0 +1,1056 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>wi_rcg</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+
+
+
+
+
+
+<CENTER>
+
+
+
+
+
+<H1>+HCU 1997, Project2: Winice cracking<BR>Phase 2<BR></H1>
+
+Courtesy of Fravia's page of reverse engineering
+
+</CENTER>
+
+
+
+PHASE 2 by +Rcg</H2><BR>
+
+
+
+<PRE>
+
+	Another approach to crack SoftIce 3.01 14 day trial.
+
+
+
+After having read the phase 1 of this project, by Frog's print, I thought: 
+
+let's analize a little the NmGetNumDaysLeft function
+
+
+
+So with W32dasm8 I got the next code fragment.
+
+
+
+Exported fn(): NmGetNumDaysLeft - Ord:000Dh 
+
+:100263F0 83EC20                  sub esp, 00000020
+
+:100263F3 8D442404                lea eax, [esp + 04]
+
+:100263F7 53                      push ebx
+
+:100263F8 56                      push esi
+
+:100263F9 57                      push edi
+
+:100263FA 55                      push ebp
+
+:100263FB 50                      push eax
+
+:100263FC 6819000200              push 00020019
+
+:10026401 6A00                    push 00000000
+
+
+
+
+
+* Possible StringData Ref from Data Obj -&gt;&quot;Software\Microsoft\Windows\Help&quot;
+
+                                  |
+
+:10026403 6888880710              push 10078888
+
+:10026408 6802000080              push 80000002
+
+
+
+* Reference To: ADVAPI32.RegOpenKeyExA, Ord:012Eh
+
+                                  |
+
+:1002640D FF15F8411C10            Call dword ptr [101C41F8]
+
+:10026413 85C0                    test eax, eax
+
+:10026415 755A                    jne 10026471
+
+:10026417 BF04000000              mov edi, 00000004
+
+:1002641C 8D442410                lea eax, [esp + 10]
+
+:10026420 8B4C2414                mov ecx, [esp + 14]
+
+:10026424 50                      push eax
+
+:10026425 68D8201C10              push 101C20D8
+
+
+
+* Reference To: ADVAPI32.RegQueryValueExA, Ord:0136h
+
+                                  |
+
+:1002642A 8B35F4411C10            mov esi, [101C41F4]
+
+:10026430 897C2418                mov [esp + 18], edi
+
+:10026434 6A00                    push 00000000
+
+:10026436 6A00                    push 00000000
+
+
+
+* Possible StringData Ref from Data Obj -&gt;&quot;OleGUIDLow&quot;
+
+                                  |
+
+:10026438 687C880710              push 1007887C
+
+:1002643D 51                      push ecx
+
+:1002643E FFD6                    call esi
+
+:10026440 85C0                    test eax, eax
+
+:10026442 752D                    jne 10026471
+
+:10026444 897C2410                mov [esp + 10], edi
+
+:10026448 8D7C2410                lea edi, [esp + 10]
+
+:1002644C 8B442414                mov eax, [esp + 14]
+
+:10026450 57                      push edi
+
+:10026451 68E8231C10              push 101C23E8
+
+:10026456 6A00                    push 00000000
+
+:10026458 6A00                    push 00000000 
+
+
+
+* Possible StringData Ref from Data Obj -&gt;&quot;OleGUIDHigh&quot;
+
+:1002645A 6870880710              push 10078870
+
+:1002645F 50                      push eax
+
+:10026460 FFD6                    call esi
+
+:10026462 85C0                    test eax, eax
+
+:10026464 750B                    jne 10026471
+
+:10026466 8B442414                mov eax, [esp + 14]
+
+:1002646A 50                      push eax
+
+
+
+* Reference To: ADVAPI32.RegCloseKey, Ord:0117h
+
+                                  |
+
+:1002646B FF15F0411C10            Call dword ptr [101C41F0]
+
+
+
+* Referenced by a Jump at Addresses:10026415(C), :10026442(C), :10026464(C)		
+
+						|
+
+:10026471 8D442420                lea eax, [esp + 20]
+
+:10026475 50                      push eax
+
+
+
+* Reference To: KERNEL32.GetSystemTime, Ord:0134h
+
+                                  |
+
+:10026476 FF1538421C10            Call dword ptr [101C4238]
+
+:1002647C 8B742420                mov esi, [esp + 20]	
+
+:10026480 33C0                    xor eax, eax
+
+:10026482 668B442426              mov ax, [esp + 26]
+
+:10026487 81E6FFFF0000            and esi, 0000FFFF
+
+:1002648D 8B0DC0A50710     ***    mov ecx, [1007A5C0]	;Get 1st constant value
+
+:10026493 8944241C                mov [esp + 1C], eax
+
+:10026497 33C0                    xor eax, eax
+
+:10026499 330DD8201C10     ***    xor ecx, [101C20D8]	;Xor with Date 1st value
+
+:1002649F 668B442422              mov ax, [esp + 22]	
+
+:100264A4 8BD9                    mov ebx, ecx
+
+:100264A6 81E300F00000            and ebx, 0000F000
+
+:100264AC 8BF9                    mov edi, ecx
+
+:100264AE C1EB0C                  shr ebx, 0C
+
+:100264B1 83E70F                  and edi, 0000000F
+
+:100264B4 C1E704                  shl edi, 04
+
+:100264B7 8BE9                    mov ebp, ecx
+
+:100264B9 81E50000000F            and ebp, 0F000000
+
+:100264BF 89442418                mov [esp + 18], eax
+
+:100264C3 C1ED10                  shr ebp, 10
+
+:100264C6 8BC1                    mov eax, ecx
+
+:100264C8 250000F000              and eax, 00F00000
+
+:100264CD C1E814                  shr eax, 14
+
+:100264D0 0BF8                    or edi, eax
+
+:100264D2 8BC1                    mov eax, ecx
+
+:100264D4 2500000F00              and eax, 000F0000
+
+:100264D9 81E1F0000000            and ecx, 000000F0
+
+:100264DF 0BE8                    or ebp, eax
+
+:100264E1 C1ED08                  shr ebp, 08
+
+:100264E4 0BE9                    or ebp, ecx
+
+:100264E6 B9FFFFFFFF              mov ecx, FFFFFFFF
+
+:100264EB 2BCB                    sub ecx, ebx
+
+:100264ED 8D443D00                lea eax, [ebp + edi 
+
+:100264F1 0FAFCF                  imul ecx, edi
+
+:100264F4 49                      dec ecx
+
+:100264F5 40                      inc eax
+
+:100264F6 0FAFCD                  imul ecx, ebp
+
+:100264F9 0FAFC3                  imul eax, ebx
+
+:100264FC 2BC8                    sub ecx, eax
+
+:100264FE 8BC7                    mov eax, edi
+
+:10026500 33C5                    xor eax, ebp
+
+:10026502 33C3                    xor eax, ebx
+
+:10026504 2BC8                    sub ecx, eax
+
+:10026506 A1C4A50710         **** mov eax, [1007A5C4]	;2nd contant value
+
+:1002650B 3305E8231C10            xor eax, [101C23E8]
+
+:10026511 3305D8201C10            xor eax, [101C20D8]
+
+:10026517 03C8                    add ecx, eax
+
+:10026519 2BCF                    sub ecx, edi
+
+:1002651B 7402                    je 1002651F
+
+:1002651D FFD1                    call ecx
+
+:1002651F 8D4C6D00                lea ecx, [ebp + 2*ebp]
+
+:10026523 8D0C8B                  lea ecx, [ebx + 4*ecx]
+
+:10026526 8D1C76                  lea ebx, [esi + 2*esi]
+
+:10026529 8BC1                    mov eax, ecx
+
+:1002652B C1E105                  shl ecx, 05
+
+:1002652E 2BC8                    sub ecx, eax
+
+:10026530 8B442418                mov eax, [esp + 18]
+
+:10026534 8D1439                  lea edx, [ecx + edi]
+
+:10026537 8D0C98                  lea ecx, [eax + 4*ebx]
+
+:1002653A 8BD9                    mov ebx, ecx
+
+:1002653C C1E105                  shl ecx, 05
+
+:1002653F 2BCB                    sub ecx, ebx
+
+:10026541 034C241C                add ecx, [esp + 1C]
+
+:10026545 3BCA                    cmp ecx, edx
+
+:10026547 7202                    jb 1002654B
+
+:10026549 2BCA                    sub ecx, edx
+
+:1002654B B800000000              mov eax, 00000000
+
+:10026550 83F90E                  cmp ecx, 0000000E
+
+:10026553 7307                    jnb 1002655C
+
+:10026555 B80E000000              mov eax, 0000000E
+
+
+
+
+
+:1002655A 2BC1                    sub eax, ecx
+
+
+
+
+
+:1002655C 5D                      pop ebp
+
+
+
+
+
+:1002655D A3DC201C10              mov [101C20DC], eax
+
+
+
+
+
+:10026562 5F                      pop edi
+
+
+
+
+
+:10026563 5E                      pop esi
+
+
+
+
+
+:10026564 5B                      pop ebx
+
+
+
+
+
+:10026565 83C420                  add esp, 00000020
+
+
+
+
+
+:10026568 C3                      ret
+
+
+
+Obviously, I was thinking that this crack couldn't be 
+
+so easy... yet after studying a little the routine above, I 
+
+noticed that there are two contant (fixed) values:
+
+
+
+		FCB32679 and 7866EDBA
+
+
+
+these values are used to decrypt the instalation date, and after
+
+having done the hard work in order to analyze the code, I just made a 
+
+simple check: I searched these values INSIDE the winice.exe file and...
+
+tachantachan.... only ONE ocurrence. Bingo! Therefore I figured that the
+
+winice.exe file uses theses values too, in order to determine if you are 
+
+a good or a bad guy (until this moment I kept thinking that the NuMega 
+
+boys were just laughing at my efforts). Look what I found:
+
+
+
+
+
+I found this:
+
+
+
+46 75 6E 63 74 69 6F 6E 20 6E 75 6D 62 65 72 20  Function number 
+
+28 25 64 29 20 63 61 6E 27 74 20 62 65 20 67 72  (%d) can't be gr
+
+65 61 74 65 72 20 74 68 61 6E 20 E7 00 00 00 00  eater than 7....
+
+79 26 B3 FC BA ED 66 78 00 00 00 00 00 00 00 00  y&amp;....fx........
+
+^^^^^^^^^^^^^^^^^^^^^^^
+
+
+
+so now the next question is, 
+
+	Does really winice use the date numbers with the curious caption
+
+&quot;Eval expiration date - DO NOT REMOVE!&quot; inside the winice.dat file? Or is
+
+it just a &quot;smoke&quot; to take all crackers on a boot ride?
+
+
+
+The next step was to change, inside winice.exe, one of these two constants,
+
+then rerun again Sice and look!... Ctrl+D has no effect. Sice does
+
+not pop, protection has snapped!
+
+
+
+But, I thought, this could be caused just by the &quot;modification&quot; of the file,
+
+may be there is a checksum, if you alter anything it snaps... let's check! 
+
+With the original file, I wrote uppercase FUNCTION on the lowercase &quot;Function&quot;
+
+among the above bytes, and... nothing happens, SoftIce ran perfectly, OK!!! 
+
+No file checksum routine.
+
+
+
+Now, I was completely sure that THESE values were used by the protection shceme.
+
+
+
+Where are these values hidden?  In the winice.dat (of course) AND
+
+in the registry, searching in the registry I found in:
+
+
+
+	MyPc\HkeyLocalMachine\SOFTWARE\Microsoft\Windows\Help
+
+	OleGUIDHigh	Date Value1
+
+	OleGUIDLow	Date Value2 
+
+
+
+After that I tried another trick: I put Frog's print's values in my own winice.dat 
+
+file AND in the registry and it worked fine.
+
+
+
+Now again W32dasm8 on winice.exe and searching in winice.exe with a 
+
+little use of zen (I searched for 0000000E, That not too much zen, is it? :-)
+
+and i found:
+
+
+
+:000549A6 55                      push ebp
+
+:000549A7 8BEC                    mov ebp, esp
+
+:000549A9 83EC1C                  sub esp, 0000001C
+
+:000549AC 53                      push ebx
+
+:000549AD 56                      push esi
+
+:000549AE 57                      push edi
+
+:000549AF A1D4730B00              mov eax, [000B73D4]
+
+:000549B4 3305B88E0600            xor eax, [00068EB8]
+
+:000549BA 8945EC                  mov [ebp-14], eax
+
+:000549BD A1D0730B00              mov eax, [000B73D0]
+
+:000549C2 3305B48E0600            xor eax, [00068EB4 
+
+:000549C8 8945F8                  mov [ebp-08], eax
+
+:000549CB A1B48E0600              mov eax, [00068EB4]
+
+:000549D0 3145EC                  xor [ebp-14], eax
+
+:000549D3 8B45F8                  mov eax, [ebp-08]
+
+:000549D6 C1E80C                  shr eax, 0C
+
+:000549D9 83E00F                  and eax, 0000000F
+
+:000549DC 8945FC                  mov [ebp-04], eax
+
+:000549DF 8B45F8                  mov eax, [ebp-08]
+
+:000549E2 C1E814                  shr eax, 14
+
+:000549E5 83E00F                  and eax, 0000000F
+
+:000549E8 8B4DF8                  mov ecx, [ebp-08]
+
+:000549EB 83E10F                  and ecx, 0000000F
+
+:000549EE C1E104                  shl ecx, 04
+
+:000549F1 0BC1                    or eax, ecx
+
+:000549F3 8945F0                  mov [ebp-10], eax
+
+:000549F6 8B45F8                  mov eax, [ebp-08]
+
+
+
+
+
+:000549F9 C1E808                  shr eax, 08
+
+
+
+
+
+:000549FC 25000F0000              and eax, 00000F00
+
+
+
+
+
+:00054A01 8B4DF8                  mov ecx, [ebp-08]
+
+
+
+
+
+:00054A04 C1E918                  shr ecx, 18
+
+
+
+
+
+:00054A07 83E10F                  and ecx, 0000000F
+
+
+
+
+
+:00054A0A 0BC1                    or eax, ecx
+
+
+
+
+
+:00054A0C 8B4DF8                  mov ecx, [ebp-08]
+
+
+
+
+
+:00054A0F 81E1F0000000            and ecx, 000000F0
+
+
+
+
+
+:00054A15 0BC1                    or eax, ecx
+
+
+
+
+
+:00054A17 8945F4                  mov [ebp-0C], eax
+
+
+
+
+
+:00054A1A 2BC0                    sub eax, eax
+
+
+
+
+
+:00054A1C 8B4DF4                  mov ecx, [ebp-0C]
+
+
+
+
+
+:00054A1F 334DF0                  xor ecx, [ebp-10]
+
+
+
+
+
+:00054A22 334DFC                  xor ecx, [ebp-04]
+
+
+
+
+
+:00054A25 8B55F4                  mov edx, [ebp-0C]
+
+
+
+
+
+:00054A28 0FAF55F0                imul edx, [ebp-10]
+
+
+
+
+
+:00054A2C 0FAF55FC                imul edx, [ebp-04]
+
+
+
+
+
+:00054A30 03CA                    add ecx, edx
+
+
+
+
+
+:00054A32 8B55F0                  mov edx, [ebp-10]
+
+
+
+
+
+:00054A35 0FAF55FC                imul edx, [ebp-04]
+
+
+
+
+
+:00054A39 03CA                    add ecx, edx
+
+
+
+
+
+:00054A3B 8B55F4                  mov edx, [ebp-0C]
+
+
+
+
+
+:00054A3E 0FAF55F0                imul edx, [ebp-10]
+
+
+
+
+
+:00054A42 03CA                    add ecx, edx
+
+
+
+
+
+:00054A44 8B55F4                  mov edx, [ebp-0C]
+
+
+
+
+
+:00054A47 0FAF55FC                imul edx, [ebp-04]
+
+
+
+
+
+:00054A4B 03CA                    add ecx, edx
+
+
+
+
+
+:00054A4D 034DF4                  add ecx, [ebp-0C]
+
+
+
+
+
+:00054A50 034DF0                  add ecx, [ebp-10]
+
+
+
+
+
+:00054A53 034DFC                  add ecx, [ebp-04]
+
+
+
+
+
+:00054A56 2BC1                    sub eax, ecx
+
+
+
+
+
+:00054A58 F7D8                    neg eax
+
+
+
+
+
+:00054A5A 2945EC                  sub [ebp-14], eax
+
+
+
+
+
+:00054A5D 0F8407000000            je 00054A6A
+
+
+
+
+
+:00054A63 2BC0                    sub eax, eax
+
+
+
+
+
+:00054A65 E97E000000              jmp 00054AE8
+
+
+
+
+
+:00054A6A 8B45F4                  mov eax, [ebp-0C]
+
+
+
+
+
+:00054A6D 50                      push eax
+
+
+
+
+
+:00054A6E 8B45F0                  mov eax, [ebp-10 
+
+
+
+
+
+:00054A71 50                      push eax
+
+
+
+
+
+:00054A72 8B45FC                  mov eax, [ebp-04]
+
+
+
+
+
+:00054A75 50                      push eax
+
+
+
+
+
+:00054A76 E872000000              call 00054AED
+
+
+
+
+
+:00054A7B 83C40C                  add esp, 0000000C
+
+
+
+
+
+:00054A7E 8945E8                  mov [ebp-18], eax
+
+
+
+
+
+:00054A81 8B4510                  mov eax, [ebp+10]
+
+
+
+
+
+:00054A84 50                      push eax
+
+
+
+
+
+:00054A85 8B450C                  mov eax, [ebp+0C]
+
+
+
+
+
+:00054A88 50                      push eax
+
+
+
+
+
+
+
+:00054A89 8B4508                  mov eax, [ebp+08]
+
+
+
+
+
+:00054A8C 50                      push eax
+
+
+
+
+
+:00054A8D E85B000000              call 00054AED
+
+
+
+
+
+:00054A92 83C40C                  add esp, 0000000C
+
+
+
+
+
+:00054A95 8945E4                  mov [ebp-1C], eax
+
+
+
+
+
+:00054A98 8B45E4                  mov eax, [ebp-1C]
+
+
+
+
+
+:00054A9B 3945E8                  cmp [ebp-18], eax
+
+
+
+
+
+:00054A9E 0F870A000000            ja 00054AAE
+
+
+
+
+
+:00054AA4 2BC0                    sub eax, eax
+
+
+
+
+
+:00054AA6 2B45E8                  sub eax, [ebp-18]
+
+:00054AA9 F7D8                    neg eax
+
+:00054AAB 2945E4              *** sub [ebp-1C], eax		;Days using it
+
+:00054AAE 837DE40E                cmp [ebp-1C], 0000000E	;here it is****
+
+:00054AB2 0F8217000000        *** jb 00054ACF		      ;Make it jmp always
+
+:00054AB8 C705A4C10C0000000000    mov dword ptr [000CC1A4], 0 ;0 days left
+
+:00054AC2 8B45F4                  mov eax, [ebp-0C]
+
+:00054AC5 E91E000000              jmp 00054AE8
+
+:00054ACA E919000000              jmp 00054AE8
+
+:00054ACF B80E000000              mov eax, 0000000E
+
+:00054AD4 2B45E4                  sub eax, [ebp-1C]	;Nop this to get always
+
+                                                    ;14 days left	
+
+:00054AD7 A3A4C10C00              mov [000CC1A4], eax	;Days left
+
+:00054ADC 8B45EC                  mov eax, [ebp-14]
+
+:00054ADF 8D444003                lea eax, [eax + 2*eax + 03]
+
+:00054AE3 E900000000              jmp 00054AE8
+
+:00054AE8 5F                      pop edi
+
+:00054AE9 5E                      pop esi
+
+:00054AEA 5B                      pop ebx
+
+:00054AEB C9                      leave
+
+:00054AEC C3                      ret
+
+
+
+
+
+Now simply change 0F8217000000 to EB1E17000000 (jmp always)!!!
+
+and 	 	    2B45E4 to 909090		
+
+
+
+Look how both routines are &quot;identical&quot;.
+
+
+
+Final check...I try a few diferent values for the date and it works ever!!!
+
+
+
+Final comments:
+
+
+
+	I'm not sure... Sice may have more protections routines, it could 
+
+happen. I have not used it a long time after the above patch, but this doc 
+
+represents only another approach, now you have more perspective point to 
+
+attack this scheme. Work on it! 
+
+
+
+And finally but not less important,
+
+*thanks a lot Razzia* (for your <A href="razzia.htm" tppabs="http://www.anticrack.de/fravia/razzia.htm">&quot;how to crack&quot;</A> VisualBasic *.dll).
+
+
+
+That's all folks!!!!
+
+
+
+
+
++Rcg 1997
+
+</PRE>
+
+<HR size="2">
+
+
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering, 
+
+choose your way out:</I></CENTER>
+
+
+
+<BR><CENTER>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#84'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#84"> homepage</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"> 
+
+<A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#73'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#73"> links</A> 
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0">
+
+<A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm"> anonymity</A> 
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm"> +ORC</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#82'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#82"> students' essays</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">
+
+<A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm"> tools</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm"> cocktails</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm"> antismut CGI-tricks</A>
+
+
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm"> search_forms</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm"> mailFraVia</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm"> Is software reverse engineering legal?</A></CENTER>
+
+
+
+</CENTER>
+
+<CENTER><HR ALIGN="CENTER" WIDTH="100%" SIZE="2"></CENTER>
+
+
+
+
+
+
+
+
+

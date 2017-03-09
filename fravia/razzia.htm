@@ -1,0 +1,566 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>razzia</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+<CENTER><H2>How to crack all visual basic programs<BR>
+
+(a Tutorial)</H2><H4><I>by Razzia</I></H4>
+
+<BR>
+
+
+
+<HR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">Courtesy of Fravia's page of reverse engineering<BR>
+
+~
+
+<BR><I>This Tutorial is EXTREMELY interesting: more and more programs have been written in 
+
+overbloated languages like visual basic or Delphy and, as Razzia correctly points 
+
+out, this makes these programs even more crackable as &quot;normal&quot; applications! Besides 
+
+I find Razzia's style extremelky clever (the &quot;more info about this program&quot; blocks 
+
+should be used by ALL crackers from now on, for instance) and very well structured. 
+
+Head his advice and always &quot;make the point&quot; (consider your approach) *BEFORE* jumping in a cracking 
+
+session!<BR>Another very interesting technique, useful for protection schemes that 
+
+change the mathematical algorhitm every time they are installed, is the patching of the Visual Basic dll
+
+ itself in order to SHOW you (in a mesagebox you'll call) which password you 
+
+should enter<BR> Enjoy!
+
+</I><BR> 
+
+<HR size="2">
+
+ <H3><B>razzia's tutorial for vb cracking</B></H3></CENTER>
+
+<PRE>
+
+
+
+
+
+               Introduction      
+
+
+
+  Lately more and more programs come out that are programmed in VB.
+
+Since VB programs are still unknown material for most crackers they
+
+ignore them and label thhem as 'uncrackable'. In this document i will show
+
+you that this is not true for text based protections (serials/reg#'s).
+
+
+
+  As tools we will need only soft-ice and in one case hiew. Further-
+
+more i assume that the reader is somewhat familiar with cracking. For 
+
+absolutely beginners i recommend the great tutorials made by +orc and 
+
+ed!son's good windows tutorial. But i will try my best to make the text 
+
+understandable for everyone who has a little knownledge about cracking.
+
+
+
+   
+
+               Getting ourselves prepared
+
+
+
+  Before i start bombing you with asm listings lets take a moment to
+
+think about what we are dealing with. 
+
+  We are dealing with exe's that dont have code themselves but instead
+
+they make calls to a library with standard functions. 
+
+  What does this mean? It means that there is a big disadventage to
+
+protect programs written in VB. Why? Do you think that the writers of
+
+the VB dll made 10 different functions you could use in order to compare 
+
+2 strings? No, of course not. They made the dll to be as efficient as
+
+possible and as small as possible. 
+
+  So therefore a good guess is that there will be only 1 (or 2) place(s)
+
+inside the dll where two strings can be compared. And that turns out to 
+
+be the case, as you will see if you finish reading this document. 
+
+  Does the little lamp already begin to glow in your head ? ;--) 
+
+Wouldnt it be great if we knew where, in the dll, 2 strings get compared?
+
+Yes, it would be great. It would reduce VB cracking to a boring job of
+
+setting a single breakpoint at the right place. Continue reading for
+
+the details.    
+
+
+
+
+
+
+
+               Strategy
+
+  
+
+  Before we continue it would be wise to set out a strategy (like you 
+
+should always do, with every other case of cracking).
+
+
+
+  Lets think about the protection ...
+
+You enter a string of text, then you hit enter or press 'OK' or whatever.
+
+Then windows passes the data you entered to the VB dll. The VB dll then 
+
+does whatever it needs in order to know if the data you entered are right 
+
+or wrong. And you get a msg, saying you entered a good/wrong code.
+
+
+
+  So where would then be the weak link in the chain? The answer is where 
+
+windows passes the data you entered to the VB dll. Thats our entry point.
+
+We can make softice break there. And then we will be at the source of the 
+
+protection-chain. With the aid of breakpoints we can then monitor what
+
+happens to our text. 
+
+
+
+  I think that we now have enough background information to crack a 
+
+first example.
+
+
+
+
+
+               Case 1 : The Collector v2.1
+
+
+
+  The collector is an utility for creating and maintaining your 
+
+image/photo collection. Not bad for a VB program.
+
+  More info about this program :
+
+
+
+  Name       : The Collector v2.1 
+
+  Where      : http://intranet.ca/~logic/collectr.html
+
+  Size       : collectr.exe = 246.047 bytes
+
+  Protection : serial
+
+  DLL        : uses VB3 dll  <VB3.DLL I find it easier to explain things in steps. So therefore i will split the cracking process in smaller chunks : Step 1 : Run The Collector right at startup it will ask you for a serial # Step 2 : Enter a dummy serial like '9876543210'. Now press control-d to enter softice. In softice enter 'bpx hmemcpy' to place a breakpoint on the hmemcpy function of the kernel. (Intermezzo : What is hmemcpy? Windows uses hmemcpy alot in operations concerning strings. In this case it will be used to copy the buffer with the text we entered to the memory space of the VB dll. Remember when i said that we were gonna break when windows passed our entered string to the VB dll?) Step 3 : Leave softice with control-d. And press 'OK". This will make softice break right at the beginning of hmemcpy. Step 4 : Now we will continue with tracing further into the hmemcpy function to find out where the string we entered will be stored. Keep pressing F10 untill you see this : :Memory_copying_snippet JMP 9E9F PUSH ECX ;these lines copy the SHR ECX,02 ;string at ds:si to es:di REPZ MOVSD ;the REPZ MOVSD! POP ECX AND ECX,03 REPZ MOVSB ;the REPZ MOVSB! XOR DX,DX Step 5: Right before REPZ MOVSD do a 'ed si'. You will see the text you entered, in my case its shows '0987654321'. Do a 'ed es:di' and you will see nothing (yet). But if you press F10 and get passed the REPZ MOVSB you will see the text getting copied to this new location, where the VB dll can access it. Step 6: Now we know where the text is located. Lets review our strategy here. Our plan was to find out where the VB dll kept our serial, then put a breakpoint on that memory location and find out with what it got compared. So, lets set a bpr (breakpoint on range) at the location where our string ,ow dwells. Since the REPZ MOVS(D/B) instructions increased the pointer in di (it now points to the end of our string) we do 'bpr es:di-8 es:di-1 rw'. Dont hit enter yet read step 7 first. Step 7: Before you hit enter i will tell you what to expect. Softice will break everywhere where that block of memory with the string is read or written to. For example you will break inside the function strlen where the lenght of the string is calculated. And you will break where the string is copied to another place in memory (for example with REPZ MOVSW). When this happens place a new bpr at the new location with the string. It will also break when the string or part of it gets deleted. If the whole string does NOT get completely deleted do not remove the corresponding bpr. Only remove it when the complete string gets written over by something else. Also you will break again in hmemcpy. Hmemcpy will read another echo of the string in the dll's memory. Place a bpr there too. And finally you will break at the part of the code "that.class" tppabs="http://fravia.org/that.class" does the comparing (the instruction you will see is REPZ CMPSB). When i reached that part of code i had 4 breakpoints set. One breakpoint for hmemcpy and 3 bpr's on 3 echos of the string (or parts of it). Step 8: Now we have found the code where the VB3 dll does the comparing we can now place a breakpoint there and disable the other breakpoints. We wont need them anymore. We HAVE FOUND the place where things get compared in VB3. What you see is this : :The_VB3_compare_snippet : 8BCA mov cx, dx : F3A6 repz cmpsb ;<- here the strings in ds:si and es:di : 7401 je 8CB6 ; are being compared : 9F lahf : 92 xchg ax,dx : 8D5E08 lea bx, [bp+08] : E80E06 call 92CB Just before the REPZ CMPSB if you do a 'ed si' and a 'ed es:di', you will see what is compared with what. In this case the second and third character of the string we entered are compared with 'V8'. So if you restart the program and enter 0V87654321 it will register. Step 9: We are not finished yet. Quite the contrary! Truly, the important part is what we do now. Next time we meet a VB3 program (and we'll meet quite a lot of them :) we want to place a breakpoint at the location with the code above and read out the right serial. How do we do that ? Lets try it real quick with our target: The Collector. Start The Collector and enter a dummy serial. Enter softice and place a breakpoint on hmemcpy. Leave softice and press 'OK', this will put you back in softice. Now, get out of the kernel and and get in the code of VBRUN300 (press F11 and F10 untill you get there) Now do a search for the pattern : 8B,CA,F3,A6,74,01,9f,92,8D,5E,08,E8,0E,06 that's the "mov cx, dx" and the rest we have seen above, search: s 0 l ffffffffff 8B,CA,F3,A6,74,01,9f,92,8D,5E,08,E8,0E,06 Place a breakpoint at the adress that gets returned (bpx <seg:offset>)
+
+    -press F5 and you will land in the middle of the above comparing
+
+     code.
+
+    -Only thing left to do is check out the pointers in es:di and ds:si
+
+   
+
+
+
+               Case 2 : Minimize Magic 1.2.4
+
+  
+
+  Minimize Magic is an utility that you can use to minimize your 
+
+programs to the traybar.
+
+
+
+  More info about this program:
+
+
+
+  Name       : Minimize Magic 1.2.4 
+
+  Where      : http://www.genesoft.demon.co.uk/
+
+  Size       : minimagic.exe =  159.744 bytes
+
+  Protection : password based on key  
+
+  DLL        : uses VB4 dll  <************** VB4.DLL To crack this program you can proceed on the same lines we used with The Collector. Starting with hmemcpy, working your way to the code "that.class" tppabs="http://fravia.org/that.class" compares the string you entered. Important thing to know is that the VB4 dll always converts strings to the WideChar format before it does anything with them. So instead of using hmemcpy you can set a breakpoint on MultiByteToWideChar to break. Check your windows API reference to learn more about this function. I have done all the hard work for you and found the VB4 dll code that compares two strings (in WideChar format !). Heres the listing : : 56 push esi : 57 push edi : 8B7C2410 mov edi, [esp + 10] : 8B74240C mov esi, [esp + 0C] : 8B4C2414 mov ecx, [esp + 14] : 33C0 xor eax, eax : F366A7 repz cmpsw ;<-- here the (WideChar) strings at ds:esi : 7405 je 0F79B362 ; and es:edi get compared : 1BC0 sbb eax, eax : 83D8FF sbb eax, FFFFFFFF : 5F pop edi : 5E pop esi : C20C00 ret 000C Now we know enough about the VB4 dll, let's crack Minimize Magic: Step 1: Start Minimize Magic and chose Register from the menus. You will be asked for a Name and a Password. Enter a name and a dummy password. Dont press 'OK' yet, continue with next step. Step 2: Enter softice and place a breakpoint on hmemcpy. Leave softice and press 'OK'. You will land in softice. Step 3: Press F11 and F10 untill you are out of the kernel and in the code of the VB40032.dll. Now we will search for the pattern of the code above. Do 's 0 l fffffffff 56,57,8b,7c,24,10,8b,74,24,0c,8b,4c,24,14' and place a breakpoint at the adress that gets returned. Step 4: Press F5 to leave softice... you will immediately break again into the target, right at the beginning of the above code. Here the password you entered will be compared to the correct password. Trace until right before the REPZ CMPSW and do 'ed es:edi', this will show the password you entered. If you do 'ed esi' you will see the correct password. (this string will be in WideChar format for example you could see A T G H D E H D. That means your password is ATGHDEHD) Ok, now you found a working password that will work only for the version installed on your computer. If you give that password to somebody else, the program wont accept it. The password is calculated from a Key that is different on each computer. This key could be randomly generated at setup or based on the info on your hd, or on the date, the time or whatever. Whichever one it is, it could be hard to find out how its generated or where it is stored. So how can we make a general crack ? We could use the 'Magic Window' trick here. We will 'reprogram' the VB40032.dll to show the correct password. The original code in the VB40032.dll looks like this : :0F79B348 56 push esi :0F79B349 57 push edi :0F79B34A 8B7C2410 mov edi, [esp + 10] ; es:edi> pw you entered 
+
+:0F79B34E 8B74240C   mov esi, [esp + 0C] ; esi -&gt; correct pw
+
+:0F79B352 8B4C2414   mov ecx, [esp + 14] 
+
+:0F79B356 33C0       xor eax, eax
+
+:0F79B358 F366A7     repz cmpsw          ; compare them
+
+:0F79B35B 7405       je 0F79B362
+
+:0F79B35D 1BC0       sbb eax, eax
+
+:0F79B35F 83D8FF     sbb eax, FFFFFFFF
+
+:0F79B362 5F         pop edi
+
+:0F79B363 5E         pop esi
+
+:0F79B364 C20C00     ret 000C            ; end of this function
+
+
+
+:0F79B367 57         push edi            ; the code below this adress 
+
+:0F79B368 8B7C2408   mov edi, [esp + 08] ; is not important, but we
+
+:0F79B36C 8B4C2410   mov ecx, [esp + 10] ; will need its space
+
+:0F79B370 8B44240C   mov eax, [esp + 0C]
+
+:0F79B374 0BE4       or esp, esp
+
+:0F79B376 F266AF     repnz scasw
+
+:0F79B379 B800000000 mov eax, 00000000
+
+:0F79B37E 7503       jne 0F79B383
+
+:0F79B380 8D47FE     lea eax, [edi-02]
+
+:0F79B383 5F         pop edi
+
+:0F79B384 C20C00     ret 000C
+
+
+
+  The code is located at offset 7a748 in the vb40032.dll file. So, to
+
+make a general crack make a patch that turns the above code into:
+
+
+
+:0F79B348 56           push esi
+
+:0F79B349 57           push edi
+
+:0F79B34a 8B7C2410     mov edi, [esp + 10] ;es:edi --&gt; text you enter
+
+:0F79B34E 8B74240C     mov esi, [esp + 0C] ;esi --&gt; correct pw  
+
+:0F79B352 813F70006300 cmp dword ptr [edi], 00630070 ;edi -&gt; 'PC&quot; ?
+
+:0F79B358 7527         jne 0F79B381                  ;if not - leave       
+
+:0F79B35A 803E00       cmp byte ptr [esi], 00   |<- these lines :0F79B35D 7410 je 0F79B36F | put spaces :0F79B35F 83C601 add esi, 00000001 | between the chars :0F79B362 C60620 mov byte ptr [esi], 20 | :0F79B365 EB03 jmp 0F79B36A |<--skip the ret :0F79B367 C20C00 ret 000C ;<-- this to prevent crash :0F79B36A 83C601 add esi, 00000001 | :0F79B36D EBEB jmp 0F79B35A |<- back to the start :0F79B36F 8B3DDCC47B0F mov edi, [0F7BC4DC] *<-- these lines :0F79B375 8B74240C mov esi, [esp + 0C] * call the :0F79B379 6A00 push 00000000 * MessageBoxA :0F79B37B 56 push esi * function to show :0F79B37C 56 push esi * the correct :0F79B37D 6A00 push 00000000 * password :0F79B37F FFD7 call edi * :0F79B381 5F pop edi :0F79B382 5E pop esi :0F79B383 90 nop :0F79B384 C20C00 ret 000C Comments: We used the space of two routines, so to prevent a crash we have to put a RET function at the beginning of the (original) second function (see line 0F79B367). This part of the VB4 dll code "is.class" tppabs="http://fravia.org/is.class" not only used to check the passwords. It is used by other parts of the program as well. Therefor we need to do something so that only something will be shown when we are dealing with a password comparison. That is what the code at line 0F79B352 is about. It checks to see if EDI points to the text "PC". So we can use that to trigger the crack. To trigger the crack, "PC" has to be entered for password when registering. The lines marked with | are there to put spaces between chars of the string. Originally there would be a string of WideChar format. That means that in memory there will be zero's between the chars. But the function we have used to show us the text (MessageBoxA) translates a 0 to end of string. So we would get only 1 letter if we did not replace the zeros with spaces. The lines marked with * are there to call the function MessageBoxA to show the correct password. I ripped those commands from the VB4 dll. Placed a breakpoint on MessageBoxA to see how VB4 called it. Well thats it for Minimize Magic. To make a general crack, a patch could be written that patches the VB4 dll at offset 7a748 with the above code. To use such a crack minimagic.exe and the vb40032.dll should be placed in a temp dir and the patch run there. Then start minimize.exe from that temp dir, and use 'PC' for password. And voila, a window will pop up with the correct password. Once the correct pw is known, the temp files should be deleted and the password can be used in the original Minimize Magic. Case 3 : Sub Station Alpha 2.02 Most of the VB4 programs can be cracked with the method described in case 2, but i have encountered 2 programs which used a different method of comparing. One of those programs is Sub Station Alpha 2.02. It uses a protection that first converts a number you enter to its hex value and then compares it with the correct number. Lets start to crack Sub Station Alpha right now: things will get clearer. Info about this program: Name : Sub Station Alpha 2.02 Where : http://www.eswat.demon.co.uk/index.html Size : SUBSTN32.EXE="629.248" bytes Protection : password based on user name DLL : uses VB4 dll Earlier i mentioned that VB4 converts strings to the widechar format before it does aything with them. Therefore we will use this function as an entry point. Again we will do it step by step ;--) Step 1: Start Sub Station Alpha and chose register from the menus. Enter a name and a dummy registration key. Step 2: Enter softice and place a breakpoint on MultiByteToWideChar (with softice command 'bpx multibytetowidechar') Step 3: Now, leave softice and press "Register". Step 4: Softice will break at the beginning of MultiByteToWideChar, press F11 to get out of it. You will see : :FF1500C27B0F call [KERNEL32!MultiByteToWideChar] :8BD8 mov ebx, eax :83FEFF cmp esi, FFFFFFFF :7501 jne 0F738BCF :4B dec ebx :53 push ebx :6A00 push 00 :FF1518C97B0F call dword ptr [0F7BC918] :8BE8 mov ebp, eax :85ED test ebp, ebp :0F845B260100 jz 0F74B23D :43 inc ebx :53 push ebx :55 push ebp :56 push esi :57 push edi :6A00 push 00 :6A00 push 00 :FF1500C27B0F call [KERNEL32!MultiByteToWideChar] :8BC5 mov eax, ebp ;<-- do 'ed ebp' here :5D pop ebp :5F pop edi :5E pop esi The important place is right after the second call to MultiByte- ToWideChar. Disable the first bp on MultiByteToWideChar and place a new bp right after the second call to that function (on the line with MOV EAX,EBP). On that line EBP will contain a pointer to a string in WideChar format that was processed. It doesnt have to be the string of the registration key. Therefor we will edit that breakpoint so that it will only break when it is processing the registration key. How can we do that? Well, the MultiByteToWideChar function returns the lenght of the string it processed plus 1 in EAX. So we will add a conditional statement on the breakpoint. Do 'bl' to find out what the number is of that breakpoint. Then do 'bpe #' and add 'if al="=&lt;lengthOfKeyString+1">' to the breakpoint. For example, if you
+
+entered '212121', lenghtOfKeyString would be 6 :--).
+
+  
+
+
+
+  Step 5: Now we will let the program run with F5. When softice breaks
+
+do a 'ed edp' and see the WideChar form of the key you entered. We 
+
+place a bpr on the block of memory containing the string and we 
+
+continue (F5). What will happen is this. Softice will break on several 
+
+places. Whats important is that it will break in the code of OLEAUT32.
+
+When that happens trace a litle further to see whats going on. The 
+
+first few times you will get out of the OLEAUT32 very quickly. But
+
+eventually you will see this code :
+
+
+
+( listing from OLEAUT32.DLL)
+
+:6534B6B3 395C240C cmp [esp + 0C], ebx     ;  this is a loop that
+
+:6534B6B7 7E14     jle 6534B6CD            ;  goes trough all 
+
+:6534B6B9 33C9     xor ecx, ecx            ;  the chars of a 
+
+:6534B6BB 8D0492   lea eax, [edx + 4*edx]  ;  string, in the end
+
+:6534B6BE 8A0E     mov cl , [esi]          ;  edx will have the 
+
+:6534B6C0 46       inc esi                 ;  hex value of the string
+
+:6534B6C1 4F       dec edi
+
+:6534B6C2 FF4C240C dec [esp + 0C]
+
+:6534B6C6 8D1441   lea edx, [ecx + 2*eax]
+
+:6534B6C9 85FF     test edi, edi
+
+:6534B6CB 7FE6     jg 6534B6B3
+
+:6534B6CD 85FF     test edi, edi
+
+:6534B6CF 7F4A     jg 6534B71B
+
+  .............
+
+  .............
+
+:6534B6F2 8910     mov [eax], edx          ;  edx is saved 
+
+:6534B6F4 33C0     xor eax, eax
+
+:6534B6F6 83C424   add esp, 00000024
+
+:6534B6F9 C21000   ret 0010
+
+
+
+  Step 6: We saw that the key is transformed into its hex value,
+
+and saved to a place in memory. If you monitor this memory location,
+
+you will end up here in the VB4 dll that compares it with another 
+
+value:
+
+ 
+
+:0F7A2CE1 5A             pop edx             ; load edx
+
+:0F7A2CE2 58             pop eax             ; load eax
+
+:0F7A2CE3 2BC2           sub eax, edx        ; subtract them 
+
+:0F7A2CE5 83F801         cmp eax, 00000001
+
+:0F7A2CE8 1BC0           sbb eax, eax
+
+:0F7A2CEA 50             push eax
+
+:0F7A2CEB 0FB706         movzx word ptr eax, [esi]
+
+:0F7A2CEE 83C602         add esi, 00000002
+
+:0F7A2CF1 FF2445F4997B0F jmp dword ptr [2*eax + 0F7B99F4]
+
+:0F7A2CF8 E8BB000000     call 0F7A2DB8
+
+
+
+  We see that EDX and EAX get loaded from the stack, and then 
+
+substracted. This is just an indirect way of comparing those two
+
+values. If you check out the contents of EAX and EDX, you will see
+
+that one has the number you entered and the other one will have the
+
+correct registration number. 
+
+
+
+  Step 7: Now we found this location its wise to note the hex values
+
+of the code, so you can find it back quickly when you suspect that  
+
+another VB4 program uses this protection.
+
+
+
+  
+
+
+
+                 Final notes              
+
+
+
+
+
+  Well, with the above 3 techniques i have been able to crack quite
+
+some VB3/4 programs that used a text based protection. Sometimes
+
+when you set a breakpoint at the comparing routine, softice will not 
+
+break. Try then to enter strings with a different length. Because
+
+the program could be checking the length of the string you enter before
+
+it compares the string itself. And other programs first isolate chars
+
+from the string you enter and then compare those isolated chars, but 
+
+again they get compared at the locations stated in the examples above.
+
+  With VB5 programs i havent much experience, i only cracked one of 
+
+them. It was called Hitlist Pro v3.0. By patching the VB5 dll, I could
+
+remove its 30 day timelimit just like it was a regular program. Of 
+
+course, the VB5 dll had to be placed in the Hitlist Pro main dir,
+
+this to prevent other VB5 programs using the patched DLL. 
+
+
+
+  Thats it folks, you may contact me (if you know how ;--) on irc
+
+with feedback and questions.
+
+
+
+
+
+ Big greets to : tHATDUDE, madmax!, cH, Teraphy, KillerBee,j0b,
+
+                 StarDogg Champion,aCP,rANDOM and all the 
+
+                 others i forgot.
+
+
+
+ Special greets and thanks to +ORC and rest of +HCU
+
+
+
+
+
+  razzia [pc97]        
+
+  date: 08 May 1997 
+
+   
+
+ </pre>
+
+<hr size="2"><center><i>
+
+I'm impressed. I believe we should use this approach also with all the OTHER 
+
+overbloated languages' dlls... say for instance the *.dll of Visual c++... 
+
+That's an idea! I'm already on my way</i> :-)
+
+<hr size="2"></center>
+
+
+
+<center><i>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</i></center>
+
+<br><center>
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><a HREF="tppmsgs/msgs0.htm#84" tppabs="http://www.anticrack.de/fravia/tppmsgs/msgs0.htm#84"> homepage</a><img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"> 
+
+<a HREF="tppmsgs/msgs0.htm#73" tppabs="http://www.anticrack.de/fravia/tppmsgs/msgs0.htm#73"> links</a> 
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0">
+
+<a HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm"> anonymity</a> 
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><a HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm"> +ORC</a>
+
+
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><a HREF="tppmsgs/msgs0.htm#82" tppabs="http://www.anticrack.de/fravia/tppmsgs/msgs0.htm#82"> students' essays</a>
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><a HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm"> tools</a><img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><a HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm"> cocktails</a><br>
+
+
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><a HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm"> search_forms</a><img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><a HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm"> mailFraVia</a></center>
+
+<center><hr ALIGN="CENTER" WIDTH="100%" SIZE="2"></center>
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+     
+
+             
+
+            
+
+
+
+
+
+
+
+
+
+
+

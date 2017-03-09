@@ -1,0 +1,1324 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>siulin1.htm</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+<CENTER><FONT size="+3">Reverse engineering the Linux OS, a first approach</FONT>
+
+<BR>(disassembling Linux)<BR>
+
+  <BR>
+
+    
+
+
+
+<H4>by SiuL+Hacky<BR><A href="solution.htm" tppabs="http://www.anticrack.de/fravia/solution.htm">
+
+<IMG SRC="hcu1.gif" tppabs="http://www.anticrack.de/fravia/hcu1.gif" ALT="+cracker!" ALIGN="BOTTOM" WIDTH="114" HEIGHT="43" BORDER="0" VSPACE="0" HSPACE="0"></A><BR>
+
+<BR>
+
+(15 October 1997)</H4>
+
+<HR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">Courtesy of fravia's page 
+
+of reverse engineering<BR>
+
+<BR><I>Well, another VERY remarkable essay, that I am proud to present.
+
+SiuL+Hacky tackles here NEW UNCOVERED ground, and teaches all of you the 
+
+first elements of Linux reverse engineering... you would have tought, as I did, that 
+
+such reversing would have been useless, since the main characteristic of Linux (and 
+
+of the whole GNU initiative) was to give freely the source code of any program. Yet 
+
+the deficiencies of Windoze are to-day so evident that more and more &quot;commercial&quot; 
+
+programmers are turning to Linux despite all efforts by Gate's lackeys. And if you 
+
+say &quot;commercial&quot; you say of course limited egotistical pusillanimous minds, that 
+
+introduce their banal protection schemes even into the Linux world, 
+
+until yesterday incontaminated.<BR>Enjoy this GREAT essay/tutorial by SiuL+Hacky, 
+
+let's hope that he will send us more essays on this subject!<BR><BR>BTW, you'll find inside here <FONT color="blue">dasm</FONT>: a disassembler for 
+
+Linux *WRITTEN* by SiuL+Hacky  himself!</I></CENTER><HR size="6"> 
+
+<PRE>
+
+I. Linux Introduction.
+
+-------------------------
+
+
+
+Probably all of you know about linux, but I don't know how many people 
+
+has linux installed in their computers. I have (as many people do) 
+
+both o.s. in different partitions of my hard-disk. Sometimes people 
+
+thinks of Operative Systems as religions (it use to happen also with 
+
+editors), so I'm not gonna tell you: INSTALL IT if you want your soul 
+
+to be saved ! If you are not sure, after reading this document, I 
+
+think you should know for sure what to do.
+
+
+
+A friend of mine told some time ago a joke about Operative Systems 
+
+compared with Airlines. When you travel with Microsoft Airlines, you 
+
+may find beautiful women at the checking desk, you may enjoy amazing 
+
+entertaining shows before departure, when you climb in the aeroplane 
+
+it is really comfort and full of charming stewardesses. Ok, after 
+
+taking off the aeroplane explodes and nobody knows why. When 
+
+travelling with unix airlines you may travel safely, but passengers 
+
+must carry themselves the pieces of the aeroplane.
+
+
+
+Unix is for you if you if you feel right working with DOS-boxes under 
+
+Windows, if you use to work with network environments, if you want 
+
+speed and safety back (your brand-new Pentium acts like a Pentium, not 
+
+like 386) and if you find lack of excitement configuring W95 
+
+programs. You may recover this bittersweet feeling of being in the 
+
+middle of a deserted island when things go wrong. But if you hate 
+
+command line programs with thousands of switches, unix is not for you.
+
+
+
+One of the main characteristics of linux, is that it's a &quot;free 
+
+environment&quot;. The applications (and kernel itself) are developed by 
+
+people and are offered to &quot;the world&quot; completely free. Most 
+
+applications are developed (more or less) under GNU License. Moreover, 
+
+a lot of the programs are provided with the source code (and you 
+
+compile it). Though it has been ported to several platforms, is 
+
+especially popular in x86 computers, and many users come from DOS.
+
+
+
+
+
+II. A Cracker inside Linux world.
+
+---------------------------------
+
+
+
+Linux is cool for hacking, but I had never heard anything about 
+
+cracking in linux. As I told you, software is free and there's no 
+
+&quot;bunch of shareware programmers&quot;. Imagine ... protecting a program and 
+
+giving you the source code, really nonsense.
+
+
+
+But wait, Linux is not perfect, programs are not beautiful and 
+
+user-friendly. One of the problems I found from start with linux, is 
+
+multimedia. Multimedia is new in Dos/Windows world, so the old unix 
+
+dinosaur, that hasn't changed in the last twenty years (though if you 
+
+look inside &quot;new&quot; operative systems they are not that different) was 
+
+not supposed to have lot of multimedia support. I have a cheap 
+
+Soundblaster clone, and I cannot make it &quot;cry&quot; through my speakers. I 
+
+am not waiting for Dennis Ritchie saying &quot;bye bye&quot; when logging out, 
+
+but I like to &quot;play&quot; with sound algorithms and other stuff. 
+
+
+
+Surprisingly in just one day I downloaded two sound-programs with the 
+
+same nasty protections of their DOS brothers. It is really strange, 
+
+and I don't know if it is going to be usual in the future; probably it 
+
+will depend on Microsoft (once more), and if it finally gets into 
+
+Linux world (now it is just a rumour). Anyway, I decided to crack 
+
+them.
+
+
+
+In Linux, people use to program in C (the Linux kernel is made in C) and 
+
+I found practically no assembler references. I had no idea if cracking 
+
+linux was gonna be easy or not, but the fact was that I had to start 
+
+from scratch practically. Most of the utilities I found are binary 
+
+utilities that come with GCC (GNU C compiler), and that every linux 
+
+user may find in the different distributions or elsewhere in the Web. 
+
+I didn't know of their existence, but I had them in my computer. Well, 
+
+this is for you.
+
+
+
+III. Tools of the trade.
+
+-------------------------
+
+
+
+Here you'll find some tools that I have found or make myself, and will 
+
+make cracking easier. Mostly are &quot;Windoze&quot; brothers. First of all, 
+
+slight differences, mnemonics are named in a different way. I would 
+
+say it's even better (Sacrilegious !), but anyway you'll have no 
+
+problem getting these changes. You just have to be careful with 
+
+operands, especially in mov instructions, because they are reversed, I 
+
+mean:
+
+
+
+mov source, destiny
+
+	instead of usual DOS:
+
+mov destiny, source
+
+
+
+
+
+1) GDB. GNU Debugger.
+
+
+
+GNU Compiler has its own debugger, it's called gdb and it has even a 
+
+front-end for X Windows. It is neither Softice nor DOS Debug, but it 
+
+is thought to work with the source code and executables with debug 
+
+information. You can debug a program with assembler instructions, but 
+
+is not comfortable. For example, you are not seeing the current 
+
+assembler instruction, nor registers. This do not pretend to be a 
+
+replace for the man page of gdb. There are lots of useful information 
+
+in books or INFO documents, but here you'll get some useful clues for 
+
+starting.
+
+
+
+It has some features that you cannot find in Softice, for instance, 
+
+you can debug a program that is already running ! You may use the 
+
+&quot;attach&quot; command for it. Gdb runs in a virtual console, so may run 
+
+your favorite programs while debugging.
+
+
+
+Assembler instructions are executed with the &quot;stepi&quot; and &quot;nexti&quot; 
+
+commands, but you cannot fire the program with these instructions. The 
+
+programs are broken with Control-C, but you will not &quot;surf&quot; inside 
+
+every instruction of kernel code. Usually you'll stop the program (for 
+
+instance while waiting for a key) in a system call. Programs do not 
+
+use to call directly to system calls, because a kernel update could 
+
+make them crash. They call C functions, and C libraries (more or less 
+
+like DLLs) will make the system calls. If you want to see a 
+
+disassembled listing, use the &quot;disassemble&quot; command (&quot;disas&quot; will do 
+
+also) + an address (0xaddress), though that address is just used to 
+
+get a function (the function owner of the inst. with the address 
+
+given) and gdb shows you the whole listing of the function from start. 
+
+That's not cool, you know, life is tough. At least you can see current 
+
+instruction with &quot;display/i $eip&quot;. After breaking the program use 
+
+&quot;Continue&quot; to resume execution.
+
+
+
+The &quot;display&quot; command is also good for showing the value of a 
+
+particular register (don't forget $ sign), but if you want to show all 
+
+registers use &quot;info registers&quot;. Finally if you want to change their 
+
+value use &quot;set $eax=3&quot; for instance.
+
+
+
+There's a wide range of breakpoints. You can set usual breakpoints &quot;br 
+
+*address&quot;, clear them, disable them, use conditional breakpoints 
+
+(YES!), hardware breakpoints ... 
+
+
+
+And finally the &quot;backtrace&quot; command is more or less like Softice 
+
+&quot;stack&quot;, and &quot;finish&quot; should make 'p ret', but do not trust it very 
+
+much. Well there are lots of commands, study them, but after realizing 
+
+the power of the dead approach, I'm sure you will not want gdb 
+
+anymore. 
+
+
+
+2) STRACE
+
+
+
+This is really a nice tool, especially for spying the program and its 
+
+behaviour. It logs every System Call made by a program, WITH 
+
+PARAMETERS and in a way you'll love it, as I'll show you afterwards. I 
+
+like to use it this way:
+
+
+
+strace -oOUTPUT_FILE -i TARGET_FILE
+
+
+
+where OUTPUT_FILE is the file where you want the log to be dumped.
+
+
+
+-i: appends the value of eip when the call was made. It seems like a 
+
+bliss, but be careful: LIBRARIES USE TO MAKE SYSTEM CALLS, not 
+
+programs.
+
+
+
+3) STRINGS
+
+
+
+It should be a great tool, because show you strings inside a binary 
+
+file, and then you can identify the evil program that is punishing 
+
+you, but there's a simple and easier way to do it using the amazing 
+
+&quot;grep&quot; command. For example if you are looking for strings as 
+
+&quot;Register&quot;, run this:
+
+
+
+grep Register *
+
+
+
+and it'll show you all the files in the current directory containing 
+
+the string &quot;Register&quot;. But the first field of this command is a 
+
+general PATTERN, so it may be an exact match or a match as complicated 
+
+as you want (learn REGULAR EXPRESSIONS for it).
+
+
+
+4) HEX EDITORS
+
+
+
+What is a crack, without an Hex-Editor ? (&quot;mental&quot; cracking is hard, 
+
+by now). There are very few of them in Unix (that I know of). Get 
+
+one of them at:
+
+
+
+ftp://vieta.math.uni-sb.de/pub/misc/hexer-0.1.4c.tar.gz
+
+
+
+It uses &quot;VI&quot;-style. You know, vi is the &quot;official&quot; editor in Unix. It 
+
+seems that every &quot;cool-unix-guy&quot; must love it, or he'll be an 
+
+&quot;aficionado&quot;. I do prefer JOE, which &quot;looks-like&quot; old WordStar and old 
+
+WordPerfect and you'll know how to quit the first time you run it :-).
+
+
+
+Anyway, you may use, as I do, good Dos HEXEDITORS like Norton Diskedit 
+
+(version 4 or 5). I'm not kidding, a DOS emulator (DOSEMU) is 
+
+available in Linux, and works fine with real mode and DOS4GW programs. 
+
+There's a Windows emulator, but it is long ago in &quot; an early alpha 
+
+stage &quot;. Don't try it.
+
+
+
+5) OBJDUMP
+
+
+
+Well, at last a candle in the middle of the darkness. If is difficult 
+
+to find assembler references, to find disassembling references is like 
+
+looking for Money 3.0 (perhaps FidoNet has again the answer :-). I 
+
+found only a switch in this program that gives a &quot;dump disassembly&quot;.
+
+
+
+This program gives you the information and data of the different 
+
+sections (more about sections later) of a linux object (executable) 
+
+file. It is possible to get the assembler listing of a program you 
+
+have made (there's a switch in the compiler), but objdump is the only 
+
+program I found that disassemble an arbitrary executable. It also 
+
+gather information of the different &quot;Sections&quot; of the file. But the 
+
+problem, is that there's no analysis information in the disassembled 
+
+file. Some switches of objdump:
+
+
+
+-d: Displays the assembler mnemonics contained in the code Sections. 
+
+Note that mnemonics are displayed in the &quot;linux-way&quot;. Something like 
+
+this:
+
+
+
+0804a37a repnz scasb %es:(%edi),%al
+
+0804a37c notl   %ecx
+
+0804a37e movl   %ecx,0xfffffc0c(%ebp)
+
+0804a384 movb   $0x0,0xfffffc16(%ebp,%ecx,1)  <CAREFUL 0804a38c movl $0xffffffff,0xfffffc14(%ebp); <-- careful 0804a396 cmpb $0x3a,0xfffffc1a(%ebp) 0804a39d jne 0804a3c2 0804a39f leal 0xfffffc14(%ebp),%eax 0804a3a5 pushl %eax Do you like it ? I'm sure you'll stand it. T: Prints the Dynamic Symbol Table. In a stable program you should not find debug information in the exe file, but in a protected program you may hope to find no symbol information at all. Well, no symbol information but imported symbols. Here you'll find imported functions, especially C functions. Remember that in linux C libraries are dynamic. x: Displays all header information (for instance Sections information): Sections: Idx Name Size VMA LMA File off Algn 0 .interp 00000013 080480d4 080480d4 000000d4 2**0 CONTENTS, ALLOC, LOAD, READONLY, DATA 1 .hash 00000188 080480e8 080480e8 000000e8 2**2 CONTENTS, ALLOC, LOAD, READONLY, DATA 2 .dynsym 000003b0 08048270 08048270 00000270 2**2 CONTENTS, ALLOC, LOAD, READONLY, DATA 3 .dynstr 000001d8 08048620 08048620 00000620 2**0 CONTENTS, ALLOC, LOAD, READONLY, DATA 4 .rel.bss 00000028 080487f8 080487f8 000007f8 2**2 CONTENTS, ALLOC, LOAD, READONLY, DATA 5 .rel.plt 00000158 08048820 08048820 00000820 2**2 CONTENTS, ALLOC, LOAD, READONLY, DATA 6 .init 00000008 08048980 08048980 00000980 2**4 ... and more and more show-raw-insn: Prints the hex value of the instruction appended to the mnemonic. 6) DASM I think you won't find this program elsewhere. Well, the output from objdump is not very useful for +us, so I decided to make myself a program for processing objdump output. The first idea was to build jump/call references, to include dynamic symbols and if possible String references.</prE>
+
+<FONT size="+1">Download <IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A href="javascript:if(confirm('http://129.105.116.5/fravia/dasm.txt  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://129.105.116.5/fravia/dasm.txt'" tppabs="http://129.105.116.5/fravia/dasm.txt">dasm.txt</A> here!</FONT>
+
+(<I>If you want to save a web file and you don't know how, and all 
+
+it does is display on the screen, try to hold down the shift key when you 
+
+click on it: it might solve your problem </I>:-)<PRE>
+
+I programmed it in PERL. Why ? Well since my very first steps in perl 
+
+I realize it was perfect for text-processing files (I knew nothing 
+
+about sed, awk ...). The syntax is not very beautiful or 
+
+high-level-looking; it's an interpreted language, so it is not the 
+
+fastest. Anyway it always has the tools you are looking for (or you 
+
+always dreamt of) and enables you to do a lot of things at the same 
+
+time. It's very popular in CGI scripts. I learnt perl and CGI with a 
+
+very good book by Eric Herrmann. Sorry, I tried not to make it very 
+
+cryptic, but PERL is PERL, and if you don't know perl you'll probably 
+
+don't understand it. For this reason I'll explain how it works.
+
+
+
+BTW a perl interpreter (perl 5.0) may be found in any LINUX 
+
+distribution, though interpreters for DOS are available too. Well 
+
+let's start with jmp/call processing:
+
+
+
+- The (DYNAMIC) SYMBOL TABLE is read and the elements are put into an
+
+associative array indexed by the addresses. For instance:
+
+		$st_element{&quot;0xprint_address&quot;}=&quot;print&quot;;
+
+
+
+- Then all call / jmp instructions are processed into another 
+
+associative array, in this way:
+
+		$jumping{&quot;jump_to_address&quot;}=&quot;jump_from_address&quot;;
+
+
+
+- After this, the addresses of assembled instructions (from .text 
+
+section) are checked against $jumping elements, and if it do exists, 
+
+the reference is written.
+
+
+
+- In the same process, call instruction are processed and if they call 
+
+a function from the symbol table, it is also written.
+
+
+
+For string processing, we must get further knowledge of how 
+
+executables are build in linux. The most common format is ELF-32bits (
+
+Executable and Linkable Format). The structure of the object is :
+
+
+
+* ELF HEADER
+
+* PROGRAM TABLE HEADER
+
+* SECTION 1
+
+* ...
+
+* SECTION N
+
+* SECTION HEADER TABLE
+
+
+
+These sections will be &quot;segments&quot; when the program is executed. Some 
+
+important sections are .init (initialization code), .fini (
+
+termination code), .data (pretty obvious), .text (code), .rodata 
+
+(Read-only data), and so on. Do you remember lesson 8.1 and Win32 
+
+exe files ? Don't you think it's pretty much the same ?
+
+
+
+These are ELF-TYPES:
+
+
+
+Elf32_Addr	4 bytes unsigned
+
+Elf32_Half	2 bytes unsigned
+
+Elf32_Off	4 bytes unsigned
+
+Elf32_Sword	4 bytes signed
+
+Elf32_Word	4 bytes unsigned
+
+
+
+And ELF Header is something like this:
+
+
+
+typedef struct {
+
+	unsigned char	e_ident[16];
+
+	Elf32_Half	e_type;
+
+	Elf32_Half	e_machine;
+
+	Elf32_Word	e_version;
+
+	Elf32_Addr	e_entry;
+
+	Elf32_Off	e_phoff;
+
+	Elf32_Off	e_shoff;
+
+	Elf32_Word	e_flags;
+
+	Elf32_Half	e_ehsize;
+
+	Elf32_Half	e_phentsize;
+
+	Elf32_Half	e_phnum;
+
+	Elf32_Half	e_shentsize;
+
+	Elf32_Half	e_shnum;
+
+	Elf32_Half	e_shstrndx;
+
+} Elf32_Ehdr;
+
+
+
+For us, is important the member e_shoff, that  keeps information about 
+
+the file offset of the Section Header Table. The SHT is an array of 
+
+Elf32_Shdr structures. The element e_shnum tells the number of entries 
+
+in the SHT, and e_shentsize gives the size in bytes of each entry. 
+
+This is the Elf32_Shdr:
+
+
+
+typedef struct {
+
+	Elf32_Word	sh_name;
+
+	Elf32_Word	sh_type;
+
+	Elf32_Word	sh_flags;
+
+	Elf32_Addr	sh_addr;
+
+	Elf32_Off	sh_offset;
+
+	Elf32_Word	sh_size;
+
+	Elf32_Word	sh_link;
+
+	Elf32_Word	sh_info;
+
+	Elf32_Word	sh_addralign;
+
+	Elf32_Word	sh_entsize;
+
+} Elf32_Shdr ;
+
+
+
+The offset of each section is taken from each sh_offset member. The 
+
+name of each section is a little bit more complicated, because sh_name 
+
+is an index into the section header String Table Section. Well, stop, 
+
+I don't want you to get confused. Fortunately, objdump give us that 
+
+information. Strings are located in the .rodata Section (for obvious 
+
+reasons), and objdump gives the file offset of the section. If you 
+
+want complete information on ELF format, there's a PostScript document 
+
+for you:
+
+
+
+ftp://tsx-11.mit.edu/pub/linux/packages/GCC/ELF.doc.tar.gz
+
+
+
+There (or in any other mirror), you'll find a lot of interesting things.
+
+
+
+Ok, then for string processing, dasm reads Section .rodata offset, and 
+
+get its content from the binary file. We get starting address and 
+
+size of .rodata section, so to make string processing:
+
+
+
+- The whole .rodata section is read in a variable.
+
+- Dasm looks for inmediate operands (with $ prefix) and checks if 
+
+they own to .rodata section. 
+
+- If true, the string (null terminated) is extracted from .rodata 
+
+section,  and the reference is written.
+
+
+
+The rest, is dirty details about format processing. The program calls
+
+objdump, and you just have to use it this way:
+
+	
+
+	dasm  exec_file  processed_output_file
+
+	
+
+I've tested it with several programs, but if you find any bug, problem 
+
+or you have any question, suggestion or whatever, report them to me 
+
+at:
+
+
+
+	lluisote@hotmail.com
+
+
+
+NOTE: In dasm, I don't use the hex values of the instructions (switch
+
+--show-raw-insn), because the output is not tabbed and it wastes disk
+
+space. When we'll need this data, I'll show you how to get it easily.
+
+
+
+	
+
+IV. THE CRACKS
+
+---------------
+
+
+
+For applying all this theory, we're gonna crack the couple of programs 
+
+I told you. I chose them because they are very different and 
+
+appropriate for beginning, you'll see. The first one is a disabled 
+
+program with password registration, the second one is a trial with 2 
+
+level of time protection and the same nasty behaviour of its windows 
+
+brothers.
+
+
+
+1) ftp://ftp.fhg.de/pub/layer3/l3v270.linux.tar.gz
+
+
+
+What the hell is this ? Well, it's an encoder/decoder of MPEG layer 
+
+III. If you don't know about it, it's a standard for audio compression 
+
+(a really exciting subject). Every time you run the decoder you're 
+
+asked about entering a registration code, because sample rates and 
+
+other features are restricted to &quot;registered users&quot;.
+
+
+
+Let's have some fun with the new tools: &quot;strace -oSalida l3dec&quot; will 
+
+dump system calls in a file called Salida. Do it, answer that you 
+
+don't want to enter Reg.Cod., and get something like this (filtered by 
+
+me):
+
+
+
+write(2, &quot;\n***    l3dec V2.70 ISO/MPEG Au&quot;..., 71) = 71
+
+write(2, &quot;|                               &quot;..., 71) = 71
+
+write(2, &quot;|           copyright Fraunhofer&quot;..., 71) = 71
+
+write(2, &quot;|                               &quot;..., 71) = 71
+
+
+
+&lt;&lt;&lt;&lt; Look! It is writing the file header
+
+
+
+open(&quot;./l3dec&quot;, O_RDONLY)       = 4  &lt;&lt;&lt;&lt; get current directory
+
+close(4)                        = 0
+
+open(&quot;./register.inf&quot;, O_RDONLY)=-1 ENOENT (No such file or directory)
+
+
+
+&lt;&lt;&lt;<LOOKING for a file named register.inf. Pretty suspicious. write(2, "| L3DEC/L3ENC is sharew"..., 71)="71" write(2, "| if used for more t"..., 71)="71" write(2, "| commercially (se"..., 71)="71" write(2, "| "..., 71)="71" write(2, "| This program is"..., 71)="71" write(2, "| If you have alrea"..., 71)="71" write(2, "| a registration cod"..., 71)="71" &lt;&lt;&lt;&lt;&lt; Writing the nag message write(2, "| Do you want to enter y"..., 65)="65" &lt;&lt;&lt;&lt;&lt; Asking if registration code "If.class" tppabs="http://fravia.org/If.class" you look for these strings (with the grep command), you'll find them in both files l3enc and l3dec (of course encoder and decoder). Ok, run dasm now, and discover the power of the dead approach. Search with your favorite linux editor (descubre cual es el editor refleja tu personalidad) for "Do you want to enter" and what you get: Possible reference to string: "| Please enter your registration code: " 08058ca3 pushl $0x805ad7e; &lt;&lt;&lt;< pushing string 08058ca8 pushl $0x8069640 Reference to function : fprintf 08058cad call 08048a58; &lt;&lt;&lt;&lt;&lt; printing 08058cb2 leal 0x170(%esp,1),%esi 08058cb9 pushl %esi Possible reference to string: "%14s" 08058cba pushl $0x805ada6; &lt;&lt;&lt; WAITING A 14 CHARS STRING !!! DON'T YOU LOVE IT ? Reference to function : scanf 08058cbf call 08048ba8 08058cc4 leal 0x2c8(%esp,1),%eax 08058ccb pushl %eax; &lt;&lt;&lt;&lt; pushing eax 08058ccc pushl %esi; &lt;&lt;&lt;&lt; pushing pointer 08058ccd call 08058f24; &lt;&lt;&lt;&lt; what happen here ? 08058cd2 addl $0x20,%esp; &lt;&lt;&lt;&lt; fix stack 08058cd5 testl %eax,%eax; &lt;&lt;&lt;&lt; testing returned value 08058cd7 je 08058d78; &lt;&lt;&lt;&lt; jump good guy !!! 08058cdd leal 0x0(%esi),%esi; &lt;&lt;&lt;&lt; bad guy !!!! Referenced from jump/call at 08058d46 ; Possible reference to string: "| |" 08058ce0 pushl $0x805abd0 08058ce5 pushl $0x8069640 Reference to function : fprintf 08058cea call 08048a58 Possible reference to string: "| This was no correct registration code. |" 08058cef pushl $0x805adab 08058cf4 pushl $0x8069640 You are cracking practically with source code :-). Let's have a look at this mysterious function: Referenced from jump/call at 08058993 ; 08058a1c ; 08058a68 ; 08058ad0 ; 08058ccd ; ; a popular function it seems 08058f24 subl $0x8c,%esp 08058f2a pushl %ebp 08058f2b pushl %edi 08058f2c pushl %esi 08058f2d pushl %ebx 08058f2e movl 0xa0(%esp,1),%ebp 08058f35 leal 0x14(%esp,1),%edi Possible reference to string: "^D" 08058f39 movl $0x805afa0,%eax 08058f3e movl %eax,%esi 08058f40 cld 08058f41 movl $0xe,%ecx 08058f46 repz movsl %ds:(%esi),%es:(%edi) 08058f48 xorb %al,%al 08058f4a movl %ebp,%edi 08058f4c cld 08058f41 movl $0xe,%ecx 08058f46 repz movsl %ds:(%esi),%es:(%edi) 08058f48 xorb %al,%al 08058f4a movl %ebp,%edi 08058f4c cld 08058f4d movl $0xffffffff,%ecx 08058f52 repnz scasb %es:(%edi),%al 08058f54 movl %ecx,%eax 08058f56 notl %eax 08058f58 decl %eax 08058f59 cmpl $0xd,%eax 08058f5c ja 08058f70; &lt;&lt;&lt; continue the endless function 08058f5e movl $0xffffff9c,%eax; &lt;&lt;&lt; what an ugly number ! 08058f63 popl %ebx 08058f64 popl %esi 08058f65 popl %edi 08058f66 popl %ebp 08058f67 addl $0x8c,%esp 08058f6d ret; &lt;&lt;&lt; premature return Ok, the function is called from different places, so it's easier to crack the function instead the conditional jump. I leave my xoring friends to look for a right serial number :-). The function is really endless, and may return the "bad-guy-value" in some instructions after 08058f70, but changing mov instruction at 08058f5e, will do unless you enter a long reg-number (crack the cmp, the ja or whatever you want if you want to take ALL possibilities, I just feel tired :-). But where are the hex codes ? ok, this instruction will return you the hot hexcodes in two seconds: objdump d show-raw-insn l3dec | grep 08058f[5-6] (... two seconds later) 08058f52 f2 ae repnz scasb %es:(%edi),%al 08058f54 89 c8 movl %ecx,%eax 08058f56 f7 d0 notl %eax 08058f58 48 decl %eax 08058f59 83 f8 0d cmpl $0xd,%eax 08058f5c 77 12 ja 08058f70 08058f5e b8 9c ff ff ff movl $0xffffff9c,%eax 08058f63 5b popl %ebx 08058f64 5e popl %esi 08058f65 5f popl %edi 08058f66 5d popl %ebp 08058f67 81 c4 8c 00 00 00 addl $0x8c,%esp 08058f6d c3 ret 08058f6e 8d 36 leal (%esi),%esi I told you it was ugly. Run your favorite hexeditor (unix or dos) and change: 08058f5e b8 9c ff ff ff movl $0xffffff9c,%eax to: 08058f5e b8 00 00 00 00 movl $0x00000000,%eax; Ok, a register.inf file (just your reg-number) will appear, and DECODE for ever. You must crack also l3enc, but the protection is exactly the same. BTW, this layer III guys want you to pay 402,50 DM for this software. 2) http://www.4front-tech.com/download.cgi What the hell is this again ? Well, as I told linux kernel (until now) doesn't support my soundcard (at least the way I deserve :-), and these guys "promise" to support my card loading a module. What are modules in linux ? A module is a piece of code that adds functionalities to the kernel, and it can be loaded and unloaded whenever you want (it is not a dos device driver but if you are happy thinking so it will help). At this location you may download the archive according to your kernel (in my case kernel 2.0.0 or above ). They say you may use it for free 7 days. It is not expensive software, but there are two things I dislike of this software: * If you uninstall it and install it again, even if you are in your first day (I can tell you a thousand innocent reasons for doing so), you are punished as if you had been using it for a week (with a toy trick BTW). * Second and worse, it doesn't work (mi gozo en un pozo otra vez). Apparently you are allowed to use it for a week with no restrictions. After a week, you may use it for 20 minutes and then reload the module. At the end of the month you are not allowed to use it anymore (unless you remove it completely. Even the "secret" /etc/oss.conf file :-). Looking in the directory created I find a file license.asc with PGP SIGNATURES Wow ! What a hard protection ! Everytime I run the program (soundon) I get this message: This product is licensed for evaluation purposes only. License will expire after: 09/1997 Write it down. Advance the system date a couple of months and it snaps: This product is licensed for evaluation purposes only. License expired: 09/1997 Please download a fresh version from http://www.4front-tech.com Failed to activate the driver Probably caused by a technical problem or by missing or invalid licence. See /usr/local/lib/oss/soundon.log for more info. Pretty chapucero no ? Well, but advance it before license ends and ... This product is licensed for evaluation purposes only. License will expire after: 09/1997 OSS: 1196 seconds of evaluation time left A nasty countdown. Ahora toca joder al usuario. Now that we have the facts, use the marvellous grep command and locate the evil files. License expired & License will expire> FILE sndconf
+
+seconds of evaluation time left -&gt; FILE modules/soundbase
+
+
+
+The second file is not executable, is a &quot;relocatable Elf file&quot; (a 
+
+module). No problem. It is logical, for a countdown the protection 
+
+must dwell in a resident program. This protection is a little bit more 
+
+complicated than the first one, but is not a tough protection at all. 
+
+Dasm sndconf, and look for &quot;License expired&quot; (Be indulgent with this 
+
+long listing, trust me, it's easy):
+
+
+
+08052101 cmpl   %esi,0x10(%eax);      &lt;&lt;&lt;&lt; some comparing
+
+08052104 jl     08052110;             &lt;&lt;&lt;&lt; if not less flag=0
+
+08052106 movl   $0x0,0xfffffd84(%ebp)
+
+
+
+Referenced from jump/call at 080520f3 ; 08052104 ;
+
+08052110 cmpl   $0x0,0xfffffd84(%ebp); &lt;&lt;&lt; flag=1 seems to be good
+
+08052117 jne    08052150;              &lt;&lt;&lt; jump somewhere
+
+08052119 pushl  %ebx;                  &lt;&lt;&lt; the game is over outlaw!
+
+0805211a pushl  %edi
+
+
+
+Possible reference to string:
+
+&quot;License expired: %02d/%04d&quot;
+
+0805211b pushl  $0x806fc08
+
+
+
+Reference to function : printf
+
+08052120 call   08049138
+
+
+
+Possible reference to string:
+
+&quot;Please download a fresh version from http://www.4front-tech.com&quot;
+
+08052125 pushl  $0x806fb97
+
+
+
+Reference to function : printf
+
+0805212a call   08049138
+
+0805212f pushl  %ebx
+
+08052130 pushl  %edi
+
+
+
+Possible reference to string:
+
+&quot;License expired: %02d/%04d&quot;
+
+08052131 pushl  $0x806fc08;   &lt;&lt;&lt;&lt; I love this formatted strings 
+
+08052136 pushl  $0x807e6d0
+
+
+
+Reference to function : fprintf
+
+0805213b call   08049368
+
+08052140 addl   $0x20,%esp
+
+08052143 pushl  $0xffffffff
+
+
+
+Reference to function : exit
+
+08052145 call   08049598;    &lt;&lt;&lt;&lt;  beggar off
+
+0805214a leal   0x0(%esi),%esi
+
+
+
+Referenced from jump/call at 08052117 ;
+
+                                      &lt;&lt;&lt; Do you remember the flag ?
+
+08052150 movl   $0x1,0xfffffd84(%ebp); &lt;&lt;&lt; jump here if above flag=1
+
+0805215a movl   0xfffffd94(%ebp),%eax
+
+08052160 movl   %eax,0xfffffd80(%ebp)
+
+08052166 decl   %eax
+
+08052167 movl   %eax,0xfffffd94(%ebp)
+
+0805216d movl   0xfffffd80(%ebp),%esi
+
+08052173 decl   %esi
+
+08052174 jns    08052186
+
+08052176 decl   0xfffffd90(%ebp)
+
+0805217c movl   $0xb,0xfffffd94(%ebp)
+
+
+
+Referenced from jump/call at 08052174 ;
+
+08052186 movl   0xfffffd7c(%ebp),%eax
+
+0805218c movl   0x14(%eax),%edx
+
+0805218f movl   0xfffffd90(%ebp),%ecx
+
+08052195 cmpl   %ecx,%edx
+
+08052197 jle    080521a3;             &lt;&lt;&lt; jumping flag=0
+
+08052199 movl   $0x0,0xfffffd84(%ebp);&lt;&lt;&lt; flag=0 BAD GUY ! 
+
+
+
+Referenced from jump/call at 08052197 ;
+
+080521a3 cmpl   %edx,%ecx
+
+080521a5 jne    080521c2
+
+080521a7 movl   0xfffffd94(%ebp),%eax
+
+080521ad movl   0xfffffd7c(%ebp),%esi
+
+08052160 movl   %eax,0xfffffd80(%ebp)
+
+08052166 decl   %eax
+
+08052167 movl   %eax,0xfffffd94(%ebp)
+
+0805216d movl   0xfffffd80(%ebp),%esi
+
+08052173 decl   %esi
+
+08052174 jns    08052186
+
+08052176 decl   0xfffffd90(%ebp)
+
+0805217c movl   $0xb,0xfffffd94(%ebp): 
+
+
+
+Referenced from jump/call at 08052174 ;
+
+08052186 movl   0xfffffd7c(%ebp),%eax
+
+0805218c movl   0x14(%eax),%edx
+
+0805218f movl   0xfffffd90(%ebp),%ecx
+
+08052195 cmpl   %ecx,%edx
+
+08052197 jle    080521a3;               &lt;&lt;&lt; jumping again badflag
+
+08052199 movl   $0x0,0xfffffd84(%ebp);  &lt;&lt;&lt; flag =0
+
+
+
+Referenced from jump/call at 08052197 ;
+
+080521a3 cmpl   %edx,%ecx
+
+080521a5 jne    080521c2
+
+080521a7 movl   0xfffffd94(%ebp),%eax
+
+080521ad movl   0xfffffd7c(%ebp),%esi
+
+080521b3 cmpl   %eax,0x10(%esi)
+
+080521b6 jl     080521c2;             &lt;&lt;&lt; again
+
+080521b8 movl   $0x0,0xfffffd84(%ebp)
+
+
+
+Referenced from jump/call at 080521a5 ; 080521b6 ;
+
+080521c2 pushl  %ebx
+
+080521c3 pushl  %edi
+
+
+
+Possible reference to string:
+
+&quot;License will expire after: %02d/%04d&quot;
+
+080521c4 pushl  $0x806fc24
+
+
+
+
+
+Ejem, if flag=1 your license don't expire, and then lot of 
+
+possibilities of flag=0. Pretty obvious. Use your favorite dos/unix 
+
+hexeditor (or copy the file to your dos partition, reboot and run the 
+
+damned Windoze hexeditor) and do a general Search/Replace: 
+
+(... objdump -d --show-raw-insn sndconf | grep 080521b)
+
+
+
+Every
+
+c7 85 84 fd ff ff 00 00 00 00  movl $0x0,0xfffffd84(%ebp)
+
+changes to:
+
+c7 85 84 fd ff ff 01 00 00 00  movl $0x1,0xfffffd84(%ebp);ALWAYS GOOD!
+
+
+
+You'll notice that the message even disappear. But we must get rid of 
+
+the countdown too. Dasm soundbase and look for &quot;seconds&quot; (you may see 
+
+that this file has line information):
+
+
+
+Possible reference to string:
+
+&quot;OSS: The evaluation time has elapsed. Please reload the driver.&quot;
+
+&lt;&lt;&lt;&lt; if you're executing this part
+
+&lt;&lt;&lt;&lt; you are a really bad guy
+
+
+
+00005901 &lt;sound_open_sw+71&gt; pushl  $0x944
+
+        RELOC: 00005902 R_386_32 .rodata; &lt;&lt; look! objdump smts helps
+
+00005906 &lt;sound_open_sw+76&gt; call   00005907 &lt;sound_open_sw+77&gt;
+
+
+
+&lt;&lt;&lt;<DON't you think the above instruction is really interesting ? RELOC: 00005907 R_386_PC32 printk_Rad1148ba 0000590b &lt;sound_open_sw+7b> movl   $0xffffffed,%eax
+
+
+
+Possible reference to string:
+
+&quot;d: Driver partially removed. Can't open device&quot; &lt;&lt;&lt;&lt; String references sometimes fail
+
+
+
+00005910 &lt;sound_open_sw+80&gt; addl   $0x4,%esp
+
+00005913 &lt;sound_open_sw+83&gt; popl   %ebx
+
+00005914 &lt;sound_open_sw+84&gt; popl   %esi
+
+00005915 &lt;sound_open_sw+85&gt; ret    
+
+00005916 &lt;sound_open_sw+86&gt; leal   0x0(%esi),%esi
+
+00005919 &lt;sound_open_sw+89&gt; leal   0x0(%esi,1),%esi
+
+
+
+Referenced from jump/call at 000058ff ; 
+
+00005920 &lt;sound_open_sw+90&gt; movl   0x0,%eax
+
+		RELOC: 00005921 R_386_32 jiffies_R2f7c7437
+
+00005925 &lt;sound_open_sw+95&gt; subl   %eax,%edx
+
+00005927 &lt;sound_open_sw+97&gt; movl   %edx,%eax
+
+
+
+Possible reference to string:
+
+&quot;en configured&quot;
+
+00005929 &lt;sound_open_sw+99&gt; movl   $0x64,%ecx
+
+0000592e &lt;sound_open_sw+9e&gt; xorl   %edx,%edx
+
+00005930 &lt;sound_open_sw+a0&gt; divl   %ecx,%eax
+
+00005932 &lt;sound_open_sw+a2&gt; pushl  %eax
+
+
+
+Possible reference to string:
+
+&quot;OSS: %d seconds of evaluation time left&quot; &lt;&lt;&lt; Here you are a not so good guy
+
+
+
+00005933 &lt;sound_open_sw+a3&gt; pushl  $0x99e
+
+		RELOC: 00005934 R_386_32 .rodata
+
+00005938 &lt;sound_open_sw+a8&gt; call   00005939 &lt;sound_open_sw+a9&gt;
+
+	RELOC: 00005939 R_386_PC32 printk_Rad1148ba; &lt;&lt; printing what? 
+
+
+
+Possible reference to string:
+
+&quot;river partially removed. Can't open device&quot;
+
+
+
+0000593d &lt;sound_open_sw+ad&gt; addl   $0x8,%esp
+
+
+
+Referenced from jump/call at 000058e8 ; 000058ec ; 000058f6 ; 
+
+
+
+00005940 &lt;sound_open_sw+b0&gt; movl   %ebx,%eax; &lt;&lt;&lt;I want to jump here !
+
+
+
+Look at this, before seeing the rest of the code:
+
+- If you are a not so good guy you come from 58ff
+
+- You bypass the countdown message if you come from 58e8;58ec and 58f6
+
+- If you don't get these jumping you are a really bad guy.
+
+It seems to be a REAL HOT AREA. Ok, you cannot wait anymore, I'll show you:
+
+
+
+000058e0 &lt;sound_open_sw+50&gt; movl   0x1148,%edx
+
+		RELOC: 000058e2 R_386_32 .data
+
+000058e6 &lt;sound_open_sw+56&gt; testl  %edx,%edx
+
+000058e8 &lt;sound_open_sw+58&gt; je     00005940; &lt;&lt;&lt; FIRST OPPORTUNITY
+
+000058ea &lt;sound_open_sw+5a&gt; testl  %ebx,%ebx
+
+000058ec &lt;sound_open_sw+5c&gt; je     00005940; &lt;&lt;&lt;<SECOND ONE 000058ee &lt;sound_open_sw+5e> movl   %ebx,%eax
+
+
+
+Possible reference to string:
+
+&quot;artially removed. Can't open device&quot;
+
+
+
+000058f0 &lt;sound_open_sw+60&gt; andl   $0xf,%eax
+
+
+
+Possible reference to string:
+
+&quot; Driver partially removed. Can't open device&quot;
+
+
+
+000058f3 &lt;sound_open_sw+63&gt; cmpl   $0x6,%eax
+
+000058f6 &lt;sound_open_sw+66&gt; je     00005940; &lt;&lt;&lt; THIRD ONE
+
+000058f8 &lt;sound_open_sw+68&gt; movl   0x0,%eax
+
+		RELOC: 000058f9 R_386_32 jiffies_R2f7c7437
+
+000058fd &lt;sound_open_sw+6d&gt; cmpl   %edx,%eax
+
+000058ff &lt;sound_open_sw+6f&gt; jbe    00005920; &lt;&lt;&lt; LAST ONE EVEN BEING
+
+                                             &lt;&lt;&lt; A NOT S.G. GUY
+
+
+
+If i'm honest i don't like this variety. If you look for hits for the 
+
+FIRST key variable 0x1148 (apparently 0x1148=0 is a good thing), it 
+
+is never (directly) assigned to 0. I don't like, perhaps it works, 
+
+but I do prefer the other two options (that deal with the same thing). 
+
+Change:
+
+
+
+000058f0 &lt;sound_open_sw+60&gt; 83 e0 0f  andl   $0xf,%eax
+
+000058f3 &lt;sound_open_sw+63&gt; 83 f8 06  cmpl   $0x6,%eax
+
+000058f6 &lt;sound_open_sw+66&gt; 74 48  je     00005940
+
+to:
+
+000058f0 &lt;sound_open_sw+60&gt; 83 e0 0f  andl   $0xf,%eax
+
+000058f3 &lt;sound_open_sw+63&gt; 83 f8 06  cmpl   $0x6,%eax
+
+000058f6 &lt;sound_open_sw+66&gt; eb 48  jmp     00005940 
+
+
+
+It apparently works, and I say apparently 'cause I told before that 
+
+this buggy module doesn't work anyhow :-) 
+
+Well, easy cracks for a new area. Good linuxing !
+
+
+
+SiuL+Hacky
+
+</PRE>
+
+<FONT color="green">(c) SiuL+Hacky 1997. All rights reversed</FONT>
+
+<HR ALIGN="CENTER" WIDTH="100%" SIZE="3">
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</I></CENTER>
+
+<BR><CENTER>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut CGI-scripts</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering legal?</A></CENTER>
+
+<CENTER><HR ALIGN="CENTER" WIDTH="100%" SIZE="2"></CENTER>
+
+</BODY>
+
+</HTML>
+

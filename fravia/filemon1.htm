@@ -1,0 +1,1606 @@
+<html><HEAD>
+
+<TITLE>filemon1</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+<CENTER><FONT size="+3">How to reverse engineer a Windows 95 target</FONT><BR>
+
+<FONT size="+2">
+
+REVERSE ENGINEERING EXERCISES FOR THE MASSES - (2a)</FONT><BR>
+
+Version 0.01<BR>
+
+
+
+<BR>
+
+<FONT Size="+2">by fravia+ (MSRE), August 1997<BR><BR>
+
+<IMG SRC="hcu1.gif" tppabs="http://www.anticrack.de/fravia/hcu1.gif" ALT="HCU" ALIGN="BOTTOM" WIDTH="114" HEIGHT="43" BORDER="0" VSPACE="0" HSPACE="0">
+
+<BR>Part A: <FONT color="purple">Introduction to filemon</FONT> - 01 August 1997</FONT>
+
+
+
+<HR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">
+
+Courtesy of Fravia's page of reverse engineering<BR>
+
+<HR>
+
+<BR>
+
+<FONT size="+1"><I>Well, a very interesting essay... I wrote it myself! :-) 
+
+This essay will be divided in 
+
+four (or more) parts:</I><PRE><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><U><B>A = Introduction to filemon</B></U>
+
+B = reverse engineering without source code 
+
+C = Filemon reversed 
+
+D = Back to Main
+
+E = VXD vagaries and mysteries</PRE><I>
+
+Although already disponible, this essay is still under construction
+
+and will be modified and ameliorated until the wording below will disappear (I reckon 
+
+until mid-september)</I></FONT>
+
+<BR><BR><FONT size="+3"><FONT color="magenta">UNDER CONSTRUCTION</FONT></FONT><BR>
+
+</CENTER>
+
+<HR size="2">
+
+<CENTER>
+
+<FONT size="+2">
+
+REVERSE ENGINEERING EXERCISES FOR THE MASSES - (2a)<BR>
+
+</FONT><FONT size="+1">
+
+How to reverse engineer a Windows 95 program<BR>~<BR><FONT><FONT size="+1"><U>Part A: Introduction to filemon.exe</U><BR><BR>
+
+(c) Fravia (MSRE), 1997. All rights reserved<BR><BR><FONT size="-1">Print as html document, else use courier 8</FONT></CENTER>
+
+</FONT><HR><CENTER><I>
+
+Sorry for the language, I'm not a native English speaker.<BR>
+
+Sorry for the &quot;rough&quot; version, it's still under construction... I am publishing this essay in its incomplete form, only because so many have insisted. The complete version will not be ready before mid-September and will contain many changes and improvements .<BR>
+
+This essay is a &quot;quick and dirty&quot; introduction to Windows 95 reverse 
+
+engineering, it requires almost NO knowledge of windows programming, and a 
+
+low to  
+
+moderate knowledge of assembler coding. If you are already a good 
+
+software reverse engineer this essay may disappoint you, being a little 
+
+too much on the elementary side, yet I believe that a good comprehension of the basic of this trade is the main secret for advanced reverse 
+
+engineering.<BR> </CENTER></I><BR><HR><BR>
+
+<FONT size="+2"><B>Introduction</B></FONT><BR>
+
+You may have already read the short essay (divided in two parts) that 
+
+I published one year ago, reverse engineering Filemanager for Windows 3.1. Since we 
+
+are all now dealing mostly with Windows 95 programs (it's not our choice 
+
+- alas - but a Micro$oft's imposition that everybody accepts, against 
+
+any sound logic :-) it suits us well to examine the &quot;deep&quot; structure 
+
+of filemon.exe, Version 2.0, by By Mark Russinovich 
+
+and Bryce Cogswell, a pretty useful program, released with its c source code at 
+
+the beginning of the year. You may want to download also the LAST version of this 
+
+good tool (version 3.0), released in July, at <A href="javascript:if(confirm('http://www.ntinternals.com/  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.ntinternals.com/'" tppabs="http://www.ntinternals.com/">http://www.ntinternals.com</A>, 
+
+where you'll find also its companion utility regmon.exe and the Windows NT versions 
+
+of both tools with complete c++ source code. Yet for this essay download from 
+
+my site <U><B>version 2</B></U> of <IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A href="javascript:if(confirm('http://129.105.116.5/fravia/filsrc.zip  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://129.105.116.5/fravia/filsrc.zip'" tppabs="http://129.105.116.5/fravia/filsrc.zip">filemon.exe</A> with its source code, this is all what you'll need.<BR>
+
+<BR>As usual, when you start a cracking session, first of all run the program, try all  its options (there are not many options inside this target) and, last 
+
+but not least, 
+
+print the complete 
+
+C source code (15 &quot;A4&quot; sheets).
+
+Since we have already the C source code of this program this lesson 
+
+will be a &quot;false&quot; reverse engineering exercise: we are not going to 
+
+find anything hidden or new, nor many secret tricks in here... yet I 
+
+believe that many of you will find pretty useful our work 
+
+below, since analogous structures will more or less be present inside 
+
+<B>UNKNOWN</B> code, inside other targets, that you'll try to reverse engineer on your 
+
+own.<BR>Another (very) interesting point in this program is its use of a virtual 
+
+device driver (VXD) for the filtering of all file system accesses... VXD reverse 
+
+engineering is a branch in its own rights, as you will see.<BR>Here you go: all 
+
+the files you'll find inside filsrc.zip:<PRE>Searching ZIP: FILSRC.ZIP
+
+
+
+ Length  Method   Size  Ratio   Date    Time    CRC-32  Attr  Name
+
+ ------  ------   ----- -----   ----    ----   -------- ----  ----
+
+      0  Stored       0   0%  07-03-97  13:16  00000000 --wD  GUI/
+
+      0  Stored       0   0%  07-03-97  13:16  00000000 --wD  VXD/
+
+    766  DeflatN    350  55%  28-03-96  08:55  cc319149 --w-  GUI/APPICON.ICO
+
+  16015  DeflatN   7090  56%  16-03-97  20:47  ce4c6ba6 --w-  GUI/FILEVXD.VXD
+
+  58368  DeflatN   4905  92%  16-03-97  20:49  75a1fd27 --w-  GUI/FILEMON.NCB
+
+      0  Stored       0   0%  07-03-97  13:16  00000000 --wD  GUI/RELEASE/
+
+  38912  DeflatN   1764  96%  16-03-97  20:49  266898dd --w-  GUI/FILEMON.MDP
+
+   7176  DeflatN   1522  79%  27-11-96  14:34  4ccc82e0 --w-  GUI/FILEMON.MAK
+
+   4786  DeflatN   1396  71%  16-03-97  20:48  54b79e51 --w-  GUI/FILEMON.RC
+
+   2312  DeflatN    623  74%  16-03-97  20:13  fea19b03 --w-  GUI/RESOURCE.H
+
+  22356  DeflatN   6422  72%  16-03-97  20:22  58b0c5ab --w-  GUI/FILEMON.C
+
+  16015  DeflatN   7090  56%  16-03-97  20:47  ce4c6ba6 --w-  GUI/RELEASE/FILEVXD.VXD
+
+  38912  DeflatN  18466  53%  16-03-97  20:48  4d4d1cee --w-  GUI/RELEASE/FILEMON.EXE
+
+    420  DeflatN    255  40%  24-11-96  21:09  bd0b63d3 --w-  VXD/MAKEFILE
+
+   1199  DeflatN    259  79%  16-03-97  20:47  1c1c6d4c --w-  VXD/FILEVXD.DEF
+
+   1620  DeflatN    961  41%  16-03-97  20:47  20fd9fad --w-  VXD/FILEVXD.SYM
+
+   1480  DeflatN    373  75%  16-03-97  20:47  031f6484 --w-  VXD/FILEVXD.EXP
+
+  16015  DeflatN   7090  56%  16-03-97  20:47  ce4c6ba6 --w-  VXD/FILEVXD.VXD
+
+   6212  DeflatN   1699  73%  16-03-97  20:47  ce4845f1 --w-  VXD/FILEVXD.MAP
+
+  15675  DeflatN   6009  62%  16-03-97  20:47  7702cbad --w-  VXD/FILEMON.OBJ
+
+   1384  DeflatN    364  74%  16-03-97  20:47  1ec43719 --w-  VXD/FILEVXD.LIB
+
+    313  DeflatN    194  39%  05-12-95  02:01  317f17cc --w-  VXD/FILEVXD.VRC
+
+    452  DeflatN    283  38%  23-11-96  18:36  0ea560c5 --w-  VXD/FILEVXD.RES
+
+  82944  DeflatN   5012  94%  16-03-97  20:47  f7db1ed0 --w-  VXD/FILEVXD.PDB
+
+  84457  DeflatN  12255  86%  24-11-96  04:47  6f9a8ab8 --w-  VXD/TEST.FIL
+
+  35430  DeflatN   7703  79%  16-03-97  20:45  2fc85672 --w-  VXD/FILEMON.C
+
+   1139  DeflatN    509  56%  16-03-97  20:24  e642c40b --w-  VXD/IOCTLCMD.H
+
+   1557  DeflatN    582  63%  16-03-97  20:25  395d7317 --w-  VXD/FILEMON.H
+
+ ------          ------  ---                                  -------
+
+ 455915           93176  80%                                       28</PRE>
+
+We'll reverse engineer two files: filemon.exe and filevxd.vxd. We'll begin with filemon.exe. The reverse engineering of this program will be COMPLETE, since its various parts will be useful -for you- in order to learn some of the different aspects and techniques (and tricks) of our trade. Be patient and wade slowly through the code of this target, I'll keep you on the right path.<BR> 'Dead listing' reverse engineering, as +ORC calls it, is a slow &quot;puzzle solving&quot; process: the intellectual challenge can be extremely interesting, btw.<BR>We will NEVER use Winice in this essay, as it is NOT NECESSARY to use our powerful debugger to understand EVERYTHING a target does, as you'll see reading this essay.
+
+<HR size="2" width="22%" align="left"><BR>
+
+<FONT size="+2"><B>Elementary must know, the SaveFile approach</B></FONT><BR>
+
+<BR>
+
+<BR>Some elementary MUST KNOW that you should head before starting a cracking session:<BR>
+
+At the beginning there are no names... only a sea of numbers, hundred of 
+
+different locations... that's your target &quot;in the wild&quot;, roaming around with unnamed procedures, before you tame it to clarity.<BR>
+
+Soon some little islands will appear... their form still indeterminate... slowly  you'll understand what some procedures of your target (should)  do... for instance here 
+
+in filemon (as in almost all programs you'll disassemble) it's pretty easy to 
+
+individuate the &quot;FileSaving&quot; function, using simple search masks inside the 
+
+dead listing.<BR>
+
+Searching you'll quickly get to this part of your dead listing:<PRE>
+
+:00401CF3 C744244804824000        mov [esp + 48], 00408204 ;&quot;Save File Info...&quot;
+
+:00401CFB C7442454FC814000        mov [esp + 54], 004081FC ;&quot;*.fil&quot;</PRE>
+
+Now just dead list &quot;back&quot;, to the beginning of this function:<PRE>
+
+:00401C20 81EC7C060000            sub esp, 0000067C  ;correct stack</PRE>
+
+Since this function starts at  :00401C20, we can at once substitute (search and replace) any &quot;<FONT color="purple">call 00401C20</FONT>&quot; 
+
+(which is not a very useful tag for our dead listing perusing) with a much 
+
+more meaningful tag: &quot;<FONT color="purple">call 
+
+00401C20=savefile</FONT>&quot;.<BR>
+
+Note how our substitution did NOT eliminate the location number, you better 
+
+keep always such number locations together with your new tags, because during your cracking sessions you will necessarily 
+
+commit quite 
+
+a lot of mistakes, that you'll correct later. Keeping the original location 
+
+numbers together with your new assigned 'provisory' names will help you a lot 
+
+when needed.<BR> 
+
+Inside 
+
+filemon's dead listing we will find only two occurrences of a call to our &quot;FileSaving&quot; routine but working
+
+on your own targets, later, you'll soon discover how abstruse (and puzzling) 
+
+code 
+
+snippets will suddenly be comprehensible thank to these - very simple -
+
+substitutions<BR>Let's have a look at the relevant filemon's code:<BR>
+
+This snippet of code calls twice the SaveFile function of our target... 
+
+by the way, since this kind of routines are typically called from the main menu 
+
+of the main window (&quot;Save&quot; and &quot;Saveas&quot; inside the &quot;File&quot; main menu option), this snippet will be very probably inside 
+
+a WM_COMMAND structure... more about this later)... here is the part of code calling 
+
+SaveFile:<PRE>:
+
+:00401569 6A00                    push 00000000             ;BOOLEAN FALSE
+
+:0040156B A1B8964000              mov eax, [004096B8]       ;get second par
+
+:00401570 8BB42458010000          mov esi, [esp + 00000158] ;get HWND hWnd
+
+:00401577 50                      push eax                  ;push second par
+
+:00401578 56                      push esi                  ;push HWND hWnd
+
+:00401579 E8A2060000              call 00401C20=savefile
+
+:0040157E 83C40C                  add esp, 0000000C
+
+:00401581 E97E010000              jmp 00401704
+
+:00401586 6A01                    push 00000001             ;BOOLEAN TRUE
+
+:00401588 A1B8964000              mov eax, [004096B8]       ;get second par
+
+:0040158D 8BB42458010000          mov esi, [esp + 00000158] ;get HWND hWnd
+
+:00401594 50                      push eax                  ;push second par
+
+:00401595 56                      push esi                  ;push HWND hWnd
+
+:00401596 E885060000              call 00401C20=savefile
+
+:0040159B 83C40C                  add esp, 0000000C
+
+:0040159E E961010000              jmp 00401704</PRE>
+
+You notice that I have already transformed &quot;call 00401C20&quot; in &quot;call 00401C20=savefile&quot;.  
+
+You may use the same &quot;search and replace&quot; technique also for memory 
+
+locations you have understood the significance of. Usually you'll be lucky every
+
+time that a KNOWN return value of a KNOWN windows function will be stored 
+
+in a specific memory location. This will allow you to prepare easily an immediate 
+
+&quot;search and replace&quot; of the same location in the whole dead listing, whereby you'll 
+
+substitute awkward number-locations with your tags, explaining 
+
+their exact meaning<BR>Yet you'll be able to clear the meaning of quite a lot of 
+
+code even 
+
+if you DO NOT KNOW the exact meaning of a value stored inside a memory 
+
+location... the important thing is that you know <B>where that value is 
+
+used</B>... let's make an example, look at the code above once more.<BR>
+
+This small code snippet let us understand 
+
+that the &quot;homemade&quot; function SaveFile 
+
+of our target accepts THREE parameters (note the three pushes before each 
+
+call).
+
+<BR>One of the three parameters is, clearly, a boolean parameter, either 0 or 1... 
+
+can you guess what this could be... in a &quot;save 
+
+file&quot; operation? It's the <B>&quot;saveas&quot;</B> parameter in alternative to &quot;save&quot;, 
+
+a typical boolean 
+
+parameter for saving operations... we don't even need the confirmation 
+
+of the c code...<BR>Nice... and the other two parameters? The first one (in the C 
+
+call, the last one in assembly) is HWND hWnd, of course, and the other 
+
+one, the &quot;middle&quot; one? We know, from the C source, that's HWND ListBox, 
+
+but we could ALREADY 
+
+have searched and replaced all memory locations &quot;<B>[004096B8]</B>&quot; - 
+
+in the whole dead 
+
+listing - with something like &quot;<B>[004096B8]=SaveFileSecondPar</B>&quot;, and believe 
+
+me, this would have made quite a BIG difference in a huge 7-8 megabytes 
+
+dead listing where you don't even understand what the hell the programmer 
+
+was trying to do, nor where have been hidden, inside the huge codewoods, the 
+
+snippets of the target's code you are looking for.<BR><BR>
+
+OK, we have finished our quick examination of the small snippet above... would 
+
+you like to 
+
+know what it was exactly? It correspond to the following 6 lines of &quot;c&quot; code, 
+
+placed  inside the main &quot;switch&quot; tree (for WM_COMMAND) of the  MainWndProc:<BR>
+
+<PRE>case IDM_SAVE:
+
+  SaveFile( hWnd, hWndList, FALSE );
+
+  return 0;
+
+
+
+case IDM_SAVEAS:
+
+  SaveFile( hWnd, hWndList, TRUE );
+
+  return 0;</PRE>
+
+<BR>
+
+<FONT size="+2"><B>Let's start cracking: the first function</B></FONT><BR>
+
+Now let's start together anew, take your sheets with the C source code have 
+
+a general look, prepare your favourite cocktail (may I suggest a 
+
+<A href="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">traitor</A>?) and then jump with me inside the disassembled 
+
+target...<BR>
+
+If you just read the disassembled code that follows, with my comments, you'll 
+
+notice pretty easily how the c source code has been &quot;translated&quot; in assembler.<BR>
+
+The first windows' function in the C source code is ABORT, let's examine first of all its &quot;C&quot; code:<BR>
+
+<PRE>/********************************************************************
+
+*	FUNCTION:	Abort:
+
+*	PURPOSE:	Handles emergency exit conditions.
+
+*********************************************************************/
+
+void Abort( HWND hWnd, TCHAR * Msg )
+
+{	MessageBox( hWnd, Msg, &quot;filemon&quot;, MB_OK );
+
+	PostQuitMessage( 1 );
+
+}</PRE>	
+
+Note the 4 parameters of the Messagebox function: from left to right:
+
+hWnd, Msg, &quot;progname&quot;, MB_OK... as you'll now see, in assembly they will be pushed in 
+
+REVERSE ORDER: MB_OK, &quot;progname&quot;, Msg, hWnd,<BR>
+
+And here is the code of our target<BR>
+
+<PRE>
+
+//********************** Start of Code in Object .text **************
+
+Program Entry Point = 004024E0 (Filemon.exe File Offset:000018E0)
+
+:00401000 8B442408       mov eax, [esp + 08]       ;get msg in eax
+
+:00401004 6A00           push 0                    ;push right parameter: MB_OK (=0)
+
+:00401006 8B4C2408       mov ecx, [esp + 08]       ;get hWnd in ecx
+
+:0040100A 68C0804000     push 004080C0             ;push StringData &quot;filemon&quot;
+
+:0040100F 50             push eax                  ;push msg
+
+:00401010 51             push ecx	              ;push hWnd
+
+:00401011 FF1590B24400   Call dword ptr [0044B290] ;call USER32.MessageBoxA 
+
+:00401017 6A01           push 1                    ;push 1 for PostQuit
+
+:00401019 FF1588B24400   Call dword ptr [0044B288] ;call USER32.PostQuitMessage 
+
+:0040101F C3             ret			      ;finis
+
+</PRE>
+
+What does this little introductory example mean from a reverse engineering point 
+
+of view?
+
+It means, for a start, that EVERY TIME you find a &quot;call USER32.MessageBoxA&quot; 
+
+function, in 
+
+your disassembled listing you may substitute IMMEDIATELY the 4 pushes preceding 
+
+it 
+
+with:<BR>
+
+First push: whatever MessageBoxStyle has been called (Here 0 = MB_0K)... see below 
+
+the complete list<BR> 
+
+Second push: Title of the MsgBox<BR> 
+
+Third push: Msg<BR>
+
+Fourth push: hWnd<BR>
+
+<BR>
+
+You dig it?<BR>It's the same old story we already (should) know from dos reverse 
+
+engineering actually:<BR>
+
+All it happens when passing parameters to a C++ function is that you push the 
+
+rightmost parameter first, then the next rightmost parameter, and so on, until 
+
+the leftmost parameter has been pushed. Then the function is called... say you 
+
+call the C library function strcpy to copy <I>SourceString</I> to 
+
+<I>DestString</I>... in c++ you would type:<PRE>
+
+strcpy (DestString, SourceString);</PRE>
+
+The same call in assembler works like this<BR><PRE>
+
+lea ax,SourceString	;rightmost parameter
+
+lea bx,DestString	;leftmost parameter
+
+push ax			;push rightmost first
+
+push bx			;push next one
+
+call _strcpy		;copy the string using pre-made code
+
+add sp,4		;DISCARD used parameters</PRE>
+
+Everything depends from the <FONT color="red">CALLING CONVENTION!</FONT><BR>
+
+The <FONT color="blue"><B>C calling convention</B></FONT> pushes rightmost first 
+
+and discards parameters from stack;<BR>
+
+The <FONT color="blue"><B>Pascal calling convention</B></FONT> pushes leftmost 
+
+first and the <I>called</I> program 
+
+discards the parameter from the stack.<BR><BR>
+
+It's therefore quite important to understand first of all wich convention uses your 
+
+target, which is pretty easy, since you just need to have a look to a known windows 
+
+function.<BR><BR>
+
+<FONT size="+2"><B>The old good MessageBox function</B></FONT><BR>
+
+But we are not yet finished with our messagebox function,, I'll use this very 
+
+function in order to explain you &quot;in the deep&quot; a single Windows' function, it's 
+
+up to you, obviously, to learn as much as you can about the more important 
+
+windows' functions... 
+
+I know, I know, it's an awful operating system, yet we MUST STUDY IT, unfortunately, 
+
+in order to reverse it whenever we feel like it. In the following example, regarding 
+
+MessageBox, you'll find a description <U>useful for reverse engineering purposes</U>, 
+
+the descriptions you'll find inside the WinAPI references of the main languages 
+
+compilers are similar, but <U>they are aimed at programmers that usually DO NOT 
+
+need to know how to disassemble their program effectively</U> and therefore are 
+
+not always useful, nor complete. In fact the basical  
+
+syntax for messagebox is the following:<BR><PRE><FONT color="purple">
+
+<CENTER><FONT size="+2">  int MessageBox(hwndParent, lpszText, lpszTitle, fuStyle)
+
+</FONT></CENTER>
+
+
+
+HWND hwndParent;        /* handle of parent window           */
+
+LPCSTR lpszText;        /* address of text in message box    */
+
+LPCSTR lpszTitle;       /* address of title of message box   */
+
+UINT fuStyle;           /* style of message box              */
+
+
+
+
+
+The MessageBox function creates, displays, and operates a message-box window. 
+
+The message box contains an application-defined message and title, plus any
+
+combination of the predefined icons and push buttons described in the fuStyle
+
+parameter. 
+
+
+
+Parameter	Description
+
+
+
+hwndParent     Identifies the parent window of the message box to be created. 
+
+               If this parameter is NULL, the message box will have no parent 
+
+               window. 
+
+LpszText       Points to a null-terminated string containing the message to 
+
+               be displayed. 
+
+LpszTitle      Points to a null-terminated string to be used for the dialog 
+
+               box title. If this parameter is NULL, the default title Error 
+
+               is used. 
+
+fuStyle	       Specifies the contents and behavior of the dialog box. 
+
+               This parameter can be a combination of the following values: 
+
+Value	Meaning
+
+
+
+MB_ABORTRETRYIGNORE	The message box contains three push buttons: 
+
+                       Abort, Retry, and Ignore. 
+
+<U>This value is 0x00000002L</U>
+
+
+
+MB_APPLMODAL	        The user must respond to the message box before 
+
+                       continuing work in the window identified by the 
+
+                       hwndParent parameter. However, the user can move 
+
+                       to the windows of other applications and work in 
+
+                       those windows. MB_APPLMODAL is the default if 
+
+                       neither MB_SYSTEMMODAL nor MB_TASKMODAL is 
+
+                       specified. 
+
+<U>This value is 0x00000000L</U>
+
+
+
+MB_DEFBUTTON1	        The first button is the default. Note that the 
+
+                       first button is always the default unless MB_DEFBUTTON2 
+
+                       or MB_DEFBUTTON3 is specified. 
+
+<U>This value is 0x00000000L</U>
+
+
+
+MB_DEFBUTTON2	        The second button is the default. 
+
+<U>This value is 0x00000100L</U>
+
+
+
+MB_DEFBUTTON3	        The third button is the default. 
+
+<U>This value is 0x00000200L</U>
+
+
+
+MB_ICONASTERISK	 Same as MB_ICONINFORMATION. 
+
+<U>This value is 0x00000040L</U>
+
+
+
+MB_ICONEXCLAMATION	 An exclamation-point icon appears in the message box. 
+
+<U>This value is 0x00000030L</U>
+
+
+
+MB_ICONHAND	         Same as MB_ICONSTOP. 
+
+<U>This value is 0x00000010L</U>
+
+
+
+MB_ICONINFORMATION	 An icon consisting of a lowercase letter &quot;I&quot; in a 
+
+                        circle appears in the message box. 
+
+<U>This value is 0x00000040L</U>
+
+
+
+MB_ICONQUESTION         A question-mark icon appears in the message box. 
+
+<U>This value is 0x00000020L</U>
+
+
+
+MB_ICONSTOP             A stop-sign icon appears in the message box.
+
+<U>This value is 0x00000010L</U> 
+
+
+
+MB_OK	                The message box contains one push button: OK. 
+
+<U>This value is 0x00000000L</U>
+
+
+
+MB_OKCANCEL	         The message box contains two push buttons: OK and Cancel. 
+
+<U>This value is 0x00000001L</U>
+
+
+
+MB_RETRYCANCEL	         The message box contains two push buttons: Retry and Cancel. 
+
+<U>This value is 0x00000005L</U>
+
+
+
+MB_SYSTEMMODAL	         All applications are suspended until the user responds to 
+
+                        the message box. Unless the application specifies MB_ICONHAND,
+
+                        the message box does not become modal until after it is
+
+                        created; consequently, the parent window and other windows
+
+                        continue to receive messages resulting from its activation. 
+
+                        System-modal message boxes are used to notify the user of
+
+                        serious, potentially damaging errors that require immediate
+
+                        attention (for example, running out of memory). 
+
+<U>This value is 0x00001000L</U>
+
+
+
+MB_TASKMODAL	         Same as MB_APPLMODAL except that all the top-level windows 
+
+                        belonging to the current task are disabled if the hwndParent
+
+                        parameter is NULL. This flag should be used when the calling 
+
+                        application or library does not have a window handle available         
+
+                        but still needs to prevent input to other windows in the 
+
+                        current application without suspending other applications.
+
+<U>This value is 0x00002000L</U>
+
+
+
+MB_YESNO	         The message box contains two push buttons: Yes and No. 
+
+<U>This value is 0x00000004L</U>
+
+MB_YESNOCANCEL	         The message box contains three push buttons: Yes, No, and             
+
+                        Cancel. 
+
+<U>This value is 0x00000003L</U>
+
+</FONT></PRE>
+
+As you can see, the possible values are 0,1,2,3,4,5,10,20,30,40,100,200,100, 2000<BR>
+
+(there are also other values, more rare: F, FO, F00, 3000, 8000, C000, 20000... you'll 
+
+find them out either experimenting a little or reverse engineering a lot :-)
+
+<PRE><FONT color="blue"><B>Returns</B></FONT><FONT color="purple">
+
+The return value is zero if there is not enough memory to create the message box. 
+
+Otherwise, it is one of the following menu-item values returned by the dialog box:
+
+
+
+Value	    Real value     Meaning
+
+
+
+ERROR         (0)	    fcked 
+
+IDOK          (1)           OK button was selected. 
+
+IDCANCEL      (2)           Cancel button was selected.
+
+IDABORT	      (3)           Abort button was selected. 
+
+IDRETRY	      (4)           Retry button was selected.
+
+IDIGNORE      (5)           Ignore button was selected. 
+
+IDYES         (6)           Yes button was selected. 
+
+IDNO          (7)           No button was selected.
+
+
+
+If a message box has a Cancel button, the IDCANCEL value will be returned 
+
+if either the ESC key is pressed or the Cancel button is selected. If the 
+
+message box has no Cancel button, pressing ESC has no effect.
+
+
+
+Comments
+
+When a system-modal message box is created to indicate that the system is 
+
+low on memory, the strings pointed to by the lpszText and lpszTitle 
+
+parameters should not be taken from a resource file, because an attempt 
+
+to load the resource may fail. 
+
+
+
+When an application calls the MessageBox function and specifies the 
+
+MB_ICONHAND and MB_SYSTEMMODAL flags for the fuStyle parameter, Windows 
+
+displays the resulting message box regardless of available memory. 
+
+When these flags are specified, Windows limits the length of the 
+
+message-box text to three lines. Windows does not automatically break 
+
+the lines to fit in the message box, however, so the message string 
+
+must contain carriage returns to break the lines at the appropriate 
+
+places. 
+
+If a message box is created while a dialog box is present, use the 
+
+handle of the dialog box as the hwndParent parameter. The hwndParent 
+
+parameter should not identify a child window, such as a control in 
+
+a dialog box. 
+
+
+
+See Also
+
+
+
+FlashWindow, MessageBeep</FONT> 
+
+</PRE>
+
+<BR><BR>OK, we have seen &quot;in the deep&quot; a single Windows' function, you would be well 
+
+advised to prepare yourself some &quot;information sheets&quot;, like the above one, for your 
+
+own use, about the most important and more frequent windows functions, <U>WITH the 
+
+values of the constants</U> that windows uses... you'll see how easy it is to 
+
+understand what an unknown part of a program is doing just examining how it handles 
+
+the DIFFERENT possible return values...<BR>This is obviously not the case here... 
+
+remember what we are doing, we are just examining an &quot;ABORT&quot; error function, an 
+
+anormal function that will show the user only a short error message and offer him 
+
+the OK button to click onto... you could modify the code at<BR><PRE>:00401004 6A00      push 0        ;push right parameter: MB_OK (=0)</PRE>
+
+into:<PRE>:00401004 6A01      push 1        ;push right parameter: MB_OKCANCEL (=1)</PRE>
+
+Yet modifying this code would not make much sense: you would see two push buttons: OK and Cancel, <U>only in the event of an error</U> (a 
+
+pretty futile reverse engineering exercise :-)<BR>
+
+<BR>
+
+
+
+<FONT size="+2"><B>The InitApplication function of filemon</B></FONT><BR>
+
+Now that we have seen the ABORT function of filemon, let's work on the next 
+
+routines  of our target... be patient and follow me: if you read carefully 
+
+this short essay you'll master the rudiments of windows reverse engineering.<BR><BR>
+
+The following function, inside our C source code, is WinMain... since WinMAin is a KNOWN function (which usually calls InitInstance and InitApp before entering a ghetmaessage loop), WinMain will be one of the LAST code snippets that 
+
+we'll reverse, we'll see first a lot of other, more or less &quot;home-made&quot; procedures that  we'll &quot;solve&quot; first (once more: we have the c 
+
+source code of this target, yet my aim is to teach you how to reverse engineer targets you 
+
+DO NOT have the source code of, we'll soon operate AS IF we did not have any source code at all, bear with me :-)<BR>
+
+We'll pass to the next procedure, the one after Winmain. This is a standard InitApp procedure (as you'll see in the FOURTH) part of this lesson) here is its C source code:
+
+<PRE>/****************************************************************************
+
+*    FUNCTION: InitApplication(HANDLE)
+
+*    PURPOSE: Initializes window data and registers window class
+
+****************************************************************************/
+
+BOOL InitApplication( HANDLE hInstance )
+
+{    WNDCLASS  wc;
+
+	// Fill in window class structure with parameters that describe the
+
+	// main (statistics) window. 
+
+	wc.style		= 0;                     
+
+	wc.lpfnWndProc		= (WNDPROC)MainWndProc; !!!!
+
+	wc.cbClsExtra		= 0;              
+
+	wc.cbWndExtra		= 0;              
+
+	wc.hInstance		= hInstance;       
+
+	wc.hIcon		= LoadIcon( hInstance, &quot;ICON&quot; );
+
+	wc.hCursor		= LoadCursor( NULL, IDC_ARROW );
+
+	wc.hbrBackground	= GetStockObject( LTGRAY_BRUSH ); 
+
+	wc.lpszMenuName	= &quot;LISTMENU&quot;;  
+
+	wc.lpszClassName	= &quot;filemonClass&quot;;
+
+	if ( ! RegisterClass( &amp;wc ) )
+
+		return FALSE;
+
+	return TRUE;
+
+}
+
+
+
+FUNCTION: InitApplication(HANDLE)
+
+* Referenced by a CALL at Address:0040102B  
+
+BOOL InitApplication( HANDLE hInstance)</PRE> 
+
+This function fills in the window class structure with parameters that describe the
+
+main (statistics) window of our target... it's one of the main &quot;initializing&quot; functions of our target<PRE>
+
+:004010B0 8B442404            mov eax, [esp + 04] 	;get hInstance
+
+:004010B4 83EC28              sub esp, 00000028
+
+:004010B7 C744240000000000    mov [esp], 00000000
+
+:004010BF 89442410            mov [esp + 10], eax
+
+:004010C3 56                  push esi                  ;save esi
+
+:004010C4 C744240890114000    mov [esp + 08], 00401190  ;See below what is this 
+
+:004010CC C744240C00000000    mov [esp + 0C], 00000000
+
+:004010D4 C744241000000000    mov [esp + 10], 00000000
+
+:004010DC 68E4804000          push 004080E4             ;StringData &quot;ICON&quot;
+
+:004010E1 50                  push eax                  ;push hInstance
+
+:004010E2 FF15F4B24400        Call dword ptr [0044B2F4] ;USER32.LoadIconA
+
+:004010E8 89442418            mov [esp + 18], eax       ;save return value
+
+:004010EC 68007F0000          push 00007F00             ;7F=IDC_ARROW
+
+:004010F1 6A00                push 00000000             ;NULL
+
+:004010F3 FF15F8B24400        Call dword ptr [0044B2F8] ;USER32.LoadCursorA
+
+:004010F9 8944241C            mov [esp + 1C], eax       ;save return value
+
+:004010FD 6A01                push 1                    ;1=LTGRAY_BRUSH 
+
+:004010FF FF15CCB14400        Call dword ptr [0044B1CC] ;GDI32.GetStockObject
+
+
+
+:00401105 C7442424D8804000    mov [esp + 24], 004080D8 ;StringData &quot;LISTMENU&quot;
+
+:0040110D C7442428C8804000    mov [esp + 28], 004080C8 ;StringData  &quot;filemonClass&quot;  
+
+:00401115 89442420            mov [esp + 20], eax      ;save return in esp+20
+
+:00401119 8D442404            lea eax, [esp + 04]      ;get WNDCLASS wc</PRE><FONT color="purple">if ( ! RegisterClass( &amp;wc ) )<BR>
+
+		return FALSE;<BR>
+
+              return TRUE<PRE>
+
+:0040111D 50                  push eax                  ;push WNDCLASS wc
+
+:0040111E FF15FCB24400        Call dword ptr [0044B2FC] ;USER32.RegisterClassA 
+
+:00401124 663D0100            cmp ax, 0001              ;did we get it through?
+
+:00401128 5E                  pop esi
+
+:00401129 1BC0                sbb eax, eax              ;if zero return false
+
+:0040112B 83C428              add esp, 00000028
+
+:0040112E 40                  inc eax                   ;else return true
+
+:0040112F C3                  ret</PRE>
+
+Well, let's see what happens when we get back from this procedure:
+
+<PRE>
+
+:WinMain of filemon calls InitApplication
+
+:00401020 83EC1C              sub esp, 0000001C
+
+:00401023 53                  push ebx
+
+:00401024 56                  push esi
+
+:00401025 8B742428            mov esi, [esp + 28]
+
+:00401029 57                  push edi
+
+:0040102A 56                  push esi
+
+:0040102B E880000000          call 004010B0  ;call InitApplication(HANDLE) 
+
+:00401030 83C404              add esp, 4 	;correct esp
+
+:00401033 85C0                test eax, eax  ;was it zero?
+
+:00401035 750B                jne 00401042 	; if InitApplication(hInstance) OK
+
+                                             ; continue WinMain
+
+:00401037 33C0                xor eax, eax  	;else return FALSE
+
+:00401039 5F                  pop edi
+
+:0040103A 5E                  pop esi
+
+:0040103B 5B                  pop ebx
+
+:0040103C 83C41C              add esp, 1C
+
+:0040103F C21000              ret 10		
+
+</PRE>
+
+Therefore the above snippet is:<PRE>
+
+if (! InitApplication(hInstance))
+
+		return FALSE;</PRE>
+
+Which is a part of WinMain, btw.<BR><BR>
+
+<FONT size="+2"><B>The trick for finding MainWndProc</B></FONT><BR>
+
+God, I realize now that I should begin to explain the whole WNDCLASS structure... 
+
+please 
+
+study it yourself... if you bought (as you should have done) the COMPLETE Borland 
+
+C++ Version 
+
+4.52 for less than 4 UK pounds (see <A href="blackbo.htm" tppabs="http://www.anticrack.de/fravia/blackbo.htm">here</A>), you'll have 
+
+all 
+
+important specs at your fingertips from the huge API helpfiles (7 million bytes 
+
+for Win32 and 3 million 
+
+bytes for Win31).<BR>I'll explain here only part of the API calls... The most 
+
+important element here, for us, is that WNDCLASS' member lpfnWndProc 
+
+<FONT color="blue">POINTS TO THE CALLBACK WINDOW PROCEDURE!</FONT><BR> 
+
+Let's approach the above code (of InitApplication) slowly... What was the value &quot;401190&quot; at 10C4?<PRE>
+
+:004010C4 C744240890114000        mov [esp + 08], 00401190</PRE>
+
+That is the location of the MainWndProc!<BR>Windows is so kind to tell us, in 
+
+many 
+
+occasions, WHERE the &quot;obligatory&quot; functions of an unknown program start!<BR>If 
+
+Peter 
+
+Urbanik, the author of Wdasm, would listen to us, instead of uselessly updating 
+
+his program every 
+
+couple of weeks, he would work on this to get a spectacular tool for reverse 
+
+engineering!<BR>OK, every single WNDCLASS call of a windows program carries 
+
+inside itself
+
+the location of the caller... in this case (as in most initialization parts of code) 
+
+WNDCLASS is called at initialization by a little initialization routine (here in 
+
+filemon called InitInstance) which is in turn called by the main &quot;homemade&quot; 
+
+procedure of our target, here in filemon called MainWndProc... nice to know, 
+
+isn't it?<BR>There is more: since WNDCLASS has a parameter lpszClassName, which 
+
+points to a null-terminated string that specifies the name of the window class  
+
+(in the case of filemon 
+
+&quot;filemonClass&quot;), it's pretty easy to find all occurrences of WNDCLASS inside any  
+
+unknown target just examining its strings (and you can use good old Frattaroli's <A href="javascript:if(confirm('http://129.105.116.5/fravia/strings.zip  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://129.105.116.5/fravia/strings.zip'" tppabs="http://129.105.116.5/fravia/strings.zip">strings.zip</A>to do it) ... nice isn't it?<BR>
+
+<BR>What have we more up there? Let's see<PRE>
+
+:004010EC 68007F0000          push 00007F00 ;IDC_ARROW</PRE>
+
+hCursor	Identifies the class cursor. This member must be a handle to a cursor 
+
+resource. There are many resources of each type, for the joy of a good reverse 
+
+engineer...<BR>
+
+Here you go! experiment a little (change it with Hexworkshop inside filemon.exe, play 
+
+with your targets! In this specific case you wont see much, though, because this 
+
+is the &quot;ghost&quot; &quot;loaded&quot; cursor of filemon... you should change the SetCursor 
+
+function's parameter to change the cursor of an application)<PRE>
+
+32512 (0x7F00) = IDC_ARROW	;that's what we have
+
+32513 (0x7F01) = IDC_IBEAM	;Text I-beam cursor.
+
+32514 (0x7F02) = IDC_WAIT	;that's the hourglass
+
+...
+
+32560		= IDC_APPSTARTING</PRE>
+
+Another parameter:<PRE>
+
+:004010FD 6A01                push 00000001 ;LTGRAY_BRUSH</PRE>
+
+Since GRAY BRUSH is 2 and DARKGRAY BRUSH is 3, you may experiment as well with 
+
+some colors... If you substitute :004010FD 6A01 with :004010FD 6A03 you'll indeed 
+
+see (for a moment) your DKGRAY_BRUSH &quot;behind&quot; the filling of the main window of 
+
+filemon, once more this is the &quot;initializing&quot; routine, which is called at the 
+
+beginning of our target's life, many parameter will be &quot;reconfirmed&quot; later on.<BR>
+
+What's more up there? Yes: RegisterWindowClass... once created, the WNDCLASS data 
+
+must be &quot;registered&quot; in order to pass to the subsequent CreateWindow function...
+
+Let's have a look at the code of WinMain that will be performed if the InitApplication 
+
+routine returns successful...<PRE>
+
+:WinMain after InitApplication
+
+:00401042 8B442438          mov eax, [esp + 38]
+
+:00401046 50                push eax
+
+:00401047 56                push esi
+
+:00401048 E8E3000000        call 00401130=InitInstance
+
+:0040104D 83C408            add esp, 00000008
+
+:00401050 85C0              test eax, eax
+
+:00401052 750B              jne 0040105F ;if InitInstance successful
+
+                                         ;continue WinMain
+
+:00401054 33C0              xor eax, eax ;else return FALSE
+
+:00401056 5F                pop edi
+
+:00401057 5E                pop esi
+
+:00401058 5B                pop ebx
+
+:00401059 83C41C            add esp, 0000001C
+
+:0040105C C21000            ret 0010</PRE>
+
+
+
+<BR>
+
+<FONT size="+2"><B>A Windows is born</B></FONT><BR Let's go on with the next procedure: InitInstance.<br>This huge operating system  
+
+will now perform its most characteristic work: create a Window. Prepare yourself 
+
+another 
+
+cocktail, this will take quite a while...
+
+<PRE>/****************************************************************************
+
+*    FUNCTION:  InitInstance(HANDLE, int)
+
+*    PURPOSE:  Saves instance handle and creates main window
+
+****************************************************************************/
+
+HWND InitInstance( HANDLE hInstance, int nCmdShow )
+
+{	HWND hWndMain;
+
+	hInst = hInstance;
+
+	hWndMain = CreateWindow( 
+
+&quot;filemonClass&quot;, &quot;Win95 File Monitor&quot;, WS_OVERLAPPEDWINDOW,
+
+CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
+
+NULL, NULL, hInstance, NULL );
+
+
+
+	// if window could not be created, return &quot;failure&quot; 
+
+	if (! hWndMain)
+
+		return NULL;
+
+	
+
+	// make the window visible; update its client area; and return &quot;success&quot;
+
+	ShowWindow(hWndMain, nCmdShow);
+
+	UpdateWindow(hWndMain); 
+
+	return hWndMain;      
+
+}</PRE>
+
+This HWND &quot;hWndMain&quot; translates to:<PRE> CreateWindow (...)
+
+:00401130 8B442404        mov eax, [esp + 04] ;get hInstance
+
+:00401134 56              push esi            ;save esi
+
+:00401135 6A00            push 00000000       ;last NULL lpvparameter
+
+:00401137 A3E8994000      mov [004099E8], eax ;save hInstance (HEY! A memory loc!)
+
+:0040113C 50              push eax            ;push hInstance
+
+:0040113D 6A00            push 00000000 ; NULL hmenu
+
+:0040113F 6A00            push 00000000 ; NULL hwndparent
+
+:00401141 6800000080      push 80000000 ; CW_USEDEFAULT 
+
+:00401146 6800000080      push 80000000 ; CW_USEDEFAULT 
+
+:0040114B 6800000080      push 80000000 ; CW_USEDEFAULT 
+
+:00401150 6800000080      push 80000000 ; CW_USEDEFAULT 
+
+:00401155 680000CF00      push 00CF0000 ; WS_OVERLAPPEDWINDOW 
+
+:0040115A 68EC804000      push 004080EC ; &quot;Win95 File Monitor&quot; 
+
+:0040115F 68C8804000      push 004080C8 ; &quot;filemonClass&quot;
+
+:00401164 6A00            push 00000000 
+
+:00401166 FF15E8B24400    Call dword ptr [0044B2E8]; USER32.CreateWindowExA, Ord:55h 
+
+:0040116C 8BF0            mov esi, eax  ;get the handle to the new window in esi
+
+:0040116E 85F6            test esi, esi ;test it
+
+:00401170 7504            jne 00401176  ;if created OK, continue to showwindow
+
+:00401172 33C0            xor eax, eax  ;else return NULL (i.e. FALSE)
+
+:00401174 5E              pop esi
+
+:00401175 C3              ret</PRE>
+
+<BR>
+
+Ok, let's have a look at this important function:<BR><PRE><FONT color="purple">
+
+HWND CreateWindow(lpszClassName, lpszWindowName, dwStyle, x, y, nWidth, nHeight, 
+
+hwndParent, hmenu, hinst, lpvParam)
+
+
+
+LPCSTR lpszClassName;       /* address of registered class name        */
+
+LPCSTR lpszWindowName;      /* address of window text                  */
+
+DWORD dwStyle;              /* window style                            */
+
+int x;                      /* horizontal position of window           */
+
+int y;                      /* vertical position of window             */
+
+int nWidth;                 /* window width                            */
+
+int nHeight;                /* window height                           */
+
+HWND hwndParent;            /* handle of parent window                 */
+
+HMENU hmenu;                /* handle of menu or child-window identifier */
+
+HINSTANCE hinst;            /* handle of application instance          */
+
+void FAR* lpvParam;         /* address of window-creation data         */
+
+</FONT><BR>
+
+lpszClassName      is &quot;filemonClass&quot; (what we have registered)
+
+lpszWindowName     is &quot;Win95 File Monitor&quot; (what you see in the main window of
+
+                   filemon)
+
+dwStyle            is WS_OVERLAPPEDWINDOW = 00CF0000 (which creates an overlapped
+
+                   window having the WS_OVERLAPPED, WS_CAPTION, WS_SYSMENU,
+
+                   WS_THICKFRAME, WS_MINIMIZEBOX, and WS_MAXIMIZEBOX styles)
+
+int x              is CW_USEDEFAULT</PRE>
+
+This value specifies the initial x-position of the window. For an overlapped or pop-up 
+
+window, the x parameter is the initial x-coordinate of the window's upper-left corner, 
+
+in screen coordinates. For a child window, x is the x-coordinate of the upper-left 
+
+corner of the window in the client area of its parent window. If, like here in filemon, 
+
+this value is CW_USEDEFAULT, Windows selects the default position for the window's 
+
+upper-left corner and ignores the y parameter. CW_USEDEFAULT is valid only for 
+
+overlapped windows... if you firmly believe that Mark Russinovich and Bryce 
+
+Cogswell should have let their program appear in the top left corner of the 
+
+screen instead of using the default position then go ahead! Modify whatever 
+
+you want!<PRE>Int y               is CW_USEDEFAULT, as above for the y-position	
+
+nWidth              is CW_USEDEFAULT</PRE> 
+
+This value specifies the width, in device units, of the window. For overlapped windows, 
+
+the nWidth parameter is either the window's width (in screen coordinates) or 
+
+CW_USEDEFAULT. If nWidth is CW_USEDEFAULT, like here in filemon, Windows selects 
+
+a default width and height for the window (the default width extends from the 
+
+initial x-position to the right edge of the screen, and the default height extends 
+
+from the initial y-position to the top of the icon area). CW_USEDEFAULT is valid only 
+
+for overlapped windows.<PRE>nHeight	             is CW_USEDEFAULT, as above for the 
+
+height
+
+hwndParent	      is NULL. This value identifies the parent or owner window of the
+
+                     window being created. Overlapped windows must NOT have a parent
+
+                     (hParent must be NULL)
+
+hMenu                is NULL, handle of menu identifier
+
+hInstance            is the value in eax, and identifies the instance of the module to
+
+                      be associated with the window.
+
+LpvParam             is the WM_CREATE param
+
+</PRE>
+
+
+
+Well, what returns CreateWindow? The return value is the handle of the new window if 
+
+the function is successful. Otherwise, it is NULL. Everything is OK with old good 
+
+filemon, let's continue...<BR><BR>
+
+
+
+A window has been &quot;made&quot; it's name is hWndMain let's show it to the world<PRE>
+
+:ShowWindow(hWndMain, nCmdShow); make the window visible &amp; update its client area
+
+:00401176 8B44240C        mov eax, [esp + 0C] ;get nCmdShow
+
+:0040117A 50              push eax            ; nCmdShow
+
+:0040117B 56              push esi            ; hWndMain (handle was in esi)
+
+:0040117C FF15ECB24400    Call dword ptr [0044B2EC] ;USER32.ShowWindow, Ord:022Ch
+
+ 
+
+UpdateWindow(hWndMain);
+
+:00401182 56              push esi ; hWndMain (handle was in esi)
+
+:00401183 FF15F0B24400    Call dword ptr [0044B2F0] ;USER32.UpdateWindow, Ord:024Fh 
+
+:00401189 8BC6            mov eax, esi ;return to WinMain with hWndMain in eax
+
+:0040118B 5E              pop esi ;let's have the old esi back
+
+:0040118C C3              ret</PRE>
+
+
+
+If you never programmed before, you could legitimately ask yourself why the hell we 
+
+have to show and update a window we have created a minute ago... see: ShowWindow 
+
+specifies <U><B>how</B></U> the window is to be shown... hide=0, normal=1, otherzoom=2, 
+
+maximize=3, otherunzoom=4, show=5 etc... therefore the value in esp+0C determines HOW 
+
+the windows will appear, and it has been already determined calling  WinMain, which 
+
+has following parameters: int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE 
+
+hPrevInstance, LPSTR lpCmdLine, int nCmdShow), the last  &quot;int&quot; one being the 
+
+nCmdShow... have a look in the code following the program entry point for this.<BR>
+
+Once show, the window must be updated. The UpdateWindow function updates the client 
+
+area of our window by sending a WM_PAINT message to the window if the update region 
+
+for the window is not empty. The function sends a WM_PAINT message directly to the 
+
+window procedure, bypassing the application queue. If the update region is empty, 
+
+no message is sent.
+
+
+
+<BR>
+
+We are now finished with the InitInstance procedure, have our nice main window, 
+
+must move on: back to WinMain!
+
+<PRE>
+
+:WinMain continued
+
+:0040105F 8D44240C        lea eax, [esp + 0C] ;
+
+:00401063 6A00            push 00000000
+
+:00401065 6A00            push 00000000
+
+:00401067 8B3500B34400    mov esi, [0044B300]
+
+:0040106D 6A00            push 00000000
+
+:0040106F 50              push eax
+
+:00401070 FFD6            call esi
+
+:00401072 85C0            test eax, eax
+
+:00401074 742B            je 004010A1
+
+:00401076 8B3D94B24400    mov edi, [0044B294]
+
+:0040107C 8B1D8CB24400    mov ebx, [0044B28C]</PRE>
+
+Well, we'll continue with another lesson, we have almost 50.000 bytes here!
+
+<HR>
+
+<FONT color="blue">(c) fravia+ 1997.</FONT> All rights reserved.
+
+   </PRE>
+
+
+
+<HR ALIGN="CENTER" WIDTH="100%" SIZE="3">
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</I><BR><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A href="filemon2.htm" tppabs="http://www.anticrack.de/fravia/filemon2.htm">filemon2</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A href="filemon3.htm" tppabs="http://www.anticrack.de/fravia/filemon3.htm">filemon3</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A href="filemon4.htm" tppabs="http://www.anticrack.de/fravia/filemon4.htm">filemon4</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A href="filemon5.htm" tppabs="http://www.anticrack.de/fravia/filemon5.htm">filemon5</A>
+
+<BR><BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"> 
+
+<A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links </A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0">
+
+<A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity </A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays </A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails </A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mailFraVia </A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">is reverse engineering legal? </A></CENTER>
+
+<CENTER><HR ALIGN="CENTER" WIDTH="100%" SIZE="2"></CENTER>
+
+
+
+</BODY>
+
+</HTML>
+
+
+
+
+

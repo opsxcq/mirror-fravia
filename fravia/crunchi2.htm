@@ -1,0 +1,1294 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>crunchi2.htm: Little essay about the various methods and viewpoints of crunching</TITLE>
+
+</HEAD>
+
+
+
+<BODY BGCOLOR=#C0C0C0 TEXT=#001010 VLINK=#405040>
+
+<CENTER><CENTER><A href="papers.htm" tppabs="http://www.anticrack.de/fravia/papers.htm"><IMG SRC="papers.gif" tppabs="http://www.anticrack.de/fravia/papers.gif" ALT="papers" ALIGN=BOTTOM WIDTH=114 
+
+EIGHT=43 BORDER=0 VSPACE=0 HSPACE=0></A><BR><FONT color=gray>+HCU papers</FONT><BR><BR>
+
+<FONT size=+6><FONT color=blue>Little essay about the various methods and viewpoints of crunching</FONT></FONT>
+
+<BR>
+
+~ version June 1998 ~<BR>
+
+by Joa
+
+<BR>
+
+
+
+
+
+<HR>Courtesy of fravia's page of reverse engineering<BR>
+
+<HR></CENTER></CENTER><P>
+
+Here is the second part of Joa's essay.<BR>
+
+See also <A href="crunchi1.htm" tppabs="http://www.anticrack.de/fravia/crunchi1.htm">the first part</A> (Introduction)<BR><HR width=33%>
+
+<P>Joa's work is extremely clear and will guide and help you to 
+
+understand these matters, that for obvious reasons no real reverser should ever 
+
+underestimate. My advice: read, re-read and then -once you have understood the basis- 
+
+search the web and deepen (and then contribute :-)<BR>
+
+
+
+<HR><PRE>
+
+Little essay about the various methods and viewpoints of crunching.
+
+
+
+Part II: Propability and Crunching (Huffman isn't the only way)
+
+
+
+
+
+
+
+By Joa Koester (JoKo2000@HotMail.Com) 
+
+This essay is free to be copied and read and spread as long as
+
+you are decent enough to leave my name in it. 
+
+If you have corrections, comments, better examples than the ones used 
+
+in this essay, etc. - drop me a line.
+
+
+
+
+
+OK, let's dive into the world of crunchers and munchers...
+
+
+
+In the Intro i told you that crunching is a process of reducing
+
+the SPACE data needs to be stored, but not the MEANING (the
+
+informations transmitted in the symbols).
+
+The meter 'Entropy' is used here like in the physics. The more
+
+entropy a symbol has, the LESS information is transmitted thru it.
+
+Less information compared to the whole of all symbols, that is.
+
+This means of course there is a lot of redundancy in it - meaning
+
+a big 'crunch me, crunch me' for us. So we should concentrate
+
+on the symbols that have a very high entropy. How we calculate
+
+an entropy for our means depends on the data we want to crunch
+
+and with which algorithm we want to crunch it.
+
+I also told you that a certain student called Huffman once came
+
+up with an algorithm to compress data. His idea is based on the
+
+fact that in data (escpecially speech) some symbols happen 
+
+to be more often than others. Here one overstated example:
+
+
+
+aaaaaaaaaabbbbbcccdd
+
+
+
+What we have here is a algorithm based on propability. That means
+
+that some symbols are not transmitted in the way they used to be,
+
+because the algorithm will create new symbols in respect to the
+
+propabilities of the symbols. Some of these new symbols will be
+
+shorter. And those lesser apperaring symbols will be transformed
+
+into longer symbols:
+
+
+
+Before:
+
+
+
+a = 61h = %0110 0001
+
+b = 62h = %0110 0010
+
+c = 63h = %0110 0011
+
+d = 64h = %0110 0100
+
+
+
+and 
+
+
+
+after:
+
+
+
+????
+
+
+
+How do we compute such a new symbol table? OK, before we explore
+
+this algorithm let me change the data from ASCII to the lower
+
+nibble. That should be enough to explain the algorithm:
+
+
+
+Before:
+
+
+
+a = %0001
+
+b = %0010
+
+c = %0011
+
+d = %0100
+
+
+
+and we have the propability:
+
+
+
+a = 10
+
+b =  5
+
+c =  3 
+
+d =  2
+
+   ===
+
+    20 <OVERALL value. Important when calculating entropy
+
+
+
+To save this original sequence to disk we would need: 
+
+
+
+10 * 4 = 40
+
+ 5 * 4 = 20
+
+ 3 * 4 = 12
+
+ 2 * 4 =  8
+
+        ===
+
+         80 bits
+
+
+
+
+
+Lets crunch this:
+
+The original algorithm works with a tree building up from the ground
+
+to the top. You can of course try to optimize it in another way. But
+
+here's the algorithm as Huffman intended it:
+
+
+
+Step 1:
+
+
+
+10   5   3   2       How often the symbol appears
+
+                     Tree (empty at first)
+
+10   5   3   2       The added sum of the actual part of the tree
+
+(a) (b) (c) (d)      Symbol
+
+
+
+
+
+Step 2:
+
+
+
+Now we take the two lowest (that is lowest in the sum of the value) entries
+
+of the tree and add the values thus giving a new knot with the former part
+
+as right and left part:
+
+
+
+10   5   3   2       How often the symbol appears
+
+                     Tree
+
+10   5   3   2       The added sum of the actual part of the tree
+
+(a) (b) (c) (d)      Symbol
+
+         ^   ^
+
+         ^   ^
+
+         Two lowest values (3 and 2). 
+
+         Take them and add the values of the two actual 
+
+         parts of the tree and give the sum to a new knot. The two former
+
+         parts become a left and right treebranch. 
+
+
+
+10   5   3   2       How often the symbol appears
+
+10   5     5         The tree
+
+(a) (b)	  / \
+
+         3   2
+
+        (c) (d)
+
+
+
+This Step 2 repeats until no two values are left:
+
+
+
+
+
+ a   b   c   d
+
+10   5   3   2       How often the symbol appears
+
+10   5     5         The tree
+
+(a) (b)	  / \
+
+         3   2
+
+        (c) (d)
+
+     ^     ^ 
+
+     ^     ^
+
+         Two lowest values (5 and 5). 
+
+         Take them and add the values of the two actual 
+
+         parts of the tree and give the sum to a new knot. The two former
+
+         parts become a left and right treebranch. 
+
+
+
+
+
+ a   b   c   d
+
+10   5   3   2       How often the symbol appears
+
+10      10
+
+(a)    / \
+
+     5     5
+
+    (b)	  / \
+
+         3   2
+
+        (c) (d)
+
+^       ^ 
+
+^       ^
+
+         Two lowest values (10 and 10). 
+
+         Take them and add the values of the two actual 
+
+         parts of the tree and give the sum to a new knot. The two former
+
+         parts become a left and right treebranch. 
+
+
+
+ a   b   c   d
+
+10   5   3   2       How often the symbol appears
+
+     20              The tree
+
+    /  \
+
+  10   10
+
+  (a)  / \
+
+     5     5
+
+    (b)	  / \
+
+         3   2
+
+        (c) (d)
+
+
+
+
+
+Step 3:
+
+
+
+We have a tree, so what?
+
+What we now have to do is to to transform the tree into 
+
+sequences of 1 and 0. To do that we start at the root giving
+
+the root a 0 and 
+
+- all left branches a 0 
+
+and 
+
+- all right branches a 1:
+
+
+
+                   20              The tree
+
+                  /  \
+
+                 /    \
+
+            [0] /      \[1]
+
+               10      10
+
+               (a)    /  \
+
+                     /    \
+
+                [0] /      \[1]
+
+                   5        5
+
+                  (b)	   / \
+
+                          /   \
+
+                     [0] /     \[1]
+
+                        3       2
+
+                       (c)     (d)
+
+
+
+(Of course you could give all left branches a 1 and all right
+
+branches a 0. Just keep straight with the directions, that's
+
+all).
+
+
+
+So we have the followin codes for our symbols:
+
+
+
+a: %0
+
+b: %10
+
+c: %110
+
+d: %111
+
+
+
+Well two things are to be mentioned here:
+
+This tree is optimized in a way that you can not produce a more
+
+condensed one. It is not possible to create a tree that gives
+
+more respect to all symbols in the table, calculating in whole
+
+bits (that's no joke. There is a algorithm which calculates with
+
+fractals of a bit and is far more powerful than Huffman. 
+
+I'll explain this, too). Try it for yourself.
+
+Important:
+
+The tree is value-unique, meaning that you can't interpret the
+
+beginning of a certain symbol as another (shorter) symbol:
+
+
+
+(Not unique and wrong table)
+
+a: %00
+
+b: %10
+
+c: %101
+
+d: %001
+
+
+
+If you would read a '00' what would this be? A 'a' or the beginning
+
+of a 'd'? With this table it is not possible to answer the question
+
+giving only the solution of a GPF. 
+
+It it utmost important that a tree is completely unique. 
+
+Therefore a complete symbol cannot be the beginning of another symbol!!!
+
+If you try to build up simple trees the unique way you'll quickly
+
+realize that the Huffman-Algorithm is the method of your choice.
+
+
+
+
+
+
+
+Our sequence
+
+
+
+  aaaaaaaaaabbbbbcccdd
+
+
+
+would now need:
+
+10 * 1 = 10
+
+ 5 * 2 = 10
+
+ 3 * 3 =  9
+
+ 2 * 3 =  6
+
+        ===
+
+         35 Bit. Not bad, eh?
+
+
+
+
+
+
+
+So that means that we can optimize codes that happen to show up
+
+more frequently than others. Big Deal. Where does this sort of
+
+thing happen, eh? Dr. Watson?
+
+
+
+Here, Sir. 
+
+Well we have a lot of interesting and probably crunchable data
+
+in SPEECH. In a normal written english text for example the letter
+
+'e' appears the most. If we were able to compress a normal text 
+
+using the Huffman-method we would save a lot of diskspace.
+
+
+
+Izzatso? Well, yes, Watson is right. The letter 'e' is dominating
+
+(not only) the english language. Here the last two paragraphs with the 
+
+letter 'e' deleted:
+
+
+
+---------------------------------------------------------------
+
+So that mans that w can optimiz cods that happn to show up
+
+mor frquntly than othrs. Big Dal. Whr dos this sort of
+
+thing happn, h? Dr. Watson?
+
+
+
+Hr, Sir. 
+
+Wll w hav a lot of intrsting and probably crunchabl data
+
+in SPCH. In a normal writtn nglish txt for xampl th ltter
+
+'' appars th most. If w wr abl to comprss a normal txt 
+
+using th Huffman-mthod w would sav a lot of diskspac.
+
+---------------------------------------------------------------
+
+While some words are still easy read, others have become
+
+totally senseless. 
+
+
+
+All we have to do is count all normal letters, sort them
+
+by their frequency and apply the Huffman-algorithm to the
+
+table. Then we would use this tree to encode our data
+
+enew and - voila. There we are.
+
+
+
+But...
+
+
+
+Yes, Watson?
+
+
+
+In your last chapter (Intro) you mentioned that BOTH, the
+
+sender AND the receiver must have the same MODEL of data
+
+(de)coding for to understand each other. If we don't 
+
+transmit the Huffman-tree with the data, how does the 
+
+other program on the other side know our tree?
+
+
+
+Good question, Watson. It can't!!! Yes, if the receiver
+
+of the message has no knowledge of the data-specific
+
+Huffman-tree all he will see is total garbage (and most 
+
+probably a GPF will follow). 
+
+The receiver MUST use the same tree. That means, that, 
+
+either, one has communicated/transmitted the tree on 
+
+a second way or one uses a more general Huffman-tree, 
+
+which is of course not optimized for the specific file 
+
+we have transmitted. A third way will be explained now.
+
+
+
+In the early days of the C64 you could tell that a program
+
+used a Huffman-like tree when you recognized a block consisting
+
+of all 256 possible chars, sorted in a strange way in the 
+
+beginning of the file. That meant that the BASIS for the
+
+complete tree (all 256 chars in the sorted order) was transmitted WITHIN 
+
+the crunched file (which of course was now the crunched size + 256 Bytes ;)
+
+
+
+The BASIS?
+
+Yes, the basis.
+
+
+
+
+
+Hm, i have a little problem...
+
+
+
+What is it, Watson?
+
+
+
+I think i got the theoretical aspect. But: how do i programm this
+
+in reality? And what is this basis, you are talking about?
+
+
+
+
+
+All right. 
+
+Well, we have to do with trees, you know. And the main part about
+
+trees is the link to the other parts of the tree. When you want
+
+to programm trees, you better get accomplished with languages 
+
+supporting pointers. 
+
+
+
+A typical C/C++ struct would look like this:
+
+
+
+struct Tree
+
+{
+
+    Tree* zero;		//pointer to struct for zeros
+
+    Tree* one;		//pointer to struct for ones
+
+    long  value;	//value of the leaf
+
+    long  sum;		//when getting linked and 
+
+                        //becoming a knot here the sum, else 0.
+
+    char  symbol;       //my symbol
+
+};
+
+
+
+You should build a tree consisting of 258 entries, with entry
+
+257 as special EOF-signal and entry 258 as dummy for later
+
+services.
+
+
+
+One of the most important steps of the alg is the counting
+
+of the bytes. With this the whole system stands or falls.
+
+We also have to consider the DEcoding part. We can't transmit
+
+1024 bytes, just because ONE character has to be encoded with
+
+10 bits, leaving 500 bytes completely zero. 
+
+And always think of it: Coder and DEcoder MUST use the same
+
+model or else...GPF.
+
+
+
+So, to ensure that both use the same model, the process with
+
+the smaller data entry dictates how the coder has to work.
+
+We decide that a table of 256 bytes, transmitted with the 
+
+crunched file is enough overhead. What is in these 256
+
+bytes, you ask? It's simple: It's the frequencies of the
+
+symbols scaled down to 8 bits. Why?
+
+
+
+Well, the general problem is: How do coder and decoder know
+
+that, for example, the symbol 'y' is to be encoded with 10
+
+bits and the symbol 'e' with 6 bits?
+
+The best way is to let the coder and the decoder BOTH build 
+
+up a tree. When this happens, we can be sure, that both use
+
+the same model and everybody is happy ("ha- vannagila, 
+
+havannagila, havannagila..." :-).
+
+The only thing that both, the coder and the decoder have in
+
+common is the frequency of the symbols. So the only thing
+
+we can transmit are the frequencies. And to save space, we
+
+just scale them down to 8 bit. Beware of having a symbol
+
+with the frequency zero. It will never be encoded or decoded.
+
+One good way of scaling down the table is the following:
+
+
+
+Counting, which symbol appeared the most and put it into maxcounter
+
+if (maxcounter == 0) maxcounter++;
+
+maxcounter /= 255;
+
+maxcounter++;
+
+in a loop divide all entries by maxcounter
+
+(if an entry, which had a positive value before and now has
+
+been zeroed - move a 1 to it).
+
+
+
+for example:
+
+
+
+the maxcounter is 32767;
+
+maxcounter = 32767 / 255 = 128;
+
+macounter++ = 129;
+
+freq[0] = 1234;
+
+freq[1] = 23456;
+
+freq[2] = 12;
+
+
+
+freq[0] = 1234 / 129 = 9
+
+freq[1] = 23456 / 129 = 181
+
+freq[2] = 12 / 129 = 0; must be made 1;
+
+
+
+
+
+So if we transmit the scaled down frequencies with the decoder,
+
+all the decoder has to do is create the Huffman-tree from the
+
+frequencies and start decoding the inputstream.
+
+Yes. That means the both, coder and decoder use the same
+
+routines. If you can reverse the algorithm of the decoder
+
+you know at least half of the coding algorithm. In the huffman
+
+case, you'll know ALL the important stuff. This behaviour will
+
+be found in every decrunching routine. To decrunch something
+
+the decruncher has - at least partly - reverse the steps that
+
+the cruncher did. Step successfully thru a decruncher and you
+
+have - with a little phantasy - the crunch-algorithm (at least
+
+the theoretical aspect of it) reversed. I never found a cruncher
+
+where this was not the case, so i suspect that all packers have
+
+this weak spot. Weak, because a lot of crunching alg are packaged.
+
+That means, that after some data a new cycle of crunched data 
+
+begins. If you manage to isolate a single (best hint: in the
+
+last part of the file) cycle, you can study the alg 
+
+while decrunching just about 10-20 bytes. Good, eh?
+
+
+
+
+
+
+
+
+
+These are some steps which should give you the general idea of 
+
+creating a Huffman-tree:
+
+- Build up a table consisting of 256 longs.
+
+- Count up the bytes you want to crunch (the whole file for example)
+
+  where you count up the frequency of all the bytes in your
+
+  source. As there are only 256 possibilities, there are no probs.
+
+- Scale the frequency down to 8 bit.
+
+
+
+- Build up a second array consisting of 256 chars. Fill them
+
+  with the chars 0...255. You will have the char 0 in entry [0],
+
+  char 1 in entry [1], the char 'A' in entry[0x41] and so on.
+
+- Sort the frequency table, but when you switch the values,
+
+  do also switch the values in the second array, holding the
+
+  chars. With that you'll create a sorted model of your input
+
+  data.
+
+
+
+- After sorting, proceed as follows:
+
+   - create an array of 257 entries of type Tree.
+
+     (If you have another service ready, use 258).
+
+   - fill the .value of each entry with the frequency of the
+
+     symbol. Fill the .symbol with the entry of the symbol char
+
+     array. Fill the .zero and .one with NULL to mark them
+
+     as leafes. This will seperate them from the knots where
+
+     there will be the adresses of your next branches/leafes.
+
+     fill .value of entry[256] (the 257th) with 1 as you will
+
+     only one EOF, right?
+
+   - recursively build up the tree. Don't forget, that you
+
+     may have to add a last knot to link the last two partial-trees
+
+     together. One way to do this:
+
+     - Have a counter set to 257. 
+
+     - repeat:
+
+     - take the least two entries.
+
+     - add up their value.
+
+     - create a new entry of type Tree.
+
+     - link the two entries to the new tree.
+
+     - give the .sum of the new entry the added value
+
+     - delete the two entries from the list (NOT FROM THE MEMORY) and add the new one.
+
+     - reduce the counter by 1
+
+     - resort the trees with criteria .sum
+
+     - while counter &gt; 1
+
+   - create a new array with the struct: char symbol, long bitsvalue, long number_of_bits_to_be_written
+
+   - recurse thru the tree to get to every char to fill up the new array. 
+
+     For every char you reached fill up the entries for symbol, bitsvalue and number_of_bits_to_be_written
+
+   - nearly finished. 
+
+   - Your encoding array is ready. All you have to do now is to read a char from the input
+
+     and write the corresponding bitvalue to the outputstream with the number of bits,
+
+     given from the array-entry. Send the EOF at last and you are done.
+
+
+
+For decoding, the process is similar:
+
+
+
+Create the tree. (thats the similar part)
+
+
+
+unsigned char symbol = 0x00;
+
+startknot = knot(0) //(of type Tree)
+
+knot = startknot    //(of type Tree)
+
+
+
+while (symbol != EOF)
+
+   clear symbol.
+
+   while (not symbol)
+
+      
+
+      get bit
+
+      if ( (bit == 0) && (knot->zero != NULL) )
+
+         knot = knot->zero
+
+      else 
+
+         if (knot->one != NULL) ) knot = knot->one
+
+
+
+      if (knot.one == NULL) //is enough. knot.zero is NULL, too
+
+         //symbol found. great. To the output with it
+
+         symbol = knot.symbol
+
+      end if
+
+    end while   
+
+    Do_Outpur_Char(symbol);
+
+end while
+
+
+
+Done. 
+
+
+
+
+
+         
+
+Hm, i have another little problem...
+
+
+
+What is it, Watson?
+
+
+
+
+
+I did as you told me. Took a table of 256 longs, counted the 256 chars,
+
+sorted them and let the computer calculate an optimized Huffman-tree.
+
+But all i got was a tree with all leaves having a length of 8 - all chars
+
+are encoded with 8 bits and there is no crunching in that. What happened?
+
+
+
+Ah, Dr. Watson,
+
+you did not remember my sentence about Entropy. This file you examined
+
+had all bytes nearly equally spread all over the length of the file.
+
+So -statisticalwise- the file is equalized. No surprises here. With 
+
+a Huffman-tree, which considers the whole file you won't get any 
+
+crunching here, i fear.
+
+
+
+But what do i do now?
+
+
+
+Well, there are three scenarios that will satisfy your desire:
+
+- We use a different algorithm
+
+- We use a brutal tree
+
+- We use an adapting technique
+
+
+
+??? Tell me about the brutal tree.
+
+
+
+Ok, i got this one from the 1001 Packer from the C64 (Anyone ringing a 
+
+bell? 1001 Crew? No? Where are the old days gone to...)
+
+They used a tree i just can label 'brutal tree'. Here's the idea:
+
+When we have the case that we have data that is so equal that no
+
+Huffman-tree will help us, we help us ourself. We take all the
+
+Bytecounters and sort them. Then we create a table of the 256 chars
+
+ordered by the sorted table, so that the still most frequent
+
+chars appear on the top. Now we have the 256 possible bytes sorted.
+
+So far so good.
+
+Lets think about a byte. How do we read a byte? Isn't it:
+
+
+
+#33 = $21 = %0010 0001  ?
+
+
+
+What, if we we would change our view of the binary to a 2 + 6:
+
+
+
+#33 = $21 = %00 100001
+
+
+
+Our 256 chars would now be represented as 4 (00, 01, 10, 11) blocks
+
+of 6 bits. What if we now 'huffman' these first two bits to:
+
+
+
+0
+
+10
+
+110
+
+111
+
+
+
+So that we would have %0 100001 instead of %00 100001. Every byte that
+
+is in the first 64Byteblock is coded with 7 bits, while the others
+
+are coded either with 8 or with 9 bits. We can only hope that there
+
+are enough bytes in the file to outweigh the two 9bit-chars. But it is
+
+amazing how this little trick works. And the speed. It's so easy to
+
+implement it and it is so fast. Even on the C64 it took only fractals of
+
+a second to decode a programm as big as the main memory area (other 
+
+packers took several seconds for the same size).
+
+
+
+
+
+Wow, cool. But what about your different algorithms 
+
+and this 'adapting technique' ?
+
+
+
+
+
+Well, this is another story and will be told in the next chapter...
+
+
+
+
+
+
+
+
+
+I hope you enjoyed this chapter. 
+
+There will be more - i promise.
+
+Just have a little patience.
+
+
+
+Greetings from a programmer
+
+
+
+Joa
+
+</PRE>
+
+<CENTER><HR size=3><P>In the meantime, after having read Joa's work above, you may 
+
+enjoy a look at a <A href="javascript:if(confirm('http://129.105.116.5/fravia/huf.c  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://129.105.116.5/fravia/huf.c'" tppabs="http://129.105.116.5/fravia/huf.c">huffer</A> and a <A href="javascript:if(confirm('http://129.105.116.5/fravia/unhuf.c  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://129.105.116.5/fravia/unhuf.c'" tppabs="http://129.105.116.5/fravia/unhuf.c">unhuffer</A>, both 
+
+written in C some time a go, and donated to the world, by Shaun Case... once you are done 
+
+studying it, may be you'll want to have a look also at <A href="javascript:if(confirm('http://129.105.116.5/fravia/sixpack.c  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://129.105.116.5/fravia/sixpack.c'" tppabs="http://129.105.116.5/fravia/sixpack.c">sixpack</A> another 
+
+more advanced (adaptive Huffman encoding) compresser, written in C as well, by Philip Gage, 
+
+for a data compression competition some time ago... since this code includes SIX different 
+
+algorhitms, I believe it could be useful for readers as 'passage' to the next part of Joa's essay 
+
+ (if Joa doesn't agree with me I'll kill these links of course).
+
+<HR size=3><A href="mailto:JoKo2000@hotmail.com">
+
+<IMG SRC="tellme.gif" tppabs="http://www.anticrack.de/fravia/tellme.gif" width="140" height="21"></A>
+
+<BR><BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links</A> 
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm"> anonymity</A> 
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC</A> 
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays</A> 
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database</A>
+
+ <BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="coumes.htm" tppabs="http://www.anticrack.de/fravia/coumes.htm">counter measures</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="botstart.htm" tppabs="http://www.anticrack.de/fravia/botstart.htm">bots wars</A> 
+
+ 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia</A>
+
+<BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering legal?</A>
+
+</CENTER></CENTER>
+
+<HR SIZE=2>
+
+
+
+</BODY>
+
+</HTML>
+
+
+
+
+

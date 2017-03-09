@@ -1,0 +1,3466 @@
+<HTML>
+<HEAD>
+<META Name="Voluntary Content Rating" content="great!">
+
+
+<TITLE>spatcom.htm +HCU 1999 ~ The 1999 STRAINER's solutions</TITLE>
+</HEAD>
+<BODY BGCOLOR=#C0C0C0 TEXT=#001010 VLINK=#405040><CENTER>
+</CENTER><PRE>        
+               -=  HCU STRAINER 1999 : CHALLENGE 1  =-
+  	                   Terminate 5.0
+					   
+                                       by Spath (09/98).
+
+
+Goals: 1. Extensively analyze and explain Terminate's protection scheme.
+       2. Create a 16 bit assembly key generator for it.
+       3. Design a technique to assure that your generated key will be
+          valid in any further version of terminate.
+
+Tools: PCWATCH (I love this tool)
+       SuperTracer 2.00
+       SoftIce 3.0 
+       TASM 5.0 
+
+               
+
+AT FIRST LOOK
+I) THE ALGORITHM
+II) REVERSING THE ALGORITHM
+III) OTHER CHECKS AND VERSION COMPATIBILITY
+IV) THE KEY GENERATOR
+FINAL NOTES
+
+
+
+AT FIRST LOOK 
+  Playing a little bit with PCWATCH, I find out that TERMINATE try to open 
+a file called TERMINAT.KEY through INT 21 (3D/3F) ; when I create a dummy 
+key file, 162h bytes are read 11 times and I get the message "TERMINAT.KEY 
+was damaged, please reinstall". By the way, some interrupt vectors are 
+redefined (including 00h and 3Fh), which can crash simplest debuggers. 
+
+
+PART ONE : THE ALGORITHM 
+  I fire SIce 3.0 through its DOS loader : as expected, the breakpoint on
+INT21/3F stops the execution at the first read attempt in TERMINAT.KEY. 
+Note that the number of bytes read is saved (but all files larger then
+162h*11 bytes will work).
+
+:0C22   INT  21          ; read 162h bytes
+        POP  DX
+        POP  DS
+        JB   0C2E        ; if a problem occured, save error code
+        CMP  AX,CX       ; 162h bytes read ? 
+        JZ   0C31        ; yes : go on     
+        MOV  AX,DX       ; no : save number of bytes read
+:0C2E   MOV  [24E4],AX   ; flag failure (DS:[24E4] = 0 if ok) 
+:0C31   POP  BP
+        RETF 0004
+
+and later, DS:[24E4] is saved into DS:[17D6] to be checked in step 2
+of the decryption algorithm. 
+
+Then, I put a BPR breakpoint on the DS:DX memory location and I land 
+in the algorithm. Before showing the code, I will give some explanations : 
+this algorithm is based on 2 layers of encryption, so that there are 2 
+separate checks (of course, if the first fails, the second one is not 
+performed). As I explained before, the datas are loaded from TERMINAT.KEY
+in blocks of 162h bytes, then stored in a internal buffer before being
+processed. 
+  
+Two cryptographic functions are used (I call them F1 and F2) ; 
+
+
+
+F1(buffer, magic_word1, magic_word2)
+
+   This function only modify two magic words (and not the buffer). It uses 
+
+   basic byte transformations (XOR, SHL, ADD, SHR, RCR) and an array of
+
+   constant datas. It is used once on the 4th block (from byte 5Bh to byte
+
+   15Dh), and once on the complete file (for each block, from byte 0 to 
+
+   byte 15Dh).
+
+
+
+F2(buffer, parameter1, parameter2, parameter3)
+
+   This function modify the bytes of the buffer from address 5Bh to address 
+
+   161h and also its two first parameters. Therefore, the values you choose 
+
+   for parameter1 and parameter2 are just initial values, that are only used
+
+   for byte 5Bh. This function is used 3 times in the algorithm, each call 
+
+   being embeded in the previous one, so that we have   
+
+   buffer = F2(F2(F2(buffer))). Note that only the 4th block's decryption 
+
+   requires F2 and that the third parameter is always constant (100h).
+
+
+
+
+
+Here's a description of the whole decryption algorithm : 
+
+
+
+0) the two magic words have initial values of (FFFFh,FFFFh).
+
+1) compute several tests on the file (see part 3).
+
+2) calculate F1 all over the file, and compare the resulting words
+
+   with the values at offset 10*162h+15Eh, 10*162h+160h (the magic words
+
+   of the last block). If the result is incorrect, the next tests are not 
+
+   performed.
+
+3) compute xoring with FFh on bytes 5Bh to 161h of block 4.
+
+4) compute block4 = F2(block4, 0007h, 0000h, 0100h)
+
+5) compute block4 = F2(block4, 325ch, 0000h, 0100h)
+
+6) compute block4 = F2(block4, 0904h, 33eeh, 0100h)
+
+7) with initials values of (FFFFh,FFFFh), compute F1 on bytes 5Bh to 15Dh
+
+   of block4. If the magic words are equal to bytes 15Eh and 160h of 
+
+   block4, the decryption worked.
+
+8) compute several tests on the file (see part 3).
+
+
+
+For detailed explanations, here's the code of the F1 function:
+
+
+
+:56B   INC  WORD PTR[17D2]          ; increment buffer index
+
+       MOV  DI,[BP+06]
+
+       LES  DI,SS:[DI+FEFA]
+
+       MOV  AX,ES
+
+       PUSH AX
+
+       MOV  DI,[17D2]               ; load index pointer
+
+       POP  ES
+
+       MOV  AL,ES:[DI]              ; load byte from buffer
+
+       PUSH AX                      ; push byte read
+
+       MOV  DI,[BP+06]
+
+       PUSH WORD PTR SS:[DI+FEF8]   ; push magic byte 2
+
+       PUSH WORD PTR SS:[DI+FEF6]   ; push magic byte 1
+
+       POP  BX                      ; BX = magic byte 1
+
+       POP  DX                      ; DX = magic byte 2
+
+       POP  CX			    ; CX = byte read
+
+       PUSH DX                      ; push magic byte 2
+
+       PUSH BX                      ; push magic byte 1
+
+:595   XOR  BX,CX		    	
+
+       XOR  BH,BH		    ; clear upper byte	
+
+       SHL  BX,1
+
+       SHL  BX,1
+
+       ADD  BX,[E320]		    ; add constant (2014h)	
+
+       MOV  AX,[BX]                 ; get value from data segment
+
+       MOV  CX,[BX+02]
+
+       POP  BX                      ; BX = magic byte 1
+
+       POP  DX                      ; DX = magic byte 1
+
+       PUSH CX                      ; save CX
+
+       MOV  CX,08                   ; initialise loop
+
+:5AC   SHR  DX,1                    ; play with magic bytes
+
+       RCR  BX,1
+
+       LOOP 5AC                     ; play again                   
+
+       AND  DX,0FF
+
+       POP  CX                      ; restore CX 
+
+       XOR  AX,BX
+
+       MOV  BX,CX
+
+       XOR  DX,BX
+
+       MOV  DI,[BP+06]
+
+       MOV  SS:[DI+FEF6],AX         ; save magic byte 1
+
+       MOV  SS:[DI+FEF8],DX         ; save magic byte 2
+
+       MOV  AX,[17D2]               ; test buffer index
+
+       CMP  AX,[BP-04]              ; 15Eh bytes processed ?
+
+       JNZ  056B                    ; no : continue
+
+
+
+And here is the code of the F2 function : the 3 parameters are 
+
+respectively stored at DS:24e6, DS:24e8, SS:BP+06. The 2 first ones 
+
+are modified at each call, the third one is always equal to 100h.
+
+
+
+:0A3C  INC WORD PTR [17D2]      ; increment buffer index
+
+       MOV  AX,0100h            ; set third parameter
+
+       PUSH AX
+
+       CALL xxxx:2053           ; calculate new parameters
+
+       MOV  DX,AX                   
+
+       MOV  DI,[BP+06]
+
+       LES  DI,[17D2]           ; index of the next byte to process
+
+       POP  ES
+
+       MOV  AL,ES:[DI]          ; get byte from buffer
+
+       XOR  AH,AH
+
+       XOR  AX,DX               ; calculate new value for this byte
+
+       MOV  DL,AL
+
+       MOV  DI,[BP+06]
+
+       LES  DI,SS:[DI+FEFA]
+
+       MOV  AX,ES
+
+       PUSH AX
+
+       MOV  DI,[17D2]           ; index of the processed byte
+
+       POP  ES
+
+       MOV  ES:[DI],DL          ; put new value in the buffer
+
+       MOV  AX,[17D2]
+
+       CMP  AX,[BP-04]          ; did we process 161h bytes ?
+
+       JNZ  0A3C                ; no : continue
+
+
+
+And here's the xxxx:2053 procedure, where the two parameters are 
+
+modified :
+
+:2053  PUSH BP
+
+       MOV  BP,SP
+
+       MOV  AX,[24E6]         ; get first parameter
+
+       MOV  BX,[24E8]         ; get second parameter
+
+       MOV  CX,AX
+
+       MUL  WORD PTR [12BC]   ; DS:[12BC] = 8405h
+
+       SHL  CX,1
+
+       SHL  CX,1
+
+       SHL  CX,1
+
+       ADD  CH,CL
+
+       ADD  DX,CX
+
+       ADD  DX,BX
+
+       SHL  BX,1
+
+       SHL  BX,1
+
+       ADD  DX,BX
+
+       ADD  DH,BL
+
+       MOV  CL,05
+
+       SHL  BX,CL
+
+       ADD  DH,BL
+
+       ADD  AX,0001
+
+       ADC  DX,00
+
+       MOV  [24E6],AX        ; modify first parameter
+
+       MOV  [24E8],DX        ; modify second parameter
+
+       XOR  AX,AX
+
+       MOV  BX,[BP+06]       ; get third parameter
+
+       OR   BX,BX            ; avoid division by 0
+
+       JZ   2097	     
+
+       XCHG AX,DX
+
+       DIV  BX
+
+       XCHG AX,DX
+
+:2097  POP  BP               ; AX=0, DX=(second parameter /100h) 
+
+       RET  0002
+
+    
+
+With the F1 function, we obtain two magic words which depend on every
+
+byte of the key file. These words are checked versus words number 15Fh
+
+and 160h of the last read block.
+
+
+
+Here's the code where the result of the F1 function is checked :
+
+
+
+:906   MOV  AX,SS:[DI+FEF6]       ; load magic byte 1
+
+       MOV  DX,SS:[DI+FEF8]	  ; load magic byte 2
+
+       LES  DI,SS:[DI+FEFA]    
+
+       CMP  DX,ES:[DI+160]        ; magic byte 2 = byte 160h ,
+
+       JNZ  092A                  ; no : bad boy
+
+       CMP  AX,ES:[DI+015E]       ; magic byte 1 = byte 15Eh ,
+
+       JNZ  092A		  ; no : bad boy
+
+       CMP  WORD PTR [17D6],00    ; no problem reading the file ,
+
+       JZ   092D                  ; ok : go on
+
+:092A  JMP  22A7                  ; bad boys go to hell
+
+:092D  MOV  DI,[BP+06]
+
+
+
+
+
+PART TWO : REVERSING THE ALGORITHM
+
+  So the question is : can we reverse the decryption algorithm ?
+
+Yes, if we can reverse F1 and F2 :
+
+
+
+- for the F1 function, there's no problem at all, since the result
+
+  of the hash is stored at the end of the hashed bytes. Therefore, 
+
+  we can directly use the F1 function to calculate the magic words, 
+
+  then we simply write them at the end of the block.  
+
+
+
+- for the F2 function, we will use two major flaws : first, the 
+
+  calculation of the two parameters is completely independant from
+
+  the contents of the buffer, i.e. the F2 function is of the form :
+
+  
+
+  for (i=5Bh, i<161H, i++)
+
+     {
+
+      parameter1 = F3(parameter1, parameter2)
+
+      parameter2 = F4(parameter1, parameter2)
+
+      buffer[i] =  F5(buffer[i], parameter1, parameter2)
+
+     }
+
+
+
+  Moreover, the F5 function is of the form :
+
+  F5(buffer[i]) = buffer[i] XOR F6(parameter1, parameter2)
+
+  
+
+  As a result of these two weaknesses, if we get the two correct
+
+  initial parameters F2 is its own inverse !
+
+
+
+  Therefore our encryption algorithm will be :
+
+
+
+0) fill all the buffers with random bytes.
+
+1) with initials values of (FFFFh,FFFFh), compute F1 on bytes 5Bh to 15Dh
+
+   of lock4. Write the result at bytes 15Eh and 160h.
+
+2) handle special tests (see part 3).
+
+2) compute block4 = F2(block4, 0904h, 33eeh, 0100h).
+
+3) compute block4 = F2(block4, 325ch, 0000h, 0100h).
+
+4) compute block4 = F2(block4, 0007h, 0000h, 0100h).
+
+5) compute xoring with FFh on bytes 5Bh to 161h of block 4.
+
+6) with initials values of (FFFFh,FFFFh), calculate F1 all over the file 
+
+   and write the resulting words at offset 15Eh and 160h of the last buffer.
+
+
+
+
+
+
+
+PART THREE : OTHER CHECKS AND VERSION COMPATIBILITY 
+
+  Apart from the algorithm, four rows of tests are performed on the file, 
+
+as described below :
+
+
+
+1)    
+
+    Buffer number          Test                      Result
+
+         1            Buffer[0B] = 46h ('F') AND    Runtime error103
+
+                      Buffer[1B] = 2Fh ('/') AND    (File not open)	
+
+		      Buffer[14] = 2Eh 	
+
+
+
+         2            Buffer[1] = Buffer[2] AND       add 0329 
+
+                      Buffer[1] = Buffer[3] AND      to MagicWord1  	
+
+		      Buffer[1] = Buffer[4] AND
+
+		      Buffer[1] = Buffer[5] 
+
+		      	
+
+	 5	            see 2)                     see 2)  
+
+
+
+	11 (a)	      Buffer[12C] = Buffer[12D] and    add 0192 
+
+		      Buffer[12C] = Buffer[12E] and   to MagicWord1
+
+		      Buffer[12C] = Buffer[12F] and
+
+		      Buffer[12C] = Buffer[130] 			
+
+
+
+        11 (b)	      Buffer[15A] = DC and	     Runtime error103	       
+
+		      Buffer[15B] = 64 and	     (File not open)	
+
+		      Buffer[15C] = D9 and
+
+		      Buffer[15D] = E9			
+
+
+
+   As a result of checks on buffer 2 and buffer 11 (a), a file filled with 
+
+f.i. all '0', encrypted with the correct algorithm would not work. This 
+
+means that in correct keyfiles, these parts are filled with usefull (at 
+
+least not constant) datas. This basic detection of false keyfiles is useless
+
+since I fill the keyfile with random values. 
+
+   To avoid the tests on blocks 1 and 11 (b), I could have add specific 
+
+tests in my key-generator, but generating these particular values is very 
+
+unlikely : even if it happens, you only need to re-run the key-generator. 
+
+Note that all these tests were already used in version 4, but the tested 
+
+values were slightly different.
+
+
+
+2) 
+
+   This test use a lot of code, so I tried to explain it in a "mathematical 
+
+way" to make it more understandable... I hope I succeeded. So this test use 
+
+bytes 15Eh and 160h of buffers 4 and 5. Some functions are involved, which 
+
+take these two bytes as input and return three bytes (which i will call B1, 
+
+B2 and B3). 
+
+
+
+Here is what happens :
+
+
+
+- calculate  B2 = F7(Buffer5[15E])
+
+	   (B1,B3) = F8(Buffer5[160])
+
+
+
+- after decryption of buffer 4, calculate 
+
+	     B2' = F9(F7(Buffer4[15E]))
+
+	   (B1',B3') = F8(Buffer4[160])
+
+	
+
+- if B1=B1' and B2=B2' and B3=B3' then the result of the test
+
+  is succesfull. 
+
+
+
+Since the bytes of buffer 4 are the result of al lot of work, it 
+
+is much easier to find the correct bytes of buffer 5 to pass this 
+
+test. The condition on B1 and B3 are easy to fulfil : we only 
+
+need to have Buffer5[160] = Buffer4[160]. The other condition seems
+
+more complicated, since we need to compensate the effects of F9 on
+
+Buffer4[15E] (further refered to as MW1).  
+
+
+
+Here's some code "of.class" tppabs="http://fravia.org/99solu/of.class" F9 :
+
+
+
+:141F	SHR   DX,1      ; SI = F7(MW1), BX=A0h=(2^4)*0Ah
+
+	RCR   BX,1      ; BX = BX / 2
+
+	RCR   AX,1
+
+	DEC   CL
+
+	JNZ   141F      ; loop
+
+ 	...
+
+ 	ADC   BX,SI 	; B2' = F7(MW1) + BX
+
+
+
+   So at the end, we have F9(F7(MW1)) = F7(MW1) + 2^(4-CL)*0Ah : in 
+
+other words the action of F9 is to add n*0Ah (a multiple of ten in 
+
+decimal). Let's try to compensate this effects with F7, which use 
+
+this code :
+
+
+
+	NEG   DX	; invert magic word 2
+
+        NEG   AX	; invert magic word 1
+
+        MOV   BX,AX	
+
+	...
+
+:1667	DEC   AL	; BX = NOT(magic word 1)
+
+	ADD   BX,BX     ; calculate B2 = 2*B2
+
+	ADC   DX,DX	
+
+	JNS   1667      ; loop until a negative number is obtained
+
+	
+
+  We see that if we substract n to magic word 1, B2 will increase by 
+
+(2^k)*n, where k is the number of times we execute the loop. Thanks 
+
+to the author, k=4-CL, so that we have (at last) :
+
+
+
+F9(x)   = x + (2^k)*0Ah      
+
+F7(x-n) = F7(x) + (2^k)*n	
+
+
+
+=>  F9(F7(Buffer4[15E])) = F7(Buffer4[15E]) + (2^k)*0Ah
+
+		         = F7(Buffer4[15E] - 0Ah) 	
+
+
+
+  So to pass the test, a key-generator can set :
+
+Buffer5[15E] = Buffer4[15E] - 0Ah     and 
+
+Buffer5[160] = Buffer4[160].
+
+
+
+
+
+3)
+
+   Then, some other checks are performed on the decrypted (after 3*F2) fourth 
+
+buffer to detect some people (or companies) names, like "Peter Thomsen",
+
+"Joshua Schultz" or "Velibor Cagalj / Zeit Systeme Gmbh" (sic). These 
+
+chains are seeked at offsets 7Ah and E0h of the fourth buffer, the first 
+
+byte containing the size of the chain to compare. Here's the code :
+
+
+
+:1070	LODSB			; load size of the chain in the buffer
+
+	MOV   AH,ES:[DI]	; load size of the model chain
+
+	INC   DI
+
+	MOV   CL,AL
+
+	CMP   CL,AH		; compare sizes
+
+	JBE   107D		; buffer size <= model size : ok
+
+	MOV   CL,AH		; otherwise compare model size
+
+:107D   OR    CL,CL
+
+	JZ    1087
+
+	XOR   CH,CH
+
+	REPZ  CMPSB		; compare chains
+
+	JNZ   1089
+
+	CMP   AL,AH		; if chains are equal, set Z flag
+
+:1089   MOV   DS,DX
+
+	RET	
+
+
+
+If one of these names if found, Terminate makes an awful "beeeeeep" 
+
+before displaying the main screen ; of course, you are not registered
+
+(maybe these guys didn't pay their key ?). This test also existed in 
+
+version 4, but the list of names was slightly different (and shorter).
+
+
+
+4)
+
+At last, several other tests are done on this buffer, which can cause a
+
+funny message to appear, asking you to delete your illegal keyfile :
+
+
+
+Buffer[158]=FA98 & Buffer[156]=12FD
+
+Buffer[74]=4638  & Buffer[72]=2391
+
+Buffer[150]=FE6F & Buffer[14E]=DF92
+
+Buffer[150]=C740 & Buffer[14E]=AE99
+
+Buffer[150]=0000 & Buffer[14E]=B37B (*)
+
+Buffer[150]=C740 & Buffer[14E]=AE66
+
+
+
+(*) This test has been added from version 4 to version 5 : apparently, the
+
+Terminate 4.0 keyfile generator from sULIVIAN [UCF] always fail it. I
+
+suppose the author analyzed the key-generator, found a flaw in the PRNG
+
+and added this specific test.
+
+
+
+
+
+How to design a technique to assure that my key will be valid in any
+
+further version of terminate ? 
+
+
+
+  Well, if I look how the sULIVIAN's key-generator has been invalidated,
+
+I only need to use a good PRNG to generate keyfiles with no constant 
+
+bytes. Therefore the four rows of tests will be useless.
+
+
+
+  But it's not so easy... for instance, what if some other bytes of 
+
+the file have forbidden (or required) values : these values are avoided 
+
+(or set) by the keymaker of the author, and not tested in version 5. But
+
+in version 6, the author add a test for these bytes, so that only the 
+
+keyfiles generated by his program are sure to pass the test. This means
+
+in particular that without changing his key-generator, the author could 
+
+create new versions of his software and invalidate previous key-generators. 
+
+
+
+So here's the method I propose :
+
+
+
+1) Find many original Terminate 5.0 keyfiles.
+
+2) Decrypt them by using the algorithm used in Terminate 5.0 and described
+
+   in part one : you can either trace in SoftIce and dump the buffers or 
+
+   reuse pieces of code "from.class" tppabs="http://fravia.org/99solu/from.class" the key-generator.
+
+3) You obtain the files that the author encrypted. In each file, you can 
+
+   read in plain-text all the informations about the owner of the keyfile 
+
+   (name, company, town,..) : replace all these informations by 00h.
+
+4) Compare all these files : if you are lucky, they are identical. If not,
+
+   try to figure out how the bytes that are different can be deduced 
+
+   from the owner's informations (e.g. the first character before a string
+
+   is its size).
+
+5) From these files, create a "mask" (or in worst case, code a mask-maker)
+
+   for your new key-generator : your program will overwrite only the bytes 
+
+   containing informations about the owner, leaving the others bytes 
+
+   unmodified.
+
+
+
+This method will prevent your keyfile from current (and future) byte checks 
+
+for forbidden/required values and may guarantee a longer life to your
+
+keyfile. Unfortunately, I did not find any original keyfile so that I was
+
+unable to test it...
+
+
+
+
+
+PART FOUR : THE KEY GENERATOR 
+
+  Here's the code of my key generator, roughly commented. I used a big
+
+buffer to store and process all the 11*162h=3894 bytes and reused the code
+
+of F1 and F2 from Terminate. The result is (without optimisation) a 9320 
+
+bytes COM file. 
+
+
+
+;-------------------------------------------------------;
+
+;   TERMINATE 5.0 Key Generator  v 0.01                 ;
+
+;                                                       ;
+
+;       coded by Spath (09/98) for +HCU strainer 1999   ;
+
+;       compile with tasm, link with tlink /t           ;             
+
+;-------------------------------------------------------;
+
+Code    Segment Byte Public
+
+Assume  Cs:Code, Ds:Code, Es:Code
+
+Org     100h
+
+.386
+
+
+
+Start:
+
+        mov   ah,09
+
+        mov   dx,offset IntroMsg
+
+        int   21h                     ; show intro msg
+
+
+
+        mov   ax,3d00h
+
+        mov   dx, offset InFileName   ; open terminat.exe
+
+        int   21h
+
+        jc    ErrorReadingFile
+
+
+
+        mov   cx,0001h                ; use constant pointer value
+
+        mov   dx,0d984h
+
+        mov   bx,ax
+
+        mov   ax,4200h
+
+        int   21h
+
+        jc    ErrorSettingPointer     ; set pointer at the right position
+
+
+
+        mov   ax,3f00h
+
+        mov   cx,1100h
+
+        mov   dx,offset TerminateDatas ; read Terminate datas       
+
+        int   21h
+
+
+
+        mov   ah,3Ch                   ; create keyfile
+
+        xor   cx,cx
+
+        mov   dx,offset OutFileName 
+
+        INT   21h
+
+        
+
+FillAndAnalyseBuffer:
+
+        mov   si,offset Buffer         ; fill the buffer
+
+        mov   cx,0b1h*11      	       ; with random values	
+
+FillBuffer:            
+
+        call  Random
+
+        mov   [si],ax
+
+        inc   si
+
+	inc   si
+
+        loopne FillBuffer  
+
+
+
+;------ FIRST LAYER OF ENCRYPTION : F1 & F2 over buffers 4 and 5 --------
+
+
+
+        mov   MagicWord1, 0FFFFh
+
+        mov   MagicWord2, 0FFFFh
+
+        mov   si, (offset Buffer) + 3*162h + 5Bh  ; calculate Magic Words
+
+        mov   F1Index,05Bh
+
+        call  F1
+
+        mov   si, (offset Buffer) + 3*162h  ; focus on buffer 4      
+
+        mov   dx,MagicWord1                 ; write magic word 1
+
+	mov   word ptr [si+015eh],dx
+
+        mov   dx,MagicWord2                 ; write magic word 2
+
+        mov   word ptr [si+0160h],dx
+
+        mov   si, (offset Buffer) + 4*162h  ; focus on buffer 5	
+
+        mov   dx,MagicWord1                 ; write magic word 1
+
+        sub   dx,0Ah
+
+        mov   word ptr [si+015eh],dx
+
+        mov   dx,MagicWord2                 ; write magic word 2
+
+        mov   word ptr [si+0160h],dx
+
+
+
+        mov   FirstParameter,0904h	    ; first call to F2	
+
+        mov   SecondParameter,33EEh
+
+        call  F2
+
+        mov   FirstParameter,325Ch	    ; second call to F2
+
+        mov   SecondParameter,0000h
+
+        call  F2
+
+        mov   FirstParameter,0007h	    ; third call to F2
+
+        mov   SecondParameter,0000h
+
+        call  F2
+
+
+
+        mov   BufferIndex,5Bh         
+
+XORLoop:				  ; XOR loop 
+
+        mov  si,(offset Buffer) + 3*162h 
+
+        add  si,BufferIndex                                 
+
+        mov  al,[si]             ; get byte from buffer
+
+        xor  al,0FFh
+
+        mov  [si],al             ; put new value in the buffer
+
+        mov  ax,BufferIndex
+
+        cmp  ax,161h             ; is it finished ?
+
+        jz   SecondLayer
+
+        inc  BufferIndex
+
+        jmp  XORLoop             ; no : continue
+
+
+
+;------ SECOND LAYER OF ENCRYPTION : F1 all over the file ---------------
+
+SecondLayer:
+
+        mov   MagicWord1, 0FFFFh
+
+        mov   MagicWord2, 0FFFFh
+
+        mov   si, offset Buffer         
+
+Calculate:                              ; calculate magic words
+
+        mov   F1Index,0                 ; process 15Dh bytes
+
+	call  F1
+
+        inc   byte ptr F1Count          ; one more buffer processed
+
+        cmp   F1Count,0Bh               ; is it buffer 0Bh ?
+
+        jz    ConcludeF1                ; yes : conclude
+
+        add   si,05                     ; skip useless bytes
+
+	jmp   Calculate
+
+
+
+ConcludeF1:
+
+        mov   si, (offset Buffer) + 10*162h
+
+        mov   dx,MagicWord1
+
+	mov   word ptr [si+015eh],dx	; write magic word 1
+
+        mov   dx,MagicWord2
+
+        mov   word ptr [si+0160h],dx	; write magic word 2
+
+
+
+        mov   si,offset Buffer		; write to file
+
+	mov   cx,162h*11
+
+        call  WriteToFile
+
+
+
+        mov   ah,09
+
+        mov   dx,offset FileCreatedMsg
+
+        int   21h                       ; show end msg
+
+           
+
+	jmp   ExitProgram
+
+
+
+ErrorSettingPointer:			 ; error in setting pointer
+
+        mov   ah,09			 
+
+        mov   dx,offset ErrorPointerMsg
+
+        int   21h			 ; show error msg
+
+        jmp   ExitProgram
+
+
+
+ErrorReadingFile:			 ; error in opening file
+
+        mov   ah,09
+
+        mov   dx,offset ErrorOpeningMsg
+
+        int   21h                        ; show error msg
+
+
+
+ExitProgram:
+
+        int   20h                        ; exit
+
+
+
+;----------- GENERAL PURPOSE PROCEDURES AND FUNCTIONS -------------------
+
+WriteToFile   PROC  NEAR
+
+        push  ax
+
+        push  cx
+
+        push  dx
+
+        push  cx
+
+
+
+OpenFile:
+
+        mov   ax,3D82h                ; open the file
+
+        mov   dx,offset OutFileName
+
+        INT   21h
+
+Write:
+
+        mov   bx,ax
+
+        xor   dx,dx
+
+        xor   cx,cx                   ; set pointer at the end
+
+        mov   ax,4202h                ; of the file
+
+        INT   21h
+
+        jc    end_pop_write_to_file
+
+        mov   ah,40h
+
+        pop   cx                      ; write in the file
+
+        mov   dx,si
+
+        INT   21h
+
+        jc    end_write_to_file
+
+        mov   ah,3Eh
+
+        INT   21h                     ; close the file
+
+        jmp   end_write_to_file
+
+
+
+end_pop_write_to_file:
+
+        pop   cx
+
+
+
+end_write_to_file:
+
+        pop   dx
+
+        pop   cx
+
+        pop   ax
+
+        ret
+
+WriteTofile ENDP
+
+
+
+
+
+; very simple PRNG
+
+; return a number in ax
+
+Random  PROC NEAR
+
+        push    cx 
+
+        push    dx
+
+        and     ah,0fh                    
+
+        
+
+        in      al,40h               ; get byte from timer
+
+        mov     cx,ax
+
+        mov     dx,RandSeed          ; get previous randseed
+
+shake:
+
+        mul     dx
+
+        add     ax,4321h
+
+        add     dx,7D96h
+
+        loop    shake
+
+        
+
+	mov     RandSeed,ax	     ; save new seed
+
+        pop     dx
+
+        pop     cx
+
+        ret
+
+Random  ENDP
+
+
+
+;----- CRYPTOGRAPHIC PROCEDURES AND FUNCTIONS --------------------
+
+F1   PROC NEAR
+
+label56B:
+
+        mov  al,[si]                  ; load byte from buffer
+
+        PUSH AX                       ; push byte read
+
+        PUSH WORD PTR MagicWord2      ; push magic word 2
+
+        PUSH WORD PTR MagicWord1      ; push magic word 1
+
+        POP  BX                       ; BX = magic word 1
+
+        POP  DX                       ; DX = magic word 2
+
+        POP  CX                       ; CX = byte read
+
+        PUSH DX                       ; push magic word 2
+
+        PUSH BX                       ; push magic word 1
+
+label595:
+
+        XOR  BX,CX                       
+
+        XOR  BH,BH                    ; clear upper byte  
+
+        SHL  BX,1
+
+        SHL  BX,1
+
+        ADD  BX,offset TerminateDatas ; use loaded datas       
+
+        MOV  AX,[BX]                  ; 
+
+        MOV  CX,[BX+02]
+
+        POP  BX                       ; BX = magic word 1
+
+        POP  DX                       ; DX = magic word 1
+
+        PUSH CX                       ; save CX
+
+        MOV  CX,08                    ; initialise loop
+
+label5AC:
+
+        SHR  DX,1                     ; play with magic words
+
+        RCR  BX,1
+
+        LOOP label5AC                 ; same player play again                   
+
+        AND  DX,0FFh
+
+        POP  CX                       ; restore CX 
+
+        XOR  AX,BX
+
+        MOV  BX,CX
+
+        XOR  DX,BX
+
+        MOV  MagicWord1,AX           ; save magic word 1
+
+        MOV  MagicWord2,DX           ; save magic word 2
+
+        mov  ax,F1Index              ; test buffer index
+
+        cmp  ax,15Dh                 ; 15Eh bytes processed ?
+
+        jz   ExitF1                  ; yes : done
+
+        inc  si
+
+	inc  F1Index
+
+        jmp  label56B                ; no : continue
+
+ExitF1:
+
+        ret
+
+F1      ENDP
+
+
+
+
+
+F2 PROC NEAR
+
+       mov   BufferIndex,5Bh         
+
+F2Start:
+
+       CALL Proc2053            ; calculate new parameters
+
+       mov  dx,ax
+
+       mov  si,(offset Buffer) + 3*162h 
+
+       add  si,BufferIndex		                   
+
+       MOV  AL,[si]             ; get byte from buffer
+
+       XOR  AH,AH
+
+       XOR  AX,DX               ; calculate new value for this byte
+
+       MOV  DL,AL
+
+       MOV  [si],DL             ; put new value in the buffer
+
+       MOV  AX,BufferIndex
+
+       CMP  AX,161h             ; did we process 162h bytes ?
+
+       JZ   OutF2
+
+       INC  BufferIndex
+
+       JMP  F2Start             ; no : continue
+
+OutF2:
+
+       RET
+
+F2 ENDP
+
+
+
+Proc2053   PROC NEAR
+
+label2053:
+
+       MOV  AX,FirstParameter         ; get first parameter
+
+       MOV  BX,SecondParameter        ; get second parameter
+
+       MOV  CX,AX
+
+       MUL  Cst8405h                  ; DS:[12BC] = 8405
+
+       SHL  CX,1                      ; play with parameters
+
+       SHL  CX,1
+
+       SHL  CX,1
+
+       ADD  CH,CL
+
+       ADD  DX,CX
+
+       ADD  DX,BX
+
+       SHL  BX,1
+
+       SHL  BX,1
+
+       ADD  DX,BX
+
+       ADD  DH,BL
+
+       MOV  CL,05
+
+       SHL  BX,CL
+
+       ADD  DH,BL
+
+       ADD  AX,0001
+
+       ADC  DX,00
+
+       MOV  FirstParameter,AX        ; modify first parameter
+
+       MOV  SecondParameter,DX       ; modify second parameter
+
+       XOR  AX,AX
+
+       MOV  BX,0100h               ; third parameter is always the same
+
+       XCHG AX,DX
+
+       DIV  BX
+
+       XCHG AX,DX
+
+label2097:
+
+       RET  
+
+Proc2053 ENDP        
+
+
+
+;------------ DATAS ----------------------------------------------------
+
+OutFileName db "terminat.key",0
+
+InFileName db "terminat.exe",0
+
+IntroMsg    db 13,10,'TERMINATE 5.0 Key Generator'
+
+         db 13,10,'coded by Spath in 1998' 
+
+	 db 13,10,'for the 1999 +HCU Strainer',13,10,'$'
+
+ErrorOpeningMsg db 13,10,'Error: TERMINAT.EXE not found',13,10,'$'
+
+ErrorPointerMsg db 13,10,'Error: incorrect pointer value',13,10,'$'
+
+FileCreatedMsg db 13,10,'TERMINAT.KEY has been generated...',13,10,'$'
+
+Buffer   db 162h*11 dup (0)
+
+MagicWord1 dw 0FFFFh
+
+MagicWord2 dw 0FFFFh
+
+FirstParameter dw ?
+
+SecondParameter dw ?
+
+BufferIndex dw 0
+
+RandSeed dw 5A9Ch
+
+F1Count db 00h
+
+F1Index dw 0
+
+TerminateDatas db 1200h dup(0)
+
+Cst8405h dw 8405h
+
+
+
+code ends
+
+End Start
+
+
+
+
+
+FINAL NOTES 
+
+  I really enjoyed working on Terminate, which was for me the most 
+
+challenging part of the strainer. The author had good ideas to reject 
+
+current (and future) false keys. Yet, the decryption scheme is weak, 
+
+since F1 is useless and F2 its own inverse. As a result, the encryption 
+
+and decryption algorithms are symetricals and not really complicated. 
+
+Maybe he should have use real cryptography instead of multiple paranoid
+
+checks.
+
+						
+
+						Spath. (09/98)
+
+
+
+---------------------------------------------------------------------------
+<hr>
+        
+
+           -=  HCU STRAINER 1999 : CHALLENGE 2  =-
+
+	             Win32 byte patcher
+
+					   
+
+                                       by Spath (08/98).
+
+
+
+
+
+Goal: 1. Create a Windows based 32 bit byte patcher for any target you
+
+      wish, using any programming language.
+
+Tool: TASM 5.0
+
+      SoftIce 3.0
+
+
+
+
+
+I) SOME EXPLANATIONS
+
+II) THE CODE
+
+
+
+
+
+PART ONE : SOME EXPLANATIONS
+
+
+
+  My patcher is a simple "search and replace" one ; it loads pieces of
+
+the file in a internal buffer until it finds the byte sequence . Then
+
+the file pointer is set to this location it found and the new sequence
+
+is written to the file. This means in particular that the byte sequence
+
+must be unique, otherwise only the first occurence will be replaced.
+
+    
+
+  Why did I use SetFilePointer after I found the sequence ?
+
+Indeed, if the sequence is in the buffer I just loaded, the file pointer
+
+is already correctly set and I only need to re-write the full buffer.
+
+Yet, I thought that a problem would appear when the byte sequence start
+
+at the end of a buffer and continues at the begining of the next loaded
+
+one.
+
+
+
+  For this task, I chose assembly because it is is my favourite language 
+
+and because I wanted to play with TASM 5.0 (Thanks +Aesculapius !). As
+
+always, I also used SIce for debugging.
+
+
+
+  Well, not much to say about this challenge, so here's...
+
+
+
+
+
+PART TWO : THE CODE
+
+
+
+;-------------------------------------------------------;
+
+;   Simple Win32 Byte Patcher   v 0.01                  ;
+
+;                                                       ;
+
+;     coded by Spath (08/98) for +HCU strainer 1999     ;
+
+;     compile: tasm32 -ml -m5 -q patcher                ;
+
+;     link: tlink32 -Tpe -aa -x -c patcher ,,, import32 ;
+
+;-------------------------------------------------------;
+
+.386p                       
+
+.model flat, stdCALL        
+
+
+
+EXTRN   ReadFile:PROC        ; imported functions
+
+EXTRN   WriteFile:PROC
+
+EXTRN   CloseFile:PROC
+
+EXTRN   CreateFileA:PROC
+
+EXTRN   CloseHandle:PROC
+
+EXTRN   MessageBoxA:PROC
+
+EXTRN   SetFilePointer:PROC
+
+EXTRN   ExitProcess:PROC 
+
+
+
+INCLUDE WINDOWS.INC          ; the famous one   
+
+
+
+.DATA
+
+
+
+;-- modify these datas to patch your target
+
+Filename db "virstop.exe",0
+
+OldChain db 0fbh,81h,21h,0cdh,35h,0feh,0b8h,50h,0a7h,26h,10h
+
+NewChain db 00h,01h,02h,03h,04h,05h,06h,07h,08h,09h,10h
+
+
+
+;-- internal constants 
+
+FILE_ATTRIBUTE_NORMAL     equ 080h
+
+OPEN_EXISTING             equ 3
+
+GENERIC_READ              equ 80000000h
+
+GENERIC_WRITE             equ 40000000h
+
+
+
+;-- internal variables
+
+BufferSize equ 5000h
+
+Buffer db BufferSize DUP (?)   ; here's the buffer
+
+FileHandle dd ?
+
+BytesRead dd ?
+
+CorrectBytes dd 0
+
+ChainSize equ OFFSET NewChain - OFFSET OldChain
+
+ChainPos dd 0
+
+
+
+;-- strings 
+
+cptPatcher db 'Patcher32',0
+
+msgFileNotFound db 'Error: the file was not found...',0
+
+msgPatchSuccesfull db 'The target has been succesfully patched !',0
+
+msgSequenceNotFound db 'Error: the byte sequence was not found...',0
+
+msgErrorWriting db 'Error: impossible to write to file...',0
+
+
+
+.CODE
+
+
+
+START:
+
+   push  0
+
+   push  FILE_ATTRIBUTE_NORMAL
+
+   push  OPEN_EXISTING
+
+   push  0
+
+   push  0
+
+   push  GENERIC_READ OR GENERIC_WRITE
+
+   push  OFFSET Filename
+
+   call  CreateFileA             ; open the target file
+
+
+
+   cmp   eax,0FFFFFFFFh          ; error ?
+
+   jz    ErrorOpeningFile        ; yes : display error message
+
+   mov   FileHandle, eax         ; no : save file handle
+
+   
+
+   mov   esi,OFFSET OldChain     ; start searching from the begining
+
+ReadLoop:
+
+   push  0
+
+   push  OFFSET BytesRead
+
+   push  OFFSET BufferSize
+
+   push  OFFSET Buffer
+
+   push  FileHandle
+
+   call  ReadFile                ; fill the buffer
+
+   mov   edi,OFFSET Buffer       ; start searching from the begining 
+
+   
+
+LoadByte:
+
+   lodsb                         ; load a byte from OldChain
+
+   cmp   al,[edi]
+
+   je    GoodByte                ; one byte in common found ?
+
+
+
+BadByte:   
+
+   mov   esi, OFFSET OldChain    ; no : search from the begining
+
+   mov   CorrectBytes,0          ; reset consecutive success counter
+
+   jmp   GoOn
+
+   
+
+GoodByte:                        ; one correct byte was found
+
+   inc   CorrectBytes            ; increment consecutive success counter
+
+   cmp   CorrectBytes,ChainSize  ; did we find all the chain ?
+
+   jz    ChainFound              ; yes : go to replace part
+
+
+
+GoOn:   
+
+   inc   edi                     ; increment Buffer pointer
+
+   cmp   edi, OFFSET FileHandle  ; is it the end of the buffer ?
+
+   jne   LoadByte                ; no : check next byte
+
+   cmp   BytesRead,BufferSize    ; yes : is it EOF ?
+
+   jne   SequenceNotFound        ; yes : sequence not found
+
+   add   ChainPos, BufferSize    ; adjust chain position
+
+   jmp   ReadLoop                ; reload from file
+
+   
+
+ChainFound:
+
+   sub   edi, ChainSize - 1      ; set edi at the begining of the chain
+
+   add   ChainPos, edi           ; adjust chain position
+
+   mov   esi, OFFSET NewChain    ; 
+
+   mov   ecx, ChainSize
+
+   repne movsb                   ; write new chain over older one
+
+   sub   edi, ChainSize          ; adjust pointer
+
+   sub   ChainPos, offset Buffer
+
+
+
+   push  0                       ; set file pointer at ChainPos
+
+   push  0
+
+   push  ChainPos   
+
+   push  FileHandle
+
+   call  SetFilePointer  
+
+
+
+   push  0                                       
+
+   push  offset BytesRead       
+
+   push  ChainSize               ; ChainSize bytes are written from     
+
+   push  edi                     ; memory address edi into the file
+
+   push  FileHandle
+
+   call  WriteFile               ; write to file
+
+               
+
+   cmp   eax, 1                  ; write access ok ?
+
+   je    Succesfull              ; yes
+
+   push  0                       ; no : prepare "Error writing" message
+
+   push  offset cptPatcher
+
+   push  offset msgErrorWriting
+
+   push  0
+
+   jmp   Terminate               
+
+
+
+Succesfull:
+
+   push  0                        ; prepare "Succesfull" message
+
+   push  offset cptPatcher
+
+   push  offset msgPatchSuccesfull
+
+   push  0
+
+   jmp   Terminate
+
+
+
+SequenceNotFound:
+
+   push  0                        ; prepare "Sequence not found" message
+
+   push  offset cptPatcher
+
+   push  offset msgSequenceNotFound
+
+   push  0
+
+   jmp   Terminate
+
+   
+
+ErrorOpeningFile:
+
+   push  0                        ; prepare "File not found" message
+
+   push  offset cptPatcher
+
+   push  offset msgFileNotFound
+
+   push  0
+
+ 
+
+Terminate:
+
+   call  MessageBoxA              ; display message box
+
+   push  0                        
+
+   push  FileHandle
+
+   call  CloseHandle              ; close file
+
+   call  ExitProcess              ; quit
+
+   END   START
+
+
+
+--------------------------------------------------------------------------
+
+Greetings: _masta_, htak and Iczelion for their good Win32 ASM tutorials.
+
+<HR>        
+             -=  HCU STRAINER 1999 : CHALLENGE 3  =-
+	       	   BrainsBreaker v 2.1 (32 bits)
+
+
+                                     by Spath (08/98).
+
+
+
+
+Goal: 1. Completely explain the protection scheme used by this program.
+Tools: SoftIce 3.01 (no need to upgrade, my old S3 card works fine)
+       W32Dasm 8.9  (IDA not needed here)
+       heXedit 4.3  (the fastest for search&patch)
+
+AT FIRST LOOK
+I) DEMO BOXES + SIDES LIMITATION
+II) TESTS OF INTEGRITY
+III) THE "DEMO" WORD ON THE PICTURES
+FINAL NOTES
+
+
+AT FIRST LOOK
+  Well, this protection has at least one good point : the registration 
+method is part of the registration secret. The limitations include demo 
+boxes, a limition of the sides you can place and an awful "DEMO" word 
+on the nicest puzzles. I removed them all.
+
+
+PART ONE : DEMO BOXES AND SIDES LIMITATION
+
+  This part will not be very exciting, because it is just a reuse of
+well-known methods to remove all the annoying boxes. Since the strings of 
+these boxes are not visible at first look, I just wait a little bit to 
+let Bbrk32 load and decode them, and then I search in the data segment.
+
+For the first box ("Warning: the program is running in evaluation mode.You 
+will be allowed to solve..."), the code is really straightforward :
+
+
+:00444D73  push 0000002C
+:00444D75  call 00420A08	 ; see (1)	
+:00444D7A  mov ebx, eax
+:00444D7C  test eax, eax         ; should we show the box ?
+:00444D7E  je 00444F88           ; no => go to 444F88
+:00444D84  add esp, FFFFFFFC     ; yes
+  .  .  .
+:00444D94  call 00465533         ; display the box
+:00444D99  jmp 00444F88          ; box closed => 444F88
+
+In the other case (the 3 first puzzles), the message displayed is 
+"Brainsbreaker unregistered. Please see how to register." but the idea is 
+the same :
+
+:00444EFE  push 0000002C
+:00444F00  call 00420A08       	 ; see (1)
+:00444F05  mov [ebp-0088], eax
+:00444F0B  test eax,eax          ; should we show the box ?
+:00444F0D  jz 00444F29           ; no 	
+
+Since before testing the result value, the prog always saves it somewhere 
+else, I chose to make a 2 lines patch:
+
+Therefore I changed:
+
+8BD8   mov ebx,eax      into      33DB   xor ebx,ebx          
+85C0   test eax,eax	          33C0   xor eax,eax	
+
+898578FFFFFF  mov [ebp-0088],eax    into   33C0          xor eax,eax 
+85C0          test eax,eax	    	   898578FFFFFF  mov [ebp-0088],eax
+
+For the "Since now you will be allowed to lock x sides" boxes, the author used
+2 counters, counter1 and counter2 respectively incremented by n and decremented
+by 2*n (1 <N < 2) ; at the begining, no box is displayed but after a certain 
+time, 2*Counter1 > Counter2 and you enter the "random display" zone (you also 
+go there after 25 sides). In this zone, boxes are displayed depending on the 
+clock for an average rate of. At last, if you have less then 8 sides to put, 
+a box is displayed every time. Here's the code :
+
+:0044DCC7  movsx eax, word ptr [ebp+FFFFFE2E]  ; read Counter1
+:0044DCCE  add eax, eax                        ; 
+:0044DCD0  cmp eax, dword ptr [0048CA9D]       ; is (2*Counter1) > Counter2 ?
+:0044DCD6  jl 0044DCE2			       ; no : go to random test 
+:0044DCD8  cmp word ptr [ebp+FFFFFE2E], 0019   ; is Counter1 > 19 ?
+:0044DCE0  jge 0044DCF4			       ; yes : no box this time                         |
+:0044DCE2  call WINMM!TimeGetTime	       ; random test based on clock
+:0044DCE7  sub eax, dword ptr [0048CBFC]
+:0044DCED  cmp eax, 00007530		       ;
+:0044DCF2  jnb 0044DCFE			       ; no box this time
+:0044DCF4  cmp word ptr [ebp+FFFFFE2E], 0008   ; Counter1 > 8 ?
+:0044DCFC  jg 0044DD68			       ; yes : no box displayed		
+:0044DCFE  call WINMM!TimeGetTime	       ; no : prepare for the box
+:0044DD03  mov dword ptr [0048CBFC], eax
+:0044DD08  push 0000002C
+:0044DD0A  call 00420A08		       ; see (1)
+:0044DD0F  mov dword ptr [ebp+FFFFFE10], eax
+:0044DD15  test eax, eax
+:0044DD17  je 0044DD5A
+   ...      ...
+:0044DD55  call 00465533		       ; -= call the Message Box =-
+
+What is really funny is that counter1 is never decremented ! Each new
+value is calculated (with counter2) via a incremental loop which gets
+shorter and shorter (and which contains many crazy co-processor 
+instructions) : 
+
+:0044DC6E  inc word ptr [ebp+FFFFFE2E]        ; increment counter1
+:0044DC75  add si, 0002			      ; increment loop counter		
+  . . .
+:0044DCA7  movsx ecx, byte ptr [edx+54]
+:0044DCAB  mov eax, dword ptr [ebp+FFFFFE24]  ; this value is decreasing
+:0044DCB1  movsx edx, word ptr [eax+2*ecx+48]
+:0044DCB6  push edx
+:0044DCB7  call 0045D6E2
+:0044DCBC  movsx ecx, si
+:0044DCBF  cmp eax, ecx
+:0044DCC1  jg 0044DBBA			      ; increment again	
+
+Counter2 is incremented by this piece of code :
+:0045592E  push 00000002       ; push increment
+:00455930  push 0048CA62       ; push base address (48CA9D - 3B)	
+:00455935  call 0046E8A1
+   . . .  
+:0046E8A4  mov eax, dword ptr [ebp+08]  ; get base address
+:0046E8A7  mov edx, dword ptr [ebp+0C]	; get increment
+:0046E8AA  add dword ptr [eax+3B], edx  ; increment counter2
+ 
+
+In spite of all these efforts, the crack was quite simple : I changed
+		     	
+:0045592E 6A02 push 02  into  6A00 push 00  ; stop counter2 increment       
+
+:0044DCD6 7C0A jl 44DCE2  into  EB1C jmp 44DCF4  ; skip all the tests 
+
+(1): 
+Of course, I noticed that the real protection test seems to be in the 
+push 2C/call 420A08 (which should return EAX=0) : the best crack would 
+certainly have been to patch the 420A08 procedure, but this value seems 
+not to be enough. Indeed, I tried to put a 
+BPX 420a08 if @ss:(esp+4)==2c do "p ret ; r eax=0 ; g"
+but unfortunately, it crashed after a few calls ; so I decided to try 
+to patch this way (if it had failed, I would have had to dig deeper 
+into 420a08).
+
+
+PART TWO : TESTS OF INTEGRITY
+  Ok, this works fine under SoftIce, but after having modified the bytes in 
+Bbrk32.exe, I get a funny "Integrity check: Program seems to be altered from 
+his original contents". So I put a breakpoint on MessageBoxA and find this 
+piece of code :
+
+:0044358A  push 00000000
+:0044358C  call 004410AF	     ; call integrity check procedure
+:00443591  cmp eax, 55443322	     ; is it correct ?
+:00443596  je 0044360A		     ; yes, go on ...
+:00443598  push 00012010	     ; display style	  
+:0044359D  push dword ptr [00486B04] ; title of the window
+:004435A3  add esp, FFFFFFFC
+:004435A6  mov word ptr [esp], 00BE
+:004435AC  call 0043A041
+:004435B1  push eax	             ; text to display
+:004435B2  push 00000000	     ; an orphaned window
+:004435B4  USER32!MessageBoxA        ; display error box
+
+If I patch this location as follows
+
+:00443591  cmp eax, 55443322    into    mov eax, 55443322   
+:00443596  je 0044360A		        jmp 0044360A	
+
+
+and start again, I still receive the same infamous message... this paranoid 
+author put more than one integrity test in his game. How can I find them all ?
+With the title parameter, stored in DS:00486B04, which is specific to this 
+box (see (2)). Looking for the "push dword ptr [00486B0A]" instruction in the
+disassembled listing, I find 5 other locations : 41FD9F, 4447E9, 44C9E3, 
+453F77, 45D033. 
+
+All these locations are patched as follows :
+
+:0041FD8A cmp dword ptr[00485880],00012345 into mov dword ptr[00485880],00012345
+:0041FD94 je 0041FE3B	  into   jmp 0041FE3B
+:004447E2 jnb 0044485F    into   jmp 0044485F
+:0044C9D8 jnb 0044CA63    into   jmp 0044CA63
+:00453F70 jnb 00453FED    into   jmp 00453FED 
+:0045D02C jnb 0045D0A9    into   jmp 0045D0A9 
+
+(2):
+This parameter is required, but it can be 
+a/ read through indirect addressage : here I trust good old Borland C++ 
+compiler for being consequent in its work.
+b/ mirrored somewhere else : here I trust the author's lack of imagination.
+
+
+PART THREE : THE "DEMO" WORD ON THE PICTURES
+  For this part, I quickly found out that in every case the picture is 
+displayed through a User32!UpdateWindow, which simply send a WM_PAINT message 
+to the window. Since I am an absolute newbie in graphics coding, I needed a 
+clue (4)... then I noticed that "DEMO" disappear when I click on the model 
+picture.
+
+So I tried the following : 
+1) click on the picture and maintain the left button.
+2) enter SIce and release the button.
+3) "p ret" until I reach the Bbrk32 code 
+
+Then I traced a little bit and... Bingo ! This is the graphical function I 
+was looking for : GDI32!BitBlt. Therefore, I put a breakpoint on this 
+function and write down all the calling adresses when I select a "clean" 
+picture (f.i. the fish) from the main screen. Then I do the same thing 
+with a "demo" picture (f.i. the cat). As expected, this last listing shows
+one more call to BitBlt ; here is a piece of the code that cause the "DEMO"
+word to appear (not only on the top left corner picture, but also on the 
+small images and on the full-size one).
+
+:00428915  push 00AC0744		; see (3)
+:0042891A  movsx edx, word ptr [ebp-46]
+:0042891E  push edx			; top left corner Y value (source)
+:0042891F  movsx ecx, word ptr [ebp-48]
+:00428923  push ecx			; top left corner X value (source)
+:00428924  mov eax, dword ptr [ebp-40]
+:00428927  push [eax+04]		; source handle	
+:0042892A  movsx edx, word ptr [ebp-42]
+:0042892E  push edx			; height of the picture   
+:0042892F  movsx ecx, word ptr [ebp-44]
+:00428933  push ecx			; length of the picture
+:00428934  push [ebp-3C]		; top left corner Y value (destination)
+:00428937  push [ebp-38]		; top left corner X value (destination)
+:0042893A  push [esi+04]		; destination handle
+:0042893D  Call GDI32!BitBlt            ; display the bitmap    
+
+My first idea was to change the push [edx+04] into push [esi+04], so that the 
+bitmap is simply overwritten by itself. In fact, it removed the "DEMO" word,
+but the gray rectangle remained on the picture ; I therefore had to find 
+which procedure called this piece of code. Back-tracing was not needed here,
+so with simple P RET and STACK commands I found these pieces of code:
+
+for the small pictures:
+:00462640  cmp dword ptr [ebp+FFFFFEC4], 00000000  ; write "DEMO" ?
+:00462647  je 004627C0				   ; no : skip this part
+:0046264D  mov eax, dword ptr [0048C918]	   ; yes
+
+for the top-left picture and the full-size one:
+:0045D317  push eax
+:0045D318  call 0046D872
+:0045D31D  test eax, eax	; write "DEMO" on the picture ?
+:0045D31F  je 0045D427		; no : skip this part
+:0045D325  mov edi, 004877AC	; yes  
+
+And I change:
+
+:00462647  0F8473010000 je 004627C0     into      jmp 004627C0         
+:0045D31D  85C0 test eax,eax    into   33C0   xor eax,eax  
+
+(3):
+
+This value is the colour combination parameter, as described in the wingdi.h 
+file ("Ternary raster operations" paragraph) :
+
+CONST
+  SRCCOPY    : DWORD = 16_00CC0020; (* dest = source *)
+  SRCPAINT   : DWORD = 16_00EE0086; (* dest = source OR dest *)
+  SRCAND     : DWORD = 16_008800C6; (* dest = source AND dest *)
+  ... (a total of 15 parameters are available)
+By the way, the 00AC0744 value is not described in it (??)
+
+(4): 
+After all this work I realized that the "DEMO" string reference in W32dasm
+was immediately leading to this piece of code... :(
+
+FINAL NOTES
+  Well, I enjoyed cracking this game, especially for part 3 (part 2 was quite
+ disapointing, though). I learned a few things about graphical interface, which
+were very useful for the last challenge. Obviously, the author spent some time 
+on the protection, which deserve respect, even if he chose complexity instead of
+precision. I think that my crack is a little bit heavy (12 patches)... I wish I
+have had more time to spend on the registration part. 
+
+Here's the summary of my crack:
+
+         offset   old chain                   new chain
+Boxes:   4437A    8B D8 85                    33 DB 33
+         44505    89 85 78 FF FF FF 85 C0     33 C0 89 85 78 FF FF FF
+
+Integrity tests:   
+         1F394    0F 84 A1		      E9 A2 00    
+	 42B91    3D 22 33 44 55 74           B8 22 33 44 55 EB
+         43DE2    73                          EB
+	 4BFD8    0F 83 85		      E9 86 00	
+         53570    73                          EB
+         5C62C    73                          EB
+
+"DEMO":  5C91D    85                          33
+         61C47    0F 84 73 01                 E9 74 01 00 
+
+Sides limitation: 
+         54F2F    02        	              00
+         4D2D6    7C 0A                       EB 1C
+  				                Spath. (08/98)	
+-----------------------------------------------------------------------------
+
+Greetings: - +Frog's Print, a master cracker and a nice person.
+           - BeLZeBuTH, Ethan, Kellogs, CyberbobJr and all the guys
+             on +FP's forums.  
+<HR>
+                      
+             -=  HCU STRAINER 1999 : ULTIMATE CHALLENGE  =-
+	       	   BrainsBreaker v 2.1 (32 bits)
+ 	   
+                                      by Spath (09/98).
+
+Goal: The objective of this challenge is to check that:
+      1. The participant understands the graphical part of demo-reversing.
+Tools: SoftIce 3.0
+       TASM 5.0
+
+
+I) SOME EXPLANATIONS
+II) THE CODE
+
+PART ONE : SOME EXPLANATIONS
+
+  The little star animation of BrainsBreaker is made of 14 bitmaps, each 
+of these bitmaps being run-time calculated. Each bitmap is made of (at
+most) 3 parts :
+
+- a main white cross.
+- 1 to 3 ellipses, each one inside the previous one, to make a gradation
+  of colours (the center is always white).
+- some pixels and little crosses around when the star is disappearing.
+
+
+The graphical functions involved are :
+
+- MoveToEx() and LineTo() to draw the crosses.
+- Ellipse() to draw the ellipses (no kidding).
+- CreatePen() and CreateSolidBrush() to choose the pens and brushes colors.
+
+
+
+The stars I create are slightly different (bigger,...) from BBrk32's : the
+main reason is that I understood this challenge as a programming one, since I
+did not find much to reverse-engineer. I therefore did not try to copy-paste 
+the disassembled code of BBrk32, but instead tried to write my own. However, 
+you can obtain almost the same stars if you change these parameters :
+
+DARK_COLOR      : color of largest ellipse
+LIGHT_COLOR     : color of middle ellipse
+SIDE_CROSS_NB   : number of side crosses per bitmap
+ELLIPSE_GAP     : distance between two ellipses
+SmallCrossSize  : small crosses height & width
+CrossSize       : main cross heights & widths 
+EllipseSize     : main ellipse heights and widths
+
+
+PART TWO : THE CODE
+;-------------------------------------------------------; 
+; "Star Truc"  v 0.01                                   ;
+;                                                       ;
+;    coded by Spath (09/98) for +HCU strainer 1999      ;
+;    contains code from Henry S. Takeuchi (Htak)        ;
+;    compile: tasm32 -ml -m5 -q startruc                ;
+;    link: tlink32 -Tpe -aa -x -c startruc ,,, import32 ;
+;-------------------------------------------------------;
+
+.386
+
+.model flat,STDCALL
+
+
+
+MAX_BMP_HEIGHT equ 400
+
+MAX_BMP_WIDTH  equ 600
+
+MF_END       = 0080h  ; end of menu template
+
+
+
+; Define Win95 structures
+
+;
+
+POINT STRUC
+
+ptX dd ?
+
+ptY dd ?
+
+POINT ENDS
+
+
+
+MSG STRUC
+
+msgWnd     dd ?
+
+msgMessage dd ?
+
+msgWparam  dd ?
+
+msgLparam  dd ?
+
+msgTime    dd ?
+
+msgPt      POINT ?
+
+MSG ENDS
+
+
+
+PAINTSTRUCT STRUC
+
+psDC        dd ? ; hdc
+
+psErase     dd ? ; fErase
+
+psRect      dd ? ; rcPaint
+
+; the following reserved by Windows
+
+psRestore   dd ? ; fRestore
+
+psIncUpdate dd ? ; fIncUpdate
+
+psRGB       db 16 dup(?) ; rgbReserved
+
+PAINTSTRUCT ENDS
+
+
+
+WNDCLASS STRUC
+
+wcStyle           dd ?    ; style
+
+wcWndProc         dd ?    ; lpfnWndProc
+
+wcClsExtra        dd ?    ; cbClsExtra
+
+wcWndExtra        dd ?    ; cbWndExtra
+
+wcInstance        dd ?    ; hInstance
+
+wcIcon            dd ?    ; hIcon
+
+wcCursor          dd ?    ; hCursor
+
+wcBackgroundBrush dd ?    ; hbrBackground
+
+wcMenuName        dd ?    ; lpszMenuName
+
+wcClassName       dd ?    ; lpszClassName
+
+WNDCLASS ENDS
+
+
+
+MF_SEPARATOR = 0800h
+
+MF_STRING    = 0000h
+
+MF_POPUP     = 0010h
+
+MF_END       = 0080h  ; end of menu template
+
+;
+
+; Window messages
+
+;
+
+WM_CREATE      = 0001h
+
+WM_DESTROY     = 0002h
+
+WM_PAINT       = 000Fh
+
+WM_TIMER       = 0113h	
+
+WM_COMMAND     = 0111h
+
+WM_LBUTTONDOWN = 0201h
+
+;
+
+; Window styles
+
+;
+
+WS_OVERLAPPED	= 0
+
+WS_CAPTION 	     = 00C00000h
+
+WS_THICKFRAME	     = 00040000h	
+
+WS_SYSMENU	     = 00080000h	
+
+WS_MINIMIZEBOX	     = 00040000h
+
+WS_MAXIMIZEBOX 	     = 00020000h	
+
+WS_VISIBLE           = 10000000h
+
+WS_OVERLAPPEDWINDOW  = WS_OVERLAPPED or WS_CAPTION or WS_THICKFRAME or \
+
+                       WS_SYSMENU or WS_MINIMIZEBOX or WS_MAXIMIZEBOX
+
+WS_EX_RIGHTSCROLLBAR = 0 ; scrollbar on right or bottom
+
+WS_EX_LEFT           = 0 ; left alignment
+
+WS_EX_LTRREADING     = 0 ; left-to-right reading
+
+SRCCPY   = 00CC0020h
+
+
+
+; define prototypes (since chal2 I read NetWalker code :) )
+
+CreateSolidBrush  PROCDESC  WINAPI  :DWORD
+
+CreatePen    PROCDESC  WINAPI  :DWORD, :DWORD, :DWORD
+
+SelectObject PROCDESC  WINAPI  :DWORD, :DWORD
+
+Ellipse      PROCDESC  WINAPI  :DWORD, :DWORD, :DWORD, :DWORD, :DWORD
+
+MoveToEx     PROCDESC  WINAPI  :DWORD, :DWORD, :DWORD, :DWORD
+
+LineTo       PROCDESC  WINAPI  :DWORD, :DWORD, :DWORD
+
+BitBlt       PROCDESC  WINAPI  :DWORD, :DWORD, :DWORD, :DWORD, :DWORD, \
+
+                               :DWORD, :DWORD, :DWORD, :DWORD
+
+MessageBoxA  PROCDESC  WINAPI  :DWORD, :DWORD, :DWORD, :DWORD
+
+FloodFill    PROCDESC  WINAPI  :DWORD, :DWORD, :DWORD, :DWORD    
+
+Rectangle    PROCDESC  WINAPI  :DWORD, :DWORD, :DWORD, :DWORD, :DWORD
+
+PostQuitMessage PROCDESC  WINAPI :DWORD
+
+DeleteObject PROCDESC  WINAPI  :DWORD
+
+DeleteDC     PROCDESC  WINAPI  :DWORD
+
+ExitProcess  PROCDESC  WINAPI  :DWORD
+
+GetDC        PROCDESC  WINAPI  :DWORD
+
+ReleaseDC    PROCDESC  WINAPI  :DWORD, :DWORD
+
+GetMessageA  PROCDESC  WINAPI  :DWORD, :DWORD, :DWORD, :DWORD
+
+DispatchMessageA PROCDESC  WINAPI :DWORD
+
+BeginPaint   PROCDESC  WINAPI  :DWORD, :DWORD
+
+EndPaint     PROCDESC  WINAPI  :DWORD, :DWORD
+
+LoadCursorA  PROCDESC  WINAPI  :DWORD, :DWORD
+
+CreateCompatibleDC PROCDESC  WINAPI  :DWORD
+
+CreateCompatibleBitmap PROCDESC  WINAPI  :DWORD, :DWORD, :DWORD
+
+GetModuleHandleA  PROCDESC  WINAPI :DWORD
+
+RegisterClassA    PROCDESC  WINAPI :DWORD
+
+LoadMenuIndirectA PROCDESC  WINAPI :DWORD
+
+
+
+; this one is clearer this way
+
+extrn CreateWindowExA:proc
+
+
+
+; no argument for these one
+
+extrn GetTickCount:proc
+extrn DefWindowProcA:proc
+
+
+
+.data
+
+
+
+; local window
+
+;
+
+msgbuffer MSG <>
+
+wc        WNDCLASS <0,MainWndProc,0,0,0,0,0,2,0,szClassName>
+
+wndPaintStruct PAINTSTRUCT <>
+
+;
+
+; Handles
+
+;
+
+appInst   dd 0              ; hInstance of application module
+
+appMenu   dd 0              ; hMenu of application window menu
+
+wndDC     dd 0              ; hDC of window client area
+
+bmpDC     dd 0              ; hDC of bitmap "canvas"
+
+bmpH      dd 0              ; handle to bitmap
+
+bmpPrev   dd 0              ; handle to original bitmap assigned to bmpDC
+
+bmpBrush1 dd 0              ; handle to first brush for bitmap DC
+
+wndColorBrush dd 0          ; handle to solid brush for window color
+
+hWhitePen dd 0              ; handles of pens
+
+hDarkPen dd 0
+
+hLightPen dd 0
+
+hBlackPen dd 0
+
+hWhiteBrush dd 0            ; handles of brushes
+
+hDarkBrush dd 0
+
+hLightBrush dd 0
+
+;
+
+; Menu templates
+
+;
+
+IDM_EXIT equ 101
+
+IDM_HELP equ 901
+
+IDM_ABOUT equ 902
+
+
+
+appMenuTemplate dw 0    ; menu template version
+
+                dw 0    ; offset from end of header to menu item list
+
+                dw MF_STRING or MF_POPUP
+
+                dw '&','F','i','l','e',0
+
+                dw MF_STRING or MF_END,IDM_EXIT
+
+                dw 'E','&','x','i','t',0
+
+                dw MF_STRING or MF_POPUP or MF_END
+
+                dw '&','H','e','l','p',0
+
+                dw MF_STRING,IDM_HELP
+
+                dw '&','H','e','l','p','.','.','.',0
+
+                dw MF_SEPARATOR,0
+
+                dw 0
+
+                dw MF_STRING or MF_END,IDM_ABOUT
+
+                dw '&','A','b','o','u','t','.','.','.',0
+
+;
+
+; auxiliary window class information
+
+;
+
+szClassName db 'Window03',0
+
+
+
+; miscellaneous string data
+
+appCaption db 'Star Truc v 0.01',0
+
+helpCaption equ appCaption
+
+helpText db 'Just click in the window',0Dh,0Ah
+
+         db 'to make stars...',0
+
+aboutCaption db 'About Star Truc',0
+
+aboutText db 'Coded by Spath for +HCU strainer 1999.',0Dh,0Ah
+
+          db 'based on code by Henri S. Takeuchi.',0
+
+;
+
+; graphical datas
+
+;
+
+DARK_COLOR      equ  00B94264h   ; color of largest ellipse
+
+LIGHT_COLOR     equ  00FFE010h   ; color of middle ellipse
+
+SIDE_CROSS_NB   equ  2           ; number of side crosses per bitmap
+
+ELLIPSE_GAP     equ  2           ; distance between two ellipses
+
+PreviousPoint  dd 0,0    ; previous X and Y value
+
+SmallCrossSize dd 4,4    ; small crosses height & width
+
+
+
+; main cross height & width 
+
+CrossSize     dd 5,2,8,4,12,7,16,9,20,12,16,9,12,7,8,4,5,2,0,0
+
+
+
+; ellipse height & width values
+
+EllipseSize   dd 0,0,4,2,8,5,12,8,16,10,12,8,10,5,4,2,0,0,0,0
+
+
+
+Index         dd 0   ; pointer for main cross and main ellipse sizes 
+
+EllipseIndex  dd 0   ; pointer for the two small ellipses sizes
+
+SideCounter   dd 0   ; counter of little stars  
+
+PosX          dd 0   ; X value of the left-button click
+
+PosY          dd 0   ; Y value of the left-button click
+
+
+
+.code
+
+;--------------------------------------------------------------------------
+
+; This is where the program starts.
+
+_start:
+
+        call    GetModuleHandleA,0  ; get hmod (in eax)
+
+        mov     [appInst],eax     ; HINSTANCE is the same as HMODULE in Win32
+
+;
+
+; Complete the WNDCLASS structure.
+
+;
+
+        mov     [wc.wcInstance],eax
+
+        call    LoadCursorA, 0, 32512
+
+        mov     [wc.wcCursor],eax
+
+;
+
+; Create and display our window.
+
+;
+
+        call    RegisterClassA, offset wc      ; returns ATOM, 0 = error
+
+        call    LoadMenuIndirectA, offset appMenuTemplate
+
+        mov     [appMenu],eax
+
+
+
+;
+
+; Create colors
+
+;
+
+        call    CreatePen, 0, 1, 0           ; create black tools
+
+        mov     [hBlackPen], eax
+
+        xor     eax, eax
+
+        call    CreateSolidBrush, eax
+
+        mov     [wndColorBrush],eax
+
+
+
+        call    CreatePen, 0, 1, 00FFFFFFh   ; create white tools
+
+        mov     [hWhitePen], eax
+
+        call    CreateSolidBrush, 00FFFFFFh  
+
+        mov     [hWhiteBrush], eax
+
+	
+
+        call    CreatePen, 0, 1, DARK_COLOR   ; create dark tools
+
+        mov     [hDarkPen], eax
+
+        call    CreateSolidBrush, DARK_COLOR    
+
+        mov     [hDarkBrush], eax
+
+
+
+        call    CreatePen, 0, 1, LIGHT_COLOR   ; create light tools
+
+        mov     [hLightPen], eax
+
+        call    CreateSolidBrush, LIGHT_COLOR    
+
+        mov     [hLightBrush], eax
+
+        
+
+;
+
+; Create window
+
+;
+
+        push    large 0                 ; lpParam
+
+        push    [appInst]               ; hInstance
+
+        push    [appMenu]               ; menu hmenu
+
+        push    large 0                 ; parent hwnd
+
+        push    large 200               ; height
+
+        push    large 200               ; width
+
+        push    large 100               ; y
+
+        push    large 100               ; x
+
+        push    large (WS_OVERLAPPEDWINDOW or WS_VISIBLE) ; Style
+
+        push    offset appCaption       ; Window text (caption)
+
+        push    offset szClassName      ; Class name
+
+        push    large (WS_EX_LEFT or WS_EX_LTRREADING  \
+
+                       or WS_EX_RIGHTSCROLLBAR) ; extended style
+
+        call    CreateWindowExA
+
+
+
+;
+
+; Process messages, quit when WM_QUIT received.
+
+;
+
+msg_loop:
+
+        call    GetMessageA, offset msgbuffer, 0, 0, 0
+
+        or      eax,eax
+
+        je      end_loop                ; WM_QUIT message
+
+        call    DispatchMessageA, offset msgbuffer
+
+        jmp     msg_loop
+
+;
+
+; Terminate program.
+
+;
+
+end_loop:
+
+        call    ExitProcess, [msgbuffer.msgWparam]
+
+
+
+;----------------------------------------------------------------
+
+; The window procedure...where messages for one class of windows
+
+; are processed.
+
+;
+
+MainWndProc:
+
+        mov     eax,[esp+8]        ; message ID
+
+        cmp     eax,WM_PAINT       ; from Windows
+
+        je      paint_client
+
+        cmp     eax,WM_COMMAND     ; from menu, accelerator, or control
+
+        je      execute_command
+
+        cmp     eax,WM_LBUTTONDOWN ; mouse button has been pressed
+
+        je      LeftMouseDown
+
+        cmp     eax,WM_CREATE      ; window created, about to show it
+
+        je      creating_window
+
+        cmp     eax,WM_DESTROY     ; about to start window destruction
+
+        je      start_destroy
+
+        jmp     DefWindowProcA     ; delegate other message processing
+
+;
+
+; Process WM_COMMAND.  
+
+;
+
+execute_command:
+
+        mov     eax,[esp+12]       ; wParam
+
+        and     eax,large 0FFFFh   ; command ID
+
+        cmp     eax,IDM_EXIT       ; test exit command
+
+        je      exit_command
+
+        cmp     eax,IDM_HELP       ; test help command
+
+        je      help_command
+
+        cmp     eax,IDM_ABOUT      ; test about command
+
+        je      about_command
+
+        xor     eax,eax            ; none of these
+
+        ret     16
+
+
+
+exit_command:                      ; exit command : quit
+
+        call    PostQuitMessage, 0
+
+        xor     eax,eax
+
+        ret     16
+
+
+
+help_command:                      ; help command : display help box
+
+        mov     eax,[esp+4]        
+
+        call    MessageBoxA, eax, offset helpText, offset helpCaption, 0
+
+        xor     eax,eax
+
+        ret     16
+
+
+
+about_command:                     ; about command : display about box
+
+        mov     eax,[esp+4]
+
+        call    MessageBoxA, eax, offset aboutText, offset aboutCaption, 0
+
+        xor     eax,eax
+
+        ret     16
+
+;
+
+; Process WM_PAINT.  Some part of the client area needs to be (re)painted.
+
+;
+
+paint_client:
+
+        mov     eax,[esp+4]  ; hwnd
+
+        call    BeginPaint, eax, offset wndPaintStruct
+
+        call    BitBlt, eax, 0, 0, MAX_BMP_WIDTH, MAX_BMP_HEIGHT, \
+
+                        [bmpDC], 0, 0, SRCCPY
+
+        mov     eax,[esp+4]  ; hwnd
+
+        call    EndPaint, eax, offset wndPaintStruct
+
+        xor     eax,eax
+
+        ret     16
+
+
+
+;- - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+; Process WM_LBUTTONDOWN.  Left mouse button has been pressed.
+
+; (here start the code which create stars)
+
+;
+
+LeftMouseDown:
+
+        mov     esi, offset CrossSize    ; start of main cross sizes array 
+
+        mov     edi, offset EllipseSize  ; start of big ellipse size array
+
+        add     esi, Index               ; calculate new cross size
+
+        add     edi, Index               ; calculate new ellipse size
+
+        call    BasicStep                ; display the cross + 3 ellipses
+
+        call    SmallDelay               ; wait a little bit
+
+        call    ClearScreen              ; clear the screen
+
+        mov     esi, offset CrossSize 
+
+        add     esi, Index
+
+        cmp     esi, (offset EllipseSize)-8   ; is it finished ?
+
+        jge     EndLeftMouseDown              ; yes : exit
+
+        add     Index, 8                      ; no : prepare next step
+
+        jmp     LeftMouseDown
+
+
+
+EndLeftMouseDown:
+
+        call    DisplayBitmap            ; clear screen
+
+        mov     Index, 0
+
+        xor     eax,eax
+
+        ret     16
+
+
+
+; ------------  Graphical Procedures and functions ---------------------
+
+
+
+; BasicStep procedure : each step of the animation is computed here
+
+;
+
+BasicStep proc near
+
+        call    GetDC, dword ptr [esp+8]
+
+        mov     [wndDC],eax               ; hDC for window
+
+ComputeEllipses:
+
+        call    SelectObject, [bmpDC], [hDarkBrush]
+
+        call    SelectObject, [bmpDC], [hDarkPen]
+
+        mov     EllipseIndex, 0
+
+        mov     dx,[esp+22]               ; HIWORD(lParam) = y
+
+        mov     eax,[esp+20]              ; LOWORD(lParam) = x
+
+        and     edx,large 0FFFFh          ; dx = y pos
+
+        and     eax,large 0FFFFh          ; ax = x pos
+
+        mov     PosX, eax                 ; save origin
+
+        mov     PosY, edx
+
+        call    DrawEllipse               ; draw dark ellipse
+
+
+
+        cmp     dword ptr [edi],4         ; can we draw more ellipses
+
+        jle     ComputeCross              ; no
+
+        call    SelectObject, [bmpDC], [hLightBrush]
+
+        call    SelectObject, [bmpDC], [hDarkPen]
+
+        mov     EllipseIndex, ELLIPSE_GAP
+
+        call    DrawEllipse               ; draw light ellipse
+
+
+
+        call    SelectObject, [bmpDC], [hWhiteBrush]
+
+        call    SelectObject, [bmpDC], [hWhitePen]
+
+        mov     EllipseIndex, 2*ELLIPSE_GAP
+
+        call    DrawEllipse               ; draw white ellipse
+
+
+
+ComputeCross:
+
+        call    SelectObject, [bmpDC], [hWhitePen]
+
+        call    DrawCross                 ; draw the cross
+
+
+
+ComputeSideShow:
+
+        cmp     Index, 48                 ; should we add sideshow   
+
+        jl      DisplayAll                ; not so soon
+
+        call    SideShow                  ; add sideshow
+
+
+
+DisplayAll:
+
+        call    DisplayBitmap             ; display the bitmap
+
+        call    ReleaseDC, dword ptr [esp+8], [wndDC]
+
+        ret
+
+BasicStep endp
+
+
+
+; DrawCross procedure : draw a cross centered on (ax,dx) and of
+
+;                       size 2*(esi+4, esi)
+
+;
+
+DrawCross proc near
+
+        pusha
+
+        mov     eax, PosX                 ; get origin      
+
+        mov     edx, PosY
+
+        mov     dword ptr [PreviousPoint], eax
+
+        mov     dword ptr [PreviousPoint+4], edx
+
+        sub     eax,dword ptr [esi+4]
+
+        Call    MoveToEx, [bmpDC], eax, edx, 0           ; set cursor
+
+
+
+        mov     eax, dword ptr[PreviousPoint] 
+
+        add     eax, dword ptr [esi+4]     
+
+        Call    LineTo, [bmpDC], eax, [PreviousPoint+4]  ; draw horiz. line
+
+
+
+        mov     edx, dword ptr [PreviousPoint+4]          
+
+        sub     edx, dword ptr [esi]
+
+        Call    MoveToEx, [bmpDC], [PreviousPoint], edx, 0  ; set cursor
+
+
+
+        mov     edx, dword ptr[PreviousPoint+4] 
+
+        add     edx, dword ptr [esi]
+
+        Call    LineTo, [bmpDC], [PreviousPoint], edx     ; draw vert. line
+
+        popa
+
+        ret
+
+DrawCross endp
+
+
+
+; DrawEllipse procedure : draw an ellipse centered on (ax,dx)
+
+;                         and of size 2*(edi+4,edi)
+
+;
+
+DrawEllipse proc near
+
+        pusha
+
+        mov     eax, PosX                 ; get origin      
+
+        mov     edx, PosY
+
+        mov     ebx, eax                  ; save x pos
+
+        mov     ecx, edx                  ; save y pos
+
+        add     edx, dword ptr [edi]      
+
+        add     eax, dword ptr [edi+4]    
+
+        sub     eax, EllipseIndex         ; down right X value
+
+        sub     edx, EllipseIndex         ; down right Y value
+
+        sub     ecx, dword ptr [edi]
+
+        add     ecx, EllipseIndex         ; top left Y value
+
+        sub     ebx, dword ptr [edi+4]
+
+        add     ebx, EllipseIndex         ; top left X value
+
+        call    Ellipse, [bmpDC], ebx, ecx, eax, edx
+
+        popa
+
+        ret
+
+DrawEllipse endp
+
+
+
+; SideShow procedure : when the main star is disappearing, little
+
+;                      stars must appear.
+
+;
+
+SideShow proc near
+
+        pusha
+
+        mov     eax, PosX                 ; get origin
+
+        mov     edx, PosY
+
+        sub     eax, dword ptr [CrossSize+36]  ; set X origin of side show
+
+        sub     edx, dword ptr [CrossSize+32]  ; set Y origin of side show
+
+        mov     PosY, edx                     ; save Y origin
+
+        mov     PosX, eax                     ; save X origin
+
+        mov     dword ptr [SideCounter], SIDE_CROSS_NB
+
+SideLoop:
+
+        xor     eax,eax                             ; choose color
+
+        in      al, 40h
+
+        cmp     al, 30h
+
+        jl      WhiteOne
+
+        call    SelectObject, [bmpDC], [hLightPen]  ; light cross
+
+        jmp     GoOn
+
+WhiteOne:
+
+        call    SelectObject, [bmpDC], [hWhitePen]  ; white cross
+
+GoOn:
+
+        dec     dword ptr [SideCounter]
+
+        mov     ebx, PosX                     ; get X origin
+
+        mov     edx, PosY                     ; get Y origin
+
+        xor     eax,eax
+
+        in      al,40h
+
+        and     al,17h         
+
+        add     edx,eax                        ; add random value to Y
+
+        in      al,40h
+
+        and     al,0Fh
+
+        add     eax,ebx                        ; add random value to X
+
+        mov     PosX, eax
+
+        mov     PosY, edx
+
+        mov     esi, offset SmallCrossSize
+
+        call    DrawCross
+
+
+
+        cmp     [SideCounter], 0
+
+        jne     SideLoop
+
+        popa
+
+        ret
+
+SideShow endp
+
+
+
+; DisplayBitmap procedure : display bmpDC in wndDC
+
+;
+
+DisplayBitmap proc near
+
+        call    BitBlt, [wndDC], 0, 0, MAX_BMP_WIDTH, MAX_BMP_HEIGHT, \
+
+                [bmpDC], 0, 0, SRCCPY
+
+        ret
+
+DisplayBitmap endp
+
+
+
+; ClearScreen procedure : just paint a big black rectangle
+
+;
+
+ClearScreen proc near
+
+        pusha
+
+        call    SelectObject, [bmpDC], [wndColorBrush]       ; black pen           
+
+        call    SelectObject, [bmpDC], [hBlackPen]           ; black brush
+
+        call    Rectangle, [bmpDC], 0, 0, MAX_BMP_WIDTH-1, \
+
+                MAX_BMP_HEIGHT+25-1                
+
+        popa
+
+	ret
+
+ClearScreen endp
+
+
+
+; SmallDelay procedure : just to wait a bit between 2 bitmaps
+
+;
+
+SmallDelay proc near
+
+        pusha
+
+        call    GetTickCount        ; get initial value
+
+        mov     ebx, eax
+
+        add     ebx, 0020h          ; calculate end value
+
+WaitLoop:
+
+        call    GetTickCount        ; wait until we reach end value
+
+        cmp     eax, ebx
+
+        jle     WaitLoop
+
+        popa
+
+        ret
+
+SmallDelay endp
+
+
+
+;-----------------------------------------------------------
+
+; Process WM_CREATE.  
+
+;
+
+creating_window:
+
+        call    GetDC, dword ptr [esp+4+0]
+
+        mov     [wndDC],eax               ; hDC for window
+
+
+
+        call    CreateCompatibleDC, eax     ; create "canvas" DC
+
+        mov     [bmpDC],eax
+
+        call    CreateCompatibleBitmap, [wndDC], MAX_BMP_WIDTH, \
+
+                        MAX_BMP_HEIGHT+25          ; create canvas
+
+        mov     [bmpH],eax
+
+
+
+        call    SelectObject, [bmpDC], eax   ; bind canvas to DC
+
+        mov     [bmpPrev],eax                ; save original bmp (canvas)
+
+
+
+        call    Rectangle, [bmpDC], 0, 0, MAX_BMP_WIDTH-1, \
+
+                MAX_BMP_HEIGHT+25-1
+
+
+
+        call    CreateSolidBrush, 0
+
+        mov     [wndColorBrush],eax
+
+
+
+        call    SelectObject, [bmpDC], eax         ; replace brush
+
+        mov     [bmpBrush1],eax                    ; save original brush
+
+
+
+        call    FloodFill, [bmpDC], 0, 0, 0        ; clear background 
+
+        call    FloodFill, [bmpDC], 1, 1, 0   
+
+
+
+        call    SelectObject, [bmpDC], [bmpBrush1] ; restore brush
+
+        call    ReleaseDC, dword ptr [esp+4], [wndDC]  ; release DC
+
+
+
+        xor     eax,eax
+
+        ret     16
+
+
+
+; Process WM_DESTROY.  
+
+; 
+
+start_destroy:
+
+        call    SelectObject, [bmpDC], [bmpBrush1] ; restore original brush
+
+        call    DeleteObject, [wndColorBrush]      ; delete our brushes
+
+        call    DeleteObject, [hWhiteBrush]
+
+        call    DeleteObject, [hLightBrush]
+
+        call    DeleteObject, [hDarkBrush]
+
+        call    DeleteObject, [hWhitePen]          ; delete our pens
+
+        call    DeleteObject, [hBlackPen]
+
+        call    DeleteObject, [hLightPen]
+
+        call    DeleteObject, [hDarkPen]
+
+                                                  
+
+        call    SelectObject, [bmpDC], [bmpPrev]  ; restore original bitmap 
+
+        call    DeleteObject, eax                 ; delete our canvas
+
+        call    DeleteDC, [bmpDC]                 ; delete canvas DC
+
+
+
+        call    PostQuitMessage, 0
+
+        xor     eax,eax
+
+        ret     16
+
+end _start
+
+
+
+----------------------------------------------------------------------------
+
+Greetings : - Henry S. Takeuchi (Htak) and NetWalker, for good usage of TASM
+            - Earl Gray, who helped me to work so late.
+
+</BODY>
+</HTML>

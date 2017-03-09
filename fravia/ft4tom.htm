@@ -1,0 +1,414 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>ft4tom.htm</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+<CENTER><FONT size="+3">Cracking the Mystique Patch for Tombraider</FONT>
+
+<BR>(the write random file trick)<BR>
+
+  <BR>
+
+    
+
+
+
+<H4>by +Alt-F4<BR>
+
+<IMG SRC="hcu1.gif" tppabs="http://www.anticrack.de/fravia/hcu1.gif" ALT="+cracker!" ALIGN="BOTTOM" WIDTH="114" HEIGHT="43" BORDER="0" VSPACE="0" HSPACE="0"></A>
+
+<BR>
+
+<BR>
+
+(17 October 1997, slightly edited by fravia+)</H4>
+
+<HR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">Courtesy of fravia's page 
+
+of reverse engineering<BR>
+
+<BR><I>Well, an interesting short essay... and we are awaiting more essays on this 
+
+section... few have arrived... many had been promised: where are they?</I></CENTER>
+
+
+
+<HR size="6"><PRE>
+
+Cracking the Mystique Patch for Tombraider.
+
+
+
+Date: 11 October 1997
+
+Target: Matrox Mystique patch for tombraider.
+
+Where: On the patches page at <A href="tppmsgs/msgs2.htm#237 tppabs=" tppabs="http://www.anticrack.de/fravia/tppmsgs/msgs2.htm#237 tppabs=" http://www.matrox.com/mga"/">http://www.matrox.com/mga/</A>
+
+Tools Used: 
+
+Softice 3.2 (Get it! The video card support is 100 times better!)
+
+Wdasm 8.9 (Find the registered version on the web!)
+
+FileMonitor
+
+
+
+
+
+Well, a friend of mine just got Tombraider on warez, but then needed 
+
+the Matrox Mystique video patch cracking for his video card.
+
+I thought this would be a perfect opportunity for me to try some 
+
+DOS4GW cracking, and to see what a cd-rom protection was like.
+
+
+
+
+
+First of all, I ran FileMon, whilst I ran Tombraider.
+
+I noticed that it searched all drives(from a to z) for 
+
+&quot;\data\title.phd&quot;, obviously a CD-file.
+
+It couldn't find it, so I used subst
+
+eg: subst j: d:\games\tomb
+
+
+
+Now I ran it again, and it succesfully found title.phd on the faked j drive
+
+Then the target tries creating a file in the root directory of the drive 
+
+where it found the file on (in my case j:).
+
+
+
+I then tried to use fakecd, but for some reason this program allows 
+
+file writes (or atleast it did on my system...) so it did not behave like 
+
+a read-only media (a CD-Rom) would have done...
+
+
+
+Ok, I now had a theory about what to crack, but no idea about how to 
+
+crack it (I have never cracked a DOS4GW program before).
+
+
+
+I wasn't sure if Dos files could be disassembled using Wdasm, but I 
+
+gave it a try and it seemed to work.
+
+In the dead listing of tomb.exe, there are only 3 interrupt 21's that 
+
+have ah=3d (open file)
+
+I wrote down the op codes for these instructions, and then loaded 
+
+tombraider once more.
+
+
+
+When the initial DOS4GW screen appeared, I pressed ctrl D, and 
+
+then did a search for the byte-codes of my three interrupts.
+
+
+
+Once found, I then set a bpx on them, and let the program run once 
+
+more.
+
+
+
+Only one of them ever seems to be executed, and that is the one at 
+
+82E1BAAD
+
+Ok, So when it searches for its CD-file &quot;title.phd&quot; , this file must be 
+
+found successfully, yet when it searches for the random file, this must 
+
+NOT be found, and yet they both use the same code?
+
+What's happening here?
+
+
+
+Obviously the code at 82E1BAAD returns a value, and the value is 
+
+checked further up the code tree.
+
+
+
+So both times (when it expects a &quot;good&quot; open file, and when it 
+
+expects a &quot;bad&quot; open file), I repeatedly press F12, to go back up the 
+
+call tree, and wrote down the values as I went...
+
+
+
+Good. Expects file to be opened successfully.
+
+82E1BAAD, is called by
+
+82E0FFFA, is called by
+
+82E10079, is called by
+
+82E1008E, is called by 
+
+82DE35A4
+
+
+
+Bad. Expects file to NOT be opened successfully
+
+82E1BAAD, is called by
+
+8EE0FFFA, is called by
+
+82E10079, is called by
+
+82E1008E, is called by
+
+82DE3624
+
+
+
+Ahh, we have found some code that differ!
+
+
+
+The code at 82DE35A4 and the code at 82DE3624 
+
+look like this...
+
+<FONT color="blue">
+
+call 82E1008E
+
+test eax,eax
+
+jz ....
+
+</FONT>
+
+
+
+Ok, this means that after each call, it checks for  eax=FALSE.
+
+Eax will be = 0 when the file could NOT be created or opened 
+
+successfully. 5which happens when you write on a CD-Rom, 
+
+a very simple way to check if the media is a CD, btw).
+
+
+
+We want to fool the program into thinking that the file was not 
+
+created, like it would have happened on a &quot;REAL&quot; CD.
+
+
+
+Thus we can just change 
+
+7410	jz ...
+
+to
+
+EB10	jmp ...
+
+
+
+But if we were to do that, every time we ran tombraider, we would 
+
+have a new random &quot;checkCD&quot; file added by our target to the tomb 
+
+directory, not very elegant...
+
+Why?
+
+Because we don't allow the program to delete the file afterwards!
+
+
+
+Here is the code that checks for the valid file:
+
+
+
+624: E85DCA0200	CALL 086	//Try to Open file
+
+629: 85C0		TEST EAX,EAX	//File Opened successfully?
+
+62B: 7410		JZ 63D		
+
+
+
+//This is only called when cd-rom is &quot;writable&quot;
+
+//This happens when eax=1
+
+
+
+62D: E826CD0200	CALL 358	&lt;Maybe delete file?
+
+632: 89D8		MOV EAX, EBX
+
+634: E8CFD00200	CALL 708	&lt;Maybe close file handle?
+
+639: 31C0		XOR EAX, EAX	&lt;Set bad flag
+
+63B: EB05		JMP 642		&lt;Jump to end
+
+
+
+//This is jumped to when the file could not be written to
+
+//This happens when eax=0
+
+63D: B801000000	MOV EAX, 1	&lt; Set &quot;good&quot; flag
+
+642: 83C410		ADD ESP, 10
+
+645: 5A			POP EDX
+
+646: 5B			POP EBX
+
+647: C3			RET
+
+
+
+So, what do the calls at 62d and 634 do? Who cares? They are 
+
+evidently used to clean up the file, so we may as well use them
+
+ourselves.
+
+The easiest way to change this is to nop out the jmp at 63b, so 
+
+that it will fall through to 63D, and always set our good flag.
+
+
+
+Therefore change
+
+63B: EB05             JMP 642
+
+to
+
+63B: 31C0             XOR EAX, EAX   ;ax is zero! Who cares?
+
+                                     ;will be set true in the
+
+                                     ;next instruction!
+
+
+
+And it works!
+
+Is this all? I wasn't sure, but it anyway no longer said &quot;please 
+
+insert tomb raider cd&quot; at the start of the program, and there 
+
+wasn't any files left in the tomb directory either... clean 
+
+crack!
+
+
+
+I couldn't test it any further (I don't have a matrox video card 
+
+myself), but when I took it round to my friends house it seemed 
+
+to work. If I later find it doesn't or anything, I'll update this 
+
+tutorial....
+
+
+
++Alt-F4</PRE>
+
+<FONT color="green">(c) +Alt-F4 1997. All rights reversed</FONT>
+
+<HR ALIGN="CENTER" WIDTH="100%" SIZE="3">
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</I></CENTER>
+
+<BR><CENTER>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="project4.htm" tppabs="http://www.anticrack.de/fravia/project4.htm">Back to Project 4</A> (&quot;CD-Rom protections&quot;)
+
+<HR width="33%">
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#84'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#84">homepage</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#73'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#73">links</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#82'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#82">students' essays</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut CGI-scripts</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering legal?</A></CENTER>
+
+<CENTER><HR ALIGN="CENTER" WIDTH="100%" SIZE="2"></CENTER>
+
+</BODY>
+
+</HTML>
+
+
+

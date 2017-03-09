@@ -1,0 +1,368 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>pape</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+<CENTER><H2>How to crack Portscan v1.2b1<BR>
+
+(More about password xoring protection schemes)</H2>
+
+<H4><I>by Hackmore Readrite</I></H4>
+
+<BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">Courtesy of Fravia's page of reverse engineering</CENTER>
+
+<HR size="2"><PRE>
+
+Portscan v1.2b1   Cracked by Hackmore Readrite, DataMiners Inc.
+
+                    &quot;Keep it FREE!&quot;
+
+
+
+----------------------------------------------------------------------------
+
+  From the &quot;Readme&quot; file included with Portscanner...
+
+Port Scanner is a tool that allows you to scan a group of IP addresses
+
+looking for the presence of specific incoming TCP/IP ports. This is a 
+
+large benefit to anyone managing a TCP/IP network, or to anyone who is 
+
+concerned with the possible security risks that some TCP/IP tools 
+
+present to their network.
+
+
+
+Using an intuitive interface that allows you to specify the start and 
+
+end addresses of a scan, you can quickly check a specific machine, a 
+
+subnet, or an entire domain. Port Scanner comes predefined to scan for 
+
+the most common TCP/IP services, and provides a quick way to add new 
+
+ports to any scan. In addition, Port Scanner lets you scan a subset of 
+
+the existing ports, and to save subsets into named groups for easy 
+
+recall. Scan results can be easily printed or save to a file.
+
+
+
+Port Scanner requires a WinSock compatible TCP/IP stack, and is fully 
+
+Windows 95 compatible.
+
+----------------------------------------------------------------------------
+
+
+
+	This &quot;shareware&quot; program has a nag screen that wont let you cancel
+
+  until it &quot;times out&quot; (about 30 seconds but seems like forever!) To make
+
+  things worse, the nag screen hits you when you open the program, and then
+
+  again when you close it! And... you are only allowed 5 ports for each
+
+  &quot;group&quot; of ports you want to make.
+
+
+
+	If you want to use this little program, you can get it at:
+
+
+
+<A href="tppmsgs/msgs2.htm#207" tppabs="http://www.anticrack.de/fravia/tppmsgs/msgs2.htm#207">http://www.blueglobe.com/~cliffmcc</A>
+
+
+
+	Here's how I cracked it. Most of this stuff is pretty basic so
+
+  I'll just explain whats going on until I get to the good stuff. You'll get
+
+  to see all the code anyway when you crack it yourself.
+
+
+
+	We load the program into SoftIce, and when the nag screen pops up,
+
+  we push the register button. Enter a name, and (I found out later) a 25
+
+  digit NUMBER. Since I wanted the program registered in my name, thats what
+
+  I entered, which was also a mistake. (Hackmore Readrite is 17 characters
+
+  so I had to loop through the math subs 34 times! Twice for each character)
+
+
+
+	O.k. Information is entered into the boxes, so...
+
+
+
+	ctrl-d                           ;enter SoftIce
+
+	s ds:0 lffffffff &quot;123,454,321&quot;   ;search for the number I entered
+
+	found at 0030:8028####           ;number was found, and to my
+
+                                        ;surprise, my name was just two
+
+                                        ;lines below the number in the
+
+                                        ;data window!
+
+	bpr ds:8028#### ds:8028#### rw   ;break on the number I entered
+
+       bpr ds:8028#### ds:8028#### rw   ;break on my name
+
+	ctrl-d                           ;enter program, push the button to
+
+                                        ;register the program.
+
+
+
+
+
+	Do these last three steps a bunch of times because both the &quot;name&quot;
+
+  and the &quot;number&quot; are moved four times each befor we get to use them. Each
+
+  time a string got moved, I deleted my old breakpoint on that string and
+
+  set up a new breakpoint for the new location.
+
+
+
+	Then the fun begins. Right away, we get kicked out because the first
+
+  cmp instruction checks to see if the serial number is 25 digits. (19 hex)
+
+  If the number has more than or equal to 25 digits, we're a good guy. Less
+
+  than 25 digits means bye-bye.
+
+
+
+	So after a new start, with the proper number of digits, we can move
+
+  on. Next we do some compares (cmp) to see if there are any &quot;$&quot;, &quot; &quot;, &quot;+&quot;,
+
+  or &quot;-&quot; in the string of digits. It looked to me like the program didn't
+
+  like those characters so I didn't push the matter, I just edited memory to
+
+  change my coma's to digits.
+
+
+
+	The digit string checks out so its time to do some math. We start
+
+  with the first character of the text string, move it to a new point on the
+
+  stack for storage. Then we hop around the string, grab a character, XOR it
+
+  to the byte we have stored, save the result at the same (storage) address,
+
+  then pick a new character, ADD it to our stored byte, save it to the same
+
+  storage address again, pick a new character, XOR it, save it.... you get
+
+  the rythem, right? Each pass through this loop, we get a character, each
+
+  even numbered pass we XOR our character to &quot;storage&quot;, each odd numbered
+
+  pass we ADD our character to &quot;storage&quot;. The result is saved at &quot;storage&quot;
+
+  at the end of each pass.
+
+
+
+	This goes on until each character has been ADD'ed and XOR'ed to the
+
+  resulting byte which is always saved to the same address. (Like I said, 34
+
+  passes through the subroutines for &quot;Hackmore Readrite&quot; which ended up to
+
+  be &quot;C8&quot; when all the math was through.)
+
+
+
+	Then we do some similar (but different) stuff with the serial number.
+
+  Skip the first eight digits, and save the next ten digits as a &quot;seed&quot; in
+
+  another location. Strip the &quot;3&quot; off the hex numbers so they look like real
+
+  numbers. (hex &quot;31&quot; ends up as &quot;01&quot;, etc.) The neat thing here is that the
+
+  numbers come MAINLY from the &quot;seed&quot;, but every now and then we pick a
+
+  number from the &quot;original&quot; string. After processing a bunch of the numbers,
+
+  we end up with three numbers, which are then reduced to a single byte.
+
+  (my number string ended up as &quot;A9&quot;)
+
+
+
+	This is done, so it's coding time...
+
+
+
+  CS:384B 8A86FDFD  MOV  AL,[BP+FDFD]          ;Get the &quot;name&quot; byte (C8)
+
+          3A86FCFD  CMP  AL,[BP+FDFC]          ;Cmp to the &quot;number&quot; byte (A9)
+
+          7506      JNZ  3857                  ;Ohhh... Goto bad hacker!
+
+          C646FF01  MOV  BYTE PTR [BP-01],01   ;Nice guy! no nag for him!
+
+          EB04      JMP  385B                  ;Go past bad hacker!
+
+          C646FF00  MOV  BYTE PTR [BP-01],00   ;bad hacker! gets nag screen!
+
+          8F06980E  POP  WORD PTR [0E98]       ;continue program start-up
+
+
+
+	Easy! Change &quot;7506&quot; (on 3rd line) to EB00 (jump to next line) so we
+
+  automaticaly drop through to get branded as a &quot;good guy!&quot;
+
+
+
+	Now of course, the &quot;00&quot; or &quot;01&quot; must be checked to verify if you need
+
+  to wait at the nag screen, and having waited there myself a few times, I
+
+  wanted to be sure nothing went wrong with this crack. So here's just a bit
+
+  more code in case you also think like me.
+
+
+
+  CS:1B51 26807D1001 CMP  BYTE PTR [ES:DI+10],01  ;Is this Good Guy?
+
+          751F       JNZ  1b77                    ;NAG this Bad Hacker!
+
+          6A00       PUSH 00                      ;Thank You Good Guy!
+
+          6A15       PUSH 15                      ;On with the program
+
+          55         PUSH BP
+
+
+
+	Again, just break out HexEdit and change &quot;751F&quot; to &quot;EB00&quot; to drop
+
+  through to the &quot;Good Guy&quot; stuff.
+
+
+
+	And thats it! Not alot of code for you to walk through but I think
+
+  it's easier to learn if you know whats going on, instead of clogging your
+
+  head with source code when you don't have the whole picture. When you start
+
+  working on the program yourself, you'll have a good idea of what you can
+
+  expect to see, and then you can watch as much, or as little of the program
+
+  as you want, to see how everything gets done.
+
+
+
+	A word of advice... Don't think you can't do it. Three years ago, I
+
+  didn't even know how to turn a computer on! Let alone how to make one work.
+
+  I had never even touched a keyboard. I bought a computer, and trained
+
+  myself, I have never been to ANY computer training, and I don't know any
+
+  body who knows anything about computers. (I do know a few people who USE
+
+  computers, but they're only doing thier &quot;job&quot; the way they were &quot;trained&quot;)
+
+  So I had no-one to get advice from. Still I learned.
+
+
+
+	August 21st, 1996 was my first visit to the internet, &quot;SEARCH&quot; was
+
+  my first command to the internet, &quot;ASM&quot; was my first subject, and &quot;FRAVIA&quot;
+
+  was the first web page I ever visited. So I haven't even &quot;surfed&quot; the web
+
+  for a whole year yet. Still I learned.
+
+
+
+	I also quit school, and type with one finger. Still I learned. So if
+
+  I can do it, you can! This is a TERRIBLE world we all share. We need more
+
+  people in this world to be wise enough to outwit those who (try) to control
+
+  us. Our good friend +ORC and his scholars tell us alot about what's
+
+  going on around us. Listen and LEARN! YOU can do it TOO!
+
+
+
+	Good-bye, Good Cracking, And stay safe!
+
+                                                Hackmore Readrite
+
+</PRE>
+
+<BR>
+
+<CENTER><HR ALIGN="CENTER" WIDTH="100%" SIZE="3">
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</I></CENTER>
+
+<BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#84'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#84"> homepage</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"> 
+
+<A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#73'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#73"> links</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0">
+
+<A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm"> anonymity</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm"> +ORC</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#82'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#82"> students' essays</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm"> tools</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm"> cocktails</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm"> search_forms</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm"> mailFraVia</A></CENTER>
+
+<CENTER><HR ALIGN="CENTER" WIDTH="100%" SIZE="2"></CENTER>
+
+
+
+
+
+
+

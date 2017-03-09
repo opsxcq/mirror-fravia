@@ -1,0 +1,1528 @@
+<html><HEAD>
+
+<TITLE>chine2</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+<CENTER><H2>HOW TO REVERSE ENGINEER SERV-U32(FTP Daemon)<BR>
+
+(Reconstruction of a missing file)</H2><H4><I>by TheChineese</I>
+
+<BR>(03 July 1997, slightly edited by Fravia)</H4>
+
+<HR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">Courtesy of Fravia's page of reverse engineering
+
+<BR><BR><I>Well, protection schemes have &quot;trends&quot;, don't they? Nowadays all the rage seems to be on &quot;missing&quot;
+
+ pieces of code. This kind of protection scheme  (like with the &quot;save-disabled&quot; or &quot;whatever-disabled&quot; targets) defeats often the 
+
+casual cracker, because &quot;if something is not there, it wont work&quot;, right? WRONG! Because a target MUST seek IF the missing part is there or not, and 
+
+in doing this &quot;betrays itself&quot;, because it carries enough information, for a reverse engineer, to reconstruct the missing code. 
+
+<BR><BR>
+
+Here TheChineese works on a relatively &quot;simple&quot; missing file protection. The missing file of this target contains only the 
+
+registration key. TheChineese's approach is VERY IMPORTANT if you want to be prepared for more 
+
+&quot;advanced&quot; reverse engineering on this kind of 
+
+protection.<BR>  Read THOROUGHLY this essay, you will not regret it.<BR><BR>Of course the protection schemes of 
+
+to-morrow will have more complex code snippets missing, say a routine to decrypt parts of the code, or a whole 
+
+complex of routines to allow some important features (shareware programmers, are you listening?)... yet the 
+
+doom of this kind of protection is (exactly as it happens with dongles and other hardware protections, BTW), that 
+
+the part of code of the target that you have MUST<BR></I></CENTER>
+
+<BR>1) Work enough well as it is (else you would not be able to &quot;trial&quot; it :-)
+
+<BR>2) Carry already ALL the informations you need to reconstruct the missing parts<BR><I><BR><CENTER>
+
+But this art, reconstructing missing code,  is a tricky one, so you better learn it step by step starting with these essays...<BR>
+
+<BR>As we will 
+
+soon see in the new +HCU's project &quot;save_disabled_targets&quot;, if you do not have the correct &quot;saving&quot; routine, 
+
+it DOES NOT MATTER at all,  because, funny as it may seem, you can use ANY OTHER &quot;save_routine&quot; 
+
+from ANY OTHER program (Ah, sweet intermodularity! :-)</I>
+
+</CENTER>
+
+<HR size="2">
+
+<PRE><FONT size="+3"><CENTER>HOW TO REVERSE ENGINEER SERV-U32(FTP Daemon)
+
+(Reconstruction of a missing file)</FONT><FONT size="+2">
+
+by TheChineese</CENTER></FONT>
+
+<HR>
+
+Well this target, called SERV-U32, is a ftp daemon for win95 (and
+
+Windows NT). I think it could be useful for our trade. It seems 
+
+interesting because of his &quot;missing file&quot; protection.
+
+It's protection scheme is in fact based on a MISSING file (KEY.TXT, as
+
+we will see) that you would get (via email) when and if you'll register 
+
+the software.
+
+&quot;A priori&quot; we do not know what this file looks like... a pretty widespread 
+
+protection scheme nowadays: &quot;Cracker won't be able to crack my crap, because 
+
+some pieces are completely missing, Ah ah!&quot;. But how does the target &quot;know&quot; 
+
+that a piece is missing? 
+
+
+
+So the purpose of this lesson is to learn how to crack these kind of 
+
+protection schemes. We must therefore understand the format of the 
+
+missing KEY.TXT file. 
+
+I'll use for this essay, as target, SERV-U32.EXE, version 2.2, 
+
+22 February 1997 (<FONT color="green">Serv-U32.exe 495 613 bytes</FONT>)
+
+&nbsp;You will be able to find it, for example, at <A HREF="javascript:if(confirm('http://tucows.via.ecp.fr/  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://tucows.via.ecp.fr/'" tppabs="http://tucows.via.ecp.fr/">Tucows</A>.
+
+You'll find the dead listing snippets AT THE BOTTOM of this essay, 
+
+they are worth following, and interesting, but let me first explain you 
+
+HOW this protection scheme works, and how to defeat it, you'll then be 
+
+able to follow more easily the relevant code.<P>
+
+
+
+- First of all use Filemon.exe by Mark Russinovitch (you'll find it <A href="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">here</A>). 
+
+Filemon will show you that the target looks for a KEY.TXT file (now we 
+
+know that there is indeed a missing file :-)
+
+
+
+- then use a disassembler (wdasm8.5 for example), disassemble the target 
+
+and search for the STRING &quot;KEY.TXT&quot; inside the dead listing... you should 
+
+find the following piece of code (FIRST CHECK for KEY.TXT and in KEY.TXT)
+
+and you will notice that the code we have found uses the <A HREF="#getprivate">GetPrivateProfileStringA</A> 
+
+API, which we better examinate a littel deeper.
+
+
+
+You will find <A HREF="#get">here</A> the description of GetPrivateProfileStringA 
+
+(It's important! It will help you to determine the <FONT COLOR="blue">Format</FONT> of the missing 
+
+KEY.TXT file)
+
+
+
+<A NAME="key.txt">The KEY.TXT format should be something like that</A>
+
+[KEY]
+
+RegistrationKey=anignoredvalueforthemoment
+
+<HR>
+
+
+
+<A NAME="get">The GetPrivateProfileString function retrieves a string from the</A>
+
+specified section in an initialization file. This function is
+
+provided for compatibility with 16-bit Windows-based applications.
+
+Win32-based applications should store initialization information in
+
+the registry.
+
+<FONT color="purple">
+
+DWORD GetPrivateProfileString(
+
+
+
+LPCTSTR lpAppName, // points to section name
+
+LPCTSTR lpKeyName, // points to key name
+
+LPCTSTR lpDefault, // points to default string
+
+LPTSTR lpReturnedString, // points to destination buffer
+
+DWORD nSize, // size of destination buffer
+
+LPCTSTR lpFileName // points to initialization filename
+
+);</FONT>
+
+
+
+Parameters<FONT color="purple">
+
+
+
+lpAppName</FONT>
+
+Points to a null-terminated string that specifies the section
+
+containing the key name. If this parameter is NULL, the
+
+GetPrivateProfileString function copies all section names in the file
+
+to the supplied buffer.<FONT color="purple">
+
+
+
+lpKeyName</FONT>
+
+Points to the null-terminated string containing the key name whose
+
+associated string is to be retrieved. If this parameter is NULL, all
+
+key names in the section specified by the lpAppName parameter are
+
+copied to the buffer specified by the lpReturnedString parameter.
+
+<FONT color="purple">
+
+lpDefault</FONT>
+
+Points to a null-terminated string that specifies the default
+
+value for the given key if the key cannot be found in the
+
+initialization file. This parameter cannot be NULL.
+
+<FONT color="purple">
+
+lpReturnedString</FONT>
+
+Points to the buffer that receives the retrieved string.
+
+<FONT color="purple">
+
+nSize</FONT>
+
+Specifies the size, in characters, of the buffer pointed to by the
+
+lpReturnedString parameter.
+
+<FONT color="purple">
+
+lpFileName</FONT>
+
+Points to a null-terminated string that names the initialization
+
+file. If this parameter does not contain a full path to the file,
+
+Windows searches for the file in the Windows directory.
+
+<FONT color="purple">
+
+Return Value</FONT>
+
+If the function succeeds, the return value is the number of
+
+characters copied to the buffer, not including the terminating null
+
+character.
+
+
+
+If neither lpAppName nor lpKeyName is NULL and the supplied
+
+destination buffer is too small to hold the requested string, the
+
+string is truncated and followed by a null character, and the return
+
+value is equal to nSize minus one.
+
+
+
+If either lpAppName or lpKeyName is NULL and the supplied
+
+destination buffer is too small to hold all the strings, the last
+
+string is truncated and followed by two null characters. In this
+
+case, the return value is equal to nSize minus two.
+
+
+
+Remarks
+
+The GetPrivateProfileString function searches the specified
+
+initialization file for a key that matches the name specified by the
+
+lpKeyName parameter under the section heading specified by the
+
+lpAppName parameter. If it finds the key, the function copies the
+
+corresponding string to the buffer. If the key does not exist, the
+
+function copies the default character string specified by the
+
+lpDefault parameter. A section in the initialization file must have
+
+the following form:
+
+<FONT color="purple">
+
+[section]
+
+key=string
+
+.
+
+.
+
+.
+
+</FONT>
+
+If lpAppName is NULL, GetPrivateProfileString copies all section
+
+names in the specified file to the supplied buffer. If lpKeyName is
+
+NULL, the function copies all key names in the specified section to
+
+the supplied buffer. An application can use this method to enumerate
+
+all of the sections and keys in a file. In either case, each string
+
+is followed by a null character and the final string is followed by a
+
+second null character. If the supplied destination buffer is too
+
+small to hold all the strings, the last string is truncated and
+
+followed by two null characters.
+
+
+
+If the string associated with lpKeyName is enclosed in single or
+
+double quotation marks, the marks are discarded when the
+
+GetPrivateProfileString function retrieves the string.
+
+The GetPrivateProfileString function is not case-sensitive; the
+
+strings can be a combination of uppercase and lowercase letters.
+
+To retrieve a string from the WIN.INI file, use the
+
+GetProfileString function.
+
+<HR>
+
+
+
+You read all the above, you better? Okay... We notice that our target uses 
+
+another function called <A HREF="#writeprivate">Writeprivateprofilestringa</A> in order 
+
+to write some stuff inside Serv-U.ini(in the GLOBAL section). 
+
+The target in fact writes the RegistrationKey (and at the same time changes 
+
+KEY.TXT into KEY.OLD)
+
+
+
+So now we want to know which is the exact form of the &quot;anignoredvalueforthemoment&quot;
+
+
+
+So let's use a zen method (thanks to +ORC for his Inspiration...),
+
+We have noticed that KEY.TXT is changed in KEY.OLD after Copying the 
+
+Registrationkey in Serv-u.ini. So we can suppose that the protection 
+
+scheme is going to check in Serv-u.ini for the &quot;anignoredvalueforthemoment&quot;
+
+using the function <A HREF="#getbis">GetPrivateProfileString</A>.
+
+So we can search for &quot;Registrationkey&quot; and &quot;GLOBAL&quot; inside the Wdasm listing 
+
+(see bottom) or/and we can use Softice...
+
+
+
+So we fire softice 3.0.1(or 3.0)
+
+We also put inside the Serv-u subdirectory a &quot;faked&quot; file called KEY.TXT 
+
+<A HREF="#key.txt">(as described here...</A>)
+
+CTRL+D ;gets us inside Winice
+
+bpx GetPrivateProfileString       ;sets the relevant breakpoint
+
+launch Serv-u32.exe               ;fire the target
+
+into sice
+
+bd 0 (for GetPrivateProfileString ;breakpoint disable, after F12 to 
+
+                                  ;be inside the serv-u code segment
+
+bpx 004440AA
+
+then be 0                         ;to enable GetPrivateProfileString
+
+then F5 until you have found the piece of code called
+
+
+
+
+
+<A HREF="#routinecheck">ROUTINE for checking inside</A> our target's serv-u.ini 
+
+file if the registrationkey has the correct format and if the encrypted 
+
+registered code is the same as the registrationkey inside serv-u.ini
+
+
+
+You notice, in the following piece of code, that it checks inside <A HREF="#serv-u.ini">serv-u.ini</A>
+
+for the Registrationkey
+
+
+
+-<A HREF="#15">the &quot;anignoredvalueforthemoment&quot; must be &gt; 0E (15)</A>
+
+<A HREF="#2c=,(coma)">-and the 12thd</A> character of &quot;anignoredvalueforthemoment&quot; 
+
+must be equal to &quot;,&quot; (2C in Hexadecimal notation, i.e. &quot;comma&quot;)
+
+-so Now ve can suppose that &quot;anignoredvalueforthemoment&quot; must have the format
+
+############,YOURNAME
+
+
+
+And that YOURNAME must be at least 3 characters (that's the purpose of the 
+
+&quot;more than 15 bytes&quot; check.
+
+########### is an 11(decimal) digits registration code
+
+
+
+Thereforeow we can now modify our faked KEY.TXT (for example as follows)
+
+<FONT color="purple">
+
+[KEY]
+
+Registrationkey=12121212121,TheChineese
+
+</FONT>
+
+Let's go! Pop into winice!
+
+CRTL+D
+
+<A HREF="#44ca4a">bpx 44CA4A</A> 
+
+<A HREF="#ebx">d ebx</A> ;this ebx is the address of the REAL &quot;good-guy&quot; Key
+
+
+
+for our Example, for instance, d ebx -&gt; ArV004LxGIs. Therefore the 
+
+registrationkey in our case is the following: ArV004LxGIs,TheChineese... 
+
+you dig it?
+
+
+
+<A HREF="#theend">That all folks</A>, we reverse engineered a &quot;missing file&quot; protection 
+
+scheme, you may now study the following code in order to understand better the 
+
+protection scheme and/or build a key generator...
+
+<HR size="3"><CENTER>
+
+<FONT size="+4">Code section</FONT>
+
+<HR size="+3"></CENTER>
+
+FIRST CHECK for KEY.TXT and in KEY.TXT
+
+
+
+<HR>
+
+* Referenced by a Jump at Address:004440A5(C)
+
+|
+
+:004440AA 8D86B6030000 lea eax, [esi+000003B6]
+
+:004440B0 50 push eax
+
+:004440B1 8D8518F8FFFF lea eax, [ebp+FFFFF818]
+
+:004440B7 50 push eax
+
+:004440B8 E8CB7FFEFF call 0042C088
+
+:004440BD 83C408 add esp, 00000008
+
+:004440C0 8D86B8030000 lea eax, [esi+000003B8]
+
+:004440C6 50 push eax
+
+:004440C7 8D8518F8FFFF lea eax, [ebp+FFFFF818]
+
+:004440CD 50 push eax
+
+:004440CE E8B57FFEFF call 0042C088
+
+:004440D3 83C408 add esp, 00000008
+
+:004440D6 8D86C0030000 lea eax, [esi+000003C0]
+
+:004440DC 50 push eax
+
+:004440DD 8D8518F8FFFF lea eax, [ebp+FFFFF818]
+
+:004440E3 50 push eax
+
+:004440E4 E87FA7FEFF call 0042E868
+
+:004440E9 83C408 add esp, 00000008
+
+:004440EC 85C0 test eax, eax
+
+:004440EE 0F8443010000 je 00444237
+
+:004440F4 50 push eax
+
+:004440F5 E8E2A2FEFF call 0042E3DC
+
+:004440FA 59 pop ecx
+
+:004440FB 8D8518F8FFFF lea eax, [ebp+FFFFF818] &lt;-- for file KEY.TXT</P :00444101 50 push eax :00444102 68A0000000 push 000000A0 :00444107 8D8578F7FFFF lea eax, [ebp+FFFFF778] :0044410D 50 push eax :0044410E 8D86D7030000 lea eax, [esi+000003D7] :00444114 50 push eax :00444115 8D86C7030000 lea eax, [esi+000003C7] &lt;-- for Registrationkey :0044411B 50 push eax :0044411C 8D86C3030000 lea eax, [esi+000003C3] &lt;-- for KEY :00444122 50 push eax &nbsp; <A NAME="getprivate">* Reference To: KERNEL32.GetPrivateProfileStringA, Ord:0000h</A> 
+
+|
+
+:00444123 E8A3150200 Call 004656CB
+
+:00444128 894594 mov [ebp-6C], eax &lt;-- eax= size of the
+
+regitrationkey
+
+:0044412B 837D9400 cmp [ebp-6C], 00000000 &lt;-- compare to 0
+
+:0044412F 751B jne 0044414C &lt;-- if eax=0 then jmp good, continue
+
+:00444131 68A0000000 push 000000A0 &lt;-- else bad guy
+
+:00444136 8D85D8F6FFFF lea eax, [ebp+FFFFF6D8]
+
+:0044413C 50 push eax
+
+&nbsp;
+
+* Possible Reference to String Resource ID=02036: &quot;NO REGISTRATION KEY FOUND IN KEY.TXT!?&quot;
+
+|
+
+:0044413D 68F4070000 push 000007F4
+
+:00444142 FF7348 push [ebx+48]
+
+&nbsp;
+
+* Reference To: USER32.LoadStringA, Ord:0000h
+
+|
+
+:00444145 E8E1180200 Call 00465A2B
+
+:0044414A EB19 jmp 00444165
+
+&nbsp;
+
+* Referenced by a Jump at Address:0044412F(C)
+
+|
+
+:0044414C 68A0000000 push 000000A0
+
+:00444151 8D85D8F6FFFF lea eax, [ebp+FFFFF6D8]
+
+:00444157 50 push eax
+
+&nbsp;
+
+* Possible Reference to String Resource ID=02037: &quot;Loaded registrationkey from KEY.TXT&quot;
+
+|
+
+:00&gt;44158 68F5070000 push 000007F5
+
+:0044415D FF7348 push [ebx+48]
+
+&nbsp;
+
+* Reference To: USER32.LoadStringA, Ord:0000h
+
+|
+
+:00444160 E8C6180200 Call 00465A2B
+
+&nbsp;
+
+* Referenced by a Jump at Address:0044414A(U)
+
+|
+
+:00444165 8D85D8F6FFFF lea eax, [ebp+FFFFF6D8]
+
+:0044416B 50 push eax
+
+:0044416C 6A12 push 00000012
+
+&nbsp;
+
+* Possible Reference to String Resource ID=01027: &quot;550 No path names in filename allowed&quot;
+
+|
+
+:0044416E 6803040000 push 00000403
+
+:00444173 8B03 mov eax, [ebx]
+
+:00444175 8B00 mov eax, [eax]
+
+:00444177 FF7010 push [eax+10]
+
+&nbsp;
+
+* Reference To: USER32.SendMessageA, Ord:0000h
+
+|
+
+:0044417A E842160200 Call 004657C1
+
+:0044417F 837D9400 cmp [ebp-6C], 00000000
+
+:00444183 741E je 004441A3
+
+:00444185 8D434C lea eax, [ebx+4C] &lt;-- for the file serv-u.ini 
+
+:00444188 50 push eax
+
+:00444189 8D8578F7FFFF lea eax, [ebp+FFFFF778]
+
+:0044418F 50 push eax
+
+:00444190 8D86DF030000 lea eax, [esi+000003DF] &lt;-- for Registrationkey
+
+:00444196 50 push eax
+
+:00444197 8D86D8030000 lea eax, [esi+000003D8] &lt;-- for GLOBAL
+
+:0044419D 50 push eax
+
+&nbsp;
+
+<A NAME="writeprivate">* Reference To: KERNEL32.WritePrivateProfileStringA, Ord:0000h</A> 
+
+|
+
+:0044419E E894150200 Call 00465737 &lt;-- write to serv-u.ini Registrationkey=what is in key.txt
+
+&nbsp;
+
+* Referenced by a Jump at Address:00444183(C)
+
+|
+
+:004441A3 56 push esi
+
+:004441A4 57 push edi
+
+:004441A5 8DB538F6FFFF lea esi, [ebp+FFFFF638]
+
+:004441AB 8DBD18F8FFFF lea edi, [ebp+FFFFF818]
+
+:004441B1 33C0 xor eax, eax
+
+:004441B3 83C9FF or ecx, FFFFFFFF
+
+:004441B6 F2 repnz
+
+:004441B7 AE scasb
+
+:004441B8 F7D1 not ecx
+
+:004441BA 2BF9 sub edi, ecx
+
+:004441BC 87F7 xchg edi, esi
+
+:004441BE 8BC7 mov eax, edi
+
+:004441C0 8BD1 mov edx, ecx
+
+:004441C2 C1E902 shr ecx, 02
+
+:004441C5 F3 repz
+
+:004441C6 A5 movsd
+
+:004441C7 8BCA mov ecx, edx
+
+:004441C9 83E103 and ecx, 00000003
+
+:004441CC F3 repz
+
+:004441CD A4 movsb
+
+:004441CE 5F pop edi
+
+:004441CF 5E pop esi
+
+:004441D0 6A5C push 0000005C
+
+:004441D2 8D8538F6FFFF lea eax, [ebp+FFFFF638]
+
+:004441D8 50 push eax
+
+:004441D9 E89681FEFF call 0042C374
+
+:004441DE 83C408 add esp, 00000008
+
+:004441E1 85C0 test eax, eax
+
+:004441E3 7403 je 004441E8
+
+:004441E5 C60000 mov byte ptr [eax], 00
+
+&nbsp;
+
+* Referenced by a Jump at Address:004441E3(C)
+
+|
+
+:004441E8 8D86EF030000 lea eax, [esi+000003EF]
+
+:004441EE 50 push eax
+
+:004441EF 8D8538F6FFFF lea eax, [ebp+FFFFF638]
+
+:004441F5 50 push eax
+
+:004441F6 E88D7EFEFF call 0042C088
+
+:004441FB 83C408 add esp, 00000008
+
+:004441FE 8D86F1030000 lea eax, [esi+000003F1]
+
+:00444204 50 push eax
+
+:00444205 8D8538F6FFFF lea eax, [ebp+FFFFF638]
+
+:0044420B 50 push eax
+
+:0044420C E8777EFEFF call 0042C088
+
+:00444211 83C408 add esp, 00000008
+
+:00444214 8D8538F6FFFF lea eax, [ebp+FFFFF638]
+
+:0044421A 50 push eax
+
+:0044421B E834A1FEFF call 0042E354
+
+:00444220 59 pop ecx
+
+:00444221 8D8538F6FFFF lea eax, [ebp+FFFFF638]
+
+:00444227 50 push eax
+
+:00444228 8D8518F8FFFF lea eax, [ebp+FFFFF818]
+
+:0044422E 50 push eax
+
+:0044422F E82CCBFEFF call 00430D60
+
+:00444234 83C408 add esp, 00000008
+
+&nbsp;
+
+* Referenced by a Jump atAddress:004440EE(C)
+
+|
+
+:00444237 833D842D470000 cmp dword ptr [00472D84], 00000000
+
+:0044423E 7509 jne 00444249
+
+:00444240 833D942D470001 cmp dword ptr [00472D94], 00000001
+
+:00444247 740D je 00444256
+
+&nbsp;
+
+* Referenced by a Jump at Address:0044423E(C)
+
+|
+
+:00444249 833D942D470003 cmp dword ptr [00472D94], 00000003
+
+:00444250 0F85E1000000 jne 00444337
+
+&nbsp;
+
+* Referenced by a Jump at Address:00444247(C)
+
+|
+
+:00444256 6A28 push 00000028
+
+:00444258 E877EDFEFF call 00432FD4
+
+:0044425D 59 pop ecx
+
+:0044425E 8945E4 mov [ebp-1C], eax
+
+:00444261 85C0 test eax, eax
+
+:00444263 7434 je 00444299
+
+:00444265 66C745D0A400 mov [ebp-30], 00A4
+
+:0044426B FF7348 push [ebx+48]
+
+:0044426E 8B03 mov eax, [ebx]
+
+:00444270 8B00 mov eax, [eax]
+
+:00444272 FF7010 push [eax+10]
+
+:00444275 8D86F9030000 lea eax, [esi+000003F9]
+
+:0044427B 50 push eax
+
+:0044427C FF75E4 push [ebp-1C]
+
+:0044427F E8D6030200 call 0046465A
+
+:00444284 83C410 add esp, 00000010
+
+:00444287 A1D41A4800 mov eax, [00481AD4]
+
+:0044428C FF08 dec dword ptr [eax]
+
+:0044428E 66C745D09800 mov [ebp-30], 0098
+
+:00444294 8B45E4 mov eax, [ebp-1C]
+
+:00444297 EB03 jmp 0044429C
+
+
+
+<HR>
+
+<A NAME="routinecheck">ROUTINE for checking</A> inside serv-u.ini if the registrationkey 
+
+has the good format and if the encrypted registred code is the same as the
+
+registrationkey in serv-u.ini
+
+<HR>
+
+
+
+* Referenced by a Jump at Addresses:0044C8C0(U), :0044C8D5(C), :0044C8EF(C), :0044C900(C)
+
+|
+
+<A NAME="serv-u.ini">:0044C923 53 push ebx &lt;-- for serv-u.ini</A>
+
+:0044C924 689F000000 push 0000009F
+
+:0044C929 8D852CFDFFFF lea eax, [ebp+FFFFFD2C]
+
+:0044C92F 50 push eax
+
+:0044C930 68BC514700 push 004751BC
+
+&nbsp;
+
+<A NAME="getbis">* Possible StringData Ref from Data Obj -&gt;&quot;RegistrationKey&quot;</A> &lt;-- for Registrationkey
+
+|
+
+:0044C935 68AC514700 push 004751AC
+
+
+
+* Possible StringData Ref from Data Obj -&gt;&quot;GLOBAL&quot; &lt;-- for GLOBAL
+
+|
+
+:0044C93A 68A5514700 push 004751A5
+
+
+
+* Reference To: KERNEL32.GetPrivateProfileStringA, Ord:0000h
+
+|
+
+:0044C93F E8878D0100 Call 004656CB
+
+:0044C944 85C0 test eax, eax &lt;-- eax= size of the registration key
+
+:0044C946 0F8442010000 je 0044CA8E &lt;-- if zero bad guy
+
+:0044C94C 8D852CFDFFFF lea eax, [ebp+FFFFFD2C]
+
+:0044C952 50 push eax
+
+:0044C953 E89C6F0100 call 004638F4
+
+:0044C958 59 pop ecx
+
+:0044C959 8D852CFDFFFF lea eax, [ebp+FFFFFD2C]
+
+:0044C95F 50 push eax
+
+:0044C960 E8E3F7FDFF call 0042C148
+
+:0044C965 59 pop ecx
+
+<A NAME="&gt;15">:0044C966 83F80E cmp eax, 0000000E &lt;-- eax= size of the</A> regitration key
+
+:0044C969 731C jnb 0044C987 &lt;-- if &gt; 0E=15 then jmp ok let's go
+
+:0044C96B C706FEFFFFFF mov dword ptr [esi], FFFFFFFE &lt;-- else bad guy
+
+:0044C971 6A00 push 00000000
+
+:0044C973 6A00 push 00000000
+
+
+
+* Possible Reference to String Resource ID=01031: &quot;150 Opening %s mode data connection for %s (%ld bytes).&quot;
+
+|
+
+:0044C975 6807040000 push 00000407
+
+:0044C97A FF750C push [ebp+0C]
+
+
+
+* Reference To: USER32.PostMessageA, Ord:0000h
+
+|
+
+:0044C97D E873900100 Call 004659F5
+
+:0044C982 E90A020000 jmp 0044CB91
+
+
+
+* Referenced by a Jump at Address:0044C969(C)
+
+|
+
+<A NAME="2c=,(comma)">:0044C987 0FBE8537FDFFFF movsx byte ptr eax, [ebp+FFFFFD37] &lt;--</A>
+
+eax=the 12thd character of the registrationkey
+
+:0044C98E 83F82C cmp eax, 0000002C &lt;-- compare to &quot;,&quot; (2C)
+
+:0044C991 741C je 0044C9AF &lt;-- if equal ok let's go
+
+:0044C993 C706FEFFFFFF mov dword ptr [esi], FFFFFFFE &lt;-- else
+
+bad guy
+
+:0044C999 6A00 push 00000000 so here we can suppose that the key form is: ###########,NAME
+
+:0044C99B 6A00 push 00000000
+
+
+
+* Possible Reference to String Resource ID=01031: &quot;150 Opening %s mode data connection for %s (%ld bytes).&quot;
+
+|
+
+:0044C99D 6807040000 push 00000407
+
+:0044C9A2 FF750C push [ebp+0C]
+
+&nbsp;
+
+* Reference To: USER32.PostMessageA, Ord:0000h
+
+|
+
+:0044C9A5 E84B900100 Call 004659F5
+
+:0044C9AA E9E2010000 jmp 0044CB91
+
+&nbsp;
+
+* Referenced by a Jump at Address:0044C991(C)
+
+|
+
+:0044C9AF 8D8538FDFFFF lea eax, [ebp+FFFFFD38] &lt;-- first part of encryption
+
+:0044C9B5 8945F0 mov [ebp-10], eax
+
+:0044C9B8 66BB45F3 mov bx, F345
+
+:0044C9BC 33FF xor edi, edi
+
+:0044C9BE EB26 jmp 0044C9E6
+
+&nbsp;
+
+* Referenced by a Jump at Address:0044C9F1(C)
+
+|
+
+:0044C9C0 8B45F0 mov eax, [ebp-10]
+
+:0044C9C3 0FBE0438 movsx byte ptr eax, [eax + edi]
+
+:0044C9C7 C1E008 shl eax, 08
+
+:0044C9CA 6633D8 xor bx, ax
+
+:0044C9CD 33C0 xor eax, eax
+
+&nbsp;
+
+* Referenced by a Jump at Address:0044C9E3(C)
+
+|
+
+:0044C9CF F6C780 test bh, 80
+
+:0044C9D2 7409 je 0044C9DD
+
+:0044C9D4 03DB add ebx, ebx
+
+:0044C9D6 6681F32110 xor ebx, 1021
+
+:0044C9DB EB02 jmp 0044C9DF
+
+&nbsp;
+
+* Referenced by a Jump at Address:0044C9D2(C)
+
+|
+
+:0044C9DD 03DB add ebx, ebx
+
+&nbsp;
+
+* Referenced by a Jump at Address:0044C9DB(U)
+
+|
+
+:0044C9DF 40 inc eax
+
+:0044C9E0 83F808 cmp eax, 00000008
+
+:0044C9E3 7CEA jl 0044C9CF
+
+:0044C9E5 47 inc edi
+
+&nbsp;
+
+* Referenced by a Jump at Address:0044C9BE(U)
+
+|
+
+:0044C9E6 FF75F0 push [ebp-10]
+
+:0044C9E9 E85AF7FDFF call 0042C148
+
+:0044C9EE 59 pop ecx
+
+:0044C9EF 3BC7 cmp eax, edi
+
+:0044C9F1 77CD ja 0044C9C0
+
+:0044C9F3 33FF xor edi, edi
+
+&nbsp;
+
+* Referenced by a Jump at Address:0044CA0A(C)
+
+|
+
+:0044C9F5 8BC3 mov eax, ebx
+
+:0044C9F7 240F and al, 0F
+
+:0044C9F9 0441 add al, 41
+
+:0044C9FB 88843D18FDFFFF mov [ebp + edi - 000002E8], al
+
+:0044CA02 66C1EB04 shr ebx, 04
+
+:0044CA06 47 inc edi
+
+:0044CA07 83FF04 cmp edi, 00000004
+
+:0044CA0A 7CE9 jl 0044C9F5
+
+:0044CA0C C6851CFDFFFF00 mov byte ptr [ebp+FFFFFD1C], 00
+
+&nbsp;
+
+* Possible StringData Ref from Data Obj -&gt;&quot;y&amp;wF%&quot;
+
+|
+
+:0044CA13 68BD514700 push 004751BD
+
+:0044CA18 8D8518FDFFFF lea eax, [ebp+FFFFFD18]
+
+:0044CA1E 50 push eax
+
+:0044CA1F E864F6FDFF call 0042C088
+
+:0044CA24 83C408 add esp, 00000008
+
+&nbsp;
+
+* Possible StringData Ref from Data Obj -&gt;&quot;CS&quot;
+
+|
+
+:0044CA27 68C3514700 push 004751C3
+
+:0044CA2C 8D8518FDFFFF lea eax, [ebp+FFFFFD18]
+
+:0044CA32 50 push eax
+
+:0044CA33 E837E1FFFF call 0044AB6F &lt;--- <A HREF="#2nd&amp;3thd">here there the second
+
+and third part of the encryption</A>
+
+:0044CA38 83C408 add esp, 00000008
+
+:0044CA3B 8BD8 mov ebx, eax
+
+:0044CA3D 6A0B push 0000000B
+
+:0044CA3F 83C302 add ebx, 00000002
+
+<A NAME="ebx">:0044CA42 53 push ebx &lt;-- good registration key</A>
+
+:0044CA43 8D852CFDFFFF lea eax, [ebp+FFFFFD2C] &lt;-- key we enter
+
+in key.txt
+
+:0044CA49 50 push eax
+
+<A NAME="44ca4a">:0044CA4A E861F7FDFF call 0042C1B0 &lt;-- check the two keys</A>
+
+:0044CA4F 83C40C add esp, 0000000C
+
+:0044CA52 85C0 test eax, eax &lt;-- test if eax=0
+
+:0044CA54 751C jne 0044CA72 &lt;-- if eax&lt;&gt;0 jmp bad guy
+
+
+
+:0044CA56 C70602000000 mov dword ptr [esi], 00000002
+
+:0044CA5C 6A00 push 00000000
+
+:0044CA5E 6A00 push 00000000
+
+&nbsp;
+
+* Possible Reference to String Resource ID=01031: &quot;150 Opening %s
+
+mode data connection for %s (%ld bytes).&quot;
+
+|
+
+:0044CA60 6807040000 push 00000407
+
+:0044CA65 FF750C push [ebp+0C]
+
+&nbsp;
+
+* Reference To: USER32.PostMessageA, Ord:0000h
+
+|
+
+:0044CA68 E8888F0100 Call 004659F5
+
+:0044CA6D E91F010000 jmp 0044CB91
+
+&nbsp;
+
+* Referenced by a Jump at Address:
+
+|:0044CA54(C)
+
+|
+
+:0044CA72 C706FEFFFFFF mov dword ptr [esi], FFFFFFFE
+
+:0044CA78 6A00 push 00000000
+
+:0044CA7A 6A00 push 00000000
+
+&nbsp;
+
+* Possible Reference to String Resource ID=01031: &quot;150 Opening %s
+
+mode data connection for %s (%ld bytes).&quot;
+
+|
+
+:0044CA7C 6807040000 push 00000407
+
+:0044CA81 FF750C push [ebp+0C]
+
+&nbsp;
+
+* Reference To: USER32.PostMessageA, Ord:0000h
+
+&nbsp;
+
+...
+
+&nbsp;
+
+<A NAME="2nd&amp;3thd"><HR></A>
+
+
+
+&nbsp;
+
+2nd and 3thd part of encryption
+
+&nbsp;
+
+<HR>
+
+
+
+* Referenced by a CALL at Addresses:0044A54E , :0044CA33 , :0045445D
+
+|
+
+:0044AB6F 55 push ebp
+
+:0044AB70 8BEC mov ebp, esp
+
+:0044AB72 833D4C4B470000 cmp dword ptr [00474B4C], 00000000
+
+:0044AB79 750F jne 0044AB8A
+
+:0044AB7B E839990100 call 004644B9 &lt;-- <A HREF="#matrix">(2nd part) call for the
+
+matrix with 0 and 1</A>
+
+:0044AB80 C7054C4B470001000000 mov dword ptr [00474B4C], 00000001
+
+
+
+&nbsp;
+
+* Referenced by a Jump atAddress:0044AB79(C)
+
+|
+
+:0044AB8A FF750C push [ebp+0C]
+
+:0044AB8D FF7508 push [ebp+08]
+
+:0044AB90 E8E6950100 call 0046417B &lt;-- <A HREF="#3thd">(3thd part) final
+
+encryption for good KEY</A>
+
+:0044AB95 83C408 add esp, 00000008
+
+:0044AB98 5D pop ebp
+
+:0044AB99 C3 ret
+
+&nbsp;
+
+&nbsp;
+
+&nbsp;
+
+<A NAME="matrix"><HR></A>
+
+
+
+&nbsp;
+
+2nd part the matrix
+
+&nbsp;
+
+<HR>
+
+
+
+&nbsp;
+
+* Referenced by a CALL at Address: 0044AB7B
+
+|
+
+:004644B9 55 push ebp
+
+:004644BA 8BEC mov ebp, esp
+
+:004644BC 6888084800 push 00480888
+
+:004644C1 6888104800 push 00481088
+
+:004644C6 6A00 push 00000000
+
+:004644C8 E8AAFEFFFF call 00464377 &lt;--- each routine write a
+
+matrix (of 1 and 0) at the same location (480740)
+
+:004644CD 83C40C add esp, 0000000C
+
+:004644D0 6888094800 push 00480988
+
+:004644D5 6888114800 push 00481188
+
+:004644DA 6A01 push 00000001
+
+:004644DC E896FEFFFF call 00464377 &lt;---
+
+:004644E1 83C40C add esp, 0000000C
+
+:004644E4 68880A4800 push 00480A88
+
+:004644E9 6888124800 push 00481288
+
+:004644EE 6A02 push 00000002
+
+:004644F0 E882FEFFFF call 00464377 &lt;---
+
+:004644F5 83C40C add esp, 0000000C
+
+:004644F8 68880B4800 push 00480B88
+
+:004644FD 6888134800 push 00481388
+
+:00464502 6A03 push 00000003
+
+:00464504 E86EFEFFFF call 00464377 &lt;---</P :00464509 83C40C add esp, 0000000C :0046450C 68880C4800 push 00480C88 :00464511 6888144800 push 00481488 :00464516 6A04 push 00000004 :00464518 E85AFEFFFF call 00464377 &lt;--- :0046451D 83C40C add esp, 0000000C :00464520 68880D4800 push 00480D88 :00464525 6888154800 push 00481588 :0046452A 6A05 push 00000005 :0046452C E846FEFFFF call 00464377 &lt;--- :00464531 83C40C add esp, 0000000C :00464534 68880E4800 push 00480E88 :00464539 6888164800 push 00481688 :0046453E 6A06 push 00000006 :00464540 E832FEFFFF call 00464377 &lt;--- :00464545 83C40C add esp, 0000000C :00464548 68880F4800 push 00480F88 :0046454D 6888174800 push 00481788 :00464552 6A07 push 00000007 :00464554 E81EFEFFFF call 00464377 &lt;--- this final matrix will be used in the third part of the encrytion :00464559 83C40C add esp, 0000000C :0046455C 33C0 xor eax, eax :0046455E 5D pop ebp :0046455F C3 ret &nbsp; <A NAME="3thd"><HR>---</A>
+
+
+
+&nbsp;
+
+&nbsp;
+
+3thd part
+
+&nbsp;
+
+<HR>
+
+
+
+* Referenced by a CALL at Address:0044AB90
+
+|
+
+:0046417B 55 push ebp
+
+:0046417C 8BEC mov ebp, esp
+
+:0046417E 53 push ebx
+
+:0046417F 56 push esi
+
+:00464180 8B4D08 mov ecx, [ebp+08]
+
+:00464183 BEC0074800 mov esi, 004807C0
+
+:00464188 8BD6 mov edx, esi
+
+:0046418A B812000000 mov eax, 00000012
+
+:0046418F EB07 jmp 00464198
+
+&nbsp;
+
+* Referenced by a Jump at  Address:0046419F(C)
+
+|
+
+:00464191 33DB xor ebx, ebx
+
+:00464193 891A mov [edx], ebx
+
+:00464195 83C204 add edx, 00000004
+
+&nbsp;
+
+* Referenced by a Jump at Address:0046418F(U)
+
+|
+
+:00464198 8BD8 mov ebx, eax
+
+:0046419A 83C0FF add eax, FFFFFFFF
+
+:0046419D 85DB test ebx, ebx
+
+:0046419F 75F0 jne 00464191
+
+:004641A1 33C0 xor eax, eax
+
+:004641A3 EB53 jmp 004641F8
+
+&nbsp;
+
+* Referenced by a Jump atAddress:00464202(C)
+
+|
+
+:004641A5 8BDA mov ebx, edx
+
+:004641A7 C1FB06 sar ebx, 06
+
+:004641AA 80E301 and bl, 01
+
+:004641AD 881C06 mov [esi + eax], bl
+
+:004641B0 40 inc eax
+
+:004641B1 8BDA mov ebx, edx
+
+:004641B3 C1FB05 sar ebx, 05
+
+:004641B6 80E301 and bl, 01</P :004641B9 881C06 mov [esi + eax], bl :004641BC 40 inc eax :004641BD 8BDA mov ebx, edx :004641BF C1FB04 sar ebx, 04 :004641C2 80E301 and bl, 01 :004641C5 881C06 mov [esi + eax], bl :004641C8 40 inc eax :004641C9 8BDA mov ebx, edx :004641CB C1FB03 sar ebx, 03 :004641CE 80E301 and bl, 01 :004641D1 881C06 mov [esi + eax], bl :004641D4 40 inc eax :004641D5 8BDA mov ebx, edx :004641D7 C1FB02 sar ebx, 02 :004641DA 80E301 and bl, 01 :004641DD 881C06 mov [esi + eax], bl :004641E0 40 inc eax :004641E1 8BDA mov ebx, edx :004641E3 D1FB sar ebx, 1 :004641E5 80E301 and bl, 01 :004641E8 881C06 mov [esi + eax], bl :004641EB 40 inc eax :004641EC C1FA00 sar edx, 00 :004641EF 80E201 and dl, 01 :004641F2 881406 mov [esi + eax], dl :004641F5 40 inc eax :004641F6 40 inc eax :004641F7 41 inc ecx &nbsp; * Referenced by a Jump at Address:004641A3(U) | :004641F8 0FBE11 movsx byte ptr edx, [ecx] :004641FB 85D2 test edx, edx :004641FD 7405 je 00464204 :004641FF 83F840 cmp eax, 00000040 :00464202 7CA1 jl 004641A5 &nbsp; * Referenced by a Jump atAddress:004641FD(C) | :00464204 E857F8FFFF call 00463A60 :00464209 8BD6 mov edx, esi :0046420B B812000000 mov eax, 00000012 :00464210 EB07 jmp 00464219 &nbsp; * Referenced by a Jump atAddress: 00464220(C) | :00464212 33C9 xor ecx, ecx :00464214 890A mov [edx], ecx :00464216 83C204 add edx, 00000004 &nbsp; * Referenced by a Jump at Address:00464210(U) | :00464219 8BC8 mov ecx, eax :0046421B 83C0FF add eax, FFFFFFFF :0046421E 85C9 test ecx, ecx :00464220 75F0 jne 00464212 :00464222 8B450C mov eax, [ebp+0C] :00464225 8A00 mov al , [eax] :00464227 A2B0074800 mov [004807B0], al :0046422C 8B450C mov eax, [ebp+0C] :0046422F 8A4001 mov al , [eax+01] :00464232 A2B1074800 mov [004807B1], al :00464237 0FBE15B0074800 movsx byte ptr edx, [004807B0] &lt;-- look here :0046423E 8B149508884700 mov edx, [4*edx + 00478808] :00464245 0FBEC0 movsx byte ptr eax, eax :00464248 0B1485088C4700 or edx, [4*eax + 00478C08] :0046424F 8BC2 mov eax, edx :00464251 8BD0 mov edx, eax :00464253 83E23F and edx, 0000003F :00464256 8BC8 mov ecx, eax :00464258 81E1C00F0000 and ecx, 00000FC0 :0046425E C1E102 shl ecx, 02 :00464261 0BD1 or edx, ecx :00464263 8BC8 mov ecx, eax :00464265 81E100F00300 and ecx, 0003F000 :0046426B C1E104 shl ecx, 04 :0046426E 0BD1 or edx, ecx :00464270 250000FC00 and eax, 00FC0000 :00464275 C1E006 shl eax, 06 :00464278 0BD0 or edx, eax :0046427A 8BC2 mov eax, edx :0046427C 50 push eax :0046427D E833F9FFFF call 00463BB5 :00464282 59 pop ecx :00464283 E839FBFFFF call 00463DC1 :00464288 33C0 xor eax, eax &nbsp; * Referenced by a Jump at Address:004642B2(C) | :0046428A 33D2 xor edx, edx :0046428C 33C9 xor ecx, ecx &nbsp; * Referenced by a Jump at Address:004642A0(C) | :0046428E 03D2 add edx, edx :00464290 8D1C40 lea ebx, [eax + 2*eax] &lt;--- get edx wich is used further :00464293 8D1C5E lea ebx, [esi + 2*ebx] :00464296 0FB61C0B movzx byte ptr ebx, [ebx + ecx] :0046429A 0BD3 or edx, ebx &lt;-- or with the value="0" (or 1) depends on the matrix :0046429C 41 inc ecx :0046429D 83F906 cmp ecx, 00000006 :004642A0 7CEC jl 0046428E &lt;-- :004642A2 8A9208904700 mov dl, [edx+00479008] &lt;-- get a letter from a table (at 479008 + edx) here edx result from the matrix too :004642A8 8890B2074800 mov [eax+004807B2], dl :004642AE 40 inc eax :004642AF 83F80B cmp eax, 0000000B &lt;-- check the length of the code="0b(11.class" tppabs="http://fravia.org/0b(11.class" decimal) :004642B2 7CD6 jl 0046428A &lt;-- if less then encrypt again :004642B4 C680B207480000 mov byte ptr [eax+004807B2], 00 &lt;-- note that the good code is located at 4807b2 :004642BB 803DB107480000 cmp byte ptr [004807B1], 00 :004642C2 750A jne 004642CE :004642C4 A0B0074800 mov al, [004807B0] :004642C9 A2B1074800 mov [004807B1], al &nbsp; * Referenced by a Jump at Address: 004642C2(C) | :004642CE B8B0074800 mov eax, 004807B0 :004642D3 5E pop esi :004642D4 5B pop ebx :004642D5 5D pop ebp :004642D6 C3 ret <hr>
+
+<A NAME="theend">I hope that my English is not so &quot;bizarre&quot;, and that the pieces 
+
+of code that I have published above</A> will be useful to people who want to 
+
+understand deeper the whole encryption scheme for the key used in this target, in
+
+order to build a keygenerator (which is a sound exercise for any reverse engineer) or 
+
+simply to be prepared for other, similar, protection schemes.
+
+
+
+Let me know about it and feel free to send any comments to: 
+
+
+
+Email:
+
+<A HREF="mailto:chineese@mygale.org">chineese@mygale.org</A>
+
+
+
+</PRE>
+
+<BR>
+
+<HR ALIGN="CENTER" WIDTH="100%" SIZE="3">
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</I></CENTER>
+
+<BR><CENTER>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html"> homepage</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"> 
+
+<A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm"> links</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0">
+
+<A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm"> anonymity</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm"> +ORC</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm"> students' essays</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm"> tools</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm"> cocktails</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm"> search_forms</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm"> mailFraVia</A></CENTER><BR>
+
+
+
+<CENTER>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm"> Is reverse engineering legal?</A></CENTER>
+
+<CENTER><HR ALIGN="CENTER" WIDTH="100%" SIZE="2"></CENTER>
+
+
+
+</BODY>
+
+</HTML>
+
+
+
+
+
+
+
+
+
+ 
+

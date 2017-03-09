@@ -1,0 +1,1122 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>htdedlst.htm: Fravia's pages of reverse engineering</TITLE>
+
+<META NAME="fravia" HTTP-EQUIV="Description" CONTENT="The only real site on the Web for software reverse engineering, studies and tutorials about software protection, reality reversing, software protection development, web-anonymity techniques and countermeasures, user defence. Must visit to learn how to defend yourself on the Web">
+
+<META NAME="fravia" HTTP-EQUIV="Keywords" CONTENT="Reverse engineering, Cracking, Software protections, Reverse engineering Manuals, Cracking Tools, Cracking Cocktails, Software locking and unlocking, Software Reverse Engineering, Software Protection improvement, Cracking Tutorials, Debugging, Disassembling, How To Crack, Learn To Crack, protection schemes, SOFTWARE REVERSE ENGINEERING, Tutorials, Web pages nuking, Steganography, Cryptography, Barcodes, Anonymity, search engines, how to search, counter measures, agent trapping, web stalking, web combing, SOFTWARE PROTECTIONS, web klebing, protection removal">
+
+<META NAME="copyright" content="Copyright 1995, 1996, 1997, 1998, 1999 by fravia+, European Union">
+
+	
+
+</HEAD>
+
+
+
+<BODY bgcolor="#C0C0C0" text="#001010" vlink="#405040" alink="#00FF50"> 
+
+<HR><CENTER><H3><A href="javascript:if(confirm('http://www.fravia.org/  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.fravia.org/'" tppabs="http://www.fravia.org/">Fravia</A>'s comment</H3></CENTER>
+
+<I>I will just publish, from now on, the essays I like <U>exactly as I get them</U>.
+
+<BR>
+
+Authors are invited to<UL>
+
+<LI>1) download the source code;
+
+<LI>2) correct it;
+
+<LI>3) <B>very important</B> CHECK on an Opera browser that it looks ok;
+
+<LI>4) resend it to me corrected
+
+</UL>
+
+And I'll update it.
+
+<HR width=33%>
+
+Note that if the essay should infringe on anyone copyrights, and if I receive a legitimate request 
+
+to nuke it, it will immediately disappear from my site, so you always better write software reversing 
+
+essays that are not "specific" target related... so, pointing out deficiences is OK, 
+
+ individuating "software black holes" is a must, but 
+
+explaining lamers 
+
+how to register (or, even more silly, how to make a coward keygen for the idiots) is definitely NOT "fraviatiquette".<BR>
+
+Indeed from now on I want to HELP, not to damage programmers.
+
+<HR width=33%>
+
+This said I publish this perfectly formatted and extremely useful essay by Svd with pleasure: 
+
+"Deadlisting", a definition given by +ORC, long ago, to all reversing activities that 
+
+are not practicized "on-line": he spoke of a "shadowy garden and a pencil", maybe the same 
+
+pencil that Svd is chewing? :-)
+
+</I>
+
+<HR size=1><FONT color="#660000"><I>The Great Dead-Listing Excavations<BR>
+
+or what one (could) see in disassembled code
+
+
+</I></FONT>
+
+<P>------------------- by SvD ----
+
+
+</P><P>
+
+
+</P><P>This is a (a bit long and twisted;) Memory of those times, when the only way to debug a program was to dump the codes or the disassembled listing onto a line-printer (until all the paper in the building run out ;) and, then, chewing the pencil, to examine for long-long hours how that code-thread is going on and on ...
+
+
+</P><P>
+
+
+</P><P>Needed:
+
+
+</P><UL>1. Some disassembled listing
+
+
+</UL>
+
+<UL>2. Some knowledge of the processor's features and instructions (architecture and assembler, addressing ways/meaning)
+
+
+</UL>
+
+<UL>2b. eventually, some of the target program's particular features - you should always know very well your target from outside BEFORE slipping your fingers there - you could be bitten ;)
+
+
+</UL>
+
+<UL>3. Patience
+
+
+</UL>
+
+<UL>4. Readiness to start from the very beginning Again at any time
+
+
+</UL>
+
+<P>
+
+
+</P><P>As usual :), I will start with an anecdote. This time it will be strictly to the point ;). So, one sunny day the female ant and the male elephant got married. They celebrated, then slept together that night. In the morning, suddenly, the elephant died. And the ant said sadly: "Oh, no, my God!... A single night of BIG fun, and now, all lifetime of digging..."
+
+
+</P><P>The situation for me is the same (and probably for you too). Once long ago I cracked some simple program, believed in my power and abilities, and up to now... I am digging. Code, Data, Files, Directories, Pages, ..., or all in one word, Shits.
+
+
+</P><P>Well, I'll try to show some paths around the labyrinths of that HOLE...
+
+
+</P><P>
+
+
+</P><P>I have attempted to make the things below OS and processor independent; but, unfortunately, the intel i80x86 architecture influenced me very much; so don't be furious if your JMP SHORT is not coded as 0xEB; try to extract the essence and use the particularities as examples. And, also, please! - I do not claim for absolute exactness nor completeness.
+
+
+</P><P>For i80x86 assembly combined with some compiler, I have made a macros-file for almost all the frequently used occasions and compilers in my experience - like arguments-in-stack-positioning; saving/restoring registers; function/variable naming etc. You could use or change it if you like: svdmacro.asm.
+
+
+</P><P>I am using the C language examples and hex-number-notation; so 0xAC stays for 0ACh (in intel assembler notation) i.e. decimal 172.
+
+
+</P><H2>
+
+1. Introduction. Assembler/Compiler and Disassembler/Decompiler
+
+
+</H2>
+
+<P>Every (micro)processor could be considered as a "language-interpreter, driven by byte-stream-of-instructions" machine. When that interpreter-machine fetches a byte-code, which stays for some instruction, depending on the type of the instruction the interpreter would do some action, or fetch more bytes to define more precisely the action, or get arguments. The registers of the processor and/or the direct accessible computer memory, stand as variables of that language-interpreter.
+
+
+</P><P>Assembler (or assembly language) is the language, that is directly associated with the above-mentioned-machine byte-codes and instructions - i.e. the specific processor's external language (external - because most processors themselves are also small-computers, working with internal microinstructions; sooner or later we will have to deal with them too).
+
+
+</P><P>Also, name Assembler is used to call the program that translates a textually written assembly language program into machine codes.
+
+
+</P><P>Compiler, is a translator from some higher-level language (Fortran, Pascal, C, Ada, C++, hundreds others) to Assembly language or to machine codes directly. Every high-language operator or construction (i.e. high-level-instruction) may produce one or Many assembler instructions. (Note that there are compilers and code-generators that could even expand/unroll loops and recursions as much as you like! Not talking about inlining memcpy() etc.. simpler stuff).
+
+
+</P><P>So Disassembler is the tool that reverses the machine codes into assembly language (e.g. 0xEB xx stays for Jump Short xx bytes forward/backward for intel i80x86 processors) and is ALMOST a straight-forward procedure. While Decompiler is something that must re-build the original high-level language constructs like if-then-else; assignments; loops; function/procedure calls etc... This is not a straight-forward and is usually not 100% possible because of optimizations made over the machine code which removed some redundancy needed to understand exactly what it was. If no optimization has been, it could be possible to make a decompiler for anything - just following/translating backwards the code-stream-produced-by-the-specific-compiler and reversing it. But still, not for 100% sure. (100% means to produce the same source as it was, not a source that does same thing as the original, but in slightly different manner.)
+
+
+</P><P>Here we deal with Assembly language stream, produced by a disassembler, trying to understand the logic of the program, i.e. to deCompile it. We are the decompiler. BUT DO NOT expect to receive the original source.
+
+
+</P><P>You won't learn assembly here - you'll need it to understand most of the things explained (like registers, memory-addressing-kinds etc). Note also that some processors can (replace or emulate) their predecessors. So a 32bit processor may behave as 24, or 16bit one. There are several modes - real,protected,virtual,etc... But I'm not going to explain these features in depth here. Only as it is needed by the topics I'll talk about.
+
+
+</P><P>I will also not explain self-referencing and self-modifying code - but one should be aware that such things HAPPEN (for example, look at some executable-packing/unpacking/encoding/decoding techniques).
+
+
+</P><H2>
+
+2. Dead Data
+
+
+</H2>
+
+<P>There are some specific rules/dependencies/things about representing data in computer's memory. All they influence the code-generating-procedures (and as a result, the generated code), too much, and should be well understood. And are Therefore covered here.
+
+
+</P><P>
+
+
+</P><P>Also described are some features of the code in representing it as data (byte-stream - from processor's view it IS only another kind of data).
+
+
+</P><H3><FONT color="#660000">
+
+2.1 byte, word, dword, ..
+
+
+</FONT></H3>
+
+<P>A BYTE is something the could be represented in 8-bit (there were also 7-bit and 9-bit bytes, but they disappeared). Like one ASCII character. Or, unsigned integer number 0..255 (0x00..0xFF). Or signed integer -128,-127,..,0,..+127 (0x80,0x81,...0,...0x7F) (intel's notation).
+
+
+</P><P>It is (in most widespread computers) the least atomic piece of memory, that could be read/write at once. All other numbers/structures/streams/etc..data-pieces consist of whole bytes (in memory representation). Of course, two data structures could use different parts of same byte (sharing it), but it is unusual.
+
+
+</P><P>(Now be careful: "Word" is not same as "WORD" !)
+
+
+</P><P>Word is the processor's widest-bit-size integer that can be processed (Read/Write/Add,And,etc...) at once (hence we have 1/2/4/8/16/32/...bit processors). Do not mix up with processor's address space - there are for example 8-bit processors with 16bit address space, like good old M6502 in Apple][.
+
+
+</P><P>I did not say there are no instructions that access more than a Word (see LDS/LES for example - they could be used for quick AND small loading of more-than-a-Word at once!)
+
+
+</P><P>Usually, accessing whole processor Word is easier/smaller/faster than accessing parts of it (or more than a Word). Also addressing a Word placed on Word's boundary could be easier/faster than if not on a boundary; i.e. addressing Word at address 0x346 could be slower than at 0x344 for a 32bit processor (0x346 is not divisible by 4), but will not matter on a 16bit processor (see, I have already mixed up word-size and addressing-size :). The same is valid for the code: JUMPing to 0x458 could be faster than JUMPing to 0x455. AND sometimes it could be impossible to create/hook to some special kind of routine if its start is not Word aligned.
+
+
+</P><P>When representing bigger-than-1-byte integers, it is important how the bytes are ordered. In intel's notation, first byte is the least significant; while in Motorola's (for example) it is the most significant. So checking if an (unsigned) integer is odd (by TEST'ing its bit 0) could be done in i80x86 by testing first byte ONLY (i.e. the byte at the address of the integer), but this will not run on Motorola processor (i.e. makes the program unportable). Sometimes, integers could be represented in smaller-size ones, if they fit - e.g. instruction like MOV eax, 5 could have a 0x00000005 (i.e. 0x05 0x00 0x00 0x00) in its code, but also could have 0x05 ONLY (it depends on the specific processor). Also, if the integer is signed, the particular representation and/or the place of its sign-bit depends on the processor (i80x86 uses two's complement with last bit, i.e. most significant one, as a sign).
+
+
+</P><P>WORD in i80x86's assembler notation is (already is not) the processor's Word, but 2byte/16bit integer. Be careful not to mix up "WORD" with processor's "Word" - they have same meaning only for 16-bit processors.
+
+
+</P><P>DWORD (Double Word) in i80x86's represents a 32bit/4byte number (again be careful not to mix things up - it is the Word of a 32bit processor). You ask why they still keep naming things wrong - could be, for "retrogressive compatibility" ? Or by some misguided nostalgia ?
+
+
+</P><P>Adding a value to some other value could cause an overflow, and the resulting value will be "wrapped" - i.e. only the part of it which is above (max-integer-of-that-bit-size) will remain. THIS is particularly IMPORTANT with pointers (see below). example: 0x70+0xA0 gives 0x10 (and overflow flag risen) for adding BYTEs.
+
+
+</P><P>Usually processor can access memory by all smallest-or-equal-than-its-Word chunks - BYTE,WORD,DWORD. But not for all processors and not for all instructions. Example: there are all MOV al,0; MOV ah,0; MOV ax,0; MOV eax,0, but you can't access the upper 16 bits of the eax directly. Or you have ESI and SI, but not less. Or, if you PUSH ax in 32bit mode, it will be same as PUSH eax (eventually with zeroed upper 16bit) - the stack goes up or down only by one whole Word.
+
+
+</P><P>When processor modes are mixed, same byte-code-of-instruction may mean different things. Example: byte-code for MOV AX,BX in 16bit is SAME as MOV EAX,EBX in 32bit. To specify different access-mode, there are sometimes mode-overriders, i.e. you could do MOV AX,BX in 32bit mode, but it will be coded more strangely.
+
+
+</P><H3><FONT color="#660000">
+
+2.2 alignments/packing
+
+
+</FONT></H3>
+
+<P>As I said above, speed of accessing data may depends on how the data is ordered in a structure (Packing) and where the structure is placed (Alignment).
+
+
+</P><P>Sometimes, less space is preferred. So, some structures could be represented EXACTLY as they are defined; or/and where they are defined.
+
+
+</P><P>Sometimes, speed is most wanted feature. So structures consisting of different-bit-size numbers like {byte a; WORD b; byte c;} could be intentionally represented as equal-sized numbers like {WORD a; WORD b; WORD c;} or even {int a; int b; int c;} if "int" is same as the processor's Word. This could be done by hand (not usually), or by special instruction to the compiler - called packing- or alignment-control (i.e. you are describing the first kind of structure, but the compiler represents it as the last one). In this way, two WORDs (16bit-integers), laid one after another, could take 4 bytes (space saving) or 8 bytes (speed - there will be a 2 bytes unusable "hole" between them). Also, be aware, that sometimes the compilers (and/or the programmers :) optimize code so much, that some small structures are loaded as a Word into some register at once, ignoring the redundant sub-items if not needed.
+
+
+</P><P>Be careful - different compilers have different Default alignment (structure packing) - e.g. for Watcom it is 1 byte (i.e. space saving), while for Zortech is sizeof int (need4speed).
+
+
+</P><P>AND, most compilers do not see any difference between data-structure alignment and data-packing - they change both with same value.
+
+
+</P><P>Alignment of the code is hand-controllable in assembler, but is usually subtle in compilers/code-generators, depending on the optimization bias preferred - space or time. So you can expect NOPs or some bullshit filling some (unused) "holes" in the code - e.g. between some function end and next function's start (to make it start at aligned boundary); or after an unconditional JUMP.
+
+
+</P><H3><FONT color="#660000">
+
+2.3 offsets
+
+
+</FONT></H3>
+
+<P>Offset is the difference in the addresses of two variables or two instructions, i.e. address1 + offset = address2; you do not add addresses, you can only subtract them, producing offset; you can add/subtract offsets, producing another offset; offsets can be positive or negative; addresses have no sign.
+
+
+</P><P>Usually offsets are used as a processor's Word (regardless of addressing-space-limit) and expanded if needed. There could be:
+
+
+</P><UL>- data-offset-variables in data:<BR>
+
+{ char type; int offs_to_next_chunk; }
+
+
+</UL>
+
+<UL>- data-offsets in data-addressing part of the instructions:<BR>
+
+MOV ax, [si]+2345;
+
+
+</UL>
+
+<UL>- code-offsets in code-address-related instructions:<BR>
+
+JMP SHORT address  is actually coded as JMP offset-from-next-instruction-to-address; sometimes to distinguish between address and offset, the offsets are shown with sign, e.g. JMP +05;
+
+
+</UL>
+
+<UL>- also code-offsets in data, but this is unusual:<BR>
+
+{ MyFuncPtr pf; int offset_in_func_to_put_checksum_there; }
+
+
+</UL>
+
+<P>The offsets are represented as plain integers, but could be a smaller-size-number if can fit (see explanation about byte-ordering above).
+
+
+</P><H3><FONT color="#660000">
+
+2.4 addresses: near, segments/descriptors, far, normalized/huge
+
+
+</FONT></H3>
+
+<P>Pointer is the address of some data/code. Data and Code could be different or equal notions - it depends on the processor and its current mode - sometimes it is possible to access code as data and vice-versa, sometimes it is not. In some processors, to expand the reachable addressing space, idea of segments (or descriptors) is used - there are several segments(and registers) which have full-addressing-space coverage. All of them can share/overlay same real memory; or separate one. In case of intel i8086 and successors/emulators (i386 in real mode is Almost an i8086), they chose the worst possible: the segments share same memory, all of them are allowed to read/write anywhere; and the combination segment/offset is not unique: segment is shifted 4 bits left (not 16!) and then added to  the offset; thus resulting in a 16+4=20bit addressing space. But there are 2^12=4096 logical combinations segment/offset pointing SAME real address. To cover whole addressing space (1Meg) of an i8086 one needs to change the segment register 16 times - offsetting gives only 64K. The (above mentioned) "wrapping" of offsets is the PAIN in 16bit modes, because within the same segment, if offset is 0xFFFF, incrementing it will not get you to the Next value really, but instead you will get something somewhere around zero of the segment (i.e. far away backwards); and adding 8 to 0xFFFF:0x0009 will wrap (as a result) the 1M addressing space, so you will get the physical address (20bit) 0x00001 (he-he, but for newer processors you will not wrap to zero, but go to the HMA called "high-memory-arrea" - i.e. 1st 64K after the 1st Meg).
+
+
+</P><P>Near pointer is an address in one segment only, i.e. offset only. Therefore the instructions always have a segment of use - a default one (DS,ES,SS,CS - it depends on the type of instruction) or other than default, stated by so-called segment-overriding (a special-instruction that changes the addressing of the next usual instruction).
+
+
+</P><P>Far pointer is an address possibly in another segment, i.e. "absolute" address - it contains the segment and the offset. In standard i80x86, if stored in memory, offset is first, then segment/descriptor. This layout is NOT mandatory, but is used by processor's LDS and LES instructions. And, in most compilers (if the pointer is maintained by the compiler AND NOT by the programmer himself).
+
+
+</P><P>Huge/normalized pointer: Far pointer, which is always unique; e.g. all more-significant bits put in the segment, and the offset is from 0 to 15 (0..0xF) only; or vice-versa.
+
+
+</P><P>Pointer arithmetics: one could subtract near pointers if he is sure they use same segment; subtracting far pointers is very tough work, usually done by special (internal compiler) function.
+
+
+</P><P>
+
+
+</P><P>In i386 and above processors, in i386 mode, offsets are 32bit (i.e. whole addressing space) and segments are actually logical descriptors - they point to some physical (again 32bit) base address which is the logical zero of that segment. Thus, a descriptor+offset is simply base_address+offset (no shifts, no redundancy). Of course, the same physical address could be accessed through several different descriptors, but it should be done Intentionally (and could be made impossible since descriptors have properties like read-only-memory, limits, memory-mapping, etc). So, logical and physical addressing are very Different things here. Subtracting far pointers (i.e. descriptor:32bit_offset) is almost meaningless, because descriptor's base address is usually unknown.
+
+
+</P><P>A near pointer in 16bit i86 mode is 16bit offset; in 32bit i386+ mode it is 32bit offset; in both cases the offset is added to some segment/descriptor's-zero, but in 32bit it is more transparent and obvious (and you never know where really you are; but, knowing where really you are in most cases doesn't have any meaning).
+
+
+</P><P>In hand-made assembly, one can play with segments a lot; but compilers always observe some strict chosen usage. Even some compilers (Metaware HighC) do not allow far pointers at all (in i386 mode), because they (and the notion of far pointer itself) are too machine-dependent. Example: MOV ax,[345] and MOV ax,[857] could address the same WORD in some 16bit compiler-generated program - depending on the value of the DS (data segment) register; while MOV eax,[345] and MOV eax,[567] is usually never the same in a 32bit compiler-generated program. I do not say that it is not possible to make it (by hand) intentionally.
+
+
+</P><H3><FONT color="#660000">
+
+2.5 zero value
+
+
+</FONT></H3>
+
+<P>The strangest value around is the Zero. In modern computers, it is represented as binary zeros. But you should be careful - the programmer or problem itself could need Another Shifted zero. (hey, don't think the character '0' is a Zero, it is a character and has value 0x30 in ASCII representation).
+
+
+</P><P>A zero offset means no offset at all, but be careful what that offset is added to: JMP SHORT +00 is not a never ending loop, but similar to NOP (ok, a bit slower and badly-cacheable - which is sometimes useful - e.g. if dealing with ports ;). CALL +0000 could be a way to run the function-code-that-follows  twice - once in the CALL and once After the RET; the second time RET will exit the whole function (huh, if that code is not self-modifiable, though - see some self-unpacking techniques).
+
+
+</P><P>A Zero pointer is something special - especially when the pointer is near - and could be VERY different from the REAL physical Zero address. Its <B>[[Using and understanding depends tightly on the context]]</B>. Examples:
+
+
+</P><P>1) MOV AX,[0000] will get what is written in 0000:0000 only if data segment DS register is also 0; otherwise it is only just the beginning of the Data segment; and if this i8086 is emulated as a virtual machine, 0000:0000 points to the start of memory given to the machine, which is far-far-away from Absolute Zero; but could be "zero"-enough for a 16bit program - it may never know it is being emulated ;)
+
+
+</P><P>2a) MOV EAX,[00000000] will get you to the beginning of the Data descriptor, which, in 386 protected mode, is usually prohibited by the extender/OS; so you will get a protection fault instead. But, under some extenders (DOS4G) it is The Physical zero;
+
+
+</P><P>2b) MOV EAX,[0F0000000h] will give you the contents of THE EXACT physical Zero address under FlashTek-32VM DOS extender;
+
+
+</P><P>Sometimes, the (above mentioned) "wrapping" of values/ registers/ addressing-space (which in most cases is a real PAIN) can be rather useful. Thus, in FlashTek-32VM, getting the base of a DS descriptor and subtracting it from zero will give us a Near offset to the absolute Zero address - adding anything to that offset (on DS descriptor)  will "wrap" around the addressing space, and start from Zero again. This is only an example - how to obtain the physical Zero address under 386+ protected-mode control is a theme for another BIG essay (see svdXmeg0.asm for several extenders-and-different approaches, including memory-twice-remapping).
+
+
+</P><P>So observe very carefully - <B>[[seemingly obvious mistakes are sometimes intentional]]</B>.
+
+
+</P><H2>
+
+3. Dead Code
+
+
+</H2>
+
+<P>As for general code understanding, learn assembly language well AND processor's architecture/features (from programming point of view, of course; no need to know what each transistor is for ;).
+
+
+</P><P>There is one (nasty from reverser's point of view, but VERY good and useful otherwise) feature in the best compilers (example: HighC), named INSTRUCTIONS_LOW_LEVEL_SHEDULING. The compiler knows which instructions are inter-dependent and which are not (both as a program, and as processor-features). So after generating the code, it re-orders independent instructions in a "strange" (but better operating) way, which will use the best of the processor's architecture - e.g. pipelines, parallel executing, etc. So sometimes a=b; x=z; g=r*t; may not look exactly this way (i.e. could be very mixed-up) in assembly. But if there is some "y=func(a,x,f,g)" afterwards, it WILL BE Afterwards - the real sequence of the things IS NOT touched (oh, but if the compiler has errors, it could be touched!).
+
+
+</P><P>One could force the compiler to put texts (i.e. strings) into code segment, and not in the data. Thus, every function, that uses some textual values, will have them after or before its code. That's why sometimes a function ends, but the next one could start far away from there.
+
+
+</P><P><B>[[Use processor's or compiler's limitations to guess which is what]]</B>.
+
+
+</P><P>Every compiler has its own (constant) purpose for the available registers. Examples of some of wide-spread purposes are: SP,BP for accessing arguments and temporary variables; AX (and DX) for returning result; SI/DI for fast "register" variables or for array-addressing; etc... Some of them are always saved before touching (and restored afterwards) because contain some needed value for the work afterwards; some of them are never saved or restored, because they are always used as temporary ones.
+
+
+</P><P>NOT ALL registers could do everything in any processor - the older processors have extremely particular specialization of their registers, while modern ones have lower specialization (e.g. in 8086 no MOV [AX]+5 base-addressing exists, only basing by BX,SI,DI; while in 386+ one can use almost every register as a base). This could make understanding of a good-compiler-generated code hard. I mean that same pieces of source code (like expanded inline function) will be translated almost same way for simpler processors or by simpler compilers; while good compiler for good target processor could make it every time in different way - e.g. 1st time using EAX/ESI/ECX; next time EDI/EBX/EDX... And, of course, the logic of the source code will be the same, so things (at the logical level) will look similar, if not the same.
+
+
+</P><P>One should be aware that some compilers, for some certain processor configurations can "hide" some values - e.g. HighC is able to use ALL the special Weitek coprocessor registers as temporary FAST memory (and they are not visible to any usual debugger).
+
+
+</P><H3><FONT color="#660000">
+
+3.1 outside-Function (call) structure:<BR>
+
+pre-call actions / call / post-call actions
+
+
+</FONT></H3>
+
+<P>The USUAL way of calling a function is:
+
+
+</P><UL>1. Prepare arguments, then pass them all; OR Prepare and pass one by one;
+
+
+</UL>
+
+<UL>1a. (possibly) save (some) state
+
+
+</UL>
+
+<UL>2. Call function
+
+
+</UL>
+
+<UL>3. Restore stack  (clear arguments, if needed) and possibly (that some) state
+
+
+</UL>
+
+<UL>4. Use the results
+
+
+</UL>
+
+<P>(4. and 3. could be mixed up)
+
+
+</P><UL><B>
+
+1. Prepare and pass arguments to function
+
+
+</B></UL>
+
+<P>This is done in three ways: through stack, through processor registers or through some special static/dynamic program-dependent structure.
+
+
+</P><P>Stack method have two forms. The normal one is by PUSH-ing arguments there (which decrements the stack pointer - stack is filled from higher-addresses to lower). This way is simple and takes less space, but is a bit slow and needs stack-pointer restoring every time.
+
+
+</P><P>The unusual one (Metaware HighC), is without touching the stack-pointer every time (only once in caller-function start), and by MOV-ing things to the proper place in the stack just like if they were PUSHed. (in i386+ one could address things in stack by [ESP]+offset addressing). This way is faster, no need to touch/care-about stack pointer all-the-time, but is unusual, and sometimes, takes more space - PUSH EAX is 1 byte, while MOV [ESP]+4,EAX is 4.
+
+
+</P><P>The order of arguments in the stack depends on the language and compiler - standard "C" notation pushes them backwards (last argument first), but for C++ there's no standard and there could be differences. And also, if the function is a method-of-a-class, i.e. "this" pointer is used, different compilers place it differently, but only first or last (before/after all other arguments). Example: Zortech pushes C++ parameters like 1st,2nd,...last,"this"; HighC pushes them like last,...2nd,1st,"this".
+
+
+</P><P>For register calling convention (e.g. Watcom) arguments are put into registers (almost all, could be) and if more arguments remain, the remainder placed into the stack. There is special instruction for the Watcom compiler in describing functions (example: see its bios.h), telling which arguments are placed into which registers (i.e. the default convention can be easily overridden).
+
+
+</P><P>Passing pointers (and references - they are pointers of a bit-different kind) is not much different from other values, but as I said above, one  can use processor's and compiler's limitations to guess which is what. Example: far pointers need both offset and segment to be pushed, so pointer arithmetics needs addition-with-overflow, which is made only through AX+DX combination. So, the value that (finally before pushing), was in AX, is the offset, and that in DX is the segment.
+
+
+</P><P>Also, if the required far-pointer is a data-pointer, it is usually inside Data Segment (DS) of the caller, so compiler could  PUSH DS; PUSH value_offset  instead of  PUSH value_seg; PUSH value_offset;  the same is true if it is code-pointer, but then CS is pushed.
+
+
+</P><P><B>[[Do not expect that all the arguments will be grouped and pushed together just before the call]]</B>. Sometimes it is so, but sometimes the pushes are immediately after the calculations, and there could be several pages of code between pushing two neighbour-standing arguments.
+
+
+</P><P>The usual way of saving of the current state (of registers, or variables, structures, etc..) in order to prevent its change by the function, is done inside the function (i.e. the principle used is: who is going to change something, he should see to save the state). But sometimes it can be done outside the function, by the caller, somewhere before the call (and restored afterwards).
+
+
+</P><UL><B>
+
+2. Call function
+
+
+</B></UL>
+
+<P>Well, the CALL itself can be made in many similar ways, but be aware that sometimes compilers/linkers make optimizations. So, if a function is declared FAR (i.e. needs far return address because it could be in another segment), and it could be currently reached by near CALL (i.e. is in same segment with the caller), some compilers will  PUSH CS; CALL near func_offset  instead of  CALL FAR func_seg:offset.
+
+
+</P><P>Also, you could find that JMPs (or  PUSH address;RET/RETF combination which is the same, but is used, for example, because one cannot make a JMP FAR [AX] - only a near one) also can be used here - if the called function knows where to return or doesn't return at all...
+
+
+</P><UL><B>
+
+3. Restore stack, if needed
+
+
+</B></UL>
+
+<P>If function is standard "C" style, it returns the same stack pointer as on entry. So here the arguments should be removed from stack (OF COURSE only IF they were PUSHed there - another reason to use MOVto_stack instead of PUSH). Usually this is done by ADD SP,nnnn, where nnnn = number_of_arguments * Word_size_in_bytes. It is done after each call, but it is possible (by hand) several calls to be made and just then one  ADD SP,summ_of_nnnn  after all of them. In some code-generators, for space-tightening, instead of  ADD SP,nnnn, a  POP some_trash_register  is used once or more times. But it is only used for less than 2-3 arguments. If the function is in Pascal/C++ style, it will remove arguments itself.
+
+
+</P><UL><B>
+
+4. Use the results
+
+
+</B></UL>
+
+<P>If result(s) are returned in standard way (i.e. not through some program dependent structure), they are in the registers.
+
+
+</P><P>Every compiler has his own way of handling this, but some things became almost-standard over the i80x86 assembly. Usually the return value (integer, or pointer) is in AL, AX or EAX; if it is longer than a Word, the higher part is in DX (EDX) - e.g. for far pointers or long integers.
+
+
+</P><P>If a function should return a structure (not reference, but whole structure, which is a VERY stupid way of passing results, IMHO, especially if bigger than one Word), it is done in another way. A space for the structure is put aside as temporary variable in the stack; a pointer to that space is passed to the function as an additional argument; inside or outside the function the constructor of the structure is called (if any). So at return we have a filled temporary structure in the stack of the caller (which most frequently use afterwards is to copy that temporary structure somewhere else - why not simply pass a reference of the final recipient to the function instead of all that abracadabra...).
+
+
+</P><H3><FONT color="#660000">
+
+3.2 inside-Function (call) structure:<BR>
+
+prologue / main part / epilogue
+
+
+</FONT></H3>
+
+<UL>1. stack frame creating
+
+
+</UL>
+
+<UL>2. saving state (registers)  if needed
+
+
+</UL>
+
+<UL>3. argument receiving
+
+
+</UL>
+
+<UL>4. function body
+
+
+</UL>
+
+<UL>5. result passing
+
+
+</UL>
+
+<UL>6. restoring state (and stack if needed)
+
+
+</UL>
+
+<UL>7. exit (and clear arguments from stack if needed)
+
+
+</UL>
+
+<P>Both preliminary (1,2,3) and post-processing (5,6,7) actions could be mixed up AND/OR placed inside the function body.
+
+
+</P><P>Usually (!) every function has an initialization part, main part, and ending part. The initialization may consist of setting up internal stack frame, creating (place for) temporary variables, saving some incoming state or registers; extracting arguments; the ending part may consist of result sending, destroying/cleaning-up the temporary variables/stack frame, restoring state.
+
+
+</P><P>Of course, it is possible to have a function without these things. But, this is the usual compiler-generated way. Everything else should be hand-made, OR made by (recently unusual) good  compiler (but there are SUCH - e.g. HighC, or Watcom). There could be Several entry points with a bit different numbers or lists of arguments and/or behaviour (well, it is like having several different functions, but sharing same code sometimes), or using one base sub-function for several different purposes.
+
+
+</P><P>Example: if func5 has 5 arguments, there could be a second entry point, which skips 1st argument, i.e. that func4 will have only 4 arguments (like C++ default argument-values). Or, if a function's behaviour is made to depend on some register, e.g. CX, it could have several entry points (each like MOV CX,number; JMP realstart) - this is actually an "inlined" switch(), but the base subfunction is invisible from outside.
+
+
+</P><UL><B>
+
+1. Initialization and stack frame creating
+
+
+</B></UL>
+
+<P>Stack goes from up to down. To have a new stack frame, means to move the stack pointer to a new place, and to use that space in between new and old one for temporary variables. But, one should 1) save the stack pointer before touching it, OR 2) know exactly how to restore it back. Examples: 1) MOV DI,SP; ..body.. MOV SP,DI; 2) SUB SP,8 ..body.. ADD SP,8.
+
+
+</P><P>The older i80x86 processors were not able to address anything in the stack using the stack pointer - only PUSH,POP,CALL,RET were available. And another special register called BP (base pointer) was invented (why? ask them, not me!). So all the things in the stack, were, if not PUSHed or POPed, addressed by BP. For this purpose every function starts with saving BP and getting the SP there: PUSH BP; MOV BP,SP; and ends with restoring BP (and SP if it was touched) - POP BP; (MOV SP,BP); RET... A space in the stack for temporary needs is put aside with simply SUB SP,number_of_words_needed.
+
+
+</P><P>Newer processors (286) involve new instructions, which combine all these thing into one. ENTER number_of_words (instead of PUSH BP; MOV BP,SP; SUB SP,nnn); and LEAVE number_of_words (instead of ADD SP,nnn; POP BP).
+
+
+</P><P>The i386 and successors are able to address things in stack basing on ESP as well as on EBP. But, most of the compilers still generate the same (needless) instructions (for EBP) even when there's no need (see examples below) - it is hard to break a habit. Of course some of them take advantage of that feature, thus making code better, but a bit harder to comprehend.
+
+
+</P><P>It is possible to create a new stack frame anytime, i.e. the function could have some (not stack related) processing before or even without creating stack frame/accessing stack-arguments - if no need OR no temporary variables and all arguments are in the registers (example: Watcom generated code!).
+
+
+</P><P>As I said above, the usual way of saving of the current state in order to prevent it' change by the function, is done inside the function (who is going to change something, he should see to save the state). But sometimes it can be done outside the function, by the caller, somewhere before the call (and restored afterwards).
+
+
+</P><P>As not all of the registers are important, some of them are saved (if touched inside the function), some are not.
+
+
+</P><UL><B>
+
+2. Argument receiving
+
+
+</B></UL>
+
+<P>As I said about argument passing above, there are several ways - but i'll cover here only the stack-based arguments, because there are some almost standard layouts there.
+
+
+</P><P>If nothing is touched immediately after the call, the stack pointer points to the return address. So, 1st (or last - it depends on the passing order) argument should be at SP+(size_of_address). Therefore, for near i8086 calls, the arguments start at [SP]+2; for far call at [SP]+4; for near i386+ call: [ESP]+4; far i386+ call: [ESP]+8... ; the temporary place for variables starts at SP-offset to variable.
+
+
+</P><P>If something is pushed, the offsets above should be increased with the summed size of the pushed things.
+
+
+</P><P>The same goes for the BP register - but with an additional correction of plus one WordSize, if BP/EBP is pushed immediately after entry (it could be saved in some other way - by MOV somewhere, but this is unusual).
+
+
+</P><P>Thus, the offset to arguments-starting-point is, if based on ESP: [ESP]+sizeof_funcAddress+sizeof_things_pushed_before_access; and if based on BP/EBP after PUSH BP done: [BP]+size_of_funcAddress+WordSize.
+
+
+</P><P>The next argument is accessible by Adding the (rounded up to whole Word) size of the previous one to its offset (also, this way one could see what size some argument is: by subtracting the offsets to next one and its own).
+
+
+</P><P>First temporary variable is at [BP]-WordSize; (or [ESP], but it is not used this way).
+
+
+</P><P>The above calculations are GENERAL - i.e. valid for any compiler/code. But there could be differences in processor's Word size, in the way of addressing (BP/EBP/ESP), order of arguments, and presence or absence of a C++ "this" pointer as an argument. Some of them are stated and expanded for several different compilers in svdmacro.asm.
+
+
+</P><UL><B>
+
+3. Exits and result passing
+
+
+</B></UL>
+
+<P>As I said above, older processors use  MOV SP,BP; POP BP; RET  at end of routine; newer could use LEAVE nnn; RET. Depending on the calling convention, the function may destroy the arguments-passed-to-it in stack (by RET number_of_Words) or leave them there (by simple RET). While there is usually one entry point, there could be several exit points from a function; or several JMPs to one exit point; or (!) several JMPs from several functions to same exit point (if all of them have same size of arguments).
+
+
+</P><P>Before restoring stack, all the saved-at-entry-things should be restored - thus POPing registers or whatever (e.g. direct values to memory).
+
+
+</P><P>Methods of passing results I have explained above - usually AX, or AX/DX pair, or EAX is used.
+
+
+</P><H3><FONT color="#660000">
+
+3.3 Interrupts - structure, arguments, results
+
+
+</FONT></H3>
+
+<P>An interrupt is a function that is called by some hardware event or by INT number instruction (or by this unusual hand-made sequence: PUSH flags; CALL FAR calculated_address). As it should be accessible from any point in memory, it should be always a FAR function (i.e. requires also code segment/descriptor), returning with RETF. As it should be callable at any time, and as there is no standard "trans-interrupt-store-place", all the needed arguments/results should be in registers AND all the registers should be saved/restored at exit (except those containing the result, of course). Therefore, a usual interrupt structure is:
+
+
+</P><UL>PUSH any registers touched, including segments/descriptors<BR>
+
+do something<BR>
+
+POP all the above registers<BR>
+
+IRET
+
+
+</UL>
+
+<P>eventually with  CLI	and STI	somewhere in most important points. (Thus, the frequently encountered string "PSQRVW" or other similar patterns in older programs are simply codes for PUSH AX; PUSH BX; PUSH CX; PUSH DX; etc sequences :-)
+
+
+</P><P>In newer processors there is special single instructions for all-at-once - PUSHA and POPA  - but not frequently used as there was a mistake in POPA in one of i386 clones).
+
+
+</P><P>Usually if not much stack is used, the interrupt uses the caller's stack; but sometimes it saves it, sets its own stack, use it, then restores caller's one.
+
+
+</P><H3><FONT color="#660000">
+
+3.4 Crazy instructions (or crazy processors ?)
+
+
+</FONT></H3>
+
+<P>Could you calculate a*4+b+37 in One instruction? It depends on the processor. The more sophisticated a processor is, the more sophisticated the methods of addressing that are possible. And if there's an instruction that gives you the chance to get the result of some addressing-method-calculation, you are happy (1. you will save space; 2. these calculations are FASTER than any other; 3. but it may stop or stall the processor's pipeline, which could result in slower overall execution, so they are of limited usage).
+
+
+</P><P>intel's i80x86 has an instruction called LEA (Load Effective Addressing). It calculates the address through the usual processor's addressing module, and afterwards does not use it for memory-access, but stores it into a target register. So, if you write LEA AX,[SI]+7, you will have AX=SI+7 afterwards. In one instruction. And in i386, you could have LEA EDI, [EAX*4][EBX]+37. In one instruction! But, if the multiplier is not 1,2,or 4 (i.e. sub-parts of the processor's Word) - you can not use it - it is not an addressing mode.
+
+
+</P><P><B>[[Always Try to (find and) use special instructions/ functions/ variables/ features, which are intended to do something else, but could well do your job too]]</B>. Example: Your repair code won't fit into the small-unused-space-in-the-code you have found? There are LDS/LES instructions that could save you space - they load two Words (or actually a far pointer) in once.
+
+
+</P><P>But <B>[[There is always a trade-off for some extra feature]]</B>. Almost always optimizing space slows down and vice versa - optimizing speed makes thing larger. Or, any optimization makes the code unportable and/or unintelligible. Example: PUSH and POP register are one byte instructions - useful for space-saving - but have side-effects of touching stack (which is slow and sometimes undesired). PUSH SI; REP MOVS; POP SI combination is smaller, but uses stack; while MOV DX,SI; REP MOVS; MOV SI,DX is faster, but uses DX. This Razor is nasty from creator's point of view but is sometimes useful for reversing - the programmer's / compilers should take this into consideration, and this puts some limits/standards on the (not-intentionally-hand-made) code.
+
+
+</P><H3><FONT color="#660000">
+
+3.5 Obvious and non-obvious calculations;<BR>
+
+Logical value calculations;<BR>
+
+Arithmetic optimizations
+
+
+</FONT></H3>
+
+<P>Okay, you should know that XOR reg,same_reg and  SUB reg,same_reg means same - fast (inside processor) zeroing of the reg.
+
+
+</P><P>That testing if a reg is zero (and other characteristic) is done by TEST reg,reg; or AND reg,reg; or OR reg,reg; (instead of CMP reg,0) and JMP-by-condition afterwards.
+
+
+</P><P>But what is the meaning of the following three code pieces?
+
+
+</P><P>
+
+
+</P><PRE>1):<BR>
+
+Segment: _TEXT  DWORD USE32  00000018 bytes<BR>
+
+ 0000  8b 44 24 04       example1        mov     eax,+4H[esp]<BR>
+
+ 0004  23 c0                             and     eax,eax<BR>
+
+ 0006  0f 94 c1                          sete    cl<BR>
+
+ 0009  0f be c9                          movsx   ecx,cl<BR>
+
+ 000c  0f 95 c0                          setne   al<BR>
+
+ 000f  0f be c0                          movsx   eax,al<BR>
+
+ 0012  03 c1                             add     eax,ecx<BR>
+
+ 0014  c3                                ret<BR>
+
+ 0015  90                                nop<BR>
+
+ 0016  90                                nop<BR>
+
+ 0017  90                                nop<BR>
+
+<BR>
+
+2):<BR>
+
+Segment: _TEXT  DWORD USE32  0000001c bytes<BR>
+
+ 0000  55                _example2       push    ebp<BR>
+
+ 0001  8b ec                             mov     ebp,esp<BR>
+
+ 0003  53                                push    ebx<BR>
+
+ 0004  8b 55 08                          mov     edx,+8H[ebp]<BR>
+
+ 0007  f7 da                             neg     edx<BR>
+
+ 0009  19 d2                             sbb     edx,edx<BR>
+
+ 000b  42                                inc     edx<BR>
+
+ 000c  8b 5d 08                          mov     ebx,+8H[ebp]<BR>
+
+ 000f  f7 db                             neg     ebx<BR>
+
+ 0011  19 db                             sbb     ebx,ebx<BR>
+
+ 0013  f7 db                             neg     ebx<BR>
+
+ 0015  89 d0                             mov     eax,edx<BR>
+
+ 0017  03 c3                             add     eax,ebx<BR>
+
+ 0019  5b                                pop     ebx<BR>
+
+ 001a  5d                                pop     ebp<BR>
+
+ 001b  c3                                ret<BR>
+
+<BR>
+
+3)<BR>
+
+Segment: _TEXT  DWORD USE32  00000016 bytes<BR>
+
+ 0000  8b 44 24 04       _example3       mov     eax,+4H[esp]<BR>
+
+ 0004  f7 d8                             neg     eax<BR>
+
+ 0006  19 c0                             sbb     eax,eax<BR>
+
+ 0008  40                                inc     eax<BR>
+
+ 0009  8b 4c 24 04                       mov     ecx,+4H[esp]<BR>
+
+ 000d  f7 d9                             neg     ecx<BR>
+
+ 000f  19 c9                             sbb     ecx,ecx<BR>
+
+ 0011  f7 d9                             neg     ecx<BR>
+
+ 0013  03 c1                             add     eax,ecx<BR>
+
+ 0015  c3                                ret
+
+
+</PRE>
+
+<P>
+
+
+</P><P>Well, they mean the SAME - the following simple function:
+
+
+</P><PRE>int example( int g ) {<BR>
+
+    int x,y;<BR>
+
+    x = !g;<BR>
+
+    y = !!g;<BR>
+
+    return x+y;<BR>
+
+}
+
+
+</PRE>
+
+<P>
+
+
+</P><P>First code is made by HighC. It IS OPTIMIZED as you see. Second piece is by Zortech C. Not so well optimized, but shows interesting NON-obvious calculations:
+
+
+</P>NEG reg; SBB reg,reg; INC reg; means: if (reg==0) reg=1; else reg=0;
+
+
+NEG reg; SBB reg,reg; NEG reg; means: if (reg==0) reg=0; else reg=1;
+
+
+<P>
+
+
+</P><P>And it is WITHOUT any JUMPS or special instructions (like SETE/SETNE from 1st example)! Only pure logics and arithmetics! Now one could figure out many similar uses of the flags, sign-bit-place-in-a-register, flag-dependent/influencing instructions etc...
+
+
+</P><P>(as you see, HighC names functions exactly as they are stated by the programmer; Zortech adds an underscore at start; Watcom adds underscore afterwards; etc..)
+
+
+</P><P>The third example is again by Zortech C, but for the (same-optimized-by-hand) function:
+
+
+</P><PRE>   int example( int g ) {  return !g + !!g; }
+
+
+</PRE>
+
+<P>I put it here to show the difference between compilers - HighC just does not care if you optimize the source yourself or not - it always produces the same most optimized code (it is because the optimization is pure logical; but it will NOT figure out that the function will always return 1, for example ;)... well, sometimes it does!); while Zortech cannot understand that x,y,z are not needed, and makes a new stack frame, etc... Of course, it could even be optimized more (but by hand in assembly!): e.g. MOV ECX,EAX (2bytes) after taking EAX from stack, instead of taking ECX from stack again (4bytes)... but hell, you're better off to replace it with the constant value 1!
+
+
+</P><P>
+
+
+</P><P>Other similar "strange" arithmetics result from the compiler's way of optimizing calculations. Multiplications by numbers near to powers of 2 are substituted with combinations of logical shifts and arithmetics. For example:
+
+
+</P><P>reg*3 could be (2*reg+reg):  MOV eax,reg; SHL eax,1; add eax,reg; (instead of MUL reg,3); but it can be even done in ONE instruction (see above about LEA instruction): LEA eax,[2*reg+reg]
+
+
+</P><P>reg*7 could be (8*reg-reg):  MOV eax,reg; SHL eax,3; sub eax,reg
+
+
+</P><H3><FONT color="#660000">
+
+3.6 Deadloops: JMP self
+
+
+</FONT></H3>
+
+<P>If you see a dead-loop instruction, like "0x347: JMP 0x347" (i.e. JMP SHORT -2), this could mean two things. 1) you have found an (intentional) error. 2) The code-thread you are following is for initialization only. All the things that happen afterwards are controlled through other points: by interrupts; or events; or other threads, etc... (0x347:CALL 0x347 is not exactly a deadloop - it will fill up the stack and cause a hang or stack-fault).
+
+
+</P><H3><FONT color="#660000">
+
+3.7 Nasty instructions: JMP [eax]; CALL [eax]
+
+
+</FONT></H3>
+
+<P>I call these instructions nasty, because they are usually impossible to follow without online-debugging (if the code calculating EAX is somewhere around it, you are lucky). These are very fast and useful instructions for function-pointers-execution and virtual-methods-calling; AND ALSO for doing branching ("C" switch operator) - but (fortunately and unfortunately) very rarely.
+
+
+</P><H3><FONT color="#660000">
+
+3.8 Meaningless instructions
+
+
+</FONT></H3>
+
+<P>Can you give an example of a 2-byte NOP instruction? Well, MOV ax,ax will do. Or every other MOV reg,same_reg. But you will not see such thing in compiler generated code (oh, if you see it, then send $1 to the author to help him starting some other business ;). If you see such a thing, it is coded-by-hand, and may be someone will modify it somewhen...
+
+
+</P><P>Many compilers in easy-mode do not think too much about saving resources and removing obvious redundancies. So, in Borland code, or Zortech-without-optimizations you can frequently see sequences like MOV [BP-2],AX; MOV AX,[BP-2]; RET - they do nothing really, but the compiler simply does not remove them. Warning: in one of 10 places this sequence could be USED really (by some JMP to second MOV). So, be careful.
+
+
+</P><H2>
+
+4. Disabling code, limiting demo-versions, etc..
+
+
+</H2>
+
+<P>There are several ways of limiting a full working program to some demo-capabilities (I'm talking from a programmer's point of view), i.e. demo version.
+
+
+</P><UL>1.  There is a #defined constant, that determines some array sizes. All the things depend on that constant, but the arrays are static (i.e. in the executable or allocated during the executable-loading/initialization).<BR>
+
+This is the worst case from reverser's point of view - you just do not know how many arrays are there and there's no room for expanding.  (example: Novell server.exe up-to ver3.x - 20user-version has am empty static tables for 20users only - not one byte more)
+
+
+</UL>
+
+<UL>2.  The same as above, but the allocation is dynamic by the program. This is only a bit easier, because again you don't know how many/big arrays are and where are they allocated.
+
+
+</UL>
+
+<UL>3.  There is a static/dynamic constant/variable, that determines the above sizes.  If you change it before the allocation, you're OK.
+
+
+</UL>
+
+<UL>4.  The stupidest kind is just to add an additional check if some var is more than some little constant, at several places in the program (and all the rest remain the same).  This is the easiest way to being reversed - find those places, and remove the check.
+
+
+</UL>
+
+<UL>5.  In my programs I usually #ifdef some parts of the program, so they are really missing in the demo-version.  This usually cannot be reversed, especially if the missing processing is unique in the program (you will need to reinvent them, which is not always impossible - I've done it several times, long ago, in (partially) encoded programs).
+
+
+</UL>
+
+<UL>6. Now mix up all the above (and add some nasties... look at how-to-protect.htm better)
+
+
+</UL>
+
+<P>
+
+
+</P><P>So finding a limitation could be a pain, if the programmer intents to do so (which is BTW very hard, coz requires that several versions of the source to be supported at same time).  Usually there are some more options on the command line (if there is such), or "hidden" shortcuts, menus, etc...  I am talking generally, not for dos/windoz/any-other special platform - just the technology.
+
+
+</P><P>Now, how to obtain the missing limits.  By observing, of course.  There are always some traces - SIZE of some array, memory allocation, clearing, copying (malloc, memset, memcpy), file, block or anything else. There is no general technique - just look inside. If you are very lucky, you may see what the programmer has hidden.  But, for bad programs, the hidden code is not exactly hidden, just needless or dead. So you could be lucky if needed code is there (not dropped by compiler), but you should find it in the heaps of rubbish.
+
+
+</P><H2>
+
+5. Some final notes
+
+
+</H2>
+
+<P>A code could look very different if disassembled from different starting point. If the instruction you are on is long, and you move the disassembly start 1-2-3 bytes below or above, you could get fairly different instructions decoded. There are sometimes special intentionally developed deceiving-instructions, which are executed normally in some case, but from the middle in other cases.
+
+
+</P><P>Do not be startled if you see a Jump or Call to a place where nothing seems reasonable. In 99% of the cases There Will be Code there when that Jump/Call gets executed - by preliminary moving some code, or by unpacking/decoding; in the rest 1% this is
+
+
+</P><UL> a) intentionally made - to cause a fault OR to make the disassembler crazy and thus to hide something interesting;
+
+
+</UL>
+
+<UL> b) it is a corrupted code - because some disk reading error or some-other-code is overwriting that part of code as a mistake in some pointer;
+
+
+</UL>
+
+<UL> c) it is a mistake in the jump-code (by the programmer), but such things happen Very Rarely. Be aware: I am not talking about Jump/Call using some variable as a target address - thus if variable gets wrong, noone could help you - You should repair the function that sets the variable, or just ignore all that section.
+
+
+</UL>
+
+<P><B>[[Always keep a track of what you have found]]</B> - some strange or special functions (strcmp, memcpy, etc..), strange or special variables, etc. - write down the addresses AND some description you have figured out. You see, same strcmp() function used to compare some executables optional command-line argument with the list of possible ones could be used also to check your name, password, etc... One never knows which bush the rabbit will come from.
+
+
+</P><H2>
+
+6. How to learn more on this (kind of magic)
+
+
+</H2>
+
+<P>It is easy. No need to reinvent the wheel - it is already invented ;). Just study it. (here is the, he-he, as one said, learning-curve killer :).
+
+
+</P><P>Make a simple C/C++/anything program or function that does something Very-Simple and that you know Exactly-what it is.
+
+
+</P><P>Then Compile it with the (chosen-target) compiler, Without optimizations.
+
+
+</P><P>Now Disassemble the object code.
+
+
+</P><P>Look carefully what code is associated with your functions. Some object-file (.obj) disassemblers can put source lines as comments around the assembly code, making it easier to see what is what.
+
+
+</P><P>Or link then disassemble and/or debug it whole.
+
+
+</P><P>Now compile it with Full Optimizations. Look again.
+
+
+</P><P>Now find or write more complex program.  Repeat the above.
+
+
+</P><P>
+
+
+</P><P>After your 100-th trial you will know VERY WELL WHAT in assembly means WHAT in C. (For that compiler). And you could decompile (i.e. understand) a disassembled executable into C/whatever in your mind. Try other compilers (one can link, i.e. mix up into one executable, modules made by different compilers). Etc... after some years you could make such an essay yourself ;).
+
+
+</P><P>This way, you may find mistakes in your programs and/or compilers - before they become a fault. <B>[[If you are programming, sometimes check out what kind of (shit) your compiler produces]]</B>. Just in case. In my experience there were many occasions when I have found my (and not-my) mistakes, caused by wrong code, compiler settings, errors in compilers (yes, such things happen! - and it is disgustingly difficult to find them), etc..., only by looking in the resulting object/executable code and not in the source/makefile's/etc. And it's the only way to find a way around the mistake, if it is in the compiler.
+
+
+</P><P><B>[[The compiler will not add brains to the programmer's]]</B>. It would try to express, in its best way, the programmer's ideas, but if they are wrong... (remember the above needless example function - yes, it could be made much longer, more complex, resource-consuming, window-animating, but will have the same CONST result: 1 ;-).
+
+
+</P><P>
+
+
+</P><P>As final words, I would like to say the following.
+
+
+</P><P>If one knows how to rip an win999.9 application with HardBreak3.14159, but he does not know what ACTUALLY he is doing, is he a reverser ? No. In my opinion he is only a blind user of someone else's made recipe. Or, using other words, Dull Consumer.
+
+
+</P><P>I do not imagine that everybody is able to figure out (I also didn't know it until I saw it) that exchanging A and B without temporary variables could be done by  XOR A,B; XOR B,A; XOR A,B  (i.e. A=A^B; B=A^B; A=A^B) sequence and it WILL work on ANY processor/language supporting XOR operation; but if one see such thing and CAN'T understand it, He is A fault.
+
+
+</P><P><B>[[Particularities die, the principles remain... but they should be BOTH learned - seeing theory behind the practice and practice behind the theory]]</B>.
+
+
+</P><P>
+
+
+</P><P>Now, sharpen your pencil, and... nice digging.
+
+
+</P><P>
+
+
+</P><P>SvD Jan'99
+
+
+=======================================
+
+
+<PRE>table of contents:
+
+
+</PRE>
+
+<PRE>1. Introduction. Assembler/Compiler and Disassembler/Decompiler<BR>
+
+2. Dead Data<BR>
+
+	2.1 byte, word, dword, ..<BR>
+
+	2.2 alignments/packing<BR>
+
+	2.3 offsets<BR>
+
+	2.4 addresses: near, segments/descriptors, far, normalized/huge<BR>
+
+	2.5 zero value<BR>
+
+3. Dead Code<BR>
+
+	3.1 outside-Function (call) structure:<BR>
+
+			pre-call actions / call / post-call actions<BR>
+
+		1. Prepare and pass arguments to function<BR>
+
+		2. Call function<BR>
+
+		3. Restore stack, if needed<BR>
+
+		4. Use the results<BR>
+
+	3.2 inside-Function (call) structure:<BR>
+
+			prologue / main part / epilogue<BR>
+
+		1. Initialization and stack frame creating<BR>
+
+		2. Argument receiving<BR>
+
+		3. Exits and result passing<BR>
+
+	3.3 Interrupts - structure, arguments, results<BR>
+
+	3.4 Crazy instructions (or crazy processors ?)<BR>
+
+	3.5 Obvious and non-obvious calculations;<BR>
+
+		Logical value calculations;<BR>
+
+		Arithmetic optimizations<BR>
+
+	3.6 Deadloops: JMP self<BR>
+
+	3.7 Nasty instructions: JMP [eax]; CALL [eax]<BR>
+
+	3.8 Meaningless instructions<BR>
+
+4. Disabling code, limiting demo-versions, etc..<BR>
+
+5. Some final notes<BR>
+
+6. How to learn more on this (kind of magic)
+
+
+</PRE>
+
+<P>EOF

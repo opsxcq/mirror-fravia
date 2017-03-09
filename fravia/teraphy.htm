@@ -1,0 +1,1476 @@
+<HTML>
+
+<HEAD>
+
+  <META NAME="GENERATOR" CONTENT="Photoshop Filter Hacking">
+
+  <TITLE>teraphy</TITLE>
+
+</HEAD>
+
+<BODY TEXT="#001010" VLINK="#405040">
+
+
+
+<P><CENTER><FONT SIZE="+4">ASM KEYGEN tutorial<BR>
+
+</FONT><FONT SIZE="+2">How to write a key generator</FONT>
+
+<BR>
+
+</CENTER>
+
+
+
+<H4><CENTER><I>by TERAPHY</I><BR>
+
+(06 August 1997, slightly edited by Fravia)</CENTER></H4>
+
+
+
+<CENTER><HR><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"> Courtesy of Fravia's page of reverse engineering<BR>
+
+<HR> <I>Well, after having read this essay you should not have any problem 
+
+whatsoever more with mathematical algorithms... an interesting &quot;double&quot; essay! 
+
+And a little of <FONT color="blue">assembling</FONT> for once... should you have disassembled enough!</I>
+
+</CENTER><HR>
+
+<PRE>
+
+== ASM KEYGEN TUTORIAL - WRITTEN BY TERAPHY [PC97]
+
+===================================================
+
+
+
+These are the tools i use in this tutorial:
+
+ Soft-Ice 3.01
+
+ W32Dasm 8.9 *Regged*
+
+ Tasm/Tlink
+
+
+
+Getting Started:
+
+ What we should do is: 1) get the registration code,
+
+2) find where the code is being calculated and 3) rip it out.
+
+I will use two easy targets as examples,
+
+Command Line 97 1.0, and Flywheel V1.02b.
+
+
+
+
+
+<B>Command Line 97 1.0: </B>
+
+(<A href="tppmsgs/msgs2.htm#249" tppabs="http://www.anticrack.de/fravia/tppmsgs/msgs2.htm#249">http://www.odyssey.net/subscribers/js01/index.html</A>)
+
+ This program has a real simple code calculation.
+
+I will guide you step by step how to get the serial,
+
+how to rip it out and how to make a working key generator.
+
+
+
+1. Start the Program
+
+
+
+2. Select Register
+
+
+
+3. Go into Soft-Ice by pressing Ctrl-D, and set a breakpoint on
+
+   GetDlgItemTextA. Type 'bpx getdlgitemtexta'. Now Press Ctrl-D
+
+   again to get out from Soft-Ice.
+
+
+
+4. Enter your name and a serial... I used 'TERAPHY' and '12345'
+
+
+
+5. Press OK Button.. Soft-Ice will now show up inside the call
+
+   to GetDlgItemTextA. Press F11 to get out of that call.
+
+
+
+Scroll up a bit and u will see this
+
+
+
+:0040254B 6A1E                    push 0000001E
+
+:0040254D 68300B4100              push 00410B30
+
+:00402552 68F0030000              push 000003F0
+
+:00402557 56                      push esi
+
+:00402558 FF1550234100            Call [USER32!GetDlgItemTextA]
+
+
+
+The memory location being pushed at 40254D is where your name is
+
+stored. Type 'd 410B30', and you should see your name.
+
+
+
+Below this you'll see
+
+
+
+:0040255E 6A00                    push 00000000
+
+:00402560 BF300B4100              mov edi, 00410B30
+
+:00402565 6A00                    push 00000000
+
+:00402567 68FC030000              push 000003FC
+
+:0040256C 56                      push esi
+
+:0040256D FF1518234100            Call [USER32!GetDlgItemInt]
+
+
+
+Step until you reach 40256D. The call to Getdlgitemint returns
+
+what you typed in as serial in eax. Type '? eax' and you will
+
+see this: '00003039 0000012345 &quot;09&quot;'. 3039 is 12345 in hex.
+
+Also notice :00402560. This command moves the offset of your name
+
+into edi.
+
+
+
+Below this, you will see
+
+
+
+:00402573 B9FFFFFFFF              mov ecx, FFFFFFFF
+
+:00402578 A354A54000              mov dword ptr [0040A554], eax
+
+:0040257D 2BC0                    sub eax, eax
+
+:0040257F F2                      repnz
+
+:00402580 AE                      scasb
+
+:00402581 F7D1                    not ecx
+
+:00402583 49                      dec ecx
+
+
+
+:00402578 saves your code for later use.
+
+The rest of the code is used to calculate the string length of
+
+your name... After this has been executed ecx contains the length
+
+of your name. In my case '7'.
+
+
+
+Below this, you'll see
+
+
+
+:00402584 0FBE05300B4100          movsx eax, byte ptr [00410B30]
+
+:0040258B 0FAFC8                  imul ecx, eax
+
+:0040258E C1E10A                  shl ecx, 0A
+
+:00402591 81C1CCF80200            add ecx, 0002F8CC
+
+:00402597 890D50A54000            mov dword ptr [0040A550], ecx
+
+:0040259D 390D54A54000            cmp dword ptr [0040A554], ecx
+
+
+
+:00402584 moves the byte of the first letter to eax. 
+
+In my case 54('T'). The next line multiplys eax (54),
+
+with ecx (7). shl ecx, 0A means multiply ecx with 2^10.
+
+And finally we add 02F8CC to ecx.
+
+At :0040259D the registration code is compared with what
+
+we typed in, remember it moved our code to [0040A554].
+
+Type '? ecx' and you can see your real code.
+
+But we don't just want the code, do we?
+
+Leave SoftIce and exit Command Line 97.
+
+
+
+6. Start W32Dasm, and dissasemble cline97.exe
+
+   Save dissasembly to file and exit.
+
+
+
+7. Now we are going to build the keygen itself.
+
+Start your favorite texteditor and enter this code.
+
+
+
+
+
+Code Segment Byte Public
+
+Assume   Ds:Code,Cs:Code
+
+Org  100h
+
+P386				; this enables 386 instructions
+
+				  and 32bit registers
+
+
+
+Start:
+
+
+
+	mov  ah,09
+
+	mov  dx,offset Intro
+
+	int  21h		; Show intro msg
+
+
+
+	mov  ah,0Ah
+
+	mov  dx,offset Namesto
+
+	int  21h		; Get name
+
+
+
+
+
+Now load the dissasembled text (cline97.alf) into your texteditor.
+
+Goto :00402573. Copy all code from here down to :00402591,
+
+and paste it into your asm source.
+
+
+
+It will look like this
+
+:00402573 B9FFFFFFFF              mov ecx, FFFFFFFF
+
+:00402578 A354A54000              mov dword ptr [0040A554], eax
+
+:0040257D 2BC0                    sub eax, eax
+
+:0040257F F2                      repnz
+
+:00402580 AE                      scasb
+
+:00402581 F7D1                    not ecx
+
+:00402583 49                      dec ecx
+
+:00402584 0FBE05300B4100          movsx eax, byte ptr [00410B30]
+
+:0040258B 0FAFC8                  imul ecx, eax
+
+:0040258E C1E10A                  shl ecx, 0A
+
+:00402591 81C1CCF80200            add ecx, 0002F8CC
+
+
+
+Now you can start ripping. You should remove everything except the command
+
+itself. The line :00402578 is obviously not needed, because it saves the
+
+inputed regcode for later use, and our keygen does not prompt for any 
+
+regcode... it calculates =)
+
+
+
+The source in your program should look like this.
+
+
+
+	mov ecx, FFFFFFFF
+
+	sub eax, eax
+
+	repnz
+
+	scasb
+
+	not ecx
+
+	dec ecx
+
+	movsx eax, byte ptr [00410B30]
+
+	imul ecx, eax
+
+	shl ecx, 0A
+
+	add ecx, 0002F8CC
+
+
+
+If you remember, it moved the offset of Name into edi earlier.
+
+So we need to add this before mov ecx, FFFFFFFF
+
+	xor edi,edi
+
+	mov di, offset Namesto+2 ; this must be +2, becaue that's where
+
+				 ; the actuall name begins.
+
+
+
+The command mov ecx, FFFFFFFF can't be compiled this way, so we
+
+have to change it to mov ecx, 0FFFFFFFFh.
+
+
+
+movsx eax, byte ptr [00410B30] is not valid either, because
+
+our name is'nt on [00410B30]. This could be changed to
+
+	xor edi,edi
+
+	mov di, offset Namesto+2
+
+	movsx eax, byte ptr [edi]
+
+
+
+Both 'shl ecx, 0A' and 'add ecx, 0002F8CC' needs to be changed to
+
+valid hex format: 'shl ecx, 0Ah' and 'add ecx 2F8CCh'
+
+
+
+We now have a source that should look like this
+
+
+
+	xor edi,edi
+
+	mov di,offset Namesto+2
+
+	mov ecx, 0FFFFFFFFh
+
+	sub eax, eax
+
+	repnz
+
+	scasb
+
+	not ecx
+
+	dec ecx
+
+	xor edi,edi
+
+	mov di,offset Namesto+2	
+
+	movsx eax, byte ptr [edi]
+
+	imul ecx, eax
+
+	shl ecx, 0Ah
+
+	add ecx, 2F8CCh
+
+
+
+after the dec ecx, we need to add another dec ecx,
+
+because when we enter our name, the last char will not be,
+
+in my case, 'y', it will be 0Dh, the enter key.
+
+This function, as it is, would return, in my case, ecx=8,
+
+not ecx=7 as it should be.
+
+
+
+movsx eax, byte ptr [edi] moves the ascii code of the first
+
+letter to eax. But, what if the user has entered a name in
+
+lowercase? The input box in Command Line 97 automatically
+
+makes it capital letters. This could be fixed by adding this
+
+code below movsx eax, byte ptr [edi].
+
+
+
+	cmp eax, 061h   ; compare eax with 61h (a)
+
+	jb capital		; jump if below
+
+	cmp eax, 07Ah   ; compare eax with 7Ah (z)
+
+	ja capital		; jump if above
+
+	sub eax,20h		; convert char to capital
+
+capital:
+
+
+
+Our code now looks like
+
+
+
+Code Segment Byte Public
+
+Assume   Ds:Code,Cs:Code
+
+Org  100h
+
+P386				; this enables 386 instructions
+
+				  and 32bit registers
+
+
+
+Start:
+
+
+
+	mov  ah,09
+
+	mov  dx,offset Intro
+
+	int  21h		; Show intro msg
+
+
+
+	mov  ah,0Ah
+
+	mov  dx,offset Namesto
+
+	int  21h		; Get name
+
+
+
+	xor edi,edi
+
+	mov di,offset Namesto+2
+
+	mov ecx, 0FFFFFFFFh
+
+	sub eax, eax
+
+	repnz
+
+	scasb
+
+	not ecx
+
+	dec ecx
+
+	dec ecx
+
+	xor edi,edi
+
+	mov di,offset Namesto+2	
+
+	movsx eax, byte ptr [edi]
+
+	cmp eax, 061h
+
+	jb capital
+
+	cmp eax, 07Ah
+
+	ja capital
+
+	sub eax,20h
+
+capital:
+
+	imul ecx, eax
+
+	shl ecx, 0Ah
+
+	add ecx, 2F8CCh
+
+
+
+What we need now is a routine to show the serial.
+
+We know that the serial is the decimal value of ecx.
+
+
+
+	xor esi,esi
+
+        mov si,offset Serial+9  ; esi is the offset there the
+
+                                ; regnumber will be stored
+
+
+
+	mov eax,ecx		; eax should be reg number
+
+        mov ecx,0Ah
+
+KeepGoing:
+
+        xor edx,edx
+
+        div ecx
+
+        add dl,30h
+
+        cmp dl,3Ah
+
+        jl  printnow
+
+        add dl,7
+
+printnow:
+
+        dec esi
+
+        mov [esi],dl
+
+        or eax,eax
+
+        jnz keepgoing
+
+
+
+After this, serial contains the registration code.
+
+You don't really need to understand this code. It can be used
+
+by any keygen where the code is the decimal value of a register.
+
+
+
+The only thing left to do is to add the command that writes
+
+this to screen, in order to SEE it...
+
+
+
+	mov ah, 9
+
+	mov dx, offset RegPrompt
+
+	int 21h
+
+
+
+And finally we may quit.
+
+	int 20h
+
+
+
+The full source should look like this
+
+
+
+; COMMAND LINE 97 *KEYGEN*
+
+; CODED BY TERAPHY [PC97]
+
+
+
+Code Segment Byte Public
+
+Assume   Ds:Code,Cs:Code
+
+Org  100h
+
+P386				; this enables 386 instructions
+
+				; and 32bit registers
+
+
+
+Start:
+
+
+
+	mov  ah,09
+
+	mov  dx,offset Intro
+
+	int  21h		; Show intro msg
+
+
+
+	mov  ah,0Ah
+
+	mov  dx,offset Namesto
+
+	int  21h		; Get name
+
+
+
+	xor edi,edi
+
+	mov di,offset Namesto+2
+
+	mov ecx, 0FFFFFFFFh
+
+	sub eax, eax
+
+	repnz
+
+	scasb
+
+	not ecx
+
+	dec ecx
+
+              dec ecx			;ADDED! (21 Aug 1997)
+
+	xor edi,edi
+
+	mov di,offset Namesto+2	
+
+	movsx eax, byte ptr [edi]
+
+	cmp eax, 061h
+
+	jb capital
+
+	cmp eax, 07Ah
+
+	ja capital
+
+	sub eax,20h
+
+capital:
+
+	imul ecx, eax
+
+	shl ecx, 0Ah
+
+	add ecx, 2F8CCh
+
+
+
+	xor esi,esi
+
+        mov si,offset Serial+9
+
+	mov eax,ecx
+
+        mov ecx,0Ah
+
+KeepGoing:
+
+        xor edx,edx
+
+        div ecx
+
+        add dl,30h
+
+        cmp dl,3Ah
+
+        jl  printnow
+
+        add dl,7
+
+printnow:
+
+        dec esi
+
+        mov [esi],dl
+
+        or eax,eax
+
+        jnz keepgoing
+
+
+
+	mov ah, 9
+
+	mov dx, offset RegPrompt
+
+	int 21h
+
+	
+
+	int 20h
+
+
+
+Intro		db 13,10,'COMMAND LINE 97 *KEYGEN*'
+
+		db 13,10,'CODED BY TERAPHY [PC97]',13,10
+
+		db 13,10,'Enter your name: $'
+
+
+
+RegPrompt 	db 13,10,'Your registration key is: '
+
+Serial		db 0,0,0,0,0,0,0,0,0,0,13,10,24h
+
+
+
+Namesto		db 18h,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+
+
+
+Code Ends
+
+End Start
+
+
+
+8. Compile the code with tasm.
+
+	tasm keygen.asm
+
+	tlink /t keygen.asm
+
+   You must link with the /t option for the keygen to run,
+
+   it makes it a com file.
+
+
+
+9. Congratulations! You have just made your first(?) keygen!
+
+<HR>
+
+<B>Flywheel V1.02b</B>
+
+(<A href="tppmsgs/msgs2.htm#250" tppabs="http://www.anticrack.de/fravia/tppmsgs/msgs2.htm#250">http://www.plannetarium.com</A>)
+
+
+
+1. Start the Program
+
+
+
+2. Select Register
+
+
+
+3. Go into Soft-Ice by pressing Ctrl-D, and set a breakpoint on
+
+   GetDlgItemTextA. Type 'bpx getdlgitemtexta'. Now Press Ctrl-D
+
+   again to get out from Soft-Ice.
+
+
+
+4. Enter your name ('TERAPHY') and any serial ('12345').
+
+   Press OK button, and Soft-Ice will show up.
+
+
+
+Scroll up a little bit and you'll see this
+
+
+
+:00402ACD 8D4C242C                lea ecx, [esp+2C]
+
+:00402AD1 66AB                    stosw
+
+:00402AD3 6800010000              push 00000100
+
+:00402AD8 51                      push ecx
+
+:00402AD9 6A65                    push 00000065
+
+:00402ADB 56                      push esi
+
+:00402ADC AA                      stosb
+
+:00402ADD FF151C154100            Call [USER32!GetDlgItemTextA]
+
+
+
+The important adress is where your name is being pushed, and
+
+that is push ecx. ecx got is value in turn from 'lea ecx,[esp+2C]'.
+
+Type 'd esp+2c', and you should see your name.
+
+
+
+Below is a call to GetDlgItemInt, and as you remember it returns
+
+the inputed value to eax. Type '? eax' to see the serial you wrote.
+
+
+
+Below this, you'll see the following snippet of code:
+
+
+
+:00402AF3 8D54242C                lea edx, [esp+2C]
+
+:00402AF7 50                      push eax
+
+:00402AF8 52                      push edx
+
+:00402AF9 E8D2F9FFFF              call 004024D0
+
+:00402AFE 83C408                  add esp, 00000008
+
+:00402B01 85C0                    test eax, eax
+
+
+
+'lea edx,[esp+2C]' moves the offset of your name into edx,
+
+and then it pushes to stack. And eax contains our serial.
+
+And after the call it tests if eax is true or false.
+
+This calls the code where the registration code will be calculated.
+
+
+
+We trace into it. Step past the first instructions until you reach
+
+
+
+:004024EF B81F85EB51              mov eax, 51EB851F
+
+:004024F4 F7E7                    mul edi
+
+:004024F6 C1EA05                  shr edx, 05
+
+:004024F9 52                      push edx
+
+:004024FA 56                      push esi
+
+:004024FB E8B0000000              call 004025B0
+
+
+
+004024EF - 004024F6 makes edx all digits except the two last
+
+of what we typed in as serial. If you wrote '12345' edx will
+
+be '123', and if you wrote '072597' edx will be '0725'.
+
+
+
+Then it pushes edx and esi. esi is the offset to your name.
+
+Trace into the call. Step past a few instructions until you reach
+
+
+
+:004025B8 8A06                    mov al, byte ptr [esi]
+
+esi contains the offset to your name, so this instrucion moves
+
+the ascii code of the first letter to al, in my case '54'
+
+
+
+:004025BA 84C0                    test al, al
+
+:004025BC 7426                    je 004025E4
+
+This instrucions checks if we have inputed any name, if not it jumps.
+
+
+
+:004025BE 0FBEC0                  movsx eax, al
+
+This instrucion moves al, to eax. If eax = FFFFFF54,
+
+after this eax would have been 00000054
+
+
+
+:004025C1 50                      push eax
+
+:004025C2 E889140000              call 00403A50
+
+At a first look this call only moves the eax value to ecx.
+
+But it does also check for a space (20h) in eax. It returns
+
+false if there is no space.
+
+
+
+:004025C7 83C404                  add esp, 00000004
+
+This code adjust the stack and should be ignored
+
+
+
+:004025CA 85C0                    test eax, eax
+
+:004025CC 750E                    jne 004025DC
+
+Test if a space was found. Jump if found.
+
+
+
+:004025CE 0FBE0E                  movsx ecx, byte ptr [esi]
+
+This moves the letter into ecx (where it should already be).
+
+
+
+:004025D1 51                      push ecx
+
+:004025D2 E8E9120000              call 004038C0
+
+If you, as in my case, wrote your name with a capital letter,
+
+this call will return eax = ascii code for your letter + 20h.
+
+This means that the character has been &quot;lowercased&quot;, i.e. 
+
+converted to lowercase.
+
+
+
+:004025D7 83C404                  add esp, 00000004
+
+Ignore this	stack adjust, we are just discarding the stack 
+
+space used for the parameters for the previous call.
+
+
+
+:004025DA 03F8                    add edi, eax
+
+Add edi, eax. Eax is the value of our char in lowercase.
+
+
+
+:004025DC 8A4601                  mov al, byte ptr [esi+01]
+
+:004025DF 46                      inc esi
+
+Moves the value of the next char into al
+
+
+
+:004025E0 84C0                    test al, al
+
+:004025E2 75DA                    jne 004025BE
+
+Test if al is 0. This means the end of our name has been reached.
+
+Jump if al is not 0.
+
+
+
+What this code has done, as you probably already figured out, is
+
+add the ascii value of all chars into edi. Except spaces (20h).
+
+It has also converted all capital chars into small letters.
+
+
+
+:004025E4 8B4C2410                mov ecx, [esp+10]
+
+This moves what we typed in (except the last two digits) into ecx
+
+
+
+:004025E8 8D14BF                  lea edx, [edi+4*edi]
+
+:004025EB 2BCF                    sub ecx, edi
+
+:004025ED 8D1457                  lea edx, [edi+2*edx]
+
+:004025F0 85D2                    test edx, edx
+
+:004025F2 740F                    je 00402603
+
+:004025F4 B8ABAAAAAA              mov eax, AAAAAAAB
+
+:004025F9 F7E2                    mul edx
+
+:004025FB D1EA                    shr edx, 1
+
+:004025FD 81C204060200            add edx, 00020604
+
+:00402603 33C0                    xor eax, eax
+
+:00402605 3BCA                    cmp ecx, edx
+
+
+
+This code checks if you typed in the right number.
+
+At 402605 the compare is made. But ecx is no longer
+
+what we wrote as serial, because of the 'sub ecx,edi'
+
+command. We could make a simple equation of this.
+
+
+
+Assume X is our registration code (except the two digits).
+
+	'X - EDI = EDX'
+
+
+
+Now type '? edx+edi' and, in my case, I'll get '136182'
+
+as decimal value. This is my regcode, except the two last
+
+digits. These digits could be anything.
+
+Now then we know my registration code is '13618200',
+
+we can start on the keygen.
+
+
+
+5. Run W32Dasm and dissasemble flywheel.exe (the file is located
+
+    in 'C:\Program Files\Plannet Crafters\Flywheel')
+
+   Save the dissasembly to disk and quit.
+
+
+
+6. Now it's time to start on the code. We can use the same start
+
+    as in the last keygen. We go directly to the ripping part.
+
+
+
+You can start by copy all code from 4025B8 to 402605 into your program.
+
+That will look like this.
+
+
+
+:004025B8 8A06                    mov al, byte ptr [esi]
+
+:004025BA 84C0                    test al, al
+
+:004025BC 7426                    je 004025E4
+
+:004025BE 0FBEC0                  movsx eax, al
+
+:004025C1 50                      push eax
+
+:004025C2 E889140000              call 00403A50
+
+:004025C7 83C404                  add esp, 00000004
+
+:004025CA 85C0                    test eax, eax
+
+:004025CC 750E                    jne 004025DC
+
+:004025CE 0FBE0E                  movsx ecx, byte ptr [esi]
+
+:004025D1 51                      push ecx
+
+:004025D2 E8E9120000              call 004038C0
+
+:004025D7 83C404                  add esp, 00000004
+
+:004025DA 03F8                    add edi, eax
+
+:004025DC 8A4601                  mov al, byte ptr [esi+01]
+
+:004025DF 46                      inc esi
+
+:004025E0 84C0                    test al, al
+
+:004025E2 75DA                    jne 004025BE
+
+:004025E4 8B4C2410                mov ecx, dword ptr [esp+10]
+
+:004025E8 8D14BF                  lea edx, dword ptr [edi+4*edi]
+
+:004025EB 2BCF                    sub ecx, edi
+
+:004025ED 8D1457                  lea edx, dword ptr [edi+2*edx]
+
+:004025F0 85D2                    test edx, edx
+
+:004025F2 740F                    je 00402603
+
+:004025F4 B8ABAAAAAA              mov eax, AAAAAAAB
+
+:004025F9 F7E2                    mul edx
+
+:004025FB D1EA                    shr edx, 1
+
+:004025FD 81C204060200            add edx, 00020604
+
+:00402603 33C0                    xor eax, eax
+
+:00402605 3BCA                    cmp ecx, edx
+
+
+
+Here is how I would have ripped this into the program,
+
+with comments.
+
+
+
+; THIS REPLACES 4025BE - 4025E2
+
+	
+
+	xor ecx,ecx
+
+	xor edi,edi
+
+	mov di, offset NameSto+2	; Mov the offset of your name
+
+					; into edi
+
+anotherchar:
+
+	movsx eax, byte ptr [di]	; Get char from [di]
+
+					
+
+	cmp eax, 20h			; Compare your letter with 20h
+
+	je space			; Jump if equal
+
+
+
+	cmp eax, 041h			; Compare your letter to see
+
+	jb capital			; if it's already is a
+
+	cmp eax, 05Ah			; small lettter
+
+	ja capital
+
+	add eax,20h			; If capital char, add 20h to make
+
+					; it a small letter.
+
+capital:
+
+	add ecx, eax			; add eax to ecx, if not space
+
+space:
+
+
+
+	inc di				; inc di to make it point to the
+
+					; next char.
+
+
+
+	cmp byte ptr [di], 0dh		; Compare next char with 0Dh (return)
+
+					; Remember then we get our name, it
+
+					; ends with a 0Dh
+
+
+
+	jne anotherchar			; Jump if not 0Dh
+
+	mov edi, ecx
+
+
+
+; CODE BELOW REPLACES 4025E2 - 402603
+
+; All commands with ecx (our inputed code) is not needed
+
+; because we do not input any code.
+
+
+
+	xor edx,edx
+
+	lea edx, [edi + 4*edi]
+
+	lea edx, [edi + 2*edx]
+
+	mov eax, 0AAAAAAABh
+
+	mul edx
+
+	shr edx, 1
+
+	add edx, 20604h
+
+
+
+	xor ecx, ecx		; Here we do our equation
+
+	add ecx, edx		; 
+
+	add ecx, edi		; ecx = edx + edi
+
+
+
+After this, ecx contains the regcode.
+
+The complete source could look like this.
+
+
+
+Code Segment Byte Public
+
+Assume   Ds:Code,Cs:Code
+
+Org  100h
+
+P386
+
+
+
+Start:
+
+
+
+	mov  ah,09
+
+	mov  dx,offset Intro
+
+	int  21h		; Show intro msg
+
+
+
+	mov  ah,0Ah
+
+	mov  dx,offset Namesto
+
+	int  21h		; Get name
+
+
+
+	xor ecx,ecx
+
+	xor edi,edi
+
+	mov di, offset NameSto+2
+
+anotherchar:
+
+	movsx eax, byte ptr [di]
+
+	cmp eax, 20h
+
+	je space
+
+	cmp eax, 041h
+
+	jb capital
+
+	cmp eax, 05Ah
+
+	ja capital
+
+	add eax,20h
+
+capital:
+
+	add ecx, eax
+
+space:
+
+	inc di
+
+	cmp byte ptr [di], 0dh
+
+	jne anotherchar
+
+	mov edi, ecx
+
+	xor edx,edx
+
+	lea edx, [edi + 4*edi]
+
+	lea edx, [edi + 2*edx]
+
+	mov eax, 0AAAAAAABh
+
+	mul edx
+
+	shr edx, 1
+
+	add edx, 20604h
+
+	xor ecx, ecx
+
+	add ecx, edx
+
+	add ecx, edi
+
+
+
+	xor esi,esi
+
+        mov si,offset Serial+9
+
+	mov eax,ecx
+
+        mov ecx,0Ah
+
+KeepGoing:
+
+        xor edx,edx
+
+        div ecx
+
+        add dl,30h
+
+        cmp dl,3Ah
+
+        jl  printnow
+
+        add dl,7
+
+printnow:
+
+        dec esi
+
+        mov [esi],dl
+
+        or eax,eax
+
+        jnz keepgoing
+
+
+
+	mov ah, 9
+
+	mov dx, offset RegPrompt
+
+	int 21h
+
+	
+
+	int 20h
+
+
+
+Intro		db 13,10,'FLYWHEEL 1.2 *KEYGEN*'
+
+		db 13,10,'CODED BY TERAPHY [PC97]',13,10
+
+		db 13,10,'Enter your name: $'
+
+
+
+RegPrompt 	db 13,10,'Your registration key is: '
+
+Serial		db 0,0,0,0,0,0,0,0,0,'0','0',13,10,24h
+
+
+
+Namesto		db 18h,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+
+
+
+Code Ends
+
+End Start
+
+
+
+
+
+Now compile, run and enjoy! :)
+
+
+
+
+
+==================
+
+= TERAPHY [PC97] =
+
+=   07/25/1997   =
+
+==================	 
+
+</PRE><FONT color="green">
+
+(c) Teraphy, 1997. All rights reserved.</FONT>
+
+ </PRE>
+
+		<HR size="2">
+
+<CENTER><I>You are deep inside fravia's page of reverse
+
+engineering, choose your way out:</CENTER>
+
+
+
+
+
+<P><CENTER><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#84'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#84">homepage </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"> <A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#73'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#73">links
+
+</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0" NATURALSIZEFLAG="0"> <A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity
+
+</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#82'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#82">students' essays </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools
+
+</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails </A><BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mailFraVia
+
+</A><BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">is reverse engineering legal? </A></FONT></CENTER></P>
+
+
+
+<P><CENTER><FONT SIZE="-1"><HR></FONT></CENTER>
+
+</BODY>
+
+</HTML>
+

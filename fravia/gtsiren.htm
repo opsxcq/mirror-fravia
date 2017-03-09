@@ -1,0 +1,920 @@
+<html>
+
+<HTML>
+
+<HEAD>
+
+<TITLE>gtsiren</TITLE>
+
+</HEAD>
+
+
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+<A NAME="anchortop"></A>
+
+<!-- HTML code by Fravia, Yeah, go ahead, steal my code, sucker -->
+
+
+
+<H2><CENTER>
+
+CRACK FOR SIREN MAIL 3.0.0 (32-bit for Windows'95 and NT)<BR>
+
+   by Greythorne the Technomancer, April 1997<BR>
+
+<IMG SRC="hcu1.gif" tppabs="http://www.anticrack.de/fravia/hcu1.gif" ALT="HCU" ALIGN="BOTTOM" WIDTH="114" HEIGHT="43" BORDER="0" VSPACE="0" HSPACE="0"></H2>
+
+<HR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">
+
+<I>Courtesy of fravia's page of reverse engineering</I>
+
+</CENTER>
+
+<HR size="3">
+
+<PRE>
+
+I am using Siren Mail 3.0.0, the executable is called SMWIN.EXE 
+
+and has a size of 1,867,264 bytes. 
+
+You'll find it at <IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A href="tppmsgs/msgs2.htm#202" tppabs="http://www.anticrack.de/fravia/tppmsgs/msgs2.htm#202">Siren's home company page</A>, they have
+
+also a  <IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A href="tppmsgs/msgs2.htm#203" tppabs="http://www.anticrack.de/fravia/tppmsgs/msgs2.htm#203">ftp</A> site (no &quot;register me&quot; to get a copy needed)
+
+
+
+Siren Mail is a program very similar to Eudora, with a decent amount 
+
+of functionality.
+
+
+
+Run the program and you will see SIREN MAIL TRIAL, a TRIAL COUNTER, 
+
+and a REGISTER button.
+
+
+
+Try register and you will get a nice screen that allows you to enter a 
+
+registration number, based on a serial number which is also displayed at the 
+
+top of the window.
+
+
+
+What nice possibilities we have here!
+
+
+
+Originally I wasn't going to crack this program because someone I know 
+
+had a registered copy at work, with a valid registration key, and needed 
+
+the program installed on a home machine.
+
+
+
+No problem I said... I copied down the code, zipped up siren mail, and 
+
+for good measure even made a copy of all .ini files in windows 
+
+(pkzipped of course as INI.ZIP) 
+
+- standard practice for me anyway, because i am sneaky like that. 
+
+hehe.
+
+
+
+So I unzipped it on the other machine and ran it. To my surprise, the 
+
+program DID NOT ACCEPT the code that was used at work, on EXACTLY THE 
+
+SAME COPY of itself.
+
+
+
+Pretty sneaky of them to foil me like that I thought, so it would seem 
+
+that to crack this damn thing I would need to make a key generator 
+
+(ugh) or crack it outright (my favorite option)
+
+
+
+Since dead listing approach worked well for me (last week) when I cracked 
+
+WLCHECK and published the results in +ORC tutorial 4.1 (available on the 
+
+web, for instance <IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A href="tppmsgs/msgs2.htm#204" tppabs="http://www.anticrack.de/fravia/tppmsgs/msgs2.htm#204">here</A> but not with Microsoft exchange :-). 
+
+I decided to go that approach. Besides, I have gotten to quite like the 
+
+win32 disassembler - NEAT PROGRAM!
+
+
+
+After using W32DASM7 - which was cracked partially by Frog Prints, and 
+
+finished by me (<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A href="frogprin.htm" tppabs="http://www.anticrack.de/fravia/frogprin.htm">here it is</A>), I opened up the file 
+
+WS.TXT and scanned for TRIAL MODE
+
+
+
+Here is the code I landed in.
+
+
+
+:0046D7CE-(THE_COMPARE) 837D0801  cmp [ebp+08], 1		
+
+:0046D7D2 0F850E000000            jne 0046D7E6			
+
+
+
+:0046D7D8 6A00                    push 00000000
+
+:0046D7DA 6A00                    push 00000000
+
+
+
+* StringData Ref from Data Obj -&gt;&quot;Invalid Registration Number. 
+
+				Program &quot;	<BAD invalid data>&quot;will run under trial mode.&quot;
+
+                                  |
+
+:0046D7DC 68C09A5700              push 00579AC0
+
+:0046D7E1 E82AB60B00              call 00528E10
+
+
+
+notice the compare and jump above...
+
+it looks immedialtely to me like a 'if registered, skip the nasty 
+
+message'and it is.
+
+just change either the compare to ZERO rather than ONE, or
+
+the 0F85 to 0F84 (JNE becomes JE) and now we have cracked 
+
+the registration key screen so that it allows you to enter 
+
+any key (except the RIGHT one however) and exit happily.
+
+
+
+Actually, I took it a bit further and decided to make it work for 
+
+any key. I did this because some people i know have registered copies 
+
+for real, and if my cracked version got around, it would matter, 
+
+since even the REAL codes work.
+
+
+
+So being the stubborn mule i am, i worked up a fix so that the JNE 
+
+always jumps away. by giving it a 00000001 every time... a 
+
+mov [ebp+08], 1 seems like it would work, but it doesnt matter: 
+
+it takes up too many bytes.
+
+
+
+I know a quicker way...
+
+First of all, when a compare of any sort is made, the result is left in 
+
+ax (eax) so we can make eax be what we want.
+
+
+
+33 C0	xor eax,eax	(clears eax to zero)
+
+40	inc eax		(adds 1 to it)
+
+90	NOP		(just to fill the extra space)
+
+
+
+3 bytes, about as tight as we could write it :)
+
+
+
+replacing the 837D0801  with  33C04090 does the trick,
+
+and the JNE goes along on it's merry way.
+
+
+
+ANYWAY,
+
+For the sake of getting work done, here is the whole call
+
+courtesy of cut &amp; paste:
+
+
+
+Notice that I looked at where all the jumps took me and did a quick 
+
+'find and replace' 0046d752' so that it says GOODBYE.
+
+That helped me alot as you can see how many places it bailed out
+
+of the function. (important to us to see what is going on)
+
+
+
+----------------------------------------------------
+
+
+
+* Referenced by a CALL at Addresses:
+
+|:0046E46D   , :0046E53F   , :0046E5D9   , :0046E65A   , :0046FCDA   
+
+|
+
+:0046D735 55                      push ebp	<START OF CALL :0046D736 8BEC mov ebp, esp :0046D738 83EC04 sub esp, 00000004 :0046D73B 53 push ebx :0046D73C 56 push esi :0046D73D 57 push edi :0046D73E 833D1CB3580000 cmp dword ptr [0058B31C], 00000000 :0046D745 0F8507000000 jne 0046D752 :0046D74B 33C0 xor eax, eax :0046D74D E99B000000 jmp 0046D7ED-(GOODBYE) * Referenced by a Jump at Address:0046D745(C) | :0046D752 A118B35800 mov eax, [0058B318] :0046D757 8945FC mov [ebp-04], eax :0046D75A B90B000000 mov ecx, 0000000B :0046D75F 8B45FC mov eax, [ebp-04] :0046D762 99 cdq :0046D763 F7F9 idiv ecx :0046D765 05AB909600 add eax, 009690AB :0046D76A 8945FC mov [ebp-04], eax :0046D76D 8B45FC mov eax, [ebp-04] :0046D770 39051CB35800 cmp [0058B31C], eax :0046D776 0F850F000000 jne 0046D78B :0046D77C B801000000 mov eax, 00000001 :0046D781 E967000000 jmp 0046D7ED-(GOODBYE) :0046D786 E962000000 jmp 0046D7ED-(GOODBYE) * Referenced by a Jump at Address:0046D776(C) | :0046D78B 8145FC020E0000 add [ebp-04], 00000E02 :0046D792 8B45FC mov eax, [ebp-04] :0046D795 39051CB35800 cmp [0058B31C], eax :0046D79B 0F852D000000 jne 0046D7CE-(THE_COMPARE) :0046D7A1 833D28B3580000 cmp dword ptr [0058B328], 00000000 :0046D7A8 0F8520000000 jne 0046D7CE-(THE_COMPARE) :0046D7AE C7052CB3580000000000 mov dword ptr [0058B32C], 00000000 :0046D7B8 C70528B3580001000000 mov dword ptr [0058B328], 00000001 :0046D7C2 E881FCFFFF call 0046D448 :0046D7C7 33C0 xor eax, eax :0046D7C9 E91F000000 jmp 0046D7ED-(GOODBYE) * Referenced by a Jump at Addresses:0046D79B(C), :0046D7A8(C) | :0046D7CE-(THE_COMPARE) 837D0801 cmp [ebp+08], 1 <---- if it is NOT a 1, :0046D7D2 0F850E000000 jne 0046D7E6 <---- jump past bad code "(SAY.class" tppabs="http://fravia.org/(SAY.class" I AM REGISTERED) :0046D7D8 6A00 push 00000000 :0046D7DA 6A00 push 00000000 * StringData Ref from Data Obj>&quot;Invalid Registration Number. 
+
+				Program &quot;	<BAD invalid data "will run under trial mode." | :0046D7DC 68C09A5700 push 00579AC0 :0046D7E1 E82AB60B00 call 00528E10 * Referenced by a Jump at Address:0046D7D2(C) | :0046D7E6 33C0 xor eax, eax <------ clear and exit :0046D7E8 E900000000 jmp 0046D7ED-(GOODBYE) * Referenced by a Jump at Addresses:0046D74D(U), :0046D781(U), :0046D786(U), :0046D7C9(U), :0046D7E8(U) | :0046D7ED 5F pop edi (GOODBYE) :0046D7EE 5E pop esi :0046D7EF 5B pop ebx :0046D7F0 C9 leave :0046D7F1 C3 ret Running the program still shows a problem, however. A hurdle has been passed that allows us to enter any data on the registration screen, but it still isnt registered! We still get the stupid trial counter and in big letters we see SIREN MAIL TRIAL. We don't like that... do we. Scanning for either of those in our dead listing, we land HERE: * StringData Ref from Data Obj>&quot;Siren Mail Trial&quot;	<BAD TRIAL MESSAGE | :0046E4D0 68449C5700 push 00579C44 :0046E4D5 8B4DE8 mov ecx, [ebp-18] :0046E4D8 81C1D4000000 add ecx, 000000D4 :0046E4DE E86C220B00 call 0052074F * StringData Ref from Data Obj>&quot;Trial Count:&quot;
+
+                                  |
+
+:0046E4E3 68589C5700              push 00579C58
+
+:0046E4E8 8B4DE8                  mov ecx, [ebp-18]
+
+:0046E4EB 83C15C                  add ecx, 0000005C
+
+:0046E4EE E85C220B00              call 0052074F
+
+:0046E4F3 A12CB35800              mov eax, [0058B32C]
+
+:0046E4F8 50                      push eax
+
+
+
+We have to backtrack a bit more than in the first try to find 
+
+our comparison, but here it is:
+
+
+
+:0046E475 83F801                  cmp eax, 1		AM I REGISTERED?
+
+:0046E478 0F8552000000            jne 0046E4D0	IF NOT, JUMP DISPLAY 
+
+						TRIAL NOTICE ON NAGSCREEN
+
+
+
+* StringData Ref from Data Obj -&gt;&quot;Siren Mail&quot;	<GOOD screen | :0046E47E 68209C5700 push 00579C20 :0046E483 8B4DE8 mov ecx, [ebp-18] :0046E486 81C1D4000000 add ecx, 000000D4 :0046E48C E8BE220B00 call 0052074F * StringData Ref from Data Obj>&quot;Registration Key:&quot;
+
+                                  |
+
+:0046E491 682C9C5700              push 00579C2C
+
+
+
+Crack it as we did above.
+
+
+
+0F85 -&gt; 0F84     or     00000001 -&gt; 00000000
+
+or even 33C040 like I showed you for a more stylistic
+
+and better crack.
+
+
+
+Coupled with the previous crack of the registration screen above, 
+
+we have cracked our naggers, but something bothers me about
+
+a two-part crack that removes visible signs of a protection scheme.
+
+----------------------------------------------------------------------------
+
+
+
+Again, to make life easier on you, here is the full call from
+
+beginning to end:
+
+
+
+* Referenced by a CALL at Addresses:0046E60B   , :0046F3CB   
+
+|
+
+:0046E45F 55                      push ebp
+
+:0046E460 8BEC                    mov ebp, esp
+
+:0046E462 83EC18                  sub esp, 00000018
+
+:0046E465 53                      push ebx
+
+:0046E466 56                      push esi
+
+:0046E467 57                      push edi
+
+:0046E468 894DE8                  mov [ebp-18], ecx
+
+:0046E46B 6A00                    push 00000000
+
+:0046E46D E8C3F2FFFF              call 0046D735	
+
+:0046E472 83C404                  add esp, 00000004
+
+	
+
+:0046E475 83F801                  cmp eax, 1		AM I REGISTERED?
+
+:0046E478 0F8552000000            jne 0046E4D0	IF NOT, DISPLAY 
+
+						TRIAL NOTICE ON NAGSCREEN
+
+
+
+* StringData Ref from Data Obj -&gt;&quot;Siren Mail&quot;	<GOOD SCREEN | :0046E47E 68209C5700 push 00579C20 :0046E483 8B4DE8 mov ecx, [ebp-18] :0046E486 81C1D4000000 add ecx, 000000D4 :0046E48C E8BE220B00 call 0052074F * StringData Ref from Data Obj>&quot;Registration Key:&quot;
+
+                                  |
+
+:0046E491 682C9C5700              push 00579C2C
+
+:0046E496 8B4DE8                  mov ecx, [ebp-18]
+
+:0046E499 83C15C                  add ecx, 0000005C
+
+:0046E49C E8AE220B00              call 0052074F
+
+:0046E4A1 A11CB35800              mov eax, [0058B31C]
+
+:0046E4A6 50                      push eax
+
+
+
+* StringData Ref from Data Obj -&gt;&quot;%ld&quot;
+
+                                  |
+
+:0046E4A7 68409C5700              push 00579C40
+
+:0046E4AC 8D45EC                  lea eax, [ebp-14]
+
+:0046E4AF 50                      push eax
+
+
+
+* Reference To: USER32.wsprintfA, Ord:0249h
+
+                                  |
+
+:0046E4B0 FF15D40F5900            Call dword ptr [00590FD4]
+
+:0046E4B6 83C40C                  add esp, 0000000C
+
+:0046E4B9 8D45EC                  lea eax, [ebp-14]
+
+:0046E4BC 50                      push eax
+
+:0046E4BD 8B4DE8                  mov ecx, [ebp-18]
+
+
+
+* Reference to Dialog: DialogID_0098 
+
+                                  |
+
+:0046E4C0 81C198000000            add ecx, 00000098
+
+:0046E4C6 E884220B00              call 0052074F
+
+:0046E4CB E94D000000              jmp 0046E51D
+
+
+
+* Referenced by a  Jump at Address:0046E478(C)
+
+|
+
+
+
+* StringData Ref from Data Obj -&gt;&quot;Siren Mail Trial&quot;	<BAD TRIAL MESSAGE | :0046E4D0 68449C5700 push 00579C44 :0046E4D5 8B4DE8 mov ecx, [ebp-18] :0046E4D8 81C1D4000000 add ecx, 000000D4 :0046E4DE E86C220B00 call 0052074F * StringData Ref from Data Obj>&quot;Trial Count:&quot;
+
+                                  |
+
+:0046E4E3 68589C5700              push 00579C58
+
+:0046E4E8 8B4DE8                  mov ecx, [ebp-18]
+
+:0046E4EB 83C15C                  add ecx, 0000005C
+
+:0046E4EE E85C220B00              call 0052074F
+
+:0046E4F3 A12CB35800              mov eax, [0058B32C]
+
+:0046E4F8 50                      push eax
+
+
+
+* StringData Ref from Data Obj -&gt;&quot;%d&quot;
+
+                                  |
+
+:0046E4F9 68689C5700              push 00579C68
+
+:0046E4FE 8D45EC                  lea eax, [ebp-14]
+
+:0046E501 50                      push eax
+
+
+
+* Reference To: USER32.wsprintfA, Ord:0249h
+
+                                  |
+
+:0046E502 FF15D40F5900            Call dword ptr [00590FD4]
+
+:0046E508 83C40C                  add esp, 0000000C
+
+:0046E50B 8D45EC                  lea eax, [ebp-14]
+
+:0046E50E 50                      push eax
+
+:0046E50F 8B4DE8                  mov ecx, [ebp-18]
+
+
+
+* Reference to Dialog: DialogID_0098 
+
+                                  |
+
+:0046E512 81C198000000            add ecx, 00000098
+
+:0046E518 E832220B00              call 0052074F
+
+
+
+* Referenced by a  Jump at Address:0046E4CB(U)
+
+|
+
+:0046E51D 6A00                    push 00000000
+
+:0046E51F 8B4DE8                  mov ecx, [ebp-18]
+
+:0046E522 E83B190B00              call 0051FE62
+
+:0046E527 E900000000              jmp 0046E52C
+
+
+
+* Referenced by a  Jump at Address:0046E527(U)
+
+|
+
+:0046E52C 5F                      pop edi
+
+:0046E52D 5E                      pop esi
+
+:0046E52E 5B                      pop ebx
+
+:0046E52F C9                      leave
+
+:0046E530 C3                      ret
+
+-----------------------------------------------
+
+
+
+Now, what we have done is two important cosmetic 
+
+changes to the program, which now
+
+1) allows you to enter any registration code you like, and
+
+2) does not display a TRIAL VERSION notice  on the main screen
+
+
+
+What if there are hidden parts to this we don't know of?
+
+There may be, there may not. Regardless, we have to make 2 
+
+changes in the software to effect an 'after the fact' crack. 
+
+In other words, we have only found the results of the 
+
+crack and removed them. If there are other results that we 
+
+haven't found, then there would be a problem, and the crack 
+
+would not be complete.
+
+
+
+To make sure, I figured that the MAKE IT REGISTERED code was 
+
+somewhere nearby, go figure: we originally looked in the ENTER 
+
+YOUR REG CODE call, and found a way to disable the nagscreen 
+
+that came with it... but if we could do that, why not look at 
+
+that piece of code a little further... if we can enter a code 
+
+there, we SHOULD BE ABLE to make it register there.
+
+
+
+Looking at the call again from the top... this time seeking 
+
+some basic compares or suspicious values being set:
+
+
+
+* Referenced by a CALL at Addresses:0046E46D, :0046E53F, 
+
+				:0046E5D9, :0046E65A, :0046FCDA   
+
+|
+
+:0046D735 55                      push ebp			
+
+:0046D736 8BEC                    mov ebp, esp
+
+:0046D738 83EC04                  sub esp, 00000004
+
+:0046D73B 53                      push ebx
+
+:0046D73C 56                      push esi
+
+:0046D73D 57                      push edi
+
+
+
+:0046D73E 833D1CB3580000          cmp dword ptr [0058B31C], 0	
+
+:0046D745 0F8507000000            jne  0046D752	
+
+:0046D74B 33C0                    xor eax, eax				
+
+:0046D74D E99B000000              jmp 0046D7ED-(GOODBYE)					
+
+
+
+The compare 0 looks interesting, notice the xor which resets eax 
+
+to zero? Changing the JNE to a JE (0F 85 becomes 0F 84) results in 
+
+something we had accomplished before... it ALSO allows acceptance 
+
+of any value on the screen where we typed in a sample registration 
+
+code.
+
+
+
+That didnt do us any good. See, but that isn't a 00000001 is it? 
+
+and our codes have been checking for a value of 1 which is what the 
+
+registered flag should be (have you been following? :)
+
+
+
+Go on down just a little farther and you will hit a MUCH NICER 
+
+fellow... 
+
+
+
+:0046D770 39051CB35800            cmp [0058B31C], eax	
+
+:0046D776 0F850F000000            jne 0046D78B		
+
+:0046D77C B801000000              mov eax, 00000001		
+
+:0046D781 E967000000              jmp 0046D7ED-(GOODBYE)	
+
+:0046D786 E962000000              jmp 0046D7ED-(GOODBYE)
+
+
+
+whereas before you had compares to 00000001, this one MAKES eax
+
+= to 1. This, my dear friends, is the main registered-version 
+
+flag setter! Want to test for yourself? go for it :)
+
+
+
+Changing the JNE from 0F85  to 0F84 cracks it completely!
+
+(In my copy i still do the 33C040  changes on top of this since
+
+they allow even good codes to work - just my style I guess ;)
+
+So then here is the complete crack for this program:
+
+*******************************************************
+
+Crack for Siren Mail 3.0 by Greythorne The Technomancer
+
+(April 1997)
+
+find this data: 051CB358000F850F
+
+change it to: 051CB358000F840F
+
+*******************************************************
+
+
+
+Enterprising crackers may want to make a fix for the compare
+
+using XOR's instead for a better crack - I did ;)
+
+
+
+33C0 33C0 33C0	 (this clears EAX 3 times in order to fill 
+
+		  the 6-byte space where the compare was)
+
+
+
+Another thing:
+
+the crack location with the compare, compares the REAL ECHO at the 
+
+point of breaking... in other words, i ran sirenmail (unregistered) 
+
+and breakpointed on MESSAGEBOXA in order to break into the program 
+
+at any old point because it seems to be a 1 to 1 exact comparison 
+
+between this program and wdasm's output...
+
+the location :0046D770 in W32DASM7 is EXACTLY  0137:0046D770 inside 
+
+softice... even if it wasnt, you could enter a 00 in the hex editor 
+
+at the crack location compare and softice would trap it there anyway 
+
+(GPF, but it works nonetheless)
+
+
+
+Now, bpx on 0137:0046d76d (the compare as seen below)
+
+:0046D76D 8B45FC                mov eax, [ebp-04]
+
+:0046D770 39051CB35800          cmp [0058B31C], eax  <YOU are here :0046D776 0F850F000000 jne 0046D78B :0046D77C B801000000 mov eax, 00000001 :0046D781 E967000000 jmp 0046D7ED-(GOODBYE) :0046D786 E962000000 jmp 0046D7ED-(GOODBYE) and if you now type this: ?eax it will display the REAL reg code, mine is 78619753, but it wont matter to anyone else since the code "changes.class" tppabs="http://fravia.org/changes.class" per system. So that is where to look to make a key generator.</pre>
+
+<HR>
+
+<H2><B>
+
+Let's make a key generator!</B></H2>
+
+<HR>
+
+<PRE>looking back at the code of the compare we just looked at,
+
+we see the mathematical part of the protection routine 
+
+(important code is explained)
+
+
+
+:0046D752 A118B35800     mov eax, [0058B318]	;get the program's serial number
+
+:0046D757 8945FC         mov [ebp-04], eax	;(store serial number)
+
+:0046D75A B90B000000     mov ecx, 0000000B	;ecx becomes B (11 in deximal)
+
+:0046D75F 8B45FC         mov eax, [ebp-04]	;(get serial number)
+
+:0046D762 99             cdq	               ;(doesn't seem to do anything)
+
+
+
+:0046D763 F7F9           idiv ecx		;divide eax (serial num) by ecx (11)
+
+:0046D765 05AB909600     add eax, 009690AB	;add this number to eax
+
+
+
+:0046D76A 8945FC        mov [ebp-04], eax    ;(store new code)
+
+:0046D76D 8B45FC        mov eax, [ebp-04]	;(get new code)
+
+
+
+:0046D770 39051CB35800  cmp [0058B31C], eax	;compare new code to your typed one
+
+
+
+NOW WE KNOW WHAT THE MATH OF THE PROTECTION IS
+
+simply: serial number / B(hex) + 9690AB(hex)
+
+that's it! The key generator is therefore:
+
+************************************************************
+
+#include <STDIO.h>
+
+int main()  /* compiled with borland c/c++ 4.5 */
+
+{
+
+        unsigned long code;
+
+        printf(&quot;Keymaker for SIREN MAIL 3.0.0 / 32-bit\n&quot;);
+
+        printf(&quot;By Greythorne the Technomancer - April 1997\n\n&quot;);
+
+        printf(&quot;Enter your serial number (do not include dashes): &quot;);
+
+        scanf(&quot;%U&quot;,&amp;code);
+
+        printf(&quot;Creating key for %lu\n&quot;,code);
+
+        code = code / 0x0B;
+
+        code = code + 0x9690AB;
+
+        printf(&quot;Your code is %lu\n&quot;,code);
+
+}
+
+*************************************************************
+
+For the softice guys out there: it is easy enough to breakpoint
+
+on the start of the code, step through each step one by one and
+
+check eax at each point (and the data locations) so it is simple
+
+to determine what values do what for us.
+
+I hope this work shows the possibilities one can grasp with the 
+
+dead listing methode, and then some :)
+
+
+
+
+
+After all this, is there something else I could do to crack this better?
+
+I get to show you how to make this program become its own key generator!!!
+
+
+
+To do this we must look at two places in particular;
+
+The code generator itself, and the registration screen that displays the
+
+registration code.
+
+
+
+HERE IS THE CODE GENERATION ROUTINE AGAIN:
+
+
+
+:0046D752 A118B35800     mov eax, [0058B318]    ;get the program's serial number
+
+:0046D757 8945FC         mov [ebp-04], eax      ;(store serial number)
+
+:0046D75A B90B000000     mov ecx, 0000000B      ;ecx becomes B (11 in deximal)
+
+:0046D75F 8B45FC         mov eax, [ebp-04]      ;(get serial number)
+
+:0046D762 99             cdq                    ;(doesn't seem to do anything)
+
+
+
+:0046D763 F7F9           idiv ecx               ;divide eax (serial num) by ecx (11)
+
+:0046D765 05AB909600     add eax, 009690AB      ;add this number to eax
+
+
+
+:0046D76A 8945FC        mov [ebp-04], eax    ;(store new code)
+
+:0046D76D 8B45FC        mov eax, [ebp-04]    ;(get new code)
+
+
+
+:0046D770 39051CB35800  cmp [0058B31C], eax     ;compare new code to your typed one 
+
+    The real code is in eax, and the one you typed in is at [0058b31c]
+
+(note that compares erase eax so the code is lost after this line is 
+
+executed)
+
+
+
+:0046D776 0F850F000000  jne 0046d78B	; jumps away if eax not zero
+
+:0046D77C b801000000  mov eax, 1		;registers the program
+
+
+
+...AND HERE AGAIN IS THE IMPORTANT DATA FROM THE REG SCREEN:
+
+
+
+* StringData Ref from Data Obj -&gt;&quot;Registration Key:&quot;
+
+                                  |
+
+:0046E491 682C9C5700          push 00579C2C
+
+:0046E496 8B4DE8              mov ecx, [ebp-18]
+
+:0046E499 83C15C              add ecx, 0000005C
+
+:0046E49C E8AE220B00          call 0052074F
+
+:0046E4A1 A11CB35800          mov eax, [0058B31C] <READ data looking at the code "above,.class" tppabs="http://fravia.org/above,.class" we know that the data here is really only what you typed in, not the echo of the real code in memory. So how do we get the program to :0046D770 39051CB35800 cmp [0058B31C], eax ;compare new code to your typed one (this is a 6 byte compare) and change it to: mov [0058B31C],eax (now the memory location holds the REAL code and not what YOU typed) which is: A31CB35800 it turns out to be 5 bytes so that we need a NOP to fix it to be 6 and not cause some weird error to crash siren here. SO WE REPLACE : 39051CB35800 WITH: A31CB3580090 but now we have just the little problem of the JNE as seen below: :0046D776 0F850F000000 jne 0046d78B ; jumps away if eax not zero :0046D77C b801000000 mov eax, 1 ;registers the program since eax is nonzero (holds our REAL code) it always leaves and fails registration... change the 0F85 to 0F84 to make it a JZ and it registers fine and we have killed 2 birds with one stone... NOT ONLY does the program register, it ALSO becomes its own key generator! run it and see no matter what you type in the register window, you get the real code every time displayed in the title screen! **************************************************** BEST CRACK FOR SIREN MAIL 3.0.0 32-Bit By Greythorne the Technomancer CHANGE: 39051CB358000F85 TO: A31CB35800900F84 **************************************************** Now, I am really done! This program has been cracked to hell and back... with wondrous results! Looking back on it, we have done several crack methods: 1) a simple crack by disabling the RESULTS of the unregistered version 2) a better crack by registering the program outright a) for people with any code but the correct one b) then for people with ANY code, even correct ones 3) making a key generator by tracing through the math and seeing what it does making sure to remember that for harder programs (see instant access) it is best to use softice and watch the data manipulations line by line until the final code is generator 4) making a better-than-professional level crack that not only registers the software but also becomes its own key generator I do hope this lesson has been good to you, it has been quite a ride for me since the other day when i started it. Good luck, keep cracking, and above all HAVE FUN! +gthorne'97</pre>
+
+<B><I><H5>
+
+Thank you for tuning in!<BR>
+
+ </I>+gthorne'97</H5>
+
+</B> <BR>
+
+<FONT color="green">+gthorne 1997. All rights reversed.</FONT>
+
+
+
+<CENTER><HR ALIGN="CENTER" WIDTH="100%" SIZE="3">
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</I></CENTER>
+
+<BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#84'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#84">homepage</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"> 
+
+<A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#73'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#73">links</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0">
+
+<A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#82'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#82">students' essays</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">
+
+<A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">
+
+<A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm"> tools</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">
+
+<A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">
+
+<A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">
+
+<A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia</A></CENTER>
+
+<CENTER><HR ALIGN="CENTER" WIDTH="100%" SIZE="2"></CENTER>
+
+
+
+</BODY>
+
+</HTML>
+
+
+

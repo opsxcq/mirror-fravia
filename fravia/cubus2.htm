@@ -1,0 +1,344 @@
+<html><TITLE>cubus2</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+<CENTER><FONT size="+3">How to crack
+
+WinHacker95 2.0<BR></FONT>
+
+<FONT size="+2">
+
+(MSVCRT.dll reverse engineering)</FONT> <BR>
+
+<IMG SRC="stupid.gif" tppabs="http://www.anticrack.de/fravia/stupid.gif" ALT="stupid" ALIGN="BOTTOM" WIDTH="114" HEIGHT="43" BORDER="0" VSPACE="0" HSPACE="0">
+
+<BR>
+
+
+
+<H4>by iNCuBuS++<BR>
+
+<BR>
+
+(15 August 1997, slightly edited by Fravia)</H4>
+
+<HR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">Courtesy of Fravia's page 
+
+of reverse engineering<HR><BR><I>Well,	here is the email snippet
+
+ that precedes this essay:<BR>
+
+<PRE></CENTER>&gt;&gt; Well, if you had the time... MSVCRT.dll reverse engineering would
+
+&gt;&gt; surely be interesting...
+
+
+
+&gt; I did have the time.... Here's my short essay on how to crack WinHacker95 
+
+&gt; 2.0. It is intended for Project 7 (&quot;Most Stupid Protection&quot;)</PRE><CENTER>
+
+I don't need to explain you what MSVCRT.DLL (Micro$oft Visual C++ Run Time library) 
+
+is, do I?<BR><BR>(A lesson for lazy and hurried shareware programmers :-)</I></CENTER><HR size="3">
+
+<PRE><CENTER><FONT size="+2">
+
+Cracking WinHacker95 2.0 by iNCuBuS++</CENTER></FONT>
+
+
+
+      This target is one of those little programs that let you play with
+
+the system settings buried deep within the system registry... settings 
+
+that are not otherwise available to the average user.
+
+It's much like TweakUI, though it has a few options more. Since
+
+modifying &quot;hidden&quot; settings in the registry is a serious thing, I expected 
+
+that this piece of shareware would have had a serious protection. 
+
+Well... I was dead wrong!
+
+
+
+      When a programmer writes his program in C++ we can be sure that he's
+
+either in a hurry to finish his work or he's lazy to put a little more effort 
+
+in programming in C (not to mention assembler) and debugging his code (he could 
+
+be both: in a hurry and lazy, since the two things go most together :-) 
+
+Programming in C or asm would give him the power to control every aspect of 
+
+his program's functioning (including the protection scheme). But nooo! He just 
+
+wants easy money - putting together pieces of code someone else has written, 
+
+coercing them into something that he would call HIS work, in a matter of
+
+hours. 
+
+      Working in this way he will have absolutely no idea about <U>what</U> is 
+
+really inside his program - he just creates and manipulates objects of some &quot;class&quot; 
+
+from class libraries (like Micro$oft's MFC)filled with bugs and errors and written 
+
+by somebody else.
+
+      How COULD such a lazyhurried guy ever write a good protection scheme?
+
+Well, this program is written in C++ and has the most stupid protection
+
+scheme I have ever seen! 
+
+      I was able to extract the serial number from memory in less than 15 minutes 
+
+and it would have taken me even less if I had known from the beginning that it was 
+
+so stupid and had skipped doublechecking every step of mine! 
+
+
+
+It uses MSVCRT.dll - Micro$oft Visual C++ Run Time library, so it seemed wise
+
+to me to include MSVCRT's exports in winice.dat as well:
+
+   <FONT color="red">
+
+  EXP=c:\windows\system\msvcrt.dll
+
+  EXP=c:\windows\system\msvcrt20.dll
+
+  EXP=c:\windows\system\msvcrt40.dll
+
+   </FONT>
+
+      This particular target uses <FONT color="blue">msvcrt40.dll</FONT>. Now, the quickest way to
+
+check a serial number - from a programmer's perspective - is to use some form of 
+
+strcmp function to compare the expected serial number with the one entered by the 
+
+user. 
+
+      Even in that (predictable and stupid) case it would be logical to encrypt the 
+
+serial number in some way at least to give us, crackers the hard time decrypting it! 
+
+Well, in this case it would have been funny if it had not been sad (for programmers, 
+
+that is it)! Whoever wrote this program, left the serial number untouched for anybody
+
+to come and get it. 
+
+      Entered serial number (plain, no encryption whatsoever) is being compared with 
+
+expected serial number (again, unencrypted) probably using MSVCRT's strcmp function. 
+
+Getting the expected serial number is as easy as taking the string's address from
+
+the routine!!! 
+
+So, we do it this way:
+
+We start WinHacker95 and a nagscreen appears asking us to register. We enter the ICE
+
+and do a simple
+
+
+
+    bpx GetWindowTextA
+
+
+
+Now, we return to WH95, enter something for the user name, company and a serial number 
+
+and then click on the &quot;Register&quot; button. 
+
+SoftICE will pop up several times before we get to our serial number. To find the 
+
+address of the buffer into which our serial number is being read, do
+
+   <FÁnt color="blue">
+
+    dd ss:esp+4</FONT>
+
+
+
+    That will give you a DWORD hex dump of the stack with all the parameters passed to the
+
+function. The address of the buffer is the second parameter of the function, thus
+
+the second dword on the stack. Once we find the serial number that we have entered, 
+
+we'll set a bpr on its buffer and let the target run. 
+
+Eventually it will break in the middle of the string comparison routine (inside 
+
+MSVCRT.dll). It is NOT MSVCRT!strcmp (which I mentioned earlier), but MSVCRT!_mbscmp 
+
+(at least a part of it). 
+
+    We couldn't just set bpx on MSVCRT!_mbscmp function because only <U>a part of it</U> 
+
+is being used, and therefore it wouldn't break into SoftICE when called... a breakpoint 
+
+can be set only at the function's starting address!
+
+
+
+    But, from now on, when we crack password protected M$VC++ programs, we will bpx on 
+
+both string comparing functions, just to be sure. An even better idea is to bpx on the 
+
+actual code within the functions that are comparing the data that interest us!
+
+
+
+    Anyway, here's the code snippet, from _mbscmp func, used to compare 2 strings:
+
+
+
+014F:78005D79 MOV ESI,[ESP+18] ;Addr. of entered serial number buffer 
+
+014F:78005D7D MOV EAX,[ESP+14] ;Addr. of expected serial number buffer
+
+014F:78005D81 MOV DL,[EAX]     ;Get a char from one string.
+
+014F:78005D83 MOV BL,[ESI]     ;Get a char from the other.
+
+014F:78005D85 MOV CL,DL        ;Save a char from expected serial number.
+
+014F:78005D87 CMP DL,BL        ;Compare chars.
+
+014F:78005D89 JNZ 78005DAC     ;Quit further comparing if they do not match
+
+014F:78005D8B TEST CL,CL       ;Jump if it is the end of expected
+
+014F:78005D8D JZ 78005DB6      ;serial number string.
+
+
+
+    Now, you see how easy it is to get to the right serial number - just look
+
+at the buffer and write it down! But, be aware that the expected serial number is
+
+actually CALCULATED from entered user and company name, so it is always different! 
+
+Of course, it's not important, here, since we can get ANY number tweaking the 
+
+routine above!
+
+
+
+   Well, that's it. Yes, there's nothing more than this. After all, this <U>IS</U> a 
+
+candidate for &quot;The Most Stupid Protection!&quot;. I just hope that there will be no more 
+
+of these stupid protections or... ...we will be out of the job ! :)))))
+
+
+
+iNCuBuS++
+
+</PRE>
+
+
+
+ <FONT color="green">(c) iNCuBuS++ 1997. All rights reserved</FONT>
+
+<HR ALIGN="CENTER" WIDTH="100%" SIZE="3">
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</I></CENTER>
+
+<BR><CENTER>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">
+
+<A HREF="project7.htm" tppabs="http://www.anticrack.de/fravia/project7.htm">Project 7</A><BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">
+
+<A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#84'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#84">homepage </A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"> 
+
+<A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#73'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#73">links </A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0">
+
+<A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity </A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#82'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#82">students' essays </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">Academy database </A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut CGI-scripts </A>
+
+
+
+
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_Fravia </A><BR>
+
+
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering illegal? </A></CENTER>
+
+<CENTER><HR ALIGN="CENTER" WIDTH="100%" SIZE="2"></CENTER>
+
+</BODY>
+
+</HTML>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

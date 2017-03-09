@@ -1,0 +1,354 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>lan002</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+
+
+<P><CENTER><FONT SIZE="+3">Enterprise REXX<BR>
+
+</FONT><FONT SIZE="+2">Reversing a &quot;tool of the trade</FONT>
+
+<BR>
+
+</CENTER>
+
+
+
+<H4><CENTER><I>by Drlan</I><BR>
+
+(18 September 1997, slightly edited by fravia+)</CENTER></H4>
+
+
+
+<CENTER><HR><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"> Courtesy of Fravia's page of reverse engineering<BR>
+
+<HR> <I>Well, an interesting essay, here is Drlan's email to me:
+
+</I></CENTER>
+
+<PRE>
+
+Fravia,
+
+
+
+Here's a short essay on a nice program I found.  It's called Enterprise 
+
+REXX (WinREXX).  It's a pretty cool programming tool and I guess could 
+
+be considered a &quot;tool of our trade.&quot; 
+
+</PRE><I><CENTER>
+
+At first I thought he cracked only the nagscreen out, leaving the 
+
+Cinderella and the Quiver protections intact. Yet drlan says that 
+
+the setting of the flag gets rid of every protection scheme inside 
+
+this target...</I></CENTER><HR size="6">
+
+<PRE>
+
+Target Program: Enterprise REXX (WinREXX)
+
+Protection: Nag(s), 21 day time limit, limited number of runs (&quot;Quiver&quot; protection)
+
+Cracked by: drlan [Me'97/C4N]!
+
+Location: <A href="tppmsgs/msgs2.htm#216" tppabs="http://www.anticrack.de/fravia/tppmsgs/msgs2.htm#216">http://www.winrexx.com/Trial/</A>
+
+
+
+Tools needed:
+
+- SoftICE Win95 3.01
+
+- Hex Editor (I like PSEdit and Hex Workshop)
+
+
+
+Conventions used:
+
+&gt; denotes a SoftICE command
+
+
+
+Download the target and run it a few times to get a feel for what's going on.
+
+You'll notice a nice little reminder that the program will expire in 21 days
+
+or after 126 more uses, whichever is later.  That doesn't sound like quite
+
+enough time for a thorough evaluation, so let's see what we can do...
+
+
+
+I am going to work through REXX.EXE in the tutorial.  The routine for the
+
+WINREXX.EXE is almost identical and I'll explain where to patch it at the
+
+end.
+
+
+
+As with any crack, there are many different ways to approach this.  The first
+
+thing I did was disassemble the file with W32Dasm 8.9.  
+
+Hey, that's not in the above list of tools needed! 
+
+Don't worry, this isn't how we're going to crack it...  
+
+You could choose the dead listing approach.  You will find the strings
+
+that refer to &quot;expires in&quot; and &quot;expired.&quot;  You could then crack from there,
+
+as usual, but let's try a different approach.
+
+
+
+When you run either of the main executables (REXX.EXE or WINREXX.EXE), the
+
+friendly reminder pops up to let us know when this babe is going to expire.
+
+This box, with just an OK button on, looks a lot like a standard API call.
+
+A couple of the routines that can put on the screen a message like this are:
+
+MessageBox and DialogBox.  Of course this is a 32-bit app, so these functions
+
+have an &quot;A&quot; on the end.  Let's try a breakpoint on MessageBoxA.  Pop over into
+
+SoftICE with Ctrl-D and do this:
+
+
+
+&gt;bpx MessageBoxA
+
+
+
+Now press Ctrl-D or F5 to get out of SoftICE and then run the program again.
+
+sICE will pop on the MessageBoxA function.  Press F12 to RETurn.  Now click
+
+the OK button on the message box.  You should drop back into sICE right after
+
+the call to MessageBoxA.
+
+
+
+Scroll up your Code Window using Ctrl-Up Arrow.  You won't need to scroll up
+
+very far (just a few lines), until you come to this interesting bit of code:
+
+
+
+:004079F9 837DB800      CMP DWORD PTR [ebp-48], 00      ; looks like a flag
+
+          0F841A000000  JZ 00404C5D                     ; jump if it's zero
+
+          6A40          PUSH 40                         ; otherwise, set up
+
+          A1B4E04000    MOV EAX, [0040E0B4]             ; for our call to
+
+          50            PUSH EAX                        ; the ugly nag screen
+
+          68301B4100    PUSH 00411B30
+
+          FF15C8534100  CALL User32!GetFocus
+
+          50            PUSH EAX
+
+          FF15D4534100  CALL User32!MessageBoxA         ; which happens here!
+
+
+
+:00404C5D 8B45FC        MOV EAX, [ebp-04]
+
+          E900000000    JMP 00404C65
+
+
+
+:00404C65 5F            POP EDI
+
+          5E            POP ESI
+
+          5B            POP EBX
+
+          C9            LEAVE
+
+          C3            RET
+
+
+
+So, what do we see here?  Looks like that CMP DWORD PTR [ebp-48], 00 is
+
+comparing a flag.  I tried placing a memory write breakpoint on that location
+
+but couldn't find where the flag was set.  It looks to me like if the flag
+
+were 00, we would jump over the whole nag screen mess.  So, let's just make
+
+it so!
+
+
+
+Let's change:
+
+          837DB800              CMP DWORD PTR [ebp-48], 00
+
+          0F841A000000          JZ 00404C5D
+
+
+
+into:
+
+          C745B800000000        MOV DWORD PTR [ebp-48], 00
+
+          EB1B                  JMP 00404C5D
+
+          90                    NOP
+
+
+
+We need to pad with one NOP to make it an even 10 byte for 10 byte exchange.
+
+Now, instead of <FONT color="blue">comparing</FONT> the flag, we are <FONT color="blue">setting</FONT> the flag.  I think this
+
+should please our master, +ORC.  Then, with the flag set, we are making an
+
+unconditional jump (JMP) over the MessageBoxA call.
+
+
+
+You can do this live in sICE.  First clear all existing breakpoints.
+
+
+
+&gt;BC *
+
+
+
+Now place a breakpoint on the CMP DWORD PTR [ebp-48], 00 line.  You can do
+
+this by typing BPX segment:offset or simply double click on the line.  Then
+
+run the program.  When sICE breaks on the line, we'll assemble in our new
+
+instructions:
+
+
+
+&gt;A                              ; to assemble in our new instructions
+
+&gt;MOV DWORD PTR [ebp-48], 00     ; let's make the flag 00
+
+&gt;JMP 00404C5D                   ; jump over the message box
+
+&gt;(press Esc)
+
+
+
+Press Ctrl-D or F5 to continue running.  You should not see any nag screens!
+
+
+
+Time to transfer our live crack into something more useful and longer lasting.
+
+We need to hex edit the rexx.exe program to replace the bad old instructions
+
+with our nice new ones.
+
+
+
+Nag screen(s):
+
+Search for:     837DB8000F841A000000    ; compare flag, jmp if 00
+
+Replace with:   C745B800000000EB1B90    ; set flag to 00, jmp, nop
+
+
+
+WinREXX.EXE uses the same code, so search and replace the same string in
+
+there and you're all set! 
+
+
+
+Setting the flag get's rid of ALL protection schemes inside these targets!
+
+
+
+That's it for this lesson.  Hope this was fun and instructional.
+
+
+
+Disclaimer: THIS ESSAY IS FOR EDUCATIONAL PURPOSES ONLY.  ANY USE, MIS-USE
+
+OR ILLEGAL ACTIVITY IS THE SOLE RESPONSIBILITY OF THE READER.
+
+
+
+GreetZ: Everyone in [Me'97/C4N], PC'97, UCF, {fravia+, gthorne+ and +ORC}, 
+
+Razzia!
+
+     
+
+
+
+                                                        +drlan
+
+
+
+</PRE>
+
+
+
+<FONT color="green"> (c) +drlan 1997. All rights reversed</FONT><HR>
+
+<CENTER><I>You are deep inside fravia's page of reverse
+
+engineering, choose your way out:</I></CENTER>
+
+
+
+
+
+<P><CENTER>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#84'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#84">homepage </A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"> <A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#73'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#73">links
+
+</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0" NATURALSIZEFLAG="0"> <A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity
+
+</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#82'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#82">students' essays </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools
+
+</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails </A><BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database </A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia
+
+</A><BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">is reverse engineering legal? </A></FONT></CENTER></P>
+
+
+
+<P><CENTER><FONT SIZE="-1"><HR></FONT></CENTER>
+
+</BODY>
+
+</HTML>
+
+
+

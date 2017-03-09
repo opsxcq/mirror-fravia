@@ -1,0 +1,673 @@
+<html><HEAD>
+
+
+
+<TITLE>rizla</TITLE>
+
+
+
+</HEAD>
+
+
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+
+
+<CENTER><FONT size="+3">Cracking TimeLock32 v2.0 without patching<BR>
+
+
+
+(&quot;Universal keygenerator for a commercial protection&quot;)</FONT>
+
+
+
+<BR>
+
+
+
+<FONT size="+2">by Riz la+</FONT><BR>
+
+
+
+<BR>(07 July 1997, slightly edited by Fravia)
+
+
+
+<HR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">
+
+
+
+Courtesy of Fravia's page of reverse engineering
+
+
+
+<BR><BR><I>Well... Riz la+ is a very very cautious
+
+man, his essay came through a couple of remailers, with 
+
+some reconstruction problems, now cleared.<BR>If you ever 
+
+wanted to know in detail how a mathematical protection 
+
+algorithm works, and you could not follow +ORC's strainer 
+
+about Instant Access in the C.1, C.2 and C.3 lessons (a very 
+
+difficult protection scheme, btw), here you will get pretty deeep
+
+knowledge about the workings of such protections. This essay 
+
+has a very important annex: Riz la+'s 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A href="rizlac.htm" tppabs="http://www.anticrack.de/fravia/rizlac.htm">C++</A> source code for a keygenerator 
+
+for this protection scheme. Needless to say this example will be 
+
+very helpful for anyone of you interested in building his own 
+
+&quot;crack_probes&quot; and his own tools (in order to reverse engineer applications 
+
+you do not happen to have the source code of :-)<BR>Studying this essay 
+
+(after having read the 
+
+one by 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">
+
+<A href="xoanon.htm" tppabs="http://www.anticrack.de/fravia/xoanon.htm">Xoanon</A> on the same subject, of course) you'll be able to 
+
+reverse engineer every program that uses this weak  
+
+&quot;commercial&quot; protection, used by many programs</CENTER>
+
+
+
+<HR size="2">
+
+
+
+</I>
+
+
+
+<CENTER><FONT size="+3">
+
+
+
+
+
+
+
+Cracking TimeLock32 v2.0 without patching
+
+
+
+<BR><FONT size="+2">
+
+
+
+by Riz la+ [6 July 1997]</FONT>
+
+
+
+</CENTER></FONT>
+
+
+
+<PRE>
+
+
+
+<B>Preface:</B>
+
+I recently read Xoanon's article about patching [tl32v20.dll] on my favourite
+
++HCU's site. 
+
+Nice work, but I hate patching. You always have to store a copy of that patched 
+
+prog, because other progs might overwrite your local copy. Or a new subversion 
+
+is published and you'll have to verify your patch. (I found two versions of 
+
+[tl32v20.dll]).I prefer a non-invasive technique in general. Let's make 
+
+keygenerators. Or much better,only  one &quot;super&quot; keygenerator that will unlock 
+
+all  programs that use as protection [tl32v20.dll], without any need to debug 
+
+or patch them anymore. 
+
+
+
+This lesson is for advanced reverse engineer. You should really know how to 
+
+handle your SoftIce and your disassembler. It goes without saying that
+
+You need good knowledge of assembler. Knowledge of C++ will be very helpful, 
+
+because I would like to speak in &quot;C++ terms&quot; during his lesson.
+
+At last (DO NOT UNDERESTIMATE IT!) you'll need a lot of time, if you really 
+
+want to understand it all. (It took me ~12 hours to to grasp the scheme, and 
+
+even more time to write this lesson.)
+
+
+
+<B>Target:</B>
+
+[tl32v20.dll] 
+
+Version a): size: 91,648 bytes, internal date: 01/11/97
+
+or
+
+Version b): size: 86,528 bytes, internal date: 03/25/97 
+
+(on their web site <A href="tppmsgs/msgs2.htm#235" tppabs="http://www.anticrack.de/fravia/tppmsgs/msgs2.htm#235">http://www.timelock.com</A> they date it 03/20/97)
+
+(It's quite rare nowadays that a newer version of a program has a smaller 
+
+size than the older one!)
+
+
+
+<B>Preparations:</B>
+
+0) Read <A href="xoanon.htm" tppabs="http://www.anticrack.de/fravia/xoanon.htm">Xoanon's</A> article.
+
+1) Get Geoboy v1.2.  (that's what I used), but v1.3.1 will work definitely the
+
+   same. Look at the target. Look inside the target. Write down your registration
+
+   number, and everything that seems to be remarkable.
+
+2) Disassemble [tl32v20.dll]
+
+
+
+And now... Let's start!
+
+
+
+<B>Step 1: A normal keygenerator:</B>
+
+At first we'll try to make a normal keygenerator for Geoboy v1.2.
+
+
+
+Install Geoboy, and start it. The typical TimeLock Nag window will pop up.
+
+Choose purchase.Enter anything as unlock code, e.g.: &quot;12345678&quot;, enter anything 
+
+as name, but it must be 3 chars long (God knows why), enter anything as company. 
+
+Before you press [OK], enter your SIce and &quot;bpx getwindowtexta&quot;. (That's the 
+
+way I usually start)
+
+Press [OK] and debugger will pop. Press [F12] = &quot;p ret&quot;, and smack, you are 
+
+in [tl32v20.dll]. Now search for your fake unlock code and &quot;bpm&quot; on that. 
+
+The next access to our input will let SIce pop again:
+
+
+
+[All listings from tl32v20.dll; size: 86,528 bytes]
+
+
+
+:10005A70 mov edx, dword ptr [esp + 04]  ; [esp+04] is moved to edx
+
+                                    ;...
+
+:10005A80 mov eax, dword ptr [edx]  ; [edx] is moved to eax
+
+:10005A82 cmp al, byte ptr [ecx]    ; [ecx] is our input, and is compared to al
+
+:10005A84 jne 10005AB4              ; (SIce will pop here)
+
+:10005A86 or al, al                 ; ....
+
+
+
+Okay, echo of valid unlock code found in *edx. (By the way, that's the echo 
+
+for a permanent unlock code. There is a second compare for an unlock code 
+
+that will reset your trial time. You can go after that on your own, we won't 
+
+do it here.
+
+We could register Geoboy now, but we want to make a keygenerator. 
+
+So what should we do now? The answer is quite simple: We'll have to trace 
+
+that echo.
+
+And some lines above you'll see that mov edx, dword ptr [esp + 04] I pointed 
+
+out in the code snippet above. 
+
+So you should press [F12] now and you'll land here:
+
+
+
+:10003FA5 Call dword ptr [100163DC]   ; GetDlgItem()
+
+:10003FAB push 00000031
+
+:10003FAD push 10013B50
+
+:10003FB2 push eax
+
+:10003FB3 call ebx                    ; GetClassNameA()
+
+:10003FB5 lea eax, dword ptr [ebp-28] ; in [ebp-28] our valid_code will be stored
+
+:10003FB8 push eax
+
+:10003FB9 call 10001D08               ; <HERE ! :10003FBE add esp, 00000004 :10003FC1 lea eax, dword ptr [ebp-14] :10003FC4 lea ecx, dword ptr [ebp-28] :10003FC7 push eax ; *entered_code :10003FC8 push ecx ; *valid_code :10003FC9 call 10005A70 ; compare entered_code with valid_code :10003FCE add esp, 00000008 ; ([F12] will bring us to here) :10003FD1 test eax, eax ; (return code "of.class" tppabs="http://fravia.org/of.class" :10005A70) eax="=" 0 ? :10003FD3 jne 10004028 ; no ?, then beggar_off Now we reached the point described by Xoanon. It's quite obvious what's that call 10001d08. Let's have a closer look there: bpx 10001d08 (You can clear all other breakpoints now). You should step through it quickly, don't trace. At least you'll notice that these call 10001C29 seem to be very interesting. I hope you got a feeling now what's going on. Give it a second try: Have a closer look at the values of the registers. The picture will get clearer, doesn't it?. Have a look at your listing of [tl32v20.dll]: :10001D08 push ebp ; ok, the whole mess begins quite boring ;... :10001D26 xor edi, edi ; initialize counter/index with 0x00 :10001D28 mov esi, dword ptr [100163AC] ; initialize esi with address of ; wsprintfA() :10001D2E push 10011044 ; start of loop :10001D33 lea eax, dword ptr [ebp-04] :10001D36 push eax :10001D37 inc edi ; increase counter/index :10001D38 call 10004D70 ; (?) :10001D3D add esp, 00000008 :10001D40 lea ecx, dword ptr [ebp-04] :10001D43 movsx eax, byte ptr [edi+10014542] ; move a single char at ;*(edi+10014542)to eax ;*(edi+10014542)="=120000NDGGBY" !! ;have a look around tose data! :10001D4A push eax ;this will be "1","2","0","0","0"and at last"0" :10001D4B push 100111B4 ;format-control string="=" "%c" :10001D50 push ecx ;output_buffer :10001D51 call esi ;wsprintfA() :10001D53 add esp, 0000000C :10001D56 lea ecx, dword ptr [ebp-04] ;get that single char... :10001D59 push ecx :10001D5A call 10004F10 ;...transform it to a dword digit... :10001D5F add esp, 00000004 :10001D62 mov dword ptr [ebp + 4*edi 60], eax ;... and store it :10001D66 cmp edi, 00000006 ;counter="=" 0x06 ? :10001D69 jb 10001D2E ;no, then loop Let's summarize: What does this loop do? It gets that mysterious "120000" and transforms every char to a corresponding dword digit, eg.: "1" to 00000001 and so on. :10001D6B xor edi, edi ; initialize counter/index with 0x00 :10001D6D push 10011044 ; loop start :10001D72 lea eax, dword ptr [ebp-04] :10001D75 push eax :10001D76 inc edi :10001D77 call 10004D70 :10001D7C add esp, 00000008 :10001D7F lea ecx, dword ptr [ebp-04] :10001D82 movsx eax, byte ptr [edi+100145AF] ; *(edi+100145AF)="=" registration ; number :10001D89 push eax :10001D8A push 100111B4 :10001D8F push ecx :10001D90 call esi :10001D92 add esp, 0000000C :10001D95 lea ecx, dword ptr [ebp-04] :10001D98 push ecx :10001D99 call 10004F10 :10001D9E add esp, 00000004 :10001DA1 mov dword ptr [ebp + 4*edi 48], eax :10001DA5 cmp edi, 00000010 :10001DA8 jb 10001D6D ;loop 0x10 times ;0x10="=length" of regist_number Let's summarize: What does this second loop do? It's similiar to the first one, but this time it transforms the *whole* registration number. (The "Registration number" is the number you should tell to the operator in order to unlock. It is NOT the unlock code we are searching for :-) :10001DAA push [ebp-34] ;this is a single digit from our regist_number :10001DAD push [ebp-08] ;ditto :10001DB0 push [ebp-5C] ;this is a single digit from our "120000" :10001DB3 push [ebp-28] ;a digit from our registration number again :10001DB6 push [ebp-44] ;...and again :10001DB9 call 10001C29 ; <-- here ! : modify these digits :10001DBE add esp, 00000014 :10001DC1 mov dword ptr [ebp+FF64], eax ; store return code ;... ; similiar code repeats... :10001F45 push [ebp-2C] :10001F48 push [ebp-24] :10001F4B push [ebp-50] :10001F4E push [ebp-24] :10001F51 push [ebp-08] :10001F54 call 10001C29 ;...till here (0x10 times) :10001F59 add esp, 00000014 :10001F5C lea edi, dword ptr [ebp+FF64] :10001F62 mov dword ptr [ebp-60], eax ; store last return code ;... and then: convert all return codes in chars again and concatenate them together. Let's summarize again: What happened? The function at :10001c29 gets 4 digits from our registration number and 1 digit from our mysterious "120000" to transform the unlock code. Now you should make a matrix: Making a keygenerator is hard work. Get your listing of [tl32v20.dll] and a sheet of paper... Certainly, you got to know what happens at :10001c29. (Listed below) Do it yourself! Work a little on this, you'll learn a lot! [Okay, if necessary you can look at my <a href="rizlac.htm" tppabs="http://www.anticrack.de/fravia/rizlac.htm">C++</A> prog)
+
+
+
+Listing of :10001c29  (compare with my C++ code):
+
+(Remark: &quot;first&quot; means &quot;first push&quot; and so on)
+
+
+
+:10001C29 push ebp
+
+:10001C2A mov eax, dword ptr [esp + 08]
+
+:10001C2E mov ebp, esp
+
+:10001C30 add eax, dword ptr [esp + 0C]  ; eax = fifth + fourth
+
+:10001C34 cmp eax, 00000009              ; if (eax &gt; 0x09) eax -= 0x0a 
+
+:10001C37 jle 10001C3C
+
+:10001C39 sub eax, 0000000A
+
+:10001C3C sub eax, dword ptr [ebp+10]    ; eax -= third
+
+:10001C3F jns 10001C44                   ; if (eax <0X00) eax +="0x0a" :10001C41 add eax, 0000000A :10001C44 add eax, dword ptr [ebp+14] ;eax +="second" :10001C47 cmp eax, 00000009 ;if (eax> 0x09) eax -= 0x0a			
+
+:10001C4A jle 10001C4F
+
+:10001C4C sub eax, 0000000A
+
+:10001C4F sub eax, dword ptr [ebp+18]    ; eax -= first
+
+:10001C52 jns 10001C57	         ; if (eax <0X00) eax +="0x0a" :10001C54 add eax, 0000000A :10001C57 pop ebp :10001C58 ret Okay, now we have done it. A keygenerator for Geoboy. Let's stop for a moment and think about it: The unlock code "was.class" tppabs="http://fravia.org/was.class" generated from the registration number, provided by [tl30v20.dll] itself and this mysterious "120000" This "120000" seems to be specific to Geoboy . 120000 looks like the version number (Remember I was working with v1.2) and this succeeding "NDGGBY", although it wasn't used, is the name of the company(="NDG)" that made Geoboy (="GBY)." It must be a Product ID. And this Product ID won't be stored in [tl32v20.dll], but in a [*.tsf file]. How do I know? First: Just try to delete [geoboytl.tsf]. Second: You did look around that data location of "120000NDGGBY"? Third: Xoanon told us so. Fourth: It cannot be stored in [tl32v20.dll] itself, because that ProductID must be different for every difefrent prog. Fifth: It cannot be found in geoboy.exe or anywhere else. Sixth: You can (and should be able to) feel it. If we could find a way to decrypt that [*.tsf files], so we could get that Product ID automatically... So we need to find [tl32v20.dll]'s decryption routine. <b>Step 2: Decrypting a [*.tsf file]:</B>
+
+I told you above, you should look around that data locations of that Product 
+
+ID of Geoboy. Remember?
+
+Above and below seemed to be the content of the [geoboytl.tsf], but ...decrypted! 
+
+That's nice, so we know what's in it. There is everything in
+
+it: Your registration number and the ProductID. Everything we need.
+
+Did you notice those blocks of hexadecimal digits, separated by 0x00 blocks 
+
+in the [geoboytl.tsf] ?
+
+Now I can imagine different approaches in order to locate the decryption routine.
+
+Easiest one seems to be: &quot;bpm&quot; (insie winice) on that &quot;120000&quot;, leave Geoboy 
+
+and restart. First pop of SIce will be a &quot;Bingo&quot;: 
+
+
+
+:10004E01 mov dword ptr [edi], edx     ; [edi] is our location, edx is &quot;1200&quot;
+
+:10004E03 add edi, 00000004            ; (SIce will pop here)
+
+
+
+Now have a look at our data location. Above [edi] everything seems to be 
+
+decrypted, but not below. We are in the middle of our decryption
+
+routine now. Now press [F12] several times, until everthing is decrypted:
+
+
+
+:1000412A push 10013A50           ; &quot;geoboytl.tsf&quot;
+
+:1000412F call 10004190           ; <HERE must everything start :10004134 add esp, 00000008 ; (several [F12]'s will bring us to here) You can disable all breakpoints now and set a new one just one line above your current location (bpx 10004190). Leave SIce, cancel Geoboy and restart it. (You should have a look in your listing first) :10004190 push ebp :10004191 mov ebp, esp :10004193 sub esp, 00000908 :10004199 push esi :1000419A push edi :1000419B push 00000000 :1000419D push [ebp+08] :100041A0 call 10005580 ;does [geoboytl.tsf] exists ? :100041A5 add esp, 00000008 :100041A8 mov esi, eax :100041AA cmp esi, FFFFFFFF :100041AD je 10004A73 ; file not found (return code: 1) ; [will be set at :10004A73] :100041B3 push 00000000 ; repetitive code "begins.class" tppabs="http://fravia.org/begins.class" here ... :100041B5 lea eax, dword ptr [ebp+F6FD] :100041BB push 0000000C :100041BD push eax :100041BE push esi :100041BF call 100036DB ; read file :100041C4 add esp, 00000010 :100041C7 test eax, eax :100041C9 jne 100041D5 :100041CB mov eax, FFFFFFFD ; file read error (return code: 3) :100041D0 jmp 10004A78 ; jmp to end of function :100041D5 push 00000000 ; ... and again, and again ... :100041D7 lea eax, dword ptr [ebp+F6F8] ; ... :100046E9 mov eax, FFFFFFFD :100046EE jmp 10004A78 ; ... repetitive code ends here Let's summarize: Nothing happened till now, just read the file and return, if an error occured. :100046F3 push esi :100046F4 call 100050F0 :100046F9 add esp, 00000004 :100046FC lea eax, dword ptr [ebp-3F] :100046FF push 00000000 :10004701 push eax ; *destination_buffer (="=" source_buffer) :10004702 push 10011044 ; [10011044]="=" 0x00000000 :10004707 push eax ; *source_buffer ; *eax="=" 0x7e,0x7c,0x6b,0x80,0x7d,0x6b,...,0x00 ; these hexes can be found in [geoboytl.tsf] ; at Offset: 0x8f9 :10004708 call 10002FF1 ; <-- here ! ; afterwards: *eax="=" "<font color="purple">travsacunt</font>&quot;
+
+:1000470D add esp, 00000010
+
+:10004710 lea ecx, dword ptr [ebp+F6FD]		
+
+:10004716 lea edx, dword ptr [ebp-3F]		
+
+:10004719 push 00000000
+
+:1000471B push ecx         ; *destination_buffer( == source_buffer)
+
+:1000471C push edx         ; &quot;<font color="purple">travsacunt</font>&quot;
+
+:1000471D push ecx         ; source_buffer
+
+                           ; *ecx == 0xc4,0xb7,0xb8,0x87,...,0x00
+
+                           ; these hexes can be found in [geoboytl.tsf]
+
+                           ; at Offset: 0x00
+
+:1000471E call 10002FF1    ; <--- here ! (again) ; afterwards: *ecx="=" "pewb48n2DG" :10004723 add esp, 00000010 :10004726 lea edx, dword ptr [ebp+F6FD] :1000472C push [ebp+0C] ; "pewb48n2DG" from [geoboytl.tsf](tl32v20.data) :1000472F push edx ; "pewb48n2DG" from [geoboy.exe](geoboy.data) :10004730 call 10005A70 ; equal ? :10004735 add esp, 00000008 :10004738 test eax, eax :1000473A je 10004746 ; yes, equal: jump :1000473C mov eax, FFFFFFFE; else: bad password (return code: 2) :10004741 jmp 10004A78 Summary: Here it is ! That call 10002FF1 is [tl32v20.dll]'s decryption routine: Its prototype seems to be:<font color="blue">
+
+Decrypt(char* source_buffer, char* decode_key, char* destination_buffer, 0)</font>.
+
+&quot;<font color="purple">travsacunt</font>&quot; is the decryption key. &quot;pewb48n2DG&quot; 
+
+is a password to check, if [geoboytl.tsf] is valid.  And all these values 
+
+are stored in 
+
+[geoboytl.tsf]. Let's keep in mind: When decoding the decryption key itself, 
+
+decode_key is 0x00.
+
+
+
+And now the work begins:
+
+
+
+:10004746 lea eax, dword ptr [ebp+F6FD] ; copying &quot;pewb48n2DG&quot; and &quot;<font color="purple">travsacunt</font>&quot;
+
+:1000474C mov esi, 10014569				
+
+:10004751 push eax
+
+:10004752 push 10013CA5
+
+:10004757 call 10004D70
+
+:1000475C add esp, 00000008
+
+:1000475F lea eax, dword ptr [ebp-3F]
+
+:10004762 xor edi, edi                 ; edi=0
+
+:10004764 push eax
+
+:10004765 push esi
+
+:10004766 call 10004D70
+
+:1000476B add esp, 00000008            ; ... copying finished
+
+:1000476E lea eax, dword ptr [ebp+F6F8]; repetitive code begins....
+
+:10004774 push edi                     ; 0
+
+:10004775 push 10013CA0                ; *destination_buffer
+
+:1000477A push esi                     ; *decode_key = &quot;travsacunt&quot;
+
+:1000477B push eax                     ; *source_buffer
+
+:1000477C call 10002FF1                ; <-- here ! (decrypt) :10004781 add esp, 00000010 ;... ;...decrypt again, and again, and again... Summary: The source_buffers are "solid" Offsets of [geoboytl.tsf]. How did I know? I didn't. I just assumed it: It is the easiest way to store data (else you need to calculate the offsets) ...And I was right. And now: Let's have a look at :10002FF1 itself. :10002FF1 push ebp :10002FF2 mov ebp, esp :10002FF4 sub esp, 00000110 :10002FFA push ebx :10002FFB push esi :10002FFC push edi :10002FFD push [ebp+08] :10003000 call 10004F20 ;get length of source_buffer :10003005 add esp, 00000004 :10003008 xor esi, esi ;initialize counter/index2 with 0x00 :1000300A mov edi, 10011044 :1000300F mov dword ptr [ebp-08], eax ;store length of source_buffer :10003012 push [ebp+0C] :10003015 call 10004F20 ;get length of decode_key :1000301A add esp, 00000004 :1000301D mov ebx, eax ;store length of decode_key in ebx (!) :1000301F lea eax, dword ptr [ebp-10] :10003022 push edi :10003023 push eax :10003024 call 10004D70 :10003029 add esp, 00000008 :1000302C lea eax, dword ptr [ebp+FEF0] :10003032 push edi :10003033 push eax :10003034 call 10004D70 :10003039 mov [ebp-01], 2A ; "solid decryptor" (see below) ; [might be overwritten later] :1000303D add esp, 00000008 :10003040 cmp dword ptr [ebp+14], esi ; 4th parameter="=" 0 ? :10003043 je 100030A8 ; yes, decrypt encryption routine: :10003045 xor edi, edi ; else, encrypt... ;... Summary: :10002FF1 is [tl32v20.dll]'s encryption routine as well. How do I know? Just set a bpx at :10003045. Leave Geoboy, restart. SIce will pop. Press [F12] and snoop around. (TimeLock needs to encrypt your number of uses, if you are registered, and so on) So: :10002FF1's prototype is:<font color="blue"> 
+
+Crypt(char* source_buffer, char* decode_key, char* destination_buffer, bool flag)</font>, 
+
+where flag == 0 to decrypt and flag == 1 to encrypt. 
+
+(I only mentioned it,  to make it complete)
+
+
+
+decryption routine:
+
+:100030A8 xor edi, edi                ; initialize counter/index1 with 0x00
+
+:100030AA cmp dword ptr [ebp-08], edi ; length of source_buffer <= 0 ? :100030AD jle 10003106 ; yes, jump to end of function :__begin of decryption loop :100030AF mov eax, dword ptr [ebp+08] ; [ebp+08]="*source_buffer" :100030B2 test ebx, ebx ; length of decode_key="=" 0 ? :100030B4 mov al, byte ptr [eax + edi]; get source_buffer[index1] :100030B7 je 100030CE ; length of decode_key="=" 0, then jump ; (will be 0x00, when the real decryption_key ;="=" "<font color="purple">travsacunt</FONT>&quot; needs to be decoded)
+
+                               ; else:
+
+:100030B9 mov ecx, dword ptr [ebp+0C] 
+
+:100030BC lea edx, dword ptr [ebx-02]
+
+:100030BF cmp edx, esi         ; compare length of decode_key with index2
+
+:100030C1 mov cl, byte ptr [ecx + esi] ; get decode_key[index2]
+
+:100030C4 mov byte ptr [ebp-01], cl	   ; store that in [ebp-01]
+
+                               ; Remark: else [ebp-01] will be 0x2a (see above)
+
+:100030C7 jge 100030CD         ; index2 &gt;= length of decode key ? then jump
+
+                                       ; else:
+
+:100030C9 xor esi, esi         ;  reset index2 ...
+
+:100030CB jmp 100030CE         ;  ...and don't increase it
+
+:100030CD inc esi              ; increase index2
+
+	
+
+:100030CE movsx eax, al        ; transform signed byte to signed dword 
+
+                               ; [char from source_buffer]
+
+:100030D1 movsx ecx, byte ptr [ebp-01] ; transform signed byte to signed dword
+
+                                       ; [char from decryption_key]
+
+:100030D5 sub eax, ecx         ; substract them !!! (decryption operation no.1)
+
+:100030D7 inc edi	             ; increase counter
+
+:100030D8 add eax, 00000020    ; add 0x20 !!! (decryption operation no.2)
+
+
+
+Summary: The decryption schema is that easy: 
+
+<FONT color="blue">
+
+result=source_buffer[index1] - decode_key[index2] + 0x20;
+
+</FONT>
+
+:100030DB lea ecx, dword ptr [ebp-10] ; store decrypted result as char ..
+
+                                      ; ...transform result to char
+
+:100030DE push eax                    ; decrypted result
+
+:100030DF push 100111B4               ; &quot;%c&quot;
+
+:100030E4 push ecx                    ; destination_buffer
+
+:100030E5 Call dword ptr [100163AC]   ; wsprintfA(destination_buffer,&quot;%c&quot;, eax)
+
+:100030EB add esp, 0000000C				
+
+:100030EE lea ecx, dword ptr [ebp-10] ; ... and copy it to destination_buffer
+
+:100030F1 lea edx, dword ptr [ebp+FEF0]
+
+:100030F7 push ecx
+
+:100030F8 push edx
+
+:100030F9 call 10004D80					
+
+:100030FE add esp, 00000008           ; ...char is stored
+
+:10003101 cmp edi, dword ptr [ebp-08] ; counter <LENGTH of source_buffer ? :10003104 jl 100030AF ; yes, then loop Summary: We have done it ! I reckon my listing is quite good commented :) (Else look at my <a href="rizlac.htm" tppabs="http://www.anticrack.de/fravia/rizlac.htm">C++</A>prog.)
+
+
+
+<B>Step 3: An Universal Keygenerator</B>
+
+Now we need to get the Offset of the decryption key in the [tsf-file], 
+
+write our own little prog, that reads any [tsf-file] you like and
+
+automatically create your own unlock codes. Enter that in the &quot;Purchase 
+
+Dialog&quot; and have fun. (Or you can skip that step: Calculate the key,
+
+and write it back to the [tsf-file]. Certainly you need to know the 
+
+[tsf-file] format then, but that seems to be easy.)
+
+
+
+Epilogue:
+
+Hope you learned a lot.  What about testing your knowledge on [tlock32.dll], 
+
+which seems to be TimeLock v1.0 ?  It is used by Numega's BoundsChecker and 
+
+Caligari's Pioneer Pro. The unlock code generating routine is quite similiar, 
+
+but even more ridiculous. The Product ID is stored in the specific prog's 
+
+main exe-file itself [6 digits + 6 chars as well]. So, give it a try...
+
+
+
+Hm,...TimeLock v3.0 is in beta phase. Does anyone know about some targets 
+
+protected by it? ;)
+
+
+
+And at last: Thanks to : +ORC and +his students for tutorials, essays and 
+
+orcpacks!
+
+
+
+(c) Riz la+ 1997
+
+</PRE>
+
+
+
+
+
+
+
+
+
+
+
+<BR>
+
+
+
+<HR ALIGN="CENTER" WIDTH="100%" SIZE="3">
+
+
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,  
+
+
+
+choose your way out:</I></CENTER>
+
+
+
+<BR><CENTER>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#84'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#84"> homepage</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"> 
+
+
+
+<A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#73'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#73"> links</A> 
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0">
+
+
+
+<A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm"> anonymity</A> 
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm"> +ORC</A>
+
+
+
+
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#82'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#82"> students' essays</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm"> tools</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm"> cocktails</A><BR>
+
+
+
+
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm"> search_forms</A>
+
+
+
+
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm"> mailFraVia</A></CENTER><BR>
+
+
+
+
+
+
+
+<CENTER>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm"> Is reverse engineering legal?</A></CENTER>
+
+
+
+<CENTER><HR ALIGN="CENTER" WIDTH="100%" SIZE="2"></CENTER>
+
+
+
+
+
+
+
+</BODY>
+
+
+
+</HTML>

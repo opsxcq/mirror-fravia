@@ -1,0 +1,1070 @@
+<html>
+
+<head>
+
+<title>andrew1.htm ~ Fravia's copy of Andrew Schulman's utilities</title>
+
+</head>
+
+<body BGCOLOR="#C0C0C0" TEXT="#001010" vlink="#405040 Alink=#00FF50">
+
+<center><table><tr><td><center><!-- gods Start -->
+
+<a href="gods.htm" tppabs="http://www.anticrack.de/fravia/gods.htm"><img SRC="gods.gif" tppabs="http://www.anticrack.de/fravia/gods.gif" ALT="gods" ALIGN="BOTTOM" WIDTH="114" HEIGHT="43" BORDER="0" VSPACE="0" HSPACE="0"></a><br>
+
+<font color="gray">Reversing gods</font><br>
+
+<!-- gods End --></center></td><td><pre>     </pre></td><td><center>
+
+
+
+
+
+<font size="+3">
+
+<center>Andrew Schulman's utilities (~1~)<br>(source code and compiled exe)</font><br>
+
+</center></td></tr></table></center>
+
+<br>
+
+<center>
+
+<br>
+
+courtesy of fravia's pages of reverse engineering<hr>
+
+<i>The relevance of the following utilities, both in order to deepen your reversing studies, and to 
+
+better understand code cannot be enough underlined.<br>
+
+The learner will find treasures understanding, using <u>and modifying</u> reversers' tools.<br>
+
+The more fortunates among you will be able to find the old &quot;Undocumented windows, a programmer's 
+
+guide to reserved Micro$oft windows API functions&quot;, by Andrew Schulman, 
+
+David Maxey and Matt Pietrek (yep!: Pietrek, nonetheless) in your favourite second hand bookshop. Those that 
+
+know how to search will find the whole book on line as well.<br> Read the following 
+
+code, use it (ideally loading the source into Softice when executing) and ameliorate 
+
+it for our holy reversing purposes!<br>
+
+Enjoy!
+
+</i>
+
+</center>
+
+<center>
+
+<hr>On this page you'll find the following utilities:
+
+<br><font color="#FF0000">[</font><a href="#anchormem1">mem one</a><font color="#FF0000">]</font>
+
+~ <font color="#FF0000">[</font><a href="#anchormem2">mem two</a><font color="#FF0000">]</font>
+
+~</center>
+
+<br><a NAME="anchormem1"></a>
+
+<hr>
+
+<font size="+2">
+
+<a href="javascript:if(confirm('http://129.105.116.5/fravia/mem1.zip  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://129.105.116.5/fravia/mem1.zip'" tppabs="http://129.105.116.5/fravia/mem1.zip">mem1</a>
+
+</font>
+
+<hr>
+
+<pre>
+
+/* 
+
+MEM1.C -- walks DOS MCB chain(s): detailed version
+
+Andrew Schulman and Jim Kyle, July 1990
+
+*/
+
+
+
+#include &lt;stdlib.h&gt;
+
+#include &lt;stdio.h&gt;
+
+#include &lt;ctype.h&gt;
+
+#include &lt;string.h&gt;
+
+#include &lt;dos.h&gt;
+
+
+
+typedef enum { FALSE, TRUE } BOOL;
+
+typedef unsigned char BYTE;
+
+typedef unsigned short WORD;
+
+typedef unsigned long ULONG;
+
+typedef void far *FP;
+
+
+
+#ifndef MK_FP
+
+#define MK_FP(seg,ofs)  ((FP)(((ULONG)(seg) &lt;&lt; 16) | (ofs)))
+
+#endif
+
+
+
+#ifdef __TURBOC__
+
+#define ASM asm
+
+#else
+
+#define ASM _asm
+
+#endif
+
+
+
+#ifdef __TURBOC__
+
+#define GETVECT(x)      getvect(x)
+
+#else
+
+#define GETVECT(x)      _dos_getvect(x)
+
+#endif
+
+
+
+#pragma pack(1)
+
+
+
+typedef struct {
+
+    BYTE type;          /* 'M'=in chain; 'Z'=at end */
+
+    WORD owner;         /* PSP of the owner */
+
+    WORD size;          /* in 16-byte paragraphs */
+
+    BYTE unused[3];
+
+    BYTE dos4[8];
+
+    } MCB;
+
+
+
+#define MCB_FM_SEG(seg)     ((seg) - 1)
+
+#define IS_PSP(mcb)         (FP_SEG(mcb) + 1 == (mcb)-&gt;owner)
+
+#define ENV_FM_PSP(psp_seg) (*((WORD far *) MK_FP(psp_seg, 0x2c)))
+
+
+
+void fail(char *s) { puts(s); exit(1); }
+
+
+
+BOOL belongs(void far *vec, unsigned start, unsigned size);
+
+void display(MCB far *mcb);
+
+char far *env(MCB far *mcb);
+
+void display_progname(MCB far *mcb);
+
+void display_cmdline(MCB far *mcb);
+
+void display_vectors(MCB far *mcb);
+
+unsigned fstrlen(char far *s);
+
+
+
+MCB far *get_mcb(void)
+
+{
+
+    ASM mov ah, 52h
+
+    ASM int 21h
+
+    ASM mov dx, es:[bx-2]
+
+    ASM xor ax, ax
+
+    /* in both Microsoft C and Turbo C, far* returned in DX:AX */
+
+}
+
+
+
+mcb_chk(MCB far *mcb)
+
+{
+
+    for (;;)
+
+        if (mcb-&gt;type == 'M')
+
+            mcb = MK_FP(FP_SEG(mcb) + mcb-&gt;size + 1, 0);
+
+        else
+
+            return (mcb-&gt;type == 'Z');
+
+}
+
+
+
+void walk(MCB far *mcb)
+
+{
+
+    printf(&quot;Seg     Owner   Size\n&quot;); 
+
+    for (;;)
+
+        switch (mcb-&gt;type)
+
+        {
+
+            case 'M' : /* Mark : belongs to MCB chain */
+
+                display(mcb);
+
+                mcb = MK_FP(FP_SEG(mcb) + mcb-&gt;size + 1, 0);
+
+                break;
+
+            case 'Z' : /* Zbikowski : end of MCB chain */
+
+                display(mcb);
+
+                return;
+
+            default :
+
+                fail(&quot;error in MCB chain&quot;);
+
+        }
+
+}
+
+
+
+main(int argc, char *argv[])
+
+{
+
+    if (argc &lt; 2)
+
+        walk(get_mcb());            /* walk &quot;normal&quot; MCB chain */
+
+    else
+
+    {
+
+        unsigned seg;
+
+        sscanf(argv[1], &quot;%04X&quot;, &amp;seg);
+
+        walk(MK_FP(seg, 0));       /* walk arbitrary MCB chain */
+
+    }
+
+
+
+    return 0;
+
+}
+
+
+
+void display(MCB far *mcb)
+
+{
+
+    static void far *vect_2e = (void far *) 0;
+
+    unsigned env_seg;
+
+    
+
+    printf(&quot;%04X    %04X    %04X (%6lu)   &quot;, 
+
+        FP_SEG(mcb), mcb-&gt;owner, mcb-&gt;size, (long) mcb-&gt;size &lt;&lt; 4);
+
+
+
+    if (IS_PSP(mcb))
+
+    {
+
+		void far *e = env(mcb);		/* MSC wants lvalue */
+
+        if (env_seg = FP_SEG(e)) printf(&quot;%04X    &quot;, env_seg);
+
+        else                     printf(&quot;        &quot;);
+
+    
+
+        display_progname(mcb);
+
+    }
+
+    
+
+    if (! vect_2e) 
+
+        vect_2e = GETVECT(0x2e);   /* do just once */
+
+    if (! mcb-&gt;owner)
+
+        printf(&quot;free &quot;);
+
+    /* 0008 is not really a PSP; belongs to CONFIG.SYS */
+
+    else if (mcb-&gt;owner == 8)   
+
+        printf(&quot;config &quot;);
+
+    /* INT 2Eh belongs to master COMMAND.COM (or other shell) */
+
+    else if (belongs(vect_2e, FP_SEG(mcb), mcb-&gt;size))
+
+        printf(&quot;%s &quot;, getenv(&quot;COMSPEC&quot;));   
+
+
+
+    /* presence command line is independent of program name */
+
+    if (IS_PSP(mcb))
+
+        display_cmdline(mcb);
+
+    display_vectors(mcb);
+
+    printf(&quot;\n&quot;);
+
+}
+
+
+
+char far *env(MCB far *mcb)
+
+{
+
+    char far *e;
+
+    unsigned env_mcb;
+
+    unsigned env_owner;
+
+
+
+    /*
+
+        if the MCB owner is one more than the MCB segment then
+
+            psp := MCB owner
+
+            env_seg := make_far_pointer(psp, 2Ch)
+
+            e := make_far_pointer(env_seg, 0)
+
+        else
+
+            return NULL
+
+    */
+
+    if (IS_PSP(mcb))
+
+        e = MK_FP(ENV_FM_PSP(mcb-&gt;owner), 0);
+
+    else 
+
+        return (char far *) 0;
+
+    
+
+    /* 
+
+       Does this environment really belong to this PSP? An
+
+       environment is just another memory block, so its MCB is
+
+       located in the preceding paragraph. Make sure the env
+
+       MCB's owner is equal to the PSP whose environment this
+
+       supposedly is! Thanks to Rob Adams of Phar Lap Software
+
+       for pointing out the need for this check; this is a 
+
+       good example of the sort of consistency check one must
+
+       do when working with undocumented DOS.
+
+    */
+
+    env_mcb = MCB_FM_SEG(FP_SEG(e));
+
+    env_owner = ((MCB far *) MK_FP(env_mcb, 0))-&gt;owner;
+
+    return (env_owner == mcb-&gt;owner) ? e : (char far *) 0;
+
+}
+
+
+
+char far *progname_fm_psp(unsigned psp)
+
+{
+
+    char far *e;
+
+    unsigned len;
+
+
+
+    /* is there an environment? */
+
+    if (! (e = env(MK_FP(MCB_FM_SEG(psp), 0))))
+
+        return (char far *) 0;
+
+
+
+    /* program name only available in DOS 3+ */
+
+    if (_osmajor &gt;= 3)
+
+    {
+
+        /* skip past environment variables */
+
+        do e += (len = fstrlen(e)) + 1;
+
+        while (len);
+
+
+
+        /* 
+
+            e now points to WORD containing number of strings following
+
+            environment; check for reasonable value: signed because
+
+            could be FFFFh; will normally be 1
+
+        */
+
+        if ((*((signed far *) e) &gt;= 1) &amp;&amp; (*((signed far *) e) &lt; 10))
+
+        {
+
+            e += sizeof(signed);
+
+            if (isalpha(*e))
+
+                return e; /* could make canonical with INT 21h AH=60h */
+
+        }
+
+    }
+
+    
+
+    return (char far *) 0;
+
+}
+
+
+
+void display_progname(MCB far *mcb)
+
+{
+
+    char far *s;
+
+    if (IS_PSP(mcb))
+
+        if (s = progname_fm_psp((FP_SEG(mcb) + 1)))
+
+            printf(&quot;%Fs &quot;, s);
+
+}
+
+
+
+BOOL belongs(void far *vec, unsigned start, unsigned size)
+
+{
+
+    unsigned seg = FP_SEG(vec) + (FP_OFF(vec) &gt;&gt; 4); /* normalize */
+
+    return (seg &gt;= start) &amp;&amp; (seg &lt;= (start + size));
+
+}
+
+
+
+void display_cmdline(MCB far *mcb)
+
+{
+
+    /*
+
+        psp := MCB owner
+
+        cmdline_len := psp[80h]
+
+        cmdline := psp[81h]
+
+        print cmdline (display width := cmdline_len)
+
+    */
+
+    int len = *((BYTE far *) MK_FP(mcb-&gt;owner, 0x80));
+
+    char far *cmdline = MK_FP(mcb-&gt;owner, 0x81);
+
+    printf(&quot;%.*Fs &quot;, len, cmdline);
+
+}
+
+
+
+void display_vectors(MCB far *mcb)
+
+{
+
+    static void far **vec = (void far **) 0;
+
+    WORD vec_seg;
+
+    int i;
+
+    int did_one=0;
+
+    
+
+    if (! vec)
+
+    {
+
+        if (! (vec = calloc(256, sizeof(void far *))))
+
+            fail(&quot;insufficient memory&quot;);
+
+        for (i=0; i&lt;256; i++)
+
+            vec[i] = GETVECT(i);
+
+    }
+
+    
+
+    for (i=0; i&lt;256; i++)
+
+        if (vec[i] &amp;&amp; belongs(vec[i], FP_SEG(mcb), mcb-&gt;size))
+
+        {
+
+            if (! did_one) { did_one++; printf(&quot;[&quot;); }
+
+            printf(&quot;%02X &quot;, i);
+
+            vec[i] = 0;
+
+        }
+
+    if (did_one) printf(&quot;]&quot;);
+
+}
+
+
+
+unsigned fstrlen(char far *s)
+
+{
+
+#if defined(_MSC_VER) &amp;&amp; (_MSC_VER &gt;= 600)
+
+	return _fstrlen(s);
+
+#else
+
+    unsigned len = 0;
+
+    while (*s++)
+
+        len++;
+
+    return len;
+
+#endif	
+
+}
+
+
+
+
+
+</pre>
+
+
+
+
+
+<br><a NAME="anchormem2"></a>
+
+<hr>
+
+<font size="+2">
+
+<a href="javascript:if(confirm('http://129.105.116.5/fravia/mem2.zip  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://129.105.116.5/fravia/mem2.zip'" tppabs="http://129.105.116.5/fravia/mem2.zip">mem2</a>
+
+</font>
+
+<hr>
+
+<pre>
+
+
+
+
+
+/* 
+
+MEM2.C -- walks DOS MCB chain(s): simple version
+
+Andrew Schulman and Jim Kyle, July 1990
+
+*/
+
+
+
+#include &lt;stdlib.h&gt;
+
+#include &lt;stdio.h&gt;
+
+#include &lt;dos.h&gt;
+
+
+
+typedef unsigned char BYTE;
+
+typedef unsigned short WORD;
+
+typedef unsigned long ULONG;
+
+typedef void far *FP;
+
+
+
+#ifndef MK_FP
+
+#define MK_FP(seg,ofs)  ((FP)(((ULONG)(seg) &lt;&lt; 16) | (ofs)))
+
+#endif
+
+
+
+#ifdef __TURBOC__
+
+#define ASM asm
+
+#else
+
+#define ASM _asm
+
+#endif
+
+
+
+#pragma pack(1)
+
+
+
+typedef struct {
+
+    BYTE type;          /* 'M'=in chain; 'Z'=at end */
+
+    WORD owner;         /* PSP of the owner */
+
+    WORD size;          /* in 16-byte paragraphs */
+
+    BYTE unused[3];
+
+    BYTE dos4[8];
+
+    } MCB;
+
+
+
+void fail(char *s) { puts(s); exit(1); }
+
+
+
+MCB far *get_mcb(void)
+
+{
+
+    ASM mov ah, 52h
+
+    ASM int 21h
+
+    ASM mov dx, es:[bx-2]
+
+    ASM xor ax, ax
+
+    /* in both Microsoft C and Turbo C, far* returned in DX:AX */
+
+}
+
+
+
+mcb_chk(MCB far *mcb)
+
+{
+
+    for (;;)
+
+        if (mcb-&gt;type == 'M')
+
+            mcb = MK_FP(FP_SEG(mcb) + mcb-&gt;size + 1, 0);
+
+        else
+
+            return (mcb-&gt;type == 'Z');
+
+}
+
+
+
+void display(MCB far *mcb)
+
+{
+
+    char buf[80];
+
+    sprintf(buf, &quot;%04X    %04X    %04X (%6lu)&quot;, 
+
+        FP_SEG(mcb), mcb-&gt;owner, mcb-&gt;size, (long) mcb-&gt;size &lt;&lt; 4);
+
+    if (! mcb-&gt;owner) 
+
+        strcat(buf, &quot;   free&quot;);
+
+    puts(buf);
+
+}
+
+
+
+void walk(MCB far *mcb)
+
+{
+
+    printf(&quot;Seg     Owner   Size\n&quot;); 
+
+    for (;;)
+
+        switch (mcb-&gt;type)
+
+        {
+
+            case 'M' : /* Mark : belongs to MCB chain */
+
+                display(mcb);
+
+                mcb = MK_FP(FP_SEG(mcb) + mcb-&gt;size + 1, 0);
+
+                break;
+
+            case 'Z' : /* Zbikowski : end of MCB chain */
+
+                display(mcb);
+
+                return;
+
+            default :
+
+                fail(&quot;error in MCB chain&quot;);
+
+        }
+
+}
+
+
+
+#ifdef TRY_BUG
+
+main(void)
+
+{
+
+    unsigned segm;
+
+    ASM mov ah, 48h     /* Allocate Memory Block */
+
+    ASM mov bx, 64h     /* get 100 paragraphs */
+
+    ASM int 21h
+
+    ASM jc done
+
+    /* ax now holds initial segment of allocated block */
+
+    ASM mov segm, ax
+
+    printf(&quot;before: &quot;); display(MK_FP(segm - 1, 0));
+
+
+
+    ASM mov ax, segm
+
+    ASM mov es, ax      /* now resize the block */
+
+    ASM mov ah, 4Ah     /* Resize Memory Block */
+
+    ASM mov bx, 0FFFFh  /* impossible (at least in real mode!) */
+
+    ASM int 21h
+
+    ASM jnc done        /* something seriously wrong if _didn't_ fail! */
+
+    printf(&quot;after:  &quot;); display(MK_FP(segm - 1, 0));
+
+done:
+
+    return 0;
+
+}
+
+#else
+
+main(int argc, char *argv[])
+
+{
+
+    if (argc &lt; 2)
+
+        walk(get_mcb());            /* walk &quot;normal&quot; MCB chain */
+
+    else
+
+    {
+
+        unsigned seg;
+
+        sscanf(argv[1], &quot;%04X&quot;, &amp;seg);
+
+        walk(MK_FP(seg, 0));       /* walk arbitrary MCB chain */
+
+    }
+
+    
+
+    if (! mcb_chk(get_mcb()))
+
+    {
+
+        /* maybe do stack backtrace here, or dump registers */
+
+        puts(&quot;Error in MCB chain - prepare for halt...&quot;);
+
+        getchar();
+
+    }
+
+    else
+
+        puts(&quot;MCB chain ok&quot;);
+
+    
+
+    return 0;
+
+}
+
+#endif
+
+</pre><hr>
+
+<center><a href="gods.htm" tppabs="http://www.anticrack.de/fravia/gods.htm"><img SRC="gods.gif" tppabs="http://www.anticrack.de/fravia/gods.gif" ALT="gods" ALIGN="BOTTOM" WIDTH="114" HEIGHT="43" BORDER="0" VSPACE="0" HSPACE="0"></a><br>
+
+<font color="gray">Back to the &quot;reversing gods&quot; Lab</font><br>
+
+<!-- Begin Javascript relocator <font color=red>~</fonT> Javascript code by fravia+ -->
+
+<form name="FraviasForm">
+
+<script LANGUAGE="javascript">
+
+<!--
+
+
+
+function FravPage(list) {
+
+	      location.href = list.options[list.selectedIndex].value
+
+}
+
+
+
+// -->
+
+</script>
+
+<div align="center">
+
+<center>
+
+<p center="&lt;center&gt;&lt;/center&gt;">&nbsp;<select name="fraviale" size="1">
+
+
+
+<option>Choose another page!</option>
+
+<option value="index.htm">Main page</option>
+
+<option value="academy.htm">Software reversing Lab</option>
+
+<option value="realicra.htm">Reality cracking Lab</option>
+
+<option value="noanon.htm">Anonymity Lab</option>
+
+<option value="ideale.htm">Site busting Lab</option>
+
+<option value="howtosea.htm">How to search Lab</option>
+
+<option value="sealight.htm">--Search engines (light)</option>
+
+<option value="searengi.htm">--Search engines (heavy)</option>
+
+<option value="links.htm">Links</option>
+
+<option value="tools.htm">Tools</option>
+
+<option value="javascri.htm">Javascript reversing</option>
+
+<option value="screamin.htm">Screaming truth</option>
+
+<option value="entran.htm">Main entrance</option>
+
+<option value="new_what.htm">What's new on fravia's</option>
+
+<option value="info.htm">Mail fravia+</option>
+
+<option value="http://greythorne.home.ml.org">+Greythorne's</option>
+
+<option value="http://www.InsideTheWeb.com/mbs.cgi/mb186724">Tools of our trade msgboard</option>
+
+<option value="http://www.InsideTheWeb.com/mbs.cgi/mb155985">Main msgboard</option>
+
+</select>
+
+
+
+<input type="button" value="Let's go!" onclick="FravPage(this.form.elements[0])">
+
+<br>
+
+</div>
+
+
+
+</form>
+
+<!-- end Javascript relocator -->
+
+<br><img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="88%" HEIGHT="6" BORDER="0" VSPACE="0" HSPACE="0"><br><br>
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><a HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage </a><img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0">
+
+<a HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links </a>
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0">
+
+<a HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity </a>
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><a HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC </a>
+
+
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><a HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays </a>
+
+
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><a HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database </a>
+
+
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><a HREF="botstart.htm" tppabs="http://www.anticrack.de/fravia/botstart.htm">bots wars</a>
+
+
+
+<br>
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><a HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut </a>
+
+
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><a HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools </a>
+
+
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><a HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails </a>
+
+
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><a HREF="javascri.htm" tppabs="http://www.anticrack.de/fravia/javascri.htm">javascript wars </a>
+
+
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><a HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms </a>
+
+
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><a HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia </a><br>
+
+
+
+
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><a HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering illegal?
+
+</a></center>
+
+<hr>
+
+
+
+</body>
+
+</html>
+
+
+
+
+

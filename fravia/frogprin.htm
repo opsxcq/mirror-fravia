@@ -1,0 +1,482 @@
+<HTML>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+<CENTER><H2>HOW TO CRACK W32dasm7</H2><H4><I>by Frog's print</I></H4>
+
+<BR><I>whith a very interesting (and cryptic) add-on by +gthorne at the end</I><BR>
+
+<BR>Courtesy of Fravia's page of reverse engineering</CENTER>
+
+<HR size="2">
+
+<PRE>
+
+If you want to crack W32Dasm7 (818720 Kb - Feb, 20 1997)  you must
+
+consider two problems:
+
+	
+
+- How to get rid of the limitation that does not allow us to perform as
+
+many operations as we want per session
+
+- How to save the disassembly listing
+
+
+
+Fortunately we, little crackers, took our time to read +ORC tutorials
+
+extensively. So we know two important things:
+
+1/ -Always use a ZEN method to analyse and then crack a program.
+
+2/ -Commercial protectionists/programmers are mostly stupid.
+
+
+
+OK, let's go:
+
+
+
+1/-Always use a ZEN method to analyse and then crack a program.
+
+
+
+First, disassemble W32Dasm7.exe with....W32Dasm7.exe. (cracking W32Dasm7
+
+using W32Dasm7 that's zen!).
+
+
+
+We'll get rid of the counter in order to use W32Dasm7 as many times as we
+
+want (without limitations) AND in order to find how to save the disassembled
+
+listing to disk.
+
+
+
+I won't spent a lot of time to explain how W32Dasm7 counter works because
+
+Adynts did it well for W32Demo6.
+
+</PRE>
+
+<CENTER><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">
+
+<A href="adynts.htm" tppabs="http://www.anticrack.de/fravia/adynts.htm">here</A></CENTER>
+
+<PRE>
+
+As we know that protectionists are stupid, let's assume that they used
+
+the same protection scheme, and the SAME COUNTER! for W32Dasm7!
+
+So we are looking for a counter that is decremented each time you press a
+
+command:
+
+
+
+We search for 'dec dword ptr' in the listing and.....right!! Poor nice
+
+Urbanik used the same counter! We find several 'dec dword ptr [ebx+ xxxxxxxx]...
+
+The one we find the more often is : DEC DWORD PTR [EBX + 00532739].
+
+We just now have to find the 'mov dword ptr [ebx+00532739],0000012C '.
+
+It is located at :
+
+
+
+:0043F7FA     C783392753002C010000      mov dword ptr [ebx + 00532739],0000012C
+
+
+
+We just have to change it as per follow:
+
+           
+
+:0043F7FA     C78339275300FF0F0000      mov dword ptr [ebx + 00532739],000FFFFF
+
+                       
+
+Done! The counter is cracked and now, just one little more thing to do:
+
+
+
+Saving the desassembly to text file.
+
+We could use SoftIce 3.00 to do this but as it took about 5mn to load
+
+W32Dasm7 to get the desassembly listing let's use W32Dasm7 features (it's
+
+always good to know all options and features of the program you are
+
+cracking!):
+
+
+
+In W32Dasm7, in the Toolbar press the &quot;Functions Imports&quot; button.
+
+You'll get a list of all calls to external functions located in Windows
+
+API.
+
+
+
+You'll see that it uses the Kernel32.DeleteFileA function.
+
+And what does such a function???? It deletes an existing file!
+
+
+
+We know that W32Dasm7 creates a file called WINSYS located in the
+
+directory of the file you loaded. It has the 'Hidden Attribute' and its
+
+size is 0 Kb (that's just because it is 'open for reading' by W32Dasm7).
+
+As usual, if a program wants to erase a file, it must close it. This
+
+particularity applies to DeleteFileA too otherwise it will fail.
+
+So, when quitting W32Dasm7 it will first close WINSYS and then erase it.
+
+We must crack right after it will close it.
+
+
+
+Press the &quot;Find&quot; button and search for 'DeleteFileA'.
+
+You'll find 3 Calls to address :0047ABCC .
+
+
+
+Press the &quot;Goto Location&quot; button and enter '0047ABCC' .
+
+You'll get:
+
+
+
+*Reference To: KERNEL32.DeleteFileA, Ord0000h
+
+:0047ABCC    FF251CA74900  jmp dword ptr [0049A71C]
+
+
+
+Here it is!!
+
+Let's change these values:
+
+
+
+:0047ABCC    C39090909090
+
+
+
+'C3' is a RET (Return) in Assembler and '90' is a NOP (NO Operation).
+
+This means that instead of jumping to Kernel32.DeleteFileA function, the
+
+program will be sent back (RET) to the caller and then will exit WITHOUT
+
+erasing Winsys.
+
+
+
+DONE!!! We cracked W32DASM7.EXE.
+
+
+
+
+
+Do these change with a good Hex Editor like Hiew550 or HexWorkshop (see
+
++ORC tutorial chapter 9(3) if you want to crack it too!).
+
+Then fire your brand new cracked copy of W32Dasm7, load any file and then
+
+exit the program. You'll see that WINSYS is still inside the directory of the
+
+ targeted program without 'Hidden Attribute', so that you can now open it with 
+
+any word processor, copy it, or move it elsewhere.
+
+
+
+2/ -Commercial protectionists/programmers are stupid.
+
++ORC was right: The commercial purposes of their work makes them BLOODY
+
+STUPID FOOLS!
+
+I cracked W32Dasm7.exe WITH W32Dasm7.exe AND even had SoftIce 3.01 loaded
+
+during that time and didn't have any problem!
+
+It took me 2 hours to crack and write a patch for W32Demo7 but only 15 mn
+
+to do the same with W32DASM6!! They are still using the EXACT SAME
+
+protection scheme (same counter, same DeleteFileA, same Winsys...) and I
+
+guess they will re-use it for the next version of W32Dasm.
+
+
+
+Can't wait for W32Dasm8 !!!!
+
+Frog's Print (Paris)
+
+</PRE>
+
+<BR>
+
+<CENTER><H2>
+
+Wdasm32  Fix for ATTRIB problems by Greythorne The Technomancer
+
+</H2><H4>
+
+ This is meant a PART II of the wdasm33 version 7 crack by Frog Prints
+
+</H4>
+
+</CENTER>
+
+<PRE>
+
+Since the file was attribbed incorrectly, it became clear to me that a part of the 
+
+crack was sorely missing from the part placed online by Frog Prints. This does 
+
+not belittle his work in any way, just points out the need to accomplish as much 
+
+of a crack as possible before it goes to the presses and the world sees it.
+
+
+
+Going under an assumption, which was correct mind you, this change fixes that 
+
+problem:
+
+
+
+search for: 77696E737973
+
+change to:  77732e747874
+
+
+
+I know why it works, and I knew why it would work as i thought of it.
+
+It is left up to you, dear reader, to use a few moments of your time to 
+
+figure it out.
+
+If you give it a go, you will a least see WHAT was done, even if you do not 
+
+understand why... But a little thought on it and it may just come to you, 
+
+even if you know nothing about cracking.
+
+
+
+The aforementioned change should therefore work for ALL versions of wdasm 
+
+ever made, and hopefully even in the future.
+
+
+
+Sometimes it is common sense that solves the puzzle, not necessarily the 
+
+book knowledge or tools which we amass in the time we have.
+
+
+
+ADDENDUM:
+
+Here is a little addition that will make the above crack a little more user 
+
+friendly:
+
+
+
+Search for this byte pattern:
+
+5361766520746F
+
+
+
+And at that location, insert the following whole pattern in its place 
+
+(starting at the first byte above.. I am only skipping spaces in order 
+
+to allow you to read it more clearly)
+
+
+
+44697361  7373656D
+
+626C7920  53617665
+
+640A546F  2046696C
+
+653A2057  532E5458
+
+540A0A3C  3C202B67
+
+74686F72  6E652739
+
+37203E3E  00
+
+
+
+I do hope you try this, it is what cracking is all about - making 
+
+programs even better... so you WANT to use them.
+
+
+
+Take care my friends,
+
+ +gthorne'97
+
+
+
+PS: For those who came in late, or somehow have not gotten 
+
+ahold of his file, here are the necessary fixes that Frog Prints 
+
+published. I am not about to explain them again, that is for you
+
+to locate his file and the one for wdasm6 for adntys.
+
+</PRE>
+
+<I><CENTER>Won't be difficult, since everything is here,
+
+courtesy of  fravia+</I> :-)</CENTER><PRE>
+
+
+
+This is his fix for the time counter:
+
+
+
+Search for:
+
+ C783392753002C010000
+
+Replace with:
+
+ C78339275300FF0F0000
+
+
+
+Frog Print's 'Fix the deleter' Function reprinted here:
+
+
+
+Search for:
+
+ FF251CA74900
+
+Replace with:
+
+ C39090909090
+
+------------------------------
+
+'The road goes ever, ever on.'
+
+   - J.R.R.Tolkien
+
+------------------------------
+
+</PRE>
+
+<BR>
+
+
+
+<BR>
+
+<CENTER><HR ALIGN="CENTER" WIDTH="100%" SIZE="3">
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</I></CENTER>
+
+<BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#84'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#84"> homepage</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"> 
+
+<A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#73'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#73"> links</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0">
+
+<A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm"> anonymity</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm"> +ORC</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#82'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#82"> students' essays</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm"> tools</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm"> cocktails</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm"> search_forms</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm"> mailFraVia</A></CENTER>
+
+<CENTER><HR ALIGN="CENTER" WIDTH="100%" SIZE="2"></CENTER>
+
+
+
+
+
+<PRE>
+
+<FONT COLOR="#C0C0C0">
+
+<CENTER>surprise!</CENTER>
+
+<HR>
+
+Here is (part of) the coveted map of my labyrinth:
+
+index.html
+
+	links.htm	
+
+		private.htm
+
+		cookie.htm
+
+	orc.htm
+
+		yamato.htm
+
+		civetta.htm
+
+		adynts.htm
+
+		frogprin.htm	<YOU are here lonelyha.htm clito.htm howto...htm tools.htm stalking.htm couninte.htm slaves.htm commento.htm ideale.htm noanon.htm deja.htm enemy.htm cookie.htm javaco1.htm coumes.htm enemy.htm cocktail.htm coriolan.htm searengi.htm search.htm search7.htm sear0397.htm </pre>	
+
+</FONT>
+
+
+
+
+
+
+
+</HTML>
+

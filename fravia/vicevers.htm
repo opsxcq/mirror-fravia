@@ -1,0 +1,1199 @@
+<html>	<HTML>
+
+<HEAD>
+
+  <META NAME="GENERATOR" CONTENT="Winice 3.01 time-stamp encryption algorithm">
+
+  <TITLE>vicevers</TITLE>
+
+</HEAD>
+
+<BODY bgcolor="CCCCCC" text="#001010" vlink="#405040 Alink=#00FF50">
+
+
+
+<P><CENTER><FONT SIZE="+4">Winice 3.01 time-stamp encryption algorithm<BR>
+
+</FONT><FONT SIZE="+2">Timestamping... and timedestamping</FONT>
+
+<BR>
+
+</CENTER>
+
+
+
+<H4><CENTER><I>by ViceVersa+</I><BR>
+
+<BR>
+
+(07 August 1997, slightly edited by Fravia)</CENTER></H4>
+
+
+
+<CENTER><HR><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"> Courtesy of Fravia's page of reverse engineering<BR>
+
+<HR> <I>Well,ViceVersa+ is right... listen to him: don't try to understand 
+
+everything immediately at the first reading... it's so easy to follow if you 
+
+just read twice the math part!</I></CENTER><HR><PRE><FONT size="+2"><CENTER>
+
+REVERSE ENGINEERING Soft-Ice 3.01
+
+time-stamp encryption algorithm</FONT><BR>
+
+by ViceVersa+, 1997</CENTER>
+
+
+
+<B>Introduction</B>
+
+
+
+	In this essay I will present a short reverse-engineering exercise. The target 
+
+	is our belowed (even if already a little &quot;too much&quot; cracked) SoftIce 3.01 for
+
+	Windows 95. 
+
+	In particular we will deal with the NmGetNumDaysLeft function at the heart of 
+
+	its &quot;Cinderella&quot; protection (14 days &quot;trial&quot; protection scheme).
+
+
+
+	As you will know from the previous good essays by Frog's Print, +Rcg and The 
+
+	Undertaker, Sice hides the installation time stamp in two DWORDs stored in the 
+
+	Registry (under HKLM\Software\Microsoft\Windows\Help\OleGUIDLow 
+
+	and	HKLM\Software\Microsoft\Windows\Help\OleGUIDHigh) and inside WINICE.DAT 
+
+	(look at the fancy line &quot;Eval expiration date - DO NOT REMOVE!&quot;). 
+
+	
+
+	As already pointed out, the two DWORDs in the Registry are used only by the 
+
+	Loader while the two DWORDs in WINICE.DAT are used only by WINICE.EXE (you 
+
+	may experiment this yourself, changing the ones or the others and observing 
+
+	which one &quot;die&quot; and which one do not).
+
+
+
+	The easy way to get 14 more days from Sice is to delete those two entries in
+
+the Registry, uninstall Sice and reinstall it. This action forces the
+
+installation program to put a &quot;fresh&quot; time stamp into the Registry and into
+
+WINICE.DAT. Anyway, knowing how this time stamp is calculated, we could just
+
+write a little program to put a &quot;fresh&quot; one into the Registry and into
+
+WINICE.DAT whenever the trial period has expired. It would be exactly like
+
+reinstalling the whole application but without having to save the configuration
+
+files and putting them back later.
+
+
+
+	I know that it's more comfortable to patch Sice once for good but I think 
+
+	that this little exercise of reverse-engineering will nevertheless turn 
+
+	out to be useful, once done.
+
+What's more: at the and of this essay you will know something more about time-stamp
+
+encryption (and how to reverse its effects) and you will own a little program
+
+that will show you the two magic numbers necessary to bring your expired Sice 
+
+copy back to a new life (should you really need to use it a couple of days more 
+
+because you have been very ill during the two allowed weeks :-)
+
+
+
+	Since I think you know how and where to get Softice for Windows95 (or more 
+
+	probably you already have it), let's start.
+
+
+
+
+
+<B>Reverse-engineering at work</B>
+
+
+
+	Here is the whole NmGetNumDaysLeft &quot;dead&quot; listing fully commented. The first
+
+part is straightforward... yet you are encouraged to read it carefully (some
+
+comments are trivial, assembly gurus will excuse me). 
+
+We will take a rest and spend some more words on the code as soon as we will 
+
+get to the main part.
+
+
+
+/------------------------------------------------------------------------\
+
+
+
+Exported fn(): NmGetNumDaysLeft - Ord:000Dh
+
+:100263F0 sub esp, 00000020				; allocate locals
+
+:100263F3 lea eax, dword ptr [esp+04]	; address of local variable in eax
+
+                                        ; where the key handle will be stored
+
+:100263F7 push ebx
+
+:100263F8 push esi
+
+:100263F9 push edi
+
+:100263FA push ebp
+
+:100263FB push eax
+
+:100263FC push 00020019                 ; KEY_READ
+
+:10026401 push 00000000                 ; reserved param
+
+:10026403 push 10078888                 ; Address of key to open
+
+                             ; StringData -&gt;&quot;Software\Microsoft\Windows\Help&quot;
+
+:10026408 push 80000002                 ; HKEY_LOCAL_MACHINE
+
+:1002640D Call dword ptr [101C41F8]     ; Open key	 (ADVAPI32.RegOpenKeyExA)
+
+:10026413 test eax, eax                 ; returns 0 if SUCCESS
+
+:10026415 jne 10026471                  ; something wrong, jump away
+
+:10026417 mov edi, 00000004             ; size of the buffer to hold the key
+
+:1002641C lea eax, dword ptr [esp+10]	; address of the size of the buffer
+
+:10026420 mov ecx, dword ptr [esp+14]	; handle of the key to query (return by
+
+                                        ; RegOpenKeyExA) (esp+14)
+
+:10026424 push eax                      ; address of the size of the
+
+                                        ; buffer (esp+10)
+
+:10026425 push 101C20D8                 ; address of buffer to hold the data
+
+:1002642A mov esi, dword ptr [101C41F4]	; ADVAPI32.RegQueryValueExA
+
+:10026430 mov dword ptr [esp+18], edi	; put size of the buffer to hold the
+
+                                        ; key in its variable (after 2 pushes
+
+                                        ; esp+10 has become esp+18)
+
+:10026434 push 00000000                 ; type of the key (REG_NONE)
+
+:10026436 push 00000000                 ; reserved
+
+:10026438 push 1007887C                 ; name of the key (&quot;OleGUIDLow&quot;)
+
+:1002643D push ecx                      ; handle of the key to query (from
+
+                                        ; RegOpenKeyExA)
+
+:1002643E call esi                      ; Read the key
+
+
+
+                                        ; Value of the low key is in 101C20D8
+
+
+
+:10026440 test eax, eax                 ; returns 0 if SUCCESS
+
+:10026442 jne 10026471                  ; something wrong, jump away
+
+:10026444 mov dword ptr [esp+10], edi	; size of the buffer to hold the key
+
+:10026448 lea edi, dword ptr [esp+10]	; address of size of the buffer
+
+:1002644C mov eax, dword ptr [esp+14]	; handle of the key to query
+
+:10026450 push edi                      ; address of the size of the buffer
+
+:10026451 push 101C23E8                 ; address of the buffer to hold the data
+
+:10026456 push 00000000                 ; type of the key (REG_NONE)
+
+:10026458 push 00000000                 ; reserved
+
+:1002645A push 10078870                 ; name of the key (&quot;OleGUIDHigh&quot;)
+
+:1002645F push eax                      ; handle of the key to query
+
+:10026460 call esi                      ; Read the key
+
+
+
+                                        ; Value of the high key is in 10126471
+
+
+
+:10026462 test eax, eax                 ; returns 0 if SUCCESS
+
+:10026464 jne 10026471                  ; something wrong, jump away
+
+:10026466 mov eax, dword ptr [esp+14]	; handle of the key
+
+:1002646A push eax                      ; on the stack
+
+:1002646B Call dword ptr [101C41F0]     ; close registry (ADVAPI32.RegCloseKey)
+
+:10026471 lea eax, dword ptr [esp+20]	; address of buffer to hold the
+
+                                        ; system time
+
+:10026475 push eax                      ; on the stack
+
+:10026476 Call dword ptr [101C4238]     ; KERNEL32.GetSystemTime 
+
+ ...
+
+
+
+\------------------------------------------------------------------------/
+
+	Ok, we are done with the easy part. Up to this point the application has read
+
+the two keys from the Registry and has stored them into two global variables.
+
+Low key is in 101C20D8 (on my PC, on yours can be different) and high key is in
+
+101C23E8. Then the application has read the current time and has stored it
+
+starting from esp+20. The time is organized into a SYSTEMTIME structure that
+
+looks like this (from WinApi32 reference):
+
+
+
+	typedef struct _SYSTEMTIME {
+
+	    WORD wYear;
+
+	    WORD wMonth;
+
+	    WORD wDayOfWeek;
+
+	    WORD wDay;
+
+	    WORD wHour;
+
+	    WORD wMinute;
+
+	    WORD wSecond;
+
+	    WORD wMilliseconds;
+
+	} SYSTEMTIME;
+
+
+
+	So, if the structure is in memory starting from esp+20, wYear will be the WORD
+
+a esp+20, wMonth the WORD at esp+22 and wDay the WORD at esp+26 (if the stack
+
+hasn't changed in the meantime).
+
+
+
+	Here is how this data are extracted from the structure and stored for future
+
+usage (unfortunately the extraction code is mixed with the starting of the time
+
+stamp decryption routine. We will come back on this later on).
+
+
+
+/------------------------------------------------------------------------\
+
+:1002647C mov esi, dword ptr [esp+20]	; year and month in esi
+
+:10026480 xor eax, eax                  ; zero eax
+
+:10026482 mov ax, word ptr [esp+26]     ; day in ax
+
+:10026487 and esi, 0000FFFF             ; mask to get just the year
+
+:1002648D mov ecx, dword ptr [1007A5C0] ; *** magic1 *** = FCB32679
+
+:10026493 mov dword ptr [esp+1C], eax   ; day in esp+1C
+
+:10026497 xor eax, eax                  ; eax = 0
+
+:10026499 xor ecx, dword ptr [101C20D8] ; ecx = magic1 xor low key
+
+:1002649F mov ax, word ptr [esp+22]     ; ax = month
+
+ ...
+
+\------------------------------------------------------------------------/
+
+
+
+	Ok, here is where the whole thing begins (actually has already begun in the
+
+previous snippet...) What is gonna happen now? Well, Sice has the encrypted time
+
+stamp read from the Registry and has the current time. Now it has to decrypt the
+
+time stamp and compare it to the current time + 14 trial days. Sounds quite
+
+easy, uh? Let's see how the decryption algorithm works. Remember that a magic
+
+number (magic1) has already been XORed with the low key and put in ecx (previous
+
+snippet). Is on this value (magic1 XOR low key) <U>and not on the low key itself</U>
+
+that all the subsequent calculations are performed. To anticipate you something,
+
+the value of magic1 XOR low key is nothing but the installation time stamp a
+
+little &quot;scrambled&quot;, as you'll see... just the date of install, but with all its 
+
+numbers &quot;mixed up&quot;. For the moment, read on and try to follow the math; we will
+
+stop as soon as it gets harder.
+
+
+
+	Oops! One more thing before you start reading. To make things easier I had to
+
+introduce some math-like notation. Since the value of magic1 XOR low key is
+
+scrambled on a nibble by nibble basis (1 nibble = 4 bit = 1 hex digit), we will
+
+refer to it with the notation:
+
+
+
+	magic1 XOR low key = 87654321
+
+
+
+where 8 represents the eighth nibble, 7 the seventh and so on. When you will
+
+read something like this:
+
+
+
+	00000004
+
+
+
+it will mean that we have a DWORD that has been obtained taking the fourth
+
+nibble of magic1 XOR low key and putting it in first position (i.e. has been
+
+shifted down 12 bits). If you read something like this:
+
+
+
+	00000527
+
+
+
+it will mean that this DWORD is composed by the <U>fifth</U> nibble of magic1 XOR low
+
+key in <U>third position</U>, the <U>second</U> in <U>second position</U> and the <U>seventh</U> 
+
+in <U>first position</U>. 
+
+If you have problems understanding this just read on a first time and come back to 
+
+read it a second time after you have seen how the algorithm works (and I know you 
+
+will then easily understand).
+
+
+
+	<FONT color="blue">[In the following, whenever we refer to a nibble it will always be a
+
+nibble of (magic1 XOR low key) and not of low key itself]</FONT>.
+
+
+
+/------------------------------------------------------------------------\
+
+:100264A4 mov ebx, ecx                  ; ebx = ecx = magic1 xor low key
+
+:100264A6 and ebx, 0000F000             ; ebx = 00004000 of magic1 xor low key
+
+:100264AC mov edi, ecx                  ; edi = magic xor low key
+
+:100264AE shr ebx, 0C                   ; ebx = 00004000 &gt;&gt; 12 = 00000004
+
+                                        ;       4th nibble of magic xor low key
+
+:100264B1 and edi, 0000000F             ; edi = 00000001 of magic xor low key
+
+:100264B4 shl edi, 04                   ; edi = 00000001 <4="00000010" ; 1st nibble of magic xor low key :100264B7 mov ebp, ecx ; ebp="magic" xor low key :100264B9 and ebp, 0F000000 ; ebp="07000000" of magic xor low key :100264BF mov dword ptr [esp+18], eax ; month in esp+18 (eax) :100264C3 shr ebp, 10 ; ebp="07000000">&gt; 16 = 00000700
+
+                                        ;       7th nibble of magic xor low key
+
+:100264C6 mov eax, ecx                  ; eax = magic xor key
+
+:100264C8 and eax, 00F00000             ; eax = 00600000 of magic xor low key
+
+:100264CD shr eax, 14                   ; eax = 00600000 &gt;&gt; 20 = 00000006
+
+                                        ;       6th nibble of magic xor low key
+
+:100264D0 or edi, eax                   ; edi = 00000010 or 00000006 = 00000016
+
+:100264D2 mov eax, ecx                  ; eax = magic xor low key
+
+:100264D4 and eax, 000F0000             ; eax = 00050000 of magic xor low key
+
+                                        ;       5th nibble of magic xor low key
+
+:100264D9 and ecx, 000000F0             ; ecx = 00000020 of magic xor low key
+
+                                        ;       2nd nibble of magic xor low key
+
+:100264DF or ebp, eax                   ; ebp = 00000700 or 00050000 = 00050700
+
+                                        ;       (7th nib)   (5th nib)
+
+:100264E1 shr ebp, 08                   ; ebp = 00050700 &gt;&gt; 8 = 00000507
+
+:100264E4 or ebp, ecx                   ; ebp = 00000507 or 0000020 = 00000527
+
+:100264E6 mov ecx, FFFFFFFF             ; ecx = FFFFFFFF
+
+:100264EB sub ecx, ebx                  ; ecx = FFFFFFFF - 00000004
+
+                                        ;                  (4th nibble)
+
+:100264ED lea eax, dword ptr [ebp+edi]  ; eax = 00000527 + 000000016
+
+:100264F1 imul ecx, edi                 ; ecx = (FFFFFFFF - 00000004) *
+
+                                        ;        000000016
+
+:100264F4 dec ecx                       ; ecx = (FFFFFFFF - 00000004) *
+
+                                        ;		000000016 -1
+
+:100264F5 inc eax                       ; eax = 00000527 + 000000016 + 1
+
+:100264F6 imul ecx, ebp                 ; ecx = ((FFFFFFFF - 00000004) *
+
+                                        ;		000000016 -1) * 00000527
+
+:100264F9 imul eax, ebx                 ; eax = ( 00000527 + 000000016 + 1 ) *
+
+                                        ; 		00000004
+
+:100264FC sub ecx, eax                  ; ecx = (((FFFFFFFF - 00000004) *
+
+                                        ;       000000016 -1) * 00000527 ) -
+
+                                        ;       (( 00000527 + 000000016 + 1 ) *
+
+                                        ;		  00000004 )
+
+:100264FE mov eax, edi                  ; eax = 00000016
+
+:10026500 xor eax, ebp                  ; eax = 00000016 xor 00000527
+
+:10026502 xor eax, ebx                  ; eax = (00000016 xor 00000527 ) xor
+
+                                        ;       00000004
+
+:10026504 sub ecx, eax                  ; ecx = (((FFFFFFFF - 00000004) *
+
+                                        ;       000000016 -1) * 00000527 ) -
+
+                                        ;       (( 00000527 + 000000016 + 1 ) *
+
+                                        ;		  00000004 )) -
+
+                                        ;       ((00000016 xor 00000527 ) xor
+
+                                        ;         00000004 )
+
+
+
+; Keep one eye on the quantity we have in ecx and keep reading...
+
+
+
+:10026506 mov eax, dword ptr [1007A5C4]	; eax = *** magic2 *** = 7866EDBA
+
+:1002650B xor eax, dword ptr [101C23E8]	; eax = magic2 xor high key
+
+:10026511 xor eax, dword ptr [101C20D8] ; eax = magic2 xor high key xor low key
+
+:10026517 add ecx, eax                  ; ecx = ecx + eax
+
+:10026519 sub ecx, edi                  ; ecx = ecx - 00000016
+
+:1002651B je 1002651F                   ; skip this odd call il the result is 0
+
+:1002651D call ecx                      ; or *** suicide *** if is not...
+
+ ...
+
+
+
+\------------------------------------------------------------------------/
+
+	Here we are! So what the hell is the quantity we have in ecx and what happens
+
+to it? There we have another magic number (magic2) where high key plays also
+
+a role... It looks like there is a &quot;quantity&quot; that discriminates in some way
+
+between good guys and bad guys. Good guys get a perfect zero on the last sub
+
+ecx, edi. On the other hand, bad guys get something that is &quot;non zero&quot; and fall
+
+into a &quot;suicide&quot; call. So what is in ecx? Well, for the moment we will leave it
+
+there and take instead a quick look at the code that follows:
+
+
+
+
+
+/------------------------------------------------------------------------\
+
+:1002651F lea ecx, dword ptr [ebp+2*ebp]; ecx = 00000527 + 2*00000527
+
+:10026523 lea ecx, dword ptr [ebx+4*ecx]; ecx = 00000004 + 12*00000527
+
+:10026526 lea ebx, dword ptr [esi+2*esi]; ebx = 3*(year and month)
+
+:10026529 mov eax, ecx                  ; eax = 00000004 + 12*00000527
+
+:1002652B shl ecx, 05                   ; ecx = (00000004 + 12*00000527)*32
+
+:1002652E sub ecx, eax                  ; ecx = (00000004 + 12*00000527)*31
+
+:10026530 mov eax, dword ptr [esp+18]   ; month in eax
+
+:10026534 lea edx, dword ptr [ecx+edi]  ; edx = (00000004 + 12*00000527)* 31 +
+
+                                        ;       00000016
+
+:10026537 lea ecx, dword ptr [eax+4*ebx]; ecx = month + 12*year
+
+:1002653A mov ebx, ecx                  ; ebx = month + 12*year
+
+:1002653C shl ecx, 05                   ; ecx = (month + 12*year)*32
+
+:1002653F sub ecx, ebx                  ; ecx = (month + 12*year)*31
+
+:10026541 add ecx, dword ptr [esp+1C]   ; ecx = (month + 12*year)*31 + day
+
+ ...
+
+\------------------------------------------------------------------------/
+
+
+
+	Looks pretty easy. Softice is calculating the number of absolute days 
+
+corresponding to the installation date and the number of absolute days that
+
+corresponds to the current date. The equation is:
+
+
+
+	number of absolute days = ( 12 * years + months ) * 31 + days
+
+
+
+	So we can easily recognize that:
+
+
+
+	00000016     is the installation day
+
+	00000004     is the installation month
+
+	00000527     is the installation year
+
+
+
+	So, low key is nothing but the installation time stamp a little encrypted and
+
+scrmabled. If you take the low key, XOR it with the first magic and then
+
+&quot;massage&quot; it a little (i.e. taking its nibbles and putting them in the right
+
+place) you obtain the installation time stamp. Here is a more figurative
+
+explanation (btw, the eighth and third nibbles are not used by the algorithm):
+
+
+
+magic1 XOR low key    =       8 7 6 5 4 3 2 1       
+
+                                | | | |   | |
+
+                                | | | |   | |
+
+                                | | | |   | |
+
+                                y | y |   y |
+
+                                1 | 3 |   2 |
+
+                                  |   |     |
+
+                                  d   |     d
+
+                                  2   |     1
+
+                                      |
+
+                                      m
+
+                                      1
+
+
+
+
+
+    y1 first (lowest nibble) hex digit of the installation year
+
+    y2 second hex digit
+
+    y3 third hex digit
+
+    d1 first hex digit of the installation day
+
+    d2 second hex digit
+
+    m1 first and only hex digit of the installation month
+
+
+
+
+
+	For example, in my Registry low key is F1D4A6B9. XORed with magic1 (that is
+
+FCB32679) we have 0D6780C0. Referring to the scheme above we get:
+
+
+
+
+
+	nibbles 527 = 7CD hex = 1997 decimal -&gt; year  = 1997
+
+	nibbles   4 =  08 hex =    8 decimal -&gt; month = August
+
+	nibbles  16 =  06 hex =   06 decimal -&gt; day   = 6th
+
+
+
+
+
+	So I have installed Sice on August 6th 1997 (that incidentally is right 8-) ).
+
+Now that we know what are the quantities that we indicated with 00000016 (the
+
+day), 00000004 (the month) and 00000527 (the year), we can go back to the
+
+strange expression that was in ecx (at :10026504). It was:
+
+
+
+
+
+	ecx = (((FFFFFFFF - 00000004) * 000000016 - 1) * 00000527 ) -
+
+          (( 00000527 + 000000016 + 1 ) * 00000004 )) -
+
+		  ((00000016 xor 00000527 ) xor 00000004 )
+
+
+
+
+
+Let's rewrite it a little better. It becomes:
+
+
+
+
+
+	ecx = (((( FFFFFFFF - month ) * days - 1) * year ) -
+
+		  (( year + day + 1 ) * month )) -
+
+          (( day xor year ) xor month )
+
+
+
+
+
+The part of code that follows (starting from :10026506) calculates another
+
+value:
+
+	 <FONT color="blue">
+
+	magic2 xor (high key) xor (low key)
+
+	 </FONT>
+
+this value is then added the previous ecx and then the day is subtracted from
+
+this sum. At the very end we have:
+
+
+
+	ecx = (((( FFFFFFFF - month ) * days - 1) * year ) -
+
+		  (( year + day + 1 ) * month )) -
+
+          (( day xor year ) xor month ) +
+
+   		   magic2 xor (high key) xor (low key) - day
+
+
+
+and we know that this equals to zero for good guys and to non zero for bad guys.
+
+
+
+	Now we need a little zen. Look at this expression: month, days and year come
+
+from the combination of a constant (magic1) and a value, the installation time
+
+stamp, that in fact is &quot;fixed&quot; (i.e. it's like a constant from the application
+
+point of view, because is &quot;fixed&quot; by the time you install Sice). magic2 is another 
+
+constant and low key (for what we just said) is like a constant too. 
+
+So, the only value that can make this expression zero is the high key (that we 
+
+haven't considered until yet)...
+
+
+
+	Eureka! We got it! So the high key is nothing <U>but a checksum value</U> 
+
+	for the encrypted time stamp. And we also know that its value has to be the 
+
+	one that makes the final value of ecx = 0.
+
+
+
+	Before further considerations, let's take a look at the final part of the
+
+function:
+
+
+
+/------------------------------------------------------------------------\																
+
+                                        ; Up to this point
+
+                                        ; edx = absolute day of installation as
+
+                                        ;       encrypted into the registry
+
+                                        ; ecx = current absolute day
+
+:10026545 cmp ecx, edx                  ; ecx <EDX ? :10026547 jb 1002654B ; yes, jump out (bad user has shifted ; the clock back!) :10026549 sub ecx, edx ; ecx="current" day installation day :1002654B mov eax, 00000000 ; eax="0" :10026550 cmp ecx, 0000000E ; ecx> 14 ?
+
+:10026553 jnb 1002655C                  ; yes, jump out (trial time has expired)
+
+:10026555 mov eax, 0000000E             ; 14 days of trial
+
+:1002655A sub eax, ecx                  ; eax = 14 days of trial - days passed
+
+                                        ;       since the installation
+
+:1002655C pop ebp
+
+:1002655D mov dword ptr [101C20DC], eax ; save days that are left for the trial
+
+:10026562 pop edi
+
+:10026563 pop esi
+
+:10026564 pop ebx
+
+:10026565 add esp, 00000020
+
+:10026568 ret
+
+\------------------------------------------------------------------------/
+
+
+
+	Nothing strange here: it's just determining how many days of trials are left
+
+and behaving as a consequence. You can take a look at the other cited essays of 
+
+project2 to know more about it.
+
+
+
+Reversing the algorithm
+
+---
+
+	Now let's come back to our main point (here comes the nice stuff). We know how
+
+the installation time stamp is decoded and unscrambled and we know the
+
+expression that calculates its checksum. If we reverse the algorithm we can
+
+create any encrypted time stamp (low key) and the proper checksum (high key) so
+
+to make Sice believe it has been installed, for example, today rather than one
+
+week ago. First of all we need to reverse the time stamp decoding algorithm.
+
+This is quiet easy since we just have to scramble the day, the month and the
+
+year and xor it with magic1. Let's do it.
+
+
+
+	Suppose we want to make Sice believe has been installed on a certain day. The
+
+corresponding date in hex digit will be:
+
+
+
+	4/16/527
+
+
+
+where each number represents the corresponding nibble (hex digit) of the
+
+scrambled time stamp (according to the notation we have introduced). For
+
+example:
+
+
+
+	16  = desired installation day      example:  0A =   10 decimal
+
+	4   = desired installation month    example:   9 =    9 decimal (September)
+
+	527 = desired installation year     example: 7CD = 1997 decimal
+
+
+
+that would be September 9th 1997... let's put the nibble in order (87654321); we
+
+get in the previous example:
+
+
+
+	8 = ?, 7 = D, 6 = A, 5 = 7, 4 = 9, 3 = ?, 2 = C, 1 = 0
+
+
+
+	We have two undetermined nibbles: 8 and 3. Let's consider them as uqual to 0.
+
+Thus the scrambled time stamp is (for our example):
+
+
+
+	scrambled time stamp = 0DA790C0
+
+	
+
+	Now we have to encrypt it XORing with the magic1 (remember that the XOR
+
+operation is commutative):
+
+
+
+	0DA790C0 XOR magic1 = 0DA790C0 XOR FCB32679 = F114B6B9 = low key
+
+	
+
+	Ok, in this example F114B6B9 will be our low key. Now we need to calculate the
+
+corresponding checksum. The equation we came up with was:
+
+
+
+	ecx = ((( FFFFFFFF - month ) * days - 1) * year ) -
+
+		  (( year + day + 1 ) * month )) -
+
+          (( day xor year ) xor month ) +
+
+   		   magic2 xor (high key) xor (low key) - day
+
+
+
+and we know that must be ecx = 0 (good guys condition). So we have the equation:
+
+
+
+	((( FFFFFFFF - month ) * days - 1) * year ) -
+
+	(( year + day + 1 ) * month )) -
+
+	(( day xor year ) xor month ) +
+
+	magic2 xor (high key) xor (low key) - day = 0
+
+
+
+	Let's &quot;massage&quot; it a little so to isolate high key (the checksum). If we move:
+
+
+
+	magic2 xor (high key) xor (low key)
+
+
+
+to the right side and then we multiply both sides by -1 we get:
+
+
+
+	day - (((( FFFFFFFF - month ) * days - 1) * year ) -
+
+	(( year + day + 1 ) * month )) -
+
+	(( day xor year ) xor month )) =
+
+ 	magic2 xor (high key) xor (low key)
+
+
+
+	Now we can apply a couple of important properties of the XOR operator (plus the
+
+commutative property we already know). This properties are really useful
+
+whenever you have to reverse encoding/decoding algorithms (e.g. the &quot;tabel XOR&quot;
+
+ones):
+
+
+
+    property 1 : x XOR x = 0
+
+    property 2 : y XOR 0 = y
+
+	
+
+	If we XOR both sides of the previous equation with magic2 xor (high key) and
+
+then we apply the XOR properties we get exactly what we need:
+
+
+
+	low key =
+
+	{ day - (((( FFFFFFFF - month ) * days - 1) * year ) -
+
+	(( year + day + 1 ) * month )) -
+
+	(( day xor year ) xor month )) } xor magic2 xor (high key)
+
+
+
+	If you had difficulties understanding this I suggest you to get paper and
+
+pencil (they are still very useful even in this hyper-technological era) and try
+
+it out until you are convinced.
+
+	
+
+	Now we know day, month and year because we decided them ourself. We know
+
+the high key because we have calculated it before and we know magic2... we know
+
+everything and we can calculate the checksum. For the lazy guys (real
+
+crackers would do all the calculations by hand 8-) here comes a little C program
+
+to calculate the correct high key and low key for the current system date.
+
+
+
+/------------------------------------------------------------------------\
+
+#include <STDIO.h>
+
+#include <CONIO.h>
+
+#include <STRING.h>
+
+#include <TIME.h>
+
+
+
+void main( void )
+
+{
+
+	unsigned long highkey ;
+
+	unsigned long lowkey, workinglowkey ;
+
+	unsigned long magic1 = 0xFCB32679 ;
+
+	unsigned long magic2 = 0x7866EDBA ;
+
+	unsigned long day, month, year ;
+
+	unsigned long check = 0 ;
+
+	
+
+	/*********************************************************************
+
+
+
+	char input[10];
+
+	
+
+	printf(&quot;LowKey = &quot; ) ;
+
+	gets( input ) ;
+
+	sscanf( input, &quot;%lx&quot;, &amp;lowkey ) ;
+
+
+
+	highkey = 0 ;
+
+
+
+	// xor the low key with the magic
+
+	workinglowkey = lowkey ^ magic1 ;
+
+
+
+	day   = ((workinglowkey &amp; 0x0000000F ) <4 ) | ((workinglowkey & 0x00F00000 )>&gt; 20 ) ;
+
+	month = ( workinglowkey &amp; 0x0000F000 ) &gt;&gt; 12 ;
+
+	year  = (( workinglowkey &amp; 0x000F0000 ) &gt;&gt; 8 ) |
+
+			(( workinglowkey &amp; 0x000000F0 ))       |
+
+			(( workinglowkey &amp; 0x0F000000 ) &gt;&gt; 24 ) ;
+
+
+
+	printf(&quot;Installation date was : %02d/%02d/%04d\n&quot;, month, day, year ) ;
+
+
+
+	check = ( ( 0xFFFFFFFF - month ) * day - 1 ) * year ;
+
+	check = check - ( ( year + day + 1 ) * month ) ;
+
+	check = check - ( ( day ^ year ^ month ) ) ;
+
+	highkey = ( day - check ) ^ magic2 ^ lowkey ;
+
+
+
+	printf( &quot;HighKey = %lx\n&quot;, highkey ) ;
+
+
+
+	***********************************************************************/
+
+
+
+	struct tm *nt;
+
+    time_t long_time;
+
+
+
+    time( &amp;long_time );           /* Get time as long integer. */
+
+    nt = localtime( &amp;long_time ); /* Convert to local time. */
+
+
+
+	day = unsigned long( nt-&gt;tm_mday ) ;
+
+	month = unsigned long( nt-&gt;tm_mon ) + 1 ;
+
+	year = unsigned long( nt-&gt;tm_year + 1900 ) ;
+
+	printf( &quot;Today is : %02d/%02d/%04d\n&quot;, month, day, year ) ;
+
+  
+
+	// encryption
+
+	lowkey = (( day &amp; 0x0000000F ) <20 ) | // low nibble in 6 (5*4) (( day & 0x000000F0 )>&gt; 4  ) |		// high nibble in 1
+
+			 (( month &amp; 0x0000000F ) <12 ) | // low nibble in 4 (3*4) (( year & 0x0000000F ) << 24 ) | ( year & 0x000000F0 ) | (( year & 0x00000F00 ) << 8 ) ; lowkey="lowkey" ^ magic1 ; printf("LowKey="%lx\n&quot;," lowkey ) ; check="(" ( 0xFFFFFFFF month ) * day 1 ) * year ; check="check" ( ( year + day + 1 ) * month ) ; check="check" ( ( day ^ year ^ month ) ) ; highkey="(" day check ) ^ magic2 ^ lowkey ; printf( "HighKey="%lx\n&quot;," highkey ) ; getch() ; } \------------------------------------------------------------------------/ As you can see, there is a part of the code "the.class" tppabs="http://fravia.org/the.class" is commented out. This part just asks you for the low key from your Registry and tells you when Sice was installed and which is the correct high key (this should match with the one you find in the Registry ot in WINICE.DAT). It's purpose is just to show how the decryption algorithm works. The non-commented part is the most interesting one 8-). It takes the current system date and gives you the correct low key and high key to make Sice elieve it has been installed today. Just take this numbers and write them over the old ones in the Registry and in WINICE.DAT. You will get your 14 days of trial back! It's intended that you will use this trick because your copy expires just on Sunday, when you need it, but the software shops are closed; you will buy it on Monday, won't you? That's it! I wish to thank +ORC for his great tutorials (and also his essay on the slaves... I loved it!), Fravia+ for his great WEB site and all the +crackers that contributed and will keep contributing to it. Good reverse-engineering to everybody! My "motto" is: <Font color="blue">Use your brain not your fingers</FONT>.
+
+	
+
+	ViceVersa+
+
+	August, 6th 1997
+
+</PRE>
+
+ <FONT color="green">
+
+(c) ViceVersa, 1997. All rights reserved.</FONT>
+
+ 
+
+		<HR size="2">
+
+<CENTER><I>You are deep inside fravia's page of reverse
+
+engineering, choose your way out:</CENTER>
+
+
+
+
+
+<P><CENTER><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"> <A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links
+
+</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0" NATURALSIZEFLAG="0"> <A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity
+
+</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools
+
+</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails </A><BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mailFraVia
+
+</A><BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">is reverse engineering legal? </A></FONT></CENTER></P>
+
+<HR>

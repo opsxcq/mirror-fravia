@@ -1,0 +1,474 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>mammop5</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+<CENTER><FONT size="+3">Regview: the 2 minutes crack</FONT>
+
+<BR>(encrypted counters)<BR>
+
+  <BR>
+
+
+
+<H4>by Rundus<BR>
+
+<BR>
+
+(20 September 1997)</H4>
+
+<HR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">Courtesy of fravia's page 
+
+of reverse engineering<BR><BR><I>
+
+Well, we had some serious emailing problems with this essay from Rundus, which has been written, as you can see, 
+
+two weeks ago. Please send always as CUT AND PASTED text, and if possible 
+
+use Ultraedit32 to compose your poems. This essay is interesting and it deals with a 
+
+pretty important register sniffer. Very good reasons to read and head it.
+
+
+
+</I><HR size="6">
+
+<PRE><FONT size="+2">THE TWO MINUTE CRACK
+
+03 September 1997, by Rundus</FONT></CENTER> 
+
+
+
+The program is Regview version 2.2, get it at ftp.winsite.com or
+
+ftp.orst.edu
+
+
+
+The program has a few more tools than Regedit.exe. For example, you can
+
+compare directories,Registry, etc.
+
+
+
+It has a Nag message and a 30 days trial.
+
+
+
+To begin with I always run a program Easyclean32 v1.04 ( great program
+
+GET IT <A href="tppmsgs/msgs2.htm#226" tppabs="http://www.anticrack.de/fravia/tppmsgs/msgs2.htm#226">http://www.idv.de./homepages/bernd</A>, my crack name:DONE s/n:$DC94412Dk )
+
+to detect any changes make to my hard disk,when installing any new
+
+programs.
+
+
+
+The first thing I look at is the register and sure enough the Regview
+
+program had added the key HKEY_LOCAL_MACHINE\SOFTWARE\classes\VR_T, that
+
+contained a encrypted counter value  	CLID    0xffffff08 (-248)
+
+So what did I do, I changed it to 0xffffff07 and goodbye Nag window and
+
+30 days limited.
+
+
+
+BUT OUT OF INTEREST,I LOADED IT INTO WDASM AND FOUND THIS.
+
+
+
+
+
+:004629BD 812D9016470007FFFFFF    sub dword ptr [00471690], FFFFFF07
+
+:004629C7 833D9016470000          cmp dword ptr [00471690], 00000000
+
+
+
+
+
+:004629CE 750C                    jne 004629DC	   ;CHANGE TO JE 740c
+
+:004629D0 C6058C16470001          mov byte ptr [0047168C], 01
+
+:004629D7 E960010000              jmp 00462B3C	
+
+
+
+;with that changed the counter is not incremented and
+
+ no regview Nag message appears. Also when you enter in a Reg No the
+
+ encrypted counter value is set to  ffffff07 unbelievable :)
+
+
+
+
+
+* Referenced by a Jump at Address:004629CE(C)	
+
+
+
+:004629DC 833D901647001E          cmp dword ptr [00471690], 0000001E
+
+:004629E3 7F0D                    jg 004629F2
+
+:004629E5 833D9016470000          cmp dword ptr [00471690], 00000000
+
+:004629EC 0F8DE1000000            jnl 00462AD3
+
+
+
+* Referenced by a Jump at Address:004629E3(C)
+
+|
+
+:004629F2 8D55F4                  lea edx, dword ptr [ebp-0C]
+
+:004629F5 B801000000              mov eax, 00000001
+
+:004629FA E84DFFF9FF              call 0040294C
+
+:004629FF 8B45F4                  mov eax, dword ptr [ebp-0C]
+
+
+
+* Possible StringData Ref from Code Obj -&gt;&quot;try&quot;
+
+                                  |
+
+:00462A02 BAAC2B4600              mov edx, 00462BAC
+
+:00462A07 E8A40DFAFF              call 004037B0
+
+:00462A0C 7529                    jne 00462A37
+
+:00462A0E B908FFFFFF              mov ecx, FFFFFF08
+
+
+
+* Possible StringData Ref from Code Obj -&gt;&quot;CLSID&quot;
+
+                                  |
+
+:00462A13 BA9C2B4600              mov edx, 00462B9C
+
+:00462A18 8B45FC                  mov eax, dword ptr [ebp-04]
+
+:00462A1B E85811FDFF              call 00433B78
+
+:00462A20 B201                    mov dl, 01
+
+:00462A22 8B8368030000            mov eax, dword ptr [ebx+0368]
+
+:00462A28 E8D7EBFAFF              call 00411604
+
+:00462A2D E8B608FAFF              call 004032E8
+
+:00462A32 E922010000              jmp 00462B59
+
+
+
+* Referenced by a Jump at Address:00462A0C(C)
+
+|
+
+:00462A37 6A00                    push 00000000
+
+:00462A39 668B0DB02B4600          mov cx, word ptr [00462BB0]
+
+:00462A40 B202                    mov dl, 02
+
+
+
+* StringData Ref from Code Obj -&gt;&quot;Maximum number of trials has been &quot;
+
+                               -&gt;&quot;reached! To continue use of this &quot;
+
+                               -&gt;&quot;program, you need to register&quot;
+
+                               -&gt;&quot;now!&quot;
+
+                                  |
+
+:00462A42 B8BC2B4600              mov eax, 00462BBC
+
+:00462A47 E87C03FDFF              call 00432DC8
+
+:00462A4C 48                      dec eax
+
+:00462A4D 757B                    jne 00462ACA
+
+:00462A4F 8D45F8                  lea eax, dword ptr [ebp-08]
+
+:00462A52 50                      push eax
+
+:00462A53 33C9                    xor ecx, ecx
+
+
+
+
+
+
+
+AND ALSO THIS TO PRODUCE THE REAL REG No, WITH HELP FROM SOFTICE V3	
+
+
+
+
+
+* Possible StringData Ref from Code Obj -&gt;&quot;Enter the register key:&quot;
+
+                                  |
+
+:0046E3E7 BABCE44600              mov edx, 0046E4BC
+
+
+
+* Possible StringData Ref from Code Obj -&gt;&quot;Enter register key&quot;
+
+                                  |
+
+:0046E3EC B8DCE44600              mov eax, 0046E4DC
+
+:0046E3F1 E86A4DFCFF              call 00433160
+
+:0046E3F6 8D4DF4                  lea ecx, dword ptr [ebp-0C]
+
+:0046E3F9 8B55F8                  mov edx, dword ptr [ebp-08]
+
+
+
+abcdefghijkl is XOR with the numbers you have entered in.
+
+
+
+e.g	 1313131313	serial No entered in
+
+
+
+	1 = 31h			3 = 33h
+
+	a = 61h			b = 62h
+
+	XOR = 50h		XOR = 51h
+
+	50h = P			51h = Q
+
+
+
+So 	1313131313   =   PQRWTUVVXY
+
+	  
+
+This is compared with TQWUPTU]YY[[   the real XOR number.
+
+
+
+Working backwards  T = 54h	     Q = 51h		
+
+		    a = 61h	     b = 62h
+
+		    XOR = 35h       XOR = 33h
+
+		    35h = 5	     33h = 3
+
+
+
+So TQWUPTU]YY[[  = 534152250307  the real serial No
+
+What does the real serial number do? You have guessed right.
+
+It sets the counter to the value of 0xffffff07
+
+
+
+* Possible StringData Ref from Code Obj -&gt;&quot;abcdefghijkl&quot;
+
+                                  |
+
+:0046E3FC B8F8E44600              mov eax, 0046E4F8
+
+:0046E401 E85A33FDFF              call 00441760   ;CALL TO CALCULATE REG No
+
+:0046E406 8B55F4                  mov edx, dword ptr [ebp-0C]
+
+:0046E409 8D45F8                  lea eax, dword ptr [ebp-08]
+
+:0046E40C E8AF51F9FF              call 004035C0
+
+:0046E411 8B45F8                  mov eax, dword ptr [ebp-08]
+
+
+
+* Possible StringData Ref from Code Obj -&gt;&quot;TQWUPTU]YY[[&quot;
+
+                                  |
+
+:0046E414 BA10E54600              mov edx, 0046E510
+
+:0046E419 E89253F9FF              call 004037B0
+
+:0046E41E 7537                    jne 0046E457
+
+:0046E420 B101                    mov cl, 01
+
+
+
+* Referenced by a Jump at Address:00441809(C)
+
+|
+
+:004417CB 8B45FC                  mov eax, dword ptr [ebp-04]
+
+:004417CE 0FB67C18FF              movzx edi, byte ptr [eax + ebx - 01]
+
+			       ;MOVE 61h ( a ) INTO EDI
+
+:004417D3 8B45F8                  mov eax, dword ptr [ebp-08]
+
+			       ;MOVE 31h ( 1 ) INTO EAX
+
+:004417D6 0FB64418FF              movzx eax, byte ptr [eax + ebx - 01]
+
+:004417DB 8945F0                  mov dword ptr [ebp-10], eax
+
+:004417DE 8D45F8                  lea eax, dword ptr [ebp-08]
+
+:004417E1 B901000000              mov ecx, 00000001
+
+:004417E6 8BD3                    mov edx, ebx
+
+:004417E8 E8F720FCFF              call 004038E4
+
+:004417ED 8D45EC                  lea eax, dword ptr [ebp-14]
+
+:004417F0 8B55F0                  mov edx, dword ptr [ebp-10]
+
+:004417F3 33D7                    xor edx, edi
+
+			       ;XOR 31h WITH 61h  EDX NOW = 50h
+
+:004417F5 E8421EFCFF              call 0040363C
+
+:004417FA 8B45EC                  mov eax, dword ptr [ebp-14]
+
+:004417FD 8D55F8                  lea edx, dword ptr [ebp-08]
+
+:00441800 8BCB                    mov ecx, ebx
+
+:00441802 E82521FCFF              call 0040392C
+
+:00441807 43                      inc ebx
+
+:00441808 4E                      dec esi
+
+:00441809 75C0                    jne 004417CB
+
+
+
+For anyone who does not know what Xoring is.
+
+
+
+		truth table
+
+	inputs	A | B		for e.g   a = 61h   binary 01100001
+
+		0 | 0 = 0		  1 = 31h   binary 00110001
+
+		0 | 1 = 1		  answer      =    01010000
+
+		1 | 0 = 1
+
+		1 | 1 = 0		01010000 = 50h  = P
+
+	
+
+Well that's all for now and I hope someone finds this tutorial useful.
+
+
+
+cheers Rundus</PRE>
+
+
+
+<FONT color="green">(c) Rundus 1997. All rights reversed</FONT>
+
+<HR ALIGN="CENTER" WIDTH="100%" SIZE="3">
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</I></CENTER>
+
+<BR><CENTER>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#84'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#84">homepage</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#73'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#73">links</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#82'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#82">students' essays</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut CGI-scripts</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering legal?</A></CENTER>
+
+<CENTER><HR ALIGN="CENTER" WIDTH="100%" SIZE="2"></CENTER>
+
+</BODY>
+
+</HTML>
+
+
+
+
+
+
+
+
+
+
+

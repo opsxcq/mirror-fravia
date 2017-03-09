@@ -1,0 +1,944 @@
+<HTML>
+
+<HEAD>
+
+  <TITLE>q_tv0601.htm Q's reversing exercise</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR=#C0C0C0 TEXT=#001010 VLINK=#405040>
+
+<B><I><FONT COLOR="#3333FF"><CENTER><FONT SIZE=+2>
+
+"Fixing" AIMS-Lab's VH-TV Program</FONT></FONT></I></B>
+
+<BR>
+
+<FONT SIZE=+1>By Q [Phrozen Crew]</FONT>
+
+<BR>Courtesy of fravia's page of reverse engineering
+
+<BR>1 June 1998<BR><A href="progcor.htm" tppabs="http://www.anticrack.de/fravia/progcor.htm"><IMG SRC="useful.gif" tppabs="http://www.anticrack.de/fravia/useful.gif" ALT="USEFUL" ALIGN=BOTTOM 
+
+WIDTH=114 HEIGHT=43 BORDER=0 VSPACE=0 HSPACE=0></A><BR>
+
+<FONT color=gray>Programmers' corner</FONT><BR></CENTER>
+
+<HR WIDTH="100%">
+
+<P><A NAME="anchortop"></A><I><CENTER>Well, I must say that I 
+
+personally cannot 
+
+understand how possibly someone in his right mind
+
+would want to watch <U>television</U> (slurping all the fake propaganda of the slave 
+
+masters and -as if that were not bad enough- 
+
+getting tons of compelled advertisement channelled down your brain). Man! Read a good 
+
+book, play with your kids, surf the interesting parts of the web, 
+
+wander inside a forest, love your partner, write a poem, crack a program, chat 
+
+with a friend... 
+
+whatever but for Chrissake 
+
+do not reduce yourself to the sad 
+
+abominion of a slave that worships the very whip used to tame him! Gosh: when I think of all the nice people making 
+
+smashed potatoes of their own life every evening I really get the creeps.<BR>Anyway I'm happy to host this nice work by Q. See: crackers 
+
+repair bugs inside commercial programs they use in order to 
+
+ameliorate them... as Q writes to the Shareware programmers: "<FONT color=purple>Please take a minute to look at your program from a side view, and fix whatever u can find before u release it. It took me 2
+
+days to do the above , but I'm sure u can do it in 2 minutes with the full source .. 
+
+The release date Can wait a day...</FONT>" Quite right! ("sauf" that I doubt that 
+
+such a shoddy programmer could fix it in 2 minutes even with source code :-) 
+
+Now: enjoy this good bug smashing 
+
+work: reversing at his best!</CENTER></I></P>
+
+<HR>
+
+<B><I><FONT COLOR="#3333FF"><FONT SIZE=+2>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+"Fixing" AIMS-Lab's VH-TV Program</FONT></FONT></I></B>
+
+<BR>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+<FONT SIZE=+1>By Q [Phrozen Crew]</FONT>
+
+<BR>
+
+<HR WIDTH="100%">
+
+<BR><FONT SIZE=-1>* I'm not a native english speaker , so please bare with
+
+me .</FONT>
+
+<BR><B><I><FONT SIZE=+1>Intro:</FONT></I></B>
+
+<BR>Bugs, those small but annoying things the programmer has left out ,
+
+are found at practically every software nowadays, when programmers are
+
+in a hurry to finish up their work , with only money in their heads. And
+
+what can u do about it ? Send 1000
+
+<BR>complaints through e-mail ? U'll get no response .. I know , that's
+
+what i did about a year ago.
+
+<BR>Now , however, thanks to +Fravia and other cracking resources , i can
+
+"reverse engineer" (aka "bug busters" ;) that bug .. And i will show u how .
+
+<BR>&nbsp;
+
+<BR><B><I><FONT SIZE=+1>What you'll need:</FONT></I></B>
+
+<BR>- The TV program it-self&nbsp; , can be found at <A HREF="javascript:if(confirm('http://aimslab.com/  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://aimslab.com/'" tppabs="http://aimslab.com/">http://aimslab.com</A>
+
+. However , i'm afraid , it won't help u if u don't have a TV card.
+
+<BR>- SNDVOL32.EXE&nbsp; , can be found at your windows directory (c:\windows)
+
+. You'll see why in the essay ;)
+
+<BR>- W32dasm . Can be found all over the net .
+
+<BR>- And wIN-ICe .
+
+<BR>* For tools u should try LordCaligo's site:&nbsp; <A HREF="javascript:if(confirm('http://lordcaligo.org/  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://lordcaligo.org/'" tppabs="http://lordcaligo.org/">http://lordcaligo.org/</A>
+
+.
+
+
+
+<P><B><I><FONT SIZE=+1>Let's Start:</FONT></I></B>
+
+<BR>This TV program has a very annoying bug : When ever u start it , it
+
+makes <U>noise </U>for about 3 seconds - until the program
+
+<BR>has "fixed" it-self on the station . It's like the program calibrates
+
+it-self , and on this short calibration stage it makes the same
+
+<BR>noise as if u r not tuned to a station (the<B> "snow" </B>picture)
+
+.. making this calibration stage a bit too long .
+
+
+
+<P>Ok , time to play with it .
+
+<BR>- Run the program (tv.exe)
+
+<BR>- Hit the 'home' button to toggle the Mute Option to On .
+
+<BR>- Re-Run it .
+
+<BR>The result is NO-Noise , and the mute option is kept ON . So the program
+
+saves this option , and at the beginning , when
+
+<BR>it sees the mute option is ON , it will mute the speakers so there's
+
+no noise .
+
+<BR>We can draw a line of work for the StartUp code : There are 2 ways
+
+:
+
+
+
+<P><B>Way #1 :</B>
+
+<BR>1. Get Mute Option.&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+(From an ini-file , registry ..)
+
+<BR>2. Set MuteFlag accordingly.&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+(If Mute Option is ON then MuteFlag = 1 , else MuteFlag=0)
+
+<BR>3. If MuteFlag=1 then Call ShutDownSpeakers .&nbsp;&nbsp;&nbsp;&nbsp;
+
+(Will mute speakers -notice,before the calibration stage- if MuteFlag=1)
+
+<BR>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+else&nbsp; Call TurnOnSpeakers.&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+(Will De-Mute the speakers if MuteFlag=0)
+
+<BR>4. Calibration Stage.&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+(The "snow" noise if not Muted)
+
+<BR>5. Normal message loop - the rest is the program itself.&nbsp; (Now
+
+that everything is ready , the program will run it's curse..)
+
+<BR>6. Exit.&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+(Exit when ESC is pressed)
+
+
+
+<P>OR <B>Way #2 :</B>
+
+<BR>1. Get Mute Option.
+
+<BR>2. Set MuteFlag accordingly.
+
+<BR>3. If MuteFlag=1 then Call ShutDownSpeakers .&nbsp;&nbsp;&nbsp;&nbsp;
+
+(Will mute speakers -notice,before the calibration stage- if MuteFlag=1)
+
+<BR>4. Calibration Stage.
+
+<BR>5. Normal message loop - the rest is the program itself.
+
+<BR>6. TurnOnSpeakers and&nbsp; Exit.&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+(Speakers on and Exit when ESC is pressed)
+
+<BR>&nbsp;
+
+<BR>See the difference ?
+
+<BR>It's important to know EXACTLY how the program works before attempting
+
+to reverse it.
+
+<BR>When the TV prog runs , it takes control of the screen (Winice is blocked
+
+!! Pressing Ctrl-D (or Alt-S in my case;) when
+
+<BR>TV is running ,will load winice, but u wont see it !) further more
+
+u can't move to an other process (by pressing Alt+Tab for
+
+<BR>example) , so there is no direct way of telling which of the above
+
+ways is correct . Not direct , so in-direct .
+
+<BR><I><U>The Audio Mixer for the rescue ..</U></I>
+
+<BR>Load the Audio Mixer .I recommend the one that comes with windows -
+
+SNDVOL32.EXE.( the shortcut is
+
+<BR>Programs\Accessories\Multimedia\Volume Conrol) .
+
+<BR>Run the program , set Mute option OFF (so there's audio) and exit .
+
+On exit a dialog will appear asking if u want to keep
+
+<BR>the TV audio in the background , press yes and return to the Mixer.
+
+<BR>There are several Audio Controls : Midi , Wave , CD and LineIN . It's
+
+the last one we are interested - lineIn- because the
+
+<BR>audio from the TV is sent through the LineIN audio control.
+
+<BR>Use the mixer to Volume Down the LineIN volume . Remember the sound
+
+in the background ? It's decreasing.
+
+<BR>Set the volume to half of what is was , and run the program . As u
+
+can hear , the volume is STILL half of the previous - it
+
+<BR>hasn't changed , the volume has not been re-set or updated back to
+
+maximum .
+
+<BR>And another thing : Run TV , Mute the sound and exit ; Look at the
+
+Mixer ; The Mute-LineIn-tag is UNSELECTED.
+
+<BR>From here we can deduct that the 2nd line of work&nbsp; is the correct
+
+one (it's a&nbsp; pretty lame deduction ,but it's better than spending
+
+10 hours with the disassembly..) :
+
+
+
+<P><B><I><U><FONT SIZE=-1>1. Get Mute Option.</FONT></U></I></B>
+
+<BR><B><I><U><FONT SIZE=-1>2. Set MuteFlag accordingly.</FONT></U></I></B>
+
+<BR><I><FONT SIZE=-1><B><U>3. If MuteFlag=1 then Call ShutDownSpeakers
+
+.</U></B>&nbsp;&nbsp;&nbsp; (Will mute speakers -notice,before the calibration
+
+stage- if MuteFlag=1)</FONT></I>
+
+<BR><B><I><U><FONT SIZE=-1>4. Calibration Stage.</FONT></U></I></B>
+
+<BR><B><I><U><FONT SIZE=-1>5. Normal message loop - the rest is the program
+
+itself.</FONT></U></I></B>
+
+<BR><I><FONT SIZE=-1><B><U>6. TurnOnSpeakers and&nbsp; Exit.</U></B>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+(Once ESC is pressed :Speakers on -that's why the mute tag is unselected-
+
+and Exit)</FONT></I>
+
+
+
+<P>Now "all" there's left to do is Make MuteFlag=1 before the 3rd step
+
+so there will be no noise on step 4 , After Step 4 do :
+
+<BR>-Set MuteFlag according to MuteOption ; - If MuteFlag=0 then speakers
+
+On.
+
+
+
+<P>Sound complicated ? it IS ! That's why i've decided to play a bit more
+
+with the Mixer , thinking there MUST be a simpler answer . And there Is
+
+:-)&nbsp;&nbsp; (Why fill the salt-cellar through the little holes, when
+
+there is a wide openning at the back ? ;)
+
+
+
+<P>Run the Audio Mixer and select the Mute tag (so the mixer will Mute
+
+LineIN audio control) , run the program and select
+
+<BR>the mute option (in the program) Off . The result is NO-SOUND . No
+
+matter what u select in the TV program , there will be
+
+<BR>no sound as long as the Mute Tag (in the mixer) is selected !
+
+<BR>We can gather that the way the program mutes the LineIn is different
+
+from the way the Mixer does it , but both ways make the same results.
+
+<BR>The only explanation i can find is that the TV program can tell the
+
+TV card directly to stop sending Audio to the SB . Whereas
+
+<BR>the mixer (that doesn't know that u have a TV card) will mute The SB
+
+from it's behalf .
+
+<BR>Here's to illustrate it :
+
+
+
+<P><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+|</TT>
+
+<CENTER><TABLE BORDER COLS=3 WIDTH="100%" BGCOLOR="#CCFFFF" >
+
+<TR ALIGN=CENTER>
+
+<TD><B><I><TT><U>&nbsp; TV CARD&nbsp; -></U></TT></I></B></TD>
+
+
+
+<TD><B><I><TT><U>-> Sound Blaster&nbsp; -></U></TT></I></B></TD>
+
+
+
+<TD><B><I><TT><U>->&nbsp; Speakers&nbsp;</U></TT></I></B></TD>
+
+</TR>
+
+</TABLE></CENTER>
+
+<TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+|</TT>
+
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+<B>Lock #1&nbsp;</B>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+|</TT>
+
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; TV program locks
+
+it when Mute Option is on.&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+|</TT>
+
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+<B>Lock #2</B></TT>
+
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+Mixer Lockes it when Mute tag is selected.</TT>
+
+
+
+<P>Both locks need to be 'Un-locked' to hear the audio (logical AND) ;
+
+the mixer has the "parent" properties , meaning it can
+
+<BR>block all 'childs' (TV card , Piano or whatever).
+
+<BR>&nbsp;
+
+
+
+<P><I><U>The Solution:</U></I>
+
+
+
+<P>The idea is to write a little program that will :
+
+<BR>1. Mute LineIN.&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+(Mute LineIN just like the mixer does)
+
+<BR>2. Run the TV program.
+
+<BR>3. Wait a while&nbsp; -3 seconds is enough-.
+
+<BR>4. De-Mute LineIN .&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+(Again , like the Mixer)
+
+<BR>5. and exit .&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+(End of LinDM ; TV is still running - It's windows , remember ? ;)
+
+
+
+<P>Or to put it in other words , Lock <B>Lock #2</B> , Run program , delay
+
+3 seconds and Unlock <B>Lock #2 </B>, leaving the Mute Option
+
+<BR>available in the program.
+
+
+
+<P>Good , it looks like a plan :-)
+
+<BR>(The little program will be named LinDM - LineIN (De)Mute..)
+
+<BR>OK , Time to learn how the Mixer Mutes and De-Mutes LineIn , so we'll
+
+"rip" it to LinDM.
+
+<BR>Disassemble the mixer (SNDVOL32.EXE) with W32dasm , and look at the
+
+Exports .
+
+<BR>here are the interesting functions :
+
+
+
+<P><TT><FONT SIZE=+1>&nbsp;&nbsp; Import Module 002: WINMM.dll</FONT></TT>
+
+<BR><TT><FONT SIZE=+1>&nbsp;mixerSetControlDetails</FONT></TT>
+
+<BR><TT><FONT SIZE=+1>&nbsp;auxGetNumDevs</FONT></TT>
+
+<BR><TT><FONT SIZE=+1>&nbsp;mixerGetID</FONT></TT>
+
+<BR><TT><FONT SIZE=+1>&nbsp;auxGetDevCapsA</FONT></TT>
+
+<BR><TT><FONT SIZE=+1>&nbsp;midiOutGetNumDevs</FONT></TT>
+
+<BR><TT><FONT SIZE=+1>&nbsp;midiOutGetDevCapsA</FONT></TT>
+
+<BR><TT><FONT SIZE=+1>&nbsp;waveOutGetNumDevs</FONT></TT>
+
+<BR><TT><FONT SIZE=+1>&nbsp;waveOutGetDevCapsA</FONT></TT>
+
+<BR><TT><FONT SIZE=+1>&nbsp;mixerClose</FONT></TT>
+
+<BR><TT><FONT SIZE=+1>&nbsp;mixerOpen</FONT></TT>
+
+<BR><TT><FONT SIZE=+1>&nbsp;mixerGetLineControlsA</FONT></TT>
+
+<BR><TT><FONT SIZE=+1>&nbsp;mixerGetControlDetailsA</FONT></TT>
+
+<BR><TT><FONT SIZE=+1>&nbsp;mixerGetNumDevs</FONT></TT>
+
+<BR><TT><FONT SIZE=+1>&nbsp;mixerGetDevCapsA</FONT></TT>
+
+<BR><TT><FONT SIZE=+1>&nbsp;mixerGetLineInfoA</FONT></TT>
+
+<BR><TT><FONT SIZE=+1>&nbsp;PlaySoundA</FONT></TT>
+
+
+
+<P>many functions with "Get" , but we are looking for those with "Set"
+
+(Mute or DeMute is a 'Set' operation) .
+
+<BR>There is only one with a 'set' :&nbsp;<FONT SIZE=+1><TT> </TT><B><I><U>mixerSetControlDetails</U></I></B></FONT>
+
+<BR>Ok , let's see if this is the correct one . Boost up wINICe and
+
+<BR>>Bpx mixerSetControlDetails
+
+<BR>(If u get a 'Symbol not defined' , add <U>WINMM.dll</U> in the Exported
+
+symbols in winice.dat , and reboot ... Btw , if u think u've made a type-o
+
+, use the >exp command ..)
+
+
+
+<P>Load the mixer and select the Mute tag . Winice poped ! So this is the
+
+function we were looking .
+
+<BR>That's all we need from softice ,for now .Now to get more info on this
+
+function . For this we have the SDK - programming
+
+<BR>help file. Search for mixerSetControlDetails in the help file (i didn't
+
+find it in the small SDK , but in the SDK that comes with
+
+<BR>Delphi 3.0) .
+
+<BR>Note that we don't need to fully understand this function with all
+
+it's parameters , we just need the structure of the parameters -
+
+<BR>So we'll correctly copy/rip it from the mixer using winice .
+
+<BR>I won't bother u with details and code , u can do it your selfs , or
+
+look at my <A HREF="#Source">source below</A>.
+
+<BR>&nbsp;
+
+
+
+<P>Now what ? Now i <I>JuMp iN JoY&nbsp;</I> !! :-)
+
+<BR>When i run LinDM.EXE , the TV program is loaded and .. No NOISE !!
+
+LinDM Locks <B>Lock #2</B> for 3 seconds , just enough
+
+<BR>time for the calibration stage to end ,then it Un-Locks <B>Lock #2</B>
+
+, letting the TV program to run it's course , still giving me the
+
+<BR>option to Mute the speakers within the TV program.
+
+
+
+<P>BTw , there's another little bug in this program : when u set theMuteOption
+
+ON , and exit the dialog asking if u want to keep the audio in the backround
+
+still appears . It's pretty useless , so to make the dialog go away when
+
+Muted Change the byte at 0000743E from 41h to 27h (in TV.EXE). This is
+
+a pretty travial 'crack' so i'll skip the explanation.
+
+<BR>&nbsp;
+
+<BR>That's it , i hope u enjoyed and learned from this .
+
+
+
+<P><B><I><U>To EveryOne </U></I></B>:
+
+<BR>So what's the lesson here ?
+
+<BR>When the spray doesn't kill the bug , u can always use the hammer !
+
+;)
+
+<BR>There are sometimes easier / simpler ways to crack something ..u just
+
+need keep your eyes OpEn and keep in mind that by using Logic you can save
+
+time ,so don't be afraid to use it ..
+
+
+
+<P><B><I><U>To SoftWare Programmers </U></I></B>:
+
+<BR>Please take a minute to look at your program from a side view, and
+
+fix whatever u can find before u release it. It took me 2 days to do the
+
+above , but I'm sure u can do it in 2 minutes with the full source ..
+
+<BR>The release date Can wait a day.
+
+
+
+<P><B><I><U>To +Fravia :</U></I></B>
+
+<BR>I see u hold the record for the most time without TV (as a 20th century
+
+man , i mean ..) Before u discard it , here's a little note : TV , much
+
+like the internet, can entertain , but can also enrich . U just need to
+
+know where (and when) to look ..
+
+<BR>May I suggest '<I>The Discovery Channel</I>'? Or CNN (to keep cracking
+
+reality ;) ? Or <I>Babylon 5</I> ? ;-)
+
+<BR>(Besides , TV is the best thing to do when disassembling or downloading
+
+large filez .. )
+
+
+
+<P><B><I><FONT SIZE=+1>Greetings:</FONT></I></B>
+
+<BR>PC members , +FraVia and all +HCUkers , friends . :-)
+
+
+
+<P><B><I><U><FONT COLOR="#FF6666"><FONT SIZE=+2>------ Cut here ------</FONT></FONT></U></I></B>
+
+
+
+<P><A NAME="Source"></A><TT>;------&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; LinDM.ASM&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+-------</TT>
+
+<BR><TT>;Should be compiled with Tasm 5.0</TT>
+
+<BR><TT>;Use the following to compile:</TT>
+
+<BR><TT>;</TT>
+
+<BR><TT>;tasm32 /ml /m3 /z /q LinDM</TT>
+
+<BR><TT>;tlink32 -x /Tpe /ap /c LinDM,LinDM,, import32.lib</TT>
+
+
+
+<P><TT>.386P</TT>
+
+<BR><TT>.Model Flat ,StdCall</TT>
+
+<BR><TT>UNICODE = 0</TT>
+
+<BR><TT>Extrn&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+ExitProcess:PROC</TT>
+
+<BR><TT>Extrn&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+mixerSetControlDetails:PROC</TT>
+
+<BR><TT>Extrn&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+GetTickCount:PROC</TT>
+
+<BR><TT>Extrn&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+WinExec:PROC</TT>
+
+<BR><TT>SW_MAXIMIZE&nbsp;&nbsp;&nbsp;&nbsp; EQU&nbsp;&nbsp;&nbsp;&nbsp;
+
+3</TT>
+
+
+
+<P><TT>.Data</TT>
+
+<BR><TT>;--------------------------------------------------------</TT>
+
+<BR><TT>hOBJ&nbsp;&nbsp;&nbsp; dd 0&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+;Handle of the mixer device.</TT>
+
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; dd 12345678h&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+;Use winice to get INTO the <U>mixerSetControlDetails</U> function</TT>
+
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; dd 0&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+;to see that this is the Handle's structure.</TT>
+
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; dd 41h</TT>
+
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+;The Mixer Control Details (MCD) stucture :</TT>
+
+<BR><TT>MCD&nbsp;&nbsp;&nbsp;&nbsp; dd 18h&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+;Size (in bytes) of MCD</TT>
+
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; dd 14h&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+;Control-ID (11h => Wave, 12h => Midi, 13h => CD, <U>14h => LineIN</U>)</TT>
+
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; dd 01&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+;Number of channels</TT>
+
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; dd 0&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+;Handle of owner</TT>
+
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; dd 4&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+;Size of Data</TT>
+
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; dd OFFSET Data</TT>
+
+<BR><TT>Data&nbsp;&nbsp;&nbsp; dd 1&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+;0 => DeMute , 1 => Mute</TT>
+
+
+
+<P><TT>Time1&nbsp;&nbsp; dd 0&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+;Holds beginning time</TT>
+
+<BR><TT>CmdLineData db "C:\VHTV\TV.EXE",0&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+;Command Line to run the TV program.</TT>
+
+
+
+<P><TT>.Code</TT>
+
+<BR><TT>;--------------------------------------------------------</TT>
+
+<BR><TT>Main:</TT>
+
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp; Call mixerSetControlDetails , OFFSET hOBJ,
+
+OFFSET MCD, 0</TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+;Mute LineIN like the mixer does.
+
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Cmp eax , 0</TT>
+
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Jnz Exit_&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+;Exit on error</TT>
+
+
+
+<P><TT>&nbsp;&nbsp;&nbsp;&nbsp; Call WinExec , OFFSET CmdLineData , SW_MAXIMIZE</TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+;Run the program
+
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Cmp eax , 31h</TT>
+
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Jna Exit_&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+;Exit on error</TT>
+
+
+
+<P><TT>&nbsp;&nbsp;&nbsp;&nbsp; Call GetTickCount</TT>
+
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Mov dword ptr Time1 , eax</TT>
+
+
+
+<P><TT>@1:&nbsp; Call GetTickCount</TT>
+
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Sub eax , dword ptr Time1</TT>
+
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Cmp eax , 0BB8h&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+; 0xBB8 = 3000 milliseconds = 3 sec</TT>
+
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Jna @1&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+;Loop if not delayed enogth</TT>
+
+<BR>&nbsp;
+
+
+
+<P><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Mov dword ptr Data , 0&nbsp;&nbsp;&nbsp;&nbsp;
+
+;De-Mute LineIn</TT>
+
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp; Call mixerSetControlDetails , OFFSET hOBJ,
+
+OFFSET MCD, 0</TT>&nbsp;&nbsp;&nbsp;&nbsp; ;Unlock <B>Lock #2</B> ;)
+
+
+
+<P><TT>Exit_:</TT>
+
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp; Call ExitProcess , 0</TT>
+
+
+
+<P><TT>End Main</TT>
+
+<BR><TT>;--------------------------------------------------------</TT>
+
+<BR><B><I><U><FONT COLOR="#FF6666"><FONT SIZE=+2>------ Cut here ------</FONT></FONT></U></I></B>
+
+
+
+<P><B><FONT COLOR="#000099">Phrozen_q@CyberDude.Com</FONT></B>
+
+<BR>sEE yA :)
+
+<BR><B><I><FONT COLOR="#009900"><FONT SIZE=+2>-Q</FONT></FONT></I></B>
+
+<BR>&nbsp;
+
+
+
+<CENTER>
+
+
+
+<BR>
+
+<HR size=5><A href="progcor.htm" tppabs="http://www.anticrack.de/fravia/progcor.htm"><IMG SRC="useful.gif" tppabs="http://www.anticrack.de/fravia/useful.gif" ALT="USEFUL" ALIGN=BOTTOM 
+
+WIDTH=114 HEIGHT=43 BORDER=0 VSPACE=0 HSPACE=0></A><BR>
+
+<FONT color=gray>Programmers' corner</FONT><BR><BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0> 
+
+<A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links </A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0>
+
+<A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity </A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN=BOTTOM
+
+BORDER=0 VSPACE=0 HSPACE=0 width="13" height="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC </A>
+
+
+
+<IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays </A>
+
+
+
+<IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database </A>
+
+
+
+<IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="botstart.htm" tppabs="http://www.anticrack.de/fravia/botstart.htm">bots wars</A>
+
+
+
+<BR>
+
+<IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut </A>
+
+
+
+<IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 
+
+VSPACE=0 HSPACE=0><A
+
+HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13
+
+BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13
+
+BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="javascri.htm" tppabs="http://www.anticrack.de/fravia/javascri.htm">javascript wars </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia </A><BR>
+
+
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering illegal? </A></CENTER>
+
+<HR size=4></FONT></CENTER></CENTER>
+
+</BODY>
+
+</HTML>
+

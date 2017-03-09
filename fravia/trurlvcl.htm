@@ -1,0 +1,900 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>Cracking VCL programs</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+<CENTER><FONT size="+3">CRACKING BORLAND'S VCL PROGRAMS</FONT>
+
+<BR>(High level languages allow high level cracking)
+
+<H2>by <FONT color="#5500AA">+trurl</FONT></H2>
+
+(24 November 1997)</H4>
+
+<!--<a href="protecti.htm" tppabs="http://www.anticrack.de/fravia/protecti.htm"><IMG SRC="tough.gif" tppabs="http://www.anticrack.de/fravia/tough.gif" ALT="our protections" ALIGN=BOTTOM WIDTH=114 HEIGHT=43 BORDER=0 VSPACE=0 HSPACE=0></a><br><Font color= gray>Our protections</fonT>-->
+
+<HR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">Courtesy of fravia's page 
+
+of reverse engineering<HR>       
+
+<I>Well, another very interesting essay about Object Oriented cracking... this time tackling Delphi, the well done (if overbloated) porting to window of good old Pascal, by Borland. +trurl  shows us here some very interesting points, and there are some sound lessons for shareware (Delphi) programmers as well.<BR>For all those among you that would like to 'have a go' at Delphi, I may remind you that nowadays you'll find THE COMPLETE DELPHI 1 and THE COMPLETE DELPHI 2 for free on many 
+
+magazine covers' cd-rom  (see the Blackboard) and that, if you want to work seriously with it you'll be able to buy and/or find the COMPLETE DELPHI 3 in any shop and/or on any good warez site on the Net.</I>
+
+</CENTER>
+
+<P><HR size="6"><P>
+
+<A NAME="BackAnchor"></A>
+
+<B>VCL Cracking</B><P>
+
+Let's learn something about the innards of new Borland's programming
+
+tools.
+
+This knowledge will allow us to speed up cracking sessions, as will
+
+teach shareware programmers who use Delphi to be more careful and not
+
+to
+
+happily expose their &quot;secrets&quot; to +curious eyes B)<BR>
+
+I'm serious about this. If you are a Delphi programmer you'll find
+
+the way to prevent your apps from being cracked (using this method)
+
+at the <A HREF="#Programmers">bottom</A> of this text.
+
+<P>
+
+VCL stands for &quot;visual component library&quot;, a library used by recent
+
+Borland visual languages as Delphi and BC++ Builder.
+
+<P>
+
+These environments use a proprietary resource format, that
+
+appear as &quot;RCDATA&quot; when listed by Resource Workshop.
+
+<P>
+
+This resources contain &quot;forms&quot;. In Delphi jargon, forms are the
+
+windows
+
+of the program. All the info about their design is stored there.
+
+When a typical Delphi app is starting, the initialisation code creates
+
+the forms, loading the required information from the resources.<BR>
+
+Sometimes this loading is deferred - forms that aren't used very often
+
+are created and destroyed as needed.<BR>
+
+This system is the best and the worst of Delphi.<BR>
+
+It allows a very fast way of programming but, for full-length apps,
+
+it can slow down the loading.
+
+<P>
+
+The really interesting part of this information is that the address of
+
+the routines -called in response to user interactions with the
+
+elements of
+
+the form- are bound at run time <B>by name</B>.
+
+So knowing these names we can find the appropriate addresses.
+
+<P>
+
+If you have cracked any Delphi apps, you have surely experienced the
+
+long
+
+chain of calls inside the library, from the breakpoints on the API
+
+calls to
+
+the &quot;do something&quot; code.<BR>
+
+I hoped that these addresses could help in pinpointing the relevant
+
+code.
+
+<P>
+
++ReZiDeNt suggested me to test this method on a &quot;real world&quot; program:
+
+Flexed, an HTML editor written in Delphi 2.<BR>
+
+You can download it from its
+
+<A href="javascript:if(confirm('http://www.infoflex.com.au/flexed.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.infoflex.com.au/flexed.htm'" tppabs="http://www.infoflex.com.au/flexed.htm">home page.</A>
+
+<P>
+
+About the program: I haven't used it. Like Fravia+, I prefer to edit
+
+html
+
+in plain text, but now you'll will be able to evaluate for as long as
+
+you
+
+need to.<BR>
+
+Remember that if you find it handy, you should pay for it.
+
+These guys are not M$, just a small company, and probably need
+
+your support to get their bills paid.
+
+<P>
+
+I installed it, without looking for registry or file changes O:)<BR>
+
+Later, I saw that it creates a &quot;C:&quot; key under HKCU and a &quot;flini&quot; file
+
+in the Windows directory.<BR>
+
+It must also put another mark on the disk, as it's not
+
+possible to reinstall it after just deleting the files/key mentioned
+
+above.<BR>
+
+You can use RegMon and FileMon and find out what happens. I'm not
+
+interested
+
+since I cracked it completely, as you are about to see :=)
+
+<P>
+
+The weeks passed and I hadn't had the time to work on it...
+
+when I started it, I found a nasty &quot;Your evaluation period has
+
+expired&quot; message :-(
+
+<P>
+
+Hands on! You'll need at least SoftIce for W95, an hexadecimal editor
+
+and
+
+a new tool: <FONT color="blue">frmspy</FONT>.<BR>
+
+You can use RWS instead, or you could even just browse the exe with
+
+your
+
+favourite tool, but using frmspy is quicker and clearer.<BR>
+
+Using WDAsm is helpful too.
+
+<P>
+
+The first step is to gather the information about the target exe with
+
+frmspy. You will see the list of forms, and, after double-clicking on
+
+them, a reverse engineered text representation of them.
+
+<P>
+
+You may be tempted to investigate TVALIDATORDLG, the form where the
+
+user name and registration key is input. But all you'll find is a mere
+
+dialog.<BR>
+
+The real work is accomplished from its caller: TSPLASHFORM.
+
+This is the nag window that appears at the beginning of the program,
+
+as
+
+well as when it's shutting down and from the help-&gt;about menu.
+
+<P>
+
+You can select TSplashForm and look at the text representation of it.
+
+A lot of
+
+information about the buttons and labels will appear. Let's
+
+concentrate on the
+
+following part, near the end.
+
+<P><PRE><FONT color="#220080">
+
+  <B>object</B> RegButton: TButton
+
+    Left = 200
+
+    Top = 176
+
+    Width = 97
+
+    Height = 25
+
+    Caption = 'Register'
+
+    TabOrder = 1
+
+    OnClick = RegButtonClick
+
+  <B>end</B>
+
+</FONT></PRE><P>
+
+What's that? This is the button with the caption &quot;Register&quot;. You can
+
+see
+
+its size, position... and something with a suggestive name: &quot;OnClick&quot;.
+
+&quot;OnClick&quot; tell us the name of the routine invoked when the user
+
+presses this
+
+button.
+
+Once we have the name (yes, &quot;nomen est omen&quot; :) we can search for the
+
+address of this routine. This is because the routine is bound to the
+
+button at run time by name.
+
+<P>
+
+Using Hex Workshop, I looked for &quot;RegButtonClick&quot; and I found it
+
+twice.
+
+The second occurrence is the resource itself, the first is within an
+
+address table:
+
+<P><PRE><FONT color="#220080">
+
+000A4990 ____ ____ ____ BC57 4A00 0E52 6567 4275 ______.WJ..RegBu
+
+000A49A0 7474 6F6E 436C 6963 6B__ ____ ____ ____ ttonClick_______
+
+</FONT></PRE><P>
+
+Now look at the magic numbers before the name.
+
+There is a byte ('0E') indicating the length of &quot;RegButtonClick&quot; (14
+
+characters)
+
+and before that an address: 004ABC57.
+
+<P>
+
+WDasm seems to think that file is too long and it doesn't disassemble
+
+this portion of the exe correctly - however, with Softice we can bpx
+
+on this and...
+
+right! It stops at the point just when we push the button.
+
+<P>
+
+A couple of instructions forward you'll find a CALL. Tracing into it
+
+you'll
+
+find a &quot;standard stack frame&quot; in 44ECC8:
+
+<P><PRE><FONT color="#220080">
+
+0044ECC8 55     push ebp
+
+0044ECC9 8BEC   mov ebp, esp
+
+...
+
+</FONT></PRE><P>
+
+This is the kind of thing expected at the beginning of a high level
+
+routine,
+
+made by the application programmer. We have avoided the whole chain of
+
+library calls through the VCL from Windows notifications, and landed
+
+in the right
+
+place!
+
+<P>
+
+From this point, there are some calls you can easily test by setting
+
+breakpoints
+
+on them  - you'll find that their purpose is to show the dialog asking
+
+for the user name and
+
+registration key. Then, the key is calculated from the user name and
+
+compared
+
+with the one the user entered.
+
+<P>
+
+You can enter the name you choose, and anything as the key, after
+
+BPXing
+
+44ED69.
+
+Here, a call to a routine compares two strings.
+
+D EDX will show the fake key you entered and D EAX will show the
+
+correct calculated key.
+
+Easy, isn't it? A ten minute crack by a beginner!!
+
+<P>
+
+Err... I'm just learning to use SoftIce so I
+
+was
+
+tempted to stop here.
+
+But, no!! let's drink one of my special whisky cocktails.
+
+I don't know whether it's more similar to vodka-martini or Wafna's dry
+
+kerosene... but it worked :*)
+
+<P>
+
+The call to the encryption algorithm is a little before, in 44ED58.
+
+<P>
+
+I think the following listing is auto-commented enough.
+
+You shouldn't have any problem understanding it, as I'll explain the
+
+meaning
+
+of each library call from it.
+
+<P>
+
+<HR>
+
+<P>
+
+It begins by aligning the stack, making room for local variables.
+
+<PRE><FONT color="#220080">:44E714 push ebp
+
+...
+
+...
+
+:44E72D mov dword ptr [ebp-4], eax
+
+</FONT></PRE>
+
+32 bit Delphi has a powerful and complex string handling system.
+
+It doesn't makes copies of the string if it's unnecessary.
+
+The following call increments the reference counter for the string
+
+with
+
+the user name.
+
+<PRE><FONT color="#220080">:44E730 mov eax, dword ptr [ebp-8]
+
+:44E733 call 4039A6   ; Inc ref. counter
+
+</FONT></PRE>
+
+I'm not sure what's the purpose of this bit is. I suspect it's related
+
+to the
+
+structured handling of exceptions (try-except or try-finally blocks)
+
+as
+
+it pushes an alternative address for RET.
+
+<PRE><FONT color="#220080">:44E738 xor eax, eax
+
+:44E73A push ebp
+
+:44E73B push 44E858
+
+:44E740 push dword ptr fs:[eax]
+
+:44E743 mov dword ptr fs:[eax], esp
+
+</FONT></PRE>
+
+This checks that the user name is not empty. If it is, it goes away.
+
+<PRE><FONT color="#220080">:44E746 cmp dword ptr [ebp-8],0
+
+:44E74A je 44E826
+
+
+
+:44E750 lea eax, dword ptr [ebp-10]
+
+:44E753 call 403680 ; Clears this string
+
+
+
+:44E758 mov eax, dword ptr [ebp-8]
+
+:44E75B call 4037F4 ; Length of user name?
+
+:44E760 mov ebx, eax  ; Store it in ebx
+
+</FONT></PRE>
+
+Testing length again?
+
+<PRE><FONT color="#220080">:44E762 test bl, bl
+
+:44E764 jbe 44E7AE
+
+</FONT></PRE>
+
+Strings indexes begin with 1
+
+<PRE><FONT color="#220080">:44E766 mov [ebp-9],1
+
+</FONT></PRE>
+
+This loop filters the string, eliminating all characters except
+
+letters and
+
+digits.
+
+<UL>
+
+<PRE><FONT color="#220080"><LI><B>LOOP:</B>
+
+</FONT></PRE>
+
+Load a char and convert it to uppercase
+
+<PRE><FONT color="#220080">:44E76A movzx esi, byte ptr [ebp-9]
+
+:44E76E mov eax, dword ptr [ebp-8]
+
+:44E771 mov al, byte ptr [eax+esi-1]
+
+:44E775 call 402A20 ; To uppercase
+
+</FONT></PRE>
+
+Filters the character, leaving only letters and digits
+
+<PRE><FONT color="#220080">:44E77A add al, D0
+
+:44E77C sub al, A
+
+:44E77E jb 44E786
+
+:44E780 add al, F9
+
+:44E782 sub al, 1A
+
+:44E784 jnb 44E7A7
+
+</FONT></PRE>
+
+Redundant, if the character is &quot;valid&quot;, adds it to a new string.
+
+<PRE><FONT color="#220080">:44E786 mov eax, dword ptr [ebp-8]
+
+:44E789 mov al, byte ptr [eax+esi-1]
+
+:44E78D call 402A20 ; To uppercase
+
+
+
+:44E792 mov edx, eax
+
+:44E794 lea eax, dword ptr [ebp-1C]
+
+:44E797 call 403790 ; Convert char to string
+
+
+
+:44E79C mov edx, dword ptr [ebp-1C]
+
+:44E79F lea eax, dword ptr [ebp-10]
+
+:44E7A2 call 4037FC ; Adds to the end.
+
+
+
+:44E7A7 inc [ebp-9]
+
+:44E7AA dec bl
+
+:44E7AC jne 44E76A   ;more?
+
+<LI><B>END LOOP</B>
+
+</FONT></PRE>
+
+</UL>
+
+Now it starts the pseudo-random number generator. As it needs a
+
+consistent result every time it's called, the &quot;seed&quot; is set
+
+directly to a fixed number, taken from the address pointed
+
+by [ebp-4]. The value is 0EEEEH.
+
+<PRE><FONT color="#220080">:44E7AE mov eax, dword ptr [ebp-4]
+
+:44E7B1 mov dword ptr [4AE02C], eax
+
+
+
+:44E7B6 lea eax, dword ptr [ebp-14]
+
+:44E7B9 call 403680 ; Clears a string
+
+</FONT></PRE>
+
+Get the length of filtered string
+
+<PRE><FONT color="#220080">:44E7BE mov eax, dword ptr [ebp-10]
+
+:44E7C1 call 4037F4 ; Length
+
+:44E7C6 mov byte ptr [ebp-15], al
+
+</FONT></PRE>
+
+Prepare the new loop. Result key must be 12 chars length.
+
+<PRE><FONT color="#220080">:44E7C9 mov [ebp-A], 0
+
+:44E7CD mov [ebp-9], C
+
+<UL>
+
+<LI><B>LOOP:</B>
+
+</FONT></PRE>
+
+Randomly select one of the characters of the filtered string.
+
+EAX selects on entry the range of result.
+
+<PRE><FONT color="#220080">:44E7D1 xor eax, eax
+
+:44E7D3 mov al, byte ptr [ebp-15]
+
+:44E7D6 call 402B94 ; Random number
+
+</FONT></PRE>
+
+From high level, strings indexes begin with 1
+
+<PRE><FONT color="#220080">:44E7DB inc eax
+
+:44E7DC and eax, FF
+
+</FONT></PRE>
+
+Now use this character as an inner loop counter to call random routine
+
+again.
+
+<PRE><FONT color="#220080">:44E7E1 mov edx, dword ptr [ebp-10]
+
+:44E7E4 mov bl, byte ptr [edx+eax-1]
+
+:44E7E8 test bl, bl
+
+:44E7EA jbe 44E7FD
+
+<UL>
+
+<LI><B>LOOP:</B>
+
+</FONT></PRE>
+
+Range in EAX. 0AH as it's meant to be a digit.
+
+<PRE><FONT color="#220080">:44E7EC mov eax,A
+
+:44E7F1 call 402B94  ; Random number
+
+:44E7F6 mov byte ptr [ebp-A], al
+
+:44E7F9 dec bl
+
+:44E7FB jne 44E7EC
+
+<LI><B>END LOOP</B>.</FONT></PRE></UL>
+
+Take the last generated random number. Convert it to string.
+
+<PRE><FONT color="#220080">:44E7FD lea edx, dword ptr [ebp-1C]
+
+:44E800 xor eax, eax
+
+:44E802 mov al, byte ptr [ebp-A]
+
+:44E805 call 406354 ; To string
+
+</FONT></PRE>
+
+Concatenate the strings.
+
+<PRE><FONT color="#220080">:44E80A mov edx, dword ptr [ebp-1C]
+
+:44E80D lea eax, dword ptr [ebp-14]
+
+:44E810 call 4037FC ; Concatenation
+
+
+
+:44E815 dec [ebp-9]
+
+:44E818 jne 44E7D1 ; more?
+
+<LI><B>END LOOP</B></FONT></PRE>
+
+</UL>
+
+Copy string with the key
+
+<PRE><FONT color="#220080">:44E81A mov eax, edi
+
+:44E81C mov edx, dword ptr [ebp-14]
+
+:44E81F call 403714 ; Copy string
+
+...
+
+</FONT></PRE>
+
+The rest is just some cleanup code.
+
+<P>
+
+<HR>
+
+<P>
+
+Well, once we know how the key is calculated from the asm code, how
+
+about
+
+trying to figure out what it looks like in Delphi?<BR>
+
+This is a key generator written in Delphi itself.
+
+<P>
+
+If you want to translate it to other language, take a look at 402B94,
+
+the source of random number generator.
+
+Remember the &quot;seed&quot; must be initialised to 0EEEEH.
+
+<P><HR><P>
+
+<PRE>
+
+<B>function</B> GuessKey( UserName: <B>string</B> ): <B>string</B>;
+
+<B>var</B>
+
+  n: Integer;
+
+  IterateRandom: Integer;
+
+  Calculated: Integer;
+
+  Selected: Integer;
+
+  Filtered: <B>string</B>;
+
+<B>begin</B>
+
+  UserName := UpperCase( UserName );
+
+  Filtered := <FONT COLOR="purple">''</FONT>;
+
+  <B>for</B> n := <FONT COLOR="green">1</FONT> <B>to</B> Length(
+
+UserName ) <B>do</B>
+
+    <B>if</B> UserName[ n ] <B>in</B> [<FONT COLOR="purple">'0'</FONT>..<FONT COLOR="purple">'9'</FONT>,<FONT COLOR="purple">'A'</FONT>..<FONT COLOR="purple">'Z'</FONT>] <B>then</B>
+
+      Filtered := Filtered + UserName[ n ];
+
+  Result := <FONT COLOR="purple">''</FONT>;
+
+  <B>if</B> Filtered = <FONT COLOR="purple">''</FONT> <B>then</B>
+
+    Exit;
+
+  RandSeed := <FONT COLOR="green">$EEEE</FONT>;
+
+  <B>for</B> n := <FONT COLOR="green">1</FONT> <B>to</B> <FONT COLOR="green">12</FONT> <B>do</B> <B>begin</B>
+
+    Selected := Ord( Filtered[ Succ( Random( Length( Filtered ) ) ) ]
+
+);
+
+    <B>for</B> IterateRandom := <FONT COLOR="green">1</FONT> <B>to</B>
+
+Selected <B>do</B>
+
+      Calculated := Random( <FONT COLOR="green">10</FONT> );
+
+    Result := Result + IntToStr( Calculated );
+
+  <B>end</B>;
+
+<B>end</B>;
+
+</PRE>
+
+<P><HR><P>
+
+<A NAME="Programmers"></A>
+
+<FONT color="purple"><H3>NOTE FOR DELPHI PROGRAMMERS</H3></FONT>
+
+<P>
+
+How this way of cracking can be avoided?
+
+<P>
+
+Easy: don't use automatic methods created by double clicking on the
+
+button or the object inspector. Write your code somewhere else in your
+
+program, preferably in another module, and bind it to the button using
+
+code
+
+such as:
+
+<P><PRE>
+
+  RegButton.OnClick := RegButtonClick;
+
+</PRE><P>
+
+Of course you'll need to enter this code after the form is created and
+
+before it's called. Best if it's rounded by a lot of unrelated stuff.
+
+<P>
+
+This won't necessarily prevent your program from being cracked of course,
+
+but things will not be as easy as you have seen above O:)<P>
+
+<CENTER><A href="#BackAnchor">Back to the top</A></CENTER>
+
+<P>
+
+<HR>
+
+<P>
+
+Thanks to <FONT COLOR="red">+ReZiDeNt</FONT> for his help and
+
+encouragement ;)
+
+<P>
+
+...and of course <B>+ORC</B> and <B>Fravia+</B> :)
+
+<P><HR><P>
+
+
+
+<FONT color="green">(c) <FONT color="#5500AA">+trurl</FONT> All rights reversed</FONT>
+
+<HR ALIGN="CENTER" WIDTH="100%" SIZE="3">
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</I></CENTER>
+
+<BR><CENTER>
+
+<!--<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A HREF="protecti.htm" tppabs="http://www.anticrack.de/fravia/protecti.htm">Our Protections</A>            <hr width=33%>-->
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut CGI-scripts</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering legal?</A></CENTER>
+
+<CENTER><HR ALIGN="CENTER" WIDTH="100%" SIZE="2"></CENTER>
+
+</BODY>
+
+</HTML>
+

@@ -1,0 +1,342 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>frarul1</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+           <A name="anchortop"></A>
+
+<P><CENTER><FONT SIZE="+3">The &quot;call relocation table' and its importance&quot;<BR>
+
+</FONT><FONT SIZE="+2">Some teachings from a small protection inside sruler</FONT>
+
+<BR>
+
+</CENTER>
+
+
+
+<FONT size="+1"><CENTER><I>by fravia+ (MSRE)</I><BR>
+
+<IMG SRC="hcu1.gif" tppabs="http://www.anticrack.de/fravia/hcu1.gif" ALT="+cracker!" ALIGN="BOTTOM" WIDTH="114" HEIGHT="43" BORDER="0" VSPACE="0" HSPACE="0"></A>
+
+<BR><BR>(25 September 1997)<BR>
+
+
+
+</CENTER><CENTER><HR><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"> Courtesy of Fravia's page of reverse 
+
+engineering<I> (well, of course :-)</I><BR> 
+
+</CENTER><HR size="6"><CENTER>
+
+<FONT size="+2">The &quot;call relocation table' and its importance&quot;<BR></FONT><FONT size="+1">
+
+(Some teachings from a small protection inside sruler)<BR></FONT><BR>
+
+</CENTER>
+
+We are not yet finished with screen ruler, a little useful cracking tool which you'll be able to download <A href="javascript:if(confirm('http://129.105.116.5/fravia/ruler.zip  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://129.105.116.5/fravia/ruler.zip'" tppabs="http://129.105.116.5/fravia/ruler.zip">here</A>. You'll find my original essay about this interesting cracking tool <A href="tppmsgs/msgs2.htm#229" tppabs="http://www.anticrack.de/fravia/tppmsgs/msgs2.htm#229">here</A>, with a stimulating add-on by Frog's print. The original work was about adding some functionalities to the target, and is part of the +HCU's &quot;crippledwarez &amp; functionalities adding&quot; <A href="project6.htm" tppabs="http://www.anticrack.de/fravia/project6.htm">project 6</A><BR><BR>
+
+I was recently fumbling around with my copy of screen ruler (that I have modified quite a lot) and as I eliminated the original one from my hard disk, I was puzzled by a small protection (if you want to call that a &quot;protection&quot;) that I had not reversed in my original essay. I didn't even see it :(<BR>In fact the code of this target checks for the existence of two files on your hard disk: its registration file and another help file. If you delete them, as I did when I deleted the original, it snaps.<BR>This is  a very 
+
+common scheme, since many shareware authors like their products to be distributed with all their parts.<BR>Usually a simple run of filemonitor will alert you about this and land you directly with a good search string for your dead listing.<BR>The protection inside this target is indeed absolutely simple, yet we'll use it in order to learn <FONT color="blue">another</FONT> very useful trick for our reverse engineering purposes: the &quot;CALL RELOCATION&quot; table.<BR><BR>Here is the part of the code where screen ruler checks the &quot;existence&quot; of its &quot;registration file&quot; (sreg.txt) and of, 
+
+its &quot;text&quot; help file (sruler.txt). I cannot understand why a target  
+
+should perform such an important checking in this &quot;easygoing&quot; way... In fact even a 
+
+stupid luser could 
+
+just prepare his own file, saving with the name &quot;sruler.txt&quot; a text file
+
+where he wrote something, let's say the phrase &quot;Hi guys, I'm sruler.txt!&quot; and, loo 
+
+and behold, he would be done :-)<BR> 
+
+Here is my SYNTHETIZED listing of this part of the code, please note the two lines in red (in fact who calls it and where does it return):</I>
+
+<PRE>
+
+:00401739      push ebp                  ;who calls here? <FONT color="red">THIS IS IMPORTANT</FONT>
+
+...                                      ; -&gt;&quot;Sorry, this version of Screen 
+
+...                                      ;&quot;-&gt;&quot;Ruler is incomplete.&quot;
+
+:0040176F      Call dword ptr [0040E324] ;FindExecutableA   -&gt;&quot;SREG.TXT&quot;
+
+:00401775      mov ebx, eax              ;pass return value
+
+:00401777      cmp ebx, 2                ;file was not found
+
+:0040177A      jne 0040178D              ;check_next_file if found
+
+...                                      ;not found, so:
+
+:0040177E      Call dword ptr [0040E36C] ;USER32.MessageBeep
+
+...                                      ;-&gt;&quot;Error Notice&quot;
+
+:0040178B      jmp 004017BC              ;messagebox, flag 0 and ret
+
+
+
+:check_next_file
+
+...
+
+:004017A0      Call dword ptr [0040E324] ;FindExecutableA  -&gt;&quot;SRULER.TXT&quot;
+
+...
+
+:004017AB      jne 004017CF              ;flag 1 and ret if found
+
+...                                      ;else
+
+:004017AF Call dword ptr [0040E36C]      ;MessageBeep,
+
+...                                      ;-&gt;&quot;Error Notice&quot;
+
+:004017C5 Call dword ptr [0040E370]      ; USER32.MessageBoxA
+
+:004017CB xor eax, eax                   ;bad flag zero
+
+:004017CD jmp ret
+
+:004017CF mov eax, 1                     ;good flag one
+
+:004017DB ret                            ;Ja, where? <FONT color="red">THIS IS IMPORTANT</FONT>
+
+</PRE><FONT size="+1">
+
+Well, there is not much to say about this codesnippet... the checking uses a 
+
+function that is really intended for EXECUTABLES (the 31 possible error codes have a lot to do with executables) just in order to check for the presence of the other two files of 
+
+the &quot;bundle&quot;. As you should immediately see here, you can easily trick this stupid code into returning a good flag, or, as I said, you can write your own &quot;faked&quot; files...<BR>But, just wait a minute: 
+
+would it not be nice if we could find WHERE this snippet is called from in our target? Yes, sure, but how the hell are we going to know FROM THE DEAD LISTING where did the call come from? There is (apparently) nowhere in the code a call to the beginning of the above code snippet at :00401739. No jumping here, no calls, how did the target get here?<BR>We'll have to load and fire winice and trace back...<BR>
+
+NO! Here is a nice trick that +ORC has teached us long ago, time to explain it to all future +crackers!<BR><BR><FONT size="+2"><CENTER>Dead listing using the CALL RELOCATION TABLE!</FONT></CENTER>
+
+<BR>
+
+In order to find where the above code snippet is called from we'll have to 
+
+have a look at the CODE TABLES of our target (use hexworkshop and search for the 
+
+hex string &quot;39174000&quot;, i.e. the start location of the procedure above... <U>our</U> location in INVERTED hex sequence):</FONT><PRE>
+
+7DC0: 00000000000000000000000000446174
+
+7DD0: 610000000000000000002E354000E112       ;table begins at 7DDA, duh
+
+      4000BF134000DC174000F5174000BD1B
+
+      400046214000BA254000D6144000FB23
+
+      4000922840004C2B4000B12C40000634     
+
+      40004D1340004E2A40000A2E4000F12E
+
+      40009B2A4000EE264000922F4000AB30
+
+      40007918400064144000A42340006431
+
+7E40: 400067194000<FONT color="red"><U>39174000</U></FONT>FB3340000000       ;table ends at 7E4A (+70), duh
+
+7E50: 5555AAAA5555AAAA5555AAAA5555AAAA</PRE><FONT size="+1">
+
+You dig it, don't you? In fact these tables, near the bottom of almost all windows files, 
+
+are very useful for our reverse engineering purposes (that's the real reason 
+
+I wanted to show you the stupid protection snippet above)... looking at them you can 
+
+immediately get the addresses of various important calls: here you have</FONT><PRE>
+
+:0040352E      ;at the bottom
+
+:004012E1      ;at the bottom+4
+
+:004013BF      ;at the bottom+8
+
+...
+
+:403164        ;at bottom+64
+
+:401967        ;at bottom+68
+
+:401739        ;(our nag call) at bottom+6C
+
+:4033FB        ;at the top (=+70)
+
+</PRE><FONT size="+1">
+
+And you will now be able to easily examine each one of the other... Yet you can do even more! Much more!
+
+Since you can see the &quot;bottom&quot; of this table at 7DDA, you'll know that you have 
+
+here 7DDA = :0040352E, 7DDA+4 (=7DDE= :0040121E), 7DDA+8 (=7DE2 = :004013BF)... until 
+
+you get to our 7E46= :00401739_call_nag_if_missing_file, which is 7DDA+6C. You dig it: each 4 bytes we have, in this table, the beginning of a routine.<BR>
+
+What the hell should we care! Will you cry exasperated by all this. Well, look at this nice piece of code, inside our target, that is not supposed to say us anything, look:</FONT>
+
+<PRE>
+
+:004012E1 55                      push ebp
+
+:004012E2 89E5                    mov ebp, esp
+
+:004012E4 53                      push ebx
+
+:004012E5 83EC04                  sub esp, 00000004
+
+:004012E8 894DF8                  mov dword ptr [ebp-08], ecx
+
+:004012EB 89C8                    mov eax, ecx
+
+:004012ED 8B4D08                  mov ecx, dword ptr [ebp+08]
+
+:004012F0 894804                  mov dword ptr [eax+04], ecx
+
+:004012F3 89C1                    mov ecx, eax
+
+:004012F5 8B19                    mov ebx, dword ptr [ecx]
+
+:004012F7 FF536C                  call [ebx+6C]   ;<FONT color="red">HERE!</FONT>
+
+:004012FA 89C1                    mov ecx, eax
+
+:004012FC 09C9                    or ecx, ecx
+
+:004012FE 7502                    jne 00401302
+
+:00401300 EB26                    jmp 00401328
+
+</PRE><FONT size="+1">
+
+We could just look at this code snippet until our eyes start dazzling, and we would 
+
+never understand anything without some laborious softicing. Or would we?<BR>
+
+In fact this is NOT a protection trick, it is the result of the COMPILATION of our 
+
+target, yet it amounts to the same &quot;confusing&quot; effect for us reverse engineers if you 
+
+will not use the &quot;table relocation countermeasures&quot; I'm explaining you now.<BR>OK guys, I know, you already understood the whole point<BR>Let's rewrite the &quot;awful&quot; code 
+
+snippet above in &quot;our&quot; way:</FONT>
+
+<PRE>
+
+:004012E1 55       push ebp       ;value corresponds to a &quot;call [<FONT color="red">ebx+4</FONT>]&quot; somewhere
+
+...                               ;prepare call
+
+:004012F7 FF536C   call [<FONT color="red">ebx+6C</FONT>]  ;call table value 00401739_nag_if_missing_file
+
+:004012FA 89C1     mov ecx, eax   ;get return value
+
+:004012FC 09C9     or ecx, ecx    ;is it zero (=bad)
+
+:004012FE 7502     jne 00401302   ;no, continue
+
+:00401300 EB26     jmp 00401328   ;yes, beggar off</PRE><FONT size="+1">
+
+Well, it makes MUCH more sense, doesn't it?... now, how is this for our &quot;dead listing&quot; purposes? Quite good, I would say, and there is no need whatsoever to fire winice in order to understand such &quot;awful&quot; dead listing snippets any more... note that I agree unconditionally with +ORC on this: good dead listing sipping a nice cocktail in 
+
+the shadows of a nice garden beats head down any eye - fatiguing live winicing :-)<BR>
+
+In fact, who cares about the values in ebx and how they get there, and all the mischievous (or innocent) manipulations of those values any more? Once we know that there is a base for all relocated calls, those values &quot;should&quot; correspond (and indeed, almost always, they will) to the values inside our table of calls.<BR>Therefore the cryptic &quot;call [ebx+4C]&quot; will 
+
+correspond (here in our target) to a simple call 7E26 (i.e.:004026EE), whereby the mysterious &quot;call [ebx+64]&quot; 
+
+will simply call the routine value hardcoded at 7E3E (i.e.:00403164). And so on and so on! Everything is SO easy! Reverse engineering, my dear readers, is just a little feeling, a little luck and a little help! (and a little brain too, you'll often need one :-)<BR><BR>
+
+<FONT size="+2">
+
+<B>Learn this, once for ever</B></FONT><BR>
+
+You should ALWAYS have a look at these tables when you dead list a program, you should ALWAYS calculate their base and you should ALWAYS prepare a copy of said table, in order to integrate it to your &quot;dead listing&quot;.<BR>
+
+Use this trick to give <U>meaningful tags</U> to the numerous 
+
+&quot;relocated&quot; calls that you'll find inside the snippets of your compiled targets... you'll notice pretty soon 
+
+the incredible difference that this will mean for your understanding of the code!<BR>
+
+Always remember +ORC's &quot;Zen&quot; teachings:</FONT><FONT color="purple">
+
+<BR><PRE>Your wordprocessor's search and replace facilities will be more 
+
+useful than ANY other tool when trying to &quot;feel&quot; your targets, and you 
+
+will feel the code, provided you have the necessary peace of mind: do 
+
+not, never, ran amok inside the dark codewoods, they are full of thorns. 
+
+Learn the names of the common structures and give meaningful names to all 
+
+things that <U>you</U> discover along your journey. If you have done your
+
+homework, a brain and a pencil are all what you will need to crack ANY 
+
+target</FONT></PRE>
+
+<FONT size="+1">Well, I love working with my brain and my colored staedtler pencils!</FONT><BR><BR>
+
+<BR>fravia+ (MSRE), 25 September 1997<HR size="6">
+
+</FONT>
+
+<FONT color="green">
+
+(c) fravia+ (MSRE), 1997. All rights reversed.</FONT>
+
+
+
+<HR size="6">
+
+<CENTER><I>You are deep inside fravia's page of reverse
+
+engineering, choose your way out:</I></CENTER>
+
+<P><CENTER>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"> <A HREF="tppmsgs/msgs2.htm#229" tppabs="http://www.anticrack.de/fravia/tppmsgs/msgs2.htm#229">My (and Frog's) original essay about screen ruler</A><HR width="33%">
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#84'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#84">homepage </A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"> <A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#73'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#73">links
+
+</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0" NATURALSIZEFLAG="0"> <A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity
+
+</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#82'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#82">students' essays </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools
+
+</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails </A><BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database </A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia
+
+</A><BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">is reverse engineering legal? </A></FONT></CENTER></P>
+
+
+
+<P><CENTER><FONT SIZE="-1"><HR></FONT></CENTER>
+
+</BODY>
+
+</HTML>
+
+
+

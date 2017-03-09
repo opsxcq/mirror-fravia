@@ -1,0 +1,407 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>DataPimp's Quake2 CD-Rom reversing</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+<CENTER><FONT size="+3">Quake2 CD-Rom reversing</FONT>
+
+<BR>(More about CD-ROM deprotections and Cd-Checks)<BR>
+
+<!--<a href="protecti.htm" tppabs="http://www.anticrack.de/fravia/protecti.htm"><IMG SRC="tough.gif" tppabs="http://www.anticrack.de/fravia/tough.gif" ALT="tough" ALIGN=BOTTOM WIDTH=114 HEIGHT=43 BORDER=0 VSPACE=0 HSPACE=0></a><br>-->
+
+<H2><B>by -= +DataPimp =-</B></H2>
+
+<H4>(19 December 1997, slightly edited by fravia+)</H4>
+
+
+
+<HR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">Courtesy of fravia's page 
+
+of reverse engineering<HR>       
+
+<I>Well, I'm happy to host this essay about the removing of a CD-ROM protection check.
+
+In fact I just wonder what is keeping our fellow readers (and +crackers) to 
+
+work a little on the CD-ROM protections used by Micro$oft in order to 
+
+'embrace and absorb' the whole game sector... I'm speaking of Microsoft 
+
+Flight Simulator 98 and of Age of Empires, for instance. In fact they are 
+
+not difficult to remove... and you have the Xmas-New year weeks to work on 
+
+them! Merry Xmas to everyone!
+
+</I></CENTER><HR size="6">
+
+<FONT size="+1"><CENTER>					
+
+Cracking Quake2
+
+(Cracking &quot;the most anticipated game of the decade&quot;)
+
+</CENTER></FONT><PRE>
+
+	Well that's what quake2 has been called. The game was released 
+
+        in the USA on December 9th, although it has been availible for 
+
+        download on the internet since last month. 
+
+
+
+In this essay we are going to explore a cd-check crack and an 
+
+interesting problem that it introduces and how to fix it. 
+
+When we complete this essay we will no doubt have a fully working 
+
+crack. 
+
+
+
+Let's start off by running quake2, we run it and so far it has not 
+
+given us an error, ok let's try to start a new game, then all of a 
+
+sudden the protection scheme kicks us out and we get a message saying 
+
+&quot;You must have the Quake2 CD in the drive to play&quot;. 
+
+
+
+Damn, now let's fix that error message. I think that this kind of 
+
+protections are wrong, companies do this on purpose, if they make you 
+
+have the cd in the drive at the time of play then you can't play network 
+
+games without everyone you want to play having a cd. It's unjust! I 
+
+bought my game and I want to play my bought game with my friends! Besides 
+
+I like to hear my own music when I play... and I should not be able 
+
+to use my own CD-drive to hear my own music in my own house? Companies 
+
+do this on purpose, they probably hate good music :)
+
+
+
+Well let's fix that... in a few short minutes we will have it cracked. 
+
+	
+
+OK let's begin by loading up &quot;Quake2.exe&quot; in the dissembler, and we 
+
+already know the text that appears inside the error message box. 
+
+Ok so let's look at the string data references, hmmm, ah, yes!
+
+towards the bottom you notice the text that we are looking for, so we 
+
+double click on it inside wdasm.
+
+
+
+Doing that, we now land inside the following code:
+
+
+
+* Referenced by a Jump at Address:0042B0FE(C)
+
+|
+
+:0042B115 8A442404                mov al, byte ptr [esp+04]
+
+:0042B119 FEC0                    inc al
+
+:0042B11B 3C7A                    cmp al, 7A
+
+:0042B11D 88442404                mov byte ptr [esp+04], al
+
+:0042B121 0F8E6AFFFFFF            jle 0042B091
+
+
+
+* StringData Ref from Data Obj -&gt;&quot;You must have the Quake2 CD in &quot;
+
+                               -&gt;&quot;the drive to play.&quot;
+
+
+
+Ok so let's now go to code offset &quot;0042B0FE&quot;, and have a look at the 
+
+code that calls the above snippet. 
+
+When we examine &quot;0042B0FE&quot; we see the following, please have a 
+
+'deep' reversing look at it, see if you can feel the protection by 
+
+yourself:
+
+
+
+* Referenced by a Jump at Address:0042B0BC(C)
+
+|
+
+:0042B0D3 8D4C2404                lea ecx, dword ptr [esp+04]
+
+:0042B0D7 8D542408                lea edx, dword ptr [esp+08]
+
+:0042B0DB 51                      push ecx
+
+
+
+* Possible StringData Ref from Data Obj -&gt;&quot;%s\quake2.exe&quot;
+
+                                  |
+
+:0042B0DC 6880474400              push 00444780
+
+:0042B0E1 52                      push edx
+
+:0042B0E2 E839430000              call 0042F420
+
+:0042B0E7 83C40C                  add esp, 0000000C
+
+:0042B0EA 8D442408                lea eax, dword ptr [esp+08]
+
+
+
+* Possible StringData Ref from Data Obj -&gt;&quot;r&quot;
+
+                                  |
+
+:0042B0EE 6890474400              push 00444790
+
+:0042B0F3 50                      push eax
+
+:0042B0F4 E897250000              call 0042D690
+
+:0042B0F9 83C408                  add esp, 00000008
+
+:0042B0FC 85C0                    test eax, eax
+
+:0042B0FE 7415                    je 0042B115
+
+:0042B100 50                      push eax
+
+:0042B101 E86A200000              call 0042D170
+
+:0042B106 83C404                  add esp, 00000004
+
+:0042B109 8D4C2404                lea ecx, dword ptr [esp+04]
+
+:0042B10D 51                      push ecx
+
+:0042B10E FFD6                    call esi
+
+:0042B110 83F805                  cmp eax,5
+
+:0042B113 7421                    je 0042B136
+
+
+
+Ok now before we do anything else, we need to backup the original 
+
+&quot;quake2.exe&quot; file. 
+
+Ok now let's have a look at the code above, which tells me that it 
+
+is looking for &quot;quake2.exe&quot;.
+
+Now if you notice the string &quot;%s\quake2.exe&quot; you might be wondering 
+
+what that &quot;%s&quot; means, well that &quot;%s&quot; is a variable that will be assigned 
+
+to it as the program runs, so that it might become &quot;e:\quake2.exe&quot;, 
+
+for example, at run time. 
+
+
+
+Now hmmm, how can we fix that?
+
+Well, you see there... that is a string data refrence, it's plain 
+
+text, let's search for it in ultraedit, so load up quake2.exe into 
+
+ultraedit and let's search for the ASCII string &quot;%s\quake2.exe&quot; you 
+
+will notice that it shows up. 
+
+Now, we want to be able to run this program without any problem and 
+
+without the silly cd that we have bought, therefore just with the 
+
+files that the game needs. 
+
+Now we are going to move it, get the &quot;%&quot; highlighted hit the 
+
+insert key and then hit space bar. We have now cleared the &quot;%&quot; out 
+
+of the string, now our cursor is positioned on the &quot;s&quot;.
+
+Go ahead now and type &quot;.&quot;. Leave the &quot;\quake2.exe&quot; alone. 
+
+Doing this we have told the program to look in the current dir for 
+
+the file instead of where it would have been looking. 
+
+	
+
+Ok, let's fire up quake2 again, after of course you save the changes 
+
+that you have made to the file, and you will see now that you will be 
+
+able to launch a new game, if you feel like it. 
+
+
+
+Why does it work? 
+
+Simple (if you understand dos): if you type &quot;cd..&quot; at the command prompt 
+
+while in the windows dir, then it will take you to &quot;c:\&quot; because it means 
+
+to drop one level lower in the dir tree.
+
+But &quot;.&quot; is the current dir, if you would have just wiped out both the
+
+&quot;%&quot; and the &quot;s&quot; then it would have been looking in the root dir of 
+
+whatever drive you had the quake2 files in. 
+
+
+
+Now it <U>seems</U> as if we have completed our crack. 
+
+Yet this is not true. Remember what I said at the beginning about a 
+
+problem that our crack produces? Now, if you look towards the end 
+
+of the snippet of code above you will see a &quot;cmp eax,5&quot;. Just above 
+
+that compare there is a call and then, below the compare, there is 
+
+a je command. 
+
+Right when I saw this I knew what it was: our target is checking if 
+
+that what it has found is or not a cd-rom! 
+
+Now if you don't have a cd-rom installed in your computer at all 
+
+then you will still get the error message. 
+
+So let's change that &quot;je&quot; to &quot;jmp&quot; and save that file. 
+
+As an hexeditor I personally use HIEW. 
+
+Now let's fire up Quake2, and you will see that it works fine.
+
+ 
+
+So it has turned out now that we have totally completed the crack, our 
+
+target won't require the cd at all. 
+
+I hope this helps all people that love music. 
+
+If you have any questions or comments please contact me using one of 
+
+the methods below.
+
+
+
+E-Mail: DataPimp@hotmail.com
+
+ICQ: 5613620
+
+Or Join #o13 on EFNet
+
+
+
+Thanks goes to: 
+
+Everyone in o13, rake, Balti, WTFMI, Teir, thanks for the idea :)
+
+</PRE>
+
+
+
+<HR>
+
+<FONT color="green">(c) <FONT color="#5500AA">-= +DataPimp =-</FONT> All rights reversed</FONT>
+
+<HR ALIGN="CENTER" WIDTH="100%" SIZE="3">
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</I></CENTER>
+
+<BR><CENTER>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="project4.htm" tppabs="http://www.anticrack.de/fravia/project4.htm">Back to Project 4</A> 
+
+           <HR width="33%">
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut CGI-scripts</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering legal?</A></CENTER>
+
+<CENTER><HR ALIGN="CENTER" WIDTH="100%" SIZE="2"></CENTER>
+
+</BODY>
+
+</HTML>

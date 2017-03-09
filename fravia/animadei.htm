@@ -1,0 +1,1458 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>project2</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+<CENTER><H2>CD-Rom emulation (Project 4)<BR>~<BR>
+
+PHASE 1 by Animadei<BR>
+
+</H2>
+
+<BR>
+
+
+
+<HR>~<BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">
+
+Courtesy of Fravia's page of reverse engineering<BR>
+
+~
+
+<BR></CENTER>
+
+<HR size="2">
+
+<H2>
+
+PHASE 1 by Animadei</H2><BR>
+
+<PRE>
+
+<BR>~<BR><I>
+
+This asm file introduces to all future good crackers the BASIS of 
+
+cd-rom emulation, which has an obvious importance for our trade. As 
+
+animadei himeself writes to me:<BR><PRE>
+
+I've taken the liberty to give my cd-emulator source as a small
+
+contribution to the cracking community.  There's a file attached to this
+
+letter.  ECD &quot;Emulate CD&quot; - introduces emulating a CD and substitutions
+
+of drives like &quot;subst.exe<BR>
+
+</PRE>
+
+This kind of cracking is very important, because once you understand the techniques 
+
+used by Animadei in its Cd-Rom emulator, you'll be able to prepare easily your own cracking 
+
+tools</I></CENTER>
+
+<HR size="2">
+
+<PRE>
+
+
+
+; EMULATE CD-ROM  -  DESIGNED BY ANIMADEI  12/25/1995  OVER 48+ HRS OF WORK
+
+; Stat: make option for MSCDEX to reply regardless because of some games
+
+;       that don't call MSCDEX properly.  12/26/1995
+
+
+
+
+
+.MODEL TINY
+
+.CODE
+
+ORG 0100H
+
+
+
+;********************************EQUATES*************************************
+
+  CHK1 EQU 1995H                                  ; CHECK LOADED ID 1
+
+  CHK2 EQU 1227H                                  ; CHECK LOADED ID 2
+
+  UNLOAD_TSR EQU 0F00DH                           ; UNLOAD ID QUE
+
+;****************************************************************************
+
+
+
+START:
+
+
+
+  JMP BEGINNING_CODE
+
+
+
+;@@@@@@@@@@@@@@@@@@@@@@@@@@@@@INTERRUPT CODES@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+TSR_START:
+
+
+
+;-- CD CALLS -------------------------------------------------------------
+
+  CMP AX,1100H                                    ; MSCDEX DRIVER CHECK
+
+  JNZ @@NOT_MSCDEX_CHECK
+
+
+
+  PUSH BP
+
+  MOV BP,SP
+
+  CMP BYTE PTR CS:[REPLY_MSCDEX],0FFH
+
+  JNZ @@DONT_REPLY
+
+  MOV AL,0FFH
+
+ @@DONT_REPLY:
+
+  CMP WORD PTR SS:[BP+08H],0DADAH
+
+  POP BP
+
+  JZ @@YES_MSCDEX_CHECK
+
+  JMP @@IRET
+
+  @@YES_MSCDEX_CHECK:
+
+  MOV AL,0FFH
+
+  PUSH BP
+
+  MOV BP,SP
+
+  MOV WORD PTR SS:[BP+08H],0ADADH
+
+  POP BP
+
+  IRET                                            ; RETURN
+
+  @@NOT_MSCDEX_CHECK:
+
+
+
+  ; { AH CHECK }
+
+  CMP AH,15H
+
+  JNZ @@NOT_ABOUT_CDROM
+
+
+
+  ; { CASE OF AL }
+
+  CMP AL,00H                                      ; EXTENDED DRIVES CHECK
+
+  JZ @@EXTENDED_DRIVES_CHECK
+
+
+
+  CMP AL,01H                                      ; LIST OF DRIVES
+
+  JZ @@IRET
+
+; CMP AL,02H                                      ; COPYRIGHT MESSAGE
+
+; JZ @@IRET
+
+; CMP AL,03H                                      ; GET ABSTRACT NAME
+
+; JZ @@IRET
+
+; CMP AL,04H                                      ; GET BIBLIOGICAL FILE
+
+; JZ @@IRET
+
+  CMP AL,0BH                                      ; CDROM DRIVE CHECK
+
+  JZ @@CDROM_DRIVE_CHECK
+
+  CMP AL,0CH                                      ; MSCDEX VERSION
+
+  JZ @@MSCDEX_VER
+
+  CMP AL,0DH                                      ; STORE CDROM DRIVE LETTER TO ES:BX
+
+  JZ @@GET_CD_LETTERS
+
+  CMP AL,10H                                      ; SEND CD ROM REQUEST
+
+  JZ @@SEND_CD_REQ
+
+
+
+;-- JUMP TO ORGINAL INT 2F -----------------------------------------------
+
+
+
+  @@NOT_ABOUT_CDROM:                              ; JUST A LABEL
+
+  DB 0EAH                                         ; RETURN BACK TO REAL INT 2F INTERRUPT
+
+  JMP_ADDR: DD ?
+
+
+
+;-- JUMP BACK FROM INTERRUPT -----------------------------------------------
+
+
+
+  @@IRET:
+
+  IRET                                            ; RETURN
+
+
+
+;-- PROCEDURES -----------------------------------------------------------
+
+  @@EXTENDED_DRIVES_CHECK:
+
+  MOV BX,01H
+
+  XOR CX,CX
+
+  MOV CL,BYTE PTR CS:[EDRIVE]
+
+  IRET                                            ; RETURN
+
+
+
+  @@CDROM_DRIVE_CHECK:
+
+  CMP CL,BYTE PTR CS:[EDRIVE]
+
+  JZ @@CD_CHECK
+
+  XOR AX,AX
+
+  MOV BX,0ADADH
+
+  IRET
+
+  @@CD_CHECK:
+
+  MOV AX,0FFFFH
+
+  MOV BX,0ADADH
+
+  IRET                                            ; RETURN
+
+
+
+  @@GET_CD_LETTERS:
+
+  PUSH AX
+
+  MOV AL,BYTE PTR CS:[EDRIVE]
+
+  MOV BYTE PTR ES:[BX],AL
+
+  POP AX
+
+  IRET                                            ; RETURN
+
+
+
+  @@SEND_CD_REQ:
+
+  CMP CL,BYTE PTR CS:[EDRIVE]
+
+  JNZ @@NOT_EQU
+
+  MOV WORD PTR ES:[BX+03H],0100H
+
+  IRET                                            ; RETURN
+
+  @@NOT_EQU:
+
+  MOV WORD PTR ES:[BX+03H],8001H
+
+  IRET                                            ; RETURN
+
+
+
+;--------------------------- UNLOADING SEQUENCE -----------------------------
+
+  @@MSCDEX_VER:
+
+
+
+  CMP BX,CHK1                                     ; CHECK IF WE'RE BEING CALLED
+
+  JNZ @@NOT_CALLING_US
+
+
+
+  CMP CX,UNLOAD_TSR                               ; CHECK TO UNLOAD TSR
+
+  MOV CX,CHK2                                     ; SIGNAL WE'RE ALIVE!
+
+  JNZ @@NOT_CALLING_US
+
+
+
+;-- UNLOAD --
+
+  PUSH AX
+
+  PUSH DX
+
+  PUSH DS
+
+  PUSH ES
+
+  PUSH DI
+
+  PUSH SI
+
+
+
+  MOV AX,352FH                                    ; CHECK IF ADDR INT IS THE SAME
+
+  INT 21H
+
+  MOV AX,CS
+
+  MOV DX,ES
+
+  CMP AX,DX
+
+  MOV CL,00H                                      ; FLAG FOR ERROR
+
+  JNZ @@INT_NOT_SAME
+
+  CMP BX,OFFSET TSR_START
+
+  JNZ @@INT_NOT_SAME
+
+  LDS DX,DWORD PTR CS:[JMP_ADDR]
+
+  MOV AX,252FH
+
+  INT 21H
+
+
+
+;++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+; RESTORE SUBST DRIVE HERE!
+
+;++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+  LES DI,DWORD PTR CS:[SUBST_ADDR]                ; RETORE ORIGINAL SUBST DATA
+
+  MOV SI,OFFSET ORG_SUBST_DATA
+
+  MOV CX,88D
+
+  PUSH CS
+
+  POP DS
+
+  CLD
+
+  REP MOVSB
+
+;++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+
+
+  cli                                             ; Unload TSR
+
+  mov AH,49h
+
+  mov ES,CS:[2CH]
+
+  int 21h
+
+  mov AH,49h
+
+  PUSH CS
+
+  POP ES
+
+  int 21h
+
+  sti
+
+
+
+  MOV CL,01H                                      ; REPLY THAT WE'VE UNLOADED
+
+  @@INT_NOT_SAME:
+
+  MOV CH,00H
+
+  POP SI
+
+  POP DI
+
+  POP ES
+
+  POP DS
+
+  POP DX
+
+  POP AX
+
+
+
+;---------
+
+  @@NOT_CALLING_US:
+
+  MOV BX,0217H
+
+  IRET                                            ; RETURN
+
+
+
+;-- DATA -----------------------------------------------------------------
+
+  REPLY_MSCDEX: DB ?                              ; IF PROG NEEDS TO REPLY MSCDEX AT ALL TIMES
+
+  EDRIVE: DB ?                                    ; EMULATED DRIVE
+
+  SUBST_ADDR: DD ?                                ; WHERE ORG EMU ADDR IS LOC
+
+  ORG_SUBST_DATA: DB 88D DUP (?)                  ; SAVED SUBST DATA
+
+;-------------------------------------------------------------------------
+
+TSR_END:
+
+
+
+
+
+
+
+
+
+
+
+;############################################################################
+
+;#########################MAIN PROGRAM STARTS HERE###########################
+
+;############################################################################
+
+
+
+BEGINNING_CODE:
+
+
+
+  CLD                                             ; FOR FORWARD REFERENCE
+
+
+
+  CALL BEGIN_PARSING                              ; PARSE AND OTHERS MISC THINGS
+
+
+
+  MOV AH,62H                                      ; FREE MEM BEFORE ALLOC
+
+  INT 21H
+
+  MOV ES,BX
+
+  MOV AH,62H
+
+  INT 21H
+
+
+
+; ALTERNATIVE MEMORY ALLOCATION BY KEEP - TAKES MORE MEMORY!
+
+; MOV DX,((OFFSET TSR_END - OFFSET START) + 0FFH)/0FH + 01H
+
+; mov ax,3100h                                    ; { Keep(0) }
+
+; int 21h
+
+
+
+  MOV DX,OFFSET TSR_END                           ; TERMINATE &amp; STAY RESIDENT
+
+  INT 27H
+
+
+
+
+
+
+
+
+
+
+
+;%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+;%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+;%%%%%%%%%%THESE FOLLOWING CODES ARE NOT LOADED TO MEMORY BY INT 27%%%%%%%%%%
+
+;%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+;%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+BEGIN_PARSING:
+
+
+
+  ;--------------------                           ; PRINT MAIN TITLE
+
+    MOV DX,OFFSET MAIN
+
+    CALL P
+
+  ;--------------------
+
+
+
+  MOV AH,30H                                      ; CHECK DOS VERSION:
+
+  INT 21H                                         ; ECD NEEDS DOS 4.0+
+
+  CMP AL,04H
+
+  JAE @DOS_VER_OK
+
+  MOV DX,OFFSET DOS_ERROR
+
+  CALL P
+
+  MOV AL,01H
+
+  JMP @EXIT
+
+ @DOS_VER_OK:
+
+
+
+  MOV WORD PTR [EXTRA],'\:'                       ; A MUST: &quot;C:\BLAH&quot; (THIS IS
+
+  MOV BYTE PTR [TEMP_CHANGE],'\'                  ; DONE TO SAVE SOME BYTES
+
+
+
+  MOV BYTE PTR [REPLY_MSCDEX],00H                 ; SET FLAGS TO FALSE &quot;INITIALIZE&quot;
+
+
+
+  MOV SI,81H                                      ; LET'S BEGIN PARSING
+
+  CALL SKIP_BLANKS                                ; SKIP ALL BLANKS
+
+  LODSW
+
+
+
+  CMP AL,'/'                                      ; OPTION:  UNLOAD
+
+  JNZ @OK___PASS1
+
+  CMP AH,'a'
+
+  JZ @OK___MSCDEX_FLAG
+
+  CMP AH,'A'
+
+  JZ @OK___MSCDEX_FLAG
+
+  CMP AH,'u'
+
+  JZ @OK___OK_UNLOAD
+
+  CMP AH,'U'
+
+  JZ @OK___OK_UNLOAD
+
+  JMP @HELP
+
+
+
+ @OK___MSCDEX_FLAG:
+
+  MOV BYTE PTR [REPLY_MSCDEX],0FFH                ; OPTION: MSCDEX REPLIES AT
+
+INT 3H
+
+;;;;
+
+;  DEC SI                                          ; ALL TIMES
+
+  CALL SKIP_BLANKS
+
+  LODSW
+
+  JMP @OK___PASS1
+
+
+
+ @OK___OK_UNLOAD:
+
+  MOV AX,150CH                                    ; UNLOAD!
+
+  MOV BX,CHK1
+
+  MOV CX,0F00DH
+
+  INT 2FH
+
+  OR CX,CX                                        ; CHECK IF ANY ERROR OCCURRED
+
+  JNZ @OK____UNLOADED                             ; WHILE UNLOADING
+
+  MOV DX,OFFSET UNLOAD_ERR2
+
+  CALL P
+
+  MOV AL,01H
+
+  JMP @EXIT
+
+ @OK____UNLOADED:
+
+  CMP CL,01H                                      ; IF 0 THEN WE'RE NOT LOADED
+
+  JZ @OK___UNLOAD_IT
+
+  MOV DX,OFFSET NOT_LOADED
+
+  CALL P
+
+  XOR AX,AX
+
+  JMP @EXIT
+
+ @OK___UNLOAD_IT:
+
+  MOV DX,OFFSET UNLOAD_OK
+
+  CALL P
+
+  XOR AX,AX
+
+  JMP @EXIT
+
+ @OK___PASS1:
+
+
+
+  CALL CHECK4ALPHADRV                             ; DRIVES ARE ALPHA CHARS ONLY
+
+  MOV BYTE PTR [DRIVE],AL                         ; SAVE THE EMU DRIVE
+
+
+
+  CALL SKIP_BLANKS
+
+  CMP AL,0DH
+
+  JNZ @OK___PASS2
+
+ @OK___CUR_DIR:
+
+  MOV SI,OFFSET DIRECTORY                         ; GET CURRENT DIRECTORY
+
+  CALL GET_CUR_DIR
+
+  ADD AL,41H
+
+  MOV BYTE PTR [XDRIVE],AL                        ; SAVE THE SUBST DRIVE
+
+  JMP @END_PARSING_FOR_DIR
+
+ @OK___PASS2:
+
+
+
+  PUSH SI                                         ; CHECK FOR USER DEFINED SUBST
+
+  POP DI                                          ; DRIVE
+
+  LODSW
+
+  CMP AH,':'
+
+  JZ @OK___DRIVE_SPECIFIED
+
+  MOV SI,OFFSET DIRECTORY                         ; GET CURRENT DIRECTORY
+
+  CALL GET_CUR_DIR                                ; * THIS IS ONLY TEMP: JUST
+
+  ADD AL,41H                                      ; TO GET THE CUR DRIVE *
+
+  MOV BYTE PTR [XDRIVE],AL                        ; SAVE THE SUBST DRIVE
+
+
+
+  MOV SI,DI
+
+  CALL SKIP_BLANKS
+
+  JMP @GOT_DRIVE
+
+ @OK___DRIVE_SPECIFIED:
+
+  CALL CHECK4ALPHADRV                             ; DRIVES ARE ALPHA CHARS ONLY
+
+  MOV BYTE PTR [XDRIVE],AL
+
+ @GOT_DRIVE:
+
+
+
+  MOV DI,OFFSET DIR1
+
+  CALL COPY_STR
+
+  CMP BYTE PTR [DI],'\'
+
+  JZ @OK___CONV
+
+  CMP BYTE PTR [DI],0DH
+
+  JZ @OK___CONV
+
+  CMP BYTE PTR [DI],20H
+
+  JNZ @OK___PASS3
+
+ @OK___CONV:
+
+  DEC DI
+
+ @OK___PASS3:
+
+  INC DI
+
+  XOR AX,AX
+
+  STOSB
+
+
+
+  CALL CHANGE_TO_TEMP_DIR
+
+  CALL CHANGE_BACK_TO_ORG_dIR
+
+
+
+ @END_PARSING_FOR_DIR:
+
+
+
+
+
+;##########################################################################
+
+;**************************************************************************
+
+;                          SUBST THE FAKE DRIVE
+
+;**************************************************************************
+
+;##########################################################################
+
+
+
+  MOV AX,150CH                                    ; CHECK IF WE ARE LOADED
+
+  MOV BX,CHK1  
+
+  INT 2FH
+
+  CMP CX,CHK2
+
+  JNZ @@NOT_LOADED
+
+  MOV DX,OFFSET UNLOAD_ERR1
+
+  CALL P
+
+  MOV AL,01H
+
+  JMP @EXIT
+
+ @@NOT_LOADED:
+
+
+
+  MOV AH,19H
+
+  INT 21H
+
+  MOV DL,AL
+
+  MOV AH,0EH
+
+  INT 21H
+
+  MOV DL,BYTE PTR [DRIVE]
+
+  MOV BYTE PTR [DRIVE_ERR],DL
+
+  SUB DL,41H
+
+  MOV AH,00H
+
+  CMP DL,AL
+
+  JL @OK___DRIVES_LISTED_IN_DOS
+
+  MOV DX,OFFSET DRIVE_ERR
+
+  CALL P
+
+  MOV AL,01H
+
+  JMP @EXIT
+
+ @OK___DRIVES_LISTED_IN_DOS:
+
+
+
+  MOV DX,OFFSET NO_SPEC                           ; PRINT EMULATED DRIVE
+
+  CALL P
+
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;SUBST DRIVE HERE;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+
+  CALL CHANGE_TO_TEMP_DIR
+
+
+
+  MOV AH,52H                                      ; GET MCB OF DOS ADDRESS
+
+  INT 21H
+
+
+
+  CWD
+
+  MOV DL,BYTE PTR [DRIVE]                      
+
+  SUB DL,41H      
+
+  MOV BYTE PTR [EDRIVE],DL                        ; SAVE EMULATED DRIVE
+
+
+
+  MOV AX,88D                                      ; GET ADDRESS OF DESCRIPTION
+
+  IMUL DX                                         ; OF DISKS
+
+  LES BX,DWORD PTR ES:[BX+18H]                    
+
+  MOV WORD PTR [TEMP_ADDR+02H],ES                 ; TEMP ADDR FOR SUBST DRIVE CALC
+
+  MOV WORD PTR [TEMP_ADDR+00H],BX
+
+  MOV CX,ES
+
+  ADD AX,CX
+
+  ADC BX,0000H
+
+  MOV WORD PTR [SUBST_ADDR+02H],BX                ; SAVE CALCULATED ADDRESS
+
+  MOV WORD PTR [SUBST_ADDR+00H],AX
+
+
+
+  PUSH CS                                         ; CHANGE TO DOS'S LIST OF DRIVES
+
+  POP ES                                          
+
+  MOV DI,OFFSET ORG_SUBST_DATA                    ; ES:DI - ORG SUBST DATA
+
+  LDS SI,DWORD PTR [SUBST_ADDR]                   ; DS:SI - LIST OF DRIVES
+
+  MOV CX,88D                                      ; SAVE SUBST DRIVE'S DATA                                      
+
+  REP MOVSB                                       ; SAVE FOUND DRIVE DATA
+
+
+
+  PUSH CS
+
+  POP DS
+
+  LES DI,DWORD PTR [SUBST_ADDR]                   ; ES:DI - EMU DRIVE
+
+  CWD
+
+  MOV DL,BYTE PTR [XDRIVE]
+
+  SUB DL,41H
+
+  MOV CX,88D
+
+  MOV AX,CX
+
+  IMUL DX
+
+  MOV SI,WORD PTR [TEMP_ADDR+02H]                 
+
+  MOV BX,WORD PTR [TEMP_ADDR+00H]
+
+  ADD SI,AX
+
+  ADC BX,0000H
+
+  MOV DS,BX                                       ; DS:SI - SUBST DRIVE
+
+  REP MOVSB                                       ; REPLACE WITH NEW DRIVE DATA
+
+
+
+  LDS SI,DWORD PTR CS:[SUBST_ADDR+00H]            ; STORE LENGTH OF SPECIFIED
+
+  CALL STRING_LENGTH                              ; DIRECTORY 'STRING' TO EMU
+
+  XCHG AH,AL                                      ; DRIVE
+
+  LES DI,DWORD PTR CS:[SUBST_ADDR+00H]
+
+  ADD DI,4FH
+
+  STOSW
+
+
+
+
+
+  CALL CHANGE_BACK_TO_ORG_DIR
+
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+
+  MOV AX,352FH                                    ; SAVE ORG INT 2F ADDR
+
+  INT 21H
+
+  MOV WORD PTR [JMP_ADDR+02H],ES
+
+  MOV WORD PTR [JMP_ADDR+00H],BX
+
+
+
+  MOV DX,OFFSET TSR_START                         ; SET INTERRUPT VECT TO OUR CODE
+
+  MOV AX,252FH
+
+  INT 21H
+
+
+
+  RET                                             ; RETURN TO MAIN PROGRAM
+
+
+
+;-------------------------
+
+ @EXIT:
+
+  MOV AH,4CH
+
+  INT 21H
+
+;-------------------------
+
+ @HELP:
+
+  MOV DX,OFFSET HELP
+
+  CALL P
+
+  XOR AX,AX
+
+  JMP @EXIT
+
+;-------------------------
+
+ P PROC                                           ; PRINT TO SCREEN
+
+   PUSH AX
+
+   MOV AH,09H
+
+   INT 21H
+
+   POP AX
+
+   RET
+
+ ENDP
+
+
+
+ SKIP_BLANKS PROC                                 ; SKIP BLANKS WHILE PARSING
+
+  @LOOP_AGAIN:
+
+   LODSB
+
+   CMP AL,0DH
+
+   JZ @OK_DONE
+
+   CMP AL,' '
+
+   JZ @LOOP_AGAIN
+
+  @OK_DONE:
+
+   DEC SI
+
+   RET
+
+ ENDP
+
+
+
+ COPY_STR PROC                                    ; COPIES A STRING FROM ONE
+
+   PUSH CX                                        ; DESTINATION TO THE OTHER
+
+   MOV CX,00FFH
+
+  @LOOP_LOOP:
+
+   LODSB
+
+   CMP AL,0DH
+
+   JZ @OK___FINISHED
+
+   CMP AL,' '
+
+   JZ @OK___FINISHED
+
+   STOSB
+
+   LOOP @LOOP_LOOP                                            
+
+   MOV AH,0FFH                                    ; AH = FF = ERROR
+
+  @OK___FINISHED:
+
+   DEC DI
+
+   POP CX
+
+   RET
+
+ ENDP
+
+
+
+ STRING_LENGTH PROC                               ; REPORT THE LENGTH OF A STRING
+
+   PUSH CX
+
+   MOV CX,00FFH
+
+   CBW
+
+  @LOOPING:
+
+   INC AH
+
+   LODSB
+
+   CMP AL,00H
+
+   JZ @OK___WITHIN_BOUNDRY
+
+   LOOP @LOOPING
+
+   MOV AH,0FFH                                    ; AH = FF = ERROR
+
+  @OK___WITHIN_BOUNDRY:
+
+   POP CX
+
+   RET
+
+ ENDP
+
+
+
+ CHECK4ALPHADRV PROC
+
+   CMP AH,':'
+
+   JZ @OK__REQ_SYMBOL                             ; CHECK IF EMU DRIVE SPECIFIED
+
+   JMP @HELP
+
+  @OK__REQ_SYMBOL:
+
+
+
+   CMP AL,'a'                                     ; CHECK FOR ALPHA CHARACTERS
+
+   JB @NO_CAPS
+
+   SUB AL,20H                                     ; CONVERT TO CAPS IF NECESSARY
+
+  @NO_CAPS:
+
+   CMP AL,'A'
+
+   JGE @OK___CHAR1
+
+   JMP @HELP
+
+  @OK___CHAR1:
+
+   CMP AL,'Z'
+
+   JLE @OK___CHAR2
+
+   JMP @HELP
+
+  @OK___CHAR2:
+
+   RET
+
+ ENDP
+
+
+
+ GET_CUR_DIR PROC
+
+   MOV AH,19H                                     ; GET CURRENT DRIVE
+
+   INT 21H
+
+   PUSH AX                                        ; SAVE AX
+
+   XOR DX,DX
+
+   MOV AH,47H                                     ; GET CURRENT DIRECTORY
+
+   INT 21H
+
+   POP AX                                         ; RETURN AX
+
+   JNC @OK___GOT_DIRECTORY
+
+   MOV DX,OFFSET ERROR1
+
+   CALL P
+
+   MOV AL,01H
+
+   JMP @EXIT
+
+  @OK___GOT_DIRECTORY:
+
+   RET
+
+ ENDP
+
+
+
+ CHANGE_TO_TEMP_DIR PROC
+
+   MOV SI,OFFSET TEMP_CUR_DIR                      ; TEST FOR THE VALIDITY OF THE
+
+   CALL GET_CUR_DIR                                ; USER SPECIFIED DRIVE AND PATH
+
+   MOV BYTE PTR [TEMP_DRIVE],AL
+
+
+
+   MOV DL,BYTE PTR [XDRIVE]                        ; CHANGE DRIVE
+
+   SUB DL,41H
+
+
+
+   MOV AH,0EH                                      
+
+   INT 21H
+
+   MOV AH,19H                                      ; SEE IF WE'VE CHANGED DRIVES
+
+   INT 21H
+
+   CMP DL,AL
+
+   JNZ @PRINT_ERROR
+
+
+
+   MOV DX,OFFSET DIR1                              ; NOW CHANGE TO THE SPECIFIED
+
+   MOV AH,3BH                                      ; DIRECTORY
+
+   INT 21H
+
+   JNC @DIR_TEST_OK
+
+  @PRINT_ERROR:
+
+   MOV DX,OFFSET ERROR2
+
+   CALL P
+
+   MOV AL,01H
+
+   JMP @EXIT
+
+  @DIR_TEST_OK:
+
+   RET
+
+ ENDP
+
+
+
+ CHANGE_BACK_TO_ORG_DIR PROC
+
+   PUSH CS
+
+   PUSH CS
+
+   POP DS
+
+   POP ES
+
+
+
+   MOV DL,BYTE PTR [TEMP_DRIVE]                    ; GO BACK TO ORIGINAL DRIVE
+
+   MOV AH,0EH                                      ; AND DIRECTORY
+
+   INT 21H
+
+   MOV AH,19H
+
+   INT 21H
+
+   CMP AL,DL
+
+   JNZ @PRINT_ERROR
+
+   MOV DX,OFFSET TEMP_CHANGE                       ; RETURN TO ORG DIRECTORY
+
+   MOV AH,3BH
+
+   INT 21H
+
+   JC @PRINT_ERROR
+
+   RET
+
+ ENDP
+
+
+
+;-------------------------
+
+  E EQU 0DH,0AH
+
+  S EQU '$'
+
+
+
+  MAIN:        DB 'EMULATE CD-ROM (R)  -  DESIGNED BY ANIMADEI[T]  -  12/25/1995',E,E,S
+
+
+
+  HELP:        DB '[HELP]   ECD [OPT: /A] [SUBST DRIVE:] [DRIVE:(\)(DIRECTORY)(\)]',E,E
+
+               DB '         MSCDEX REPLY REGARDLESS:  ECD /A ...ETC.',E,E
+
+               DB '         INSTALL:  ECD A:',E
+
+               DB '                   ECD Y: C:.',E
+
+               DB '                   ECD X:B:DOS\',E
+
+               DB '                   ECD Z: D:\WINDOWS',E
+
+               DB '         UNLOAD!:  ECD /U',E,S
+
+
+
+  UNLOAD_OK:   DB 'UNLOAD OK!',E,S
+
+  NOT_LOADED:  DB 'NOT RESIDENT!',E,S
+
+  UNLOAD_ERR1: DB 'ALREADY LOADED!',E,S
+
+  UNLOAD_ERR2: DB &quot;CAN'T UNLOAD!&quot;,E,S
+
+
+
+  DOS_ERROR:   DB 'NEED DOS VERSION 4.0+ TO EXECUTE ECD!',E,S
+
+
+
+  DRIVE_ERR:   DB ?
+
+               DB ': NOT LISTED WITHIN LASTDRIVE!',E,S
+
+
+
+  NO_SPEC:     DB 'EMULATING = '
+
+  DRIVE:       DB ?
+
+               DB ':',E,S
+
+
+
+  ERROR1:      DB &quot;CAN'T GET CURRENT DIRECTORY!&quot;,E,S
+
+  ERROR2:      DB &quot;CAN'T GET SPECIFIED DIRECTORY!&quot;,E,S
+
+;-------------------------
+
+      XDRIVE: DB ?
+
+       EXTRA: DB ?
+
+        DIR1: DB ?
+
+   DIRECTORY: DB (70H - 4H) DUP (?)
+
+              DB ?
+
+
+
+  TEMP_DRIVE: DB ?
+
+ TEMP_CHANGE: DB ?
+
+TEMP_CUR_DIR: DB (70H) DUP (?)
+
+              DB ?
+
+
+
+   TEMP_ADDR: DD ?
+
+;-------------------------
+
+
+
+END START</PRE><HR>That's all folk, 
+
+however, I must stress that it is really a simple method of emulating MSCDEX.EXE,
+
+and returning values that it would in reality.  If you need to simulate
+
+an actual physical sector reads like on some CD's, then you'd just trap
+
+the address, check how many bytes being read, dump it to disk, and make
+
+an additional code to the assembly source I submitted to write it all
+
+back when read's to that sector is detected by interrupt traps.<BR> Easy as
+
+pie!
+
+<BR>	 <FONT color="green">
+
+(c) Animadei, May 1997. All rights reversed.</FONT>
+
+</PRE>
+
+<HR ALIGN="CENTER" WIDTH="100%" SIZE="3">
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</I></CENTER>
+
+<BR><CENTER>
+
+
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="project4.htm" tppabs="http://www.anticrack.de/fravia/project4.htm">Back to Project 4</A><BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#79'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#79">homepage</A> <IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"> 
+
+<A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#53'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#53">links</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0">
+
+<A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm"> +ORC</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#78'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#78">students' essays</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database</A>
+
+<BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm"> tools</A> <IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia</A>
+
+<BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is cracking illegal?</A></CENTER>
+
+</CENTER>
+
+
+
+<CENTER><HR ALIGN="CENTER" WIDTH="100%" SIZE="2"></CENTER>
+
+        
+

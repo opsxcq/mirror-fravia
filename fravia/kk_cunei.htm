@@ -1,0 +1,690 @@
+<HTML>
+
+<HEAD>
+
+<META Name="Voluntary Content Rating" content="great!">
+
+
+
+
+
+<TITLE>kk_cunei.htm: BRW magic reversing</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR=#C0C0C0 TEXT=#001010 VLINK=#405040><P><CENTER>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0>Courtesy of Fravia's page 
+
+of reverse engineering
+
+<HR><I>A very interesting example of BRW use 'on the field', slightly edited by fravia+</I><BR>
+
+~<BR>31 march 1998
+
+<HR> <CENTER>
+
+	<A href="student.htm#student_loo_na" tppabs="http://www.anticrack.de/fravia/student.htm#student_loo_na"><IMG SRC="notassi3.gif" tppabs="http://www.anticrack.de/fravia/notassi3.gif" ALT="student"
+
+	    ALIGN=CENTER WIDTH=114 HEIGHT=43 BORDER=0 VSPACE=0 HSPACE=0></A> <BR>
+
+	<FONT color=gray>Not Assigned</FONT>
+
+      </CENTER>
+
+<HR>
+
+</CENTER>
+
+<PRE>
+
+<CENTER>
+
+How to perform some magic reversing with good old BRW
+
+You shrink your target a million bytes, you rip  all protections off... 
+
+and it works!
+
+
+
+by -= F**KingKrazy =-
+
+
+
+31 March 1998
+
+</CENTER><HR>
+
+I intended to begin this text with its title but I did not found a
+
+suitable one. I thought I could call it "When a Protection Scheme is
+
+Good For Nothing" or "The Easiest Crack I Ever Did" or "The Most
+
+Negligected Protected Program I Ever Saw". You choose.
+
+
+
+In this text, I will show how to reverse the protection scheme of a 
+
+very useful OCR program called Cuneiform 1.31 (Jan'98). 
+
+You can find it at http://www.ocr.com/html/west.html, of course you 
+
+should pay for it if you intend to use it in real life.
+
+
+
+This kewl program uses a double protections scheme: use counter and
+
+registration password. The scheme cripples some functions after 30 
+
+days, that is: the target allows you to scan and save 30 pages as trial. 
+
+After the trial is expired you may continue to scan and recognize documents 
+
+but all the save, append and export functions will stay blocked until you 
+
+enter the password for registration.
+
+
+
+I am going to use only one tool for this crack: BRW 4.5 which you can find
+
+everywhere on the web (for instance at <A href="javascript:if(confirm('http://www.st.rim.or.jp/~bela/  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.st.rim.or.jp/~bela/'" tppabs="http://www.st.rim.or.jp/~bela/">http://www.st.rim.or.jp/~bela/</A>).
+
+
+
+More about BRW? Read "<A HREF="ultrae2.htm" tppabs="http://www.anticrack.de/fravia/ultrae2.htm">An interesting tool: BRW</A> (32-bit reverse engineering)"
+
+an essay by Fravia+.
+
+
+
+Ok, now that you have got the victim... er... the target and the tool, let's
+
+have fun.
+
+
+
+Install the program. During the installation you will be asked to enter
+
+names for user and company.
+
+
+
+Before you continue to read, explore the target, learn how to, and mainly,
+
+use it until the grace scanning counter expires.
+
+
+
+So, you scan and save...scan and append...scan and export... suddenly a
+
+"beg screen" shows up telling that your trial period expired and asking 
+
+your datas for registration and password code to unlock the blocked
+
+functions.
+
+
+
+Ok, trial expired, cracking time, let's reverse the relevant code.
+
+
+
+Now snoop a bit the .EXEs and .DLLs to obtain info on compiler used to produce
+
+the proggie, export libraries, function names, etc. You can use quickview
+
+or a similar utility.
+
+
+
+This will help you to choose the easiest way to crack our little beast.
+
+
+
+You could also explore the Windoze registry, but I forward you that only three
+
+explicit reference to the program have been found there and are all worthless 
+
+for the kind of crack we intend to do.
+
+
+
+At this point you could opt to:
+
+
+
+1. Use the "traditional" method to defeat the protection:
+
+        - run the program
+
+        - go to main menu help option
+
+        - activate the register screen
+
+        - enter a fake password code
+
+        - fire S-Ice
+
+        - bpx GetWindowText (in this case better than hmemcpy or
+
+                             GetDialogItemText)
+
+        - then click Ok, F11, severals F12, lots of F10 e somes F8
+
+        - feel the code
+
+        - ...and, if you are a newbie
+
+        - be lost
+
+        - get fingers cramps
+
+        - or worst, get a tendinitis
+
+	
+
+2. Use W32Dasm to generate dead list of all suspects .EXE and .DLL:
+
+        - analise every routine that's worth
+
+        - drink a lot of coffee
+
+        - trace a lot of jumps and calls
+
+        - fell asleep in front your computer
+
+        - ...and, once again, if you are a newbie
+
+        - get mad and lose your hair
+
+
+
+3. Use BRW to snoop all the suspects .EXE and .DLL:
+
+        - "see" the program resources
+
+        - discover where is the weak link dialog (i.e. the beg screen)
+
+        - rip off the weakness
+
+        - ...and, if the program work after the crack
+
+        - experience a feeling of great satisfaction
+
+
+
+Since the compiler of our target is Borland C++, I choose the last option due
+
+statistics on my own cracks, about 25-30% of protections schemes applied
+
+to programs that uses high level languages compilers with standard libraries
+
+can be broken this way (stranger than a bit huh?!).
+
+
+
+Ok, let's continue.
+
+
+
+1. Run BRW
+
+        - Load the first file to be snooped: CUNEI.EXE.
+
+
+
+BRW show us:
+
+
+
+BITMAP
+
+  CUNEIFORM_LOGO        // the splash screen logo, rip it off
+
+DIALOG
+
+  ABOUT                 // if we rip this off, goodbye splash screen
+
+  DIALOG_1           
+
+STRINGTABLE
+
+  22
+
+ICON
+
+  CUNEIICON    	
+
+  
+
+Save the file (project), minimize BRW and run Cuneiform.
+
+
+
+Look! The splash screen is gone and the program still works.
+
+
+
+Humm...the CUNEI.EXE did not CRC check, has few resources visible, and seems
+
+to be a shuttle module only.
+
+  
+
+2. The next suspect CUNSDLL.EXE
+
+
+
+Resources shown by BRW:
+
+	  
+
+BITMAP
+
+   BRIGHT_MASK
+
+   :
+
+   :
+
+   PORTRAIT3_PICT
+
+MENU
+
+   MAINMENU      // has, inside HELP menu, the options we will never use after
+
+                 // the crack
+
+DIALOG   
+
+   32   DIALOG SHOWING LICENSING   // this will never appear after the crack,
+
+                                   // so we can rip it off
+
+   :
+
+   Follows dialogs used by the program and should not be removed.
+
+
+
+
+
+Our interest is in the MAINMENU. Let's change it.
+
+ 
+
+POPUP "&Help"
+
+       {
+
+       MENUITEM "&Contents\tF1", 1794
+
+       MENUITEM SEPARATOR                          // not necessary anymore
+
+       MENUITEM "How to &Register...",1810         // forget it dude
+
+       MENUITEM "Tech &Support", 1812              // ask support for this
+
+                                                   // cracked version
+
+                                                   // if you dare
+
+       MENUITEM "&Password and Registration", 1808 // what you think we are
+
+                                                   // trying to do
+
+       MENUITEM "A&bout Cuneiform...", 1796        // we already know who
+
+                                                   // you are
+
+       }
+
+
+
+So, we will stay with Contents F1 just to mantain the Windoze standard.
+
+
+
+Again, save the project, run it and test.
+
+
+
+If you did not messed up anything, the program is still running fine.
+
+
+
+Of course, you still can't save a scanned doc and the "beg screen" also
+
+shows up.
+
+
+
+At this point we know that no effort was made to protect the .EXEs against
+
+external modifications and it is clear that if we find the "weak link dialog"
+
+the chances to defeat the protection by ripping it off are almost 100%.
+
+
+
+3. Now the .DLLs
+
+
+
+ACCUPAGE.DLL    // Accupage driver for HP scanners
+
+APLIB1.DLL      // not interesting for our purpose
+
+APLIB2.DLL      // same
+
+BC30RTL.DLL     // same
+
+
+
+BMP.DLL         // worthless resources, but the program may check
+
+                // if file exist
+
+For this .dll BRW shows:
+
+
+
+BITMAP
+
+   197          // publicity, rip it off
+
+   198          // same, rip it off
+
+   199          // same, rip it off
+
+DIALOG
+
+    93          // rip it off
+
+    95          // rip it off
+
+    98          // rip it off
+
+    99          // rip it off
+
+STRINGTABLE
+
+    401         // rip it off
+
+    416         // rip it off
+
+    800         // rip it off
+
+    820         // rip it off
+
+    900         // rip it off
+
+
+
+Save the project, run it and test.
+
+
+
+The program runs fine.
+
+
+
+CODCTC.DLL      // not interesting for our purpose
+
+CUNCHECK.DLL    // same
+
+CUNOLE.DLL      // same
+
+CUNTWAIN.DLL    // same
+
+C_COMMON.DLL    // same
+
+C_PIXDF.DLL     // same
+
+GROUP4.DLL      // same
+
+HL.DLL          // same
+
+OWLCTC31.DLL    // same
+
+SCANHP.DLL      // same
+
+SCANMK.DLL      // same
+
+SCANPIX.DLL     // same
+
+SG5W30.DLL      // same
+
+TCLASS31.DLL    // same
+
+TGCALL.DLL      // bridge routines, but no resource in this file
+
+TIFF4.DLL       // not interesting for our purpose
+
+TIFFDLL.DLL     // same
+
+
+
+TIGER.DLL       // humm...dangerous at first sight
+
+For this .dll BRW shows:
+
+
+
+CTC 
+
+  COPYRIGHT  	// Cognitive Technologies product number
+
+
+
+My intuition tells me not to remove this resource, but you can do a little
+
+experience yourself:
+
+
+
+        - minimize BRW
+
+        - backup this .DLL
+
+        - maximize BRW
+
+        - rip off the COPYRIGHT resource
+
+        - save the project
+
+        - run Cuneiform and...
+
+
+
+Huah hah hah hah!...You screwd up the program!
+
+
+
+Ok. Calm down, restore the .DLL using the backup you have done (didn't you?).
+
+
+
+The program is running fine again.
+
+
+
+Let's continue our scouting and snooping.
+
+
+
+TRESRC.DLL      // yesss, finaly the resourse we are wanting
+
+For this .dll BRW shows:
+
+
+
+DIALOG
+
+  99            // rip off this damm thing
+
+STRINGTABLE
+
+  22
+
+  32
+
+  100
+
+  :
+
+  :
+
+
+
+Save the project, run, test, test, test.
+
+
+
+Yesss, Yesss, Yesss! Unbelievable easy! And works!
+
+
+
+A program as good as Cuneiform deserves a better protection!
+
+
+
+Enough of ripping off. Let's compare the file size of the original files and
+
+changed ones.
+
+
+
+                Before   After
+
+CUNEI.EXE       109584   27648
+
+CUNSDLL.EXE     531968   536080 
+
+BMP.DLL		316928   5632
+
+TRESRC.DLL	12800    5632
+
+
+
+Quite reasonable amount of disk space saving, so if you BOUGHT this program 
+
+and are really and totally legally using it, as you should, you better 
+
+CRACK IT NEVERTHELESS in order to spare all this wasted space on your own 
+
+harddisk.
+
+
+
+This proves that no routine protected the critical files from being altered,
+
+no tricks, no traps, and despite of the supposed double protection scheme
+
+the program was easily cracked in a few minutes.
+
+
+
+I will not explain why the protection was broken so easily using BRW.
+
+Almost all good developers programming under Windoze API know very well why 
+
+this happens.
+
+
+
+If you are newbie on Windoze API you may learn something about, using the
+
+tutorials you can find somewhere in the net.
+
+
+
+Final notes:
+
+        - sometimes only one tool, well known and well used, can offer
+
+          a miriad of possibilities to reverse engineering
+
+        - you must "feel" the code, but must "see" the resources too
+
+        - Windowze is lame, and IBM is one to blame because throwed
+
+          the towel too early
+
+        - Windowze is lame, and Apple is another to blame because was too
+
+          ambitious and too pretentious, a deserved death.
+
+</PRE><CENTER>
+
+  <HR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 
+
+VSPACE=0 HSPACE=0><A HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 
+
+VSPACE=0 HSPACE=0><A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 
+
+VSPACE=0 HSPACE=0><A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 
+
+VSPACE=0 HSPACE=0><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 
+
+VSPACE=0 HSPACE=0><A HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 
+
+VSPACE=0 HSPACE=0><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database</A><BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 
+
+VSPACE=0 HSPACE=0><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools</A>
+
+<A href="javascript:if(confirm('http://www.dejanews.com/  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.dejanews.com/'" tppabs="http://www.dejanews.com/" onMouseOver="window.status='(A stalking utility :-)'; return true"><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0
+
+VSPACE=0 HSPACE=0></A><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm" onMouseOver="window.status='An amazing useful link'; return true">cocktails</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 
+
+VSPACE=0 HSPACE=0><A HREF="javascript:if(confirm('http://www.fravia.org/ideale.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.fravia.org/ideale.htm'" tppabs="http://www.fravia.org/ideale.htm">antismut CGI-scripts</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 
+
+VSPACE=0 HSPACE=0><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 
+
+VSPACE=0 HSPACE=0><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia</A><BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 
+
+VSPACE=0 HSPACE=0><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering legal?</A>
+
+</CENTER>
+
+<HR>
+
+</BODY>
+
+</HTML>
+
+       
+
+
+

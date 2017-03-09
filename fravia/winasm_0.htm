@@ -1,0 +1,469 @@
+<HTML>
+
+<HEAD>
+
+<META Name="Voluntary Content Rating" content="great!">
+
+
+
+
+
+<TITLE>winasm_0.htm THE RESURRECTION OF ASSEMBLY PROGRAMMING</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR=#C0C0C0 TEXT=#001010 VLINK=#405040><PRE>
+
+		THE RESURRECTION OF ASSEMBLY PROGRAMMING - 0
+
+
+
+                		   -          
+
+			  -----=========-----
+
+      -------==========================================----------
+
+--------=====_masta_'s Tutorial on Win95 ASM Coding Part 0=====---------
+
+      -------==========================================----------
+
+
+
+			     --==INTRO==--
+
+
+
+
+
+Hi, after unsuccessfully searching the for an assembly tutorial on
+
+Win95 I decided to contribute a little one of my own and I hope this
+
+is just one of many to come.
+
+
+
+
+
+		        --==WHAT IS NEEDED?==--
+
+
+
+
+
+	1. Brain ;)
+
+	2. A(n Intel compatible) Computer with Win95
+
+	3. TASM 5.0 (with Tlink, libfiles, etc ...)
+
+	4. An API-Reference (Win32.HLP)
+
+
+
+        ---> most of it can be found on 
+
+	     lžRD «‰LÔG¯'$ f’‹tˆ$tÔ© w¯RL­ ¯F ¢RAcKÔÒG 
+
+	     [>Cracking.home.ml.org<PRE-KNOWLEDGE==--
+
+    
+
+
+
+I assume that you posses at least basic knowledge of Assembly 
+
+language, which every Cracker, Coder (Speedfreak!) should have.
+
+
+
+
+
+
+
+-==WHAT IS SPECIAL ABOUT ASSEMBLY LANGUAGE AND WIN95?==--
+
+
+
+
+
+The main different is the use of API-functions as well as you 
+
+aren't able to use interrupts. The API-parameter are PUSHed
+
+into the stack before the function is called. It runs similar
+
+to C (The last parameter first, then the second-last ...) ...
+
+aditionally upper- and lowercase characters MUST be used in
+
+a certain way:
+
+
+
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Always: "MessageBoxA" <-------------> NEVER!!!: "messageboxa"
+
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+
+
+
+
+
+
+	 --==WHAT WILL WE LEARN IN THIS TUT?==--
+
+
+
+
+
+Simple!: The popular "Hello World" - Demo :-).
+
+
+
+
+
+
+
+		--==HELLO WORLD !!==--
+
+
+
+
+
+These are two words, that every coder has already seen ...
+
+
+
+So first we should think about, how we want to show it on the 
+
+screen. So what I do, is just use a MessageBox and since we
+
+work in Win95 and we want to use FULL 32bit Power, the command
+
+will be "MessageBoxA".
+
+So we switch over to our Api-Reference (Win32.hlp) and search
+
+for "MessageBoxA". This is what we should find:
+
+
+
+---------------------------------------------------------------------
+
+   int MessageBox(
+
+
+
+       HWND  hWnd,	   // handle of owner window
+
+       LPCTSTR  lpText,	   // address of text in message box
+
+       LPCTSTR  lpCaption, // address of title of message box  
+
+       UINT  uType 	   // style of message box
+
+      );
+
+---------------------------------------------------------------------
+
+
+
+-  Since we don't ahve a window, that calles our MessageBox we set
+
+   "hWnd" to zero.
+
+
+
+-  "lpText" will be the offset of our text (where it is stored)
+
+
+
+-  "lpCaption" ---> offset of the Caption
+
+
+
+-  "uType" we set to "0" also, which corresponds to a "normal" 
+
+   MessageBox with a nice OK-button (Type mb_ok)
+
+
+
+
+
+So now let's get started and see the source in ASM ...
+
+
+
+;-------------------------------START--------------------------tut.asm
+
+
+
+			      ; set some options for the assembler
+
+.386P			
+
+Locals
+
+jumps		
+
+
+
+.Model Flat ,StdCall
+
+mb_ok     equ 0               ;mb_ok gets the value "0"
+
+hWnd      equ 0   
+
+lpText    equ offset text     ;set a pointer to the text
+
+lpCaption equ offset caption  ;set a pointer to the caption
+
+
+
+
+
+; declaration of all used API-functions
+
+
+
+extrn     ExitProcess     : PROC     ;procedure to shut down a process
+
+extrn     MessageBoxA     : PROC     ;procedure to show a MessageBox
+
+
+
+; here begins our Data
+
+
+
+.Data                                        
+
+text     db "Hello World",13,10 ; first row of the text(with word-wrap)
+
+         db "_masta_ greets everybody who reads this tut",0
+
+                                ; second row, terminated with "0"
+
+
+
+caption  db "Hello",0 ;Captionstring, 0-terminated
+
+
+
+
+
+; and here we start with our code
+
+
+
+.Code                                  
+
+Main:
+
+				; lets greet the world   :))
+
+
+
+        push mb_ok              ;PUSH value for uType
+
+        push lpCaption          ;PUSH Pointer to Caption
+
+        push lpText             ;PUSH Pointer to Text
+
+        push hWnd               ;PUSH Masterhandle
+
+        call MessageBoxA        ;CALL MessageBoxA
+
+        CALL    ExitProcess     ;End (exit) program
+
+
+
+End Main                        ;End of code, Main is the entrypoint
+
+
+
+;-----------------------------------END------------------------tut.asm
+
+
+
+
+
+You can compile this source with the following "MAKE.BAT"
+
+
+
+------------------------cut here--------------
+
+tasm32 /mx /m3 /z /q tut
+
+tlink32 -x /Tpe /ap /c tut,tut,, import32.lib
+
+------------------------cut here--------------
+
+
+
+and the "import32.lib".
+
+
+
+Well as you see, it is not much, but I hope it it can be a good start to
+
+Windows-coding in ASM for you.
+
+
+
+
+
+
+
+			   --==FINAL WORDS==--
+
+
+
+
+
+This is my first, but surely not my last Tutorial on Assembly-coding for
+
+windows ...
+
+
+
+Ok, hope to CyA all at the next one ....
+
+
+
+
+
+			    --==GREETINX==--
+
+
+
+
+
+VucoeT (Translator [ :) ]), |Caligo| (kewl Page), fravia+ (best on the web),
+
+stone (for the inspiration), not4you, fungus, |Quest|, 
+
+Silvio (where are you ?), Vantmas and every Cracker on this planet ...
+
+
+
+
+
+  -------=====================================================--------
+
+------======everybody was a lamer, before they become ELITE======-------
+
+  -------=====================================================--------
+
+                          -----=========-----
+
+         			   -
+
+</PRE><CENTER>
+
+<HR size=5>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0> 
+
+<A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links </A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0>
+
+<A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity </A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN=BOTTOM
+
+BORDER=0 VSPACE=0 HSPACE=0 width="13" height="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC </A>
+
+
+
+<IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays </A>
+
+
+
+<IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database </A><BR>
+
+<IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut </A>
+
+
+
+<IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 
+
+VSPACE=0 HSPACE=0><A
+
+HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13
+
+BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13
+
+BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="javascri.htm" tppabs="http://www.anticrack.de/fravia/javascri.htm">javascript wars </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia </A><BR>
+
+
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering illegal? </A></CENTER>
+
+<HR size=4></FONT></CENTER></CENTER>
+
+
+
+</BODY>
+
+</HTML>

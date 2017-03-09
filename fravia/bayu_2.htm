@@ -1,0 +1,1266 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>bayu_2.htm bye bye HASP protections, by -bajunny</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR=#CCCCCC TEXT=#001010 VLINK=#405040>
+
+<FONT size=+3><CENTER>
+
+Undocumented HASP</FONT><BR>
+
+by -bajunny<BR>
+
+Part I<BR><BR>
+
+26 February 1998
+
+<HR size=1><A href="index.html" tppabs="http://www.anticrack.de/fravia/index.html"><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALIGN="BOTTOM" 
+
+BORDER="0" VSPACE="0" HSPACE="0" width="13" height="13"></A>Courtesy of Fravia's page of 
+
+reverse engineering</CENTER> <HR size=1>
+
+Great reading for protectionists... <I>what d'you think of all the hype about HASP</I>?<BR>
+
+Great reading for reversers: <I>what about 'secret' tables</I>?<BR>
+
+Great reading for wizards: "<I>On each iteration this is THE SAME boolean. Voila,
+
+no more obscured strong cryptography functions</I>!!" <BR><BR>
+
+<I><CENTER>Well, whoever -bajunny, this <U>great</U> reverser is, here you have a funny, 
+
+well written, astonishing, great anti-hasp tutorial... when I receive 
+
+this kind of good contributions I "feel" the might of Internet... we are 
+
+nothing alone, but once we send a snowball rolling downhill... neither Bill 
+
+himself nor all King's horses will ever be able to stop it! :-)<BR>Yes, dear 
+
+-bajunny, by all means! Send your next essays! Send whatever your cleverness 
+
+will put together for us... (if possible using formamus.htm :-)<BR>
+
+I have NOT edited your work, because it's a great reading 
+
+as it is... your text is humorous, interesting and refreshing... I even left your somewhat 'private' post header 
+
+on the essay, because of the (very sound) Lanaki's 
+
+tip... avec espoir et sans regret, dear -bayunny, I have always thought (especially 
+
+after having seen IDA) that Russian reversers are a race apart!</CENTER></I><PRE>sans espoir et sans regret..<FONT color=purple>
+
+
+
+
+
+    Live long and prosper dear +Fravia!
+
+
+
+  This is my first post to you.. Recently I found your site
+
+(courtesy to Peter Gutmann's links farm) and sit still
+
+for quite a while.. It is SOMETHING.. I only might compare
+
+it to not so many miracles of our time: FSF, Linux, LANAKI's
+
+classical cryptography course.. It's simply GREAT! 
+
+
+
+  Then I decided to tribute in some way, coz ideas 
+
+exchange works this way.. by exchanging ideas, not by 
+
+unilateral dataflow.. Hardly I'll ever be a HCUker so I 
+
+don't cry for you to place my text on your pages. But you'll
+
+be the first person seeing my work. Why? Reasons are given..
+
+I also believe presented material might start completely new
+
+branch in the Project3..
+
+
+
+  I'm confident this text will be useful for many crackers,
+
+coz dongles are everywhere and any serious cracker inevitably
+
+comes one sunny day to crack HIS DONGLE.. 
+
+</FONT>
+
+<HR size=3><FONT size=+3><CENTER>
+
+Undocumented HASP</FONT>
+
+by -bajunny<BR>
+
+Part I<BR><BR>
+
+26 February 1998</CENTER>
+
+               
+
+
+
+    1. Introduction (sorry, too long)
+
+    ---------------------------------
+
+  It is amazing to see how many people believe in strength 
+
+of dongle protection. It can be explained for I have some 
+
+affiliation to ad business and know the cuisine pretty well 
+
+but it is still _very_ amazing. Take HASP for example. 
+
+Some of my fellow programmers, even experienced in cracking 
+
+still admit that HASP is #1 protection in the world because 
+
+of: "..97% rating by.., sophisticated API.., ..irreversible 
+
+encryption". Well, decrypting irreversible encryptions is 
+
+my hobby and as for ratings.. Ratings favor who paid more and 
+
+are shit by itself. Just don't pay attention, ratings are for 
+
+stupid jerks like my fellows from ad business. What's left? 
+
+API? Well, we will analyze it a little and I believe you won't 
+
+pay a cent of confidence to HASP superiority at the end 
+
+of this text.
+
+
+
+  What we have in our surgery? I am not an expert in 
+
+electrical engineering but still know how to handle soldering 
+
+iron :)  Actually, on may _see_ HASP internals without any 
+
+destruction if got hands over any full HASP software 
+
+distribution - there are pictures out there, I recommend 
+
+ASIC.TIF.. As far as I can imagine, HASP is nothing more than 
+
+modest EEPROM (I'm going to deal with only LPT-pluggable 
+
+MemoHasp here) plus Programmable Logic (factory burned they 
+
+say) plus some flip-flops and power grabber. You send commands,
+
+it changes internal state and sometimes provides you with 
+
+response. Clear picture? Not yet. There's a gap between 
+
+our API calls and actual data sent and read and I'll do my 
+
+best to present to you some findings to shorten the gap. 
+
+
+
+  An important notice: I claim that all presented material has
+
+been tested on MemoHASP-I devices only (I found four dongles 
+
+in the neighborhood). I see no particular reason why 
+
+it shouldn't work on other LPT-ing HASP dongles. Whenever 
+
+different behavior is assumed, I'll put appropriate warning. 
+
+But once again: I've tested only Memos.. If you are interested,
+
+all this was explored during torturing of funny buggy proggy
+
+called InscriberVMP. I still like her: no envelope, pure
+
+API calls, no checksumming in memory, no anti-softicing..
+
+
+
+  Let's begin with API function #2. HaspCode they call it if 
+
+I am not mistaken. BTW, better got your copy of HASPMAN.PDF
+
+from someplace or read Zafer's essay to understand what this
+
+funny API names mean. This function got from you some 
+
+unimportant crap like port number, and more valuable SeedValue
+
+and HaspPassword. If the last was correct API will supply you
+
+with four 16bit numbers on return - The Great Magic Numbers of 
+
+HaspCode. If not - you'll got a bunch of zeros. As we'll see,
+
+the word Seed* gives us a clue, but now just realize that 
+
+those four numbers are base for almost any protection, 
+
+including enveloping.
+
+
+
+  Poor programmer has to pepper flow of execution of his 
+
+proggy by those moronic API calls (not only func #2), gathers
+
+cryptic four-numbers and apply them for smth protective. 
+
+As many of you dear crackers already demonstrated, sometimes
+
+all protection ends in a trivial jxx beggar_off_bad_guy, 
+
+but sometimes not. As for my Inscriber proggy, it has a pool
+
+of 13 coded HASP responses and on some event asks HASP 
+
+for one of them anew, performing various jmp beggar_off later, 
+
+if it fails. Yeah, it could be easily patched the usual way, 
+
+but still not in one place. I decided it would be more cool 
+
+to write full HASP emulator - and did it! So left this proggy 
+
+alone, we are going to crack HASP - it is much more exciting.
+
+
+
+  Here's a bit of necessary information on LPT ports in case
+
+you have no clue (shame!). There are three common addresses 
+
+where one may find LPT port: x3BC x378 and x278. You can 
+
+consult BIOS data area at 0:408+ to find out which address
+
+correspond to which LPT. I took x378 as the base for LPT1. 
+
+For our HASP business only following is of relevance:
+
+
+
+  x378 data send port, only write command/data bytes here
+
+  
+
+  x379 status port, only read, bit 5 stands for PAPER_OUT
+
+       signal, HASP will fire 0/1 here, talking back to us
+
+  x37A control port, earlier versions used to write x0c here, 
+
+       but modern ones seem to cancel this
+
+       practice; usually it served as dongle power source,
+
+       by firing 0th bit wire (STROBE signal) 
+
+       dongle circuitry recharges; HASP uses another 
+
+       mechanism.. don't care..
+
+
+
+    2. Four Magic Numbers
+
+    ---------------------
+
+  Here's a useful add-on to HASP docs: full disclosure of 
+
+"HaspCode" API#2 call internals.  
+
+  ...
+
+  byte  buff[8];
+
+  ...
+
+  do
+
+  {
+
+    do
+
+    {
+
+      seed *= 0x1989; // ooh I see that healthy smile of you
+
+      seed += 5;      // dear crypto fellows ;)
+
+      buff[i] <1;
+
+      buff[i] |= ask_hasp( seed>>8);
+
+    }
+
+    while(..) // 8 times
+
+    i++;
+
+  }
+
+  while(..) // 8 times
+
+  ...
+
+on_return:
+
+  AX = buff[1]buff[0]
+
+  BX = buff[3]buff[2]
+
+  CX = buff[5]buff[4]
+
+  DX = buff[7]buff[6]
+
+  // You see them as resulting four 16bit numbers.
+
+
+
+  So this fragment just generates pseudorandom numbers from
+
+the given seed, feeds them to HASP and places resulting bits 
+
+to buffer. In fact, only 6 bits are actually digested! Each 
+
+time HASP performs a calculation of 64-to-one boolean, to
+
+conclude. On each iteration this is THE SAME boolean. Voila,
+
+no more obscured strong cryptography functions!! 
+
+
+
+  Not so easy, though. Without appropriate activation, HASP
+
+fires back only 1s.. Exactly this will happen if you supply
+
+wrong password, but software just zeros all xFF for you.
+
+BTW, there's undocumented extension: if you supply 0:0 as a
+
+password for API#2, HASP fires you back not with zeros, but
+
+with xBB58, xE11F, x7A86, xDCD9 quad regardless of SeedValue.
+
+No mystery though. In this case default seed of x1DE3 and
+
+default boolean are used. What's the heck is default boolean?
+
+ 
+
+  Ooh, here's the juicy part of boolean story. My research 
+
+detected two booleans in every MemoHASP: which I called 
+
+default and secret. If you activated HASP correctly, secret
+
+function is awakened, if _gently_ not-so-correctly, default
+
+one, and if you send complete gibberish or nothing at all,
+
+eat xFFFF.. So I will picture two such booleans here as neat
+
+8x8 tables (you see, it is much more understandable than 
+
+looong 64bit strings) Left top corner corresponds to x00, 
+
+right bottom to x3F, usual sequential reading order from
+
+left to right, top to bottom.. (I am an european type)
+
+
+
+    default                 secret
+
+
+
+0 1 0 1 0 0 0 0         0 1 0 1 1 0 0 1
+
+0 1 0 1 0 0 0 0         1 1 0 1 1 0 0 0
+
+0 1 1 1 0 0 1 1         0 1 0 0 0 0 0 1
+
+0 1 1 1 0 0 1 1         1 1 0 0 0 0 0 0
+
+1'1 1 1 1 1 1 1         0 1 1 1 1 0 1 1
+
+0 1 0 1 0 0 0 0         1 1 1 1 1 0 1 0
+
+1'1 1 1 1 1 1 1         0 1 1 0 0 0 1 1
+
+0 1 1 1 0 0 1 1         1 1 1 0 0 0 1 0
+
+
+
+  Well, did you see any random patterns here? Especially in
+
+"secret" table? Believe me, all four different MemoHASPs exhibit
+
+this funny patterns with affine booleans as columns.. But it's
+
+the theme for another more cryptographically-intensive text.. 
+
+So now just realize once you know this two booleans, you can 
+
+throw your old good HASPEDIT utility away to dark corner and 
+
+generate all this magic numbers without HASP assistance. I 
+
+actually demonstrated this to my fellow software developers. 
+
+Boyz, were they paralyzed!
+
+
+
+  One moment, still what use is of default boolean?? You see,
+
+it is THE FUNCTION to decide whether it is HASP that is plugged
+
+in the port. I have confidence, that all MemoHASPs and
+
+(most probably) simple HASP-3 devices have this very function.
+
+Memo-4 MUST have another, and Time-4 the other one. For I never
+
+tested them, I cannot give relevant tables here but I suppose 
+
+they may be similar, with some columns swapped. It is due to 
+
+intricacies of detection mechanism, that I will omit here for
+
+some space/time limitations, sorry..
+
+
+
+  Some peculiarity: if one didn't raise MSB (see commented in
+
+bitcode()), bits marked with ' will be 0s.. Feature?.. 
+
+
+
+    3. HASP password.
+
+    -----------------
+
+  All this fiddling with booleans is fun, but there's a cloud
+
+on our sunny sky: even if you have a HASP and its password,
+
+you still have to delve into protection code to fish the
+
+tables, because wily API closes HASP device on return.. Sorry,
+
+one substantial addition here: you CAN reconstruct secret table
+
+by calling API#2 many times (I believe, two times usually are
+
+sufficient, especially with knowledge of its expected symmetry).
+
+But what if no password is at your disposal? Such a neat
+
+HASP device in your hand, but completely useless without 
+
+these two 16bit words.. Ooh, nevermind, my little proggy in 
+
+appendix will reveal password to you and even show tables..
+
+So it is the time to unveil some HASP password secrets..
+
+
+
+  First, one MAY bruteforce the password.. But searchspace
+
+is 2**32, HASP is unique (as they say) and API functions spend
+
+our valuable time in useless en/decryptions. Well, after 
+
+looking at booleans I definitely begin to realize that there
+
+must be something "fishy" with passwords. Result: REAL
+
+searchspace is 5**6 or just 15625 which is definitely less
+
+than awful 2**32 (I suspect HASP MIGHT melt down on such 
+
+a huge keysearch BTW).
+
+
+
+  Now I will briefly sketch HASP passwording so my proggy
+
+be more understandable. First, two numbers supplied by you 
+
+are XORed, 1st with x1989 (see magic numbers pseudocode
+
+above, these guys obviously cherished this number) while
+
+2nd with x0108. Resulting 4bit nibbles are used as indexes 
+
+in some substitution table later. To make life more 
+
+complicated, 8 nibbles are "stretched", composing 15-byte
+
+resulting table, where first eight elements are genuine
+
+nibbles (with xF substed for x0) and the rest is composed
+
+from 7 of this nibbles by adding 7 mod 16 (reverse order!) 
+
+and again killing zeros. Not very clear? Well, it's all 
+
+unimportant but I still give the picture: suppose, your 
+
+passwd was x5AA8:x866D
+
+XORing gives:
+
+5AA8  866D
+
+1989  0108
+
+-----------
+
+4321  8765 , so array of nibbles-indices will be
+
+
+
+ 1, 2, 3, 4, 5, 6, 7, 8, F, E, D, C, B, B, 9
+
+                          special case ^^^
+
+No zeros encountered, if so, they would be transformed to Fs.
+
+  ...
+
+  for(i=0;i<8;i++)
+
+  {
+
+    arr[i] = nibble[i];
+
+    if( 0==arr[i]) arr[i] = 15;
+
+    if( i)
+
+    {
+
+      arr[15 -i] = (arr[i] +7) & 15;
+
+      if( 0==arr[15 -i]) arr[15-i] = 15;
+
+    }
+
+  }
+
+  arr[ 13] = 11; // don't ask me why.. till part II
+
+  ...
+
+  But that's not the end! This indices are used to retrieve 
+
+some data from substitution_table[15], which in turn will be 
+
+transformed later in a kinky way, giving depending on 
+
+some variable setting two variant of additions (see resulting
+
+pair1/pair2 in my proggy). This IS relevant however.
+
+See, each element has only one bit set someplace, and there's
+
+no two equal pairs (if we make pair as {pair1[i],pair2[i]}).
+
+
+
+  So how exactly HASP is unlocked? There's one more 15-byte
+
+array, copy of it can be found as raw0. Each byte of it is 
+
+disturbed by XORing with result of password
+
+obfuscation (this array of x04, x08, x10, x20, x40 values, 
+
+they are in-the-clair only in proggy, in actual HASP they 
+
+are dynamically expanded into filler[]-values ) Well, it is 
+
+still incomplete! According to settings of some variable 
+
+(as I've already said) BUT ONLY first EIGHT bytes can be 
+
+encoded in two different ways (I almost going' stir crazy 
+
+explaining it..)
+
+
+
+  Well, our hypothetical sequence once again:
+
+
+
+ 1  2  3  4  5  6  7  8  F  E  D  C  B  B  9
+
+
+
+raw0 array always holds:
+
+8a f8 da ba 94 c8 a8 80 92 d0 b0 8c 9e dc bc
+
+
+
+(Variable set to 1)
+
+XOR raw0 with:         |< ignore variable after 8th byte!
+
+40 40 20 40 20 10 40 20 04 08 10 20 40 40 10
+
+                       |
+
+                       |
+
+(Variable set to 0)    |
+
+XOR raw0 with:         |
+
+20 10 10 08 08 08 04 04 04 08 10 20 40 40 10
+
+
+
+  Both sequences will unlock our HASP.
+
+
+
+  I hope your brain still ain't fatally damaged, so let's
+
+continue with the heart of passwd cracking. This weird 
+
+two-variant scheme seemed very suspicious to me. I thought 
+
+on it, tried, thought, tried again. Definitely for the eight 
+
+first bytes only complement variants are allowed, if you XOR 
+
+the first with 08 for example, HASP would not unlock. More 
+
+interesting, variants ARE INTERCHANGEABLE all the way through 
+
+first eight bytes.. What if no XORing at all?!! IT WORKS!
+
+And it gives me only the last 7 numbers as a headache.
+
+Well, actually only 6, because the last but one is 
+
+predetermined (ooh, those HASP designers..) But now I have
+
+to spend only 5 variant for each! This is where 5**6 was
+
+distilled, BTW. And after I will find this opening combination
+
+I can proceed with the first eight bytes, isolating EACH
+
+and trying all 15 pair compositions on it! Hey presto..
+
+
+
+  Well, one more iceberg: what if I found a xF, substed
+
+for x0 in the original passwd? Theoretically, it can be
+
+resolved by looking at the tail. But 14th byte is constant,
+
+what's then? Not a tragedy, though. The password obtained
+
+is usable for your HASP even if it it not "genuine". One
+
+more speculation: I never met this situation to date, 
+
+and HASP people probably didn't as well :) So use my little 
+
+proggy, and if it won't give you desired passwd you know where 
+
+it smells rat..
+
+
+
+  BTW, ever wonder why all HASP-3 passwords (you can see
+
+demo ones in docs) have first number even while MemoHASPs
+
+odd? It is principal: API#5 distinguishes them by this
+
+feature, and so did one internal function before deciding
+
+to fetch/place something into HASP memory.. No more secrets!
+
+
+
+-- to be continued ------------------------------------------
+
+  Well, more than enough for the first part. So I didn't
+
+give you any concrete description of how to patch every
+
+HASP-protected proggy neither did I provide you with
+
+totally new cracking technique.. But instead you have some
+
+unique information on "how the thing works". You see, 
+
+sometimes "black boxes" are much simple than you are
+
+forced to believe.
+
+
+
+Plans for the future ( part II):
+
+  - fiddling with HASP memory read/writes
+
+  - HASP ID demystified
+
+  - EPROM or EEPROM??
+
+  - HASP software/nightmare (PCS and all that..)
+
+  
+
+I desperately need more information on HASP devices.
+
+Especially on applicability of abovementioned to 
+
+TimeHASPs. You see, there's a lot of new functions 
+
+inside HASP module just for them I start to worry..
+
+If I'll find the time (and/or definitely if I'll find 
+
+the TimeHASP :) I will certainly analyze it.
+
+
+
+    APPENDIX.
+
+    ---------
+
+  Here is presented to your attention rather simple but
+
+workable HASP password finder. It won't teach you style
+
+but might help to understand all the crap I typed above.
+
+
+
+  Z12_KLUDGE was added just before posting: you see, 
+
+this proggy didn't work on one PC (and modern one, 
+
+with Pentium-II, some problem with ports) so I made this
+
+quick & dirty patch. Anyway, due mirror of actual HASP code 
+
+"be.class" tppabs="http://fravia.org/be.class" better, but it needs bit-level manipulation I have 
+
+no desire to litter my already imperfect proggy.. 
+
+Maybe next time..
+
+</prE><XMP>
+
+// HASP password detector/cracker
+
+// ---- a REAL tool -------------
+
+// (c)1998 by -bajunny
+
+// All Rights Reversed, All Lefts Righted 
+
+// allowed for noncommercial usage, weird things happen
+
+// on corporate PCs..
+
+// set correct PORT (and write down inportb/outportb 
+
+//  primitives if you don't use Watcom/Borland..)
+
+
+
+#include <STDIO.h>
+
+#include <DOS.h>
+
+
+
+#define PORT   0x378  // 0x3bc, 0x378, 0x278..
+
+
+
+#define Z12_KLUDGE
+
+int z1, z2;
+
+
+
+#ifdef __WATCOMC__
+
+
+
+void outportb( int, int);
+
+int inportb( int);
+
+
+
+#pragma aux outportb = "out dx, al" parm [edx] [eax];
+
+#pragma aux inportb = "in al, dx" parm [edx];
+
+
+
+#endif
+
+
+
+void outbyte( int v)
+
+{
+
+  outportb( PORT, v);
+
+  outportb( PORT, v|1); // the way they are CONTROLLED
+
+}
+
+
+
+int bitcode( int v)
+
+{
+
+//  outportb( PORT, v);
+
+  outportb( PORT, v |0x80);
+
+  v = inportb( PORT +1);
+
+  return (v & 0x20) ? 1 : 0;
+
+}
+
+
+
+int get_result( char *cmd)
+
+{
+
+  int i, j, res;
+
+
+
+  outportb( PORT +2, 0x0c);
+
+//outportb(PORT,0x80);
+
+  outbyte( 0xc6);
+
+
+
+  for( i=0; i<13; i++) outbyte( cmd[i]);
+
+  outbyte( cmd[i]);
+
+  res = inportb( PORT +1);
+
+  i++;
+
+  res <<= 8;
+
+  outbyte( cmd[i]);
+
+  res |= inportb( PORT +1);
+
+
+
+#ifdef Z12_KLUDGE
+
+  for( z2=j=0; j < 64; j++)   z2 += bitcode(j<<1);
+
+//  if(z2==32) res = 0x5f5f; 
+
+  if(z2!=0 && z2!=64 && z2!=z1) res = 0x5f5f; 
+
+#endif
+
+
+
+  return res;
+
+}
+
+
+
+char raw0[15] =
+
+{
+
+  0x8a, 0xf8, 0xda, 0xba, 0x94, 0xc8, 0xa8, 0x80,
+
+  0x92, 0xd0, 0xb0, 0x8c, 0x9e, 0xdc, 0xbc
+
+};
+
+
+
+char tmp[15] = { 0};
+
+
+
+char filler[6] = { 0x40, 0x20, 0x10, 0x08, 0x04, 0x02};
+
+
+
+char pair1[15] =
+
+{
+
+  0x40, 0x40, 0x20, 0x40, 0x20, 0x10, 0x40, 0x20,
+
+  0x10, 0x08, 0x40, 0x20, 0x10, 0x08, 0x04
+
+};
+
+char pair2[15] =
+
+{
+
+  0x20, 0x10, 0x10, 0x08, 0x08, 0x08, 0x04, 0x04,
+
+  0x04, 0x04, 0x02, 0x02, 0x02, 0x02, 0x02
+
+};
+
+
+
+int try_pair_index( int n)
+
+{
+
+  char tmp1[15], tmp2[15];
+
+  int i;
+
+  for( i=0; i<15; i++) tmp1[i] = tmp2[i] = tmp[i];
+
+  for( i=0; i<15; i++)
+
+  {
+
+    tmp1[n] ^= pair1[i];
+
+    tmp2[n] ^= pair2[i];
+
+    if( 0x5f5f==get_result(tmp1) && 0x5f5f==get_result(tmp2))
+
+      return i+1;
+
+    tmp1[n] ^= pair1[i];
+
+    tmp2[n] ^= pair2[i];
+
+  }
+
+  return 0;
+
+}
+
+
+
+unsigned int tab[64];
+
+
+
+void emulate_func2( unsigned short seed)
+
+{
+
+  int i, j;
+
+  unsigned char ch[8];
+
+
+
+  for(i=0;i<8;i++)
+
+  {
+
+    ch[i] = 0;
+
+    for(j=0;j<8;j++)
+
+    {
+
+      seed *= 0x1989;
+
+      seed += 5;
+
+      ch[i] |= (tab[(seed>>9)&0x3f]) <7-j);
+
+    }
+
+    printf("%02x ", ch[i]);
+
+  }
+
+  printf("\n");
+
+}
+
+
+
+void main()
+
+{
+
+  int i, j, k, found = -1;
+
+
+
+  setbuf( stdout, NULL);
+
+  z1 = 0;
+
+  get_result( raw0);
+
+  
+
+  printf("Default table\n");
+
+  for(i=0;i< 64;i++)
+
+  {
+
+    tab[i] = bitcode(i<<1);
+
+    printf("%d ", tab[i]);
+
+    if((i+1)%8==0) printf("\n");
+
+    z1 += tab[i];
+
+  }
+
+
+
+  for( j=0; j<8; j++) tmp[j] = raw0[j];
+
+  tmp[13] = 0x9c;
+
+  
+
+  for( i=0; i<5*5*5*5*5*5; i++)
+
+  {
+
+    if((i+1)%1000 == 0) printf(".");
+
+    k = i;
+
+    for( j=8; j<13; j++) 
+
+    {
+
+      tmp[j] = filler[k%5] ^ raw0[j];
+
+      k /= 5;
+
+    }
+
+    tmp[14] = filler[k%5] ^ raw0[14];
+
+    
+
+    if( 0x5f5f == get_result(tmp))
+
+    {  
+
+      printf("\b+");
+
+      if( found!=-1) printf("Warning: already found!\n");
+
+      found = i;
+
+    }
+
+  }
+
+
+
+  k = found;
+
+  for( j=8; j<13; j++) 
+
+  {
+
+    tmp[j] = filler[k%5] ^ raw0[j];
+
+    k /= 5;
+
+  }
+
+  tmp[14] = filler[k%5] ^ raw0[14];
+
+
+
+  printf("\nHASP password: %01x%01x%01x%01x %01x%01x%01x%01x\n",
+
+    try_pair_index(3) ^ 0x1,
+
+    try_pair_index(2) ^ 0x9,
+
+    try_pair_index(1) ^ 0x8,
+
+    try_pair_index(0) ^ 0x9,
+
+    try_pair_index(7) ^ 0x0,
+
+    try_pair_index(6) ^ 0x1,
+
+    try_pair_index(5) ^ 0x0,
+
+    try_pair_index(4) ^ 0x8
+
+  );
+
+
+
+  get_result( tmp);
+
+  printf("\nSecret table\n");
+
+  for(i=0;i< 64;i++)
+
+  {
+
+    tab[i] = bitcode(i<<1);
+
+    printf("%d ", tab[i]);
+
+    if((i+1)%8==0) printf("\n");
+
+  }
+
+  outbyte( 0xc6); // have a good sleep, Mr. HASP!
+
+
+
+  emulate_func2( 0x0000);
+
+  emulate_func2( 0x0001);
+
+  emulate_func2( 0x1234);
+
+}
+
+// ------------- end of transmission -----------------</xmp>
+
+
+
+<HR size=2><CENTER>
+
+<I>You are deep inside fravia's page of reverse
+
+engineering, choose your way out:</I></CENTER>
+
+<BR>
+
+<CENTER>
+
+<A href="project3.htm" tppabs="http://www.anticrack.de/fravia/project3.htm"><IMG SRC="project3.gif" tppabs="http://www.anticrack.de/fravia/project3.gif" ALT="dongles" ALIGN=BOTTOM 
+
+WIDTH=114 HEIGHT=43 BORDER=0 VSPACE=0 HSPACE=0></A><BR>
+
+<FONT color=gray>Back to dongles</FONT>
+
+
+
+<BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0"
+
+VSPACE="0" HSPACE="0" width="13" height="13"><A HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage </A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" width="13" height="13"> <A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links
+
+</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13"
+
+BORDER="0" VSPACE="0" HSPACE="0" NATURALSIZEFLAG="0"> <A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity
+
+</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" width="13" height="13"><A
+
+HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0"
+
+VSPACE="0" HSPACE="0" width="13" height="13"><A HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays </A><IMG SRC=
+
+"bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" width="13" height="13"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools
+
+</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" width="13" height="13"><A
+
+HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails </A><BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" width="13" height="13"><A
+
+HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database </A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="javascri.htm" tppabs="http://www.anticrack.de/fravia/javascri.htm">Javascript wars</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut CGI-scripts</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER=
+
+"0" VSPACE="0" HSPACE="0" width="13" height="13"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms </A><IMG SRC=
+
+"bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" width="13" height="13"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia+
+
+</A><BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" width="13" height="13"><A
+
+HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">is reverse engineering legal? </A></FONT></CENTER>
+
+
+
+</BODY>
+
+</HTML>
+

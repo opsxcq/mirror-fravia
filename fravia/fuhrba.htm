@@ -1,0 +1,1412 @@
+<html> <HTML>
+
+<HEAD>
+
+<TITLE>fuhrba.htm</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+<CENTER><FONT size="+3">Simple unix busting</FONT>
+
+<BR>(the microphar dongle galore)
+
+  <BR>
+
+<H4><BR>by Dr. Fuhrball<BR>
+
+(6 November 1997)</H4><BR>
+
+<A href="project3.htm" tppabs="http://www.anticrack.de/fravia/project3.htm"><IMG SRC="project3.gif" tppabs="http://www.anticrack.de/fravia/project3.gif" ALT="projecy3" ALIGN="BOTTOM" WIDTH="114" HEIGHT="43" BORDER="0" VSPACE="0" HSPACE="0"></A>
+
+<BR><FONT color="gray">Dongle cracking</FONT>
+
+
+
+<HR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">Courtesy of fravia's page 
+
+of reverse engineering<BR>       
+
+<BR><I>Well, I have received this good essay more than a week ago, yet I bat 
+
+Dr. Fuhrball to 'deepen' it a little, since many of our readers could be VERY 
+
+interested in unix cracking, yet may not be very well acquinted with some of 
+
+the concepts that unix experts give for granted. Dr Fuhrball was so kind to 
+
+modify and revise his essay. Here it is, I'm sure many of you will find it 
+
+partiicularly interesting.</I><HR size="6"><PRE><FONT size="+2">
+
+Simple unix busting</FONT>
+
+by Dr. Fuhrball<BR>
+
+modified 6 November 1997</CENTER> 
+
+
+
+I have read all of the student essays, and none refer
+
+to unix and only two refer to dongles. This essay refers
+
+to both and indicates some techniques.
+
+
+
+HISTORY:
+
+The unix lineage for X86 based architecture goes back to
+
+the original Xenix for 286 that microsoft produced back in
+
+1983 with source code bought from AT&amp;T for about 1 Million
+
+dollars. About 6 months after the purchase of source code
+
+from AT&amp;T, AT&amp;T started selling source code to anyone with
+
+65 to 250 thousand dollars. Billy boy got a bit miffed and
+
+split of the Xenix product to Santa Cruz Operation (SCO).
+
+SCO has been producing Unix ever since. They have significantly
+
+added to the line with networking from Lachman and Sun, and
+
+X windows from MIT. SCO openserver 5 is a highly integrated
+
+and slick product, but its fairly expensive too. If you are
+
+at a University however you can get the product for virtually
+
+nothing.
+
+
+
+MAJOR NOTE: you need root password to do all of this.
+
+
+
+
+
+
+
+The product in question is Aries which is a 3d graphics
+
+package that runs on Sco openserver5. Similar to autocad
+
+in function, its about 100 times more powerful. And about
+
+5 times as expensive. It drives SLA's (stereo lithography
+
+aparatus) directly. (argon ion laser writes on nasty
+
+chemical which turns solid creating 3d shapes). It also
+
+drives my hobby mill in the basement.
+
+
+
+Anyway this program comes with a microphar (french) dongle
+
+which is basically a few gates and a national semiconducor
+
+eeprom nmc9306 (32 words). A lot of the dongles out there
+
+use this part, because of its extremely low consumption of
+
+power. Its serial 2 wire interface and open collector output
+
+make it perfect for attachment to a printer port.
+
+
+
+There are a number of ways to break this thing. Since I have
+
+an MSEE (Master of Science, Electrical Engineering),
+
+my first inclination is to hook up the logic analyzer
+
+and look at whats going on. I have now seen at least 5 different
+
+dongles that all use the national semiconductor eeprom, in various
+
+creative ways, but its basically the same thing. The logic analyzer
+
+trick certainly works, because you can see the entire data stream
+
+and if you wanted to you could create a completely compatable device
+
+which combined with a small software program would allow you to read
+
+out all of the data, and then program it into your own device. However
+
+the use of dongles tends to cause other problems, especially with
+
+most new bi-directional laser printers. So the desire to remove the
+
+device is preferable. The logic analyzer method relys on the fact
+
+that there is really only one data output line, one clock line and
+
+one data input line. The rest of the lines are either do not care, or
+
+held in a high or low state to enable the device.
+
+
+
+(The new Rainbow technologies software sentinel pro is just a fancied
+
+version of same, with the addition of their 8 shift register with
+
+adjustable feedback of old), 100% proprietary of course.
+
+
+
+Of Course I also have a MSCS (Master of Science, Computer Science),
+
+and that lends me to the software crack. Which is elegant because it
+
+does not touch the origional aries code. And thats good, because the
+
+main executable is over 10mb. And with their update of the month club,
+
+you could be cracking this thing for the rest of your life. In addition
+
+there are 6 different executables that would need cracking.
+
+This crack once installed, lasts forever.
+
+
+
+Back to the story;
+
+
+
+
+
+When you install this program it adds a device driver that
+
+talks to the dongle.
+
+
+
+In all unix's, virtually everything is done with device drivers.
+
+hard disk, serial ports, ethernet ports, the video display...
+
+You can even access memory through a device driver.
+
+
+
+
+
+Virtually all X86 based unix's today based on AT&amp;T 5.4 code do
+
+the following in exactly the same manner.
+
+(SCO,Interactive, UHC, Consensys, Novell Unix....)
+
+(BSDI and Solaris are different however but these tricks still hold)
+
+
+
+
+
+running strings on Driver.o module in the /etc/conf/pack.d/mp shows
+
+among others the following symbols.
+
+
+
+(all unix drivers are stored in /etc/conf/pack.d/drivername and consist
+
+of an object module and possibly a C tunables file called space.c)
+
+(also on new unix's, these directorys are actually symbolicly linked
+
+to somewhere else)
+
+
+
+mpopen, mpclose, mpread, mpwrite...
+
+
+
+So now we have the names to look at in kernel space.
+
+
+
+Fire up adb on /unix and disassemble starting at mpopen and you get
+
+
+
+(one of the nice things about unix is that you can always get to
+
+kernel space, but be careful patching a live kernel)
+
+</PRE><XMP>
+
+dumpfile = /dev/mem, namelist = /unix, outfile = stdout
+
+&gt; 
+
+mpopen              pushl  %ebp
+
+mpopen+1            movl   %esp,%ebp
+
+mpopen+3            subl   $0x0,%esp
+
+mpopen+9            pushl  %ebx
+
+mpopen+a            pushl  %edi
+
+mpopen+b            pushl  %esi
+
+mpopen+c            testb  $0x1,0xd00ee570         [-,valeur_port +1c]
+
+mpopen+13           je     0x0c <D0093559>         [mpopen+25]
+
+mpopen+19           movb   $0x10,0xe00010e9        [-,u+10e9]
+
+mpopen+20           jmp    0x012 <D009356B>        [mpopen+37]
+
+mpopen+25           data16 
+
+mpopen+26           movw   $0x1,0xd00ee570         [-,valeur_port +1c]
+
+mpopen+2e           data16 
+
+mpopen+2f           movw   $0x0,0xd00ee572         [valeur_port +1e]
+
+mpopen+37           popl   %esi
+
+mpopen+38           popl   %edi
+
+mpopen+39           popl   %ebx
+
+mpopen+3a           leave  
+
+mpopen+3b           ret    
+
+
+
+mpclose             pushl  %ebp
+
+mpclose+1           movl   %esp,%ebp
+
+mpclose+3           subl   $0x0,%esp
+
+mpclose+9           pushl  %ebx
+
+mpclose+a           pushl  %edi
+
+mpclose+b           pushl  %esi
+
+mpclose+c           data16 
+
+mpclose+d           movw   $0x0,0xd00ee570         [valeur_port +1c]
+
+mpclose+15          popl   %esi
+
+mpclose+16          popl   %edi
+
+mpclose+17          popl   %ebx
+
+mpclose+18          leave  
+
+mpclose+19          ret    
+
+</XMP><PRE>
+
+The rest has been deleted for brievity
+
+Anyway, its obviously C code, virtually
+
+all unix drivers are. So lets dis-compile
+
+the whole thing, which once you get the
+
+knack, goes quite quick.
+
+
+
+Also note that good C compilers generate code thats
+
+so obvious that its easy to dis-compile.
+
+
+
+Here is the dis-compiled code
+
+
+
+It took about 3 hours with my favorite drink
+
+which is 50 year old single malt north highlands
+
+SCOTCH. I did have a bottle of real russian vodka
+
+once, but in the USA, its virtually impossible to find.
+
+
+
+Notice that its still in french. They did not even
+
+have the brains to strip the debugging symbols out
+
+of the final Driver.o module which made dis-compilation
+
+that much easier.
+
+
+
+One thing that makes this easier is that at any point
+
+you can re-compile and compare to the original object
+
+module. At some point they will both be the same except
+
+for the compile date.
+
+</PRE>
+
+<XMP>
+
+/* original microphar dongle driver */
+
+/* I assume they don't own a copyright on this thing */
+
+
+
+#include <SYS/TYPES.h>
+
+#include <SYS/ERRNO.h>
+
+#include <SYS/PARAM.h>
+
+#include <SYS/SYSMACROS.h>
+
+#include <SYS/SIGNAL.h>
+
+#include <SYS/DIR.h>
+
+#include <SYS/SEG.h>
+
+#include <SYS/PAGE.h>
+
+#include <SYS/USER.h>
+
+
+
+struct valeur_port {
+
+unsigned char p;
+
+unsigned short p8;
+
+unsigned char pa,pb,pc,pd;
+
+unsigned short p10,p12,p14,p16,p18,p1a,p1c;
+
+short p1e,p20;
+
+unsigned short p22;
+
+short p24;
+
+}valeur_port;
+
+
+
+extern char fvect;
+
+extern struct xnet{
+
+unsigned char p14,p15,p16,p17,p18;
+
+}xnet;
+
+
+
+
+
+mpopen(dev,flag)
+
+short int dev,flag;
+
+{
+
+if (valeur_port.p1c &amp; 0x1)
+
+	u.u_error=EBUSY;
+
+else
+
+{
+
+	valeur_port.p1c=1;
+
+	valeur_port.p1e=0;
+
+}
+
+}
+
+mpclose(dev,flag)
+
+short int dev,flag;
+
+{
+
+	valeur_port.p1c=0;
+
+}
+
+mpwrite(dev,flag)
+
+short int dev,flag;
+
+{
+
+while ((valeur_port.p20 = cpass()) &gt;= 0)
+
+{
+
+switch (valeur_port.p1e) {
+
+case 0 :
+
+	if(valeur_port.p20 == 'P')
+
+	{
+
+	valeur_port.p1e=1;
+
+	valeur_port.p22=0;
+
+	}	
+
+	break;
+
+case 1 :
+
+	w1();
+
+
+
+default:
+
+	break;
+
+}
+
+}
+
+}
+
+
+
+w1()
+
+{
+
+unsigned int temp;
+
+	if (valeur_port.p20 != '*')
+
+	{
+
+	if (valeur_port.p20 &gt;= '0')
+
+		{
+
+		if (valeur_port.p20 <= '9') { valeur_port.p22="valeur_port.p22*10;" valeur_port.p22="valeur_port.p22+(valeur_port.p20-0x30);" return; } } return; } else { valeur_port.p1e="0;" temp="spl5();" valeur_port.p24="valeur_port.p22;" if (valeur_port.p24="=" 0) valeur_port.p24 +="1;" driver(); splx(temp); } } mpread(dev,flag) short int dev,flag; { unsigned int temp; temp="0x2710;" /* 10000 */ valeur_port.p8 +="valeur_port.p22;" valeur_port.p8 ^="0x79b;" /*1947*/ valeur_port.p8 | 0xfedc); passc(0x30); while (temp> 0)
+
+	{
+
+	passc((valeur_port.p8/temp)+'0');
+
+	valeur_port.p8= valeur_port.p8 % temp;
+
+	temp=temp/10;
+
+	}
+
+	passc('\n');
+
+}
+
+sort(number)
+
+unsigned char number;
+
+{
+
+unsigned short temp;
+
+temp=valeur_port.p1a;
+
+iooutb(temp,number);
+
+tempo();
+
+}
+
+alimentation()
+
+
+
+/* this is the one that mixes up the output lines */
+
+
+
+{
+
+unsigned int temp;
+
+valeur_port.p=0;
+
+sort(0);
+
+for (temp=0;temp <0X28; temp++) alea(); valeur_port.p="valeur_port.pa;" sort(valeur_port.p); } _fin() { valeur_port.p &="~valeur_port.pb;" sort(valeur_port.p); valeur_port.p |="valeur_port.pc;" sort(valeur_port.p); valeur_port.p &="~valeur_port.pc;" sort(valeur_port.p); valeur_port.p &="~valeur_port.pd;" sort(valeur_port.p); valeur_port.p="0;" sort(0); } tempo() { short temp; for (temp="0;temp" < 0xa;temp++); } lecturemot(var1,var2) unsigned short var1,var2; { unsigned short temp; char temp1; char temp1a; unsigned short temp2; short temp3; temp2="0;" temp="0;" fvect="ioinb(valeur_port.p1a);" alimentation(); do { operation(0x80,var1); valeur_port.p |="valeur_port.pc;" sort(valeur_port.p); temp1="lecture_bit();" valeur_port.p &="~valeur_port.pc;" sort(valeur_port.p); lecture_bit(); temp="temp&lt;&lt;1;" if (temp1="=0)" ++temp; ++temp2; } while (temp2 < 0x10); valeur_port.p |="valeur_port.pc;" sort(valeur_port.p); valeur_port.p &="~valeur_port.pc;" sort(valeur_port.p); _fin(); sort(fvect); return(temp); } operation(oper,oper2) unsigned short oper,oper2; { unsigned short temp1; unsigned short temp; valeur_port.p |="valeur_port.pb;" sort(valeur_port.p); valeur_port.p |="valeur_port.pd;" sort(valeur_port.p); valeur_port.p |="valeur_port.pc;" sort(valeur_port.p); valeur_port.p &="~valeur_port.pc;" sort(valeur_port.p); switch (oper) { case 0 : case 0x10: case 0x20: case 0x30: oper2="oper;" break; default: oper2 |="oper;" } for (temp="0;temp&lt;8;temp++)" { if (temp1 & 0x80) { valeur_port.p |="valeur_port.pd;" sort(valeur_port.p); } else { valeur_port.p |="~valeur_port.pd;" sort(valeur_port.p); } tempo(); valeur_port.p |="valeur_port.pc;" sort(valeur_port.p); valeur_port.p |="valeur_port.pc;" sort(valeur_port.p); valeur_port.p &="~valeur_port.pc;" sort(valeur_port.p); temp1="temp1&lt;&lt;1;" } valeur_port.p &="~valeur_port.pd;" sort(valeur_port.p); } lecture_bit() { unsigned char temp1; unsigned char temp2; unsigned short temp3; temp3="valeur_port.p1a;" temp1="0xff;" temp3++; tempo(); temp2="ioinb(temp3);" temp1 &="temp2;" temp1 &="0x40;" return(temp1); } etatci() { unsigned short temp1,temp2,temp3,temp4; temp3="0x3e8;" temp4="0;" valeur_port.p &="~valeur_port.pb;" sort(valeur_port.p); valeur_port.p &="~valeur_port.pd;" sort(valeur_port.p); tempo(); valeur_port.p|="valeur_port.pc;" sort(valeur_port.p); valeur_port.p &="~valeur_port.pc;" sort(valeur_port.p); valeur_port.p |="valeur_port.pb;" sort(valeur_port.p); tempo(); valeur_port.p |="valeur_port.pc;" sort(valeur_port.p); do { valeur_port.p |="valeur_port.pc;" sort(valeur_port.p); temp1="(unsigned" char)lecture_bit(); valeur_port.p |="valeur_port.pc;" sort(valeur_port.p); lecture_bit(); if (temp4++>0x10)
+
+{
+
+if (temp1 ==0)
+
+goto more;
+
+} 
+
+}
+
+while (--temp3 !=0);
+
+more:
+
+temp2=0x3e8-temp3;
+
+tempo();
+
+valeur_port.p &amp;= ~valeur_port.pb;
+
+sort(valeur_port.p);
+
+valeur_port.p |= valeur_port.pc;
+
+sort(valeur_port.p);
+
+valeur_port.p &amp;= ~valeur_port.pc;
+
+sort(valeur_port.p);
+
+valeur_port.p |= valeur_port.pb;
+
+sort(valeur_port.p);
+
+return(temp2);
+
+}
+
+
+
+ewactif()
+
+{
+
+operation(0x30,0);
+
+valeur_port.p &amp;= ~valeur_port.pb;
+
+sort(valeur_port.p);
+
+tempo();
+
+}
+
+ewinactif()
+
+{
+
+operation(0,0);
+
+valeur_port.p &amp;= ~valeur_port.pb;
+
+sort(valeur_port.p);
+
+tempo();
+
+}
+
+
+
+effacemot(oper)
+
+unsigned short oper;
+
+{
+
+unsigned short temp1,temp2;
+
+alimentation();
+
+ewactif();
+
+operation(0xc0,oper);
+
+temp1=etatci();
+
+if(temp1!=0);
+
+ewinactif();
+
+_fin();
+
+return(temp1);
+
+}
+
+
+
+ecritcode(oper,oper1)
+
+unsigned short oper,oper1;
+
+{
+
+unsigned short temp1,temp2;
+
+temp2=0x10;
+
+alimentation();
+
+ewactif();
+
+operation(0xc0,oper);
+
+temp1=etatci();
+
+if (temp1==0)
+
+{
+
+_fin();
+
+return(temp1);
+
+}
+
+operation(0x40,oper);
+
+do {
+
+if ((oper1 &amp; 0x8000))
+
+{
+
+valeur_port.p |= valeur_port.pd;
+
+sort(valeur_port.p);
+
+goto more2;
+
+}
+
+valeur_port.p &amp;= ~valeur_port.pd;
+
+sort(valeur_port.p);
+
+more2:
+
+valeur_port.p |= valeur_port.pc;
+
+sort(valeur_port.p);
+
+valeur_port.p |= valeur_port.pc;
+
+sort(valeur_port.p);
+
+valeur_port.p &amp;= ~valeur_port.pc;
+
+sort(valeur_port.p);
+
+oper1=oper1<1; } while (--temp2 !="0);" temp1="etatci();" if (temp1 !="0)" ewinactif(); _fin(); return(temp1); } choixnumero() { valeur_port.p16="0;" calcul_masque(); valeur_port.p1a="0x3bc;" valeur_port.p14="lecturemot(0x3f);" if (valeur_port.p18 !="valeur_port.p14)" { valeur_port.p1a="0x378;" valeur_port.p14="lecturemot(0x3f);" if (valeur_port.p18 !="valeur_port.p14)" { valeur_port.p1a="0x278;" valeur_port.p14="lecturemot(0x3f);" if (valeur_port.p18 !="valeur_port.p14)" valeur_port.p16="1;" } } } alea() { unsigned char temp1,temp2,temp3,temp4; temp2="rnd();" temp3="rnd()" & 3; temp3++; do { sort(~valeur_port.pa & temp2); tempo(); tempo(); tempo(); tempo(); tempo(); temp2="~temp2;" sort(~valeur_port.pa & temp2); tempo(); tempo(); tempo(); tempo(); tempo(); temp2="~temp2;" } while (--temp3 ); sort(valeur_port.p="0);" tempo(); tempo(); tempo(); } calcul_masque() { valeur_port.pa="1&lt;&lt;(xnet.p14-2);" valeur_port.pb="1&lt;&lt;(xnet.p17-2);" valeur_port.pc="1&lt;&lt;(xnet.p16-2);" valeur_port.pd="1&lt;&lt;(xnet.p15-2);" valeur_port.p18="xnet.p14;" valeur_port.p18*="10;" valeur_port.p18+="xnet.p15;" valeur_port.p18*="10;" valeur_port.p18+="xnet.p16;" valeur_port.p18*="10;" valeur_port.p18+="xnet.p17;" } lecture() { valeur_port.p14="lecturemot(valeur_port.p10);" } ecrit(oper) unsigned char *oper; { unsigned short temp1; unsigned char temp2,temp3; unsigned short temp4; temp1="valeur_port.p12;" temp2="valeur_port.p10;" valeur_port.p10="valeur_port.p10">&gt;2;
+
+valeur_port.p10 +=0x20;
+
+temp4=ecritcode(valeur_port.p10,temp1);
+
+valeur_port.p14=lecturemot(valeur_port.p10);
+
+if (temp1==valeur_port.p14)
+
+if (temp4==0)
+
+valeur_port.p16=1;
+
+if (valeur_port.p16==1)
+
+{
+
+*oper=1;
+
+return;
+
+}
+
+valeur_port.p12=temp1;
+
+valeur_port.p10=temp2;
+
+temp4=ecritcode(valeur_port.p10,temp1);
+
+if (valeur_port.p16!=1)
+
+if (temp4==0)
+
+{
+
+*oper=0x1;
+
+return;
+
+}
+
+*oper=0x0;
+
+}
+
+driver()
+
+{
+
+haltscheduler();
+
+choixnumero();
+
+if (valeur_port.p16==1)
+
+{
+
+valeur_port.p8=0;
+
+goto more3;
+
+}
+
+valeur_port.p14=lecturemot(0x1f);
+
+valeur_port.p8=valeur_port.p14;
+
+more3:
+
+freescheduler();
+
+}
+
+
+
+haltscheduler()
+
+{
+
+int temp2;
+
+for (temp2=0;temp2<0X1FFFF;++temp2); } freescheduler() { unsigned int temp1; } rnd(number) unsigned short number; { int temp; temp="valeur_port.p24" & 0x2000; if (temp!="0)" valeur_port.p24^="0x1;" valeur_port.p24="valeur_port.p24&lt;&lt;1;" if (temp!="0)" valeur_port.p24|="1;" return(valeur_port.p24); } dec_adjust() { /* not used */ } </xmp><PRE>
+
+Whats going on here. A bunch of mucking around to hide
+
+the real and trivial protection stuff. Also various
+
+ands, ors, and inverts to further hide the data, plus
+
+moving around more than the one data line and clock
+
+line to the eeprom to throw off my Tektronix 7d01/df2
+
+logic analyzer. (NOT)
+
+
+
+Before going any further it helps to print out and study
+
+this driver. It shows many things including the required
+
+entry points, and functions that pass strings to and from
+
+kernel space. Device drivers must pay strict attention to
+
+memory and stack usage, as well as calling most intrinsic
+
+functions. Thats why for example in the code below debugging
+
+strings have to be written to the Common Error routine instead
+
+of calling another driver. In virtually all cases one device
+
+driver cannot call another.
+
+
+
+
+
+Back to the story
+
+
+
+
+
+Basically you write to the device driver a &quot;P#####*&quot;
+
+and when you issue a read call you get an ascii string as the answer.
+
+
+
+The ##### is an ascii number between 0 and 65535
+
+
+
+for example P0*   P00*     P1234*
+
+
+
+
+
+further example
+
+
+
+cat &gt;/dev/mp
+
+
+
+type in P1234* 
+
+
+
+hit a control Z
+
+
+
+cat &lt;/dev/mp
+
+
+
+5678
+
+
+
+
+
+So now lets write a simple program which when compiled and
+
+run with the output re-directed to the file &quot;datafile&quot;
+
+generates all 64K possible output answers without having
+
+to really figure out the entire thing.
+
+
+
+The algorithm part of the software sentinel pro works in
+
+exactly the same fashion. (Until you realize that its just
+
+an 8 bit shift register with tapped feedback, then its easy)
+
+
+
+
+
+What we are doing here is taking the simple way out. Instead
+
+of figuring out the 32 words of data in the eeprom and then
+
+calculating the masks, we just interrogate every possible
+
+request and tabulate every possible answer. If this was a
+
+32 bit number, this technique would not be practical.
+
+
+
+
+
+Furthermore, if Aries actually wrote to the eeprom (which it
+
+definitely does not), we would have to do a bunch more work.
+
+The eeproms used in this device have a maximum write capacity
+
+of between 10,000 and 100,000, and since aries interrogates the
+
+device more than once a minute, writing to it is impractical.
+
+
+
+Thus</PRE>
+
+<XMP>
+
+/* read data from real microphar dongle */
+
+/* using the real driver and a real key */
+
+
+
+#include <STDIO.h>
+
+#include <SIGNAL.h>
+
+#include <ERRNO.h>
+
+
+
+FILE *fps,*fopen();
+
+
+
+main()
+
+{
+
+unsigned lvalue,address;
+
+
+
+fps=fopen(&quot;/dev/mp&quot;,&quot;r+&quot;);
+
+
+
+printf(&quot;unsigned int data[] = {&quot;);
+
+
+
+for (address=0; address<=65535; address ++) { fprintf(fps,"P%d*",address); fseek(fps,0L,0); fscanf(fps,"%d",&lvalue); printf("%d , ",lvalue); } printf("}"); fclose(fps); } </xmp><PRE>
+
+which generates int data [] = {#,#,#,#.....}
+
+
+
+
+
+Pretty simple huh. OH, and yes this takes a while
+
+to run. (about 15 minutes)
+
+
+
+
+
+Now lets hack the origional device driver removing
+
+lots and lots of useless garbage. We cannot null out the
+
+open and close routines, because they prevent re-entrancy.
+
+
+
+Thus</PRE>
+
+<XMP>
+
+#include <SYS/TYPES.h>
+
+#include <SYS/ERRNO.h>
+
+#include <SYS/PARAM.h>
+
+#include <SYS/SYSMACROS.h>
+
+#include <SYS/SIGNAL.h>
+
+#include <SYS/DIR.h>
+
+#include <SYS/SEG.h>
+
+#include <SYS/PAGE.h>
+
+#include <SYS/USER.h>
+
+#include <SYS/CMN_err.h>
+
+
+
+#include &quot;datafile&quot;
+
+
+
+struct valeur_port {
+
+	unsigned char p;
+
+	unsigned short p8;
+
+	unsigned char pa,pb,pc,pd;
+
+	unsigned short p10,p12,p14,p16,p18,p1a,p1c;
+
+	short p1e,p20;
+
+	unsigned short p22;
+
+	short p24;
+
+}valeur_port;
+
+
+
+mpopen(dev,flag)
+
+short int dev,flag;
+
+{
+
+	if (valeur_port.p1c &amp; 0x1)
+
+		u.u_error=EBUSY;
+
+	else
+
+	{
+
+		valeur_port.p1c=1;
+
+		valeur_port.p1e=0;
+
+	}
+
+}
+
+mpclose(dev,flag)
+
+short int dev,flag;
+
+{
+
+	valeur_port.p1c=0;
+
+}
+
+mpwrite(dev,flag)
+
+short int dev,flag;
+
+{
+
+	while ((valeur_port.p20 = cpass()) &gt;= 0)
+
+	{
+
+		switch (valeur_port.p1e) {
+
+		case 0 :
+
+			if(valeur_port.p20 == 'P')
+
+			{
+
+				valeur_port.p1e=1;
+
+				valeur_port.p22=0;
+
+			}
+
+			break;
+
+		case 1 :
+
+			w1();
+
+
+
+		default:
+
+			break;
+
+		}
+
+	}
+
+}
+
+
+
+w1()
+
+{
+
+	unsigned int temp;
+
+	if (valeur_port.p20 != '*')
+
+	{
+
+		if (valeur_port.p20 &gt;= '0')
+
+		{
+
+			if (valeur_port.p20 <= '9') { valeur_port.p22="valeur_port.p22*10;" valeur_port.p22="valeur_port.p22+(valeur_port.p20-'0');" return; } } return; } else { /* this was added for debugging and is now removed*/ /*cmn_err (CE_NOTE,"!%x,",valeur_port.p22);*/ valeur_port.p1e="0;" valeur_port.p8="data[valeur_port.p22];" } } mpread(dev,flag) short int dev,flag; { unsigned int temp; temp="0x2710;" /* 10000 */ passc(0x30); while (temp> 0)
+
+	{
+
+		passc((valeur_port.p8/temp)+'0');
+
+		valeur_port.p8= valeur_port.p8 % temp;
+
+		temp=temp/10;
+
+	}
+
+	passc('\n');
+
+}
+
+</XMP><PRE>
+
+Now we compile this thing, call it Driver.o, replace their driver
+
+with our own (saving theirs someplace safe), relink and install
+
+the unix kernel, and bye bye dongle.
+
+
+
+To compile, install and link the kernel do;
+
+
+
+cc mp.c -o Driver.o
+
+
+
+mv Driver.o /etc/conf/pack.d/mp
+
+
+
+cd /etc/conf/cf.d
+
+
+
+./link_unix          (thats dot slash link underscore unix)
+
+
+
+after rebuilding the kernel (takes about 5 minutes) it will
+
+ask if you want to install the kernel as default.
+
+
+
+Answer yes.
+
+
+
+Then it will ask whether you want the environment rebuilt.
+
+
+
+The answer here does not matter. But for example if you have
+
+changed major and minor device numbers (which we have not) you
+
+would have to answer yes, because device names in the /dev directory
+
+would no longer be pointing to the right place.
+
+
+
+Now reboot    (type init 0)    and you are done.
+
+
+
+
+
+In addition, all the utilites necessary to break this come as
+
+part of the operating system (use the crippled C compiler or get
+
+GCC). This is unlike Windows95 where you need softice, wdasm,...
+
+
+
+What we have seen here is that parallel port dongles used on
+
+unix boxes give virtually worthless protection, far easier
+
+than their dos/windows counterparts. They all fail the
+
+freddy the freeloader part of the fiat-shamir zero knowledge test!
+
+
+
+Matter of fact, a lot of things fail the fiat shamir test. Go search
+
+the web, lots of good reading on this topic.
+
+
+
+
+
+And while we are on the subject of fiat-shamir, the biggest failure
+
+on this so far is the DSS-02 smart cards for the DSS receivers in
+
+the USA market. The pirates are making way too much money selling
+
+solutions that do not work for long. Look people it does not make
+
+sense. Why give a pirate $500 for a T or L or Battery card, which
+
+1.5 years later croaks permanantly, just to buy the latest twiddled
+
+H card for another $500, and then buy the shim card for another 500.
+
+Its way cheaper to legally subscribe (Canada is a different story).
+
+This is something that needs to be brought to the grass-roots level.
+
+The latest card is way to easy to twiddle. Lets put the people that
+
+are strictly in this for the money out of buisness. We know who you
+
+are. I personally do not have a DSS, and because i have a REAL dish,
+
+I am not likely to ever get one. (4dtv is another story). And since
+
+I live in the USA, I will NOT get involved in DSS activities...
+
+
+
+
+
+
+
+Soon will come an essay on the Rainbow Technologies Software
+
+sentinel superpro. Which can also be busted numerous ways.
+
+And just slightly harder. I now have a virtually 100 percent working
+
+programable hardware solution. And yes you can read the algorithm
+
+and time keys out of the device. Although you can certainly crack
+
+this via the software methods, or replace their driver with another,
+
+A downloadable version of a hardware emulator can make this quite
+
+easy to use.
+
+
+
+Also an essay on breaking protection on the EESOF (now hp)
+
+touchstone, montecarlo, linecalc and other high priced spreads.
+
+hint( one cmos 8 bit eprom size &gt;128 bytes, 8 diodes, one cap,
+
+one cmos buss transiever). The hardware solution here was just
+
+too simple to ignore.
+
+
+
+
+
+Other fun targets. The protection DEC uses on their unix that runs
+
+on the alpha motherboards. This one could be fairly tough.
+
+
+
+Other fun targets: serial dongles (like netsentinel). Almost as
+
+easy, you have to create a shim between the program and the real
+
+tty driver...
+
+
+
+
+
+       later            Dr. Fuhrball</PRE>
+
+
+
+<FONT color="green">(c) Dr. Fuhrball. All rights reversed</FONT>
+
+<HR ALIGN="CENTER" WIDTH="100%" SIZE="3">
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</I></CENTER>
+
+<BR><CENTER>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="project3.htm" tppabs="http://www.anticrack.de/fravia/project3.htm">project3</A> 
+
+           <HR width="33%">
+
+
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut CGI-scripts</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering legal?</A></CENTER>
+
+<CENTER><HR ALIGN="CENTER" WIDTH="100%" SIZE="2"></CENTER>
+
+</BODY>
+
+</HTML>
+
+
+
+
+
+
+

@@ -1,0 +1,673 @@
+<HTML>
+<HEAD>
+<META Name="Voluntary Content Rating" content="it's fravia's: great!">
+<TITLE>volati_s.htm: Manually Unpacking - ASPack v1.083, by +tsehp</TITLE>
+</HEAD>
+<BODY BGCOLOR=#C0C0C0 TEXT=#001010 ALINK=#405040 VLINK=#8850AA><P><CENTER>
+<A href="projunpa.htm" tppabs="http://www.anticrack.de/fravia/projunpa.htm"><IMG SRC="packers.gif" tppabs="http://www.anticrack.de/fravia/packers.gif"  ALT="packers" ALIGN=BOTTOM 
+WIDTH=114 HEIGHT=43 BORDER=0 VSPACE=0 HSPACE=0></A>
+<BR><BR>
+
+<H1>Manually Unpacking - ASPack v1.083<BR>by Volatily July 1999</H1><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+ALT="red" ALIGN=BOTTOM WIDTH=88% HEIGHT=5 BORDER=0
+VSPACE=0 HSPACE=0><BR><BR> 
+
+<I>
+Manually Unpacking... Volatily's essay (with a little too much code, maybe... hope 
+that next version of this will have more explanations and less code :-) 
+is well worth reading <U>and</U> experimenting on your own. 
+<BR>Read and enjoy!
+</I></CENTER>
+<HR>
+<PRE>
+Web: <A href="javascript:if(confirm('http://www.immortaldescendants.com/  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.immortaldescendants.com/'" tppabs="http://www.immortaldescendants.com/">http://www.ImmortalDescendants.com</A>   
+  
+Author: Volatility              
+  
+                     Date: 07/01/99                
+  
+        Topic: Manually Unpacking - ASPack v1.083  
+  
+               Level: Beginner/Intermediate        
+  
+                                                   
+  
+
+=========================================================================
+INTRODUCTION:
+=========================================================================
+
+I'm sure you've heard, by now, about packed programs. 
+If you haven't, it
+will be a topic worth learning about, because more and
+more newer 
+applications are being packed.  This essay deals
+specifically with ASPack
+v1.08.03, but may provide information on unpacking
+some of the other many
+packers out there.  I haven't tested my methods on
+other versions of 
+ASPack, or other packers, so it may work!
+
+It will be extremely useful to print this essay if
+you're going to follow
+it step by step.  It would be rather difficult to
+follow if you're just
+referring to it on your computer.  Some word wrapping
+problems will occur
+but you should still have no problems understanding
+it.
+
+=========================================================================
+TOOLS NEEDED:
+=========================================================================
+
+1. NuMega Soft-Ice (any version for windows)
+2. uCF's ProcDump
+3. ASPack v1.08.03
+
+=========================================================================
+THE ESSAY:
+=========================================================================
+
+A Bit About Packed Programs:  Software authors pack
+their programs mainly
+for two reasons, first, a packer dramatically reduces
+the program's file
+size, saving hard drive space.  Second, packers can
+make the job of a
+reverser a tough one, since you can't get an accurate
+disassembly of the
+file.  The original program is "wrapped" inside the
+code of the packer,
+which hides the original code.  When you execute the
+program, you're 
+actually executing the packer's code first.  The
+packer, in turn, unpacks
+the original application into memory, so that it can
+execute.  This is 
+where we will stop execution of the program - the
+point where our program
+is unpacked in memory.  We can then "dump" the program
+to disk, and after
+a little PE header editing (not discussed in great
+detail in this essay),
+we will have a copy of the original unpacked program!
+
+Instead of searching all over for a program that has
+been packed with
+ASPack v1.08.03, we can simplify things by packing our
+own program!  I'm
+going to choose one that you're familiar with -
+Windows 95/98's 
+Calculator (calc.exe)!
+
+The first thing we must do, is pack the program (make
+sure this is a copy
+of calc.exe, not the original!).  Open calc.exe with
+ASPack, and it will
+start packing the program.  Once finished, you can
+"Test It" if you wish,
+then exit ASPack.
+
+Now that our program is packed, let's load it into
+Soft-Ice's Symbol
+Loader (File, Open Module).  Now let's run it (Module,
+Load).  Soft-Ice
+doesn't break!!! Why?  Here is a small explanation
+from Miz's excellent
+essay:
+
+=========================================================================
+BEGIN MIZ'S ESSAY SNIPPET
+=========================================================================
+Ooops...SIce loader doesn't stop at the entrypoint
+like we asked it to.  
+Hmmmm...Why is that?
+
+Well the answer lies in the PE format! (Told you this
+stuff was 
+important)
+
+Lets take a look at it in ProcDump, via the 'PE Editor
+Option':-
+
+First thing we spot is that the packer entry point
+(PEP) is 0x00006046.
+
+Lets look at the section containing the PEP:-
+Well we can see it's the .text section and the
+characteristics are 
+0xC0000040
+
+What does this mean? Well, lets take alook at winnt.h
+to see......
+
+[Excerpt from WinNT.h]
+................................
+// Section characteristics.
+#define IMAGE_SCN_TYPE_NO_PAD 0x00000008 // Reserved.
+#define IMAGE_SCN_CNT_CODE 0x00000020 // Section contains code.
+#define IMAGE_SCN_CNT_INITIALIZED_DATA 0x00000040 //Section contains initialized data.
+#define IMAGE_SCN_CNT_UNINITIALIZED_DATA 0x00000080 //Section contains uninitialized data.
+#define IMAGE_SCN_LNK_OTHER 0x00000100 // Reserved.
+#define IMAGE_SCN_LNK_INFO 0x00000200 // Section contains comments or some other type of information.
+#define IMAGE_SCN_LNK_REMOVE 0x00000800 // Section contents will not become part of image.
+#define IMAGE_SCN_LNK_COMDAT 0x00001000 // Section contents comdat.
+#define IMAGE_SCN_NO_DEFER_SPEC_EXC 0x00004000 // Reset speculative exceptions handling 
+						bits in the TLB entries for this section.
+#define IMAGE_SCN_GPREL 0x00008000 // Section content can be accessed relative to GP
+#define IMAGE_SCN_MEM_FARDATA 0x00008000
+#define IMAGE_SCN_MEM_PURGEABLE 0x00020000
+#define IMAGE_SCN_MEM_16BIT 0x00020000
+#define IMAGE_SCN_MEM_LOCKED 0x00040000
+#define IMAGE_SCN_MEM_PRELOAD 0x00080000
+#define IMAGE_SCN_ALIGN_1BYTES 0x00100000 //
+#define IMAGE_SCN_ALIGN_2BYTES 0x00200000 //
+#define IMAGE_SCN_ALIGN_4BYTES 0x00300000 //
+#define IMAGE_SCN_ALIGN_8BYTES 0x00400000 //
+#define IMAGE_SCN_ALIGN_16BYTES 0x00500000 // Default alignment if no others are specified.
+#define IMAGE_SCN_ALIGN_32BYTES 0x00600000 //
+#define IMAGE_SCN_ALIGN_64BYTES 0x00700000 //
+#define IMAGE_SCN_ALIGN_128BYTES 0x00800000 //
+#define IMAGE_SCN_ALIGN_256BYTES 0x00900000 //
+#define IMAGE_SCN_ALIGN_512BYTES 0x00A00000 //
+#define IMAGE_SCN_ALIGN_1024BYTES 0x00B00000 //
+#define IMAGE_SCN_ALIGN_2048BYTES 0x00C00000 //
+#define IMAGE_SCN_ALIGN_4096BYTES 0x00D00000 //
+#define IMAGE_SCN_ALIGN_8192BYTES 0x00E00000 //
+#define IMAGE_SCN_LNK_NRELOC_OVFL 0x01000000 // Section contains extended relocations.
+#define IMAGE_SCN_MEM_DISCARDABLE 0x02000000 // Section can be discarded.
+#define IMAGE_SCN_MEM_NOT_CACHED 0x04000000 // Section is not cachable.
+#define IMAGE_SCN_MEM_NOT_PAGED 0x08000000 // Section is not pageable.
+#define IMAGE_SCN_MEM_SHARED 0x10000000 // Section is shareable.
+#define IMAGE_SCN_MEM_EXECUTE 0x20000000 // Section is executable.
+#define IMAGE_SCN_MEM_READ 0x40000000 // Section is readable.
+#define IMAGE_SCN_MEM_WRITE 0x80000000 // Section is writeable.
+.................................
+
+From this we can see that our 0xC0000040 actually means:-
+
+0xC0000040 = IMAGE_SCN_MEM_READ | IMAGE_SCN_MEM_WRITE | IMAGE_SCN_CNT_INITIALIZED_DATA 
+^^^^^^^^^^^^^^^^^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Read Write Initialized Data
+
+
+Hmmm - but we know that SIce loader won't break on
+entry unless we specify that
+this section contains *CODE*, and we should also
+specify that it is executable.
+
+So (Using ProcDump) change the Section Characteristics
+for the .text section to 0xE0000020.
+
+0xE0000020 = IMAGE_SCN_MEM_EXECUTE |IMAGE_SCN_MEM_READ | IMAGE_SCN_MEM_WRITE |IMAGE_SCN_CNT_CODE
+^^^^^^^^^^^^^^^^^^^^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ ^^^^^^^^^^^^^^^^^^
+Executable Read Write Contains Code
+
+Does SIce loader break in now? Yes it does!
+=========================================================================
+END MIZ'S ESSAY SNIPPET
+=========================================================================
+
+If you don't completely understand this, don't worry. 
+You can read more
+about PE information later.  What we need to know from
+this info, is how
+to make Soft-Ice break via Symbol Loader, to do this,
+perform the 
+following steps:
+
+1. Run Procdump, and click on the "PE Editor" button.
+2. Choose your packed calc.exe file.
+3. Click on the "Sections" button.
+4. Right click on the first line (.text) and choose
+"Edit Section".
+5. Change the "Section Characteristics" from C0000040
+to E0000020.
+6. Click "OK", and exit Procdump.
+
+With these steps completed, open, and load the program
+in Symbol Loader
+again.  Now Soft-Ice breaks!
+
+Now we're in the packer's code.  The key to getting to
+the end of this
+code, and the place we need to unpack the original
+program, is by 
+setting several BPX's to get through the loops.  If
+you try to do this
+manually, without setting breakpoints, it could take
+hours (or days? I
+never tried it).
+
+Below is all the code from my Symbol Loader log file. 
+I've commented on
+where to set the breakpoints, and on important lines. 
+My comments are
+precedeed by "***".
+
+NOTE: The address numbers may be different on your PC,
+but the last three
+will be the same (XXX:XXXXX712).
+
+=========================================================================
+SYMBOL LOADER LOG FILE 
+=========================================================================
+015F:01017000  PUSHAD
+015F:01017001  CALL    01017006
+015F:01017006  POP     EBP
+015F:01017007  SUB     EBP,00444A0A
+015F:0101700D  MOV     EBX,00444A04
+015F:01017012  ADD     EBX,EBP
+015F:01017014  SUB     EBX,[EBP+004450B1]
+015F:0101701A  CMP     DWORD PTR [EBP+004450AC],00
+015F:01017021  MOV     [EBP+00444EBB],EBX
+015F:01017027  JNZ     01017544                 (NO JUMP)
+015F:0101702D  LEA     EAX,[EBP+004450D1]
+015F:01017033  PUSH    EAX
+015F:01017034  CALL    [EBP+00445194]
+015F:0101703A  MOV     [EBP+004450CD],EAX
+015F:01017040  MOV     EDI,EAX
+015F:01017042  LEA     EBX,[EBP+004450DE]
+015F:01017048  PUSH    EBX
+015F:01017049  PUSH    EAX
+015F:0101704A  CALL    [EBP+00445190]
+015F:01017050  MOV     [EBP+004450B9],EAX
+015F:01017056  LEA     EBX,[EBP+004450EB]
+015F:0101705C  PUSH    EBX
+015F:0101705D  PUSH    EDI
+015F:0101705E  CALL    [EBP+00445190]
+015F:01017064  MOV     [EBP+004450BD],EAX
+015F:0101706A  MOV     EAX,[EBP+00444EBB]
+015F:01017070  MOV     [EBP+004450AC],EAX
+015F:01017076  PUSH    04
+015F:01017078  PUSH    00001000
+015F:0101707D  PUSH    0000049A
+015F:01017082  PUSH    00
+015F:01017084  CALL    [EBP+004450B9]
+015F:0101708A  MOV     [EBP+004450B5],EAX
+015F:01017090  LEA     EBX,[EBP+00444ACF]
+015F:01017096  PUSH    EAX
+015F:01017097  PUSH    EBX
+015F:01017098  CALL    01017565
+015F:0101709D  MOV     ECX,EAX
+015F:0101709F  LEA     EDI,[EBP+00444ACF]
+015F:010170A5  MOV     ESI,[EBP+004450B5]
+015F:010170AB  SAR     ECX,02
+015F:010170AE  REPZ MOVSD
+015F:010170B0  MOV     ECX,EAX
+015F:010170B2  AND     ECX,03
+015F:010170B5  REPZ MOVSB
+015F:010170B7  MOV     EAX,[EBP+004450B5]
+015F:010170BD  PUSH    00008000
+015F:010170C2  PUSH    00
+015F:010170C4  PUSH    EAX
+015F:010170C5  CALL    [EBP+004450BD]
+015F:010170CB  LEA     EAX,[EBP+00444C37]
+015F:010170D1  PUSH    EAX
+015F:010170D2  RET
+015F:01017233  MOV     EBX,[EBP+00444ADF]
+015F:01017239  OR      EBX,EBX
+015F:0101723B  JZ      01017247                               (JUMP )
+015F:01017247  LEA     ESI,[EBP+00444AF7]
+015F:0101724D  CMP     DWORD PTR [ESI],00
+015F:01017250  JZ      01017365                              (NO JUMP)
+015F:01017256  LEA     EAX,[EBP+004450D1]
+015F:0101725C  PUSH    EAX
+015F:0101725D  CALL    [EBP+00445194]
+015F:01017263  MOV     [EBP+004450CD],EAX
+015F:01017269  MOV     EDI,EAX
+015F:0101726B  LEA     EBX,[EBP+004450DE]
+015F:01017271  PUSH    EBX
+015F:01017272  PUSH    EAX
+015F:01017273  CALL    [EBP+00445190]
+015F:01017279  MOV     [EBP+004450B9],EAX
+015F:0101727F  LEA     EBX,[EBP+004450EB]
+015F:01017285  PUSH    EBX
+015F:01017286  PUSH    EDI
+015F:01017287  CALL    [EBP+00445190]
+015F:0101728D  MOV     [EBP+004450BD],EAX
+015F:01017293  LEA     ESI,[EBP+00444AF7]
+015F:01017299  MOV     EAX,[ESI+04]
+015F:0101729C  PUSH    04
+015F:0101729E  PUSH    00001000
+015F:010172A3  PUSH    EAX
+015F:010172A4  PUSH    00
+015F:010172A6  CALL    [EBP+004450B9]
+015F:010172AC  MOV     [EBP+004450B5],EAX
+015F:010172B2  PUSH    ESI
+015F:010172B3  MOV     EBX,[ESI]
+015F:010172B5  ADD     EBX,[EBP+004450AC]
+015F:010172BB  PUSH    EAX
+015F:010172BC  PUSH    EBX
+015F:010172BD  CALL    01017565
+015F:010172C2  CMP     EAX,[ESI+04]
+015F:010172C5  JZ      010172D2                           (JUMP )
+015F:010172D2  CMP     BYTE PTR [EBP+004450B0],00
+015F:010172D9  JNZ     01017316                           (NO JUMP)
+015F:010172DB  INC     BYTE PTR [EBP+004450B0]
+015F:010172E1  PUSH    EAX
+015F:010172E2  PUSH    ECX
+015F:010172E3  PUSH    ESI
+015F:010172E4  PUSH    EBX
+015F:010172E5  MOV     ECX,EAX
+015F:010172E7  SUB     ECX,06
+015F:010172EA  MOV     ESI,[EBP+004450B5]
+015F:010172F0  XOR     EBX,EBX
+015F:010172F2  OR      ECX,ECX
+015F:010172F4  JZ      01017312                           (NO JUMP)
+015F:010172F6  JS      01017312                                (NO JUMP)
+015F:010172F8  LODSB
+015F:010172F9  CMP     AL,E8
+015F:010172FB  JZ      01017305                                (NO JUMP)
+015F:010172FD  CMP     AL,E9
+015F:010172FF  JZ      01017305                                (NO JUMP)
+015F:01017301  INC     EBX
+015F:01017302  DEC     ECX
+015F:01017303  JMP     010172F2                                (JUMP )
+015F:010172F2  OR      ECX,ECX
+015F:010172F4  JZ      01017312                                (NO JUMP)
+015F:010172F6  JS      01017312                                (NO JUMP)
+015F:010172F8  LODSB
+015F:010172F9  CMP     AL,E8
+
+*** Set BPX here to jump to next line (BPX
+015F:01017312)
+    Press F5
+
+Break due to BPX #015F:01017312  (ET=8.40 milliseconds)
+015F:01017312  POP     EBX
+015F:01017313  POP     ESI
+015F:01017314  POP     ECX
+015F:01017315  POP     EAX
+015F:01017316  MOV     ECX,EAX
+015F:01017318  MOV     EDI,[ESI]
+015F:0101731A  ADD     EDI,[EBP+004450AC]
+015F:01017320  MOV     ESI,[EBP+004450B5]
+015F:01017326  SAR     ECX,02
+015F:01017329  REPZ MOVSD
+015F:0101732B  MOV     ECX,EAX
+015F:0101732D  AND     ECX,03
+015F:01017330  REPZ MOVSB
+015F:01017332  POP     ESI
+015F:01017333  MOV     EAX,[EBP+004450B5]
+015F:01017339  PUSH    00008000
+015F:0101733E  PUSH    00
+015F:01017340  PUSH    EAX
+015F:01017341  CALL    [EBP+004450BD]
+015F:01017347  ADD     ESI,08
+015F:0101734A  CMP     DWORD PTR [ESI],00
+015F:0101734D  JNZ     01017299                       (JUMP )
+
+*** Set BPX here to jump to next line (BPX
+015F:01017353)
+    Press F5
+
+Break due to BPX #015F:01017353  (ET=35.08
+milliseconds)
+015F:01017353  MOV     EBX,[EBP+00444ADF]
+015F:01017359  OR      EBX,EBX
+015F:0101735B  JZ      01017365                                     (JUMP )
+015F:01017365  MOV     EDX,[EBP+004450AC]
+015F:0101736B  MOV     EAX,[EBP+00444ADB]
+015F:01017371  SUB     EDX,EAX
+015F:01017373  JZ      010173EE                                     (JUMP )
+015F:010173EE  MOV     ESI,[EBP+00444AEB]
+015F:010173F4  MOV     EDX,[EBP+004450AC]
+015F:010173FA  ADD     ESI,EDX
+015F:010173FC  MOV     EAX,[ESI+0C]
+015F:010173FF  TEST    EAX,EAX
+015F:01017401  JZ      01017544                                     (NO JUMP)
+015F:01017407  ADD     EAX,EDX
+015F:01017409  MOV     EBX,EAX
+015F:0101740B  PUSH    EAX
+015F:0101740C  CALL    [EBP+00445194]
+015F:01017412  TEST    EAX,EAX
+015F:01017414  JNZ     0101747D                                     (JUMP )
+015F:0101747D  MOV     DWORD PTR [EBX],00000000
+015F:01017483  MOV     [EBP+0044516E],EAX
+015F:01017489  MOV     DWORD PTR [EBP+00445172],00000000
+015F:01017493  MOV     EDX,[EBP+004450AC]
+015F:01017499  MOV     EAX,[ESI]
+015F:0101749B  TEST    EAX,EAX
+015F:0101749D  JNZ     010174A2                       (JUMP )
+015F:010174A2  ADD     EAX,EDX
+015F:010174A4  ADD     EAX,[EBP+00445172]
+015F:010174AA  MOV     EBX,[EAX]
+015F:010174AC  MOV     EDI,[ESI+10]
+015F:010174AF  ADD     EDI,EDX
+015F:010174B1  ADD     EDI,[EBP+00445172]
+015F:010174B7  TEST    EBX,EBX
+015F:010174B9  JZ      0101752C                                     (NO JUMP)
+015F:010174BB  TEST    EBX,80000000
+015F:010174C1  JNZ     010174C7                                     (NO JUMP)
+015F:010174C3  ADD     EBX,EDX
+015F:010174C5  INC     EBX
+015F:010174C6  INC     EBX
+015F:010174C7  PUSH    EBX
+015F:010174C8  AND     EBX,7FFFFFFF
+015F:010174CE  PUSH    EBX
+015F:010174CF  PUSH    DWORD PTR [EBP+0044516E]
+015F:010174D5  CALL    [EBP+00445190]
+015F:010174DB  TEST    EAX,EAX
+015F:010174DD  POP     EBX
+015F:010174DE  JNZ     0101751E                                     (JUMP )
+015F:0101751E  MOV     [EDI],EAX
+015F:01017520  ADD     DWORD PTR [EBP+00445172],04
+015F:01017527  JMP     01017493                                     (JUMP )
+
+*** Set BPX here to jump to next line (BPX 015F:0101752C)
+    Press F5
+
+Break due to BPX #015F:0101752C  (ET=33.17 milliseconds)
+015F:0101752C  XOR     EAX,EAX
+015F:0101752E  MOV     [ESI],EAX
+015F:01017530  MOV     [ESI+0C],EAX
+015F:01017533  MOV     [ESI+10],EAX
+015F:01017536  ADD     ESI,14
+015F:01017539  MOV     EDX,[EBP+004450AC]
+015F:0101753F  JMP     010173FC                                     (JUMP )
+
+*** Set BPX here to jump to next line (BPX 015F:01017544)
+    Press F5
+
+Break due to BPX #015F:01017544  (ET=2.62 milliseconds)
+015F:01017544  MOV     EAX,[EBP+00444AEF]
+015F:0101754A  PUSH    EAX
+015F:0101754B  ADD     EAX,[EBP+004450AC]
+015F:01017551  POP     EBX
+015F:01017552  OR      EBX,EBX
+015F:01017554  MOV     [ESP+1C],EAX
+015F:01017558  POPAD
+015F:01017559  JNZ     01017563                                     (JUMP )
+015F:01017563  PUSH    EAX  *** Take note of the value
+of EAX!
+015F:01017564  RET          *** Stop here!!!
+=========================================================================
+END SYMBOL LOADER LOG
+=========================================================================
+
+Lengthy code, but straight to the point!  We've set several breakpoints
+as you can see from the above code, so we don't get stuck in the loops.
+
+Make sure you took note of the value of EAX (should be 010119E0).
+
+The final RET above, is the end of the packer code. 
+In order to be able to dump our full program code, we need to put the
+unpacking code in an infinite loop.  To do this, type the following:
+
+a eip      (hit enter)
+jmp eip    (hit enter)
+(hit enter again)
+
+Now, press F5 to leave Soft-Ice.  The program is now unpacked in memory,
+due to the infinite loop we set.  We can now dump it, by performing the
+following steps:
+
+1. Run Procdump.
+2. Find calc.exe in the list of "Tasks".
+3. Right-click on the calc.exe task, and choose "Dump (Full)".
+4. Save the program under a new filename.
+
+You can now compare file sizes of the packed program, and the dumped 
+program.  Quite a difference!
+
+If you try to run the dumped program though, it won't work.  Why?
+Remember the value of EAX you noted?  This is referred to as the OEP
+(Original Entry Point).  Run Procdump again, and click on the "PE Editor"
+button.  Open the dumped program.  We need to change the "Entry Point"
+from 00017000 to our new entry point, which is OEP minus Image Base
+(010119E0 - 01000000 = 000119E0).  When you've changed the Entry Point,
+exit Procdump, and try to run the dumped program again.  It works!
+
+NOTE: As I stated earlier, I'm not going into great
+detail about PE
+header functions, and editing.  You should study it
+though to gain a
+complete understanding of unpacking.
+
+Congratulations, you've successfully unpacked a
+program packed with 
+ASPack v1.08.03!!!
+
+If you have any questions, feel free to e-mail me at
+Volatility(at)ImmortalDescendants.com 
+or
+volatility_id(at)hotmail.com
+=========================================================================
+GREETINGS (in no order of importance):
+=========================================================================
+
+Eternal Bliss (for showing me the EASY way to get out of those damned loops!)
+Miz           (for his EXCELLENT essay that got me interested in packing)
+Fravia+       (For THE site that got me interesting in reversing)
+
+Torn@do, Lucifer48, Jeff, BJanes, MisterZ-, +Sandman, Lord Soth, alpine.
+
+=========================================================================
+Copyright (c) 1999 Volatility And The Immortal Descendants
+All Rights Reserved
+</FONT></PRE>
+
+<HR>
+<CENTER><I>You'r deep inside fravia's pages of reverse engineering</I>
+<BR><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+ALT="red" ALIGN=CENTER WIDTH=88% HEIGHT=6 BORDER=0
+VSPACE=0 HSPACE=0><BR><BR>
+<!-- Begin Javascript relocator <font color=red>~</fonT> Javascript code by fravia+ -->
+<FORM name="FraviasForm">
+<SCRIPT LANGUAGE="javascript">
+<!--
+
+function FravPage(list) {
+	      location.href = list.options[list.selectedIndex].value
+}
+
+// -->
+</SCRIPT>
+<DIV align="center">
+
+<P center="&lt;center&gt;&lt;/center&gt;">&nbsp;<SELECT name="fraviale" size="1">
+
+<OPTION>Choose another page!</OPTION>
+<OPTION value="index.htm">Main page</OPTION>
+<OPTION value="academy.htm">Software reversing Lab</OPTION>
+<OPTION value="realicra.htm">Reality cracking Lab</OPTION>
+<OPTION value="noanon.htm">Anonymity Lab</OPTION>
+<OPTION value="ideale.htm">Site busting Lab</OPTION>
+<OPTION value="howtosea.htm">How to search Lab</OPTION>
+<OPTION value="sealight.htm">--Search engines (light)</OPTION>
+<OPTION value="searengi.htm">--Search engines (heavy)</OPTION>
+<OPTION value="links.htm">Links</OPTION>
+<OPTION value="tools.htm">Tools</OPTION>
+<OPTION value="javascri.htm">Javascript reversing</OPTION>
+<OPTION value="screamin.htm">Screaming truth</OPTION>
+<OPTION value="entran.htm">Main entrance</OPTION>
+<OPTION value="new_what.htm">What's new on fravia's</OPTION>
+<OPTION value="info.htm">Mail fravia+</OPTION>
+<OPTION value="http://greythorne.home.ml.org">+Greythorne's</OPTION>
+<OPTION value="http://www.InsideTheWeb.com/mbs.cgi/mb186724">Tools of our trade msgboard</OPTION>
+<OPTION value="http://www.InsideTheWeb.com/mbs.cgi/mb155985">Main msgboard</OPTION>
+</SELECT>
+
+<INPUT type="button" value="Let's go!" onclick="FravPage(this.form.elements[0])">
+<BR>
+</DIV>
+
+</FORM>
+<!-- end Javascript relocator -->
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+ALT="red" ALIGN=BOTTOM WIDTH=88% HEIGHT=6 BORDER=0
+VSPACE=0 HSPACE=0><BR><BR>
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0
+VSPACE=0 HSPACE=0><A
+HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0
+VSPACE=0 HSPACE=0>
+<A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links </A>
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0>
+<A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity </A>
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC </A>
+
+<IMG
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays </A>
+
+<IMG
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database </A>
+
+<IMG
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+HREF="botstart.htm" tppabs="http://www.anticrack.de/fravia/botstart.htm">bots wars</A>
+
+<BR>
+<IMG
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut </A>
+
+<IMG
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+HEIGHT=13 BORDER=0
+VSPACE=0 HSPACE=0><A
+HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools </A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+HEIGHT=13
+BORDER=0 VSPACE=0 HSPACE=0><A
+HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails </A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+HEIGHT=13
+BORDER=0 VSPACE=0 HSPACE=0><A
+HREF="javascri.htm" tppabs="http://www.anticrack.de/fravia/javascri.htm">javascript wars </A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0
+VSPACE=0 HSPACE=0><A
+HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms </A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0
+VSPACE=0 HSPACE=0><A
+HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia </A><BR>
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0
+VSPACE=0 HSPACE=0><A
+HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering illegal?
+</A></CENTER>
+<HR size=4></FONT></CENTER></CENTER>
+
+
+</BODY>
+</HTML>

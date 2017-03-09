@@ -1,0 +1,1672 @@
+<html><HEAD>
+
+<TITLE>filemon4</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+<CENTER><FONT size="+3">How to reverse engineer a Windows 95 target</FONT><BR>
+
+<FONT size="+2">
+
+REVERSE ENGINEERING EXERCISES FOR THE MASSES - (2d)</FONT>
+
+
+
+<BR>
+
+<FONT Size="+2">by fravia+ (MSRE), August 1997<BR><BR>
+
+<IMG SRC="hcu1.gif" tppabs="http://www.anticrack.de/fravia/hcu1.gif" ALT="HCU" ALIGN="BOTTOM" WIDTH="114" HEIGHT="43" BORDER="0" VSPACE="0" HSPACE="0">
+
+<BR>(Part D: Back to Main - 11 August 1997)</FONT>
+
+
+
+<HR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">
+
+Courtesy of Fravia's page of reverse engineering<BR>
+
+<HR>
+
+<BR>
+
+<FONT size="+1"><I>Well, a very interesting essay... I wrote it myself! :-)
+
+This essay will be divided in 
+
+four (or more) parts:</I><PRE>A = Introduction to filemon
+
+B = reverse engineering without source code 
+
+C = Filemon reversed 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><U><B>Back to Main</B></U> 
+
+D = VXD vagaries and mysteries</PRE><I>
+
+Although already disponible, this essay is still under construction
+
+and will be modified and ameliorated until the wording below will disappear (I reckon 
+
+until mid-september)</I></FONT>
+
+<BR><BR><FONT size="+3"><FONT color="magenta">UNDER CONSTRUCTION</FONT></FONT><BR>
+
+</CENTER>
+
+<HR size="2">
+
+<CENTER>
+
+<FONT size="+2">
+
+REVERSE ENGINEERING EXERCISES FOR THE MASSES - (5)<BR>
+
+</FONT><FONT size="+1">
+
+How to reverse engineer a Windows 95 program<BR>
+
+Filemon.exe Version 2<BR><FONT><FONT size="+1">(Part D: Back to Main)<BR>
+
+by Fravia (MSRE), August 1997<BR><BR></CENTER>
+
+</FONT><HR>
+
+<I>
+
+Well, in the first part of this essay we had a general &quot;introduction&quot; to the structure 
+
+of filemon.exe, in the second one we reversed quite a lot of code without using 
+
+the C source... in the third one we finished all &quot;home-made&quot; functions of our target... time to tackle the WinMain and the MainWndProc functions...
+
+</I>
+
+<HR>
+
+<FONT size="+2"><B>WinMain was already known</B></FONT><BR>
+
+<BR>
+
+Let's resume the &quot;logistic&quot; of our target, all the functions data we have already  gathered:<BR>
+
+01)	FUNCTION Abort <FONT color="blue">;This dwells between 1000-1020</FONT> <BR>
+
+02)	FUNCTION WinMain  <FONT color="blue">;This dwells between 1020-10B0</FONT> <BR> 
+
+03)	FUNCTION InitApplication <FONT color="blue">;This dwells between 10B0-1130</FONT> <BR>
+
+04)	FUNCTION InitInstance <FONT color="blue">;This dwells between 1130-1190</FONT> <BR>
+
+05)	FUNCTION MainWndProc <FONT color="blue">;This dwells between 1190-1750</FONT> <BR>
+
+06)	FUNCTION Split<FONT color="blue">;This dwells between 1750-1790</FONT> <BR>
+
+07)	FUNCTION ListAppend <FONT color="blue">;This dwells between 1790-1A40</FONT> <BR>
+
+08)	FUNCTION UpdateStatistics <FONT color="blue">;This dwells between 1A40-1B50</FONT> <BR>
+
+09)	FUNCTION CreateListView<FONT color="blue">;This dwells between 1B50-1C20</FONT> <BR>
+
+10)	FUNCTION SaveFile <FONT color="blue">;This dwells between 1C20-1ED0</FONT><BR>
+
+11)	FUNCTION FilterProc<FONT color="blue">;This dwells between 1ED0-2190</FONT> <BR>
+
+12)	FUNCTION About<FONT color="blue">;This dwells between 2190-21C9</FONT> <BR>
+
+Now that we know where everything dwells, let's have a look at the [1020-10B0]:WinMain function.<BR>In Windows we enter WinMain coming from Program entry point, here the call is at :00402626 E8F5E9FFFF: call 1020WinMain. We will not work a lot on it, because we don't need to reverse anything at all: WinMain is a PERFECTLY WELL KNOWN procedure:<PRE>
+
+int PASCAL WinMain(hinstCurrent, hinstPrevious, lpCmdLine, nCmdShow)
+
+
+
+HINSTANCE hinstCurrent;            /* handle of current instance	*/
+
+HINSTANCE hinstPrevious;           /* handle of previous instance	*/
+
+LPSTR lpszCmdLine;                 /* address of command line	*/
+
+int nCmdShow;                      /* show-window type (open/icon)	*/
+
+
+
+The WinMain function is called by the system as the initial entry 
+
+point for a Windows application. 
+
+
+
+Parameter	Description
+
+hinstCurrent	Identifies the current instance of the application. 
+
+hinstPrevious	Identifies the previous instance of the application. 
+
+lpszCmdLine	Points to a null-terminated string specifying the command 
+
+               line for the application. 
+
+nCmdShow	Specifies how the window is to be shown. This parameter 
+
+               can be one of various SW_ values. 
+
+0x00 SW_HIDE; 0x01 SW_SHOWNORMAL; 0x02 SW_SHOWMINIMIZED; 0x03 SW_SHOWMAXIMIZED; 
+
+0x04 SW_SHOWNOACTIVATE; 0x05 SW_SHOW; 0x06 SW_MINIMIZE; 0x07 SW_SHOWMINNOACTIVATE;
+
+0x08 SW_SHOWNA; 0x09 SW_RESTORE... etc</PRE>
+
+Ah ah! Therefore let's go back to the target's entry point code, where it calls WinMain and let's better check what's going on:<PRE>
+
+:jumped from 260F
+
+:00402619 50              push eax         ;WinMain rightmost nCmdShow
+
+:0040261A 56              push esi         ;WinMain next: lpszCmdLine
+
+:0040261B 6A00            push 0           ;WinMain next: hinstPrevious
+
+:0040261D 6A00            push 0           ;GMH_ lpszModuleName
+
+:0040261F FF156CB24400    Call dword ptr [0044B26C] ;GetModuleHandle(lpszModuleName)
+
+:00402625 50              push eax         ;WiNMain leftmost: hinstCurrent
+
+:00402626 E8F5E9FFFF      call 1020_WinMain(modulehandle, 0, esi, old_eax)
+
+</PRE>Well, I hope that the approach of my essay will work... You saw smack at the beginning the functions InitInstance and InitApplication, as if they were &quot;extraordinary&quot; functions... and we come only now to WinMain... you see, there is something important I didn't tell you until now: WinMain, in <U>ANY WINDOWS PROGRAM</U>, calls a function InitInstance and a function InitApplication... yes, always!<BR>Here an example: the following text is taken -without modifying a comma- from Borland's C++ 4.52 API helpfile. <BR>
+
+In the following example the WinMain function  initializes the application, initializes the instance, and establishes a message loop:<PRE>int PASCAL WinMain(HINSTANCE hinstCurrent, HINSTANCE hinstPrevious,
+
+    LPSTR lpszCmdLine, int nCmdShow)
+
+{
+
+    MSG msg;
+
+
+
+    if (hinstPrevious == NULL)                /* other instances?      */
+
+        if (!InitApplication(hinstCurrent))   /* shared items          */
+
+            return FALSE;                     /* initialization failed */
+
+
+
+    /* Perform initializations for this instance. */
+
+
+
+    if (!InitInstance(hinstCurrent, nCmdShow))
+
+        return FALSE;
+
+
+
+    /* Get and dispatch messages until WM_QUIT message. */
+
+
+
+    while (GetMessage(&amp;msg, NULL, 0, 0)) {
+
+        TranslateMessage(&amp;msg); /* translates virtual key codes    */
+
+        DispatchMessage(&amp;msg);  /* dispatches message to window    */
+
+    }
+
+    return (int) msg.wParam;    /* return value of PostQuitMessage */
+
+}
+
+</PRE>
+
+Well, so what? Well, have a look at filemon's c source code NOW!<BR>
+
+You are astonished, aren't you... yes, it's THE SAME code, I could have told you when we have examined InitInstance but, see, I just wanted to carry you through the entire target <U>before</U> telling you that BIG CHUNKS OF WINDOWS CODE are already perfectly known (with all their variables and parameters and relative calls) for (almost) any application! (Peter Urbanik, are you reading this? D'you understand what this could mean for developing the perfect reverse engineering tool? :-)<BR><BR>I know, dear reader, you are quite impatient now, you have read a lot of text and you already believe that you now understand everything,  that you can disassemble every windows application on the face 
+
+of this planet... it is true for &quot;easy&quot; targets, but there is unfortunately still a lot to understand in order to reverse engineer more &quot;complex&quot; windows code, as you will see... bear with me a little more... let's investigate filemon's WinMain itself now<BR>Wow! A WinMain function in all its dazzly splendour!<PRE>
+
+:WinMain
+
+:00401020 83EC1C          sub esp, 1C         ;Adjust Stack
+
+:00401023 53              push ebx            ;will pop
+
+:00401024 56              push esi            ;will pop
+
+:00401025 8B742428        mov esi, [esp + 28] ;get param hInstance
+
+:00401029 57              push edi            ;will pop
+
+:0040102A 56              push esi            ;push hInstance
+
+:0040102B E880000000      call 10B0=InitApplication (hInstance)
+
+:00401030 83C404          add esp, 4     ;(4=was only one param)
+
+:00401033 85C0            test eax, eax  ;return FALSE?
+
+:00401035 750B            jne 00401042   ;OK, continue
+
+:00401037 33C0            xor eax, eax   ;prepare FALSE return
+
+:00401039 5F              pop edi        ;pop them all
+
+:0040103A 5E              pop esi
+
+:0040103B 5B              pop ebx
+
+:0040103C 83C41C          add esp, 1C    ;Adjust stack
+
+:0040103F C21000          ret 0010       ;bye WinMain
+
+
+
+:ContinueWinMain_after_InitApplication
+
+:00401042 8B442438        mov eax, [esp + 38] ;get nCmdShow
+
+:00401046 50              push eax            ;push nCmdShow
+
+:00401047 56              push esi            ;push hInstance
+
+:00401048 E8E3000000      call 1130=InitInstance(hInstance, nCmdShow)
+
+:0040104D 83C408          add esp, 8       ;(8 because had two param)
+
+:00401050 85C0            test eax, eax    ;worked?
+
+:00401052 750B            jne 0040105F     ;yes, so continue WinMain
+
+:00401054 33C0            xor eax, eax     ;no, so prepare FALSE
+
+:00401056 5F              pop edi          ;popall
+
+:00401057 5E              pop esi
+
+:00401058 5B              pop ebx
+
+:00401059 83C41C          add esp, 1C      ;adjust and return
+
+:0040105C C21000          ret 0010         ;bye WinMain</PRE>
+
+
+
+<FONT size="+2"><B>Passed parameter counting</B></FONT><BR>
+
+Ok, after these two code snippets it's time to explain and understand a very important point: PARAMETER PASSING MATH.<BR>
+
+As you can see, the call to InitApplication is followed by a <U>stack &quot;4&quot; Adjust</U>, the call to InitInstance is followed by a <U>stack &quot;8&quot; Adjust</U>, this happens because the first function (InitApplication) is called with only ONE parameter (esi), and the second one (InitInstance) is called with two (esi and eax).Don't confond this with the LENGTH of the parameters... this is the space that the POINTERS have taken, yet it's important to understand HOW MANY parameters had the function originally... it's a very simple relation:<BR>
+
+add, esp 4 = ONE parameter<BR>
+
+add, esp 8 = TWO parameters<BR>
+
+add, esp C = THREE parameters, add esp, 10 = 4 parameters, add esp, 14 = 5 parameters... and so on... you dig it?<BR>Once more, that was parameters &quot;discarding&quot;:  if the programmer used the C calling convention (or rather if the compilerdid) he must remember to discard the parameters, adjusting SP after the call.<BR>
+
+Let's clarify also the more &quot;general&quot; stack adjusting a little: There are two ways to adjust the stack: you can use the <B>RET</B>n instruction, where &quot;n&quot; is the number of bytes of parameters pushed, or you can save the return address in some register (or in memory) and pop the parameter off one by one, or you can use a mix of the two methods... the popping technique is useful if you are optimizing for speed AND space.<BR>
+
+When a routine receives control, the top of the stack contains <U>A RETURN ADDRESS</U> (two or four words, depending on whether the routine is near or far) and, above it, any parameters being passed.<BR>
+
+There are <B>THREE</B> basic techniques for accessing the parameters passed to the routines:<BR>
+
+1) use the BP register to address the stack<BR>
+
+2) use another base or index register to get the parameters<BR>
+
+3) pop the return address and then pop the parameters.<BR><BR>
+
+Since we are (supposed to be) reverse engineering our targets, we DO NOT know, most of the time the exact &quot;prototypes&quot; of the &quot;home-made&quot; functions we are examining... prototypes establish the return type for functions that return any type other than <B>int</B>; contain a full list of parameter types, identifiers for each expression that will be passed as an actual argument and can also reflect the fact that the number of arguments passed will be <FONT color="blue">variable</FONT>, or that there will be NO arguments passed. The <I>parameter list</I> in a prototype is a list of type names separated by commas, for instance you may well have in a protection schema a <FONT color="blue">FARPROC GetProtectionAddress(hinst, lpszProtSnippet)</FONT><BR><BR>
+
+Since here we have added 1C at the beginning of WinMain, we'll have some combination of LPSTR 32/16 bytes pointers 16 bytes handles and ints. Well, if  you look at the two snippets above, you'll already have some hints:<PRE>
+
+:00401025 8B742428         mov esi, [esp + 28]  ;so we have one of them at 28
+
+:00401042 8B442438         mov eax, [esp + 38]  ;and one at 38</PRE>
+
+Therefore we know that one of the parameters passed to WinMain will now be collected at +28 and one at +38, and that the first one (+28) is collected in esi and pushed as LEFTMOST parameter in our two functions InitApplication and InitInstance... c'mon, even if you did not know already that MOST of the main functions in Window need hWnd as leftmost parameters, that we are Initialising now from WinMain and that esi is the &quot;classical&quot; hWnd register, you would have guessed by now that the one at 28 is hWnd!<BR>Just keep in mind that we had an adjust 1C entering WinMain... more about parameter passing later... let's go on with WinMain, we have seen the &quot;standard&quot; calls to the two procedures InitInstance and Initapplication, what's happening next? Well, the usual Message chain, what else... Windoze is so boring!
+
+Well, here are the three functions, just read their prototypes... you'll understand all the following comments of mine to WinMain's code:<PRE>
+
+BOOL TranslateMessage(lpmsg)
+
+const MSG FAR* lpmsg;	/* address of MSG structure	*/
+
+      ;prepares for GetMessage if it was a &quot;virtual key&quot; msg
+
+
+
+LONG DispatchMessage(lpmsg)
+
+const MSG FAR* lpmsg;	/* address of structure with message	*/
+
+
+
+BOOL GetMessage(lpmsg, hwnd, uMsgFilterMin, uMsgFilterMax)
+
+MSG FAR* lpmsg;          /* address of structure with message */
+
+HWND hwnd;               /* handle of the window              */
+
+UINT uMsgFilterMin;      /* first message                     */
+
+UINT uMsgFilterMax;      /* last message                      */</PRE>
+
+<B>Here is the code of WinMain:</B>
+
+<PRE>
+
+:continue_WinMain_after_InitInstance
+
+:0040105F 8D44240C        lea eax, [esp + 0C] ;lpmsg
+
+:00401063 6A00            push 00000000
+
+:00401065 6A00            push 00000000
+
+:00401067 8B3500B34400    mov esi, [0044B300] ;GetMessage
+
+:0040106D 6A00            push 00000000
+
+:0040106F 50              push eax
+
+:00401070 FFD6            call esi ;GetMessage(lpmsg,NULL,0,0)
+
+:00401072 85C0            test eax, eax  ;WM_QUIT? Should we die?
+
+:00401074 742B            je 004010A1    ;Yes, so ret and terminate
+
+:00401076 8B3D94B24400    mov edi, [0044B294] ;TranslateMessage
+
+:0040107C 8B1D8CB24400    mov ebx, [0044B28C] ;DispatchMessage
+
+
+
+:continue_WinMain_message_chain
+
+:00401082 8D44240C    lea eax, [esp + 0C] ;get   lpmsg
+
+:00401086 50          push eax            ;push  lpmsg
+
+:00401087 FFD7        call edi ;TranslateMessage(lpmsg)
+
+:00401089 8D44240C    lea eax, [esp + 0C] ;get   lpmsg
+
+:0040108D 50          push eax            ;push  lpmsg
+
+:0040108E FFD3        call ebx ;DispatchMessage (lpmsg)
+
+:00401090 8D44240C    lea eax, [esp + 0C] ;get   lpmsg
+
+:00401094 6A00        push 0              ;push 0
+
+:00401096 6A00        push 0              ;push 0
+
+:00401098 6A00        push 0              ;push NULL
+
+:0040109A 50          push eax            ;push  lpmsg
+
+:0040109B FFD6        call esi  ;GetMessage(lpmsg,NULL,0,0)
+
+:0040109D 85C0        test eax, eax ;ret and terminate if it is WM_QUIT,
+
+:0040109F 75E1        jne 00401082  ;else go chain_start: find out which 
+
+                                    ;other message has disturbed us
+
+
+
+:exit WinMain with return value of the PostQuitMessage function
+
+:004010A1 8B442414                mov eax, [esp + 14] ;get msg.wParam;
+
+:004010A5 5F                      pop edi             ;pop the hell out of them
+
+:004010A6 5E                      pop esi
+
+:004010A7 5B                      pop ebx
+
+:004010A8 83C41C                  add esp, 1C         ;re-adjust
+
+:004010AB C21000                  ret 0010            ;bye WinMain</PRE>
+
+Keep in mind that the WM_QUIT message indicates a request to terminate an application and is generated when the application calls the PostQuitMessage function. It causes the GetMessage function to return zero. Therefore you could read the above code like this: Initialise our app, initialise our instance and get messages until we want to quit or something funny happens or user clicks something or whatever... There is no direct connection now from WinMain to the other functions of our target, other that the messages themselves... It's InitInstance that calls MainWndProc, the last (and most important) function of our target (that we have still to investigate). Let's see now what happens at the good old entry point of our target when WinMain closes...<PRE>
+
+:0040262B 50             push eax
+
+:0040262C E80F160000     call 00403C40;GetCurrentProcess  (retrieve task)
+
+                                      ;TerminateProcess   (ends task)
+
+                                      ;ExitProcess (close self loading app)
+
+:00402631 EB27           jmp 0040265A ;ret</PRE>
+
+Well that was it... WinMain is just a &quot;running wheel&quot;, continuously looking for messages in order to get, translate and dispatch them to our target, which WinMain has initialized before entering its master loop. The INITIALISATION part of WinMain triggers InitApp and InitInstance, the rest is just the messages loop until a WM_QUIT message kills it. WM_QUIT is so terrible that an extra windows function exists only in order to deliver it: PostQuitMessage(nExitCode). This is called in our target from three obvious &quot;termination&quot; points: our Abort function (of course) and from the WM_CLOSE and WM_DESTROY switches of the message tree in MainWndProc (of course). This is interesting too, from a reverse engineering point of view, because this &quot;death&quot; chain can be very intersting to approach a difficult target... even cloaked code must react to a termination command, and in a difficult session you'll be able to re-mount (until you find your bearings) starting from the termination routines and from the ExitCode returned to PostQuitMessage.<BR><BR>
+
+<FONT size="+2"><B>Return values</B></FONT><BR>
+
+You should keep in mind the following about return values: 8 and 16 bit values are always returned in AX; 32 bit values are returned in dx:ax; floating point values are in the 8087 TOS register and structures are returned in VARIOUS WAYS, according to their size. Returned structures are indeed a bit more complex: 1 or 2 bytes length structures  are returned in ax and 4 bytes length structures are returned in dx:ax, but THREE or MORE THAN FOUR bytes structures must be stored in a static data area, the function will return a POINTER to that data area... near pointers in ax and far pointers in dx:ax... (well, just keep it basic: return value always in ax, at times in dx:ax :-)<BR><BR>
+
+We are done with WinMain, yet we have still the &quot;Main Chunk&quot; of filemon to examine: 
+
+MainWndProc(HWND hWnd, UINT message, UINT wParam, LONG lParam), here it is: as you will immediately see, the initial switch is based in esi and gives following options: WM_=F; WM_=1; WM_=2; WM=5; WM=more than F etc... since we KNOW the meaning of WM_tags, we can easily understand the whole function...<BR><BR><B>TAKE NOTE!</B> All what windows programs do is react to messages... the whole os turns around waiting for messages to process... in (almost) all windows targets you'll have somewhere the switch tree of the message processing function (which is always the &quot;real&quot; main function of your targets, by the way). We come now to see it, in this essay, only after having examined for teaching purposes all the others functions, BUT IN THE REALITY OF REVERSE ENGINEERING you'll often <U>start</U> from this &quot;windows messages&quot; switch tree, because you'll immediately understand what your target will do when it gets the WM_CREATE (aka 1) and the WM_COMMAND (aka 111) messages, the two most important ones for reverse engineering purposes.<PRE>
+
+:MainWndProc_Let's see which WM_ case we have
+
+:00401190 81EC44010000  sub esp, 144         ;adjust
+
+:1196 53                push ebx             ;will pop
+
+:1197 56                push esi             ;will pop
+
+:1198 8BB42454010000    mov esi, [esp + 154] ;which WM_ do we have?
+
+:119F 57                push edi             ;will pop
+
+:11A0 83FE0F            cmp esi, F           ;is it WM_ = 000F = WM_PAINT?
+
+:11A3 771F              ja 004011C4          ;go more than F
+
+:11A5 0F8485020000      je 00401430          ;go WM_PAINT
+
+:11AB 83FE01            cmp esi, 1           ;is it WM_= 0001 = WM_CREATE?
+
+:11AE 7466              je 00401216          ;go WM_CREATE
+
+:11B0 83FE02            cmp esi, 2           ;is it WM_= 0002 = WM_DESTROY?
+
+:11B3 0F843F020000      je 004013F8          ;go WM_DESTROY
+
+:11B9 83FE05            cmp esi, 5           ;is it WM_= 0005 = WM_SIZE?
+
+:11BC 0F8443020000      je 00401405          ;go WM_SIZE
+
+:11C2 EB2E              jmp 004011F2         ;else go WM_DEFAULT
+
+ 
+
+:WM_more than F
+
+:11C4 83FE4E          cmp esi, 4E   ;is it WM_ = 004E = WM_NOTIFY?
+
+:11C7 7711            ja 004011DA   ;more than 4E
+
+:11C9 0F84E7020000    je 004014B6   ;go WM_NOTIFY
+
+:11CF 83FE10          cmp esi, 10   ;is it WM_ = 0010 = WM_CLOSE?
+
+:11D2 0F84AE020000    je 00401486   ;go WM_CLOSE
+
+:11D8 EB18            jmp 004011F2  ;else go WM_DEFAULT
+
+
+
+:WM_ more than 4E
+
+:11DA 81FE11010000    cmp esi, 111  ;is it WM_ = 0111 = WM_COMMAND?
+
+:11E0 0F84F7020000    je 004014DD   ;go WM_COMMAND
+
+:11E6 81FE13010000    cmp esi, 113  ;is it WM_ = 0113 = WM_TIMER?
+
+:11EC 0F84AB040000    je 0040169D   ;go WM_TIMER
+
+                                    ;else fall through to WM_DEFAULT
+
+:WM_DEFAULT (not 1,2,5,F,10,4E,111 or 113) 
+
+:calls the default window procedure: every message is processed!
+
+:11F2 8B942460010000          mov edx, [esp + 00000160]
+
+:11F9 8B8C245C010000          mov ecx, [esp + 0000015C]
+
+:1200 52                      push edx
+
+:1201 51                      push ecx
+
+:1202 56                      push esi
+
+:1203 8BB42460010000          mov esi, [esp + 00000160]
+
+:120A 56                      push esi  
+
+:120B FF15D4B24400            Call dword ptr [0044B2D4] ; DefWindowProcA
+
+:1211 E9F0040000              jmp 1706_keep ax_&amp;_ret
+
+
+
+:WM_ = OOO1 = <B>WM_CREATE</B><FONT color="purple">
+
+The WM_CREATE message is sent when an application requests that a window be 
+
+created by calling the CreateWindowEx or CreateWindow function. The window 
+
+procedure for the new window receives this message after the window is 
+
+created but before the window becomes visible. The message is sent to the 
+
+window before the CreateWindowEx or CreateWindow function returns.</FONT>
+
+:1216 68027F0000      push 00007F02  ;pszCursor
+
+:121B 6A00            push 00000000  ;hinst
+
+:121D FF15F8B24400    Call dword ptr [0044B2F8] ;LoadCursor(hinst, pszCursor)
+
+:1223 8BB42454010000  mov esi, [esp + 154]
+
+:122A A3B0964000      mov [004096B0], eax ;handle of the newly loaded cursor
+
+:122F 56              push esi ;hWnd
+
+:1230 FF15B4B24400    Call dword ptr [0044B2B4] ;SetCapture(hWnd)
+
+:1236 A1B0964000      mov eax, [004096B0] ;handle of the newly loaded cursor
+
+:123B 8B3DB8B24400    mov edi, [0044B2B8] ;SetCursor
+
+:1241 50              push eax            ;handle of cursor
+
+:1242 FFD7            call edi            ;SetCursor
+
+:1244 56              push esi            ;hWnd
+
+:1245 A3BC964000      mov [004096BC], eax ;handle of previous cursor
+
+:124A E801090000      call 1B50_CreateListView(hWnd)   
+
+:124F 83C404          add esp, 4
+
+:1252 A3B8964000      mov [004096B8], eax ;save hWndList
+
+:1257 85C0            test eax, eax ;error?
+
+:1259 7511            jne 0040126C  ;continue_WM_CREATE
+
+:125B 6A00            push 00000000
+
+:125D 6A00            push 00000000
+
+:125F 6874814000      push 00408174  ;-&gt;&quot;List not created!&quot;
+
+:1264 6A00            push 00000000
+
+:1266 FF1590B24400    Call dword ptr [0044B290] ; MessageBoxA
+
+
+
+:continue WM_CREATE (Initialise_filters)
+
+:126C 6870814000              push 00408170 ;-&gt;&quot;*&quot;
+
+:1271 68C0974000              push 004097C0
+
+:1276 E8650F0000              call 004021E0
+
+:127B 83C408                  add esp, 00000008
+
+:127E 6870814000              push 00408170 ;-&gt;&quot;*&quot;
+
+:1283 68E0974000              push 004097E0
+
+:1288 E8530F0000              call 004021E0
+
+:128D 83C408                  add esp, 00000008
+
+:1290 686C814000              push 0040816C
+
+:1295 68E0984000              push 004098E0
+
+:129A E8410F0000              call 004021E0 
+
+:129F 8D4C2458                lea ecx, [esp + 58]
+
+:12A3 83C408                  add esp, 00000008
+
+:12A6 B801000000              mov eax, 00000001
+
+:12AB 51                      push ecx
+
+:12AC 6800010000              push 00000100
+
+:12B1 A3E0994000              mov [004099E0], eax       ;TRUE
+
+:12B6 A3E4994000              mov [004099E4], eax       ;TRUE
+
+
+
+:continue WM_CREATE (open device handle)
+
+:12BB FF15E0B14400            Call dword ptr [0044B1E0] ;GetCurrentDirectoryA
+
+:12C1 8D4C2450                lea ecx, [esp + 50]
+
+:12C5 685C814000              push 0040815C ;-&gt;&quot;\\.\FILEVXD.VXD&quot;
+
+:12CA 6858814000              push 00408158 ;-&gt;&quot;\%s&quot;
+
+:12CF 51                      push ecx
+
+:12D0 FF15D4B14400            Call dword ptr [0044B1D4] ;KERNEL32.lstrlenA
+
+:12D6 8D4C0458                lea ecx, [esp + eax + 58]
+
+:12DA 8B1DBCB24400            mov ebx, [0044B2BC]       ;wsprintf
+
+:12E0 51                      push ecx
+
+:12E1 FFD3                    call ebx                  ;wsprintf
+
+:12E3 83C40C                  add esp, 0000000C
+
+:12E6 6A00                    push 00000000
+
+:12E8 6800000044              push 44000000
+
+:12ED 6A00                    push 00000000
+
+:12EF 6A00                    push 00000000
+
+:12F1 6A00                    push 00000000
+
+:12F3 6A00                    push 00000000
+
+:12F5 685C814000              push 0040815C ;-&gt;&quot;\\.\FILEVXD.VXD&quot;
+
+:12FA FF15D8B14400            Call dword ptr [0044B1D8] ;CreateFileA
+
+:1300 A360804000              mov [00408060], eax
+
+:1305 83F8FF                  cmp eax, FFFFFFFF ;ax=-1?
+
+:1308 7527                    jne 00401331      ;no, continue_1331 
+
+:130A 6850814000              push 00408150 ;-&gt;&quot;FILEVXD&quot;
+
+:130F 6834814000              push 00408134 ;-&gt;&quot;%s is not loaded properly.&quot;
+
+:1314 68A0944000              push 004094A0
+
+:1319 FFD3                    call ebx          ;wsprintf
+
+:131B 83C40C                  add esp, 0000000C
+
+:131E 68A0944000              push 004094A0
+
+:1323 56                      push esi
+
+:1324 E8D7FCFFFF              call 1000_Abort_funct ;ABORT function
+
+:1329 83C408                  add esp, 00000008
+
+:132C E9D3030000              jmp 1704_ax=0_&amp;_ret
+
+
+
+:continue WM_CREATE driver zero information
+
+:1331 8D44240C                lea eax, [esp + 0C]
+
+:1335 6A00                    push 00000000
+
+:1337 50                      push eax
+
+:1338 8B0D60804000            mov ecx, [00408060]
+
+:133E 6A00                    push 00000000
+
+:1340 8B1DE4B14400            mov ebx, [0044B1E4] ;DeviceIoControl
+
+:1346 6A00                    push 00000000
+
+:1348 6A00                    push 00000000
+
+:134A 6A00                    push 00000000
+
+:134C 6A01                    push 00000001
+
+:134E 51                      push ecx
+
+:134F FFD3                    call ebx            ;DeviceIoControl
+
+:1351 85C0                    test eax, eax ;ERROR?
+
+:1353 7518                    jne 0040136D  ;jump tell_driver_filter_136D
+
+:1355 6814814000              push 00408114 ;-&gt;&quot;Couldn't access device driver&quot;
+
+:135A 56                      push esi
+
+:135B E8A0FCFFFF              call 1000_Abort
+
+:1360 83C408                  add esp, 00000008
+
+:1363 B801000000              mov eax, 00000001
+
+:1368 E999030000              jmp 1706_keep ax_&amp;_ret
+
+
+
+: continue_WM_CREATE_tell_driver_filter
+
+:136D 8D44240C                lea eax, [esp + 0C]
+
+:1371 6A00                    push 00000000
+
+:1373 50                      push eax
+
+:1374 8B0D60804000            mov ecx, [00408060]
+
+:137A 6A00                    push 00000000
+
+:137C 6A00                    push 00000000
+
+:137E 6828020000              push 00000228
+
+:1383 68C0974000              push 004097C0
+
+:1388 6A05                    push 00000005
+
+:138A 51                      push ecx
+
+:138B FFD3                    call ebx          ;DeviceIoControl
+
+:138D 85C0                    test eax, eax ; ERROR?
+
+:138F 750E                    jne 0040139F  ;jump_start_filtering_139F
+
+:1391 6814814000              push 00408114 ;-&gt;&quot;Couldn't access device driver&quot;
+
+:1396 56                      push esi
+
+:1397 E864FCFFFF              call 1000_Abort_funct ; ABORT function
+
+:139C 83C408                  add esp, 00000008
+
+
+
+:continue_WM_CREATE_start_filtering
+
+:139F 8D44240C                lea eax, [esp + 0C]
+
+:13A3 6A00                    push 00000000
+
+:13A5 50                      push eax
+
+:13A6 8B0D60804000            mov ecx, [00408060]
+
+:13AC 6A00                    push 00000000
+
+:13AE 6A00                    push 00000000
+
+:13B0 6A00                    push 00000000
+
+:13B2 6A00                    push 00000000
+
+:13B4 6A04                    push 00000004
+
+:13B6 51                      push ecx
+
+:13B7 FFD3                    call ebx      ;DeviceIoControl
+
+:13B9 85C0                    test eax, eax ;ERROR?
+
+:13BB 7518                    jne 004013D5  ;jump start_timer_13D5
+
+:13BD 6814814000              push 00408114 ;-&gt;&quot;Couldn't access device driver&quot;
+
+:13C2 56                      push esi
+
+:13C3 E838FCFFFF              call 1000_Abort_funct  ;ABORT function
+
+:13C8 83C408                  add esp, 00000008
+
+:13CB B801000000              mov eax, 1     ;RETURN TRUE
+
+:13D0 E931030000              jmp 1706_keep ax_&amp;_ret
+
+
+
+:continue_WM_CREATE_start_timer<FONT color="purple">
+
+The SetTimer function installs a system timer. A time-out value is specified, 
+
+and every time a time-out occurs, the system posts a WM_TIMER message to 
+
+the installing application's message queue or passes the message to an 
+
+application-defined TimerProc callback function.</FONT>
+
+:13D5 6A00            push 0     ;zero=to queue
+
+:13D7 68F4010000      push 1F4   ;time out duration: 500 milliseconds
+
+:13DC 6A01            push 1     ;timer identifier
+
+:13DE 56              push esi   ;hWnd	
+
+:13DF FF15C0B24400    Call dword ptr [0044B2C0] ;USER32.SetTimer
+
+:13E5 A1BC964000      mov eax, [004096BC]       ;get cursor
+
+:13EA 50              push eax                  ;push cursor
+
+:13EB FFD7            call edi                  ;SetCursor
+
+:13ED FF15C4B24400    Call dword ptr [0044B2C4] ;ReleaseCapture
+
+:13F3 E90C030000      jmp 1704_ax=0_&amp;_ret       ;ret, bye WM_CREATE
+
+
+
+:WM_ = 0002 = WM_DESTROY<FONT color="purple">
+
+The WM_DESTROY message is sent when a window is being destroyed. It 
+
+is sent to the window procedure of the window being destroyed after 
+
+the window is removed from the screen.</FONT>
+
+:13F8 6A00         push 0         ;typical response to a WM_DESTROY:
+
+:13FA FF1588B24400 Call dword ptr [0044B288] ;PostQuitMessage
+
+:1400 E9FF020000   jmp 1704_ax=0_&amp;_ret
+
+
+
+:WM_ = 0005 = WM_SIZE <FONT color="purple"> WM_SIZE
+
+fwSizeType = wParam;      /* sizing-type flag      */
+
+nWidth = LOWORD(lParam);  /* width of client area  */
+
+nHeight = HIWORD(lParam); /* height of client area */
+
+The WM_SIZE message is sent to a window after its size has changed.</FONT> 
+
+:1405 8B942460010000          mov edx, [esp + 00000160]
+
+:140C 6A01                    push 1        ;repaint flag true
+
+:140E 8BC2                    mov eax, edx
+
+:1410 C1E810                  shr eax, 10
+
+:1413 0FB7D2                  movzx word ptr edx, edx
+
+:1416 0FB7C8                  movzx word ptr ecx, eax
+
+:1419 51                      push ecx      ;height
+
+:141A A1B8964000              mov eax, [004096B8]
+
+:141F 52                      push edx      ;width
+
+:1420 6A00                    push 0        ;new top
+
+:1422 6A00                    push 0        ;new left
+
+:1424 50                      push eax      ;hWnd
+
+:1425 FF15C8B24400            Call dword ptr [0044B2C8] ;MoveWindow
+
+:142B E9D4020000              jmp 1704_ax=0_&amp;_ret  ;ret, bye WM_SIZE
+
+
+
+:WM_ = 000F = WM_PAINT <FONT color="purple">
+
+The WM_PAINT message is sent when Windows or an application makes a 
+
+request to repaint a portion of an application's window. The message 
+
+is sent when the UpdateWindow or RedrawWindow function is called or 
+
+by the DispatchMessage function.</FONT>
+
+:1430 803D6C80400000  cmp byte ptr [806C=Deleting], 00 ;are we deleting?
+
+:1437 7429            je 00401462          ;no, return DefWindowProc, else
+
+:1439 8D442410        lea eax, [esp + 10]  ;prepare window for painting
+
+:143D 8BB42454010000  mov esi, [esp + 00000154]
+
+:1444 50              push eax             ;structure with paint info
+
+:1445 56              push esi             ;hWnd
+
+:1446 FF15CCB24400    Call dword ptr [0044B2CC] ;BeginPaint,
+
+:144C 8D442410        lea eax, [esp + 10]  ;get paint info structure 
+
+:1450 50              push eax             ;push paint info structure
+
+:1451 56              push esi             ;hWnd
+
+:1452 FF15D0B24400    Call dword ptr [0044B2D0] ;EndPaint
+
+:1458 B801000000      mov eax, 1           ;return true
+
+:145D E9A4020000      jmp 1706_keep ax_&amp;_ret  ; bye WM_PAINT
+
+
+
+:WM_PAINT_return DefWindowProc <FONT color="purple">
+
+The DefWindowProc function calls the default window procedure. The 
+
+default window procedure provides default processing for any window 
+
+messages that an application does not process. This function ensures 
+
+that every message is processed. It should be called with the same 
+
+parameters as those received by the window procedure.</FONT>
+
+:1462 8B942460010000          mov edx, [esp + 160]
+
+:1469 8B8C245C010000          mov ecx, [esp + 15C]
+
+:1470 52                      push edx
+
+:1471 51                      push ecx      
+
+:1472 56                      push esi        ;type of msg
+
+:1473 8BB42460010000          mov esi, [esp + 160] 
+
+:147A 56                      push esi
+
+:147B FF15D4B24400            Call dword ptr [0044B2D4] ;DefWindowProcA
+
+:1481 E980020000              jmp 1706_keep ax_&amp;_ret
+
+
+
+:WM_ = 0010 = WM_CLOSE<FONT color="purple">
+
+The WM_CLOSE message is sent as a signal that a window or an application 
+
+should terminate. An application can prompt the user for confirmation 
+
+prior to destroying the window by processing the WM_CLOSE message and 
+
+calling the DestroyWindow function only if the user confirms the choice.</FONT> 
+
+:1486 A160804000              mov eax, [00408060]
+
+:148B 50                      push eax
+
+:148C FF15DCB14400            Call dword ptr [0044B1DC] ;.CloseHandle,
+
+:1492 8B942460010000          mov edx, [esp + 00000160]
+
+:1499 8B8C245C010000          mov ecx, [esp + 0000015C]
+
+:14A0 52                      push edx
+
+:14A1 51                      push ecx
+
+:14A2 56                      push esi
+
+:14A3 8BB42460010000          mov esi, [esp + 00000160]
+
+:14AA 56                      push esi
+
+:14AB FF15D4B24400            Call dword ptr [0044B2D4] ; DefWindowProcA
+
+:14B1 E950020000              jmp 1706_keep ax_&amp;_ret
+
+
+
+:WM_ = 004E = WM_NOTIFY
+
+:14B6 81BC245C010000E8030000  cmp dword ptr [esp + 15C], 3E8 
+
+:14C1 0F853D020000            jne 1704_ax=0_and_ret
+
+:14C7 8B942460010000          mov edx, [esp + 00000160]
+
+:14CE 837A0897                cmp [edx+08], FFFFFF97
+
+:14D2 0F852C020000            jne 1704_ax=0_and_ret
+
+:14D8 E920020000              jmp 004016FD ;return true
+
+
+
+:WM_ = 0111 = <B>WM_COMMAND</B> <FONT color="purple">
+
+The WM_COMMAND message is sent to a window when the user selects an item 
+
+from a menu, when a control sends a notification message to its parent 
+
+window, or when an accelerator keystroke is translated. As soon as this 
+
+part of the code runs, it checks for three eventualities:<BR>1) is it IDM_ABOUT? (which in our home-made menu is &quot;300&quot;, i.e. 0x12C.<BR>2) 
+
+Is it a Menu option? (And if yes, which one? 40007,40012, 40018, 40019, 40020 or 40023?)<BR>3) is it IDM_EXIT? (i.e. &quot;104&quot; = 0x68)</FONT>
+
+:14DD 8B8C245C010000  mov ecx, [esp + 0000015C]
+
+:14E4 0FB7C1          movzx word ptr eax, ecx
+
+:14E7 3D2C010000      cmp eax, 12C  ;is it IDM_= 0x12C = 300 = IDM_ABOUT?
+
+:14EC 7F24            jg 00401512   ;go IDM &gt; 12C: it's our MENU
+
+:14EE 7454            je 00401544   ;go IDM_ABOUT
+
+:14F0 83F868          cmp eax, 68   ;is it IDM_ = 0x68 = 104 = IDM_EXIT?
+
+:14F3 7436            je 0040152B   ;go IDM_EXIT
+
+                                    ;else knows the cuckoo... fall through to
+
+:continue WM_COMMAND: DEFAULT EXIT (DefWindowProc and ret)
+
+:14F5 8B942460010000          mov edx, [esp + 00000160]
+
+:14FC 52                      push edx
+
+:14FD 51                      push ecx
+
+:14FE 56                      push esi
+
+:14FF 8BB42460010000          mov esi, [esp + 00000160]
+
+:1506 56                      push esi
+
+:1507 FF15D4B24400            Call dword ptr [0044B2D4] ;DefWindowProcA,
+
+:150D E9F4010000              jmp 1706_keep ax_&amp;_ret
+
+
+
+:continue WM_COMMAND: IDM_ &gt; 12C... it's a MENU option 
+
+:1512 2D479C0000              sub eax, 9C47 ;magic subtract
+
+:1517 83F810                  cmp eax, 10
+
+:151A 77D9                    ja 004014F5   ;DEFAULT exit
+
+:151C 33D2                    xor edx, edx
+
+:151E 8A9030174000            mov dl, [eax+00401730]
+
+:1524 FF249514174000          jmp dword ptr [4*edx + 00401714]
+
+                        ;Call all other IDMs following table at 1714
+
+                        ;and ret</PRE>
+
+<FONT size="+2"><B> A short digression about &quot;menu tables&quot;</B></FONT><BR>
+
+As you can see, each dword pointer points to a different menu option... how do you get them?, Well, look at the code, it SUBTRACTs first of all from the menu item the &quot;magic&quot; 9C47, which corresponds to 40007 (the first menu value for &quot;Save&quot;). Look at the menu &quot;values&quot;: (through BRW: Borland's resources workshop):<PRE>
+
+  MENUITEM &quot;&amp;Save...&quot;, 40007
+
+  MENUITEM &quot;Save &amp;As...&quot;, 40012
+
+  MENUITEM SEPARATOR
+
+  MENUITEM &quot;E&amp;xit&quot;, 104
+
+  MENUITEM &quot;&amp;Filter...&quot;, 40023
+
+  MENUITEM SEPARATOR
+
+  MENUITEM &quot;&amp;Capture Events&quot;, 40018, CHECKED
+
+  MENUITEM &quot;&amp;Auto Scroll&quot;, 40019, CHECKED
+
+  MENUITEM SEPARATOR
+
+  MENUITEM &quot;C&amp;lear Display&quot;, 40020</PRE>
+
+You see? 40007=0=Save; 40012=+5=SaveAs; 40018=+B=CaptureEvents; 400019=+C=AutoScroll; 40020=+D=ClearDisplay; 40023=+10=filter... Now look at line <U>:151E  mov dl, [eax+00401730]</U>In your dead listing is probably bad interpreted by wdasm... it is a simple &quot;relocation table&quot; here you are:<PRE>
+
+:1730 00 06 06 06 06 01 06 06   Save Exit Exit Exit    Exit     SaveAs Exit Exit
+
+:1738 06 06 06 02 03 04 06 06   Exit Exit Exit Capture Autoscll Clear  Exit Exit                
+
+:1740 05</PRE>                  Fltr
+
+Therefore 0=0; 5=1; B=2; C=3; D=4; 10=5 and more than 10 is out and all the rest is 6... this is VERY IMPORTANT if you want to understand alien &quot;compiled&quot; code you do not know the purpose of... this means that the &quot;relocation&quot; of the various ID_TAGS of a menu after subtracting it with the magic (hexadecimal) number (saveas is +5 in relation to Save, which is 0) are used to fetch the CORRECT multiplication factor (in the case of &quot;SaveAs&quot; is 01, in the case of &quot;Filter&quot; is 05... and these 01 and 05 are used as relocators to fetch the corresponding routine from the table:
+
+Have a look, you'll notice immediately that there are seven possible jumps:<PRE>
+
+:1714 69154000  DWORD 00401569 ;IDM_SAVE   relocator = 00 (40007-40007=0)
+
+:1718 86154000  DWORD 00401586 ;IDM_SAVEAS relocator = 01 (40012-40007=5)
+
+:171C A3154000  DWORD 004015A3 ;IDM_Captre relocator = 02 (40018-40007=B)
+
+:1720 E0154000  DWORD 004015E0 ;IDM_Atscll relocator = 03 (40019-40007=C)
+
+:1724 1D164000  DWORD 0040161D ;IDM_Clear  relocator = 04 (40020-40007=D)
+
+:1728 7B164000  DWORD 0040167B ;IDM_Filter relocator = 05 (40023-40007=10)
+
+:172C F5144000  DWORD 004014F5 ;IDM_Exit   relocator = 06 (all other cases)</PRE>
+
+I think you understand now one of the &quot;intricacies&quot; of windows reverse engineering... the 6 lines of code we saw above:<PRE>
+
+:1512 2D479C0000     sub eax, 9C47        ;magic subtract 40007
+
+:1517 83F810         cmp eax, 10          ;did we get more than maximum?
+
+:151A 77D9           ja 004014F5          ;if so DEFAULT exit
+
+:151C 33D2           xor edx, edx         ;make sure it's zero
+
+:151E 8A9030174000   mov dl, [eax+1730]   ;get relocator 00-06
+
+:1524 FF249514174000 jmp dword ptr [4*edx + 1714]  ;jmp to relocator line</PRE>
+
+Are now pretty strightforward, d'you agree?<BR><BR>
+
+You may ask yourself <FONT color="red">why</FONT> the programmers have chosen these values... well, they have not... that's <U>Microsoft Developer Studio</U> here... with 
+
+time you'll get acquainted with all different compiler peculiarities... have a look at 
+
+the &quot;resource.h&quot; text file inside the packahe of filemon you downloaded... everything is there. But you don't need to have a resource file to grasp this... good old WCB will show it to you, or, alternatively, just hexedit your windows target... look towards the end of the hexedited file... there you'll find all imported functions and 
+
+a little after, at 8720, for instance:<PRE>
+
+00000000000000000800529C26004300   ..........R.&amp;.C.
+
+61007000740075007200650020004500   a.p.t.u.r.e. .E.
+
+760065006E007400730000000800539C   v.e.n.t.s.    S. 
+
+26004100750074006F00200053006300   &amp;.A.u.t.o.  S.c.
+
+72006F006C006C000000000000000000   r.o.l.l......... </PRE>
+
+You understand what that means, don't you... 529C is the VALUE of the <U>C</U>apture Events option and 539C is the VALUE (0x9C53=40019) of the <U>A</U>utoscroll menu option... all windows targets carry these IMPORTANT information within themselves, you 
+
+just sit there fishing all these names out of the unnamed see until your dead listing makes <FONT color="blue">more sense</FONT> than the original source code of the programmer itself! 
+
+<PRE>:continue WM_COMMAND: IDM_ = 68 = IDM_EXIT
+
+:152B 8BB42454010000          mov esi, [esp + 00000154]
+
+:1532 6A00                    push 00000000
+
+:1534 6A00                    push 00000000
+
+:1536 6A10                    push 00000010    ;WM_CLOSE
+
+:1538 56                      push esi
+
+:1539 FF15D8B24400            Call dword ptr [0044B2D8] ;SendMessage (WM_CLOSE)
+
+:153F E9C0010000              jmp 1704_ax=0_&amp;_ret       ;bye bye everybody
+
+
+
+:continue WM_COMMAND: IDM_ = 12C IDM_ABOUT<FONT color="purple">
+
+The DialogBoxParam function creates a modal dialog box from a dialog 
+
+box template resource. &quot;dlgprc&quot; specifies the procedure-instance address 
+
+of the dialog box procedure.</FONT>
+
+:1544 8BB42454010000    mov esi, [esp + 00000154]
+
+:154B 6A00              push 00000000             ;lParamInit;	
+
+:154D 6890214000        push 00402190             ;dlgProc = Function ABOUT
+
+:1552 A1E8994000        mov eax, [004099E8]       ;get hInst
+
+:1557 56                push esi                  ;hWndOwner
+
+:1558 6800814000        push 00408100             ;lpszDlgTem: &quot;AboutBox&quot;
+
+:155D 50                push eax                  ;hInst
+
+:155E FF15E4B24400      Call dword ptr [0044B2E4] ;DialogBoxParam
+
+:1564 E99B010000        jmp 1704_ax=0_&amp;_ret       ;bye WM_COMMAND
+
+
+
+:IDM_SAVE, we land here through the relocation table
+
+:1569 6A00                    push 00000000
+
+:156B A1B8964000              mov eax, [004096B8]
+
+:1570 8BB42458010000          mov esi, [esp + 00000158]
+
+:1577 50                      push eax
+
+:1578 56                      push esi
+
+:1579 E8A2060000              call 00401C20=savefile
+
+:157E 83C40C                  add esp, C
+
+:1581 E97E010000              jmp 1704_ax=0_&amp;_ret
+
+
+
+:IDM_SAVEAS, we land here through the relocation table
+
+:1586 6A01                    push 00000001
+
+:1588 A1B8964000              mov eax, [004096B8]
+
+:158D 8BB42458010000          mov esi, [esp + 00000158]
+
+:1594 50                      push eax
+
+:1595 56                      push esi
+
+:1596 E885060000              call 00401C20=savefile
+
+:159B 83C40C                  add esp, C
+
+:159E E961010000              jmp 1704_ax=0_&amp;_ret
+
+
+
+:IDM_Capture, we land here through the relocation table
+
+       ;since the first thing it does is checking TRUE a
+
+       ;memory location, we'll call it 8064_Capture
+
+:15A3 803D6480400001     cmp byte ptr [8064_Capture], 01 ;if capture
+
+:15AA 1AC0               sbb al , al                     ;let's have
+
+:15AC F6D8               neg al                          ;no capture
+
+:15AE A264804000         mov [8064_Capture], al          ;in 8064 or
+
+:15B3 3C01               cmp al, 01                      ;the other way
+
+:15B5 B800000000         mov eax, 00000000               ;round
+
+:15BA 8BB42454010000     mov esi, [esp + 00000154]
+
+:15C1 83D0FF             adc eax, FFFFFFFF
+
+:15C4 83E008             and eax, 00000008
+
+:15C7 50                 push eax
+
+:15C8 68529C0000         push 00009C52 ;LISTMENU, Item: &quot;Capture Events&quot;
+
+:15CD 56                 push esi
+
+:15CE FF15DCB24400       Call dword ptr [0044B2DC] ;GetMenu,
+
+:15D4 50                 push eax
+
+:15D5 FF15E0B24400       Call dword ptr [0044B2E0] ;CheckMenuItem,
+
+:15DB E924010000         jmp 1704_ax=0_&amp;_ret</PRE><FONT color="purple">
+
+The CheckMenuItem function selects (places a check mark next to) or clears (removes a check mark from) a specified menu item in the given pop-up menu.</FONT>
+
+<PRE>:IDM_Autoscroll, we land here through the relocation table
+
+       ;since the first thing it does is checking TRUE a memory
+
+       ;location, we'll call it 8068_Atscll... see how important
+
+       ;are these &quot;WM_COMMAND's IDMs&quot; for tagging purposes?
+
+:15E0 803D6880400001  cmp byte ptr [8068_Atscll], 01  ;see above
+
+:15E7 1AC0            sbb al , al                     ;the same as
+
+:15E9 F6D8            neg al                          ;for capture
+
+:15EB A268804000      mov [8068_Atscll], al
+
+:15F0 3C01            cmp al, 01                      
+
+:15F2 B800000000      mov eax, 00000000
+
+:15F7 8BB42454010000  mov esi, [esp + 00000154]
+
+:15FE 83D0FF          adc eax, FFFFFFFF
+
+:1601 83E008          and eax, 00000008
+
+:1604 50              push eax
+
+:1605 68539C0000      push 00009C53  ;&quot;Auto Scroll&quot;
+
+:160A 56              push esi
+
+:160B FF15DCB24400    Call dword ptr [0044B2DC] ;GetMenu
+
+:1611 50              push eax  ;and places or remove checkmark
+
+:1612 FF15E0B24400    Call dword ptr [0044B2E0] ;CheckMenuItem;
+
+:1618 E9E7000000      jmp 1704_ax=0_&amp;_ret
+
+
+
+:IDM_CLEAR, we land here through the relocation table
+
+:161D 8D44240C                lea eax, [esp + 0C]
+
+:1621 6A00                    push 00000000
+
+:1623 50                      push eax
+
+:1624 8B0D60804000            mov ecx, [00408060]
+
+:162A 6A00                    push 00000000
+
+:162C 6A00                    push 00000000
+
+:162E 6A00                    push 00000000
+
+:1630 6A00                    push 00000000
+
+:1632 6A01                    push 00000001
+
+:1634 51                      push ecx
+
+:1635 FF15E4B14400            Call dword ptr [0044B1E4] ;DeviceIoControl
+
+:163B 85C0                    test eax, eax             ;lost device?
+
+:163D 751F                    jne 0040165E              ;works, go update
+
+:163F 8BB42454010000          mov esi, [esp + 00000154]
+
+:1646 6814814000              push 00408114  ;-&gt;&quot;Couldn't access device driver&quot;
+
+:164B 56                      push esi
+
+:164C E8AFF9FFFF              call 1000_Abort
+
+:1651 83C408                  add esp, 00000008
+
+:1654 B801000000              mov eax, 00000001
+
+:1659 E9A8000000              jmp 1706_keep ax_&amp;_ret
+
+
+
+:continue IDM_CLEAR: Update
+
+:165E 6A01                    push 00000001
+
+:1660 A1B8964000              mov eax, [004096B8]
+
+:1665 8BB42458010000          mov esi, [esp + 00000158]
+
+:166C 50                      push eax
+
+:166D 56                      push esi
+
+:166E E8CD030000              call 00401A40 ;UpdateStatistic
+
+:1673 83C40C                  add esp, 0000000C
+
+:1676 E989000000              jmp 1704_ax=0_&amp;_ret
+
+
+
+:IDM_FILTER, we land here through the relocation table
+
+           ;Calls FilterProc (same as for the About case) 
+
+:167B 8BB42454010000          mov esi, [esp + 00000154]
+
+:1682 6A00                    push 00000000
+
+:1684 68D01E4000              push 00401ED0   ;FilterProc!
+
+:1689 A1E8994000              mov eax, [004099E8]
+
+:168E 56                      push esi
+
+:168F 680C814000              push 0040810C ;-&gt;&quot;Filter&quot;
+
+:1694 50                      push eax
+
+:1695 FF15E4B24400            Call dword ptr [0044B2E4] ;USER32.DialogBoxParamA
+
+:169B EB67                    jmp 1704_ax=0_&amp;_ret
+
+
+
+:WM_ = 0113 = WM_TIMER<FONT color="purple">
+
+The WM_TIMER message is posted to the installing application's message 
+
+queue or sent to the appropriate TimerProc callback function after each 
+
+interval specified in the SetTimer function used to install a timer. Location 
+
+[8064] is already called 8064_Capture here, because we already investigated it 
+
+above.</PRE>How do we know, below,  that <FONT color="blue">&quot;44B1E4&quot;</FONT> corresponds to <FONT color="blue">DeviceIoControl</FONT>?<BR>
+
+There are two possibilities: luck (search for 44B1E4 inside the dead listing, 
+
+may be you are lucky and the programmer has called it DIRECTLY somewhere else) or a little &quot;zen&quot; feeling (number of parameters, context, various feelings). Here it is luck :-)</FONT><PRE>
+
+:169D 803D6480400000          cmp byte ptr [8064_Capture], 00
+
+:16A4 745E                    je 00401704         ;return if no capture
+
+:16A6 8B1DE4B14400            mov ebx, [0044B1E4] ;DeviceIoControl
+
+:16AC 8BB42454010000          mov esi, [esp + 154]
+
+:16B3 33FF                    xor edi, edi        ;make sure edi is zero!
+
+
+
+:loop_16B5
+
+:16B5 57                      push edi            ;0
+
+:16B6 A160804000              mov eax, [00408060]
+
+:16BB 68B4964000              push 004096B4       ;push Statslen loc
+
+:16C0 6800000400              push 00040000       ;SizeofStats
+
+:16C5 68F0994000              push 004099F0
+
+:16CA 57                      push edi            ;0
+
+:16CB 57                      push edi            ;NULL
+
+:16CC 6A02                    push 00000002
+
+:16CE 50                      push eax
+
+:16CF FFD3                    call ebx   ;DeviceIoControl
+
+:16D1 85C0                    test eax, eax    ;ERROR?
+
+:16D3 741A                    je 004016EF      ;Abort
+
+:16D5 393DB4964000            cmp [004096B4], edi         ;Statslen=0?
+
+:16DB 7427                    je 00401704      ;exit loop return FALSE
+
+:16DD 57                      push edi
+
+:16DE A1B8964000              mov eax, [004096B8]
+
+:16E3 50                      push eax
+
+:16E4 56                      push esi
+
+:16E5 E856030000              call 00401A40  ;UpdateStatistic
+
+:16EA 83C40C                  add esp, C
+
+:16ED EBC6                    jmp 004016B5  ;loop_16B5
+
+
+
+:abort
+
+:16EF 6814814000              push 00408114 ;-&gt;&quot;Couldn't access device driver&quot;
+
+:16F4 56                      push esi
+
+:16F5 E806F9FFFF              call 1000_Abort_funct 
+
+:16FA 83C408                  add esp, 00000008
+
+
+
+:16FD_return true
+
+:16FD B801000000              mov eax, 1  ;flag return value TRUE
+
+:1702 EB02                    jmp 1706_keep ax_&amp;_ret
+
+
+
+:1704_ax=0_and_ret
+
+:1704 33C0                    xor eax, eax
+
+
+
+:1706_keep_ax_and_ret
+
+:1706 5F                      pop edi
+
+:1707 5E                      pop esi
+
+:1708 5B                      pop ebx
+
+:1709 81C444010000            add esp, 00000144
+
+:0040170F C21000              ret 0010    ;bye MainWndProc
+
+
+
+
+
+:1712 8BFF                    mov edi, edi
+
+
+
+:IDM_jump table for WM_COMMAND
+
+:1714 69154000                DWORD 00401569  ;IDM_SAVE
+
+:1718 86154000                DWORD 00401586  ;IDM_SAVEAS
+
+:171C A3154000                DWORD 004015A3  ;IDM_CAPTURE
+
+:1720 E0154000                DWORD 004015E0  ;IDM_AUTOSCROLL
+
+:1724 1D164000                DWORD 0040161D  ;IDM_CLEAR
+
+:1728 7B164000                DWORD 0040167B  ;IDM_FILTER
+
+:172C F5144000                DWORD 004014F5  ;IDM_EXIT
+
+
+
+:IDM_ relocation table for WM_COMAND, rewritten, since Wdasm
+
+                  ;does not interpret this snippet correctly
+
+:1730 00 06 06 06 06 01 06 06 
+
+:1738 06 06 06 02 03 04 06 06                   
+
+:1740 05 
+
+</PRE>
+
+
+
+Well, we are almost DONE! We'll tackle the device driver in the next (and last) part.
+
+<HR>
+
+<FONT color="blue">(c) fravia+ 1997.</FONT> All rights reserved.<BR> 
+
+
+
+<HR ALIGN="CENTER" WIDTH="100%" SIZE="3">
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</I><BR><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A href="filemon1.htm" tppabs="http://www.anticrack.de/fravia/filemon1.htm">filemon1</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A href="filemon2.htm" tppabs="http://www.anticrack.de/fravia/filemon2.htm">filemon2</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A href="filemon3.htm" tppabs="http://www.anticrack.de/fravia/filemon3.htm">filemon3</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A href="filemon5.htm" tppabs="http://www.anticrack.de/fravia/filemon5.htm">filemon5</A>
+
+<BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"> 
+
+<A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links </A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0">
+
+<A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity </A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays </A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails </A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mailFraVia </A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">is reverse engineering legal? </A></CENTER>
+
+<CENTER><HR ALIGN="CENTER" WIDTH="100%" SIZE="2"></CENTER>
+
+
+
+</BODY>
+
+</HTML>
+

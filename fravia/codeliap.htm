@@ -1,0 +1,470 @@
+<HTML>
+
+<HEAD>
+
+<META Name="Voluntary Content Rating" content="it's fravia's: great!">
+
+<TITLE>codeliap.htm: cracking codelink v4.0 by silkware</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR=#C0C0C0 TEXT=#001010 ALINK=#405040 VLINK=#8850AA><P><CENTER>
+
+<H1>cracking codelink v4.0 by silkware<BR>("applets cracking")</H1>
+
+by <B><U>douby</U></B>, 2 December 1998<BR>(slightly edited by fravia+)<BR><BR><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=600 HEIGHT=5 BORDER=0
+
+VSPACE=0 HSPACE=0></CENTER><BR>
+
+<PRE>
+
+cracking codelink v4.0 by silkware                              
+
+by douby
+
+
+
+  More and more companies are trying to make big money out of java
+
+applets ... yet what's money? Money is NOTHING compared to knowledge... 
+
+as you will see cracking such an applet is a piece cake ... 
+
+
+
+  The applet used in this essay is codelink v4.0 by silkware.
+
+  You can download it at 
+
+<A href="javascript:if(confirm('http://silk.webware.co.nz/  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://silk.webware.co.nz/'" tppabs="http://silk.webware.co.nz/" target=_blank>http://silk.webware.co.nz</A> 
+
+this applet can be used to password-protect some of your pages (duh!.. as if 
+
+my readers would need an applet to protect their pages)... it's a 30 day trial 
+
+version and reading the readme.html you'll soon find out that it can be registered 
+
+using a correct registration key... 
+
+
+
+  To crack this baby only one tool is needed... JAD, a java decompiler... 
+
+you can download it at
+
+<A href="javascript:if(confirm('http://www.geocities.com/SiliconValley/Bridge/8617/jad.html  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.geocities.com/SiliconValley/Bridge/8617/jad.html'" tppabs="http://www.geocities.com/SiliconValley/Bridge/8617/jad.html" target=_blank>http://www.geocities.com/SiliconValley/Bridge/8617/jad.html</A>. 
+
+
+
+  Ok, enough 'chit chat' let's start cracking this applet...
+
+decompile all the classes in the codelink directory and examine the
+
+output files ... you will quickly come to the conclusion  that the protection
+
+scheme is hidden in the file called V4Codelink.class in a method called ftxx... 
+
+so, let's take a look at the protection scheme... 
+
+	int fxtx = 2098;
+
+	String hexstart = "f-";
+
+	String hexfin = "3C";
+
+	boolean xzxzvv = true;
+
+	String xzxzv = "";
+
+	String param = getParameter("RegistrationID");
+
+	if(param == null)
+
+	    return false;
+
+	if(param != null)
+
+	    xzxzv = param;
+
+	xzxzv = xzxzv.trim();           //get right reg. id
+
+	String hexa4 = "";
+
+	int lengthh = xzxzv.length();   //store length of reg. id in lengthh
+
+	String bitof = "";
+
+	int iii = lengthh;              //iii = length of reg. id
+
+	if(lengthh &lt;= 9)             //if lengthh &lt;= 9 wrong reg. id
+
+	    return false;               //length of reg. id must be &gt;= 10
+
+
+
+Hhmm... interesting! The value of the param RegistrationID is stored in a
+
+string called param, if param isn't null the string is stored in a string
+
+called xzxzy... the string xzxzy is trimmed and it's length is stored in both
+
+int lengthh and in int iii 
+
+if  lengthh is &lt; 10 you've got a wrong reg. id... 
+
+
+
+at this point in the code we've reached a for-loop .. let's take a look
+
+at it
+
+
+
+for(int ii = 0; ii &lt;= lengthh; ii++)  
+
+{
+
+		iii--;
+
+		if(iii &lt;= 0)
+
+		    iii = 0;
+
+		bitof = xzxzv.substring(iii, lengthh - ii);
+
+		hexa4 = hexa4 + bitof;
+
+	    }
+
+hmm ... the string bitof is filled with the character at position
+
+lengthh-ii in the string and is concatenated to hexa4 so the only 
+
+thing this for loop does is to turn the string around... 
+
+btw they could have used charAt instead of substring but I bet 
+
+they used substring to make the code tougher too crack... hahaha... 
+
+let's take a look at the next part of the code...
+
+
+
+String hexa5 = hexa4;                        //hexa5=hexa4
+
+	int hexa7 = hexa5.length();          //hexa7=length of hexa5
+
+	String Licen = hexa5.substring(0, 2);//Licen=first 2 chars of hexa5
+
+	String ProdnVers = hexa5.substring(hexa7 - 2, hexa7);
+
+					     //ProdnVers=last 2 chars of hexa5
+
+	String rawNum = hexa5.substring(2, hexa7 - 3);  
+
+					     //rawnr is the rest of the chars
+
+
+
+on to the next 'obstacle' the string in hexa4 is copied in the string
+
+called hexa5 the length of hexa5 is copied into hexa7... now comes the
+
+interesting part this part tells use a right reg. id should consist of a Licen
+
+string, a ProdnVers String, and a rawNum string... the Licen string has to be 
+
+the first 2 chars of the hexa5 string, the prodnVers has to be the last 2 chars
+
+of the hexa5 string, the rawNum string contains the rest of the remaining
+
+characters 
+
+
+
+int moveto = rawNum.indexOf("-");       //there must be a '-' in the rawnr
+
+					//string
+
+	if(moveto &lt; 0)
+
+	    return false;
+
+	String bitup = rawNum.substring(0, moveto);
+
+					//copy part before '-' into bitup
+
+	String bitdn = rawNum.substring(moveto + 1, rawNum.length());   
+
+					//copy part after '-' into bitdn
+
+	String Num = bitup + bitdn;     //concatenate bitup+bitdn
+
+	String Whatisit = "Code:" + xzxzv + " The Reverse:" + hexa4 + 
+
+	  " licence:" + Licen + "  Version" + ProdnVers + "\n" + rawNum + "  "
+
+          + Num;
+
+
+
+somewhere in the rawNum string there has to be a "-" character if not
+
+the  registration id you're using is a fake ... else the bitup string is
+
+given the value of the part before the "-" and bitdn is given the value of
+
+the part after the "-" both bitup and bitdn are concatenated and copied
+
+into the string num ... 
+
+
+
+try
+
+	{
+
+	    original = Integer.parseInt(Num);   //parse string to int
+
+	}
+
+	catch(Exception e)
+
+	{
+
+	    Num = "0";
+
+	    return false;
+
+	}
+
+	int Result = 0;
+
+	Result = original % fxtx;       //nr has to be a mod of fxtx=2098
+
+	boolean rtclassconvert = false;
+
+	rtclassconvert = hexfin.equals(ProdnVers);      
+
+					//ProdnVers has to be "3C"
+
+	boolean KeepCool = true;
+
+	KeepCool = hexstart.equals(Licen);              
+
+					//Licen has to be "f-"
+
+	String fallornerd = "not Registered";
+
+	if(Result == 0 && rtclassconvert && KeepCool)
+
+	{
+
+	    fallornerd = "Licenced";
+
+	    return true;
+
+	}
+
+	else
+
+	{
+
+	    return false;
+
+	}
+
+
+
+in the remaining part of the code the string Num is parsed to an int and 
+
+copied into the int original ... the int original has to be a modulus of 
+
+2098, the ProdnVers string has to be 3C and the Licen string has to be "f-" 
+
+putting all this information together we get a turned around 
+
+registration id looking like this...
+
+
+
+f-abcd-e3C
+
+
+
+with "f-" being the Licen String, "3C" being the ProdnVers and 
+
+abcde mod 2098=0 turn it around and you'll get the right reg. id... 
+
+something like this ...
+
+
+
+C3e-dcba-f
+
+
+
+well that's all folks ... hope you liked the essay ...
+
+
+
+for comments,suggestions or just to say hello you can email me at:
+
+
+
+douby_(at)hotmail(dot)com
+
+
+
+bye!
+
+</PRE><CENTER>
+
+<BR>
+
+<HR size=5>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0
+
+VSPACE=0 HSPACE=0><A
+
+HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0
+
+VSPACE=0 HSPACE=0>
+
+<A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links </A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0>
+
+<A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity </A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN=BOTTOM
+
+BORDER=0 VSPACE=0 HSPACE=0 width="13" height="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC </A>
+
+
+
+<IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays </A>
+
+
+
+<IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database </A>
+
+
+
+<IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="botstart.htm" tppabs="http://www.anticrack.de/fravia/botstart.htm">bots wars</A>
+
+
+
+<BR>
+
+<IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut </A>
+
+
+
+<IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 BORDER=0
+
+VSPACE=0 HSPACE=0><A
+
+HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13
+
+BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13
+
+BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="javascri.htm" tppabs="http://www.anticrack.de/fravia/javascri.htm">javascript wars </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0
+
+VSPACE=0 HSPACE=0><A
+
+HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0
+
+VSPACE=0 HSPACE=0><A
+
+HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia </A><BR>
+
+
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0
+
+VSPACE=0 HSPACE=0><A
+
+HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering illegal?
+
+</A></CENTER>
+
+<HR size=4></FONT></CENTER></CENTER>
+
+
+
+</BODY>
+
+</HTML>
+
+
+

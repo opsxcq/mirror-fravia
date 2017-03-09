@@ -1,0 +1,1656 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>solution</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+<CENTER><H2>How to reverse engineer +Sync's protection<BR>
+
+(You'll find it in the SECOND PHASE of &quot;our protections&quot; section)</H2><H4>by +Sync, 13 August 1997</H4>
+
+<IMG SRC="hcu1.gif" tppabs="http://www.anticrack.de/fravia/hcu1.gif" ALT="HCU" ALIGN="BOTTOM" WIDTH="114" HEIGHT="43" BORDER="0" VSPACE="0" HSPACE="0">
+
+	<BR>
+
+<BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">Courtesy of Fravia's page 
+
+of reverse engineering<BR><BR><I>Well, let's hope that programmers will NOT 
+
+use protection schemes based on +Sync's findings, the math involved is awesom! 
+
+We would crack such a scheme anyway, of course, but there may come a point where 
+
+cracking a protection is too fatiguing to be worth the try... altough I 
+
+would not count on it: the more complex it is the more worth is it to 
+
+crack... let's not forget that we DO NOT CARE for the programs we crack... 
+
+we care for the complexity of the protection scheme itself!<BR>This said, 
+
+you have here a &quot;terrific&quot; protection scheme from +Sync (one of the few +HCUkers 
+
+since the 1996 &quot;strainer&quot;), it is jolly well WORTH studing if you are 
+
+seriously into software 
+
+protection (or deprotection, which amounts to the same interests :-)
+
+
+
+</I><HR size="2">
+
+<PRE><FONT size="+2">How to Reverse Engineer Register v1.0
+
+By +Sync</FONT></CENTER>
+
+
+
+Find Target: At <A href="tppmsgs/msgs2.htm#271" tppabs="http://www.anticrack.de/fravia/tppmsgs/msgs2.htm#271">Fravia's</A> Page of Reverse Engineering (of course)
+
+Tools Used: WinIce 3.0 (Godot), WDASM 8.9, Hex Workshop
+
+Time Required: Depends on how in depth you study it
+
+
+
+<CENTER>Took over 8 hours to write program, about 2 to write this essay.</CENTER>
+
+Well here is the solution to the REGISTER.EXE program I wrote.  I'm guessing
+
+that not many people attempted to crack it, because as of this writing, almost
+
+3 weeks after releasing it, only one valid code has been turned in to me.  I
+
+would like to thank +Daq for his great work and enthusiasm for this project,
+
+not to mention a working name/number sequence.  I would also like to thank
+
+jOb for his response - while he did not go through all of the details he did
+
+have an almost perfect explaination of the code, and I'm certain he was capable
+
+of reversing it if he had taken the time.  However, I commend him for his choice
+
+NOT to work on it.  Understanding the code is enough, why work tediously on
+
+an excercise when there are real Micro$oft programs to destroy?  There were
+
+several patches turned in, however patching (especially in this case where
+
+I gave you a valid name/number pair) was much easier than reversing the code
+
+generating algorithm.  I decided that to be complete I would include both the
+
+C and ASM code to this program.  I will warn you now that there is ALOT of
+
+code to wade through in this text.  It is not necessary to go through line
+
+by line, just look at the areas that you don't understand.  I decided that
+
+to include the complete ASM code would be better than just short snippets
+
+because then you can see how the C code is converted by the compiler.  You
+
+will notice several inneficient ways that the code was generated.  I would
+
+like to thank +Daq for his interest in my program, his was the only response
+
+I received which attempted to understand how the code is generated, and he
+
+did fine work.
+
+Please examine this code as closely as you like: it is deliberately choppy, 
+
+as this hinders it's reversal. 
+
+I commented as well as I think necessary, but if you REALLY can't figure 
+
+something out just let me know.  
+
+All math in the C code is done in decimal form (kind of like reading
+
+greek after using hex exclusively).  I hope this project will be helpful 
+
+to someone.
+
+
+
+-----------------------------------------------------------------
+
+void Register::OnRegButton() 
+
+{
+
+	
+
+	int RegFlag[4];		// 69 = good
+
+	int i;
+
+	int NameSum;	
+
+	CString Temp1= &quot;UareaisrerGd&quot;;	//poor attempt at encrypting text
+
+	CString Temp2= &quot;URrbgis8ered&quot;;
+
+	CString Temp3= &quot;Sync5ister+d&quot;;
+
+	CString Temp4= &quot;VnrQ7isoered&quot;;
+
+	CString UnReg;				
+
+	CString Reg = &quot;0123456789&quot;;
+
+	div_t DivResult;
+
+	RegFlag[1]=69;
+
+	RegFlag[2]=96;
+
+	RegFlag[3]=99;
+
+	
+
+	UpdateData(TRUE);		//Update m_name with whats in box	
+
+	SetupCheck();
+
+
+
+	UnReg = Temp1;			// Set up 'UnRegistered'
+
+	UnReg.SetAt(1,Temp4.GetAt(1));
+
+	UnReg.SetAt(4,Temp2.GetAt(4));
+
+	UnReg.SetAt(7,Temp3.GetAt(7));
+
+	UnReg.SetAt(10,Temp4.GetAt(10));
+
+	
+
+	Reg.SetAt(0, Temp2.GetAt(1));	// Set up 'Registered'
+
+	for (i=1 ; i<=9 ; i++) { Reg.SetAt(i, UnReg.GetAt(i+2)); } if (lstrlen(m_name)>= 3)		// Name must be 3 chars long
+
+	{
+
+		
+
+		i=Clean( toascii(  m_name.GetAt(1) ));  //2nd char cleaned on line 1
+
+		if (!check[(i-65)*10+2])
+
+		{
+
+			RegFlag[1] =14;
+
+		}
+
+		else
+
+		{
+
+			testchk[(i-65)*10+2] = TRUE;
+
+		}
+
+
+
+		i=Clean( toascii( m_name.GetAt(0))+toascii( m_name.GetAt(1))+toascii( m_name.GetAt(2)) );
+
+		if (!check[(i-65)*10+3])		//(1st+2nd+3rd) cleaned on line 2
+
+		{
+
+			RegFlag[2] =35;
+
+		}
+
+		else
+
+		{
+
+			testchk[(i-65)*10+3] = TRUE;
+
+		}
+
+
+
+		if (!check[164])			// &quot;Q&quot; on line 3 hard coded
+
+		{
+
+			RegFlag[3] = 48;
+
+		}
+
+		else
+
+		{
+
+			testchk[164] = TRUE;
+
+		}
+
+
+
+		i=Clean( toascii( m_name.GetAt(0) )); // 1st cleaned on line 4
+
+		if (!check[(i-65)*10+5])
+
+		{
+
+			RegFlag[1] = 19;
+
+		}
+
+		else
+
+		{
+
+			testchk[(i-65)*10+5] = TRUE;
+
+		}
+
+		i=Clean( toascii( m_name.GetAt(1) )); // 2nd cleaned on line 4
+
+		if (!check[(i-65)*10+5])
+
+		{
+
+			RegFlag[2] = 18;
+
+		}
+
+		else
+
+		{
+
+			testchk[(i-65)*10+5] = TRUE;
+
+		}
+
+		i=Clean( toascii( m_name.GetAt(2) ));  // 3rd cleaned on line 4
+
+		if (!check[(i-65)*10+5])
+
+		{
+
+			RegFlag[3] = 17;
+
+		}
+
+			else
+
+		{
+
+			testchk[(i-65)*10+5] = TRUE;
+
+		}
+
+
+
+
+
+		NameSum =0;		// remainder of sum of all chars /69 cleaned on line 5
+
+		for (i=1; i <= m_name.GetLength(); i++ ) { NameSum +="m_name.GetAt(i-1);" } DivResult="div(NameSum," 69); i="Clean(DivResult.rem);" if (!check[(i-65)*10+6]) { RegFlag[1]="68;" } else { testchk[(i-65)*10+6]="TRUE;" } i="Clean(" toascii(m_name.GetAt(2))*6 ); // (6 * 3rd) cleaned on line 6 if (!check[(i-65)*10+7]) { RegFlag[2]="27;" } else { testchk[(i-65)*10+7]="TRUE;" } i="Clean(" toascii(m_name.GetAt(0))*toascii(m_name.GetAt(2)) ); if (!check[(i-65)*10+8]) // (1st * 3rd) cleaned on line 7 { RegFlag[3]="61;" } else { testchk[(i-65)*10+8]="TRUE;" } i="Clean(toascii(m_name.GetAt(0))-4);" //1st 4 cleaned on line 8 if (!check[(i-65)*10+9]) { RegFlag[1]="56;" } else { testchk[(i-65)*10+9]="TRUE;" } if (!check[190]) // "S" on line 9 hard coded { RegFlag[2]="47;" } else { testchk[190]="TRUE;" } if (!check[71]) // "H" on line 0 hard coded { RegFlag[3]="48;" } else { testchk[71]="TRUE;" } if (!check[21]) // "C" on line 0 hard coded { RegFlag[1]="59;" } else { testchk[21]="TRUE;" } if (!check[201]) // "U" on line 0 hard coded { RegFlag[2]="64;" } else { testchk[201]="TRUE;" } for (i="1" ; i <="210" ; i++) // make sure only correct checks are checke { // i.e. no extras. The two arrays should be same if (testchk[i] !="check[i])" { RegFlag[2]="i+100;" } } if (RegFlag[1] !="69)" //this section makes sure all 3 flags are unchanged { RegFlag[2]="56;" } if (RegFlag[2] !="96)" { RegFlag[3]="43;" } if (RegFlag[3]="=" 99) //if unchanged, your'e good guy { m_name="Reg;" UpdateData(FALSE); } else // otherwise you're a bad guy { m_name="UnReg;" UpdateData(FALSE); } } } int Register::Clean(int X) // Return int representing letters A-U // Simply subtracts or adds 10 until it is within 65-85 range { while (X> 85)
+
+	{
+
+		X=X-10;
+
+	}
+
+	while (X <65) { X="X+10;" } return X; } And now, as promised the ASM code "corresponding.class" tppabs="http://fravia.org/corresponding.class" to the C code above. :0040295E 90 nop :0040295F 90 nop :00402960 6AFF push FFFFFFFF :00402962 6840434000 push 00404340 :00402967 64A100000000 mov eax, fs:[00000000] :0040296D 50 push eax :0040296E 64892500000000 mov dword ptr fs:[00000000], esp :00402975 83EC30 sub esp, 00000030 :00402978 55 push ebp :00402979 56 push esi :0040297A 8BF1 mov esi, ecx :0040297C 57 push edi * Possible StringData Ref from Data Obj>&quot;UareaisrerGd&quot;	
+
+===========================================================================
+
+;This and the three garbled below are combined to make &quot;Registered&quot; and
+
+&quot;Unregistered&quot; text fields.
+
+===========================================================================
+
+                                  |
+
+:0040297D 68A0604000              push 004060A0
+
+:00402982 8D4C2424                lea ecx, dword ptr [esp + 24]
+
+
+
+* Reference To: MFC42.MFC42:NoName0127, Ord:0219h
+
+                                  |
+
+:00402986 E86F140000              Call 00403DFA
+
+
+
+* Possible StringData Ref from Data Obj -&gt;&quot;URrbgis8ered&quot;	                                  |
+
+:0040298B 6890604000              push 00406090
+
+:00402990 8D4C241C                lea ecx, dword ptr [esp + 1C]
+
+:00402994 C744244800000000        mov [esp + 48], 00000000
+
+
+
+* Reference To: MFC42.MFC42:NoName0127, Ord:0219h
+
+                                  |
+
+:0040299C E859140000              Call 00403DFA
+
+
+
+* Possible StringData Ref from Data Obj -&gt;&quot;Sync5ister+d&quot;
+
+                                  |
+
+:004029A1 6880604000              push 00406080
+
+:004029A6 8D4C2420                lea ecx, dword ptr [esp + 20]
+
+:004029AA C644244801              mov [esp + 48], 01
+
+
+
+* Reference To: MFC42.MFC42:NoName0127, Ord:0219h
+
+                                  |
+
+:004029AF E846140000              Call 00403DFA
+
+
+
+* Possible StringData Ref from Data Obj -&gt;&quot;VnrQ7isoered&quot;
+
+                                  |
+
+:004029B4 6870604000              push 00406070
+
+:004029B9 8D4C2418                lea ecx, dword ptr [esp + 18]
+
+:004029BD C644244802              mov [esp + 48], 02
+
+
+
+* Reference To: MFC42.MFC42:NoName0127, Ord:0219h
+
+                                  |
+
+:004029C2 E833140000              Call 00403DFA
+
+:004029C7 8D4C240C                lea ecx, dword ptr [esp + 0C]
+
+:004029CB C644244403              mov [esp + 44], 03
+
+
+
+* Reference To: MFC42.MFC42:NoName0120, Ord:021Ch
+
+                                  |
+
+:004029D0 E8FB130000              Call 00403DD0
+
+
+
+* Possible StringData Ref from Data Obj -&gt;&quot;0123456789&quot;	
+
+===========================================================================
+
+;This is where the &quot;Registered&quot; is stored, notice it is 10 characters long,
+
+just like &quot;Registered&quot;.
+
+===========================================================================
+
+                                  |
+
+:004029D5 6864604000              push 00406064
+
+:004029DA 8D4C2414                lea ecx, dword ptr [esp + 14]
+
+:004029DE C644244804              mov [esp + 48], 04
+
+
+
+* Reference To: MFC42.MFC42:NoName0127, Ord:0219h
+
+                                  |
+
+:004029E3 E812140000              Call 00403DFA
+
+:004029E8 6A01                    push 00000001
+
+:004029EA 8BCE                    mov ecx, esi
+
+:004029EC C644244805              mov [esp + 48], 05
+
+:004029F1 C744243445000000        mov [esp + 34], 00000045	;RegFlag[1]
+
+:004029F9 C744243860000000        mov [esp + 38], 00000060	;RegFlag[2]
+
+:00402A01 C744243C63000000        mov [esp + 3C], 00000063	;RegFlag[3]
+
+
+
+* Reference To: MFC42.MFC42:NoName0126, Ord:18BEh
+
+                                  |
+
+:00402A09 E8E6130000              Call 00403DF4
+
+:00402A0E 8BCE                    mov ecx, esi
+
+:00402A10 E83B040000              call 00402E50
+
+:00402A15 8D442420                lea eax, dword ptr [esp + 20]
+
+:00402A19 8D4C240C                lea ecx, dword ptr [esp + 0C]
+
+:00402A1D 50                      push eax
+
+
+
+* Reference To: MFC42.MFC42:NoName0125, Ord:035Ah
+
+                                  |
+
+:00402A1E E8CB130000              Call 00403DEE
+
+:00402A23 8B4C2414                mov ecx, dword ptr [esp + 14]
+
+:00402A27 8A5101                  mov dl, byte ptr [ecx+01]
+
+:00402A2A 8D4C240C                lea ecx, dword ptr [esp + 0C]
+
+:00402A2E 52                      push edx
+
+:00402A2F 6A01                    push 00000001
+
+
+
+* Reference To: MFC42.MFC42:NoName0124, Ord:16E0h
+
+                                  |
+
+:00402A31 E8B2130000              Call 00403DE8
+
+===========================================================================
+
+Trace into the call above (at 402A31) until it makes another call.  AX will
+
+hold a memory location.  Look at DS:AX and you will see Temp1.  2 Lines above
+
+you will see &quot;0123456789&quot;.  Keep your data window on this area as you trace
+
+through the next few calls.  The strings will be constructed right before your
+
+eyes.  For a more in depth look at what these calls are doing, see the C code.
+
+===========================================================================
+
+:00402A36 8B442418                mov eax, dword ptr [esp + 18]
+
+:00402A3A 8A4804                  mov cl, byte ptr [eax+04]
+
+:00402A3D 51                      push ecx
+
+:00402A3E 6A04                    push 00000004
+
+:00402A40 8D4C2414                lea ecx, dword ptr [esp + 14]
+
+
+
+* Reference To: MFC42.MFC42:NoName0124, Ord:16E0h
+
+                                  |
+
+:00402A44 E89F130000              Call 00403DE8
+
+:00402A49 8B54241C                mov edx, dword ptr [esp + 1C]
+
+:00402A4D 8D4C240C                lea ecx, dword ptr [esp + 0C]
+
+
+
+:00402A51 8A4207                  mov al, byte ptr [edx+07]
+
+:00402A54 50                      push eax
+
+:00402A55 6A07                    push 00000007
+
+
+
+* Reference To: MFC42.MFC42:NoName0124, Ord:16E0h
+
+                                  |
+
+:00402A57 E88C130000              Call 00403DE8
+
+:00402A5C 8B4C2414                mov ecx, dword ptr [esp + 14]
+
+:00402A60 8A510A                  mov dl, byte ptr [ecx+0A]
+
+:00402A63 8D4C240C                lea ecx, dword ptr [esp + 0C]
+
+:00402A67 52                      push edx
+
+:00402A68 6A0A                    push 0000000A
+
+
+
+* Reference To: MFC42.MFC42:NoName0124, Ord:16E0h
+
+                                  |
+
+:00402A6A E879130000              Call 00403DE8
+
+:00402A6F 8B442418                mov eax, dword ptr [esp + 18]
+
+:00402A73 8A4801                  mov cl, byte ptr [eax+01]
+
+:00402A76 51                      push ecx
+
+:00402A77 6A00                    push 00000000
+
+:00402A79 8D4C2418                lea ecx, dword ptr [esp + 18]
+
+
+
+* Reference To: MFC42.MFC42:NoName0124, Ord:16E0h
+
+                                  |
+
+:00402A7D E866130000              Call 00403DE8
+
+:00402A82 BF01000000              mov edi, 00000001
+
+
+
+* Referenced by a Jump at Address :00402A9E(C)
+
+|
+
+:00402A87 8B54240C                mov edx, dword ptr [esp + 0C]
+
+:00402A8B 8D4C2410                lea ecx, dword ptr [esp + 10]
+
+:00402A8F 8A443A02                mov al, byte ptr [edx + edi + 02]
+
+:00402A93 50                      push eax
+
+:00402A94 57                      push edi
+
+
+
+* Reference To: MFC42.MFC42:NoName0124, Ord:16E0h
+
+                                  |
+
+:00402A95 E84E130000              Call 00403DE8
+
+:00402A9A 47                      inc edi
+
+:00402A9B 83FF09                  cmp edi, 00000009
+
+:00402A9E 7EE7                    jle 00402A87
+
+:00402AA0 8B4E60                  mov ecx, dword ptr [esi+60]
+
+===========================================================================
+
+ECX now points to RegName that you entered, I entered '+Sync'
+
+===========================================================================
+
+:00402AA3 8D7E60                  lea edi, dword ptr [esi+60]
+
+:00402AA6 51                      push ecx
+
+
+
+* Reference To: KERNEL32.lstrlenA, Ord:02A1h
+
+                                  |
+
+:00402AA7 FF15CC734000            Call dword ptr [004073CC]	  ;Get Length
+
+:00402AAD 83F803                  cmp eax, 00000003            ;Is it 3 or more
+
+:00402AB0 0F8CE5020000            jl 00402D9B			;No, beggar off
+
+:00402AB6 8B17                    mov edx, dword ptr [edi]
+
+:00402AB8 8BCE                    mov ecx, esi
+
+:00402ABA 8A4201                  mov al, byte ptr [edx+01]  ;Load 2nd char of RegName
+
+:00402ABD 83E07F                  and eax, 0000007F
+
+:00402AC0 50                      push eax		;pass 2nd to call
+
+:00402AC1 E84A030000              call 00402E10	
+
+===========================================================================
+
+The call above 'cleans' the character, turning it into one of the valid letters
+
+which appear on the grid.  See the code for this subroutine in the C code, it
+
+simply adds/subtracts 10 until in the right range
+
+===========================================================================
+
+:00402AC6 8D0C80                  lea ecx, dword ptr [eax + 4*eax]
+
+:00402AC9 8D04CE                  lea eax, dword ptr [esi + 8*ecx]
+
+:00402ACC 8B8CCE44F6FFFF          mov ecx, dword ptr [esi + 8*ecx -000009BC]
+
+===========================================================================
+
+Here we must take a small sidebar.  When you create a checkbox in windows, a
+
+1 word space of memory is set aside to hold the status of the box.  There may
+
+be a reason Micro$oft used 4 bytes to hold a boolean value, but I sure don't
+
+know what it is.  Let's think (yes I said think) a little about this little
+
+feature Micro$oft has included for us.  A boolean value (TRUE or FALSE) can be
+
+stored in 1 bit.  This means we have 21 Letters * 10 Numbers = 210 boolean
+
+values that can be stored in 210 bits.  (210 bits)/8 =27 bytes could have been
+
+used to store the entire contents of the checkbox grid.  However, Micro$oft used
+
+21*10*4 = 840 bytes!  They used 31 times as much memory as was necessary, an
+
+increase of over 3000% and we wonder why we are required to buy 32mb of ram.
+
+Well I have 21 Letters by 10 numbers, so that is 210 of these words set aside.
+
+They begin at DS:63EFBD, you can check this by setting a break in the code
+
+(right around 402AC1 will be fine) and checking box A-0, the first element in
+
+the array.  Hit the 'register' button and when you break check out DS:63EFBD.
+
+This word should be set to 1 (DS:63EFC0 should be 01).  You will also notice
+
+that they are ordered sequentally down the columns.  So A-0 is the first word
+
+in the array, A-1 is the second etc.  Allright, now we see that the mov
+
+statement above loads from this array.  Put in '+Sync' as your name so that you
+
+can follow the next part.  Trace up until 402ACC and then look at ECX.  It
+
+should be 63F294 which is (63F294 - 63EFBD) = 2D7 bytes from the beginning.
+
+This means that there are 2D7 / 4 = B5 elements before this one, making it the
+
+B6th or 182th in decimal.  Okay, there are 10 elements in each column so to
+
+figure out which row we are in we divide where we are at by 10.  182 / 10 = 18
+
+rem 2, so we are in the 19th column, 2nd box down.  This happens to be S-1.
+
+It is the 19th column because there are 18 complete columns before it, plus 2
+
+boxes.  Let's step back and look at this.  We took the 2nd character of the
+
+name you typed in (cleaned to be in range) and forced a check to be in the row
+
+1.  The check to see if you checked the correct box is below.
+
+=============================================================================
+
+:00402AD3 85C9                    test ecx, ecx		;is it checked?
+
+:00402AD5 750A                    jne 00402AE1		;yes, jmp over
+
+:00402AD7 C74424300E000000        mov [esp + 30], 0000000E	;no, alter RegFlag[1]
+
+===========================================================================
+
+If any of the RegFlag's are altered then the check at the end will not work,
+
+so you want to jump over anything that alters them.
+
+===========================================================================
+
+
+
+:00402ADF EB0A                    jmp 00402AEB
+
+
+
+* Referenced by a Jump at Address :00402AD5(C)
+
+|
+
+:00402AE1 C78090F9FFFF01000000    mov dword ptr [ebx+FFFFF990], 00000001
+
+
+
+* Referenced by a Jump at Address :00402ADF(U)
+
+|
+
+:00402AEB 8B07                    mov eax, dword ptr [edi]	;Point to Name
+
+:00402AED 8A10                    mov dl, byte ptr [eax]	;dl=first char
+
+:00402AEF 8A4802                  mov cl, byte ptr [eax+02]	;cl=third char
+
+:00402AF2 8A4001                  mov al, byte ptr [eax+01]	;al=second char
+
+:00402AF5 83E27F                  and edx, 0000007F
+
+:00402AF8 83E17F                  and ecx, 0000007F
+
+:00402AFB 83E07F                  and eax, 0000007F
+
+:00402AFE 03D1                    add edx, ecx		;add 1st and 3rd
+
+:00402B00 8BCE                    mov ecx, esi
+
+:00402B02 03D0                    add edx, eax		;add 2nd to sum
+
+:00402B04 52                      push edx
+
+:00402B05 E806030000              call 00402E10		;clean (1st+2nd+3rd)
+
+:00402B0A 8D0C80                  lea ecx, dword ptr [eax + 4*eax]
+
+:00402B0D 8D04CE                  lea eax, dword ptr [esi + 8*ecx]
+
+:00402B10 8B8CCE48F6FFFF          mov ecx, dword ptr [esi + 8*ecx - 000009B8]
+
+===========================================================================
+
+Much as before we can determine what row needs to have a check in based on the
+
+cleaned sum of the first 3 characters of the name.  I go through it again.
+
+When you get to 402b10 ECX is loaded from 63F1A8 if your first 3 characters are
+
+'+Sy' as mine were.  That means that there are (63F1A8 - 63EFBD) = 1EB bytes
+
+or 1EB/4 = 7A words (elements) ahead of it making it number 7B or the 123
+
+element in decimal.  This means that there are 123/10 = 12 row with 3 left over
+
+(3rd one down) ahead of it.  This means that when you take the sum of the first
+
+3 chars, clean it into a letter between A and U, you must have a check in that
+
+column in row 2(which is the 3rd one down). In my case with '+Sy' the 13th row
+
+is column is produced by this algorithm, which is 'M' so M-2 must be checked.
+
+===========================================================================
+
+:00402B17 85C9                    test ecx, ecx
+
+:00402B19 750F                    jne 00402B2A
+
+:00402B1B C744243423000000        mov [esp + 34], 00000023 ;Alter RegFlag[2]
+
+:00402B23 BD01000000              mov ebp, 00000001
+
+:00402B28 EB0B                    jmp 00402B35
+
+
+
+* Referenced by a Jump at Address :00402B19(C)
+
+|
+
+:00402B2A BD01000000              mov ebp, 00000001
+
+:00402B2F 89A894F9FFFF            mov dword ptr [eax+F994], ebp
+
+
+
+* Referenced by a Jump at Address :00402B28(U)
+
+|
+
+:00402B35 8B86F4020000            mov eax, dword ptr [esi+02F4]
+
+===========================================================================
+
+(63F24C-63EFB)/4=A3 or 163rd element is loaded here (notice it does NOT depend
+
+at all on what you typed in).  I will skip the math, this means column 17, row
+
+3 must be checked.  This is the 'Q' Column.  So every valid code irregardless
+
+of the name you type as Q-3 checked.
+
+===========================================================================
+
+:00402B3B 85C0                    test eax, eax
+
+:00402B3D 750A                    jne 00402B49
+
+:00402B3F C744243830000000        mov [esp + 38], 00000030
+
+:00402B47 EB06                    jmp 00402B4F
+
+
+
+* Referenced by a Jump at Address :00402B3D(C)
+
+|
+
+:00402B49 89AE40060000            mov dword ptr [esi+0640], ebp
+
+
+
+* Referenced by a Jump at Address :00402B47(U)
+
+|
+
+:00402B4F 8B17                    mov edx, dword ptr [edi]
+
+:00402B51 8BCE                    mov ecx, esi
+
+:00402B53 8A02                    mov al, byte ptr [edx]	;Load 1st Char
+
+:00402B55 83E07F                  and eax, 0000007F
+
+:00402B58 50                      push eax
+
+:00402B59 E8B2020000              call 00402E10			;Clean it
+
+:00402B5E 8D48C2                  lea ecx, dword ptr [eax-3E]
+
+:00402B61 8D0C89                  lea ecx, dword ptr [ecx + 4*ecx]
+
+:00402B64 833CCE00                cmp dword ptr [esi + 8*ecx], 00000000
+
+===========================================================================
+
+Same as above, except only first character is used.  This means 1st character
+
+cleaned must be on row 4.
+
+===========================================================================
+
+:00402B68 750A                    jne 00402B74
+
+:00402B6A C744243013000000        mov [esp + 30], 00000013
+
+:00402B72 EB0A                    jmp 00402B7E
+
+
+
+* Referenced by a Jump at Address :00402B68(C)
+
+|
+
+:00402B74 8D1480                  lea edx, dword ptr [eax + 4*eax]
+
+:00402B77 89ACD69CF9FFFF          mov dword ptr [esi + 8*edx - 00000664], ebp
+
+
+
+* Referenced by a Jump at Address :00402B72(U)
+
+|
+
+:00402B7E 8B07                    mov eax, dword ptr [edi]
+
+:00402B80 8A4801                  mov cl, byte ptr [eax+01]	;Load 2nd char
+
+:00402B83 83E17F                  and ecx, 0000007F
+
+:00402B86 51                      push ecx
+
+:00402B87 8BCE                    mov ecx, esi
+
+:00402B89 E882020000              call 00402E10			;Clean it
+
+:00402B8E 8D48C2                  lea ecx, dword ptr [eax-3E]
+
+:00402B91 8D1489                  lea edx, dword ptr [ecx + 4*ecx]
+
+===========================================================================
+
+As +Orc would say, same old soup.  2nd character cleaned also needs to be on
+
+line 4. 
+
+===========================================================================
+
+:00402B94 833CD600                cmp dword ptr [esi + 8*edx], 00000000
+
+:00402B98 750A                    jne 00402BA4
+
+:00402B9A C744243412000000        mov [esp + 34], 00000012
+
+:00402BA2 EB0A                    jmp 00402BAE
+
+
+
+* Referenced by a Jump at Address :00402B98(C)
+
+|
+
+:00402BA4 8D0480                  lea eax, dword ptr [eax + 4*eax]
+
+:00402BA7 89ACC69CF9FFFF          mov dword ptr [esi + 8*eax - 00000664], ebp
+
+
+
+* Referenced by a Jump at Address :00402BA2(U)
+
+|
+
+:00402BAE 8B0F                    mov ecx, dword ptr [edi]
+
+:00402BB0 8A5102                  mov dl, byte ptr [ecx+02]	;Load 3rd char
+
+:00402BB3 8BCE                    mov ecx, esi
+
+:00402BB5 83E27F                  and edx, 0000007F
+
+:00402BB8 52                      push edx
+
+:00402BB9 E852020000              call 00402E10			;Clean it
+
+:00402BBE 8D48C2                  lea ecx, dword ptr [eax-3E]
+
+:00402BC1 8D0C89                  lea ecx, dword ptr [ecx + 4*ecx]
+
+============================================================================
+
+Same soup again!  3rd cleaned must be on line 4.  Remember that this is the 
+
+same line that the 1st and 2nd must be on. This means that if the first 3
+
+characters are the same, only 1 check will satisfy all three conditions, but
+
+if they are different 3 checks are needed.  This satisfies one of the hints I
+
+gave originally. (number of checks can vary)
+
+============================================================================
+
+:00402BC4 833CCE00                cmp dword ptr [esi + 8*ecx], 00000000
+
+:00402BC8 750A                    jne 00402BD4
+
+:00402BCA C744243811000000        mov [esp + 38], 00000011
+
+:00402BD2 EB0A                    jmp 00402BDE
+
+
+
+* Referenced by a Jump at Address :00402BC8(C)
+
+|
+
+:00402BD4 8D1480                  lea edx, dword ptr [eax + 4*eax]
+
+:00402BD7 89ACD69CF9FFFF          mov dword ptr [esi + 8*edx - 00000664], ebp
+
+
+
+* Referenced by a Jump at Address :00402BD2(U)
+
+|
+
+:00402BDE 8B07                    mov eax, dword ptr [edi]
+
+:00402BE0 33C9                    xor ecx, ecx			;Start at 0
+
+:00402BE2 8B50F8                  mov edx, dword ptr [eax-08]
+
+:00402BE5 3BD5                    cmp edx, ebp			;done yet?
+
+:00402BE7 7C10                    jl 00402BF9			;yes, jmp
+
+:00402BE9 40                      inc eax
+
+
+
+* Referenced by a Jump at Address :00402BF2(C)
+
+|
+
+:00402BEA 0FBE68FF                movsx ebp, byte ptr [eax-01]	;load char from name
+
+:00402BEE 03CD                    add ecx, ebp			;add to ecx
+
+:00402BF0 40                      inc eax			;point to next char
+
+:00402BF1 4A                      dec edx
+
+:00402BF2 75F6                    jne 00402BEA
+
+:00402BF4 BD01000000              mov ebp, 00000001
+
+
+
+* Referenced by a Jump at Address :00402BE7(C)
+
+|
+
+:00402BF9 6A45                    push 00000045
+
+:00402BFB 51                      push ecx
+
+
+
+* Reference To: MSVCRT.div, Ord:0243h
+
+                                  |
+
+:00402BFC FF1514774000            Call dword ptr [00407714]	;This call divides
+
+                                                                ;the contents of ECX
+
+                                                                ;by 69 (45h) and puts
+
+                                                                ;the reult in AX
+
+:00402C02 83C408                  add esp, 00000008
+
+:00402C05 8BCE                    mov ecx, esi
+
+:00402C07 89442424                mov dword ptr [esp + 24], eax
+
+:00402C0B 52                      push edx
+
+:00402C0C E8FF010000              call 00402E10			;Clean it
+
+:00402C11 8D0480                  lea eax, dword ptr [eax + 4*eax]
+
+:00402C14 8B8CC654F6FFFF          mov ecx, dword ptr [esi + 8*eax - 000009AC]
+
+:00402C1B 8D04C6                  lea eax, dword ptr [esi + 8*eax]
+
+==============================================================================
+
+Notice the code above.  It sums up the ASCII values of all the characters in
+
+the name you entered.  Then the call at 402BFC: divides this sum by 45h (trace
+
+into it yourself to see how this is done using the Micro$oft Visual C Runtime).
+
+I'll skip the math this time, but just the same as before we find that this
+
+sum/45h and cleaned to the right range gives us a letter, and it must go on 
+
+line 5.
+
+==============================================================================
+
+:00402C1E 85C9                    test ecx, ecx
+
+:00402C20 750A                    jne 00402C2C
+
+:00402C22 C744243044000000        mov [esp + 30], 00000044
+
+:00402C2A EB06                    jmp 00402C32
+
+
+
+* Referenced by a Jump at Address :00402C20(C)
+
+|
+
+:00402C2C 89A8A0F9FFFF            mov dword ptr [eax+F9A0], ebp
+
+
+
+* Referenced by a Jump at Address :00402C2A(U)
+
+|
+
+:00402C32 8B0F                    mov ecx, dword ptr [edi]
+
+:00402C34 8A4102                  mov al, byte ptr [ecx+02]	;Load 3rd char
+
+:00402C37 8BCE                    mov ecx, esi
+
+:00402C39 83E07F                  and eax, 0000007F
+
+:00402C3C 8D1440                  lea edx, dword ptr [eax + 2*eax]	;Notice that this puts 3*EAX in EDX
+
+:00402C3F D1E2                    shl edx, 1			;Mult. by 2
+
+:00402C41 52                      push edx
+
+:00402C42 E8C9010000              call 00402E10			;Clean it
+
+:00402C47 8D0480                  lea eax, dword ptr [eax + 4*eax]
+
+:00402C4A 8B8CC658F6FFFF          mov ecx, dword ptr [esi + 8*eax - 000009A8]
+
+:00402C51 8D04C6                  lea eax, dword ptr [esi + 8*eax]
+
+==============================================================================
+
+Notice we took the 3rd charcater, multiplied by 3, multiplied by 2 then cleaned
+
+it.  This is the same as multipliying by 6 (which is how it is coded originally
+
+in the C code).  The letter this gives has a check in it in row 6, again see
+
+the math above for how to figure this out.
+
+==============================================================================
+
+:00402C54 85C9                    test ecx, ecx
+
+:00402C56 750A                    jne 00402C62
+
+:00402C58 C74424341B000000        mov [esp + 34], 0000001B
+
+:00402C60 EB06                    jmp 00402C68
+
+
+
+* Referenced by a Jump at Address :00402C56(C)
+
+|
+
+:00402C62 89A8A4F9FFFF            mov dword ptr [eax+F9A4], ebp
+
+
+
+* Referenced by a Jump at Address :00402C60(U)
+
+|
+
+:00402C68 8B07                    mov eax, dword ptr [edi]
+
+:00402C6A 8A08                    mov cl, byte ptr [eax]	;Load 1st char
+
+:00402C6C 8A5002                  mov dl, byte ptr [eax+02]	;Load 3rd char
+
+:00402C6F 83E17F                  and ecx, 0000007F
+
+:00402C72 83E27F                  and edx, 0000007F
+
+:00402C75 0FAFCA                  imul ecx, edx			;1st * 3rd
+
+:00402C78 51                      push ecx
+
+:00402C79 8BCE                    mov ecx, esi
+
+:00402C7B E890010000              call 00402E10			;Clean it
+
+:00402C80 8D0480                  lea eax, dword ptr [eax + 4*eax]
+
+:00402C83 8B8CC65CF6FFFF          mov ecx, dword ptr [esi + 8*eax - 000009A4]
+
+:00402C8A 8D04C6                  lea eax, dword ptr [esi + 8*eax]
+
+==============================================================================
+
+Same as all the rest, 1st char multiplied by 3rd char, cleaned on line 7
+
+==============================================================================
+
+:00402C8D 85C9                    test ecx, ecx
+
+:00402C8F 750A                    jne 00402C9B
+
+:00402C91 C74424383D000000        mov [esp + 38], 0000003D
+
+:00402C99 EB06                    jmp 00402CA1
+
+
+
+* Referenced by a Jump at Address :00402C8F(C)
+
+|
+
+:00402C9B 89A8A8F9FFFF            mov dword ptr [eax+F9A8], ebp
+
+
+
+* Referenced by a Jump at Address :00402C99(U)
+
+|
+
+:00402CA1 8B0F                    mov ecx, dword ptr [edi]	
+
+:00402CA3 8A11                    mov dl, byte ptr [ecx]	;Load 1st char
+
+:00402CA5 8BCE                    mov ecx, esi
+
+:00402CA7 83E27F                  and edx, 0000007F		
+
+:00402CAA 83EA04                  sub edx, 00000004		;Subtract 4
+
+:00402CAD 52                      push edx
+
+:00402CAE E85D010000              call 00402E10			;Clean it
+
+:00402CB3 8D0480                  lea eax, dword ptr [eax + 4*eax]
+
+:00402CB6 BA38000000              mov edx, 00000038
+
+:00402CBB 8B8CC660F6FFFF          mov ecx, dword ptr [esi + 8*eax - 000009A0]
+
+:00402CC2 8D04C6                  lea eax, dword ptr [esi + 8*eax]
+
+==============================================================================
+
+It's amazing, every check is done the same way.  Once you have cracked one, 
+
+you've cracked them all.  This one takes the first character and subtracts 4
+
+from it, cleans it to find a valid letter.  The check must go with that letter
+
+and in row 8
+
+==============================================================================
+
+:00402CC5 85C9                    test ecx, ecx
+
+:00402CC7 7506                    jne 00402CCF
+
+:00402CC9 89542430                mov dword ptr [esp + 30], edx
+
+:00402CCD EB06                    jmp 00402CD5
+
+
+
+* Referenced by a Jump at Address :00402CC7(C)
+
+|
+
+:00402CCF 89A8ACF9FFFF            mov dword ptr [eax+F9AC], ebp
+
+
+
+* Referenced by a Jump at Address :00402CCD(U)
+
+|
+
+:00402CD5 8B865C030000            mov eax, dword ptr [esi+035C]
+
+==============================================================================
+
+Look at the line above.  ESI holds 63EF58 (as it has the whole time), which 
+
+means we are loading from 63EF58+35C = 63f2b4.  We can calculate this as we 
+
+did before.  We will first subtract the starting point of the table
+
+63F2B4 - 63EFBD = 2f7
+
+But, there are 4 bytes ber item in the table so there are
+
+2F7/4 = BD items in the array befor it.  BD is 189 in decimal so, it is the
+
+190th checkbox.  This is the at S-9.  Again this does not depend on the name
+
+you enter, it is in every valid code.
+
+==============================================================================
+
+:00402CDB 85C0                    test eax, eax
+
+:00402CDD 750A                    jne 00402CE9
+
+:00402CDF C74424342F000000        mov [esp + 34], 0000002F
+
+:00402CE7 EB06                    jmp 00402CEF
+
+
+
+* Referenced by a Jump at Address :00402CDD(C)
+
+|
+
+:00402CE9 89AEA8060000            mov dword ptr [esi+06A8], ebp
+
+
+
+* Referenced by a Jump at Address :00402CE7(U)
+
+|
+
+:00402CEF 8B8680010000            mov eax, dword ptr [esi+0180]
+
+==============================================================================
+
+This is just like the check above, it requires an 'H' on line 0
+
+==============================================================================
+
+:00402CF5 85C0                    test eax, eax
+
+:00402CF7 750A                    jne 00402D03
+
+:00402CF9 C744243830000000        mov [esp + 38], 00000030
+
+:00402D01 EB06                    jmp 00402D09
+
+
+
+* Referenced by a Jump at Address :00402CF7(C)
+
+|
+
+:00402D03 89AECC040000            mov dword ptr [esi+04CC], ebp
+
+
+
+* Referenced by a Jump at Address :00402D01(U)
+
+|
+
+:00402D09 8B86B8000000            mov eax, dword ptr [esi+00B8]
+
+==============================================================================
+
+This is just like the check above, it requires an 'C' on line 0
+
+==============================================================================
+
+:00402D0F 85C0                    test eax, eax
+
+:00402D11 750A                    jne 00402D1D
+
+:00402D13 C74424303B000000        mov [esp + 30], 0000003B
+
+:00402D1B EB06                    jmp 00402D23
+
+
+
+* Referenced by a Jump at Address :00402D11(C)
+
+|
+
+:00402D1D 89AE04040000            mov dword ptr [esi+0404], ebp
+
+
+
+* Referenced by a Jump at Address :00402D1B(U)
+
+|
+
+:00402D23 8B8688030000            mov eax, dword ptr [esi+0388]
+
+==============================================================================
+
+This is just like the check above, it requires an 'U' on line 0
+
+==============================================================================
+
+:00402D29 85C0                    test eax, eax
+
+:00402D2B 750A                    jne 00402D37
+
+:00402D2D C744243440000000        mov [esp + 34], 00000040
+
+:00402D35 EB06                    jmp 00402D3D
+
+
+
+* Referenced by a Jump at Address :00402D2B(C)
+
+|
+
+:00402D37 89AED4060000            mov dword ptr [esi+06D4], ebp
+
+
+
+* Referenced by a Jump at Address :00402D35(U)
+
+|
+
+:00402D3D 8BC5                    mov eax, ebp
+
+:00402D3F 8D4E68                  lea ecx, dword ptr [esi+68]
+
+
+
+* Referenced by a Jump at Address :00402D5C(C)
+
+|
+
+:00402D42 8BA94C030000            mov ebp, dword ptr [ecx+034C]
+
+:00402D48 3B29                    cmp ebp, dword ptr [ecx]
+
+:00402D4A 7407                    je 00402D53
+
+:00402D4C 8D6864                  lea ebp, dword ptr [eax+64]
+
+:00402D4F 896C2434                mov dword ptr [esp + 34], ebp
+
+
+
+* Referenced by a Jump at Address :00402D4A(C)
+
+|
+
+:00402D53 40                      inc eax
+
+:00402D54 83C104                  add ecx, 00000004
+
+:00402D57 3DD2000000              cmp eax, 000000D2
+
+:00402D5C 7EE4                    jle 00402D42
+
+:00402D5E 837C243045              cmp dword ptr [esp + 30], 00000045	;Is RegFlag[1] unchanged ?  (still 69 or 45h)
+
+:00402D63 7404                    je 00402D69		;yes, jump ahead good guy
+
+:00402D65 89542434                mov dword ptr [esp + 34], edx	;no, alter RegFlag[2]
+
+
+
+* Referenced by a Jump at Address :00402D63(C)
+
+|
+
+:00402D69 837C243460              cmp dword ptr [esp + 34], 00000060	;RegFlag[2] still unchanged?
+
+:00402D6E 7408                    je 00402D78	;yes, jmp ahead good guy
+
+:00402D70 C74424382B000000        mov [esp + 38], 0000002B	;no, alter RegFlag[3]
+
+
+
+* Referenced by a Jump at Address :00402D6E(C)
+
+|
+
+:00402D78 837C243863              cmp dword ptr [esp + 38], 00000063  ;is RegFlag[3] still 99 or 63h?
+
+:00402D7D 7507                    jne 00402D86		;nope, beggar off
+
+=============================================================================
+
+Note to those who sent in answers with several pathes in them.  This is the
+
+ONLY place that a patch would be necessary.  Change the 7507 above to a 7500
+
+and everything would be fine. (the name would still be forced to be at least
+
+3 chars still however).  Nice and clean patch, no NOPs and only 1 byte changed
+
+=============================================================================
+
+:00402D7F 8D4C2410                lea ecx, dword ptr [esp + 10]	;yep, register good guy
+
+:00402D83 51                      push ecx
+
+:00402D84 EB05                    jmp 00402D8B
+
+
+
+* Referenced by a Jump at Address :00402D7D(C)
+
+|
+
+:00402D86 8D54240C                lea edx, dword ptr [esp + 0C]	;Point to &quot;Unregistered&quot;
+
+:00402D8A 52                      push edx
+
+
+
+* Referenced by a Jump at Address :00402D84(U)
+
+|
+
+:00402D8B 8BCF                    mov ecx, edi
+
+
+
+* Reference To: MFC42.MFC42:NoName0125, Ord:035Ah
+
+                                  |
+
+:00402D8D E85C100000              Call 00403DEE		;Call to UpdateData to put the text in the window
+
+:00402D92 6A00                    
+
+
+
+
+
+------------------------------------------------------------------------------
+
+
+
+Below is a short summary of what the requirements are.  The right column will
+
+provide a decimal number, the ASCII code for the letter above the column you
+
+must check.
+
+
+
+Line 1  - 2nd char cleaned
+
+Line 2 - (1st + 2nd + 3rd) cleaned
+
+Line 3 - Q
+
+Line 4 - 1st char cleaned
+
+Line 4 - 2nd char cleaned
+
+Line 4 - 3rd char cleaned
+
+Line 5 - Remainder of (Sum of all chars / 69) cleaned
+
+Line 6 - (6 * 3rd char) cleaned
+
+Line 7 - (1st * 3rd) cleaned
+
+Line 8 - (1st - 4) cleaned
+
+Line 9 - S
+
+Line 0 - H
+
+Line 0 - C
+
+Line 0 - U
+
+
+
+As always, comments are welcome.
+
++Sync
+
+ </PRE>
+
+ <FONT color="green">(c) +Sync 1997. All rights reserved</FONT>
+
+<HR ALIGN="CENTER" WIDTH="100%" SIZE="3">
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</I></CENTER>
+
+<BR><CENTER>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">
+
+<A HREF="protecti.htm" tppabs="http://www.anticrack.de/fravia/protecti.htm">Our protections </A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">
+
+<A HREF="tppmsgs/msgs0.htm#79" tppabs="http://www.anticrack.de/fravia/tppmsgs/msgs0.htm#79">homepage </A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"> 
+
+<A HREF="tppmsgs/msgs0.htm#53" tppabs="http://www.anticrack.de/fravia/tppmsgs/msgs0.htm#53">links </A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0">
+
+<A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity </A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="tppmsgs/msgs0.htm#78" tppabs="http://www.anticrack.de/fravia/tppmsgs/msgs0.htm#78">students' essays </A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails </A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut CGI-scripts </A>
+
+
+
+
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_Fravia </A><BR>
+
+
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering illegal? </A></CENTER>
+
+<CENTER><HR ALIGN="CENTER" WIDTH="100%" SIZE="2"></CENTER>
+
+</BODY>
+
+</HTML>
+

@@ -1,0 +1,1257 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>pilgrim2.htm FlexLmPC: Further FlexCrypt analysis</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR=#C0C0C0 TEXT=#001010 VLINK=#405040>
+
+<A href="protec.htm" tppabs="http://www.anticrack.de/fravia/protec.htm"><IMG SRC="protec.gif" tppabs="http://www.anticrack.de/fravia/protec.gif" 
+
+ALT="protec" ALIGN=CENTER WIDTH=114 HEIGHT=43 BORDER=0 VSPACE=0 HSPACE=0></A>
+
+<BR>
+
+<FONT color=gray>Back to protec</FONT>
+
+<BR><BR>
+
+<CENTER><I>The second part of Pilgrim's Flexcrypt studies, 
+
+see  <A href="pilgrim.htm" tppabs="http://www.anticrack.de/fravia/pilgrim.htm">pilgrim.htm</A>: Pilgrim's <I>How to crack a PC-based FlexLm license manager</I>, 
+
+read and enjoy!</I>
+
+<HR>Courtesy of fravia's pages of reverse engineering
+
+</CENTER><HR>
+
+<PRE>
+
+Further FlexCrypt analysis
+
+==========================
+
+
+
+
+
+pilgrim 7th January 1999
+
+
+
+Introduction
+
+============
+
+
+
+Globetrotters FlexLm has been discussed by Siul+Hacky and myself
+
+previously.
+
+One of the first stages in analysing FlexLm is to crack the encryption
+
+used to package it:
+
+FlexCrypt.
+
+FlexCrypt is produced by Globetrotter Software Inc 
+
+and seems to share may commonalities with FlexLm.
+
+This document analyses the FlexCrypt en/de-cryption program to a stage 
+
+that allows decryption of any FlexCrypted package.
+
+This in turn leads into some interesting areas worthy of further
+
+investigation.
+
+
+
+Tools required
+
+==============
+
+
+
+IDA ( 3.75 used in example )
+
+W32DASM ( V8.9 used in the example )
+
+Install-shield decompiler ( isdcc V1.1 used in example )
+
+HexEditor ( Hiew V5.66 used in example )
+
+
+
+Targets URL
+
+===========
+
+
+
+<A href="javascript:if(confirm('http://www.globetrotter.com/  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.globetrotter.com/'" tppabs="http://www.globetrotter.com/" target=_blank>http://www.globetrotter.com</A>
+
+<A href="javascript:if(confirm('ftp://ftp.globes.com/  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='ftp://ftp.globes.com/'" tppabs="ftp://ftp.globes.com/" target=_blank>ftp://ftp.globes.com</A>
+
+
+
+Recommended files
+
+=================
+
+
+
+For a full explanation you'll need to download two files: flexlm5.12
+
+and flexlm6.1
+
+
+
+<A href="javascript:if(confirm('ftp://ftp.globes.com/flexlm/v5.12/windows/flexmin.exe  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='ftp://ftp.globes.com/flexlm/v5.12/windows/flexmin.exe'" tppabs="ftp://ftp.globes.com/flexlm/v5.12/windows/flexmin.exe" target=_blank>ftp://ftp.globes.com/flexlm/v5.12/windows/flexmin.exe</A> ( 4,088,198
+
+Bytes )
+
+<A href="javascript:if(confirm('ftp://ftp.globes.com/flexlm/v6.1/windows/flexlm.exe  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='ftp://ftp.globes.com/flexlm/v6.1/windows/flexlm.exe'" tppabs="ftp://ftp.globes.com/flexlm/v6.1/windows/flexlm.exe" target=_blank>ftp://ftp.globes.com/flexlm/v6.1/windows/flexlm.exe</A> ( 7,873,894 Bytes )
+
+
+
+The site also contains many other flexcrypted files to practise on.
+
+
+
+FlexCrypt basics
+
+================
+
+
+
+FlexCrypt uses a rolling XOR based scheme to encrypt a file.
+
+It uses the same key on 8 bytes, recalculates the key, then continues
+
+through the file.
+
+The key is in some way based on the passkey you must find for correct
+
+decryption.
+
+The passkey is of the format xxxx-xxxx-xxxx-xxxx-nn
+
+where the x are hexadecimal numbers and nn ranges from 00 to 99 decimal.
+
+The hex numbers are in some way related to your PC ( hard disc number
+
+/ network card number ).
+
+The nn specifies which of 100 keys was used to encrypt the file. 
+
+Only one nn value decrypts the file correctly.
+
+There is a table which stores 100 passkey related values in the
+
+decryption executable.
+
+There are many versions of FlexCrypt available, but there is basically
+
+a 16bit and 32bit.
+
+Both use the same encryption method.
+
+32 bit introduces a file header with some sort of file/passkey check
+
+data included.
+
+All FlexCrypt files may easily be decrypted correctly using the 32 bit
+
+decryption program.
+
+The decryption program is packaged with the install files and is
+
+usually called something 
+
+like cryptwin.exe
+
+Command line options for decrypt.exe:
+
+-p xxxx-xxxx-xxxx-xxxx-nn : the passkey
+
+-t Z *.fc : decrypt all .fc extension files to files with .Z extension
+
+-d n : debug mode, n can take values 1,2,3 each displaying differing
+
+formats of debug info
+
+
+
+Stage 1 :  how to decrypt the files
+
+===================================
+
+
+
+Run the install.exe from the downloaded FlexLm 5.12.
+
+This will extract all the files needed for the install.
+
+Run setup.exe
+
+You'll be asked for the FlexLm decryption key in the format
+
+xxxx-xxxx-xxxx-xxxx-xx
+
+Cancel the install.
+
+We see a setup.ins file : installshield is here
+
+Use isdcc to decompile the install script.
+
+Have a look for the text we saw earlier, xxxx-xxxx-xxxx-xxxx-xx, and
+
+we see:
+
+
+
+AskText("Please enter in your decryption key.  It should be of the
+
+form xxxx-xxxx-xxxx-xxxx-xx .  If you do not have this key, you can
+
+obtain it by calling Globetrotter Software at (408) 370-2800  If you
+
+do not have a key at this time, please press cancel to end t",
+
+"xxxx-xxxx-xxxx-xxxx-xx", string15);
+
+Sprintf(lString1, "%scryptwin.exe", SRCDIR);
+
+Sprintf(lString2, "Decrypting files, this may take some time");
+
+function11(lString2, 1);
+
+Sprintf(lString0, "-w %s  -p %s -t Z *.fc", SRCDIR, string15);
+
+
+
+This decodes to:
+
+
+
+cryptwin.exe -p xxxx-xxxx-xxxx-xxxx-xx -t Z *.fc
+
+
+
+where xxxx-xxxx-xxxx-xxxx-xx would be the numbers you type.
+
+-p option is password
+
+-t is convert *.FC into *.Z type
+
+
+
+So rename cryptw~1.exe to it's full title, cryptwin.exe, and try 
+
+cryptwin.exe -p 0000-0000-0000-0000-00 -t Z *.fc 
+
+We end up with zero length Z files. Not too good.
+
+
+
+Cryptwin is 16-bit, so let's use IDA to dissassemble it.
+
+At this moment I'm interested in command line options so let's have a
+
+look.
+
+Searching for -p gives us a function at loc_8B6_6C which looks like a
+
+command line parser.
+
+It seems to also accept -x -o -i -e and -d options
+
+What's -d? debug? There's references to DEBUG in the exe, let's try it.
+
+A bit of experimenting shows there are 3 debug levels, with varying
+
+outputs,
+
+1 writes a log file, 2 displays on the screen, 3 uses pop-up windows.
+
+
+
+Stage 2 : Get a valid passkey
+
+=============================
+
+
+
+32 bit's easier to debug than 16 bit so let's abandon FlexLm 5.12 for
+
+now and try FlexLm 6.1
+
+
+
+Clear the Windows\Temp directory and run the FlexLm 6.1 install.
+
+When prompted for the key press cancel and copy all the files into
+
+another work directory.
+
+
+
+Let's try cryptwin.exe -d 3 -p 0000-0000-0000-0000-00 -t Z *.fc again.
+
+Again we end up with a zero length Z file.
+
+Dissasemble cryptwin.exe using W32DASM.
+
+Load the program with the command line options -p
+
+0000-0000-0000-0000-00 -t Z *.fc
+
+Put a break-point on the reference to "%.4d-%.4d-%.4d-%.4d"
+
+Run to the break point then single step.
+
+
+
+* Possible StringData Ref from Data Obj -&gt;"%.4d-%.4d-%.4d-%.4d"
+
+:00405E2F 6870B04200              push 0042B070
+
+:00405E34 BE60F34200              mov esi, 0042F360
+
+:00405E39 56                      push esi
+
+:00405E3A E8A1840100              call 0041E2E0
+
+:00405E3F 83C418                  add esp, 00000018
+
+
+
+In this case there's a call to 0041E2E0 which returns esi pointing to
+
+the processed string,
+
+which looks something like:
+
+
+
+[esi+00000000] - 7375
+
+[esi+00000004] - -553
+
+[esi+00000008] - 2-55
+
+[esi+0000000C] - 21-5
+
+[esi+00000010] - 871.
+
+
+
+This string appears to be related to machine specific items such as
+
+hard disk number
+
+and network card number. This string is the first four numbers of a
+
+potentially valid
+
+passkey. The last two digits are the key number used in the test. In
+
+this case 00.
+
+
+
+OK, we have a key to try, it's 7375-5532-5521-5871-00
+
+So let's try cryptwin.exe -d 3 -p 7375-5532-5521-5871-00 -t Z *.fc 
+
+Again, an error message and a zero file.
+
+
+
+We need to repeat the above process using keys 00 to 99 as the last
+
+two digits in the password.
+
+This would be a very slow process using DASM.
+
+So modify the cryptwin program to generate a file with a name of each
+
+passkey.
+
+
+
+Stage 2a: auto generate the passkeys
+
+====================================
+
+
+
+Copy your original cryptwin.exe to something else, I used dcrypt.exe.
+
+Using your favourite hexeditor, modify dcrypt.exe as follows:
+
+
+
+1) Just after esi points to the passkey string, jump to some unused
+
+code space:
+
+
+
+Replace
+
+:00405E3F 83C418                  add esp, 00000018
+
+:00405E42 57                      push edi
+
+:00405E43 E80C000000              call 00405E54
+
+With
+
+:00405E3F 83C418                  add esp, 00000018
+
+:00405E42 E9E1B9FFFF              jmp 00401828
+
+
+
+2) At this unused space, 00401828, replace the existing code with:
+
+
+
+:00401828 6A00                    push 00000000
+
+:0040182A 6880000000              push 00000080
+
+:0040182F 6A01                    push 00000001
+
+:00401831 6A00                    push 00000000
+
+:00401833 6A03                    push 00000003
+
+:00401835 68000000C0              push C0000000
+
+:0040183A 8BC6                    mov eax, esi
+
+:0040183C 50                      push eax
+
+* Reference To: KERNEL32.CreateFileA, Ord:0030h
+
+:0040183D E8CC760200              Call 00428F0E    &lt;- create the file
+
+:00401842 50                      push eax
+
+* Reference To: KERNEL32.CloseHandle, Ord:0017h
+
+:00401843 FF15BC324300            Call dword ptr [004332BC] &lt;- close
+
+the file handle
+
+* Reference To: KERNEL32.ExitProcess, Ord:006Ah
+
+:00401849 FF158C324300            Call dword ptr [0043328C] &lt;- end the
+
+program
+
+
+
+Now run the dcrypt.exe with the command line options -p
+
+0000-0000-0000-0000-00 -t Z *.fc
+
+You should get a file of name 7375-5532-5521-5871
+
+
+
+Now write 2 batch files to run through 00 to 99 and store the results:
+
+
+
+test2.bat:
+
+call test.bat 00
+
+call test.bat 01 .... to .....
+
+call test.bat 98
+
+call test.bat 99
+
+
+
+test.bat:
+
+dcrypt -p 0000-0000-0000-0000-%1 -t cab data1.fc
+
+rename ????-????-????-???? ????-????-????-????-%1
+
+
+
+This gives 100 files with potential passkeys to try.
+
+Note that these passkeys will differ on different machines.
+
+
+
+So now we want to try each one and see when we get a valid result.
+
+Dir all the files into a text file and run a macro to get something like
+
+cryptwin -p 7375-5532-5521-5871-00 -t cab data1.fc
+
+pause 
+
+... etc for each key
+
+
+
+I checked the size of the decrypted file after each try.
+
+It's non-zero when it's been decrypted correctly.
+
+( further work: you may be able to use the debug error level to tell
+
+you when it's worked )
+
+
+
+You'll eventually end up with the correct key for your machine.
+
+Once you've got it you can then use it to decrypt all the fc files.
+
+
+
+Stage 3: Repackage so you don't need the key again.
+
+===================================================
+
+
+
+It would be wise to repackage the FlexLm 6.1 so you don't need the key
+
+again.
+
+Delete the cryptwin.exe and the *.Z files then try installing again.
+
+You can now enter any passkey and FlexLm6.1 will install.
+
+
+
+Stage 4: Try decrypting another package.
+
+========================================
+
+
+
+Let's try the passkey we got above with the 16 bit FlexLm5.12
+
+No good. 
+
+That's because the 16bit cryptwin.exe has a different set of keys
+
+stored in it's executable.
+
+OK, so let's try decrypting the 16bit FC files using the 32bit cryptwin.
+
+This may work as we know the key for the 32bit decrypter.
+
+Well, we get some Z files, no error messages, but the files are corrupt.
+
+Open up a Z file with your favourite hex editor and have a look.
+
+Mmmm, lots of repeating 8 byte patterns. 
+
+Looks like we've decrypted the file but with the wrong start value.
+
+
+
+Stage 4a: A diversion ... partial analysis of file decryption
+
+=============================================================
+
+
+
+Time to look at how crypwin.exe decrypts the fc file.
+
+Open up the disassembled cryptwin.exe from FlexLm6.1, and look at
+
+00402d1d:
+
+( Some dissassembly has been removed )
+
+
+
+1) Read the file and see if it contains the "FLEXcrypt Copyright"
+
+signature
+
+   If it does then this is a new 32bit generated file, else it's a
+
+16bit file
+
+
+
+:00402D1D 55                      push ebp
+
+....
+
+:00402D58 51                      push ecx
+
+:00402D59 E8D2A60100              call 0041D430 &lt;- fread "FlexCryp"
+
+from the file
+
+...
+
+* Possible StringData Ref from Data Obj -&gt;"FLEXcrypt Copyright (C)
+
+1990-1997, "
+
+                                        -&gt;"Globetrotter Software, Inc."
+
+:00402D66 6870AE4200              push 0042AE70
+
+:00402D6B 51                      push ecx
+
+:00402D6C E8CFC40100              call 0041F240 &lt;- Compare the 2 strings
+
+:00402D71 83C40C                  add esp, 0000000C
+
+:00402D74 85C0                    test eax, eax
+
+:00402D76 7579                    jne 00402DF1 &lt;- Jump if it's 16bit
+
+straight to decrypt file
+
+
+
+2) This is a 32bit file with a valid header
+
+   The analysis of this next section needs some more work, it may hold
+
+more clues.
+
+   The code reads some sort of checksum from the file header
+
+   The first 8 bytes of data are decrypted
+
+   The data is then compared with something and a pass/fail is
+
+determined.
+
+
+
+:00402D78 FF7508                  push [ebp+08]
+
+:00402D7B 53                      push ebx
+
+:00402D7C 6A68                    push 00000068 &lt;- 104 bytes of header
+
+data
+
+:00402D7E 8D8D24FFFFFF            lea ecx, dword ptr [ebp+FFFFFF24]
+
+:00402D84 51                      push ecx
+
+:00402D85 E8A6A60100              call 0041D430 &lt;- read the header data
+
+:00402D8A 83C410                  add esp, 00000010
+
+:00402D8D 8D55BC                  lea edx, dword ptr [ebp-44]
+
+:00402D90 FF7508                  push [ebp+08]
+
+:00402D93 53                      push ebx
+
+:00402D94 6A08                    push 00000008
+
+:00402D96 52                      push edx
+
+:00402D97 E894A60100              call 0041D430 &lt;- read the first 8
+
+bytes of data
+
+:00402D9C 83C410                  add esp, 00000010
+
+:00402D9F 8D4DE4                  lea ecx, dword ptr [ebp-1C]
+
+:00402DA2 8D55BC                  lea edx, dword ptr [ebp-44]
+
+:00402DA5 8D45DC                  lea eax, dword ptr [ebp-24]
+
+:00402DA8 51                      push ecx
+
+:00402DA9 52                      push edx
+
+:00402DAA 50                      push eax
+
+:00402DAB E818550000              call 004082C8 &lt;- get an 8 byte key?
+
+:00402DB0 83C40C                  add esp, 0000000C
+
+:00402DB3 B9FF000000              mov ecx, 000000FF
+
+:00402DB8 8B4514                  mov eax, dword ptr [ebp+14]
+
+:00402DBB 2BC8                    sub ecx, eax
+
+:00402DBD 51                      push ecx
+
+:00402DBE 50                      push eax
+
+:00402DBF 50                      push eax
+
+:00402DC0 8D4DC8                  lea ecx, dword ptr [ebp-38]
+
+* Possible StringData Ref from Data Obj -&gt;"%02x%03d%03d"
+
+:00402DC3 6860AE4200              push 0042AE60
+
+:00402DC8 51                      push ecx
+
+:00402DC9 E812B50100              call 0041E2E0 &lt;- sprintf first 8 bytes
+
+:00402DCE 83C414                  add esp, 00000014
+
+:00402DD1 8D4DC8                  lea ecx, dword ptr [ebp-38]
+
+:00402DD4 8D55E4                  lea edx, dword ptr [ebp-1C]
+
+:00402DD7 6A08                    push 00000008
+
+:00402DD9 51                      push ecx
+
+:00402DDA 52                      push edx
+
+:00402DDB E820C40100              call 0041F200 &lt;- string compare 8
+
+bytes
+
+:00402DE0 83C40C                  add esp, 0000000C
+
+:00402DE3 85C0                    test eax, eax
+
+:00402DE5 7411                    je 00402DF8 &lt;- passkey OK, continue
+
+to decrypt the file
+
+:00402DE7 B801100000              mov eax, 00001001
+
+:00402DEC E9B5000000              jmp 00402EA6 &lt;- fail, abort with
+
+error code
+
+
+
+3) Decrypt the file, 8 bytes at a time
+
+
+
+:00402DF1 C745F801000000          mov [ebp-08], 00000001
+
+...............
+
+:00402E73 8D45E4                  lea eax, dword ptr [ebp-1C]
+
+:00402E76 8D4DF0                  lea ecx, dword ptr [ebp-10]
+
+:00402E79 50                      push eax
+
+:00402E7A 8D55DC                  lea edx, dword ptr [ebp-24]
+
+:00402E7D 51                      push ecx
+
+:00402E7E 52                      push edx
+
+:00402E7F E844540000              call 004082C8  &lt;- get an 8 byte key?
+
+:00402E84 83C40C                  add esp, 0000000C
+
+:00402E87 33C0                    xor eax, eax
+
+* Referenced by a (U)nconditional or (C)onditional Jump at Address:
+
+|:00402E95(C)
+
+-&gt; 8 bytes loop
+
+:00402E89 8A4C05D4                mov cl, byte ptr [ebp+eax-2C] &lt;- XOR
+
+8 bytes
+
+:00402E8D 304C05E4                xor byte ptr [ebp+eax-1C], cl &lt;-
+
+with key
+
+:00402E91 40                      inc eax
+
+:00402E92 83F808                  cmp eax, 00000008
+
+:00402E95 7CF2                    jl 00402E89 &lt;- loop 8 times
+
+
+
+Stage 5: XOR the incorrectly decrypted file
+
+===========================================
+
+
+
+As mentioned above, it's as if we've used the wrong start point to
+
+decrypt the FC file.
+
+And from the analysis above we can see it's an XOR decryption.
+
+So how about finding some likely looking zeros in the file.
+
+XOR of zero with a key is zero.
+
+If we XOR the file with the value stored at a zero we may get a
+
+working file.
+
+Open up the html.Z that comes with FlexLm5.12 with your hex editor.
+
+I spy lots of repeats at 40hex, in my case, d361f5a2006ebb12.
+
+Let's try XORing the whole file with d361f5a2006ebb12.
+
+
+
+I wrote a little C program to do this, ( main parts only shown ):
+
+
+
+void main()
+
+{
+
+FILE *ReadFile, *WriteFile;
+
+unsigned char xor_table[8]={0xd3,0x61,0xf5,0xa2,0x00,0x6e,0xbb,0x12};
+
+ReadFile=fopen("test.x","rb");     /* Open up the project file to read
+
+*/
+
+WriteFile=fopen("test.z","wb+");   /* Open up the new project file to
+
+write */
+
+init=0;
+
+i=0;
+
+while (feof(ReadFile) == 0) /* Repeat until the end of the read file
+
+is reached */
+
+{  
+
+  c=fgetc(ReadFile);
+
+  if (init==1)
+
+    c^=xor_table[i];
+
+  i++;
+
+  i&=7;
+
+  init =1;
+
+  fputc(c,WriteFile);
+
+}
+
+fclose(ReadFile);
+
+fclose(WriteFile);
+
+}
+
+
+
+Run this on the files and they look like they should work, but they're
+
+still corrupt.
+
+
+
+Stage 6: correct the first 8 bytes of the file
+
+==============================================
+
+
+
+The problem is the first 8 bytes of the data are not correct.
+
+Further work: I think the first 8 bytes have something to do with the
+
+initial decrypt value.
+
+This doesn't pose a problem as FlexCrypt is typically used to encrypt
+
+files with known headers.
+
+For an installshield Z file the first 8 bytes are
+
+13,5D,65,8C,3A,01,02,00
+
+For an installshield CAB file the first 8 bytes are
+
+49,53,63,28,04,00,00,01
+
+So I modified my XOR code to skip the first 8 bytes and replace them
+
+with the correct header:
+
+
+
+void main()
+
+{
+
+FILE *ReadFile, *WriteFile;
+
+unsigned char xor_table[8]={0xd3,0x61,0xf5,0xa2,0x00,0x6e,0xbb,0x12};
+
+unsigned char z_header[8] ={0x13,0x5D,0x65,0x8C,0x3A,0x01,0x02,0x00};
+
+ReadFile=fopen("test.x","rb");     /* Open up the project file to read
+
+*/
+
+WriteFile=fopen("test.z","wb+");   /* Open up the new project file to
+
+write */
+
+/* Skip the first 8 bytes and write the Z file header */
+
+for (i=0;i&lt;8;i++)
+
+{
+
+  c=fgetc(ReadFile);
+
+  fputc(z_header[i],WriteFile);
+
+}
+
+init=0;
+
+i=0;
+
+while (feof(ReadFile) == 0) /* Repeat until the end of the read file
+
+is reached */
+
+{  
+
+  c=fgetc(ReadFile);
+
+  if (init==1)
+
+    c^=xor_table[i];
+
+  i++;
+
+  i&=7;
+
+  init =1;
+
+  fputc(c,WriteFile);
+
+}
+
+fclose(ReadFile);
+
+fclose(WriteFile);
+
+}
+
+
+
+Run this and your encrypted files are now decrypted.
+
+As before, remove the cryptwin.exe and the FC files and your
+
+installation will now accept 
+
+any passkey.
+
+
+
+FlexCrypt further work
+
+======================
+
+
+
+Now we can decrypt ANY FlexCrypted file.
+
+This includes the FlexCrypt developers kit.
+
+So download this, decrypt it and we get a useful html manual and some
+
+source code.
+
+Have a look a mycode.c and cryptkit.h
+
+It appears that the kit uses FlexLm license data to encrypt the keys
+
+stored in the code.
+
+There's an array fc_keytab[256] stored in the cryptwin.exe 
+
+which contains the 8 bytes keys to use XORed with vendorkey5.
+
+As we know from FlexLm cracking, vendorkey5 is the hard one to find.
+
+And we also know it's calculated on the fly from the other vendor codes.
+
+So maybe cryptwin.exe has the necessary license data stored in it's EXE?
+
+
+
+Using your favourite hex editor open up cryptwin.exe from FleLm 6.1
+
+Have a look at offset 002a5c0, I think this is the fc_keytab table.
+
+Looking at the rest of the code it seems to have lots of FlexLm code
+
+embedded in it.
+
+And we've cracked this before.
+
+
+
+So maybe, by analysis of the cryptwin.exe and the FC file it may be
+
+possible to determine
+
+which key will work, without all the effort above.
+
+
+
+Conclusion
+
+==========
+
+
+
+The above document shows how we can decrypt ANY FlexCrypted file.
+
+Further work may show the essence of FlexCrypt and it's relationship
+
+with FlexLm.
+
+
+
+Thanks to the people out there who continue to reveal the light.
+
+
+
+pilgrim
+
+</PRE>
+
+<HR><CENTER><A href="protec.htm" tppabs="http://www.anticrack.de/fravia/protec.htm"><IMG SRC="protec.gif" tppabs="http://www.anticrack.de/fravia/protec.gif" 
+
+ALT="protec" ALIGN=CENTER WIDTH=114 HEIGHT=43 BORDER=0 VSPACE=0 HSPACE=0></A>
+
+<BR>
+
+<FONT color=gray>Back to protec</FONT>
+
+<BR><BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database</A>
+
+<BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+
+
+
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="realicra.htm" tppabs="http://www.anticrack.de/fravia/realicra.htm">reality cracking</A>
+
+
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+
+
+
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="howtosea.htm" tppabs="http://www.anticrack.de/fravia/howtosea.htm">how to search</A>
+
+
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+
+
+
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="javascri.htm" tppabs="http://www.anticrack.de/fravia/javascri.htm">javascript wars</A>
+
+
+
+
+
+<BR>
+
+
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+
+
+
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools</A>
+
+
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+
+
+
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity academy</A> 
+
+
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+
+
+
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails</A>
+
+
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+
+
+
+
+BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="ahref/index.html" tppabs="http://www.anticrack.de/fravia/ahref/index.html"ideale.htm"</a>antismut CGI-scripts</A>
+
+
+
+
+
+
+
+
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+
+
+
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia+</A>
+
+
+
+
+
+<br>
+
+
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+
+
+
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering
+
+legal?</A>
+
+
+
+
+
+</CENTER>
+
+
+
+
+
+<hr>
+
+
+
+
+
+<!-- THAT'S ALL, THANKS A LOT this will allow automated retrieval -->
+
+
+
+
+
+</BODY>
+
+
+
+
+
+</HTML>"

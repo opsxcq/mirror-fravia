@@ -1,0 +1,616 @@
+<HTML>
+
+<HEAD>
+
+<META Name="Voluntary Content Rating" content="it's fravia's: great!">
+
+<TITLE>d2kessay.htm: Reverse Engenering The Protections From WestWood</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR=#C0C0C0 TEXT=#001010 ALINK=#405040 VLINK=#8850AA>
+
+<CENTER><B><FONT size=+3>Reverse Engenering The Protections From WestWood</FONT></B>
+
+
+
+<BR><FONT size=+2>by zoltan<BR></FONT>(24 September 1999)<BR><BR><A href="project4.htm" tppabs="http://www.anticrack.de/fravia/project4.htm"><IMG SRC="project4.gif" tppabs="http://www.anticrack.de/fravia/project4.gif" ALT="project4" ALIGN=BOTTOM WIDTH=114 
+
+HEIGHT=43 BORDER=0 VSPACE=0 HSPACE=0></A>
+
+<BR><FONT color=gray>CD-ROM faking</FONT><BR>
+
+<HR>Courtesy of fravia's pages of reverse engineering ~ slightly edited by fravia+
+
+<HR></CENTER></FONT>
+
+<PRE>
+
+Reverse Engenering The Protections From WestWood
+
+
+
+ (As example: DUNE 2000)
+
+
+
+Another Aproach On The CD Check Protection, using ripped version from 
+
+CLASS and the update from WESTWOOD (do FTPSEARCH).
+
+
+
+Author   : zoltan
+
+______________________________________________________
+
+Tools Needed :
+
+              Hackers View (HIEW)
+
+              SoftIce
+
+              W32Dasm
+
+Target:
+
+              The patch for DUNE2000
+
+              http://ftpsearch.lycos.com/?form=medium
+
+              and search for d2k106uk.zip
+
+
+
+Visit the tools section of our web page: <A href="javascript:if(confirm('http://protools.cjb.net/  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://protools.cjb.net/'" tppabs="http://protools.cjb.net/">http://protools.cjb.net</A> a nice tool site...
+
+
+
+______________________________________________________
+
+</PRE>
+
+This game was/is (being) played alot in the world, and no wonder because this game is from one of the best game companys
+
+in the whole world, WESTWOOD. Yeah that's right, the same company that made the smash hit's back in 94-95 if i remember
+
+right, Command & Conquer and Command & Conquer 2: RED ALERT. DUNE 2000 was released to the public long ago 
+
+and has of course been availible for download on the inet since then.
+
+
+
+<BR><BR>
+
+I did some job for you and discovered that Dune2000 isnt the main exe but Dune2000.dat 
+
+however is the real one, so we
+
+start off by running the game, run (dune2000.exe). What happens? A messagebox pops up telling ous to insert the CD.
+
+Arg!, let's fix this obvious bug, so we can run it without the CD in.<BR> 
+
+I personaly dont like this cinda protections, mainly
+
+because you cant play over network with your friends (with one cd) and you cant 
+
+listen to music (if possible) when
+
+you play either.<BR>
+
+Alright load up the (.dat) in W32dasm, now look at the API imports and se if you can se 
+
+any CD-Check releated
+
+API's like GetDriveTypeA, GetVolumeInformationA, yeah you found getdrivetypea...<BR>
+
+I have cracked this before so i will be
+
+blind tracing and showing you stuff from W32Dasm, but you can follow in SoftIce if 
+
+youd like that<BR>Double click on it
+
+once/or break on it in SoftIce and we should be landing somewhere around here :
+
+<PRE>
+
+* Reference To: KERNEL32.GetDriveTypeA, Ord:00DFh       <VERY common in today's cd-checks
+
+                                  |
+
+:004826EA 8B2D48F58C00            mov ebp, dword ptr [008CF548]
+
+
+
+* Reference To: KERNEL32.GetVolumeInformationA, Ord:014Fh
+
+                                  |                     <---- Very common in today's cd-checks
+
+:004826F0 8B3D58F58C00            mov edi, dword ptr [008CF558]
+
+
+
+* Reference To: KERNEL32.Sleep, Ord:023Fh
+
+                                  |                     <---- lame ...
+
+:004826F6 8B1DE8F48C00            mov ebx, dword ptr [008CF4E8]
+
+
+
+* Referenced by a Jump at Address:0048275A(C)
+
+|
+
+:004826FC 8D4C2410    lea ecx, dword ptr [esp+10]   <- esp+10 holds the drive_string it's checking
+
+:00482700 51          push ecx                       - IE: C:\, D:\, E:\ and returns a value in eax.
+
+:00482701 FFD5        call ebp     <- GetDriveTypeA  - HD=EAX=3, CD=EAX=5.
+
+:00482703 83F805      cmp eax, 5   <- compare if the drive we are checking is a CD drive.
+
+:00482706 7546        jne 0048274E <- jump if not ...
+
+:00482708 6A00        push 0
+
+:0048270A 6A00        push 0
+
+:0048270C 6A00        push 0
+
+:0048270E 6A00        push 0
+
+:00482710 6A00        push 0
+
+:00482712 8D542428    lea edx, dword ptr [esp+28]
+
+:00482716 6A64        push 64
+
+:00482718 8D442428    lea eax, dword ptr [esp+28]
+
+:0048271C 52          push edx
+
+:0048271D 50          push eax
+
+:0048271E FFD7        call edi                     <- call getvolumeinformationa
+
+:00482720 85C0        test eax, eax
+
+:00482722 742A        je 0048274E                  <- jump if no label found .. ?
+
+
+
+* Possible Reference to String Resource ID=00001: "Dummy for list box "
+
+                                  |
+
+:00482724 6A01                    push 01
+
+
+
+* StringData Ref from Data Obj ->"Dune2000CDLabel"  <DUNE 2000 CD Label...so it checks for the 
+
+                                  |                  label on the current Drive (wich is supposed 
+
+:00482726 68CC8B4E00              push 004E8BCC      to be the  CD Drive).
+
+:0048272B E8E0B40000              call 0048DC10
+
+:00482730 83C404                  add esp, 00000004
+
+:00482733 50                      push eax
+
+:00482734 E887B50000              call 0048DCC0
+
+:00482739 83C408                  add esp, 00000008
+
+:0048273C 8D4C2414                lea ecx, dword ptr [esp+14]
+
+:00482740 50                      push eax
+
+:00482741 51                      push ecx
+
+:00482742 E8D9A30300              call 004BCB20
+
+:00482747 83C408                  add esp, 00000008
+
+:0048274A 85C0                    test eax, eax
+
+:0048274C 7418                    je 00482766         <- Jump if it's the same label :)
+
+
+
+* Referenced by a Jump at Addresses:00482706(C), :00482722(C)
+
+|
+
+:0048274E 68F4010000              push 000001F4
+
+:00482753 FFD3                    call ebx            <- sleep! this crap is lame ...
+
+:00482755 8BD6                    mov edx, esi
+
+:00482757 4E                      dec esi
+
+:00482758 85D2                    test edx, edx
+
+:0048275A 75A0                    jne 004826FC
+
+:0048275C 32C0                    xor al, al          <- xor al, al = bad cracker go away!
+
+:0048275E 5F                      pop edi
+
+:0048275F 5E                      pop esi
+
+:00482760 5D                      pop ebp
+
+:00482761 5B                      pop ebx
+
+:00482762 83C468                  add esp, 68
+
+:00482765 C3                      ret
+
+
+
+
+
+* Referenced by a Jump at Address:0048274C(C)
+
+|
+
+:00482766 B001                    mov al, 01             <- mov al, 01 = continue_flag!
+
+:00482768 5F                      pop edi
+
+:00482769 5E                      pop esi
+
+:0048276A 5D                      pop ebp
+
+:0048276B 5B                      pop ebx
+
+:0048276C 83C468                  add esp, 68
+
+:0048276F C3                      ret
+
+
+
+Ok, Change :
+
+
+
+:00482703 83F805   cmp eax, 5            <- compare if the drive we are checking is a CD drive.
+
+TO
+
+:00482703 83F803   cmp eax, 3            <- Get the hard drive HD
+
+
+
+-
+
+
+
+And Change :
+
+
+
+:00482722 742A     je 0048274E
+
+TO
+
+:00482722 9090     nop                          <- No operational Process...(do nothing)
+
+
+
+-
+
+
+
+And change :
+
+
+
+:0048274C 7418     je 00482766                  <- Jump if it's the same label :)
+
+TO
+
+:0048274C EB18     jmp 00482766                 <- Jump! no matter what :)
+
+
+
+</pre>
+
+Ok we made it on the cd-check routine with the lame label check ...lets try 
+
+and make the changes permanent with
+
+hackersview and run the game. What happends? yes a gay messagebox poping 
+
+up telling us "Oh No! Cant open movies
+
+it cant find the movies. Al right, run it again but this time 
+
+put a break on MessageBoxA, when it breaks you 
+
+just backtrace the call and simply nop it, coz you are inside of the movie 
+
+playing routine. So now it wont even
+
+look for the movie's it will just go pass the whole crap. ;) Also i must admit that I 
+
+dont know if there where any
+
+more protections in the original game exe, coz you know this 
+
+is the patch im working on, but i dont think so.
+
+<BR><BR>
+
+The Movie Routine Call (read the text below before trying to understand it):
+
+<PRE>
+
+:0048D92C C605B878510001          mov byte ptr [005178B8], 01
+
+:0048D933 E8285BF7FF              call 00403460                 <THAT's the one ...
+
+:0048D938 83C404                  add esp, 00000004
+
+
+
+Change :
+
+:0048D933 E8285BF7FF              call 00403460
+
+TO
+
+:0048D933 9090909090              nop
+
+</prE>
+
+
+
+Special greets to: BMonkey, Carphatia, Fravia+, Neural_Noise ...
+
+
+
+</PRE></FONT>
+
+<HR>
+
+
+
+<BR><CENTER><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=88% HEIGHT=6 BORDER=0
+
+VSPACE=0 HSPACE=0><BR><BR><I>You'r deep inside fravia's pages of reverse engineering, choose your way out!</I><BR>
+
+<!-- Begin Javascript relocator <font color=gray><b>~</b></fonT> Javascript code by fravia+ -->
+
+<FORM name="FraviasForm">
+
+<SCRIPT LANGUAGE="javascript">
+
+<!--
+
+
+
+function FravPage(list) {
+
+	      location.href = list.options[list.selectedIndex].value
+
+}
+
+
+
+// -->
+
+</SCRIPT>
+
+<DIV align="center">
+
+<CENTER>
+
+<P center="&lt;center&gt;&lt;/center&gt;">&nbsp;<SELECT name="fraviale" size="1">
+
+
+
+<OPTION>Choose another page!</OPTION>
+
+<OPTION value="index.htm">Main page</OPTION>
+
+<OPTION value="academy.htm">Software reversing Lab</OPTION>
+
+<OPTION value="realicra.htm">Reality cracking Lab</OPTION>
+
+<OPTION value="noanon.htm">Anonymity Lab</OPTION>
+
+<OPTION value="ideale.htm">Site busting Lab</OPTION>
+
+<OPTION value="howtosea.htm">How to search Lab</OPTION>
+
+<OPTION value="sealight.htm">--Search engines (light)</OPTION>
+
+<OPTION value="searengi.htm">--Search engines (heavy)</OPTION>
+
+<OPTION value="links.htm">Links</OPTION>
+
+<OPTION value="tools.htm">Tools</OPTION>
+
+<OPTION value="javascri.htm">Javascript reversing</OPTION>
+
+<OPTION value="screamin.htm">Screaming truth</OPTION>
+
+<OPTION value="entran.htm">Main entrance</OPTION>
+
+<OPTION value="new_what.htm">What's new on fravia's</OPTION>
+
+<OPTION value="info.htm">Mail fravia+</OPTION>
+
+<OPTION value="http://greythorne.home.ml.org">+Greythorne's</OPTION>
+
+<OPTION value="http://www.InsideTheWeb.com/mbs.cgi/mb186724">Tools of our trade msgboard</OPTION>
+
+<OPTION value="http://www.InsideTheWeb.com/mbs.cgi/mb155985">Main msgboard</OPTION>
+
+</SELECT>
+
+
+
+<INPUT type="button" value="Let's go!" onclick="FravPage(this.form.elements[0])">
+
+<BR>
+
+</DIV>
+
+
+
+</FORM>
+
+<!-- end Javascript relocator -->
+
+<BR><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=88% HEIGHT=6 BORDER=0
+
+VSPACE=0 HSPACE=0><BR><BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0
+
+VSPACE=0 HSPACE=0><A
+
+HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0
+
+VSPACE=0 HSPACE=0>
+
+<A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links </A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0>
+
+<A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity </A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC </A>
+
+
+
+<IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays </A>
+
+
+
+<IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database </A>
+
+
+
+<IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="botstart.htm" tppabs="http://www.anticrack.de/fravia/botstart.htm">bots wars</A>
+
+
+
+<BR>
+
+<IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut </A>
+
+
+
+<IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13 BORDER=0
+
+VSPACE=0 HSPACE=0><A
+
+HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13
+
+BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13
+
+HEIGHT=13
+
+BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="javascri.htm" tppabs="http://www.anticrack.de/fravia/javascri.htm">javascript wars </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0
+
+VSPACE=0 HSPACE=0><A
+
+HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0
+
+VSPACE=0 HSPACE=0><A
+
+HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia </A><BR>
+
+
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0
+
+VSPACE=0 HSPACE=0><A
+
+HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering illegal?
+
+</A></CENTER>
+
+
+
+</BODY>
+
+</HTML>
+

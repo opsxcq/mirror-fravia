@@ -1,0 +1,503 @@
+<html><HEAD>
+
+<TITLE>sdzero</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+<CENTER><H2>Cracking &quot;Save disabled&quot; protections</H2><H4><I>by Zero</I><BR>
+
+(&quot;Dead listing&quot; approach and &quot;live&quot; approach<BR>
+
+a couple of lessons that the protectionists should head :-)
+
+<BR>
+
+<BR>(14 July 1997, slightly edited by Fravia+)</H4>
+
+<HR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">Courtesy of Fravia's page of reverse engineering
+
+<BR><BR><I>Well, this project is finally on its way!... here you'll find not one 
+
+but *TWO* essays 
+
+by Zero, master of the &quot;save disabled&quot; protections.<BR><BR>I like what Zero writes:</I></CENTER><BR>
+
+<PRE>By the way, although I am a beginner in software reverse engineering 
+
+and practically learned everything from +ORC and his students' essays,
+
+I never actually did any of the cracks they wrote about. At the beginning,
+
+I have tried the famous pooldemo crack, but got bored after five minutes.
+
+Cracking just looses it's fine taste if you already know all the answers.
+
+So, IMHO the best way to use these essays is to understand the described
+
+method and try it on <FONT color="blue">other</FONT> programs having a similar protection.
+
+</PRE>
+
+<I>But if he's a &quot;beginner&quot; as he says, then I would like to find many other &quot;beginners&quot; 
+
+working with this quality and with this kind of deep and clear methodical approach!
+
+</I>
+
+<HR size="2">
+
+<PRE><FONT size="+2">
+
+Cracking &quot;Save disabled&quot; protections
+
+</FONT>
+
+
+
+ It's getting very popular among software writers nowadays, to distribute crippled
+
+versions of their program, where some important functions, (save, export
+
+etc.) are not working. Usually, these demos try to suggest that the critical 
+
+code is really missing from the program, so you have to get a full version
+
+from the author to enjoy those functions, and cracking the demo would make 
+
+no snese. 
+
+As +ORC kindly pointed out for us, we should never believe blindly the 
+
+statements of the programmers (nor of anybody else, for that matter). 
+
+For example, if we disassemble a &quot;save disabled&quot; program and see that it 
+
+calls the commdlg.getsavefilename routine, we can suspect some cheating.
+
+ As you can guess, a number of these demos can be turned into full
+
+versions quite easily. In this essay, I want to show you, how to crack
+
+these demos if the protection is implemented through a master &quot;demo 
+
+version&quot; flag.
+
+<FONT size="+2">
+
+Cracking Vector NTI demo
+
+</FONT>
+
+VNTI 4.0 demo for win95 from Informax, Inc. can be found at
+
+<A href="tppmsgs/msgs2.htm#240" tppabs="http://www.anticrack.de/fravia/tppmsgs/msgs2.htm#240">ftp.informaxinc.com/pub/informax/vnti4/D40dw95.zip</A>
+
+The main exe file of this target is DI40DEMO.EXE (3 596 288 bytes)
+
+
+
+ This is a really outstanding program for those who are in the DNA hacking
+
+business, but probably useless for most of you. Never mind, the aim of this
+
+essay is to show you how to crack *not* to give you some good program
+
+for free. By the way, although I am a beginner in this cracking business
+
+and practically learned everything from +ORC and his students' essays,
+
+I never actually did any of the cracks they wrote about. At the beginning,
+
+I have tried the famous pooldemo crack, but got bored after five minutes.
+
+Cracking just looses it's fine taste if you already know all the answers.
+
+So, IMHO the best way to use these essays is to understand the described
+
+method and try it on an other program having similar protection.
+
+
+
+ OK let's go back to our target. After installation and running, we see
+
+that several functions - most notably exporting and importing sequences - 
+
+are not allowed, but we get the nice message &quot;This Function Deactivated
+
+in Demonstration Version&quot;. Well, this message will be our hook.
+
+ Let's try the dead listing approach first. (I suppose you have read the
+
+relevant +ORC tutorials.) In the disassembled list of DI40DEMO.EXE we
+
+search for the text &quot;This Function Deactivated&quot;. It turns up at several
+
+positions, the first one is listed here:
+
+
+
+:00427D64 837D1003                cmp [ebp+10], 00000003
+
+:00427D68 0F8507000000            jne 00427D75 <GO to flag check :00427D6E 33C0 xor eax, eax :00427D70 E9D9040000 jmp 0042824E <-leave * Referenced by a Jump at Address :00427D68(C) | :00427D75 833DACD26D0000 cmp dword ptr [006DD2AC], 0 <-check flag :00427D7C 0F8418000000 je 00427D9A <-go to real work :00427D82 6A00 push 00000000 :00427D84 6A40 push 00000040 * Possible StringData Ref from Data Obj>&quot;This Function Deactivated&quot;
+
+                                        -&gt;&quot;in Demonstration Version&quot;
+
+                                  |
+
+:00427D86 68202E6D00              push 006D2E20
+
+:00427D8B E86A471C00              call 005EC4FA &lt;-send the message
+
+:00427D90 83C40C                  add esp, 0000000C
+
+:00427D93 33C0                    xor eax, eax
+
+:00427D95 E9B4040000              jmp 0042824E &lt;-leave
+
+
+
+* Referenced by a Jump at Address :00427D7C(C)
+
+|
+
+:00427D9A 837D1001                cmp [ebp+10], 01 &lt;-real work starts
+
+:00427D9E 0F8535000000            jne 00427DD9
+
+:00427DA4 837D0C01                cmp [ebp+0C], 00000001
+
+
+
+ Well, what do we see here? Just four instructions before the demo message
+
+is sent, there is a flag check, and if it's zero we are free to go on.
+
+Very suggestive, but let's check first the other occurences of the demo
+
+message. As we find out, exactly this type of flag check occurs before
+
+each demo message is sent.
+
+ It's time to see, where this flag is being set at the first place. We
+
+search for the string &quot;mov dword ptr [006DD2AC]&quot; and find that it has only
+
+three occurances, all in one part of the code.
+
+
+
+* Referenced by a Jump at Address :00512A2B(C)
+
+|
+
+:00512A38 6898A66F00              push 006FA698
+
+:00512A3D E8286C0D00              call 005E966A	&lt;-checking subroutine
+
+:00512A42 83C404                  add esp, 00000004
+
+:00512A45 8945D0                  mov [ebp-30], eax <RESULT is saved :00512A48 E93E000000 jmp 00512A8B <-go to evaluation of result * Referenced by a Jump at Address :00512A8F(C) | :00512A4D C705ACD26D000A000000 mov dword ptr [006DD2AC], 0A <-demo ver. :00512A57 E948000000 jmp 00512AA4 <-go on * Referenced by a Jump at Address :00512A99(C) | :00512A5C C705ACD26D0000000000 mov dword ptr [006DD2AC], 0 <-full ver. :00512A66 E939000000 jmp 00512AA4 <-go on * Referenced by a Jump at Address :00512A9F(U) | :00512A6B C705ACD26D000A000000 mov dword ptr [006DD2AC], 0A <-demo ver. :00512A75 6A00 push 00000000 :00512A77 6A30 push 00000030 * Possible StringData Ref from Data Obj>&quot;Bad or missing User Data file&quot;
+
+                                  |
+
+:00512A79 680CFD6D00              push 006DFD0C
+
+:00512A7E E8779A0D00              call 005EC4FA <SEND warning :00512A83 83C40C add esp, 0000000C :00512A86 E919000000 jmp 00512AA4 <-go on * Referenced by a Jump at Address :00512A48(U) | :00512A8B 837DD004 cmp [ebp-30], 04 <-evaluate check result :00512A8F 0F84B8FFFFFF je 00512A4D <-go to demo version set :00512A95 837DD005 cmp [ebp-30], 05 :00512A99 0F84BDFFFFFF je 00512A5C <-go to full version set :00512A9F E9C7FFFFFF jmp 00512A6B <-go to demo + warning * Referenced by Jump at Addresses :00512A57(U), :00512A66(U), :00512A86(U) | :00512AA4 6868A76F00 push 006FA768 <- Ok, continue :00512AA9 8D4DDC lea ecx, [ebp-24] :00512AAC E8C2C7FFFF call 0050F273 :00512AB1 C745FC00000000 mov [ebp-04], 00000000 This piece of code "is.class" tppabs="http://fravia.org/is.class" a little bit confusing, because of the back and forward jumps, but I hope you can easily figure it out with my comments. First, the subroutine at 005E966A is called and the result is saved in ebp-30. Then if the result is evaluated to 4 we set the flag to 0A (demo version) and we go on. If the result of the check is 5 the flag is set to 0 (full version) and we go on. If the result is neither 4 nor 5, the program complains about a missing data file and switches to demo version. Well, all this stuff (especially the missing data file message) suggest that we are at the right place. If we want to be completely sure, we can have a look at the routine at 005E966A. I don't list it here, because it's too long and complete understanding of it is not necessary. It first refers to some GEXUDAT.DEF file which turns out to be a small (172 bytes) data file. Then it starts to send messages like "User data file contains illegal serial number. Vector NTI will function only in demo mode." and "Contact Informax to obtain a new demo." etc. The picture is clear now. The important info is in the GEXUDAT.DEF file, which is checked by the routine at 005E966A. According to the result the master flag is set at 00512A4D to demo mode and later the program always checks this flag when you want to use a function which is disabled in the demo. The crack is obvious. Change the instruction at position 00512A4D to mov dword ptr [006DD2AC], 0. (I hope you know how to do that with a hex editor). You do not even have to change the instruction at 00512A6B if you did not temper with the GEUXDAT.DEF file. Well, this was easy. As a matter of fact, it took longer time to disassemble DI40DEMO.EXE than to find and disable the protection :-) Well, in the above text I have shown how to crack a save disabled program by the "dead listing" method. Now let's see how to crack a similar protection with our beloved Softice. <Font size="+2">
+
+Cracking Dnasis ver 2.5 Demo
+
+</FONT>
+
+Dnasis 2.5 for windows from Hitachi Software can be found at
+
+<A href="tppmsgs/msgs2.htm#239" tppabs="http://www.anticrack.de/fravia/tppmsgs/msgs2.htm#239">www.hitsoft.com:80/gs/dnasis/dnadmo25.zip</A>
+
+The main exe file of this target is DNASIS.EXE (3 019 264 bytes).
+
+
+
+ After installation, we run DNASIS.EXE, open a sample file (pbr322.dna)
+
+and observe that a couple of functions (Save As, Print, Copy etc.) are
+
+not working, but send a message window with the text &quot;This function is
+
+not supported in demo version.&quot;
+
+ Well, how should we attack this protection? Let's think a bit about, what
+
+is happening between the selection of a menu item and the appearance of
+
+the demo message. Obviously, there is a point in the line of the events,
+
+where the information about <FONT color="blue">which</FONT> menu item has been selected, will be 
+
+converted to an address, where there is code which responds to the actual
+
+selection, and the execution of the code will continue on this address.
+
+ Why is this important for us? Because, the decision whether to send the
+
+demo message or execute the function will, probably, be made very close
+
+to this conversion point. Why? Because, before this point the program is
+
+not aware of which menu item was chosen, so it cannot decide to send the
+
+demo message. After the main switch point, when the program starts
+
+to work on the menu item specific code, it is unreasonable to execute tons
+
+of useless code, just to decide, later, that a demo message was appropriate.
+
+ Keeping this reasoning in mind, we can suppose that the decision about
+
+the demo message is either wired into the process which produce the menu
+
+item specific address or situated at the very beginning of the menu item
+
+specific code. (Note, that this does not mean, we have a conditional
+
+decision on our hand! It may very well mean that we'll just find a jmp to
+
+<FONT color="blue">senddemomessage</FONT> routine at this place).
+
+ Well, the aim is clear now! We have to find the main switch point and
+
+snoop around it! We have to break in the line of events between the menu
+
+item selection and the demo message appearence. The demo message is sent
+
+in a new window, so we can try to break in at the user!createwindow
+
+procedure.
+
+ OK, first load Softice, load DNASIS.EXE then start the program and load a
+
+sample file. Open the file menu, press ctrl-D and we are in Softice, now.
+
+Set a breakpoint on the createwindow function:
+
+<B>
+
+:bpx createwindow
+
+</B>
+
+ The breakpoint is set, so go back to DNASIS and select the Save As menu
+
+item. As the program wants to present the demo message we pop up in Softice
+
+at the very first instruction of the user!createwindow procedure. At this
+
+point the program has already decided to send the warning message so it has
+
+actually passed the code we are looking for. Let's examine the stack.
+
+
+
+:stack
+
+NDVGM(53) at 3767:5EAC [?]
+
+NDVGM(53) at 3767:570C [?]
+
+NDVGM(53) at 3767:52EE [?]
+
+NDVGM(53) at 3767:4D78 [?]
+
+NDVGM(53) at 3767:4C7C [?]
+
+NDVGM(53) at 3767:4C18 [?]
+
+DNASIS(09) at 23AF:3F80 [?] <LAST common call DNASIS(02) at 246F:0BDA [?] <-Save As specific call !! DNASIS(40) at 222F:6BD4 [?] <-demo message specific call NDVGM(20) at 28FF:19F9 [?] DNASIS(40) at 222F:6A2B [?] NDVGM(25) at 38D7:3E03 [?] <-common window handling call NDVGM(25) at 38D7:341B [?]> USER!CREATEWINDOW at 17B7:07F1 [?]
+
+
+
+ It shows us through which calls we arrived to the createwindow procedure.
+
+(Forget about my comments on the right, for a moment!) We could now set
+
+breakpoints at this addresses and run the program to find out at which
+
+point the Save As specific code starts, but it would take far too much 
+
+time.
+
+ It's better if we follow the above described procedure when we select 
+
+other menu items, too. In that way, we can compare the stack results of the
+
+different menu selections - working ones and disabled ones - and we'll 
+
+probably find what we want. 
+
+So do the bpx createwindow + our stack &quot;magic&quot; when you choose <FONT color="blue">another</FONT> menu 
+
+item which gives the demo message (say &quot;Print&quot;) and yet another menu item 
+
+which <FONT color="blue">does not</FONT> send the demo message, yet creates 
+
+a new window as well (say &quot;New&quot;). For Print we get the following stack result:
+
+
+
+NDVGM(53) at 3767:5EAC [?]
+
+NDVGM(53) at 3767:570C [?]
+
+NDVGM(53) at 3767:52EE [?]
+
+NDVGM(53) at 3767:4D78 [?]
+
+NDVGM(53) at 3767:4C7C [?]
+
+NDVGM(53) at 3767:4C18 [?]
+
+DNASIS(09) at 23AF:3F80 [?] <LAST common call DNASIS(02) at 246F:0D32 [?] <-Print specific call !! DNASIS(40) at 222F:6BD4 [?] <-demo message specific call NDVGM(20) at 28FF:19F9 [?] DNASIS(40) at 222F:6A2B [?] NDVGM(25) at 38D7:3E03 [?] <-common window handling call NDVGM(25) at 38D7:341B [?]> USER!CREATEWINDOW at 17B7:07F1 [?]
+
+
+
+But we get this one for &quot;New&quot;:
+
+
+
+NDVGM(53) at 3767:570C [?]
+
+NDVGM(53) at 3767:52EE [?]
+
+NDVGM(53) at 3767:4D78 [?]
+
+NDVGM(53) at 3767:4C7C [?]
+
+NDVGM(53) at 3767:4C18 [?]
+
+DNASIS(09) at 23AF:3F80 [?] <LAST common call DNASIS(02) at 246F:09A5 [?] <-New specific call DNASIS(02) at 246F:050A [?] DNASIS(0A) at 23CF:0420 [?] NDVGM(20) at 28FF:19F9 [?] DNASIS(0A) at 23CF:0015 [?] NDVGM(25) at 38D7:3E03 [?] <-common window handling call NDVGM(25) at 38D7:341B [?]> USER!CREATEWINDOW at 17B7:07F1 [?]
+
+
+
+ Comparing the three stack results, we can pinpoint where the menu item
+
+specific code is executed (see my comments on the right, now). We can see
+
+that the last common point from the beginning, in the three different
+
+execution pathway, is the call at DNASIS(09):3F80 (the selectors in your
+
+listings are different from mine so I'll use the DNASIS(module number)
+
+description from now on). Here the program calls the main switch routine,
+
+which pass the execution to the menu item specific codes.
+
+ We can observe another thing, too. There is a small difference between
+
+the execution path of the Print and the Save As functions, which otherwise
+
+produce the same demo message result. Therefore, the decision about the
+
+demo message <FONT color="blue">is not wired</FONT> in the menu item specific address decoding
+
+process, since it generates two different addresses for Save As and
+
+Print. If it were the other way, the same address (the address of the
+
+&quot;senddemomessage&quot; routine) would be generated for the two different menu
+
+items. This means that the decision of sending the demo message is
+
+generated inside the menu item specific codes. With this knowledge, we set a
+
+breakpoint at DNASIS(09):3F80. (Remove all other breakpoints and mind your
+
+own selector)
+
+
+
+:bpx 23af:3f80
+
+
+
+ Running DNASIS we have a conferm that the process of every menu item 
+
+selection goes through this point. Let's step inside the call with F8 
+
+and we find ourself in the menu item selection decoding subroutine 
+
+(at DNASIS(02):064B).
+
+We step through the code with F10 until we come to this part:
+
+
+
+246F:082C  7714                JA      0842
+
+246F:082E  2D6500              SUB     AX,0065
+
+246F:0831  8BD8                MOV     BX,AX
+
+246F:0833  83FB0A              CMP     BX,0A
+
+246F:0836  7603                JBE     083B
+
+246F:0838  E93F0B              JMP     137A
+
+246F:083B  03DB                ADD     BX,BX
+
+246F:083D  2EFFA75D14          JMP     CS:[BX+145D] <MAIN switch for File 246F:0842 3DCE00 CMP AX,00CE 246F:0845 7503 JNZ 084A 246F:0847 E9DF05 JMP 0E29 246F:084A 7714 JA 0860 246F:084C 2DC900 SUB AX,00C9 246F:084F 8BD8 MOV BX,AX 246F:0851 83FB04 CMP BX,04 246F:0854 7603 JBE 0859 246F:0856 E9210B JMP 137A 246F:0859 03DB ADD BX,BX 246F:085B 2EFFA75314 JMP CS:[BX+1453] <- main switch for Edit 246F:0860 2D2D01 SUB AX,012D 246F:0863 8BD8 MOV BX,AX 246F:0865 83FB04 CMP BX,04 In this code, the jump at DNASIS(2):083D decides where to go for each menu item selected from the File menu. Here, AX containes the number of the pressed menu point (New="0," Save As="4," Print="9" etc.) and BX="AX*2." With the help of BX the start of the menu item specific code "is.class" tppabs="http://fravia.org/is.class" looked up from a table located at CS:145D. A similar switch is located at 085B for the decoding of the menu items of the Edit menu, etc. By setting a breakpoint on the switch at 083D and selecting the Save As, Print and New menu items we can confirm that indeed different addresses are generated for them. Now if we follow the jumps we get to the entry point of the menu item specific codes. Here they are: For New: 246F:09A4 0E PUSH CS 246F:09A5 E850FB CALL 04F8 246F:09A8 E9D109 JMP 137C 246F:09AB 0E PUSH CS 246F:09AC E8A9FB CALL 0558 246F:09AF E9CA09 JMP 137C 246F:09B2 FF7608 PUSH WORD PTR [BP+08] 246F:09B5 FF7606 PUSH WORD PTR [BP+06] 246F:09B8 0E PUSH CS 246F:09B9 E83BFC CALL 05F7 246F:09BC 83C404 ADD SP,04 246F:09BF E9BA09 JMP 137C 246F:09C2 B8DF21 MOV AX,21DF For Save As: 246F:0BB3 B8DF21 MOV AX,21DF 246F:0BB6 8EC0 MOV ES,AX 246F:0BB8 26833E328100 CMP WORD PTR ES:[8132],00 <-Flag check! 246F:0BBE 7424 JZ 0BE4 <-Go on 246F:0BC0 6A64 PUSH 64 246F:0BC2 9A2E564F22 CALL 224F:562E 246F:0BC7 83C402 ADD SP,02 246F:0BCA 52 PUSH DX 246F:0BCB 50 PUSH AX 246F:0BCC 6A01 PUSH 01 246F:0BCE 9A2E564F22 CALL 224F:562E 246F:0BD3 83C402 ADD SP,02 246F:0BD6 52 PUSH DX 246F:0BD7 50 PUSH AX 246F:0BD8 6A01 PUSH 01 246F:0BDA 9A0D6B2F22 CALL 222F:6B0D <-Send demo message 246F:0BDF 83C40A ADD SP,0A 246F:0BE2 EB14 JMP 0BF8 <-leave 246F:0BE4 FF7608 PUSH WORD PTR [BP+08] <-Save As starts 246F:0BE7 FF7606 PUSH WORD PTR [BP+06] 246F:0BEA C45E06 LES BX,[BP+06] 246F:0BED 26C45F14 LES BX,ES:[BX+14] 246F:0BF1 26FF5F2C CALL FAR ES:[BX+2C] 246F:0BF5 83C404 ADD SP,04 246F:0BF8 E98107 JMP 137C And for Print: 246F:0CFE B8DF21 MOV AX,21DF 246F:0D01 8EC0 MOV ES,AX 246F:0D03 26833E328100 CMP WORD PTR ES:[8132],00 <-Flag check! 246F:0D09 7431 JZ 0D3C <- Go on 246F:0D0B B8DF21 MOV AX,21DF 246F:0D0E 8EC0 MOV ES,AX 246F:0D10 26833E348100 CMP WORD PTR ES:[8134],00 246F:0D16 7524 JNZ 0D3C 246F:0D18 6A64 PUSH 64 246F:0D1A 9A2E564F22 CALL 224F:562E 246F:0D1F 83C402 ADD SP,02 246F:0D22 52 PUSH DX 246F:0D23 50 PUSH AX 246F:0D24 6A01 PUSH 01 246F:0D26 9A2E564F22 CALL 224F:562E 246F:0D2B 83C402 ADD SP,02 246F:0D2E 52 PUSH DX 246F:0D2F 50 PUSH AX 246F:0D30 6A01 PUSH 01 246F:0D32 9A0D6B2F22 CALL 222F:6B0D <-Send demo message 246F:0D37 83C40A ADD SP,0A 246F:0D3A EB14 JMP 0D50 <-leave 246F:0D3C FF7608 PUSH WORD PTR [BP+08] <-Printing starts 246F:0D3F FF7606 PUSH WORD PTR [BP+06] 246F:0D42 C45E06 LES BX,[BP+06] 246F:0D45 26C45F14 LES BX,ES:[BX+14] 246F:0D49 26FF5F38 CALL FAR ES:[BX+38] 246F:0D4D 83C404 ADD SP,04 As we compare the beginning of each routine we find a piece of code which is present in the routines sending the demo message, but missing from the New routine which works normally. This code starts with a flag check and after there is a jump which goes around the demo message. Very suggestive! If we manipulate this flag check in the Save As routine we can bypass the demo message and from now on happily save our work. If we check the other disabled routines we find exactly this kind of flag check at the very begining of their code. Well, that's it! We have found our main flag at ES:[8132]. If it is zero then every function works, if it's not zero then we run in demo mode. The only thing that remains is to find out where the flag is set at first place. Exit and reload DNASIS, set a breakpoint on memory write at address ES:[8132]. :bpmw ES:[8132] w Let's start DNASIS and we pop up into Softice at DNASIS(42):431E. Here is the surrounding code: 239F:4306 68AB81 PUSH 81AB 239F:4309 0E PUSH CS 239F:430A E817F4 CALL 3724 <-call the check routine 239F:430D 83C404 ADD SP,04 239F:4310 A801 TEST AL,01 239F:4312 7405 JZ 4319 239F:4314 B80100 MOV AX,0001 <-demo mode is set here 239F:4317 EB02 JMP 431B 239F:4319 33C0 XOR AX,AX 239F:431B A33281 MOV [8132],AX <-our flag is set here 239F:431E 1E PUSH DS <-Softice pops up here 239F:431F 68B781 PUSH 81B7 239F:4322 0E PUSH CS 239F:4323 E8FEF3 CALL 3724 As you can see the demo flag is set depending on the result of the routine at 3724. We can patch the MOV AX,0001 instruction to move 0 into the flag. However, patching here to zero our flag and ning the program we are in for a nice surprise! The program sends a "Stop! DNASIS hardware key is not found!" message and quits. Obviously, the program detects that it is running in full version mode now and an other layer of protection (looking for a missing hardware key) kicks in. We only changed the demo flag, so the appearance of this message must depend on this flag. We set a breakpoint to see who reads our flag after it has been set. :bpmw ES:[8132] r We rerun the program and pop up into Softice at DNASIS(05):597A 0C8F:5975 B8CF23 MOV AX,23CF 0C8F:5978 8EC0 MOV ES,AX 0C8F:597A 26833E328100 CMP WORD PTR ES:[8132],00 <- check flag 0C8F:5980 740C JZ 598E <- go to hardware key check 0C8F:5982 B80100 MOV AX,0001 <- ok we are in demo mode 0C8F:5985 5F POP DI 0C8F:5986 5E POP SI 0C8F:5987 8D66FE LEA SP,[BP-02] 0C8F:598A 1F POP DS 0C8F:598B 5D POP BP 0C8F:598C 4D DEC BP 0C8F:598D CB RETF We also have to patch this code to avoid the hardware check. How to do the final patch is a matter of taste. You can patch the initial flag set as described above and patch here, too. I prefer to patch the program at one position only, so I did not bother with the initial flag set, but changed the instructions here: CMP WORD PTR ES:[8132],00 to MOV BYTE PTR ES:[8132],00 JZ 598E NOP NOP This takes care of the comparison here and the flag is set for the rest of the program at the same time. So, in this essay we have seen two methods to crack save disabled demos which has a master demo flag. The conclusions are: 1) For beginner crackers: A number of save disabled programs are using a master demo flag to switch of some functions and the flag is often checked at the very beginning of the routines of the disabled functions. 2) For shareware programmers: Don't use a master flag and check it at the begining of the routines like: if demoversion then senddemomessage else goontosave Use instead conditional compilation or replace the whole save routine with a call to the senddemomessage routine. It's even better if you do not send any warning at all, just disable the corresponding menu item. As you can see, by presenting messages, beeps etc. you give the cracker an easy point to start with. The last thing; I don't know what to think about the hardware key which is required for the full version of DNASIS. If this is not a joke or an aborted development option and if they really have some kind of dongle for normal users, implementing the software part of the protection scheme like we saw here, is more than stupid: it's a sin. Finally, I would like to thank +ORC and his students for the fine essays and +Fravia for his amazing WEB site. Written by ZER0 </pre>
+
+<BR>
+
+<HR ALIGN="CENTER" WIDTH="100%" SIZE="3">
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</I></CENTER>
+
+<BR><CENTER>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#84'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#84"> homepage</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"> 
+
+<A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#73'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#73"> links</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0">
+
+<A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm"> anonymity</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm"> +ORC</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#82'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#82"> students' essays</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm"> tools</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm"> cocktails</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm"> search_forms</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="corporate.htm" tppabs="http://www.anticrack.de/fravia/corporate.htm"> corporate</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm"> mailFraVia</A><BR>
+
+
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm"> Is reverse engineering legal?</A></CENTER>
+
+<CENTER><HR ALIGN="CENTER" WIDTH="100%" SIZE="2"></CENTER>
+
+
+
+</BODY>
+
+</HTML>

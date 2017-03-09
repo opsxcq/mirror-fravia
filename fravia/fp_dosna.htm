@@ -1,0 +1,806 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>DOS&nbsp; Navigator v1.50</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+<CENTER><FONT size="+3">DOS&nbsp; Navigator v1.50: how to spy our targets</FONT>
+
+<BR>(TSR spying and &quot;classical old style&quot; cracking)
+
+<H2>by <FONT color="#5500AA">Frog's Print</FONT></H2>
+
+(10 December 1997, slightly edited by fravia+)</H4>
+
+<!--<a href="protecti.htm" tppabs="http://www.anticrack.de/fravia/protecti.htm"><IMG SRC="tough.gif" tppabs="http://www.anticrack.de/fravia/tough.gif" ALT="our protections" ALIGN=BOTTOM WIDTH=114 HEIGHT=43 BORDER=0 VSPACE=0 HSPACE=0></a><br><Font color= gray>Our protections</fonT>-->
+
+<HR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">Courtesy of fravia's page 
+
+of reverse engineering<HR>       
+
+<I>Well, a nice example of DOS cracking...<BR><FONT color="purple">
+
+&lt;short explanation for people that don't know anything at all:&gt;</FONT></I></CENTER><PRE>&quot;Noo, Dos cracking is not dead, Dos is still VERY important for reverse engineering 
+
+purposes, Windows is more &quot;transient&quot; than DOS, you are well advised to learn dos 
+
+cracking -and tsrring- techniques, study dos and dos protections every time you get a 
+
+chance to find one, fish Softice DOS lastversion 92 out of the web... etcetera.&quot;</PRE><I><CENTER><FONT color="purple">&lt;End of the short explanation for people that don't know anything at all&gt;</FONT><BR>
+
+...and of TSR building, a particular fascinating essay for reversers that are building their own tools, not quite suitable for the beginner cracker or the casual reverser, tough :-)<BR>
+
+Enjoy!
+
+</I></CENTER><HR size="6">
+
+<CENTER><B><FONT SIZE="+3">DOS&nbsp; Navigator v1.50</FONT></B></CENTER>
+
+<CENTER><B><FONT SIZE="+1">(TSR spying/cracking)</FONT></B></CENTER>
+
+&nbsp;
+
+<BR><TT>&nbsp;by Frog's Print -: )</TT>
+
+
+
+<P><FONT SIZE="+1">As the name says, DOS Navigator v1.5 (available at <A HREF="javascript:if(confirm('http://www.ritlabs.com/dn/  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.ritlabs.com/dn/'" tppabs="http://www.ritlabs.com/dn/">http://www.ritlabs.com/dn/</A>
+
+from the authors of THE_BAT!, an e-mail program with a nice protection
+
+that may drive crazy some newbyes...) is a DOS file manager.</FONT>
+
+<BR><FONT SIZE="+1">It can handle any kind of file manipulation, viewing,
+
+edition, drag &amp; drop, as well as a disk editor and even 2 versions
+
+of the famous Tetris. It doesn't support Windows95 long filenames (I really
+
+couldn't care less about that because I don't like long filenames and I'm
+
+still using the 16 bits Winfile.exe -: ).</FONT>
+
+<BR><FONT SIZE="+1">It's a useful tool, specially when you get stuck at the
+
+DOS prompt because Win95 doesn't want to load...</FONT>
+
+<BR><FONT SIZE="+1">It is shareware and has a nagscreen reminding it to you
+
+each time you run it.</FONT>
+
+
+
+<P><FONT SIZE="+1">Right after installing it, here is the listing of the
+
+files in its directory:</FONT>
+
+
+
+<P><TT>&nbsp;&nbsp; DN.COM&nbsp;&nbsp;&nbsp;&nbsp; 1 778&nbsp; &lt;= &quot;Launcher&quot;</TT>
+
+<BR><TT>&nbsp;&nbsp; DN.OVR&nbsp;&nbsp; 762 170</TT>
+
+<BR><TT>&nbsp;&nbsp; DN.PRG&nbsp;&nbsp; 132 720&nbsp; &lt;= .Exe file packed
+
+with PKLITE</TT>
+
+<BR><TT>&nbsp;&nbsp; DN.LNG&nbsp;&nbsp;&nbsp; 17 952</TT>
+
+<BR><TT>&nbsp;&nbsp; DN.DLG&nbsp;&nbsp;&nbsp; 57 031</TT>
+
+<BR><FONT SIZE="+1">&nbsp;</FONT>
+
+<BR><FONT SIZE="+1">&nbsp;We can see that DN.COM is 1.7Kb and could only
+
+be a &quot;launcher&quot; (the file is full of &quot;jmp xxxx:xxxx&quot; ). Due to its extension,
+
+DN.PRG seems to be the main program. After opening it with an hexeditor,
+
+we can see it is an EXE file and that it has been packed with PKLITE.</FONT>
+
+<BR><FONT SIZE="+1">The programmers did a little mistake here, because PKLITE
+
+has an option to make compressed file unextractable but they didn't use
+
+it (or may those naughty guys from Ritlabs don't have a Registered version
+
+of the famous PKWARE soft! -: ). Anyway, we will not unpack it, it is not
+
+the purpose of this essay.</FONT>
+
+<BR><FONT SIZE="+1">&nbsp;</FONT>
+
+<BR><FONT SIZE="+1">As&nbsp; there's a nagscreen but no registration dialog
+
+box, I just assume that the program is looking for a .reg or .key file.
+
+So let's see:</FONT>
+
+<BR><FONT SIZE="+1">Load DN.COM with SoftICE (with any version of S-ICE Symbol
+
+Loader for DOS - I am using here DLDR.EXE v3.1from S-ICE DOS v2.95 ) and
+
+BPINT on Int21h function 3Dh (open existing file, ds:dx=ASCIZ filename
+
+- Return AX=file handle or error code):</FONT>
+
+
+
+<P><TT>BPINT 21 IF ah==3d do &quot;d ds:dx&quot;</TT>
+
+
+
+<P><FONT SIZE="+1">At the 12th break you can see in the data window that
+
+Dos Navigator is looking for DN.KEY. Of course it will return a #2 error
+
+code (file not found) as this is the registration key file and it is not
+
+included in the shareware package.</FONT>
+
+<BR><FONT SIZE="+1">I simply copy a file in its directory, rename in DN.KEY,
+
+and using the same BPINT, run the program again.</FONT>
+
+<BR><FONT SIZE="+1">When the break occures, I put a conditional BPINT Int21h/AH=3Fh
+
+(read from file):</FONT>
+
+
+
+<P><TT>BPINT 21 IF ah==3f &amp;&amp; bx==?? (put DN.KEY handle returned
+
+in Eax during last open_existing_file)</TT>
+
+
+
+<P><FONT SIZE="+1">At this point, I was about trying to decrypt the registration
+
+procedure. I still had SoftICE Data window pointing to DS:DX and then,
+
+about one minute later, I saw the following message in this memory area:</FONT>
+
+
+
+<P><TT><FONT COLOR="#000099">&nbsp; HI, Hacker Nice To See You Here!</FONT></TT>
+
+
+
+<P><FONT COLOR="#000000"><FONT SIZE="+1">I was just wondering if there was
+
+any Anti-Cracker/Debugger trick that was about to crash my PC. I noted
+
+the Offset location and decided to go ahead to verify this. So, &quot;F12&quot; and
+
+I got there at offset xxxx:1ADB (in DN.PRG):</FONT></FONT>
+
+
+
+<P><TT><FONT COLOR="#000000">1AC5&nbsp;&nbsp;&nbsp; push&nbsp;&nbsp;&nbsp;
+
+bp</FONT></TT>
+
+<BR><TT><FONT COLOR="#000000">1AC6&nbsp;&nbsp;&nbsp; mov&nbsp;&nbsp;&nbsp;&nbsp;
+
+bp,sp</FONT></TT>
+
+<BR><TT><FONT COLOR="#000000">1AC8&nbsp;&nbsp;&nbsp; cmp&nbsp;&nbsp;&nbsp;&nbsp;
+
+byte ptr [1E8A],00 </FONT><FONT COLOR="#000099">; Any_Cracker_Around ?</FONT></TT>
+
+<BR><TT><FONT COLOR="#000000">1ACD&nbsp;&nbsp;&nbsp; jz&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+1AD1&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+</FONT><FONT COLOR="#000099">; 1) Yes, send him the message</FONT></TT>
+
+<BR><TT><FONT COLOR="#000000">1ACF&nbsp;&nbsp;&nbsp; jmp&nbsp;&nbsp;&nbsp;&nbsp;
+
+1AF7&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+</FONT><FONT COLOR="#000099">; 2) No Cracker there, go ahead</FONT></TT>
+
+<BR><TT><FONT COLOR="#000000">1AD1&nbsp;&nbsp;&nbsp; les&nbsp;&nbsp;&nbsp;&nbsp;
+
+di, [bp+06]</FONT></TT>
+
+<BR><TT><FONT COLOR="#000000">1AD4&nbsp;&nbsp;&nbsp; push&nbsp;&nbsp;&nbsp;
+
+es</FONT></TT>
+
+<BR><TT><FONT COLOR="#000000">1AD5&nbsp;&nbsp;&nbsp; push&nbsp;&nbsp;&nbsp;
+
+di</FONT></TT>
+
+<BR><TT><FONT COLOR="#000000">1AD6&nbsp;&nbsp;&nbsp; call&nbsp;&nbsp;&nbsp;
+
+xxxx:0020&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </FONT><FONT COLOR="#000099">;
+
+&quot;Hi Hacker...&quot;</FONT></TT>
+
+<BR><B><TT><FONT COLOR="#000000">1ADB&nbsp;&nbsp;&nbsp; les&nbsp;&nbsp;&nbsp;&nbsp;
+
+di, [bp+06]</FONT></TT></B>
+
+<BR><TT><FONT COLOR="#000000">...</FONT></TT>
+
+<BR><TT><FONT COLOR="#000000">1AF7&nbsp;&nbsp;&nbsp; leave</FONT></TT>
+
+<BR><TT><FONT COLOR="#000000">1AF8&nbsp;&nbsp;&nbsp; retf&nbsp;&nbsp;&nbsp;
+
+0004&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+</FONT><FONT COLOR="#000099">; Back to caller</FONT></TT>
+
+
+
+<P><FONT COLOR="#000000"><FONT SIZE="+1">Pressing &quot;F12&quot; again we land here:</FONT></FONT>
+
+
+
+<P><TT><FONT COLOR="#000000">18A1&nbsp;&nbsp;&nbsp; call&nbsp;&nbsp;&nbsp;
+
+xxxx:0057&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </FONT><FONT COLOR="#000099">;
+
+Any_Cracker_Around routine we come from</FONT></TT>
+
+<BR><TT><FONT COLOR="#000000">18A6&nbsp;&nbsp;&nbsp; push&nbsp;&nbsp;&nbsp;
+
+0100</FONT></TT>
+
+<BR><TT><FONT COLOR="#000000">18A9&nbsp;&nbsp;&nbsp; push&nbsp;&nbsp;&nbsp;
+
+9DD1&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+</FONT><FONT COLOR="#000099">; &quot;key&quot;</FONT></TT>
+
+<BR><TT><FONT COLOR="#000000">18AC&nbsp;&nbsp;&nbsp; push&nbsp;&nbsp;&nbsp;
+
+00</FONT></TT>
+
+<BR><TT><FONT COLOR="#000000">18AE&nbsp;&nbsp;&nbsp; push&nbsp;&nbsp;&nbsp;
+
+00</FONT></TT>
+
+<BR><TT><FONT COLOR="#000000">18B0&nbsp;&nbsp;&nbsp; call&nbsp;&nbsp;&nbsp;
+
+xxxx:19A0&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </FONT><FONT COLOR="#000099">;
+
+Check if registered</FONT></TT>
+
+<BR><TT><FONT COLOR="#000000">18B5&nbsp;&nbsp;&nbsp; or&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+ax,dx&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+</FONT><FONT COLOR="#000099">; Is it?</FONT></TT>
+
+<BR><TT><FONT COLOR="#000000">18B7&nbsp;&nbsp;&nbsp; jnz&nbsp;&nbsp;&nbsp;&nbsp;
+
+18C8&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+</FONT><FONT COLOR="#000099">; Good_Guy jump</FONT></TT>
+
+<BR><TT><FONT COLOR="#000000">...</FONT></TT>
+
+<BR><TT><FONT COLOR="#000000">18C3&nbsp;&nbsp;&nbsp; call&nbsp;&nbsp;&nbsp;
+
+xxxx:0034&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </FONT><FONT COLOR="#000099">;
+
+NagScreen</FONT></TT>
+
+<BR><TT><FONT COLOR="#000000">18C8&nbsp;&nbsp;&nbsp; mov&nbsp;&nbsp;&nbsp;&nbsp;
+
+di,9BBA&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+</FONT><FONT COLOR="#000099">; Go_Ahead</FONT></TT>
+
+
+
+<P><FONT COLOR="#000000"><FONT SIZE="+1">Obviously, patching the JNZ at offset
+
+18B7 would get rid of the nagscreen.</FONT></FONT>
+
+
+
+<P><FONT COLOR="#000000"><FONT SIZE="+1">The crack is done, but what about
+
+our &quot;Any_cracker_Around&quot; routine?</FONT></FONT>
+
+<BR><FONT COLOR="#000000"><FONT SIZE="+1">The message doesn't appear on the
+
+program screen, only in the memory area where ds:dx pointed. It didn't
+
+crash nor it affected the program.</FONT></FONT>
+
+
+
+<P><FONT COLOR="#000000"><FONT SIZE="+1">Let's find out how Dos Navigator
+
+check if we are debugging it (or if SoftICE is loaded).</FONT></FONT>
+
+<BR><FONT COLOR="#000000"><FONT SIZE="+1">Fisrt I checked the usual DOS tricks
+
+to detect SoftICE (i.e. Int 2Fh/ax=1684h/ bx=0202h/ di=0/es=di...) then
+
+stupid anti-debugging tricks (Int 01h, Int 03h) but didn't find anything.</FONT></FONT>
+
+<BR><FONT COLOR="#000000"><FONT SIZE="+1">Then, as I knew that the program
+
+used a &quot;cmp byte ptr [1E8A],00&quot; to check if we are debugging it, I though
+
+the best would be to write a TSR that would check [1E8A]. It would work
+
+like this:</FONT></FONT>
+
+
+
+<P><FONT COLOR="#000000"><FONT SIZE="+1">1)-Grab an interrupt as closed as
+
+possible to the &quot;Any_Cracker_Around&quot; routine</FONT></FONT>
+
+<BR><FONT COLOR="#000000"><FONT SIZE="+1">2)-Check the flag at [1E8A]:</FONT></FONT>
+
+<BR><FONT COLOR="#000000"><FONT SIZE="+1">&nbsp;&nbsp; a)-If &quot;0&quot; ( cracker
+
+detected) then do nothing, restore the interrupt and go ahead</FONT></FONT>
+
+<FONT SIZE="+1">(nagscreen..)</FONT>
+
+<BR><FONT COLOR="#000000"><FONT SIZE="+1">&nbsp;&nbsp; b)-If &quot;1&quot; (no debugging)
+
+then get rid of the NagScreen</FONT></FONT> <FONT COLOR="#000000"><FONT SIZE="+1">and
+
+go ahead</FONT></FONT>
+
+<BR><FONT COLOR="#000000"><FONT SIZE="+1">3)-Restore original Interrupt used
+
+by Dos Navigator.</FONT></FONT>
+
+
+
+<P><FONT COLOR="#000000"><FONT SIZE="+1">We must grab an Int as closed as
+
+possible to the routine because during its execution, the program jumps/jumps
+
+back from DN.COM to DN.PRG. The routine is only loaded at the latest moment.
+
+As this happens during the program initialization, intercepting Int 10h
+
+should be fine.</FONT></FONT>
+
+<BR><FONT COLOR="#000000"><FONT SIZE="+1">I found a good one:</FONT></FONT>
+
+<BR><FONT COLOR="#000000"><FONT SIZE="+1">Int 10h / AX=03h (get cursor position
+
+and size). The routine to check is loaded right before the call to this
+
+Int (but is located far from it).</FONT></FONT>
+
+
+
+<P><FONT COLOR="#000000"><FONT SIZE="+1">And now, the TSR:</FONT></FONT>
+
+<BR>&nbsp;
+
+
+
+<P><TT>;***********************;</TT>
+
+<BR><TT>;&nbsp; <FONT COLOR="#000099">Check_DN.asm</FONT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+;</TT>
+
+<BR><TT>;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+;</TT>
+
+<BR><TT>;***********************;</TT>
+
+<BR><TT>&nbsp;</TT>
+
+<BR>&nbsp;<TT>code&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+segment</TT>
+
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+org&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 100h</TT>
+
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+assume&nbsp;&nbsp; cs:code</TT>
+
+
+
+<P><TT>start:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; jmp&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+Install</TT>
+
+
+
+<P><TT>int10&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; label&nbsp;&nbsp;&nbsp;
+
+dword&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+<FONT COLOR="#000099">; Save old Int10</FONT></TT>
+
+<BR><TT>int10off&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; dw 0&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+<FONT COLOR="#000099">; address</FONT></TT>
+
+<BR><TT>int10seg&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; dw 0&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+<FONT COLOR="#000099">;</FONT></TT>
+
+
+
+<P><TT>NewInt10&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; proc&nbsp;&nbsp;&nbsp;&nbsp;
+
+far&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+<FONT COLOR="#000099">; Our new Int10.</FONT></TT>
+
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+pushf&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+<FONT COLOR="#000099">; Save flags.</FONT></TT>
+
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+cmp&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ax,0300h&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+<FONT COLOR="#000099">; Chech if it is</FONT></TT>
+
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+jne&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Exit&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+<FONT COLOR="#000099">; the right one</FONT></TT>
+
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+cmp&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; cx,0020h&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+<FONT COLOR="#000099">; otherwise</FONT></TT>
+
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+jne&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Exit&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+<FONT COLOR="#000099">; exit.</FONT></TT>
+
+<BR><TT>Check_Flag:&nbsp;&nbsp; push&nbsp;&nbsp;&nbsp;&nbsp; ax&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+<FONT COLOR="#000099">; Save ax,</FONT></TT>
+
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+push&nbsp;&nbsp;&nbsp;&nbsp; bp&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+<FONT COLOR="#000099">; and bp.</FONT></TT>
+
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+mov&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; bp,sp&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+<FONT COLOR="#000099">; sp=&gt;bp.</FONT></TT>
+
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+mov&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ax,[bp+8]&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+<FONT COLOR="#000099">; Get previous segment in DN.EXE.</FONT></TT>
+
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+add&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ax,2F0Fh&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+<FONT COLOR="#000099">; +2F0Fh to get segment to check.</FONT></TT>
+
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+push&nbsp;&nbsp;&nbsp;&nbsp; es&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+<FONT COLOR="#000099">; Save es</FONT></TT>
+
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+push&nbsp;&nbsp;&nbsp;&nbsp; di&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+<FONT COLOR="#000099">; and di.</FONT></TT>
+
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+push&nbsp;&nbsp;&nbsp;&nbsp; ax&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+<FONT COLOR="#000099">; Push ax</FONT></TT>
+
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+pop&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; es&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+<FONT COLOR="#000099">; Pop it back into es.</FONT></TT>
+
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+mov&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; di,1E8Ah&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+<FONT COLOR="#000099">; Get offset to check.</FONT></TT>
+
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+cmp&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; byte ptr es:[di],0&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+<FONT COLOR="#000099">; Check our AntiCracker_Flag.</FONT></TT>
+
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+je&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Bad_Guy&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+<FONT COLOR="#000099">; If 0 (Bad_guy), then jump...</FONT></TT>
+
+<BR><TT>Patch_Nag:&nbsp;&nbsp;&nbsp; sub&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+ax,309Fh&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+<FONT COLOR="#000099">; -309Fh to get segment to patch.</FONT></TT>
+
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+push&nbsp;&nbsp;&nbsp;&nbsp; ax&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+<FONT COLOR="#000099">; Save it.</FONT></TT>
+
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+pop&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; es&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+<FONT COLOR="#000099">; Pop it back into es.</FONT></TT>
+
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+mov&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; di,18B7h&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+<FONT COLOR="#000099">; Offset to patch.</FONT></TT>
+
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+mov&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; byte ptr es:[di],74h&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+<FONT COLOR="#000099">; Get rid of the NagScreen.</FONT></TT>
+
+<BR><TT>Bad_Guy:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; pop&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+di&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+<FONT COLOR="#000099">; Restore di,</FONT></TT>
+
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+pop&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; es&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+<FONT COLOR="#000099">; es,</FONT></TT>
+
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+pop&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; bp&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+<FONT COLOR="#000099">; bp,</FONT></TT>
+
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+pop&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ax&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+<FONT COLOR="#000099">; ax</FONT></TT>
+
+<BR><TT>Exit:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; popf&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;!
+
+;
+
+<FONT COLOR="#000099">; and flags</FONT></TT>
+
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+jmp&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; dword ptr cs:[Int10]&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+<FONT COLOR="#000099">; Execute Int 10h.</FONT></TT>
+
+<BR><TT>NewInt10&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; endp</TT>
+
+
+
+<P><TT>Install:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; mov&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+ax,3510h&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+<FONT COLOR="#000099">; Get interrupt vector.</FONT></TT>
+
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+int&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 21h&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+<FONT COLOR="#000099">;</FONT></TT>
+
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+mov&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Int10off,bx&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+<FONT COLOR="#000099">; ES:BX = value of interrupt vector</FONT></TT>
+
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+mov&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Int10seg,es&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<FONT COLOR="#000099">
+
+;</FONT></TT>
+
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+mov&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ax,2510h&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+<FONT COLOR="#000099">;</FONT></TT>
+
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+mov&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; dx,offset NewInt10&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+<FONT COLOR="#000099">; New vector to be used for Int 10h</FONT></TT>
+
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+int&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 21h&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+<FONT COLOR="#000099">; ...</FONT></TT>
+
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+mov&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; dx,Install-Start+100h+15&nbsp;&nbsp;&nbsp;
+
+<FONT COLOR="#000099">; DX= Program size.</FONT></TT>
+
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+mov&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; cl,4&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+<FONT COLOR="#000099">; Divide by 4 to get</FONT></TT>
+
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+shr&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; dx,cl&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+<FONT COLOR="#000099">; size in paragraphs.</FONT></TT>
+
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+mov&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; al,0&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+<FONT COLOR="#000099">; Exit code.</FONT></TT>
+
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+mov&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ah,31h&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+<FONT COLOR="#000099">;</FONT></TT>
+
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+int&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 21h&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<FONT COLOR="#000099">
+
+; Terminate and stay resident.</FONT></TT>
+
+<BR><TT>code&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ends</TT>
+
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+end&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Start</TT>
+
+
+
+<P><TT>;**********************;</TT>
+
+<BR><TT>;&nbsp; <FONT COLOR="#000099">TLINK Check_DN&nbsp;</FONT>&nbsp;&nbsp;&nbsp;&nbsp;
+
+;</TT>
+
+<BR><TT>;&nbsp; <FONT COLOR="#000099">TASM Check_DN /t</FONT>&nbsp;&nbsp;&nbsp;
+
+;</TT>
+
+<BR><TT>;**********************;</TT>
+
+<BR>&nbsp;
+
+
+
+<P><FONT SIZE="+1">Now, under DOS run CHECK_DN.COM and then DN.COM and...the
+
+Nagscreen is still present!</FONT>
+
+<BR><FONT SIZE="+1">Re-boot, don't load SoftICE and try again: the NagScreen
+
+pops again!!</FONT>
+
+
+
+<P><FONT SIZE="+1">CONCLUSION:</FONT>
+
+<BR><FONT SIZE="+1">The program doesn't check (and doesn't care) if you are
+
+debugging it or not,&nbsp;<FONT COLOR="#000000"> the flag at [1E8A] is
+
+always equal to &quot;0&quot; (Bad_Guy) and will always display the &quot;Hi, Hacker...&quot;</FONT>
+
+message in memory... conclusions? Draw your own conclusions!</FONT>
+
+<BR>&nbsp;
+
+<P>Frog's Print - December 1997 -</PRE>
+
+<FONT color="green">(c) <FONT color="#5500AA"> Frog's Print </FONT> All rights reversed</FONT>
+
+<HR ALIGN="CENTER" WIDTH="100%" SIZE="3">
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</I></CENTER>
+
+<BR><CENTER>
+
+<!--<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A HREF="protecti.htm" tppabs="http://www.anticrack.de/fravia/protecti.htm">Our Protections</A>            <hr width=33%>-->
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="javascri.htm" tppabs="http://www.anticrack.de/fravia/javascri.htm">javascripts</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut CGI-scripts</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering legal?</A></CENTER>
+
+<CENTER><HR ALIGN="CENTER" WIDTH="100%" SIZE="2"></CENTER>
+
+</BODY>
+
+</HTML>
+
+
+

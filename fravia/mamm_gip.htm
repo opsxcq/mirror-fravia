@@ -1,0 +1,3013 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>mamm_gip.htm: How to use our tools: Great +Mammon's IDA primer</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR=#C0C0C0 TEXT=#001010 VLINK=#405040><CENTER><H1>+MAMMON'S GREAT IDA PRIMER</H1>
+
+
+
+<A href="howtouse.htm" tppabs="http://www.anticrack.de/fravia/howtouse.htm"><IMG SRC="ourtools.gif" tppabs="http://www.anticrack.de/fravia/ourtools.gif" ALT="ourtools" ALIGN=BOTTOM 
+
+WIDTH=114 HEIGHT=43 BORDER=0 VSPACE=0 HSPACE=0></A><BR>
+
+<FONT color=gray>How to use our tools</FONT>
+
+<BR>
+
+(courtesy of fravia's pages of reverse engineering)<BR><BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=550 HEIGHT=8
+
+BORDER=0 VSPACE=0 HSPACE=0><BR><BR>
+
+
+
+<B>A great IDA primer</B><BR>by good wizard +Mammon_<BR>
+
+30 October 1998 ~ updated 25 November 1998
+
+</CENTER>
+
+<HR><PRE><CENTER>  
+
+Mammon_'s Tales to Fravia's Grandson
+
+...An IDA Primer...
+
+</CENTER>
+
+Contents
+
+--------
+
+*<A href="#intro">Introduction</A>
+
+*<A href="#confi">Configuring IDA</A>
+
+*<A href="#loadi">Loading a program</A>
+
+*<A href="#viewi">Viewing Imports</A>
+
+*<A href="#viewe">Viewing Exports</A>
+
+*<A href="#views">Viewing Strings/Resources</A>
+
+*<A href="#searc">Searching for Strings/Code</A>
+
+*<A href="#locat">Location names</A>
+
+*<A href="#worki">Working with IDC scripts</A>
+
+*<A href="#prodi">Producing an Output File</A>
+
+*<A href="#advan">Advanced Techniques</A>
+
+
+
+<A name="intro"></A>
+
+Introduction
+
+------------
+
+Ok, this is a long document for "the basics", mostly due to the Configuration section. New users may
+
+want to skip this section, or simply apply the changes suggested therein without reading the explanations.
+
+Also, some parts of the "Advanced Techniques" may get lengthy as well.
+
+
+
+Why is IDA so useful? Because it can do anything. IDA will change the way you think about disassemblers; it
+
+will change the way you think about cracking. W32Dasm? A toy. Soft-Ice? Unnecessary. When you have a disassembler
+
+that lets you follow the flow of execution by tapping the keyboard, backtrace just as easily, name variables/
+
+addresses/functions, view the entire program as opcodes or assembly, change code to data and back again according
+
+to your whim, and even run limited C programs to perform operations on the code from searching and parsing to
+
+translating and patching...why go somewhere else?
+
+
+
+IDA is a reverse engineer's tool. Like many such tools, it is incredibly useful for crackers...yet it is not
+
+designed for them. It is huge, it is complex, it requires a lot of studying and tuning to get it to perform.
+
+What follows is an attempt to demonstrate how to get the most out of IDA when getting it "straight out of the
+
+box": configuration changes are suggested, macros are provided, and a basic tour of using the program in the
+
+manner of W32Dasm is attempted as well. By the end of this document you should know well IDA's capabilities and
+
+potential; you should also realize how to track down API calls, string references, and specific opcodes.
+
+
+
+As a tool for engineers, IDA requires that you know what you are doing. The more you know, the more you will get
+
+out of it. At the very least I would recommend reading the PE file format reference at
+
+http://www.microsoft.com/win32dev/base/pefile.htm
+
+Cristina Cifuentes' doctoral thesis (selectively, of course) at
+
+http://www.cs.uq.edu.au/groups/csm/dcc.html#thesis
+
+and of course the IDA home page itself at
+
+http://www.unibest.ru/~ig/index.html
+
+...That should be enough to get you familiar enough with disassembling and the PE file format to use
+
+IDA to its greatest potential.
+
+
+
+What are all these IDA files? Yes, IDA is huge, and some of the files may be useless to you. Here is a quick
+
+overview:
+
+*.CFG -- IDA Configuration Settings
+
+IDA.KEY -- Registration File
+
+IDA2.EXE -- OS/2 Executable
+
+IDAX.EXE -- DOS4/GW Executable
+
+IDAW.EXE -- Win32 Executable
+
+IDA.INT -- Auto-generated comments
+
+*.LDO -- File loader for OS/2 Executable (ex PE.LDO = PE File Loader)
+
+*.LDX -- File loader for DOS4/GW Executable
+
+*.LDW -- File loader for Windows Executable
+
+*.DLL -- Disassembler for OS/2 Executable (ex PC.DLL = PC Disassembler)
+
+*.D32 -- Disassembler for DOS4/GW Executable
+
+*.W32 -- Disassembler for Windows Executable
+
+/IDC -- IDC macro scripts and include files
+
+/IDS -- IDS files for commenting/naming imports
+
+/Sig -- FLIRT/Compiler signature files (for recognizing target's compiler)
+
+
+
+<A name="confi"></A>
+
+Configuring IDA
+
+---------------
+
+In the \IDA37? directory, locate the file Ida.cfg and open it in any text editor.
+
+The file is divided into two main sections, First Pass and Second Pass, each of
+
+which has different configuration options: the first pass contains the file
+
+extension to processor type associations, the memory and screen configuration,
+
+OS/2 options, and hotkey definitions; the second pass contains general program
+
+parameters, code analysis configuration, format options for the code displayed,
+
+ASCII string display options, displayable characters, macro definitions, and
+
+processor options.
+
+
+
+The areas of the configuration file that you will most likely want to change are:
+
+*Screen Configuration
+
+*Format Options (Text Representation)
+
+*ASCII Display Options
+
+*Processor Options
+
+
+
+Some additional areas that you may want to configure are:
+
+*Hotkey Definitions
+
+*Code Analysis Options
+
+*Displayable Characters
+
+
+
+1. Screen Configuration
+
+Out of the box, the IDA screen configuration section looks like this:
+
+====================================================================
+
+//	Screen configuration (first pass)
+
+//	---------------------------------
+
+#ifdef __MSDOS__
+
+SCREEN_MODE		= 0		// Screen mode to use
+
+					// 0 - don't change screen mode
+
+					// DOS: AL for INT 10
+
+#else
+
+SCREEN_MODE		= 0		// Screen mode to use
+
+					// high byte - cols, low byte - rows
+
+					// i.e. 0x5020 is 80cols, 32rows
+
+#endif
+
+SCREEN_PALETTE		= 0		// Screen palette:
+
+					// 0 - automatic
+
+					// 1 - B & W
+
+					// 2 - Monochrone
+
+					// 3 - Color
+
+====================================================================
+
+The MD-DOS SCREEN_MODE anf the SCREEN_PALETTE need not change. If you are using
+
+Windows, the second ("else) SCREEN_MODE will determine your screen size. Note that
+
+the col/row numbers are in hexadecimal, thus 0x5020 is 80x32 in decimal. I have found
+
+that  0x5530 works best on an 800x600 resolution screen.
+
+
+
+2. Text Representation
+
+Initially, the Text Representation section is given as follows:
+
+====================================================================
+
+//	Text representation
+
+//-------------------------------------------------------------------------
+
+OPCODE_BYTES       	= 0	    	// don't display bytes of instruction/data
+
+INDENTION		    = 16		// Indention of instructions
+
+COMMENTS_INDENTION	= 40		// Indention for on-line comments
+
+MAX_TAIL		    = 16		// Tail depth
+
+MAX_XREF_LENGTH		= 80		// Maximal length of line with cross-references
+
+MAX_DATALINE_LENGTH	= 70		// Data directives (db,dw, etc):
+
+            					//   max length of argument string
+
+SHOW_AUTOCOMMENTS	= NO		// Don't show silly comments
+
+SHOW_BAD_INSTRUCTIONS	= NO		// Don't bother about instruction lengthes
+
+SHOW_BORDERS		= YES		// Borders between data/code
+
+SHOW_EMPTYLINES		= YES		// Generate empty line to make
+
+					            // text more readable
+
+SHOW_LINEPREFIXES	= YES		// Show line prefixes (1000:0000)
+
+SHOW_SEGMENTS		= YES		// Show segments in addresses
+
+USE_SEGMENT_NAMES	= YES		// Show segment names instead of numbers
+
+SHOW_REPEATABLE_COMMENTS = YES	// Of course, use repeatable comments
+
+					            // Disabling this increases IDA speed.
+
+SHOW_VOIDS		= NO	    	// Don't display <VOID> marks
+
+SHOW_XREFS		= 2		        // Show 2 cross-references
+
+SHOW_XREF_VALUES	= YES		// If not, xrefs are displayed
+
+				             	// as "..."
+
+SHOW_SEGXREFS		= YES		// Show segment part of addresses
+
+					            // in cross-references
+
+SHOW_SOURCE_LINNUM	= YES		// Show source line numbers
+
+					            // (used in .obj files and java)
+
+SHOW_ASSUMES		= YES		// Generate 'assume' directives
+
+SHOW_ORIGINS		= YES		// Generate 'org' directives
+
+USE_TABULATION		= YES		// Use '\t' in output file
+
+====================================================================
+
+Of course this section is modified to suit taste, and can be configured through the
+
+Options-Text Representation menu item (though changes made within IDA are saved only
+
+for the current project). I usually use the following changes:
+
+====================================================================
+
+OPCODE_BYTES       	= 6		// I want the hex codes!
+
+INDENTION	    	= 0		// Save some space
+
+COMMENTS_INDENTION	= 30	// Save some space
+
+MAX_DATALINE_LENGTH	= 100	// These can get long
+
+SHOW_BAD_INSTRUCTIONS	= YES	// bother about instruction lengthes
+
+SHOW_BORDERS		= NO		// why border?
+
+SHOW_EMPTYLINES		= NO		// These lines waste space
+
+SHOW_XREFS	    	= 15	    // Show a ton of  cross-references
+
+SHOW_ORIGINS		= NO    	// Hide 'org' directives
+
+====================================================================
+
+
+
+3. ASCII Strings & Names
+
+Here are the default settings that come with IDA:
+
+====================================================================
+
+//	ASCII strings & names
+
+//-------------------------------------------------------------------------
+
+ASCII_GENNAMES		= YES		// Generate names when making
+
+					// an ASCII string
+
+ASCII_TYPE_AUTO		= YES		// Should IDA mark generated ascii names
+
+					// as 'autogenerated'?
+
+					// Autogenerated names will be deleted
+
+					// when the ascii string is deleted
+
+					// Also, they are displayed with the
+
+					// same color as dummy names.
+
+ASCII_LINEBREAK		= '\n'		// This char forces IDA
+
+					// to start a new line
+
+ASCII_PREFIX		= "a"		// This prefix is used when a new
+
+					// name is generated
+
+#define ASCII_STYLE_C		0x00000000// Character-terminated ASCII string
+
+#define ASCII_STYLE_PASCAL	0x00000001// Pascal-style ASCII string (length byte)
+
+#define ASCII_STYLE_LEN2	0x00000002// Pascal-style, length has 2 bytes
+
+#define ASCII_STYLE_UNICODE	0x00000003// Unicode string
+
+ASCII_STYLE             = ASCII_STYLE_C // Default is C-style
+
+ASCII_SERIAL		= NO		// Serial names are disabled
+
+ASCII_SERNUM		= 0		// Number to start serial names
+
+ASCII_ZEROES		= 0		// Number of leading zeroes in
+
+					// serial names
+
+	// type of generated names: (dummy names)
+
+#define NM_REL_OFF	0
+
+#define NM_PTR_OFF	1
+
+#define NM_NAM_OFF	2
+
+#define NM_REL_EA	3
+
+#define NM_PTR_EA	4
+
+#define NM_NAM_EA	5
+
+#define NM_EA		6
+
+#define NM_EA4		7
+
+#define NM_EA8		8
+
+#define NM_SHORT	9
+
+#define NM_SERIAL	10
+
+DUMMY_NAMES_TYPE	= NM_REL_OFF
+
+MAX_NAMES_LENGTH	= 15		// Maximal length of new names
+
+					// (you may specify values up to 120)
+
+// Types of names that should be included into the list of names
+
+// (this list usually appears by pressing Ctrl-L)
+
+//	normal	  1
+
+//	public	  2
+
+//	auto	  4
+
+//	weak	  8
+
+LIST_NAMES		= 0x07	// default: include normal, public, weak
+
+...and a ton of demangling info...
+
+====================================================================
+
+What's the big deal? It's only strings... Well, to tell the truth, a string is just
+
+a collection of bytes virtually indistinguishable--to the untrained eye--from opcode
+
+bytes. IDA will pick up a lot of strings, but it has to have a default string type...
+
+hence the ASCII_STYLE definition. This defaults to ASCII_STYLE_C, but you may want to
+
+change it to ASCII_STYLE__UNICODE if you will be dealing primarily with Windows 95/NT
+
+programs. [Note: You can change string types dynamically in IDA using the Options->ASCII
+
+Strings Style menu item, in case your target has multiple string types...notice also that
+
+from within IDA you can define different "end characters" from 1 to 2 bytes...this is very
+
+handy for special "internal" data types that some targets use.]
+
+Now, what about those weird name types? Here they are, translated:
+
+//	normal	  1: this shows internal functions, etc
+
+//	public	  2: this includes exports, entry points
+
+//	auto	  4: this shows the irritating IDA names
+
+//	weak	  8: this is useless ;)
+
+#define NM_REL_OFF	0 = loc_0_1234     segbase relative to prog base & offset from segbase
+
+#define NM_PTR_OFF	1 = loc_1000_1234  segment base address & offset from the segment base
+
+#define NM_NAM_OFF	2 = loc_dseg_1234  (*) segment name & offset from the segment base
+
+#define NM_REL_EA	3 = loc_0_11234    segment relative to base address & full address
+
+#define NM_PTR_EA	4 = loc_1000_11234 segment base address & full address
+
+#define NM_NAM_EA	5 = loc_dseg_11234 segment name & full address
+
+#define NM_EA		6 = loc_12         full address (no leading zeroes)
+
+#define NM_EA4		7 = loc_0012       full address (at least 4 digits)
+
+#define NM_EA8		8 = loc_00000012   full address (at least 8 digits)
+
+#define NM_SHORT	9 = dseg_1234      the same as (*) without data type specifier
+
+#define NM_SERIAL	10= loc_1          enumerated names (1,2,3...
+
+
+
+The first part determines what names are shown in the "Names" window; in general, the fewer the better.
+
+If you want the Names to show only the exports of the program, choose 0x02. The next section determines
+
+how internal addresses are referred to in the disassembled listing; if you like Sourcer's method
+
+of defining "location1, location2, etc" you should try defaulting to NM_SERIAL; if you like the location
+
+to show just the segment name and offset, use NM_SHORT. You can experiment with this using the Options->
+
+Name Representation menu item in IDA.
+
+
+
+I tend to set the following parameters:
+
+ASCII_TYPE_AUTO		= NO
+
+ASCII_PREFIX		= "str->"
+
+MAX_NAMES_LENGTH	= 15
+
+LIST_NAMES		= 0x03
+
+DUMMY_NAMES_TYPE	= NM_SHORT
+
+**Note to use my "str->" prefix you will have to change the following line
+
+NameChars = 	"$?@"		// asm specific character
+
+to
+
+NameChars =	"$?@->"		// asm specific character
+
+...see #7 below. This setup will fill the Names window with strings, exports, and imports.
+
+
+
+4. Processor Specific Parameters
+
+The PC-specific parameters for IDA are given as follows:
+
+====================================================================
+
+#ifdef __PC__				// INTEL 80x86 PROCESSORS
+
+USE_FPP			= YES
+
+					// Floating Point Processor
+
+					// instructions are enabled
+
+WINDIR			= "c:\\windows"	// Default directory to look up for
+
+					// DLL files
+
+OS2DIR			= "c:\\os2"	// OS/2 main directory (is used to
+
+					// look up DLLs)
+
+// IBM PC specific analyser options
+
+PC_ANALYSE_PUSH		= YES		// Convert immediate operand of "push" to offset
+
+					// 	In sequence
+
+					// 		push	seg
+
+					// 		push	num
+
+					// 	IDA will try to convert <NUM> to offset.
+
+PC_ANALYSE_NOP		= YES		// Convert db 90h after "jmp" to "nop"
+
+					// 	Sequence
+
+					// 		jmp	short label
+
+					// 		db	90h
+
+					// 	will be converted to
+
+					// 		jmp	short label
+
+					// 		nop
+
+PC_ANALYSE_MOVOFF	= YES		// Convert immediate operand of "mov reg,..." to offset
+
+					// 	In sequence
+
+					// 		mov reg,    num
+
+					// 		mov segreg, immseg
+
+					//  	where
+
+					// 	  reg    - any general register
+
+					// 	  num    - a number
+
+					// 	  segreg - any segment register
+
+					// 	  immseg - any form of operand representing a segment paragraph
+
+					// 	<NUM> will be converted to an offset
+
+PC_ANALYSE_MOVOFF2	= YES		// Convert immediate operand of "mov memory,..." to offset
+
+					// 	In sequence
+
+					// 		mov x1, num
+
+					// 		mov x2, seg
+
+					//  	where
+
+					// 		x1,x2 - any references to memory
+
+					// 	<NUM> will be converted to an offset
+
+// translation used to build an ASCII string name by its contents
+
+// (now it is tuned for 866 codepage)
+
+// the order and number of the string constants is important!
+
+
+
+... a bunch of XLat stuff...
+
+
+
+#endif // __PC__
+
+====================================================================
+
+As you can, see, there are a few useful disassembly options here, most of which
+
+are already set. In fact, the only thing you should have to change is the following
+
+line:
+
+WINDIR			= "c:\\windows\\system"
+
+This will correctly locate the WinAPI DLLs--it is very important to set this!
+
+
+
+5. Keyboard HotKey Definitions
+
+This section is mostly a matter of personal taste, but I thought that I would draw attention to it.
+
+Here are the default keyboard shortcuts (you may want to print this out):
+
+"LoadFile"		=	0		// Load additional file into database
+
+"LoadIdsFile"		=	0		// Load IDS file
+
+"LoadDbgFile"		=	0		// Load DBG file
+
+"LoadSigFile"		=	0		// Load SIG file
+
+"Execute"		=	"F2"		// Execute IDC file
+
+"ExecuteLine"		=	"Shift-F2"	// Execute IDC line
+
+"Shell"			=	"Alt-Z"
+
+"About"			=	0
+
+"SaveBase"		=	"Ctrl-W"
+
+"SaveBaseAs"		=	0
+
+"Abort"			=	0		// Abort IDA, don't save changes
+
+"Quit"			=	"Alt-X"		// Quit to DOS, save changes
+
+"ProduceMap"		=	"Shift-F10"	// Produce MAP file
+
+"ProduceAsm"		=	"Alt-F10"
+
+"ProduceLst"		=	0
+
+"ProduceExe"		=	"Ctrl-F10"
+
+"ProduceDiff"		=	0		// Generate difference file
+
+"DumpDatabase"		=	0		// Dump database to IDC file
+
+"EditFile"		=	0		// Small text editor
+
+"JumpAsk"		=	'G'
+
+"JumpName"		=	"Ctrl-L"
+
+"JumpSegment"		=	"Ctrl-S"
+
+"JumpSegmentRegister"	=	"Ctrl-G"
+
+"JumpQ"			=	"Ctrl-Q"
+
+"JumpPosition"		=	"Ctrl-M"
+
+"JumpXref"		=	"Ctrl-X"
+
+"JumpOpXref"		=	"X"
+
+"JumpFunction"		=	"Ctrl-P"
+
+"JumpEntryPoint"	=	"Ctrl-E"
+
+"JumpEnter"		=	"Enter"		// jump to address under cursor
+
+"Return"		=	"Esc"
+
+"UndoReturn"		=	"Ctrl-Enter"	// undo the last Esc
+
+"EmptyStack"		=	0		// make the jumps stack empty
+
+"SetDirection"		=	"Tab"
+
+"MarkPosition"		=	"Alt-M"
+
+"JumpVoid"		=	"Ctrl-V"
+
+"JumpCode"		=	"Ctrl-C"
+
+"JumpData"		=	"Ctrl-D"
+
+"JumpUnknown"		=	"Ctrl-U"
+
+"JumpExplored"		=	"Ctrl-A"
+
+"AskNextImmediate"	=	"Alt-I"
+
+"JumpImmediate"		=	"Ctrl-I"
+
+"AskNextText"		=	"Alt-T"
+
+"JumpText"		=	"Ctrl-T"
+
+"AskBinaryText"		=	"Alt-B"
+
+"JumpBinaryText"	=	"Ctrl-B"
+
+"JumpNotFunction"	=	"Alt-U"
+
+"MakeJumpTable"		=	"Alt-J"
+
+"MakeAlignment"		=	'L'
+
+"MakeCode"	 	=	'C'
+
+"MakeData"		=	'D'
+
+"MakeAscii"		=	'A'
+
+"MakeArray"		=	'*'
+
+"MakeUnknown"		=	'U'
+
+"MakeVariable"		=	0
+
+"SetAssembler"		=	0
+
+"SetNameType"		=	0
+
+"SetDemangledNames"	=	0
+
+"SetColors"		=	0
+
+"MakeName"		=	'N'
+
+"MakeAnyName"		=	"Ctrl-N"
+
+"ManualOperand"		=	"Alt-F1"
+
+"MakeFunction"		=	'P'
+
+"EditFunction"		=	"Alt-P"
+
+"DelFunction"		=	0
+
+"FunctionEnd"		=	'E'
+
+"OpenStackVariables"	=	"Ctrl-K" // open stack variables window
+
+"ChangeStackPointer"	=	"Alt-K"  // change value of SP
+
+"MakeComment"		=	':'
+
+"MakeRptCmt"		=	';'
+
+"MakePredefinedComment"	=	"Shift-F1"
+
+"MakeExtraLineA"	=	"Ins"
+
+"MakeExtraLineB"	=	"Shift-Ins"
+
+"OpNumber"		=	'#'
+
+"OpHex"			=	'Q'
+
+"OpDecimal"		=	'H'
+
+"OpOctal"		=	0
+
+"OpBinary"		=	'B'
+
+"OpChar"		=	'R'
+
+"OpSegment"		=	'S'
+
+"OpOffset"		=	'O'
+
+"OpOffsetCs"		=	"Ctrl-O"
+
+"OpAnyOffset"		=	"Alt-R"
+
+"OpUserOffset"		=	"Ctrl-R"
+
+"OpStructOffset"	=	'T'
+
+"OpStackVariable"	=	'K'
+
+"OpEnum"		=	'M'
+
+"ChangeSign"		=	'-'
+
+"CreateSegment"		=	0
+
+"EditSegment"		=	"Alt-S"
+
+"KillSegment"		=	0
+
+"MoveSegment"		=	0
+
+"SegmentTranslation"	=	0
+
+"SetSegmentRegister"	=	"Alt-G"
+
+"SetSegmentRegisterDefault"	= 0
+
+"ShowRegisters"		=	"Space"
+
+"OpenSegmentRegisters"	=	0	// open various windows:
+
+"OpenSegments"		=	0
+
+"OpenSelectors"		=	0
+
+"OpenNames"		=	0
+
+"OpenXrefs"		=	0
+
+"OpenFunctions"		=	0	// open functions window
+
+"OpenStructures"	=	0	// open structures window
+
+"OpenEnums"		=	0	// open enums window
+
+"OpenSignatures"	=	0	// open signatures window
+
+"PatchByte"		=	0
+
+"PatchWord"		=	0
+
+"Assemble"		=	0
+
+"TextLook"		=	0	    // set text representation
+
+"SetAsciiStyle"		=	"Alt-A"	    // set ascii strings style
+
+"SetAsciiOptions"	=	0	    // set ascii strings options
+
+"SetCrossRefsStyle"	=	0	    // set cross-referneces style
+
+"SetDirectives"		=	0	    // setup assembler directives
+
+"ToggleDump"		=	"F4"	    // show dump or normal view
+
+"SetAuto"		=	0	    // background analysis
+
+"ViewFile"		=	0
+
+"Calculate"		=	'?'
+
+"ShowFlags"		=	'F'
+
+"WindowOpen"		=	"F3"
+
+"WindowMove"		=	"Ctrl-F5"
+
+"WindowZoom"		=	"F5"
+
+"WindowPrev"		=	"Shift-F6"
+
+"WindowNext"		=	"F6"
+
+"WindowClose"		=	"Alt-F3"
+
+"WindowTile"		=	"F7"
+
+"WindowCascade"		=	"F8"
+
+"SetProcessor"		=	0
+
+"AddStruct"		=	"Ins"		// add struct type
+
+"DelStruct"		=	"Del"		// del struct type
+
+"ExpandStruct"		=	"Ctrl-E"	// expand struct type
+
+"ShrinkStruct"		=	"Ctrl-S"	// shrink struct type
+
+"MoveStruct"		=	0		// move struct type
+
+"DeclareStructVar"	=	"Alt-Q"		// declare struct variable
+
+"AddEnum"		=	"Ins"		// add enum
+
+"DelEnum"		=	"Del"		// del enum
+
+"EditEnum"		=	"Ctrl-E"	// edit enum
+
+"AddConst"		=	"Ctrl-N"	// add new enum member
+
+"EditConst"		=	'N'		// edit enum member
+
+"DelConst"		=	'U'		// delete enum member
+
+
+
+Quite a few, eh? Basically, anything in IDA can have a hotkey. Note all of the 0's in the
+
+above list: these options have not hotkeys by default. It is generally good to set frequently-
+
+use operations (ASCII text representation, View Names, Search, etc) up as HotKeys, and to change
+
+hotkeys which make no sense into better menmonics.
+
+
+
+6. Analysis Parameters
+
+IDA by default has the following Anaylsis Parameters set:
+
+//	Analysis parameters
+
+//-------------------------------------------------------------------------
+
+ENABLE_ANALYSIS		= YES	// Background analysis is enabled
+
+SHOW_INDICATOR		= YES	// Show background analysis indicator
+
+#define AF_FIXUP	0x0001	// Create offsets and segments using fixup info
+
+#define AF_MARKCODE	0x0002	// Mark typical code sequences as code
+
+#define AF_UNK		0x0004	// Delete instructions with no xrefs
+
+#define AF_CODE		0x0008	// Trace execution flow
+
+#define AF_PROC		0x0010	// Create functions if call is present
+
+#define AF_USED		0x0020	// Analyse and create all xrefs
+
+#define AF_FLIRT	0x0040	// Use flirt signatures
+
+#define AF_PROCPTR	0x0080	// Create function if data xref data->code32 exists
+
+#define AF_JFUNC	0x0100	// Rename jump functions as j_...
+
+#define AF_NULLSUB	0x0200	// Rename empty functions as nullsub_...
+
+#define AF_LVAR		0x0400	// Create stack variables
+
+#define AF_TRACE	0x0800	// Trace stack pointer
+
+#define AF_ASCII	0x1000	// Create ascii string if data xref exists
+
+#define AF_IMMOFF	0x2000	// Convert 32bit instruction operand to offset
+
+#define AF_DREFOFF	0x4000	// Create offset if data xref to seg32 exists
+
+#define AF_FINAL	0x8000	// Final pass of analysis
+
+				// See also ANALYSIS2, bit AF2_DODATA
+
+ANALYSIS	= 0xFFFF	// This value is combination of the defined
+
+				// above bits.
+
+#define AF2_JUMPTBL	0x0001	// Locate and create jump tables
+
+#define AF2_DODATA	0x0002	// Coagulate data segs in the final pass
+
+ANALYSIS2	= 0x0001
+
+====================================================================
+
+Generally, you will not need to change any of these parameters. In case you feel
+
+like playing with them, though, here is the IDA help file description of each:
+
+
+
+Create offsets and segments using fixup info
+
+        IDA will use relocation information to make the disassembly
+
+        nicer. In particular, it will convert all data items with
+
+        relocation information to words or dwords like this:
+
+                dd offset label
+
+                dw seg seg000
+
+        If an instruction has a relocation information attached to it,
+
+        IDA will convert its immediate operand to an offset or segment:
+
+                mov     eax, offset label
+
+        You can display the relocation information attached to the current
+
+        item by using show @0:953[internal] flags command.
+
+Mark typical code sequences as code
+
+        IDA knows some typical code sequences for each processor.
+
+        For example, it knows about typical sequence
+
+                push    bp
+
+                mov     bp, sp
+
+        If this option is enabled, IDA will search for all typical sequences
+
+        and convert them to instructions even if there are no references
+
+        to them. The search is performed at the loading time.
+
+Delete instructions with no xrefs
+
+        This option allows IDA to undefine unreferences instructions.
+
+        For example, if you @0:914[undefine] an instruction at the start of a
+
+        function, IDA will trace execution flow and delete all instructions
+
+        that lose references to them.
+
+Trace execution flow
+
+        This options allows IDA to trace execution flow and convert all
+
+        references bytes to @0:916[instructions].
+
+Create functions if call is present
+
+        This options allows IDA to create @0:933[function] (proc) if a call
+
+        instruction is present. For example, the presence of:
+
+                call loc_1234
+
+        leads to creation of a function at label loc_1234
+
+Analyse and create all xrefs
+
+        Without this option IDA will not thoroughly analyse the program.
+
+        If this option is disabled, IDA will simply trace execution flow,
+
+        nothing more (no xrefs, no additional checks, etc)
+
+Use flirt signatures
+
+        Allows usage of FLIRT technology
+
+Create function if data xref data->code32 exists
+
+        If IDA encounters a data references from DATA segment to 32bit
+
+        CODE segment, it will check for the presence of meaningful
+
+        (disassemblable) instruction at the target. If there is an
+
+        instruction, it will mark is as an instruction and will create
+
+        a function there.
+
+Rename jump functions as j_...
+
+        This option allows IDA to rename simple functions containing only
+
+                jmp somewhere
+
+        instruction to "j_somewhere".
+
+Rename empty functions as nullsub_...
+
+        This option allows IDA to rename empty functions containing only
+
+        a "return" instruction as "nullsub_..."
+
+        (... is replaced by a serial number: 0,1,2,3...)
+
+Create stack variables
+
+        This option allows IDA to automatically create stack variables and
+
+        function parameteres.
+
+Trace stack pointer
+
+        This option allows IDA to @0:743[trace] value of SP register.
+
+Create ascii string if data xref exists
+
+        If IDA encounters a data reference to an undefined item, it
+
+        checks for the presence of ASCII string at the target. If the length
+
+        of ASCII string is big enough (more than 4 chars in 16bit or data
+
+        segments; more than 16 chars otherwise), IDA will automatically create
+
+        an @0:918[ASCII] string.
+
+Convert 32bit instruction operand to offset
+
+        This option works only in 32bit segments.
+
+        If an instruction has an immediate operand and the operand
+
+        can be represented as a meaningful offset expression, IDA will
+
+        convert it to an offset. However, the value of immediate operand
+
+        must be higher than 0x10000.
+
+Create offset if data xref to seg32 exists
+
+        If IDA encounters a data reference to 32bit segment and the target
+
+        contains 32bit value which can be represented as an offset expression,
+
+        IDA will convert it to an offset
+
+Make final analysis pass
+
+        This option allows IDA to coagulate all @0:914[unexplored] bytes
+
+        by converting them to data or instructions.
+
+Locate and create jump tables
+
+        This option allows IDA to try to guess address and size of @0:863[jump]
+
+        tables. Please note that disabling this option will not disable
+
+        the recognition of C-style typical switch constructs.
+
+Coagulate data in the final pass
+
+        This option is meaningful only if "Make final analysis pass"
+
+        is enabled. It allows IDA to convert @0:914[unexplored] bytes
+
+        to data arrays in the data segments. If this option is disabled,
+
+        IDA will coagulate only code segments.
+
+
+
+7. Character Translations and Allowed Character Lists
+
+The default character rules suppleid with IDA are as follows:
+
+====================================================================
+
+//	Character translations and allowed character lists
+
+//-------------------------------------------------------------------------
+
+// translation when ASCII string name is built using its contents
+
+XlatAsciiName =
+
+/*00..0F*/ "\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0A\x0B\x0C\x0D\x0E\x0F"
+
+/*10..1F*/ "\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1A\x1B\x1C\x1D\x1E\x1F"
+
+/*20..3F*/ " !\"# %&'()*+,-_/"
+
+	   "0123456789:;<=>?"
+
+/*40..5F*/ "@ABCDEFGHIJKLMNO"
+
+	   "PQRSTUVWXYZ[\\]^_"
+
+/*60..7F*/ "`abcdefghijklmno"
+
+	   "pqrstuvwxyz{|}~"
+
+/*80..9F*/ "ABVGDEJZIIKLMNOP"
+
+	   "RSTUFXCCSS I AUQ"
+
+/*A0..BF*/ "abvgdejziiklmnop"
+
+	   "¶¶¶¶¶¶¶++¶¶+++++"
+
+/*C0..DF*/ "+--+-+¶¶++--¶-+-"
+
+	   "---++++++++¶_¶¶_"
+
+/*E0..FF*/ "rstufxccss i auq"
+
+	   "=ð==()~~ð++vnð¶Ý";
+
+// the following characters are allowed in ASCII strings, i.e.
+
+// in order to find end of a string IDA looks for a character
+
+// which doesn't belong to this array:
+
+AsciiStringChars =
+
+	"\r\n\a\v\b\t\x1B"
+
+	" !\"#$%&'()*+,-./0123456789:;<=>?"
+
+	"@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_"
+
+	"`abcdefghijklmnopqrstuvwxyz{|}~"
+
+	"ðnTGSastOdFne8-++Êð(–=v™<PÉ"
+
+	"·f=™Ò-ð+¨¨++°´+¶¶¶¶¶¶¶++¶¶+++++"
+
+	"+--+-+¶¶++--¶-+----++++++++¶_¶¶_"
+
+	"a_GpSsðtFTOd8fen";
+
+
+
+// the following characters are allowed in user-defined names:
+
+NameChars =
+
+	"$?@"		// asm specific character
+
+	"_0123456789"
+
+	"ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+	"abcdefghijklmnopqrstuvwxyz";
+
+// the following characters are allowed in mangled names.
+
+// they will be substituted with the SubstChar during output if names
+
+// are output in a mangled form.
+
+MangleChars = "$:?([.)]"	// watcom
+
+	      "@$%?"		// microsoft
+
+	      "@$%";		// borland
+
+SubstChar   = '_'
+
+====================================================================
+
+Of these, two areas are of interest. The first is the "NameChars" section, which
+
+dictates which characters may be used for naming an address. For maximum flexibility
+
+(and to help make IDC scripts that automatically generate names run better), you may
+
+want to increase the characters in this section ot include the full range, i.e.
+
+"$?@"
+
+becomes:
+
+"$?@!#%^&*-+=~|\}{[]:;></"
+
+although this is strictly up to the user. The MangleChars section is also important for
+
+those working from code "compiled.class" tppabs="http://fravia.org/compiled.class" with mangling set on; if the compiler of the target uses
+
+different mangling characters that the ones listed (rare), you can include them here--you
+
+can also change the character with which the mangled characters are replaced by changing
+
+the SubstChar value.
+
+
+
+<a name="loadi"></a>
+
+Loading a program
+
+-----------------
+
+For all of the examples in this primer, I will be using notepad.exe as a target; I will
+
+also be assuming that the configuration changes mentioned above have been made. To begin,
+
+launch IDAW.EXE and type "c:\windows\notepad.exe" at the "Select File" dialog box, press
+
+OK.
+
+
+
+Immediately IDA will bring up a dialog box prompting you for loading options. Make sure that
+
+Portable Executable is checked (for Win32 files), that "Create Segments", "Load Resources", and
+
+"Make Imports Section" are checked, and that "Rename DLL Entries" is unchecked. Also ensure that
+
+the "DLL directory" is set to the location of kernel32.dll et. al., usually C:\windows\system.
+
+
+
+Press OK, and wait for the green "Ready" notice to appear in the upper left of the IDA menu bar.
+
+
+
+A few notes about the IDA user interface may be helpful at this point. IDA uses a text-mode windowing
+
+techniques common in console-mode applications; each window has a toborder with a green square (close),
+
+a title, and a green arrow (restore/mamximize), a right border with a veritcal scroll bar, and a bottom
+
+border with a horizontal scrollbar and a green corner (resize); the windows may be moved by dragging on
+
+the title bar, or resized by dragging on the green corner. F6 switches between windows (like Alt-Tab),
+
+F7 tiles all windows (except the Messages Windows, which is like a desktop), and F8 cascades all windows.
+
+
+
+Note that the disassembled listing is referred to as the Code Window or Text Window; you can open multiple
+
+views of the same program by selecting the View->Disassembly menu item, or by pressing F3.
+
+
+
+As with any Windows DOS box, clicking on the small MS-DOS icon (for the system menu) gives you an Edit
+
+submenu with Mark and Copy options; to copy text out of IDA and inot a windows editor, select Edit->Mark,
+
+highlight the text you want to copy, then select Edit->Copy, then go to the windows editor and Ctrl-V
+
+(or Edit->Paste) to insert the text selected from IDA.
+
+
+
+<a name="viewi"></a>
+
+Viewing Imports
+
+---------------
+
+All of the programs's imports will appear as names in the program, and may be viewed in the Names window
+
+by selecting the View->Names menu item; however as this contains all of the names in the program it may be
+
+a bit confusing. Double-clicking on the name of an inport will bring you to its entry in the .idata segment
+
+(see below).
+
+
+
+Another way to view the imports is to select the View->Segments menu item, which will bring up the Segments
+
+window. Double-click on the .idata segment; this will jump the disassembled listing to the start of the .idata
+
+segment, which will contain all of the program's imports in pink text. To the right of each import, at the end of
+
+the line, will be a list of addresses in the program which all that import. Double-clicking on one of these
+
+addresses will jump the disassembled listing to that address.
+
+
+
+Example: View the .idata segment of Notepad.exe as mentioned above. The imports are sorted by module; scroll down
+
+to the Kernel32.dll imports and find the one for "lstrcmpa". You should see a line like this:
+
+¶00407300 ?? ?? ?? ??       extrn lstrcmpA:dword          ; DATA XREF: sub_401FAC+15
+
+¶00407300                                                 ; sub_4045AF+3E^r
+
+¶00407300                                                 ; .text:004046B9^r
+
+¶00407300                                                 ; .text:004046DD^r
+
+Each of the locations after a ";" is an address in the file that calls lstrcmpa; these are known as cross-references,
+
+or X-refs for short. Double-click on the first one; note how it brings you to
+
+|00401FC1 FF 15 00 73 40 00 call    ds:lstrcmpA
+
+|00401FC7 85 C0             test    eax, eax
+
+|00401FC9 75 10             jnz     short loc_401FDB
+
+Press Esc to go back to the lstrcmp entry, then double-click on each of the remaining X-refs to scope out the caller
+
+code. Note how you can scout out each caller routine by double clicking on call/jmp locations within the code, and by
+
+double-clicking on X-refs to see who initiated the caller routine; Esc, as always, returns you back the way you came,
+
+one step at a time.
+
+
+
+A final method of viewing exports is to write an IDC script. IDC is the IDA macro language; it stands for IDA-C much
+
+in the way that QCC stands for Quake-C. All IDA scripts must include the file IDC.IDC, which contains a number of
+
+internal IDA functions and constants. The IDC language is a lot like C, and is described in the file IDC.TXT--here is
+
+brief excerpt summarizing the language:
+
+====================================================================
+
+IDC supports the following statements:
+
+  if (expression) statement
+
+  if (expression) statement else statement
+
+  for ( expr1; expr2; expr3 ) statement
+
+  while (expression) statement
+
+  do statement while (expression);
+
+  break;
+
+  continue;
+
+  return <expr>;
+
+  return;					the same as 'return 0;'
+
+  { statements... }
+
+  expression;					 (expression-statement)
+
+  ;						 (empty statement)
+
+In expressions you may use almost all C operations except:
+
+  ++,--
+
+  complex assigment operations as '+='
+
+  , (comma operation)
+
+Here is how a function is declared :
+
+  static func(arg1,arg2,arg3) {
+
+    ...
+
+  }
+
+Here is how a variable is declared :
+
+  auto var;
+
+====================================================================
+
+That said and done, here is a script for listing the file's exports by API module
+
+to the IDA Messages window (the blue one with all of the yellow writing on it):
+
+====================================================================
+
+//Imports.idc : Outputs list of imported functions to the Message Window
+
+#include <idc.idc>
+
+
+
+static GetImportSeg()
+
+{
+
+    auto ea, next, name;
+
+    ea = FirstSeg();
+
+    next = ea;
+
+    while ( (next = NextSeg(next)) != -1) {
+
+        name = SegName(next);
+
+        if ( substr( name, 0, 6 ) == ".idata" ) break;
+
+   }
+
+   return next;
+
+}
+
+
+
+static main()
+
+{
+
+    auto BytePtr, EndImports;
+
+    BytePtr = SegStart( GetImportSeg() );
+
+    EndImports = SegEnd( BytePtr );
+
+    Message(" \n" + "Parsing Import Table...\n");
+
+    while ( BytePtr < EndImports ) {
+
+        if (LineA(BytePtr, 1) != "") Message("\n" + "____" + LineA(BytePtr,1) + "____" + "\n");
+
+        Message(Name(BytePtr) + "\n");
+
+        BytePtr = NextAddr(BytePtr);
+
+    }
+
+    Message("\n" + "Import Table Parsing Complete\n");
+
+}
+
+====================================================================
+
+The coding is pretty straight forward if you know C: the script finds the .idata segment,
+
+prints each non-blank anterior comment line (i.e., the line that tells what API module
+
+the following imports belong to), then prints the Name of each defined/named address in the
+
+.idata section. The script is executed by pressing F2 and selecting "imports.idc", assuming
+
+that you have saved the script as imports.idc in the \IDA37?\IDC directory.
+
+
+
+<a name="viewe"></a>
+
+Viewing Exports
+
+---------------
+
+Viewing exported functions s a little easier. Perhaps the quickest way is to select the Options-Name Representation
+
+menu item, and mark the "type of names" dialog so it includes only publics, as follows:
+
+ Types of names included in the list of names:
+
+   [ ] Normal
+
+   [X] Public
+
+   [ ] Autogenerated
+
+   [ ] Weak
+
+Press Ok and then select the View->Names menu item; the Names window will now only contain the exported functions of
+
+the program. As with any of the Names/Segments/etc windows, double clicking on any line will bring that function up
+
+in the "code window". [Note: if you have modified the IDA.cfg file as mentioned above, you can also browse the imports
+
+in this manner by checking only "Normal" in the dialog box illustrated above, then ignoring everything with a "str->"
+
+prefix; the remainder will be imports.]
+
+
+
+If the program has an .edata segment, you can also view the exports there much in the same manner as in the .idata method
+
+given in the previous section. Note that Notepad has only one export ("start", the program entry point) and also has no
+
+.edata segment.
+
+
+
+The IDC method works for exports as well. The following ID script searches for entry points into the program and displays them
+
+in the message window:
+
+====================================================================
+
+//exports.idc : display eprogram entry points to the message window
+
+#include <IDC.idc>
+
+
+
+static main()
+
+{
+
+    auto x, ord, ea;
+
+    Message("\n Program Entry Points: \n \n");
+
+	for ( x=0; x<= GetEntryPointQty(); x = x+1){
+
+		ord =  GetEntryOrdinal( x );
+
+		ea = GetEntryPoint( ord );
+
+        Message( Name( ea ) + ":  Ordinal " + ltoa( ord,16 ) + " at offset " + ltoa( ea, 16) + "\n");
+
+	}
+
+    Message("\n" + "Export Parsing Complete\n");
+
+}
+
+====================================================================
+
+Once again, this script may be run by pressing F2 and selecting "exports.idc".
+
+
+
+<a name="views"></A>
+
+Viewing Strings/Resources
+
+-------------------------
+
+The strings can be previewed by selecting "Normal" as the "Type of names to be shown in the list of names" in the
+
+Options->Name Representation dialog box, and then looking for everything beginning with the prefix "str->" (or "a",
+
+if using IDA straight out of the box).
+
+
+
+In PE files, strings are commonly kept in a string table in the .rsrc segment. However, IDA does not by default
+
+parse the .rsrc segment for strings. Thus, an IDC script can be written to parse the .rsrc section for us, creating
+
+strings where any standard ASCII character is found so that the strings may be browsed either in the .rsrc segment,
+
+or in the names window:
+
+====================================================================
+
+//RSRC_Strings.IDC
+
+//define all std ASCII characters in the .rsrc segment as strings
+
+#include <IDC.idc>                //This file contains all of the
+
+                                  //function protos we will be using
+
+static main(){
+
+    auto ea;                      //auto is the standard variable type
+
+	ea = FirstSeg();              //Get Addr of first segment into ea
+
+	while (ea !=BADADDR) {
+
+		Message( "Analyzing " + SegName(ea) + "...\n" );
+
+ 								 //Is this the .RSRC segment? If so...
+
+		if ( SegName(ea) == ".rsrc"){
+
+     		Message("     RSRC found!\n");
+
+     		while ( ea <= SegEnd(ea)) {
+
+     		                    //Change every Std ASCII character into a string
+
+              if ( Byte(ea) > 0x19 && Byte(ea) <0X7F){
+
+                MakeStr( ea, -1 );
+
+                MakeRptCmt(ea, Name(ea));
+
+                ea = ea + ItemSize( ea );
+
+              }
+
+              else ea = ea + 1;
+
+            }
+
+     	}
+
+		ea=NextSeg(ea);        //Goto Next Segment
+
+	}
+
+	Message("Done!\n");
+
+}
+
+====================================================================
+
+The IDC script is functional, though not perfect (plenty of random bytes
+
+defined as strings, but it is quick up-and-running script). Notice that IDC.IDC
+
+contains a lot of function prototypes for use in IDC scripts; by including it, you
+
+are able to call all of the FirstSeg(), NextSeg(), etc functions. These functions
+
+are poorly documented, but the commented prototypes should give you enough to go
+
+on.
+
+
+
+The IDC script can be placed in the \IDC directory and run by pressing F2 and choosing
+
+the rsrc_strings.idc script. Note that this script assumes that you have the default
+
+string type set as "Unicode"; as such it will parse any Unicode resource names or values
+
+in the .rsrc statement. For a full-fledged resource parsing IDC script a lot more work is
+
+in order; I have started such a project with a script known as reslib.idc (too large to
+
+include here) which is publicly available.
+
+
+
+After running this script we can create and run a second one which will print out all of the
+
+strings (that is, every location name that begins with "str->") in the disassembled listing:
+
+====================================================================
+
+//ss.idc : display all strings in the program
+
+#include <idc.idc>
+
+
+
+static main()
+
+{
+
+    auto ea;
+
+    ea = FirstSeg();
+
+    Message("\n" + "Strings in Application: \n \n");
+
+    while( ea != BADADDR) {
+
+		if( substr( Name(ea), 0, 5) == "str->") {
+
+			Message( substr(Name(ea), 5, -1) + " at address " + ltoa( ea, 16) + "\n" );
+
+		}
+
+		ea = NextAddr(ea);
+
+    }
+
+    Message("\n" + "String Listing Complete\n");
+
+}
+
+====================================================================
+
+Running this after the previous IDC script will reveal the flaw in
+
+the first one: a lot of garabage ASCII bytes are listed as strings--more,
+
+in fact than there are actually strings. For this reason it is important
+
+to refine your scripts so they print out only the string table and resource
+
+names in the .rsrc section (as I have done with the reslib.idc script),
+
+rather than blindly naming locations.
+
+
+
+<A name="searc"></A>
+
+Searching for Strings/Code
+
+--------------------------
+
+Once you have defined strings, you can search for them using the Navigate->
+
+Search For->Text... menu item. For instance, entering the string "Cannot" at
+
+this dialog box will bring up the "YouCannotQuitWindows" string in the Code
+
+window. The shortcut for FindText is Alt-T, and for FindNextText is Ctrl-T. A
+
+"Pattern is not found" message will appear at the bottom of the message window
+
+when there are no more occurences of the text.
+
+
+
+What if your string has not been defined? If it is not Unicode, then you can
+
+search for it using Navigate->SearchFor->Text In Core... (Alt-B), by entering
+
+the string in quotes at the dialog box, as follows:
+
++-[_]--------------- Binary search --------------------+
+
+ð                                                      ð
+
+ð Enter search (down) string:                          ð
+
+ð   String "FindReplace"                            _ðð
+
+ð                                                      ð
+
+ð    [X] Case-sensitive     () Hex                    ð
+
+ð                           ( ) Decimal                ð
+
+ð                           ( ) Octal                  ð
+
+ð                                                      ð
+
+ð           OK   _    Cancel _    F1 for Help_         ð
+
+ð         ________    ________    ____________         ð
+
++------------------------------------------------------+
+
+This will find occurences of "FindReplace" in the file. You can also search
+
+for the text using the hexadecimal equivalents of the ASCII characters:
+
++-[_]--------------- Binary search --------------------+
+
+ð                                                      ð
+
+ð Enter search (down) string:                          ð
+
+ð   String 46 69 6E 64                              _ðð
+
+ð                                                      ð
+
+ð    [X] Case-sensitive     () Hex                    ð
+
+ð                           ( ) Decimal                ð
+
+ð                           ( ) Octal                  ð
+
+ð                                                      ð
+
+ð           OK   _    Cancel _    F1 for Help_         ð
+
+ð         ________    ________    ____________         ð
+
++------------------------------------------------------+
+
+This will search for "Find" in the disassembled listing. In
+
+this way you can search for Unicode strings as well:
+
++-[_]--------------- Binary search --------------------+
+
+ð                                                      ð
+
+ð Enter search (down) string:                          ð
+
+ð   String 43 00 61 00 6E 00 6E                     _ðð
+
+ð                                                      ð
+
+ð    [X] Case-sensitive     () Hex                    ð
+
+ð                           ( ) Decimal                ð
+
+ð                           ( ) Octal                  ð
+
+ð                                                      ð
+
+ð           OK   _    Cancel _    F1 for Help_         ð
+
+ð         ________    ________    ____________         ð
+
++------------------------------------------------------+
+
+This will search for the Unicode string "Cannot". Note that
+
+simply searching for the string "Cannot" will fail due to the
+
+00 bytes that Unicode inserts between characters. Thus, to search
+
+effectively for Unicode strings, they must be defined first.
+
+
+
+Searching for code can be done in the same way, using the Text In Core
+
+method. For example, the following will search for "test eax, eax":
+
++-[_]--------------- Binary search --------------------+
+
+ð                                                      ð
+
+ð Enter search (down) string:                          ð
+
+ð   String 85 C0                                    _ðð
+
+ð                                                      ð
+
+ð    [X] Case-sensitive     () Hex                    ð
+
+ð                           ( ) Decimal                ð
+
+ð                           ( ) Octal                  ð
+
+ð                                                      ð
+
+ð           OK   _    Cancel _    F1 for Help_         ð
+
+ð         ________    ________    ____________         ð
+
++------------------------------------------------------+
+
+And you can use the standard Text search for opcodes as well, though
+
+you will get a lot of hits (i.e., you can search for the text "test" but not "test eax, eax";
+
+therefore you will get quite a few hits).
+
+
+
+There is, of course, a final option to make searching for strings much easier--you must write an
+
+IDC script to front-end for the "Search for Text In Core" function. The following IDC script will
+
+do just that, allowing you to enter a text string to search for, then converting the string to
+
+hexadecimal and feeding it to the "Text In Core" function:
+
+====================================================================
+
+// textsearch.idc : search for undefined strings
+
+#include <IDC.idc>
+
+
+
+static main()
+
+{
+
+   auto ea, x, y, searchstr, temp_c, binstr, array_id, alphabet, bin_c, cont;
+
+   ea = FirstSeg();
+
+	// ---- Create Array Of ASCII Characters ------------------------
+
+	// ---- Note that the index of each char = its decimal value ----
+
+	array_id = CreateArray("AsciiTable");
+
+	alphabet = "0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz";
+
+	y = 48;
+
+	for (x = 0; x <STRLEN(alphabet); x = x + 1 ) {
+
+	 	SetArrayString( array_id, y, substr(alphabet, x, x+1));
+
+		y = y +1;
+
+	}
+
+	// ---- Prompt User For Search String ----------------------------
+
+    searchstr = AskStr("", "Enter a search string:\n");
+
+	// ---- Cycle through array looking for match --------------------
+
+    for (x = 0; x < strlen(searchstr); x = x + 1 ) {
+
+		temp_c = substr(searchstr, x, x + 1 );
+
+		for( y = GetFirstIndex(AR_STR, array_id); y <= GetLastIndex(AR_STR, array_id); y =  GetNextIndex(AR_STR, array_id, y) ) {
+
+			if (temp_c == GetArrayElement(AR_STR, array_id, y)) {
+
+				bin_c = y;
+
+				break;
+
+			}														//End "If Match"
+
+		} 	  														//End Array Loop
+
+		binstr = form("%s %X", binstr, bin_c);       //Standard Version
+
+  //binstr = form("%s %X 00", binstr, bin_c); 	//Unicode Version
+
+    }																//End Search String Loop
+
+	Message("Search string is " + binstr + "\n");	//Debug Control
+
+	// -------- "Search" and "Search Again" Loop... --------------------
+
+	cont = 1;
+
+	while (cont==1) {
+
+		ea = FindBinary(ea, 1, binstr);					//Search From ea
+
+		if( ea == -1) {										//If No Hits
+
+			Warning("No more occurrences");				//MessageBox
+
+			cont = 0;
+
+			break;												//Leave
+
+		}
+
+		Jump(ea);                							//Position Cursor At Hit
+
+		cont = AskYN( 1, "Find next occurence?" );	//Search Again?
+
+	}
+
+	// --------- Cleanup and Exit
+
+   Message("\n" + "Search Complete\n");
+
+	DeleteArray(array_id);
+
+}
+
+====================================================================
+
+
+
+<a name="locat"></A>
+
+Location Names
+
+--------------
+
+In IDA, location names are your greatest asset. Naming locations whose purpose
+
+you know or suspect allows you to quickly browse the code for references to that
+
+location. For example, do the following:
+
+1. Go to the lstrcmp import listing
+
+2. Double Click on the first X-ref; this should put you at 00401FC1
+
+3. Scroll up to the start of the function (401FAC) and use the N command to name it "StringCmpFunc"
+
+4. Rename 401FDB to "StringCmpFailed" (because of the JNZ at 401FC9)
+
+5. Name 402033 to "Good String Name" (for the JMP at 401FD9)
+
+Instantly the function is more readable. Now, go to the X-refs at 401FAC and double click on the
+
+first one; this will put you at 00402816 (yes, we are back-tracing! Great, isn't it?). Here you are in
+
+a great huge routine, and the "StringCmpFunc" stands out from the rest in bright yellow. The rest of the
+
+internal functions (sub_???????) can be named in the same way.
+
+
+
+Now some elementary searching browsing: You'll notice that you can see all of the names you created with
+
+the N command in the Names window. Using Alt-T (search text), you can look for occurences of StringCmpFunc
+
+in the disassembled listing, which will show you all of the locations that reference this function.
+
+
+
+Ok, comments: you can comment code using the ";" key. Go back to the "StringCmpFailed" location (look it up
+
+in the Names window), hit the ";" key and type in the text "Bad String Entered!". This is what is known as a
+
+"repeatable comment". Why repeatable? Because evey address that refers to this location will now have that comment
+
+suffixed to it--go back up to 401FC9 to verify. Cool, eh? You will never go back to W32Dasm...
+
+
+
+<A name="prodi"></A>
+
+Producing an Output File
+
+------------------------
+
+Producing an output file is relatively simple. If you want a full listing of the names, comments, addresses, in
+
+short everything in the Code Window, use File->Produce Output File->Produce LST File. If you just want the ASM
+
+source code, with no addresses, use File->Produce Output File->Produce ASM File. If you want to produce a tiny file
+
+that will make all of the changes that you just made to an executable (in case you want someone else to be able to
+
+duplicate your .idb [idb: IDA database, containing all of your changes to the exe and the disassembled listing]),
+
+use File->Produce Output File->Produce IDC file--this will create an IDc script that, when run, will leave the
+
+disassembled listing identical to yours.
+
+
+
+<A name="advan"></A>
+
+Advanced Technique
+
+------------------
+
+1.IDS files and Comment Databases
+
+Custom IDS files are very useful; you will need to download the IDS utilities from
+
+http://www.unibest.ru/~ig/idsutil.zip
+
+Basically, you create an IDT file from a .DLL by running the DLL2IDT utility. From there you can comment the
+
+IDT file and compress it into an IDS file using ZIPIDS, and finally move it to the appropriate subdirectory
+
+(based on OS) of \IDS.
+
+
+
+An IDT file looks like this:
+
+ALIGNMENT 4
+
+;DECLARATION
+
+;
+
+0 Name=ADVAPI32.dll
+
+;
+
+1 Name=AbortSystemShutdownA
+
+2 Name=AbortSystemShutdownW
+
+3 Name=AccessCheck
+
+4 Name=AccessCheckAndAuditAlarmA
+
+5 Name=AccessCheckAndAuditAlarmW
+
+6 Name=AddAccessAllowedAce
+
+7 Name=AddAccessDeniedAce
+
+8 Name=AddAce
+
+9 Name=AddAuditAccessAce
+
+10 Name=AdjustTokenGroups
+
+11 Name=AdjustTokenPrivileges
+
+...
+
+
+
+With this file, you can provide comments for various functions by adding "Comment=" lines to each, for example:
+
+154 Name=RegCreateKeyA Comment=Create a Key in the System Registry
+
+
+
+Note that an IDT line has the following structure:
+
+Ordinal Name=name Args=args Drops=drops Pascal=pascal Typeinfo=type Comment=comment RptCmt=ord#
+
+The keywords are defined as follows:
+
+Name     : name of entry point 		                   [string]
+
+Args     : number of bytes occupied by entry point arguments  [number]
+
+Drops    : number of bytes purged from the stack upon return  [number]
+
+Pascal   : the same as Args=Drops= [number]
+
+Typeinfo : entry point function prototype (type of input/output arguments [string]
+
+Comment : a comment for this entry point [string]
+
+Rptcmt : use the comment from the specified entry point  [number]
+
+
+
+Wouldn't it be nice to have all of the API prototypes entered as comments into the IDS files? Well, it can
+
+be done, though no-one in their right mind would attempt it by hand. One of the most basic programming tools,
+
+grep.exe, will allow you to search an entire directory for lines in any file containing a specific search pattern.
+
+If you were to grep an entire directory for WINAPI or STDCALL, you would then have as output a file with every
+
+1-line API prototype in it. The following perl script will take an .idt file and grep output file, and output an
+
+.idt file commented with the API prototypes to stdout or a specified filename:
+
+====================================================================
+
+#!/usr/bin/perl
+
+
+
+if ($#ARGV == 0) {
+
+	print "Usage: h2idt [idtfile] [grepfile] [outfile]\n";
+
+	print "Output defaults to stdout\n";
+
+	exit (1);
+
+}
+
+
+
+$idtfile = $ARGV[0];
+
+$grepfile = $ARGV[1];
+
+if ($#ARGV == 2) {
+
+	$outfile = ">" . $ARGV[2];
+
+} else {
+
+	$outfile = ">-";
+
+}
+
+open(IDTFILE, $idtfile)|| die "Can't open file: $!\n";
+
+open(GREPFILE, $grepfile) || die "Can't open file: $!\n";
+
+open(OUTFILE, "$outfile") || die "Can't create file: $!\n";
+
+$i =0;
+
+foreach (<GREPFILE>){
+
+	s/\n\r//;
+
+	@greparray[$i] = $_;
+
+	$i++;
+
+}
+
+
+
+print OUTFILE ";DECLARATION \n";
+
+print OUTFILE ";ALIGNMENT 2 \n\n";
+
+print OUTFILE "; Module Name and Description \n";
+
+
+
+foreach (<IDTFILE>) {
+
+	if ( /^0/ ){
+
+		s/\\//;
+
+		print OUTFILE $_;
+
+		print OUTFILE ";---------------------------------------\n";
+
+		break;
+
+	} elsif ( /Name=/ ){
+
+	if (/\n/){
+
+		chop; #get rid of LF
+
+	}
+
+	if (/\r/){
+
+		chop; #get rid of CR
+
+	}
+
+	$outstr = $_;
+
+	($junk, $searchstr, $junk) = split(' ', $_, 3);
+
+	$searchstr =~ s/Name=//;
+
+	$comment='';
+
+	foreach(@greparray) {
+
+		if (/\s$searchstr\(/) {
+
+			$comment = $_;
+
+		}
+
+	}
+
+	$outstr =~ s/\\//;
+
+	if ($comment != '') {
+
+		$comment =~ s/^[^a-zA-Z]+//;
+
+		$comment =~ s/\n//;
+
+		$comment =~ s/;//;
+
+		$comment =~ s/STDCALL\s//;
+
+		print OUTFILE $outstr, " Comment=", $comment, "\n";
+
+	}else {
+
+		print OUTFILE $outstr, "\n";
+
+	}
+
+   }
+
+}
+
+print OUTFILE ";------------------EOF------------------";
+
+close(OUTFILE);
+
+close(GREPFILE);
+
+close(GREPTMP);
+
+close(IDTFILE);
+
+exit (0);
+
+====================================================================
+
+As usual with Perl/unix files, strip the above for CR/LF's before you run it in perl (you can use
+
+Editeur, or nedit for this, depending on your OS). So, how do you do this from NT? Well, assuming
+
+you have the NT resource kit, the process for extracting and IDT file from an existing IDS file,
+
+grepping for prototypes (I use LCC as the protos are all 1-line), creating the commented IDT file
+
+and compressing it into an IDS file, is as follows:
+
+
+
+c:\ntreskit\posix\grep STDCALL c:\lcc\include\*  > grep.out
+
+c:\ida\Utility\IDSUtil\WIN32\zipids -u c:\ida\Ids\Win\kernel32.ids
+
+c:\ntreskit\perl\perl.exe  h2idt kernel32.idt grep.out idt.out
+
+c:\ida\Utility\IDSUtil\WIN32\zipids out.idt
+
+ren out.ids kernel32.ids
+
+
+
+You will get --in the IDT file-- output similar to the following:
+
+===========================================================================
+
+;DECLARATION
+
+;ALIGNMENT 2
+
+
+
+; Module Name and Description
+
+0 Name=KERNEL32.dll
+
+;---------------------------------------
+
+50 Name=AddAtomA Pascal=2 Comment=ATOM AddAtomA(LPCSTR);
+
+102 Name=AddAtomW Pascal=2 Comment=ATOM AddAtomW(LPCWSTR);
+
+103 Name=AllocConsole Pascal=0 Comment=BOOL AllocConsole(VOID);
+
+104 Name=AllocLSCallbac Comment=BOOL AllocConsole(VOID);
+
+===========================================================================
+
+Note that eveyrthing after the "Comment=" will appear in the comment margin of IDA.
+
+
+
+
+
+In addition to the IDS files, you can also maintain a database of comments that
+
+will be inserted into the code upon disassembly. The IDA comment database is stored
+
+in the IDA.INT file, and it can be modified with the LoadINT utility available at
+
+http://www.unibest.ru/~ig/ldint37.zip
+
+
+
+The Readme file best documents how to edit this database, but to show you a brief example of
+
+the comments supplied with IDA, here is an excerpt from the PC section of the INT:
+
+//	MMX instructions
+
+NN_emms:	"Empty MMX state"
+
+NN_movd:	"Move 32 bits"
+
+NN_movq:	"Move 64 bits"
+
+NN_packsswb:	"Pack with Signed Saturation (Word->Byte)"
+
+NN_packssdw:	"Pack with Signed Saturation (Dword->Word)"
+
+NN_packuswb:	"Pack with Unsigned Saturation (Word->Byte)"
+
+NN_paddb:	"Packed Add Byte"
+
+NN_paddw:	"Packed Add Word"
+
+NN_paddd:	"Packed Add Dword"
+
+
+
+These comments will appear (if "auto comments" is turned on) whenever the
+
+opcode is encountered in the disassembly; note that you can browse through the .cmt files included
+
+with LoadINT to see what the existing comments are. The most interesting will be int.cmt,  pc.cmt,
+
+portin.cmt, portout.cmt, and vxd.cmt. It is tempting --but rather daunting-- to port Ralph Brown's
+
+Interrupt List comments to an INT database...
+
+
+
+<A name="worki"></A>
+
+2.IDC Scripts
+
+I have used IDC scripts for a number of monotonous tasks. Basically, you can use an IDC script to
+
+parse VCL resources, to parse VB forms (if you take the time...), to encrypt or decrypt sections
+
+of code, to print out a call trace, to perform searches for the user (e.g. a front-end to the RegEx
+
+feature), etc.
+
+
+
+Here are a quick few additional IDC scripts to demonstrate their usefulness:
+
+====================================================================
+
+//copy.idc: Outputs selected text to an .asm file
+
+//Usage: Select text with mouse or cursor, hit F2 and type copy.idc, enter a filename when prompted
+
+//       and the selected text will be written to that file.
+
+//Future Plans: Make this output to the Windows clipboard. I may have to patch IDA for this....
+
+//
+
+// code by mammon_ All rights reversed, use as you see fit.....
+
+//------------------------------------------------------------------------------------------------------
+
+#include <IDC.idc>
+
+
+
+static main(){
+
+    auto filename, start_loc, end_loc;
+
+    start_loc = SelStart();
+
+    end_loc = SelEnd();
+
+    filename = AskFile( "asm", "Output file name?");
+
+    WriteTxt( filename, start_loc, end_loc);
+
+    return 0;
+
+}
+
+====================================================================
+
+//------------------------------------------------------------------------------------------------------
+
+//Haeder.idc : Imports #defines from a .h file, adds as enums
+
+//Note:  This script prompts the user for a header file (*.h), then parses the
+
+//       file looking for #define statements: these are then converted to members
+
+//       of enum "Defines".
+
+//Bugs: Only the first instance of any value will be preserved; all others will be
+
+//      discarded with an error as you can have only one instance of any value (or
+
+//      any name) in a single enumeration. A prompt has been added for the user to
+
+//      name the enumerations for the header file, so that any duplicate enum values
+
+//      can be added to a different file and enumerated under a different "enum name."
+
+//
+
+// code by mammon_ All rights reversed, use as you see fit.....
+
+//------------------------------------------------------------------------------------------------------
+
+
+
+#include <IDC.idc>
+
+
+
+static strip_spaces( BytePtr, hHeaderFile){
+
+       auto tempc;
+
+       fseek( hHeaderFile, BytePtr, 0);
+
+       tempc = fgetc(hHeaderFile);
+
+       while ( tempc == 0x20) {
+
+        BytePtr = BytePtr + 1;
+
+        fseek( hHeaderFile, BytePtr, 0);
+
+        tempc = fgetc(hHeaderFile);
+
+       }
+
+       return BytePtr;
+
+}
+
+
+
+static FindStringEnd( StrName ){
+
+    auto x, tempc;
+
+    for ( x = 1; x <STRLEN(StrName); x = x + 1) {
+
+        tempc = substr( StrName, x-1, x);
+
+        if ( tempc == " ") {
+
+            return substr( StrName, 0, x);
+
+        }
+
+    }
+
+    return substr( StrName, 0, strlen(StrName));
+
+}
+
+
+
+static FixString( StrName ){
+
+    auto x, tempc, newname;
+
+    newname="def";    //set newname to type character
+
+    for ( x = 1; x < strlen(StrName); x = x + 1) {
+
+        tempc = substr( StrName, x-1, x);
+
+        if ( tempc != "_") {
+
+            newname = newname + tempc;
+
+        }
+
+    }
+
+    return newname;
+
+}
+
+
+
+static main(){
+
+    auto HeaderFile, hHeaderFile, fLength, BytePtr, first_str, second_str, third_str, define_val;
+
+    auto enum_id, tempc1, x, y, errcode, define_name, FilePtr, define_str, enum_name;
+
+    FilePtr = 0;
+
+    Message("\nStart Conversion\n");
+
+    HeaderFile = AskFile( "*.h", "Choose a header file to parse:");
+
+    enum_name = AskStr("Defines", "Enter a name for the enumerations (alpha only, eg 'VMMDefines'):");
+
+    hHeaderFile = fopen( HeaderFile, "r");
+
+    fLength = filelength(hHeaderFile);
+
+    if( fLength == -1) Message( "Bad File Length!\n");
+
+    enum_id = AddEnum( GetEnumQty() + 1, enum_name, FF_0NUMH);
+
+    if ( enum_id == -1) {
+
+        enum_id = GetEnum( enum_name );
+
+        if(enum_id == -1) Message("Enum #Defines not created/not found\n");
+
+    }
+
+    SetEnumCmt( enum_id, "#define from " + HeaderFile, 1);
+
+    while(FilePtr < fLength ){
+
+        FilePtr = strip_spaces( FilePtr, hHeaderFile );
+
+        BytePtr = FilePtr;
+
+        errcode = fseek( hHeaderFile, BytePtr, 0 );
+
+        if ( errcode != 0) break;
+
+        first_str = readstr( hHeaderFile );
+
+        if ( first_str == -1 ) {
+
+            Message( "End of file! \n" );
+
+            break;
+
+        }
+
+        else if ( substr(first_str, 0, 7) == "#define" || substr( first_str, 0, 7) == "#DEFINE" ) {
+
+            FilePtr = FilePtr + strlen( first_str );
+
+            BytePtr = BytePtr + 7;
+
+            BytePtr = strip_spaces( BytePtr, hHeaderFile );
+
+            errcode = fseek( hHeaderFile, BytePtr, 0 );
+
+            if ( errcode != 0 ) break;
+
+            second_str = readstr( hHeaderFile );
+
+            if ( second_str == -1 ) {
+
+                Message( "End of file after #define!\n" );
+
+                break;
+
+            }
+
+            else {
+
+                define_name = FindStringEnd( second_str );
+
+                define_name = FixString( define_name );
+
+                BytePtr = strip_spaces( BytePtr + strstr( second_str, " " ), hHeaderFile );
+
+                errcode = fseek( hHeaderFile, BytePtr, 0);
+
+                if ( errcode != 0 ) break;
+
+                third_str = readstr( hHeaderFile);
+
+                tempc1 = substr(third_str, 0, 2);
+
+                if ( third_str == -1) {
+
+                    Message( "End of file before value!\n");
+
+                    break;
+
+                }
+
+                else if ( tempc1 == "0x" || tempc1 == "0X") {
+
+                  define_str = FindStringEnd( third_str );
+
+                    define_val = xtol( define_str );
+
+                    errcode = AddConst( enum_id, define_name, define_val);
+
+                    if ( errcode == 1 ) Message( "Name " + define_name + " bad or already used in program!\n");
+
+                    if ( errcode == 2 ) Message( "Value " + define_str + " already used in program!\n");
+
+                    if ( errcode == 3 ) Message( "Bad enumID!\n");
+
+                }
+
+            }
+
+        }
+
+        else FilePtr = FilePtr + strlen( first_str);
+
+    }
+
+    Message("\nConversion finished!\n");
+
+}
+
+====================================================================
+
+//------------------------------------------------------------------------------------------------------
+
+//funcalls.idc : Display the calls made by a function
+
+
+
+#include <idc.idc>
+
+
+
+static main(){
+
+    auto ea,x,f_end;
+
+    ea = ChooseFunction("Select a function to parse:");
+
+    f_end = FindFuncEnd(ea);
+
+    Message("\n*** Code References from " + GetFunctionName(ea) + " : "  + atoa(ea) + "\n");
+
+    for ( ea ; ea <= f_end; ea = NextAddr(ea) ) {
+
+        x = Rfirst0(ea);
+
+        if ( x != BADADDR) {
+
+        Message(atoa(ea) + " refers to " + Name(x) + " : " + atoa(x) + "\n");
+
+        x = Rnext0(ea,x);
+
+        }
+
+        while ( x != BADADDR) {
+
+            Message(atoa(ea) + " refers to " + Name(x) + " : " + atoa(x) + "\n");
+
+            x = Rnext0(ea,x);
+
+        }
+
+    }
+
+    Message("End of output. \n");
+
+}
+
+===================================================================
+
+And, finally, I have referred to a reslib.idc file throughout this work. It can be found at
+
+http://www.eccentrica.org/Mammon/Reslib.idc
+
+with it's "caller file" at
+
+http://www.eccentrica.org/Mammon/Res.idc
+
+
+
+3.Map files
+
+Map files may be generated by IDA using the File->Produce Output File->Produce Map File
+
+menu item. All of the user-created and auto-generated names (if selected) will be included
+
+as symbols in the .MAP files, which then can be converted into Soft-Ice symbol files using
+
+NMSYM.EXE.
+
+
+
+Note that there are a few tricks to this, I recommend using Gij's MaptoMap utility for the conversion.
+
+
+
+4.ASM files
+
+The ASM files may be used to produce compilable source code. This is not, strictly speaking, the
+
+province of the cracker, but a bit of good practice can be found by taking various small .COM files
+
+(such as debug, edit, or the various Crack-me's) and re-compiling them.</PRE>
+
+<BR><BR>
+
+You should be able to get a working copy of this essay at <IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A href="javascript:if(confirm('http://www.eccentrica.org/Mammon/idaprimer.txt  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.eccentrica.org/Mammon/idaprimer.txt'" tppabs="http://www.eccentrica.org/Mammon/idaprimer.txt">Mammon's</A> site.
+
+<BR><BR>
+
+<HR ALIGN=CENTER WIDTH=100% SIZE=3>
+
+
+
+<CENTER><I>You are deep inside fravia's pages of reverse engineering,  
+
+choose your way out:</I><BR>
+
+<TABLE>
+
+<TR>
+
+<TD><CENTER>
+
+<A href="howtouse.htm" tppabs="http://www.anticrack.de/fravia/howtouse.htm"><IMG SRC="ourtools.gif" tppabs="http://www.anticrack.de/fravia/ourtools.gif" ALT="ourtools" ALIGN=BOTTOM 
+
+WIDTH=114 HEIGHT=43 BORDER=0 VSPACE=0 HSPACE=0></A><BR>
+
+<FONT color=gray>How to use our tools</FONT>
+
+</CENTER></TD>
+
+<TD><CENTER>
+
+<A href="ourtools.htm" tppabs="http://www.anticrack.de/fravia/ourtools.htm"><IMG SRC="ourtools.gif" tppabs="http://www.anticrack.de/fravia/ourtools.gif" ALT="ourtools" ALIGN=BOTTOM 
+
+WIDTH=114 HEIGHT=43 BORDER=0 VSPACE=0 HSPACE=0></A><BR>
+
+<FONT color=gray>Our tools</FONT>
+
+</CENTER></TD>
+
+</TR>
+
+</TABLE>
+
+
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=666 HEIGHT=6 BORDER=0 VSPACE=0 HSPACE=0>
+
+<BR><BR>
+
+
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0> 
+
+<A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links </A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0>
+
+<A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity </A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN=BOTTOM
+
+BORDER=0 VSPACE=0 HSPACE=0 width="13" height="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC </A>
+
+
+
+<IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays </A>
+
+
+
+<IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database </A><BR>
+
+<IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut </A>
+
+
+
+<IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 
+
+VSPACE=0 HSPACE=0><A
+
+HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13
+
+BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia </A><BR>
+
+
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering illegal? </A></CENTER>
+
+<HR size=4></FONT>
+
+<!-- Begin signet -->
+
+ <A href="awards.htm" tppabs="http://www.anticrack.de/fravia/awards.htm"><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN=CENTER 
+
+BORDER=0 HEIGHT=13 WIDTH=13 ALT= "red"></A><FONT color=green>(c) 
+
++Mammon_ [mammon_(at)hotmail(dot)com] 1998. All rights reserved
+
+<!-- End signet -->
+
+</BODY>
+
+</HTML>

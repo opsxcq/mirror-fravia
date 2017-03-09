@@ -1,0 +1,1271 @@
+<HTML>
+
+<HEAD>
+
+
+
+<TITLE>iceman.htm: Tweaking with memory in Window95</TITLE>
+
+</HEAD>
+
+
+
+<BODY BGCOLOR=#C0C0C0 TEXT=#001010 VLINK=#405040>
+
+
+
+
+
+<CENTER><A href="papers.htm" tppabs="http://www.anticrack.de/fravia/papers.htm"><IMG SRC="papers.gif" tppabs="http://www.anticrack.de/fravia/papers.gif" ALT="papers" ALIGN=BOTTOM WIDTH=114 
+
+EIGHT=43 BORDER=0 VSPACE=0 HSPACE=0></A><BR><FONT color=gray>Back to the HCU Papers</FONT></CENTER><HR>
+
+<PRE>
+
+			Tweaking with memory in Window95
+
+			      - An API approach -
+
+
+
+						by Iceman
+
+
+
+
+
+	
+
+Intro
+
+------
+
+
+
+	I decided to write this after I read NaTzGUL's tutorial called "How to 
+
+access memory of another process".This time want to take you deeper inside 
+
+Windows95 ,revealing some useful tricks.The basic fact is that if we want
+
+to write good tools for reverse engineering on WIN32 hosted platforms we have
+
+to take full control over the OS.That means system level programming
+
+techniques such: virtual memory management,Debug API functions,Ring 0 programming
+
+using VxD or Call gates,Image Manipulation functions.
+
+
+
+So let's learn how this OS work!
+
+
+
+	My future projects are based on Ring 0 programing.I am especially 
+
+interested in Call gates and WIN32 debug API.Two of the most powerful
+
+functions of WIN32 API are contained in debug API.They are GetThreadContext & 
+
+SetThreadContext.You can do amazing things using them,such as injecting
+
+code and executing code in another process adress space.
+
+	I want to thank to Matt Pietrek for his articles about WIN32 
+
+platforms.Reading those was a pleasure and very instructive.In fact 90% of
+
+my knowledge regarding system level programming in Windows was gained reading
+
+his work.In my humble opinion Matt is one of the best official "reverse 
+
+engineer".Thank you,Matt,thank you for sharing knowledge with us!
+
+	Next,let's give Fravia the credit he deserves.His WEB site is a treasure
+
+for knowledge seekers.Is the best page in reverse engineering business I ever
+
+seen.
+
+	I know , I know my english is very bad.Please forgive me.
+
+	This essay is structured as below:
+
+
+
+Chapter1:Short Introduction to Windows95 memory management
+
+Chapter2:Tweaking with virtual memory functions
+
+Chapter3.Short intro to Toolhelp32 functions
+
+Chapter4.How do I:
+
+		4.1.Write self-modifiable code.
+
+		4.2.Modify the code pages of another process. 
+
+		4.3.Modify functions inside system Dll's.
+
+		
+
+========================================================================
+
+
+
+Short Introduction to Windows95 memory management
+
+--------------------------------------------------
+
+
+
+	I assume that the reader is familiar with process and threads functions 
+
+and have a basic knowledge on how Windows95,using the paging mechanism on
+
+386+ processors,manage memory.Let's remember some facts:
+
+		1.Windows 95 implements a page based virtual memory system. It 
+
+uses a 32 bit linear addressing system.Internaly,all memory is managed in
+
+4096 bytes segments called pages.The entire memory that CPU can address
+
+in theory is called "address space".That's 4Gb.
+
+		2. In Windows95 each 32 bit application is provided with an 
+
+independent 4 Gb address space,regardless of how match phisycal memory is 
+
+installed in your computer.This address space is structured as below:
+
+
+
+
+
+
+
+	4Gb		------------------------         
+
+			|                      |
+
+			|                      |
+
+			|          VxD	       |
+
+	3Gb		------------------------
+
+			|     System DLLs      |
+
+			|  	   MMF	       |
+
+			|  Top W16 Global Heap |
+
+	2Gb		------------------------
+
+			|		       |
+
+			|		       |
+
+			|    User process      |
+
+			|        area	       |		
+
+			|		       |
+
+			|		       |	
+
+	4Mb		------------------------
+
+			|  Base W16 Global Heap|
+
+	0		------------------------		
+
+			
+
+	The portion 0 to 4Mb is shared between processes.It usually contain
+
+16 bit system dll's.The next region begin at 4Mb and ends at 2Gb.This is
+
+the user process area.Each process have code ,data ,resources loaded in
+
+this region.
+
+The region is not shared! The third region begin at 2Gb and ends at
+
+3 Gb.This region is shared between processes.Usualy the system load here
+
+The system dll's .This region is also used to map Memory Mapped Files.The
+
+MMF must be in a shared region because they are utilized to share data 
+
+between processes.Finaly , the last region begin at 3Gb and ends at 4Gb		
+
+Here the system loads Ring0 components (VxD).
+
+	When a executable image is loaded,the system loader maps the file 
+
+in the user process area starting with address 0x0040000 (4Mb).
+
+This is the base address of the most PE files.
+
+Of course ,an executable image can be rebased,so don't relay blindly on this 
+
+address.(Microsoft provides a set of functions for image manipulation.
+
+This functions reside inside imagehlp.dll. Some of them can be
+
+quite useful ,so don't miss them.
+
+
+
+============================================================================
+
+
+
+Tweaking with virtual memory functions
+
+--------------------------------------
+
+
+
+	Following functions are used for Virtual Memory Managemnt.They are part 
+
+of WIN32 API:
+
+		VirtualAlloc
+
+		VirtualFree
+
+		VirtualLock
+
+		VirtualUnlock
+
+		VirtualProtect
+
+		VirtualProtectEx
+
+		VirtualQuery
+
+		VirtualQueryEx
+
+
+
+	VirtualAlloc is used to allocate virtual memory in process address space.
+
+	VirtualFree  is used to free virtual memory.
+
+	VirtualLock and VirtualUnlock are used for locking/unlocking pages in memory.
+
+	VirtualProtect and VirtualProtectEx are used to change protection
+
+attributes of virtual memory pages.
+
+	VirtualQuery and VirtualQueryEx are used to query virtual memory pages. 
+
+Using this function you can retrieve all information you need about a memory
+
+region.
+
+	VirtualProtectEx & VirtualQueryEx are extended versions of 
+
+VirtualProtect & VirtualQuery functions.They can be used to query and
+
+modify protection attributes of memory pages in another processes address space.
+
+	Why bother with this functions? The answer is very simple.If you try to 
+
+write to a code page using WriteProcessMemory the function will fail. This
+
+is because the OS always write-protect the code pages,protecting them from
+
+being modified.Any attempt to write to a write protected page will generate a
+
+Access Violation exception.
+
+
+
+So , if I want to modify something inside a write-protected 
+
+page I must change it's protection attributes. Here is the step where
+
+virtual memory functions can help.All you have to do is to change page 
+
+protection attributes with VirtualProtect or VirtualProtectEx.You have 
+
+to use VirtualProtect if you want to modify protection our own process 
+
+memory pages and VirtualProtectEx to work on another process.
+
+Those function also saves old protection attribs., so then you finish 
+
+your work restore them.
+
+	You can use this method to:
+
+		1.Write self-modifiable code.
+
+		2.Modify the code pages of another process. 
+
+		3.Modify functions inside system Dll's.
+
+		4.Read from read-protected areas.
+
+		5.Injecting and executing code into another process
+
+		  address space.
+
+	This is not a limitative list.Just use your imagination!
+
+	Let's see now how you can modify protection attributes with 
+
+VirtualProtectEx:
+
+
+
+	BOOL VirtualProtectEx(
+
+
+
+		    HANDLE hProcess,
+
+		    LPVOID lpAddress,	
+
+		    DWORD dwSize,
+
+		    DWORD flNewProtect,	
+
+		    PDWORD lpflOldProtect 	
+
+   			     );
+
+
+
+We need:
+
+	1.HANDLE hProcess: A handle to target process.The handle must have 
+
+PROCESS_VM_OPERATION access.See OpenProcess for further reference.(I
+
+usually use OpenProcess with PROCESS_ALL_ACCESS to get all possible access rights)
+
+	2. LPVOID lpAddress: A pointer to the base address of the region of 
+
+pages whose access protection attributes are to be changed.(I usually use a
+
+DWORD with a type cast)
+
+	3.DWORD dwSize: A dword that specify the size in bytes of region whose 
+
+protection attributes are to be modificated.If dwSize excedes a page
+
+boundary both pages will change protection attributes.
+
+	4.DWORD flNewProtect:A dword that specify new protection atributes.This 
+
+can be a one of following flags:
+
+
+
+	PAGE_READONLY		Enables read access to the committed region of pages. 
+
+				An attempt to write to the committed region results in 
+
+				an access violation. If the system differentiates between
+
+				read-only access and execute access, an attempt to execute
+
+				code in the committed region results in an access 
+
+				violation.
+
+	PAGE_READWRITE		Enables both read and write access to the committed region
+
+
+
+				of pages.
+
+	PAGE_WRITECOPY		Gives copy-on-write access to the committed region of pages.
+
+	PAGE_EXECUTE		Enables execute access to the committed region of pages. 
+
+				An attempt to read or write to the committed region results 
+
+				in an access violation.
+
+	PAGE_EXECUTE_READ	Enables execute and read access to the committed region
+
+                                of pages.
+
+			        An attempt to write to the committed region results in an access
+
+				violation.
+
+	PAGE_EXECUTE_READWRITE	Enables execute, read, and write access to the
+
+                                committed region of pages.
+
+	PAGE_EXECUTE_WRITECOPY	Enables execute, read, and write access to the
+
+				committed region of pages. The pages are shared 
+
+				read-on-write and copy-on-write.
+
+	PAGE_GUARD		Pages in the region become guard pages. Any attempt to read 
+
+				from or write to a guard page causes the operating system 
+
+				to raise a STATUS_GUARD_PAGE exception, and turn off the guard
+
+				page status. Guard pages thus act as a one-shot access alarm.
+
+				The PAGE_GUARD flag is a page protection modifier. 
+
+				An application uses it with one of the other page protection 
+
+			        flags, with one exception: it cannot be used with PAGE_NOACCESS.
+
+			        When an access attempt leads the operating system to turn off 
+
+				guard page status, the underlying page protection takes over.
+
+				If a guard page exception occurs during a system service, 
+
+				the service typically returns a failure status indicator.
+
+	PAGE_NOACCESS		Disables all access to the committed region of pages. 
+
+				An attempt to read from, write to, or execute in the 
+
+				committed region results in an access violation exception,
+
+			        called a general protection (GP) fault.
+
+	PAGE_NOCACHE		Allows no caching of the committed regions of pages. 
+
+				The hardware attributes for the physical memory should be set 
+
+				to "no cache." This is not recommended for general usage. 
+
+				It is useful for device drivers; for example, mapping a video 
+
+				frame buffer with no caching. This flag is a page protection 
+
+				modifier, only valid when used with one of the page protections
+
+			        other than PAGE_NOACCESS.
+
+
+
+	5.PDWORD lpflOldProtect: A pointer to a DWORD to save old protection
+
+attributes.
+
+
+
+
+
+	A handle to another process is easy to obtain.You can use several methods
+
+for this:
+
+	1.Use CreateProcess to create target process.Then retrieve the handler
+
+from PROCESS_INFORMATION structure.(basically you use the loader method here).
+
+	2.Use of ToolHelp32 functions.This method is more elegant than previous
+
+one. The first step here is to retrieve a PID of target process.
+
+	Use CreateToolhelp32Snapshoot,Process32First and Process32Next functions.
+
+After you have the PID use OpenProcess to obtain a handle to target
+
+process.(Be sure to set access flags to PROCESS_ALL_ACCESS).Warning: Toolhelp32 functions
+
+are not portable!
+
+	3.The methods described by NaTzGUL in his essay "How to access memory of
+
+another process".
+
+	The rest of parameters are self-explanatory.Now let's modify the
+
+protection attributes of first code page of target process.
+
+
+
+
+
+		HANDLE hTarget;              	// Handle to target process 
+
+		DWORD  codebase = 0x0040000;  	// Assuming image is based at 0x0040000
+
+		DWORD  oldattr;			// Here we will store old prot. attribs	
+
+		VirtualProtectEx( hTarget , 
+
+				LPVOID(codebase),                //Change attribs of 
+
+				4096,                            // first code page to 
+
+				PAGE_EXECUTE_READWRITE,		 // enable read , write
+
+				&oldattr);			 // and execute access.
+
+		
+
+		//
+
+		// Do something useful here
+
+		// 
+
+		//
+
+		 VirtualProtectEx( hTarget , 
+
+				LPVOID(codebase),                //Restore old attr.
+
+				4096,                            // 
+
+				oldattr,		         // 
+
+				&oldattr);
+
+
+
+	Querying the virtual address space is another important thing.By use of
+
+VirtualQuery and VirtualQueryEx you can get various info about memory regions in a
+
+process address space.
+
+ Fire up Soft-Ice and type Query.Do you like the screen now? What you can
+
+see is a map virtual address space of target process.Every memory region 
+
+is listed there with some additional info.Not only Soft-Ice can do this.
+
+You can too!By the way: A memory region from Virtual memory API point of view 
+
+is a region whose protection attributes , type and base allocations are the same.
+
+Let's the API: 
+
+
+
+	DWORD VirtualQueryEx(
+
+				HANDLE hProcess,	// handle of process 
+
+			        LPCVOID lpAddress,	// address of region 
+
+			        PMEMORY_BASIC_INFORMATION lpBuffer,	// address of 
+
+									// information buffer 
+
+				DWORD dwLength 	// size of buffer 
+
+   			     );	
+
+ 
+
+The parameters:
+
+		1.HANDLE hProcess: Handle to target process.Must have
+
+PROCESS_QUERY_INFORMATION
+
+access flag set.
+
+		2.LPCVOID lpAddress: Pointer to se address of the region of pages to be
+
+queried.
+
+This value is rounded down to the next page boundary.
+
+		3.PMEMORY_BASIC_INFORMATION lpBuffer pointer to a
+
+MEMORY_BASIC_INFORMATION structure to receive region info.
+
+
+
+		typedef struct _MEMORY_BASIC_INFORMATION { // mbi  
+
+    			PVOID BaseAddress;            // base address of region 
+
+		        PVOID AllocationBase;         // allocation base address 
+
+		        DWORD AllocationProtect;      // initial access protection 
+
+		        DWORD RegionSize;             // size, in bytes, of region 
+
+		        DWORD State;                  // committed, reserved, free 
+
+		        DWORD Protect;                // current access protection 
+
+		        DWORD Type;                   // type of pages 
+
+
+
+		} MEMORY_BASIC_INFORMATION; 
+
+		typedef MEMORY_BASIC_INFORMATION *PMEMORY_BASIC_INFORMATION; 
+
+
+
+     BaseAddress	Points to the base address of the region of pages. 
+
+     AllocationBase	Points to the base address of a range of pages
+
+			allocated by the VirtualAlloc function. The page pointed 
+
+			to by the BaseAddress member 
+
+			is contained within this allocation range. 
+
+     AllocationProtect  Specifies the access protection given when the
+
+			region was initially 
+
+			allocated. One of the following flags can be present, along with the 
+
+			PAGE_GUARD and PAGE_NOCACHE protection modifier flags. 	
+
+     RegionSize		Specifies the size, in bytes, of the region beginning at
+
+			the base 
+
+			address in which all pages have identical attributes. 		 
+
+     State		Specifies the state of the pages in the region. 
+
+			One of the following states is indicated:
+
+			MEM_COMMIT	Indicates committed pages for which physical storage 
+
+					has been allocated, either in memory or in the paging 
+
+					file on disk.
+
+			MEM_FREE	Indicates free pages not accessible to the calling 
+
+					process and available to be allocated. For free pages, 
+
+					the information in the AllocationBase, AllocationProtect,
+
+					Protect, and Type members is undefined.
+
+			MEM_RESERVE	Indicates reserved pages where a range of the process's 
+
+					virtual address space is reserved without allocating any
+
+				        physical storage. For reserved pages, the information in
+
+				        the Protect member is undefined.
+
+ 
+
+
+
+     Protect 		Specifies the access protection of the pages in the region.
+
+			One of the 
+
+			flags listed for the AllocationProtect member is specified.
+
+     Type		Specifies the type of pages in the region. The following types
+
+			are defined: 	  	
+
+			MEM_IMAGE	Indicates that the memory pages within the region are 
+
+					mapped into the view of an image section.
+
+			MEM_MAPPED	Indicates that the memory pages within the region are 
+
+					mapped into the view of a section.
+
+			MEM_PRIVATE	Indicates that the memory pages within the region are 
+
+					private (not shared by other processes).
+
+	4.DWORD dwLength: Specifies the size, in bytes, of the buffer pointed to
+
+			by the lpBuffer parameter. 
+
+			  Usually set to sizeof(MEMORY_BASIC_INFORMATION).
+
+ 	
+
+	Now let's retrieve this information for the code section of target
+
+process:
+
+
+
+		HANDLE Hare;              	// Handle to target process 
+
+		DWORD  codebase = 0x0040000;  	// Assuming image is based at 0x0040000
+
+		MEMORY_BASIC_INFORMATION mbi;   // 
+
+		VirtualQueryEx(hTarget,
+
+LPCVOID(codebase),&mbi,sizeof(MEMORY_BASIC_INFORMATION);
+
+
+
+        After VirtualQueryEx returns you have in mbi all information you
+
+need about code	memory region  of target process.
+
+	To retrieve info about all memory regions of a process address space all
+
+you have to do is to start enumerate all memory regions from 0 to 4Gb.Initially call
+
+VirtualProcessEx with
+
+LPCVOID lpAddress set to 0 .After the function returns start iterate  calls
+
+to VirtualProcessEx with LPCVOID lpAddress incremented by the size of region
+
+it queried previously.
+
+Be sure to save away contents of MEMORY_BASIC_INFORMATION structure before
+
+next call.Usualy I use a do - while  loop.
+
+=============================================================================
+
+		
+
+	3.Short intro to Toolhelp32 functions
+
+	-------------------------------------
+
+	
+
+	Nice set of functions!Unfortunately they are NOT portable to other
+
+implementations
+
+of WIN32 such as WIN32s or WINDOWS NT.Those functions are designed to
+
+retrieve info about
+
+processes and threads running in your system.They are very useful to design
+
+debuggers for
+
+WIN95 environment.
+
+	The keyword  is "snapshot".A snapshot is an object in OS memory that lists
+
+all 
+
+possible information about processes and thread runing.Snapshoots are
+
+created with
+
+CreateToolhelp32Snapshoot functions.This function returns a handle that you
+
+can use for 
+
+future access to snapshot object.Destroying the snapshot object is very
+
+simple.All
+
+you have to do is to call CloseHandle function.The snapshot objects are
+
+continue updated
+
+by OS to reflect the real state of system,so you don't have to worry that
+
+the information
+
+is outdated.
+
+	They also provide an easy method to create an "Attach to process"
+
+function.A good 
+
+tool must provide a way to dynamically attach to other processes.Using this
+
+functions is 
+
+very easy to do it.
+
+	Those functions resides in Kernel32.dll,but they are not exported through
+
+kernel32.lib
+
+I think that in Visual C they are exported through tlh32.lib.You must also
+
+locate the 
+
+appropriate header file.The linker does not link implicitly with
+
+tlh32.lib!You have to add
+
+the lib to your project.
+
+	The API:
+
+		CreateToolhelp32Snapshoot
+
+		Heap32First
+
+		Heap32Next
+
+		Heap32ListFirst
+
+		Heap32ListNext
+
+		Module32First
+
+		Module32Next
+
+		Process32First
+
+		Process32Next
+
+		Thread32First
+
+		Thread32Next
+
+		Toolhelp32ReadProcessMemory
+
+
+
+	After you use CreateToolhelp32Snapshoot to create system snapshot you can
+
+use
+
+other functions to retrieve the info.
+
+	Process32First & Process32Next are used to walk the process list in
+
+snapshoot.They
+
+return process information in a PROCESSENTRY32  structure.Use
+
+Process32First to get info
+
+about the first process,then Process32Next to retrieve info about
+
+subsequent processes.
+
+Use GetLastError to retrieve the error status.
+
+	This functions are the subject of one of my future essays,so I don't
+
+present them in 
+
+details here.They are very simple to use.I put this short section here only
+
+to provide you
+
+an idea how to retrieve some really cool info.
+
+============================================================================
+
+====================
+
+
+
+
+
+	How do I....
+
+	------------
+
+
+
+
+
+
+
+		1.Write self modifiable code?
+
+
+
+			A. Call VirtualProtect on code pages you want to modify.
+
+			   DWORD flNewProtect must be PAGE_WRITECOPY.
+
+			B. Write to code pages.
+
+			C.Call VirtualProtect on code pages you want to modify to
+
+			   restore old attribs.(PAGE_EXECUTE)
+
+			D.Call FlushInstructionCache to empty the invalidate instruction cache.
+
+			  This step is required because this portion of code may be already
+
+			  in cache memory.		
+
+
+
+
+
+		2.Modify the code pages of another process(single thread).
+
+			A.Get a handle to target process 
+
+			B.Get handle of target process main thread.
+
+			C.Stop thread using SuspendThread.
+
+			D.Call VirtualProtectEx on code pages you want to modify.
+
+			  DWORD flNewProtect must be PAGE_READWRITE.
+
+			E.Save away the code pages (not required. may you don't need
+
+			  them anymore.Use ReadProcessMemory
+
+			F.Use WriteProcessMemory to write to target pages.
+
+			G.Call VirtualProtectEx on code pages you want to modify to
+
+			   restore old attribs.(PAGE_EXECUTE)
+
+			H.Resume thread using ResumeThread.
+
+
+
+			
+
+		3.Modify functions inside system Dll's
+
+
+
+			This is can be very dangerous.Write something wrong inside kernell32.dll
+
+		,for  example,and BYE-BYE Windows.But,sometimes it may be very useful
+
+that a
+
+		WIN API function to return without doing nothing,to return faked
+
+values,or to
+
+		do anything but not what was supposed to do.Please take a look at
+
+Madmax's essay
+
+		"Cracking using KERNEL32.DLL??" in Fravia's pages of reverse engineering
+
+to get 
+
+		the point. He chose to patch the file kernel32.dll itself.I don't like
+
+this
+
+		method.I want as far as possible my system files unmodified.So I have to
+
+tweak
+
+		with memory.Let's see how:
+
+
+
+			A. Use GetModuleHandle to get a handle to Kernel32.dll
+
+			B. Use GetProcessAdress to get the address of the function we
+
+			   want to patch.
+
+			C.Call VirtualProtect on code pages you want to modify.
+
+			  Use value returned by GetProcessAdress as  LPVOID lpAddress
+
+			  parameter.DWORD flNewProtect must be PAGE_EXECUTE_READWRITE.
+
+			D.Modify (patch the function). Write some code there.Anything
+
+			  you want.I keep hoping that you know what are you doing! 
+
+			E.Call VirtualProtect to restore previous protection attributes.
+
+	      Enjoy your new kernel!
+
+	      Let's see some code.We want to patch
+
+			
+
+		HANDLE hKernel32;
+
+		DWORD oldprot;
+
+		hKernel32=GetModuleHandle("kernel32.dll");
+
+		VirtualProtect(GetProcessAdress( hKernel32,"GetDriveTypeA"),4096,
+
+						PAGE_EXECUTE_READWRITE, &oldprot);
+
+		//
+
+		//
+
+		//Write new code
+
+		// 
+
+		VirtualProtect(GetProcessAdress( hKernel32,"GetDriveTypeA"),4096,
+
+						oldprot, &oldprot);	
+
+			
+
+		As an exercise,try to make this function to say that your HDD is a
+
+			ramdisk.
+
+		Note that the small code snippet presented above does not perform ANY
+
+			error checking.This is bad.This is very bad!I suggest an 
+
+			extensive error checking and or exception handling when you
+
+			play with memory.For example if somehow the first call to
+
+			VirtualProtect fails then trying to access that memory range
+
+			to write will generate a superb AccessViolation Exception.It
+
+			will crash into pieces.I also make intensive use of 
+
+			IsBadWritePtr,IsBadCodePtr,IsBadReadPtr API functions.
+
+			So please, do always !at least! a basic error checking!
+
+============================================================================
+
+===================
+
+
+
+Final Notes
+
+-----------
+
+
+
+	1.Any corrections and additions are wellcomed.Please append them at the
+
+end of
+
+this document and also include your name (or your nickname ).Slightly
+
+editing minor mistakes
+
+and typos is admitted in-place and without notice.
+
+	2.You can contact me at folowing e-mail adress ice_man81@hotmail.com
+
+</PRE>
+
+
+
+<!-- WAY OUT STARTS HERE -->
+
+<HR>
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</I></CENTER>
+
+<BR><CENTER>
+
+<!-- EITHER A NICE GIF LIKE THIS -->
+
+
+
+<CENTER><A href="papers.htm" tppabs="http://www.anticrack.de/fravia/papers.htm"><IMG SRC="papers.gif" tppabs="http://www.anticrack.de/fravia/papers.gif" ALT="papers" ALIGN=BOTTOM WIDTH=114 
+
+EIGHT=43 BORDER=0 VSPACE=0 HSPACE=0></A><BR><FONT color=gray>Back to the HCU Papers</FONT></CENTER><HR>
+
+<BR><BR>
+
+
+
+
+
+<!-- OR JUST A LINK LIKE THIS -->
+
+
+
+<!--
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="project1.htm" tppabs="http://www.anticrack.de/fravia/project1.htm">Back to Your_chosen_project</A> 
+
+<hr width=33%>
+
+-->
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database</A>
+
+<BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="realicra.htm" tppabs="http://www.anticrack.de/fravia/realicra.htm">reality cracking</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="howtosea.htm" tppabs="http://www.anticrack.de/fravia/howtosea.htm">how to search</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="javascri.htm" tppabs="http://www.anticrack.de/fravia/javascri.htm">javascript wars</A>
+
+<BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity academy</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut CGI-scripts</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia+</A>
+
+<BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 
+
+BORDER=0 VSPACE=0 HSPACE=0><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering legal?</A>
+
+</CENTER>
+
+<HR>
+
+<!-- THAT'S ALL, THANKS A LOT this will allow automated retrieval -->
+
+</BODY>
+
+</HTML>
+
+	
+
+
+
+
+
+
+
+			  			 
+
+		  
+
+			
+
+			   
+
+			   	 
+
+				
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+		
+
+
+
+				

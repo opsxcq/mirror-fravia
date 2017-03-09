@@ -1,0 +1,305 @@
+<HTML>
+
+<HEAD></HEAD>
+
+<BODY BGCOLOR=#C0C0C0 TEXT=#001010 VLINK=#405040>
+
+
+
+
+
+
+
+<PRE><CENTER><FONT size=+2>Dongles are NOT dead! (programmers: use them!)</FONT><FONT size=+1>
+
+by Jack of Shadows</FONT>
+
+21 February 1998
+
+
+
+<A href="project3.htm" tppabs="http://www.anticrack.de/fravia/project3.htm" onMouseOver="window.status='Yessir, back to project 3'; return true"><IMG SRC="javascri.gif" tppabs="http://www.anticrack.de/fravia/javascri.gif" 
+
+ALT="project 3 page" ALIGN=BOTTOM WIDTH=114 HEIGHT=43 BORDER=0 
+
+VSPACE=0 HSPACE=0></A><BR><FONT color=gray>Back to project 3</FONT></CENTER>
+
+
+
+
+
+
+
+Fravia, hi!
+
+
+
+I was stimulated to write you mail while reading the article Dongle Bashing
+
+(quite nice, by the way). I must definitely agree with Frog's print that
+
+most commercial producers don't use their brain in building the program
+
+protection but I definitely disagree with idea that dongles are mostly
+
+useless. You just have to use them the right way. So let's take a look at
+
+how the dongles could be used correctly.
+
+
+
+First, I must admit two things. My dongle knowledge is intimately connected
+
+to German producer FAST and their Hardlock E.Y.E. (very nice dongle,
+
+really). My protection writing knowledge is so far tightly connected to DOS
+
+(real and protected mode). I hope that my ideas could be implemented in
+
+Win32 (I will found this out in the next weeks ' update follows if you
+
+think it will be interesting reading).
+
+
+
+OK, let's set up some basic rules. I won't talk about time protections etc
+
+since mostly anything that could be said about that had already been said.
+
+Let's just say that we would like to distribute some crippleware over the
+
+Net and be later able to activate its functions with a key. That way we
+
+could put a 'fully' function version of our latest program on the net with
+
+the only one 'feature' that save, print, export' functions are disabled.
+
+Registered users would receive the key which would enable those functions.
+
+
+
+When designing a protection system I follow the first rule of cryptography:
+
+'System is only secure if you can distribute its source code, operation
+
+principles and all knowledge that was build into and still nobody can crack
+
+it'. If it is working for cryptography it must work for the program
+
+protection also. So let's take a new look at the protection along those
+
+premises.
+
+
+
+Let us assume that cracker will have access to the program assembly code
+
+(no problem those days thanks to IDA), could trace the runtime behavior (no
+
+problem thanks to SoftICE) and would be able to trace communications
+
+between dongle and program (no problem if we use another computer with two
+
+parallel ports and appropriate software). If the disabled functions we were
+
+talking about before (save, print') are present in the program, we can be
+
+sure that cracker will find them and activate them. OK, so they must not be
+
+present in a usable form but must be somehow encrypted. And we have a right
+
+tool for the job - dongle!
+
+
+
+As I have said before I don't know other dongles but Hardlock works along
+
+quite an interesting principles. Basically it encodes any 8 bytes you send
+
+to it and returns 8 encoded bytes. Encoding functions is bijective so we
+
+can send resulting 8 bytes to the dongle and receive original 8 bytes.
+
+Hardlock can therefore server as encryption function.
+
+
+
+Even nicer property is that FAST builds into every Hardlock the customer
+
+number of its buyer. Keys with different customer numbers behave
+
+differently when coding/encoding. So nobody can buy a key at FAST and use
+
+it to crack your program.
+
+
+
+Now you probably have a pretty clear picture what I have in mind. Mark a
+
+functions that have to be disabled in source code. Compile the program.
+
+Encrypt marked functions with a dongle. Put program on Net. User without a
+
+dongle has no way of guessing the code for missing functions. Add a dongle
+
+and program becomes fully functional.
+
+
+
+Probable ways of attack:
+
+1. Guess what first few bytes of a function must be and guess a dongle
+
+function.
+
+Pretty small chances but maybe possible. Can be easily defeated by
+
+prefixing functions to be encrypted with a few random characters.
+
+
+
+2. Buy one copy of a program and crack it so you can use it on more than
+
+one machine at the same time.
+
+Much easier but can still be made a tough problem. Let's see how a
+
+fictitious cracker can attack our program.
+
+a) Log all communications between computer and dongle. Make EPROM with
+
+data/encrypted data pairs. Add a processor and some logic and package it
+
+into a dongle.
+
+Countermeasure: don't just decode the program through the dongle but keep
+
+the constant flow of random data interleaved with the real encryption. Make
+
+this data pseudorandom (always use the same seed) so the cracker cannot
+
+compare data flow from two program executions and eliminate random data.
+
+Remember some of the returned data, send it through dongle later and
+
+compare the results with original data. Use your immagination.
+
+b) Wait till the program is decrypted and save in-memory copy to the disk.
+
+Write a loader for this copy.
+
+Countermeasure: don't decode whole program. Decode some parts when you need
+
+them and encode others at the same time (remember, decode and encode are
+
+really the same function!). Repeat. It is still possible to crack this
+
+program since you have to keep track of which part of the program are
+
+encoded but the problem is very very complicated.
+
+c) Maybe some other form of the attack I couldn't think of'
+
+
+
+Similar way of crippling the program can be used without a dongle. Encrypt
+
+part of the program with cryptographic strong function. Use the key to
+
+decrypt the program. Key is never compared to anything which is good but is
+
+the same for all users which is bad. Alternatively: user must send you some
+
+ID that uniquely represents your computer and which is generated by the
+
+program. You return to the user some unlock code. He enters the code, it is
+
+in some way combined with the computer ID and the result is decryption key.
+
+Program is not saved to disk in decrypted form, of course, only the unlock
+
+code is remembered (in open place since it is of no use on the other
+
+computer which has different computer ID). Much less safe then dongle since
+
+you must hide and protect the mechanism which combines computer ID and
+
+unlock code but still pretty safe.
+
+
+
+If we take this to the limits, the whole program can be encryped. Startup
+
+code uses a fixed key to decrypt and run the program every time (resulting
+
+program can still use all the tricks mentioned above) so this is no
+
+protection in itself but just a weapon against disassemblers.
+
+
+
+Be that enough for today. Publish if you think this rambling of mine is of
+
+any interest to your faithful readers.
+
+
+
+                                    Jack of Shadows</PRE>
+
+        <HR>
+
+<CENTER>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 
+
+VSPACE=0 HSPACE=0><A HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 
+
+VSPACE=0 HSPACE=0><A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 
+
+VSPACE=0 HSPACE=0><A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 
+
+VSPACE=0 HSPACE=0><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 
+
+VSPACE=0 HSPACE=0><A HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 
+
+VSPACE=0 HSPACE=0><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database</A><BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 
+
+VSPACE=0 HSPACE=0><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools</A>
+
+<A href="javascript:if(confirm('http://www.dejanews.com/  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.dejanews.com/'" tppabs="http://www.dejanews.com/" onMouseOver="window.status='(A stalking utility :-)'; return true"><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0
+
+VSPACE=0 HSPACE=0></A><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm" onMouseOver="window.status='An amazing useful link'; return true">cocktails</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 
+
+VSPACE=0 HSPACE=0><A HREF="javascript:if(confirm('http://www.fravia.org/ideale.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.fravia.org/ideale.htm'" tppabs="http://www.fravia.org/ideale.htm">antismut CGI-scripts</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 
+
+VSPACE=0 HSPACE=0><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 
+
+VSPACE=0 HSPACE=0><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia</A><BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 
+
+VSPACE=0 HSPACE=0><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering legal?</A>
+
+</CENTER>
+
+</BODY>
+
+</HTML>

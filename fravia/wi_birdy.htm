@@ -1,0 +1,328 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>wi_birdy</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+
+
+
+
+
+
+<CENTER>
+
+
+
+
+
+<H1>+HCU 1997, Project2: WiniceNT cracking<BR>Phase 6<BR></H1>
+
+Courtesy of Fravia's page of reverse engineering <BR>18 July 1997
+
+</CENTER>	<PRE>
+
+There still was much work to do in the fourth phase, as I mentioned,
+
+because IgNorAMUS only in the long run had told how it was done (he had
+
+done the most tricky part of it, though).
+
+
+
+There were many bits of information that were left out, not only the new
+
+checksum itself but also the exact location and code of the routine
+
+&quot;similar to NmGetNumDaysLeft&quot;. Now here it is, in HIEW (I first had to
+
+update my entire toolbox. You *must* have version 5.60 or greater,
+
+because of the checksum later on) search for the following:
+
+
+
+             This the line of KeQueryGetSystemTime
+
+					 |
+
+.0002A02C: FF1508380D00  call   KeQuerySystemTime ;ntoskrnl.exe 
+
+.0002A032: 8D8D04FFFFFF  lea    ecx,[ebp][0FFFFFF04]            
+
+.0002A038: 8D853CFFFFFF  lea   eax,[ebp][0FFFFFF3C]            
+
+.0002A03E: 51            push  ecx                             
+
+.0002A03F: 50            push  eax                             
+
+.0002A040: FF1504380D00                 call   RtlTimeToTimeFields;ntoskrnl.exe
+
+.0002A046: 0FBF8D04FFFFFF               movsx ecx,w,[ebp][0FFFFFF04]          
+
+.0002A04D: 0FBF8508FFFFFF               movsx eax,w,[ebp][0FFFFFF08]          
+
+.0002A054: 0FBF9506FFFFFF               movsx edx,w,[ebp][0FFFFFF06]          
+
+.0002A05B: 51                           push  ecx                             
+
+.0002A05C: 50                           push  eax                             
+
+.0002A05D: 52                           push  edx                             
+
+.0002A05E: E8D1160000                   call  .00002B734   ------(1)      
+
+					|
+
+  				This is IT. Follow Me!
+
+
+
+Then you're landing in a routine quite (but not wholly) similar to that
+
+one in Phase 2; Page down... down... down - gotcha:
+
+
+
+.0002B7FA: 034D08                       add   ecx,[ebp][00008]                
+
+.0002B7FD: 6BC01F                       imul  eax,eax,01F                     
+
+.0002B800: 6BC91F                       imul  ecx,ecx,01F                     
+
+.0002B803: 8D1438                       lea   edx,[eax][edi]                  
+
+.0002B806: 8B450C                       mov   eax,[ebp][0000C]                
+
+.0002B809: 03C1                         add   eax,ecx                         
+
+.0002B80B: 3BC2                         cmp   eax,edx                         
+
+.0002B80D: 7202                         jb    .00002B811   -------(1)      
+
+.0002B80F: 2BC2                         sub   eax,edx                         
+
+.0002B811: 83F80E                       cmp   eax,00E                         
+
+.0002B814: EB0F                         jmps  .00002B825   -------(2)      
+
+.0002B816: C705B0E4060000000000         mov   d,[00006E4B0],000000000         
+
+.0002B820: 8B45F8                       mov   eax,[ebp][-0008]                
+
+.0002B823: 7213                  ****   jb  .00002B838   ---------- (3)*** --&gt; jmps...
+
+.0002B825: B90E000000                   mov   ecx,00000000E                   
+
+.0002B82A: 2BC8                  ****   sub    ecx,eax			*** --&gt; nop nop
+
+.0002B82C: 8D4601                       lea   eax,[esi][00001]                
+
+.0002B82F: 6BC003                       imul  eax,eax,003                     
+
+.0002B832: 890DB0E40600                 mov   [00006E4B0],ecx                 
+
+.0002B838: 5F                           pop   edi                             
+
+.0002B839: 5E                           pop   esi                             
+
+.0002B83A: 5B                           pop   ebx                             
+
+
+
+So what you have to do is change
+
+7213 in EB13	(short jump sufficient)
+
+2BCB in 9090
+
+
+
+This is the first part of it. Now for the tricky one. First the checksum
+
+<OLD> for retrieval. Hit F8 in HIEW:
+
+
+
+Checksum:		000DBB04
+
+
+
+Now we can search for this constant in register EDX when tracing into
+
+the call right after NTOSKRNL!ZwOpenFile to be sure we are near it;
+
+First, take NTOSKRNL.EXE into the Exports listbox in loader32, then
+
+start up the unchanged Version of NTICE.SYS. BPX ZwOpenfile as assumed
+
+in phase 4. Outta there.
+
+
+
+This is again a point I first didn't understand. Why should the NTICE
+
+fake be renamed in PNPISA.SYS? Wouldn't it have been much funnier to
+
+name it &quot;Winnie.sys&quot;? Then I realized what IgNorAMUS meant with it. A
+
+breeze for crackers, in NT most of the drivers can be loaded and
+
+unloaded &quot;afterwards&quot; in the running environment (understand now why I
+
+like working with it? 95 is game. NT is business. They take it much more
+
+serious). What you do is search the listbox of Control, Devices (hope I
+
+got the names right!) for a device that is loaded at &quot;System&quot; level
+
+_and_ deactivated (==not needed). Rename NTICE.SYS or what you have to
+
+the name of this device (backup!!!) and click the Start button. Just
+
+like that! And restart and restart and restart if you need to. No silly
+
+bootomania.
+
+
+
+When everything is done right, you don't wait for long and wham! Winnie
+
+pops up with the breakpointed line. Trace now. Only step over the
+
+NTOSKRNL calls. Keep watching EDX. Near the end of the second call the
+
+checksum appears, and the &quot;new&quot; one in 
+
+
+
+EAX: 000D83E2.
+
+
+
+Caution: When you simply step over the call, directly to
+
+
+
+cmp al,al
+
+
+
+the checksum is slightly different. If you now press F5, the well known
+
+MessageBox appears: &quot;...something... 00000221&quot;. Nevermore!
+
+
+
+Hiew the PNPISA.SYS now and search for the anagram: 04 BB 0D 00. Change
+
+to E2 83 0D 00. Restart in the devices window. Now another Box appears,
+
+telling you that you can't have the same device twice. Yahoo!
+
+
+
+That's all about it. Now, before doing anything else, &quot;take the cracked
+
+NTICE.SYS out of the traffic&quot;, as a german phrase goes, and replace it
+
+with the original PNPISA.SYS (Remark: This driver comes first with the
+
+service pack 3 of NT4!). If you don't, this means war because at next
+
+bootup the driver will then be loaded. Or even not. And if you have NT
+
+running on a NTFS partition, you will have to install a second NT4 on
+
+your system to get back to it (sort of service station, not a bad move
+
+though).
+
+
+
+Now reboot and enjoy.
+
+
+
+What there is left to say: You have to live on with the Registry keys
+
+OleGUIDHigh and OleGUIDLow and also with the lines at the bottom of
+
+Winice.dat. But don't matter, eh?
+
+
+
+Greetz,
+
+Birdy Harry
+
+</PRE>
+
+
+
+<HR size="2">
+
+
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering, 
+
+choose your way out:</I></CENTER>
+
+
+
+<BR><CENTER>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#84'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#84"> homepage</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"> 
+
+<A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#73'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#73"> links</A> 
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0">
+
+<A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm"> anonymity</A> 
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm"> +ORC</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#82'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#82"> students' essays</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">
+
+<A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm"> tools</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm"> cocktails</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm"> antismut CGI-tricks</A>
+
+
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm"> search_forms</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm"> mailFraVia</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm"> Is software reverse engineering legal?</A></CENTER>
+
+
+
+</CENTER>
+
+<CENTER><HR ALIGN="CENTER" WIDTH="100%" SIZE="2"></CENTER>
+

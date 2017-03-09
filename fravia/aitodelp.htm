@@ -1,0 +1,656 @@
+<html>
+<head>
+<title>aitodelp.htm: Delphi Reverse Engineering   DFM Files, Windows RCDATA and Object Conversion Routines</title>
+</head>
+<body TEXT="#001010" BGCOLOR="#C0C0C0" VLINK="#405040">
+<table BORDER CELLSPACING="2" WIDTH="100%" HEIGHT="22">
+<caption></caption>
+<tr>
+<td></td>
+<td><!-- Choose  a TITLE and a subtitle, choose well! -->
+<center><font SIZE="+2">Delphi Reverse Engineering</font></center> 
+<center><font SIZE="+1">DFM Files, Windows RCDATA and</font></center>
+<center><font SIZE="+1">Object Conversion Routines  </font></center>
+</td>
+<td><!-- Choose  a PROJECT GIF, leave this if unsure -->
+<center><a HREF="papers.htm" tppabs="http://www.anticrack.de/fravia/papers.htm"><img SRC="papers.gif" tppabs="http://www.anticrack.de/fravia/papers.gif" ALT="papers" BORDER="0&quot;" HEIGHT="43" WIDTH="114" ALIGN="CENTER"></a></center>
+<center><font COLOR="#808080">Papers</font>  </center>
+</td>
+</tr>
+<tr>
+<td BGCOLOR="#FFFFEA">
+<center><!-- CHOOSE A DATE (will probably be changed) --><font COLOR="#890000">June 1999</font></center>
+</td>
+<td BGCOLOR="#FFFFEA">
+<center>by  <font SIZE="+3">+Aitor</font></center>
+</td>
+<td VALIGN="CENTER" BGCOLOR="#FFFFEA">
+<a href="hcu98_3.htm" tppabs="http://www.anticrack.de/fravia/hcu98_3.htm"><img SRC="hcu1.gif" tppabs="http://www.anticrack.de/fravia/hcu1.gif" ALT="+cracker" ALIGN="BOTTOM" WIDTH="114" HEIGHT="43" BORDER="0" VSPACE="0" HSPACE="0"></a></td>
+</tr>
+
+<tr>
+<td>
+<center><a HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html"><img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" BORDER="0" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13"></a></center>
+</td>
+
+<td BGCOLOR="#898030">
+<center>Courtesy of Fravia's page of reverse
+engineering</center>
+</td>
+
+<td BGCOLOR="#898030">
+</td>
+</tr>
+
+<tr>
+<td><font COLOR="#C4C0CF">fra_00xx</font>  
+<br><font COLOR="#C4C0CF">980606</font>  
+<br><font COLOR="#C4C0CF">+Aitor</font>  
+<br><font COLOR="#C4C0CF">0010</font>  
+<br><font COLOR="#C4C0CF">NA</font>  
+<br><font COLOR="#C4C0CF">PC</font></td>
+
+<td>
+<center>Nice deed +Aitor! Was about time that some +HCUker would start a little sound 
+Delphi reversing. I know that +Aitor will soon send quite a lot of additions and 
+material (delphi related) for this and other essays, so stay tuned!</i></center>
+</td>
+
+<td></td>
+</tr>
+
+<tr>
+
+<td><!-- Leonard Coehn's old song, because we arepoets, not onlycrackers --></td>
+
+<td BGCOLOR="#898030">
+<center><b>There is a crack, a crack in everything
+That's how the light
+gets in</b></center>
+<!-- Leonard Coehn's old song, because we are poets,not only crackers--></td>
+
+<td></td>
+</tr>
+
+<tr>
+<td VALIGN="CENTER" BGCOLOR="#C6E7C6">
+<center><font COLOR="#0000FF">Rating</font></center>
+</td>
+
+<td VALIGN="CENTER" BGCOLOR="#C6E7C6">
+<center><!-- CHOOSE A RATING (may be changed) --><font COLOR="#0000FF">(
+)<b>Beginner</b> ( )<b>Intermediate</b> (x)<b>Advanced</b> (
+)<b>Expert</b></font>  </center>
+</td>
+
+<td></td>
+</tr>
+</table>
+<!-- END HEAD  -->
+<br><!-- CORPUS  --><!-- CHOOSE A COMMENT (may bechanged)  -->&quot;A little
+paper to teach +reversers new paths to research, and
+give Delphi
+programmers
+a topic to reflection&quot;  
+<hr>
+<center><!-- Repeat your TITLE  --><font SIZE="+2">Delphi Reverse
+Engineering</font></center>
+
+<center><!-- Repeat your SUBTITLE --><font SIZE="+1">DFM
+Files, Windows
+RCDATA
+and</font></center>
+
+<center><font SIZE="+1">Object Conversion
+Routines</font></center>
+
+<center><!-- REPEAT YOUR CHOSEN HANDLE HERE --><font COLOR="#0B7FC1">Written
+by +Aitor</font></center>
+  
+
+<p><!-- INTRO STARTS HERE -->
+<table BORDER CELLSPACING="2" WIDTH="100%" HEIGHT="22">
+<tr>
+<td BGCOLOR="#C6E7C6">
+<center><font SIZE="+2"><font COLOR="#0000FF">Introduction</font>  </font></center>
+</td>
+</tr>
+</table>
+<!-- PASTE HERE YOUR INTRODUCTION -->
+<br>... And then Borland created Delphi, an amazing
+development tool
+that
+convulsed the programming scene in the middle
+90's.  OOP + RAD +
+BP7
+compiler made of Borland Delphi a very attractive
+option for thousands
+of developers around the world.
+
+<p>So many times we have heard things like &quot;Delphi is
+like a Pascal
+based
+Visual Basic&quot;, CERTAINLY NOT!!  OOP techniques
+applied to Delphi
+are
+the main reason to get a +100 Kb &quot;hello world&quot; exe
+file, but, taking
+apart
+all the overbloated object hierarchy, we are still
+able to develop full
+Win32 API based software, enjoying the beauty of one
+of the nicest
+languages
+ever, Pascal.
+
+<p>In a simple &quot;Hello world&quot; Delphi program, there are
+thousands of
+useless
+bytes, resources injected into the executable that
+program will never
+use,
+strings, cursors, etc., not to mention all the crap
+that VCL object
+hierarchy
+takes with it.  A real programmer must know in
+deep the language
+he/she
+uses, now he/she most learn how his/her compiler works
+...  amazing
+situation, isn't it?
+
+<p>So many things hidden to our eyes ...  Delphi
+programmers /
+reverse
++engineers, it's time to reveal some of them ...
+<br>  
+
+<p><!-- REAL ESSAY  STARTS HERE -->
+<table BORDER CELLSPACING="2" WIDTH="100%" HEIGHT="22">
+<tr>
+<td BGCOLOR="#C6E7C6">
+<center><font COLOR="#0000FF"><font SIZE="+2">Essay</font></font>  </center>
+</td>
+</tr>
+</table>
+<!-- PASTE HERE THE TEXT OF YOUR ESSAY     THIS IS OF COURSE THE MOST IMPORTANT PART     PLEASE CHECK THE MARGINS WHEN YOU ARE FINISHED!      SHOULD NOT BLAST OPERA'S MARGINS OUT! HAVE A LOOKINSIDE     YOUR OWN BROWSER WHEN YOU FINISH!  -->
+<center><b><font SIZE="+3">Delphi Reverse
+Engineering</font></b></center>
+
+<center><font SIZE="+2">DFM Files, Windows RCDATA
+and</font></center>
+
+<center><font SIZE="+2">Object Conversion
+Routines.</font></center>
+
+<center><font SIZE="+1">by +Aitor, June
+1999</font></center>
+  
+<br>  
+<br>  
+<br><b>INTRODUCTION</b>
+
+<p>Anyone that has opened an executable of Delphi at
+some time with the
+Resource Workshop of Borland has met with a total
+absence of windows and
+dialog boxes, but yes with a series more or less
+extensive of RCDATA
+type
+resources. What is there behind all this? If you don't
+know it, I hope
+this document helps you to understand it...
+<br>  
+
+<p>  
+<br><b>RCDATA, WHAT IS IT?</b>
+
+<p>Inside a Win32 executable we can store different
+type of resources:
+<dir>
+<dir><tt>RT_ACCELERATOR      Accelerator
+table</tt>
+<br><tt>RT_ANICURSOR          
+Animated cursor</tt>
+<br><tt>RT_ANIICON              
+Animated
+icon</tt>
+<br><tt>RT_BITMAP                
+Bitmap
+resource</tt>
+<br><tt>RT_CURSOR                
+Hardware-dependent
+cursor resource</tt>
+<br><tt>RT_DIALOG                
+Dialog
+box</tt>
+<br><tt>RT_FONT                    
+Font resource</tt>
+<br><tt>RT_FONTDIR              
+Font
+directory
+resource</tt>
+<br><tt>RT_GROUP_CURSOR    
+Hardware-independent cursor
+resource</tt>
+<br><tt>RT_GROUP_ICON        
+Hardware-independent icon
+resource</tt>
+<br><tt>RT_ICON                    
+Hardware-dependent icon resource</tt>
+<br><tt>RT_MENU                    
+Menu resource</tt>
+<br><tt>RT_MESSAGETABLE    Message-table
+entry</tt>
+<br><b><tt>RT_RCDATA                
+Application-defined
+resource (raw data)</tt></b>
+<br><tt>RT_STRING                
+String-table
+entry</tt>
+<br><tt>RT_VERSION              
+Version
+resource</tt>
+<br>  </dir>
+</dir>
+We can store blocks of binary data as RCDATA
+resources. In this way,
+JPEG
+images, data tables, complete files or even structures
+of data that will
+be extracted by the program at runtime, can be stored
+into the exe file.
+
+<p>  
+
+<p><b>DELPHI AND RCDATA RESOURCES</b>
+
+<p>Delphi programs source files are usually
+distributed in two file
+types:
+ASCII code files (.PAS, .DPR, .INC), and resource
+files (.RES, .RC,
+.DFM,
+.DCR).
+
+<p>At design time (code time), part of the program is
+written in
+background
+without the programmer almost realizes. Every time the
+programmer
+changes
+a window's position, a button's color or assigns an
+event to a
+component,
+Delphi writes those modifications in a DFM file.
+
+<p>A DFM file is nothing more than an ASCII file
+encoded by Delphi.
+Later,
+during the compilation, this file is linked with the
+executable one in
+form of RCDATA resource. Starting from now, when you
+hear speak of the
+Borland/Inprise's own RCDATA format, you will know
+which way the wind is
+blowing ...
+<br>  
+<br>  
+
+<p><b>EXTRACTING DFM RCDATA FROM A DELPHI
+EXECUTABLE</b>
+
+<p>A function of the Win32 API will allow us to write
+a small program to
+do the work. Next an extract of code from our small
+tool:
+<br>  
+<dir><b><tt>function EnumResourceNames(</tt></b>
+<br><b><tt>  hModule:
+HMODULE;                        
+// EXE handle returned from LoadLibrary/Ex</tt></b>
+<br><b><tt>  lpType:
+PChar;                              
+// resource type (eg: RT_RCDATA)</tt></b>
+<br><b><tt>  lpEnumFunc: ENUMRESNAMEPROC;  
+// callback
+function
+address</tt></b>
+<br><b><tt>  lParam:
+Integer                            
+// long integer (eg: pointer to an object)</tt></b>
+<br><b><tt>): BOOL; stdcall;</tt></b>
+<br>  
+<br>  
+
+<p><tt>function CB_EnumDfmNameProc(hModule: THandle;
+lpszType, lpszName:
+PChar;</tt>
+<br><tt>  lParam: Integer): Boolean;
+stdcall;</tt>
+<br><tt>var</tt>
+<br><tt>  ms: TMemoryStream;</tt>
+<br><tt>  rs: TResourceStream;</tt>
+<br><tt>  Buffer: array of Byte;</tt>
+<br><tt>begin</tt>
+<br><tt>  with TResourceInfo(lParam) do</tt>
+<br><tt>      begin</tt>
+<br><tt>          rs :=
+TResourceStream.Create(TResourceInfo(lParam).Module,</tt>
+<br><tt>              
+lpszname,
+lpszType);                                      
+// load resource in memory</tt>
+<br><tt>          try</tt>
+<br><tt>              ms
+:=
+TMemoryStream.Create;</tt>
+<br><tt>              
+try</tt>
+<br><tt>                  
+try</tt>
+<br><tt>                      
+SetLength(Buffer, 4);</tt>
+<br><tt>                      
+rs.Read(Buffer[0], SizeOf(Buffer)); // read the first
+4 bytes</tt>
+<br><tt>                      
+if string(Buffer) = 'TPF0'
+then        // is it a DFM
+resource?</tt>
+<br><tt>                          
+begin</tt>
+<br><tt>                              
+rs.Seek(0, 0);</tt>
+<br><tt>                              
+ObjectBinaryToText(rs, ms);        //
+decode DFM</tt>
+<br><tt>                              
+ms.Seek(0, 0);</tt>
+<br><tt>                              
+AddDfm(StrPas(lpszName), ms);    // add it to
+our own list</tt>
+<br><tt>                          
+end;</tt>
+<br><tt>                  
+except</tt>
+<br><tt>                      
+raise;</tt>
+<br><tt>                  
+end;</tt>
+<br><tt>              
+finally</tt>
+<br><tt>                  
+ms.Free;</tt>
+<br><tt>              
+end;</tt>
+<br><tt>          finally</tt>
+<br><tt>              
+rs.free;</tt>
+<br><tt>          end;</tt>
+<br><tt>      end;</tt>
+
+<p><tt>  Result := True;</tt>
+<br><tt>end; {CB_EnumDfmNameProc}</tt>
+
+<p><tt>procedure TResourceInfo.EnumDfmNames;</tt>
+<br><tt>begin</tt>
+<br><tt>  if FModule &gt; 0
+then                                          
+// if an EXE file has been loaded</tt>
+<br><tt>      EnumResourceNames(FModule,
+RT_RCDATA,  
+// go and search RCDATA resources</tt>
+<br><tt>          
+@CB_EnumDfmNameProc,
+Integer(Self));</tt>
+<br><tt>end; {TResourceInfo.EnumDfmNames}</tt>
+
+<p>  </dir>
+Uhm, apart from the Win32 API function already
+mentioned, here there are
+things that sound strange to me... what is
+&quot;ObjectBinaryToText&quot;? and
+that
+4 bytes header? OK, everything will be explained in
+due course ...
+<br>  
+<br>  
+
+<p><b>DECODING / ENCODING DFM RCDATA</b>
+
+<p>As we have already mentioned before, the RCDATA
+format used by the
+DFM
+files is a Borland/Inprise's characteristic format. In
+the Delphi 4 unit
+&quot;Classes&quot; of Delphi there are 4 functions, called
+object conversion
+routines,
+to convert DFM binary blocks to ASCII format, and vice
+versa:
+<dir>
+<dir><tt>procedure ObjectBinaryToText(Input, Output:
+TStream);</tt>
+<br><tt>procedure ObjectTextToBinary(Input, Output:
+TStream);</tt>
+<br><tt>procedure ObjectResourceToText(Input, Output:
+TStream);</tt>
+<br><tt>procedure ObjectTextToResource(Input, Output:
+TStream);</tt>
+<br>  </dir>
+</dir>
+Depending on what we want to do with the concerning
+resource we will use
+some or others. In our case, for the small tool that
+we will write we
+will
+use both first: &quot;ObjectBinaryToText&quot; and
+&quot;ObjectTextToBinary&quot;.
+
+<p>Before explaining how works our program, a question
+is pending, what
+was that 4 byte header that appeared in the code shown
+in the previous
+point? The matter is that Delphi doesn't only store
+automatically DFM
+blocks
+DFM as RCDATA, but rather we will also meet with
+resources like DVCLAL
+and PACKAGEINFO. To distinguish them some of other, we
+will read the
+first
+four bytes of the block that in all those of DFM type
+is always &quot;TPF0&quot;
+($54 $50 $46 $30).
+
+<p>  
+
+<p><b>CODING A DELPHI DFM EXPLORER</b>
+
+<p>With all the above-mentioned we should already be
+able to write a
+tool
+that makes us life a little easier as much to crackers
+as to
+programmers.
+
+<p>The operation is simple:
+<ol>
+<li>
+Load an executable module (EXE/DLL/BPL/DPL) in memory
+by means of
+&quot;LoadLibrary&quot;
+or &quot;LoadLibraryEx&quot; functions, from the Win32 API.</li>
+
+<li>
+Go through it looking for RCDATA resources by means of
+&quot;EnumResourceNames&quot;,
+from the Win32 API.</li>
+
+<li>
+Load each DFM block found, decode it and store it in a
+list in memory,
+together with their name.</li>
+
+<li>
+In the main window of the application we will be able
+to visualize in
+text
+mode all the loaded DFM's of the loaded
+executable.</li>
+
+<li>
+Finally, we will be able to save to disk the DFM
+selected as an ASCII
+file
+(.RC), or as a binary block (.DAT) such which it
+appears linked in the
+executable file.</li>
+</ol>
+The .RC file generated is ready to be loaded from the
+BRW. Choose the
+Delphi
+form you're interested in, modify it and save it as
+ASCII .RC file.
+Then,
+load the Delphi executable with the BRW, delete the
+previous Delphi form
+and substitute it with the new (modified) one. The
+possibilities are
+enormous
+if you have imagination ...
+
+<p><!-- FINAL NOTES STARTS HERE -->
+<table BORDER CELLSPACING="2" WIDTH="100%" HEIGHT="22">
+<tr>
+<td BGCOLOR="#C6E7C6">
+<center><font SIZE="+2"><font COLOR="#0000FF">Final
+Notes</font>  </font></center>
+</td>
+</tr>
+</table>
+
+
+<p>All that you have seen here, including the little
+demo tool, have
+been
+written in an hot Sunday afternoon, very hot indeed
+... :)  It's
+possible
+that this text contains something incorrect, or that
+the program has
+shortcomings
+that I have not seen. If you find something wrong,
+don't wait more and
+write now, it will be of benefit to +all ...
+
+<p>A zip file containing binaries and full sources of
+the DfmExplorer tool can be downloaded <a HREF="javascript:if(confirm('http://www.anticrack.de/fravia/DfmExplorer.zip  \n\nThis file was not retrieved by Teleport Pro, because the server reports that this file cannot be found.  \n\nDo you want to open it from the server?'))window.location='http://www.anticrack.de/fravia/DfmExplorer.zip'" tppabs="http://www.anticrack.de/fravia/DfmExplorer.zip">here</a>.
+
+<br>An spanish translation of this doc can be
+downloaded from <a HREF="javascript:if(confirm('http://www.anticrack.de/fravia/%3ca%20href=  \n\nThis file was not retrieved by Teleport Pro, because the server reports that this file cannot be found.  \n\nDo you want to open it from the server?'))window.location='http://www.anticrack.de/fravia/%3ca%20href='" tppabs="http://www.anticrack.de/fravia/%3ca%20href=" http://pagina.de/wkt" target="_blank">http://pagina.de/wkt</a>&quot;&gt;wkt
+homepage</a>.
+
+<p>  
+
+<p>(c) 1999 Aitor, +HCU and wkt
+<br>Basque Country, May 1999
+<br>  
+
+<p><!-- OB DUH STARTS HERE -->
+<table BORDER CELLSPACING="2" WIDTH="100%" HEIGHT="22">
+<tr>
+<td BGCOLOR="#C6E7C6">
+<center><font COLOR="#0000FF"><font SIZE="+2">Ob
+Duh</font></font>  </center>
+</td>
+</tr>
+</table>
+
+<center><i></i></center>
+
+<center><i>Ooops!    No &quot;Ob Duh&quot; applicable
+here
+...</i></center>
+<!-- WAY OUT STARTS HERE -->
+<hr>
+<center><i>You are deep inside fravia's page of
+reverse engineering,
+choose
+your way out:</i></center><img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="88%" HEIGHT="6" BORDER="0" VSPACE="0" HSPACE="0"><br><br>
+<!-- Begin Javascript relocator <font color=red>~</fonT> Javascript code by fravia+ -->
+<form name="FraviasForm">
+<script LANGUAGE="javascript">
+<!--
+
+function FravPage(list) {
+	      location.href = list.options[list.selectedIndex].value
+}
+
+// -->
+</script>
+<div align="center">
+<center>
+<p center="&lt;center&gt;&lt;/center&gt;">&nbsp;<select name="fraviale" size="1">
+
+<option>Choose another page!</option>
+<option value="index.htm">Main page</option>
+<option value="academy.htm">Software reversing Lab</option>
+<option value="realicra.htm">Reality cracking Lab</option>
+<option value="noanon.htm">Anonymity Lab</option>
+<option value="ideale.htm">Site busting Lab</option>
+<option value="howtosea.htm">How to search Lab</option>
+<option value="sealight.htm">--Search engines (light)</option>
+<option value="searengi.htm">--Search engines (heavy)</option>
+<option value="links.htm">Links</option>
+<option value="tools.htm">Tools</option>
+<option value="javascri.htm">Javascript reversing</option>
+<option value="screamin.htm">Screaming truth</option>
+<option value="entran.htm">Main entrance</option>
+<option value="new_what.htm">What's new on fravia's</option>
+<option value="info.htm">Mail fravia+</option>
+<option value="http://greythorne.home.ml.org">+Greythorne's</option>
+<option value="http://www.InsideTheWeb.com/mbs.cgi/mb186724">Tools of our trade msgboard</option>
+<option value="http://www.InsideTheWeb.com/mbs.cgi/mb155985">Main msgboard</option>
+</select>
+
+<input type="button" value="Let's go!" onclick="FravPage(this.form.elements[0])">
+<br>
+</div>
+
+</form>
+<!-- end Javascript relocator -->
+<br><img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="88%" HEIGHT="6" BORDER="0" VSPACE="0" HSPACE="0"><br><br>
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><a HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage </a><img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0">
+<a HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links </a>
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0">
+<a HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity </a>
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><a HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC </a>
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><a HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays </a>
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><a HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database </a>
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><a HREF="botstart.htm" tppabs="http://www.anticrack.de/fravia/botstart.htm">bots wars</a>
+
+<br>
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><a HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut </a>
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><a HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools </a>
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><a HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails </a>
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><a HREF="javascri.htm" tppabs="http://www.anticrack.de/fravia/javascri.htm">javascript wars </a>
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><a HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms </a>
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><a HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia </a><br>
+
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><a HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering illegal?
+</a></center>
+<hr size="4">
+
+</body>
+</html>

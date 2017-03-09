@@ -1,0 +1,2688 @@
+<html><!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+
+<HTML>
+
+<HEAD>
+
+<TITLE>anormal book #1: design your own cpu</TITLE>
+
+<META http-equiv="keywords" content="protections, fake cpu, fravia, +orc, anormal/kindergarten">
+
+<META http-equiv="description" content="a short essay about usign a new type of protections: design your own cpu">
+
+</HEAD>
+
+<BODY>
+
+<CENTER>
+
+<BR>
+
+<BR>
+
+<TABLE width="100%" cellspacing="4" cellpadding="2" align="CENTER" valign="MIDDLE" bgcolor="#800080">
+
+<TR>
+
+<TD colspan="3" width="100%"><CENTER><I><FONT color="#ffffff" size="7">A</FONT><FONT size="5" color="#ffffff"><SUP><BIG> new kind of protections </BIG></SUP></FONT><FONT size="7" color="#ffffff">?</FONT><BR></I></CENTER></TD>
+
+</TR>
+
+<TR>
+
+    <TD width="5%" bgcolor="#008080">&nbsp;</TD>
+
+    <TD>
+
+		<CENTER><I><FONT color="#ffffff" size="7">D</FONT><FONT color="#ffffff" size="5"><SUP><BIG>esign your own CPU </BIG></SUP></FONT><FONT color="#ffffff" size="7">!!</FONT><BR></I></CENTER>
+
+	</TD>
+
+    <TD width="5%" bgcolor="#008080">&nbsp;</TD>
+
+</TR>
+
+<TR>
+
+    <TD colspan="3" width="100%"><I><FONT size="6" color="#FFFFFF"><CENTER>by anormal/kindergarten</CENTER></FONT></I></TD>
+
+</TR>
+
+</TABLE>
+
+<BR>
+
+</CENTER>
+
+<HR align="CENTER" color="#800080" noshade>
+
+<BR>
+
+<I><FONT size="+3">.Index.</FONT></I><BR>
+
+<FONT size="+2">
+
+&nbsp;&nbsp;&nbsp;&nbsp;<A href="#index1">1. intro, ideas, etc...</A><BR>
+
+&nbsp;&nbsp;&nbsp;&nbsp;<A href="#index2">2. first example: stup8CPU</A><BR>
+
+&nbsp;&nbsp;&nbsp;&nbsp;<A href="#index3">3. second example: memoCPU</A><BR>
+
+&nbsp;&nbsp;&nbsp;&nbsp;<A href="#index4">4. closing words: greetings, stupid things, etc...</A><BR>
+
+</FONT>
+
+
+
+<BR>
+
+<HR align="CENTER" color="#800080" noshade>
+
+<BR><BR>
+
+<FONT size="+2"><A name="index1"><U>1. intro, ideas, etc...</U></A></FONT>
+
+<BR><BR>
+
+
+
+&nbsp;&nbsp;&nbsp;&nbsp;hey you!: What are you doing?, let me guess it... sitting comfortably in your chair, looking at the screen of your display, reading the new essays from fravia???. Maybe with a glass of your favorite drink?(remember more caffeine means more power!!!, so get a jolt cola now!!!), and listening to some deep and relaxing ambient music (let me recommend you: "lifeforms" or "isdn" from future sound of london, "ghost in the shell" original sound track, or some of the goldie¥s CDs: "timeless", "saturnzreturn").<BR><BR>
+
+
+
+&nbsp;&nbsp;&nbsp;&nbsp;Fravia¥s is a nice site, isn¥t it???. He, he... well in this essay i¥ll try to show you a new kind of protection scheme. I say "new", because i only have seen this one 3 times, i¥ll explain this later. Through this text, we are going to learn how design and implement our own cpus, of course in software. <BR><BR>
+
+
+
+&nbsp;&nbsp;&nbsp;&nbsp;A new CPU?. Yes, let me explain the main points of this idea:<BR><BR>
+
+
+
+&nbsp;&nbsp;&nbsp;&nbsp;1. Design the architecture of a new cpu: number of registers, kind and usage of memory, opcodes and special functions, like ports for accessing external devices, etc.<BR><BR>
+
+
+
+&nbsp;&nbsp;&nbsp;&nbsp;2. Write a emulation of this CPU for intel x86 machines (or motorola, or whatever ...). We could code this emulation in assembler, c, lisp, basic, etc... I think a big overbloated compiler (like visual basic) will generate enough tons of code to keep our crackers happy for a while, of course, the two examples in this essay are coded in hardcore assembler.<BR><BR>
+
+
+
+&nbsp;&nbsp;&nbsp;&nbsp;3. Code the protection scheme: keyfiles, passwords checks, hashing cryptography schemes, etc..., in the assembler language of the emulated cpu.<BR><BR>
+
+
+
+&nbsp;&nbsp;&nbsp;&nbsp;4. Compile the protection, with our own compiler, assembler, etc, and ...<BR><BR>
+
+
+
+&nbsp;&nbsp;&nbsp;&nbsp;5. Execute the protection scheme under the emulator.<BR><BR>
+
+
+
+Nice, eh?. I¥m sure you got the point.<BR><BR>
+
+
+
+&nbsp;&nbsp;&nbsp;&nbsp;I think this is a good protection, because we hide the real protection scheme under tons of bastard code. The well learn scheme cmp var,1 - jne go_beggar, will be hidden deep inside the kernel of the emulator. The only defense we have against a cracker is trying to bore him, if he get bored tracing tons of stupid code he¥ll give up.<BR>
+
+
+
+&nbsp;&nbsp;&nbsp;&nbsp;Some advantages are: extensibility: we could code different protections in seconds. Portability: just coding the emulator for a different system, unix, macs, etc, we can execute the "same protection" in a portable fashion.<BR><BR>
+
+
+
+&nbsp;&nbsp;&nbsp;&nbsp;Weak points: the cracker could reverse engineer the emulator, guess how the cpu works, make a dissasembler, and ... , you could guess the rest. Funny, eh?<BR><BR>
+
+
+
+&nbsp;&nbsp;&nbsp;&nbsp;A solution: we must code emulator for the cpu to be very hard to understand. It¥s a lot harder to patch the code in this way, remember that the opcodes of the cpu are emulated in a confusing way. The cracker must patch the emulated code, not the emulator. He first need to build a disassembler or, at last, know very well the inner working of the CPU.<BR><BR>
+
+
+
+&nbsp;&nbsp;&nbsp;&nbsp;Let¥s see the examples.
+
+
+
+
+
+<HR align="CENTER" color="#800080" noshade>
+
+<BR>
+
+<FONT size="+2"><A name="index2"><U>2. first example: stup8CPU</U></A></FONT>
+
+<BR>
+
+<BR>
+
+&nbsp;&nbsp;&nbsp;&nbsp;In this example we are going to design a cpu with this features(?):
+
+<BR>
+
+<BR>
+
+
+
+<PRE>
+
+-------------------------
+
+project name: stup8cpu
+
+por: anormal/kindergarten
+
+-------------------------
+
+
+
+:description:
+
+-------------
+
+
+
+ registers:
+
+            1 accumulator (8 bits)
+
+            1 index       (8 bits)
+
+
+
+ memory:
+
+            0..................31....................255 bytes
+
+            [-- idx to inm ---][----- code + data -----]
+
+            [------------ 256 bytes of ram ------------]
+
+
+
+:opcodes:
+
+---------
+
+    pnemonic       type     opcode    meaning         
+
+   ------------------------------------------------
+
+    mov idx,@inm   arith     010 (2)  load a number in index register
+
+    load           arith     001 (1)  load accumulator with contents of [idx]
+
+    sub acc,@inm   arith     011 (3)  accumulator-=inm
+
+    inc idx        arith     000 (0)  inc idx
+
+    output         ctrl      101 (5)  print accumulator in screen
+
+    input          ctrl      110 (6)  input bytes from keyboard and put them in [idx] 0 terminated
+
+    jnz @label     ctrl      111 (7)  jmp to label if accumulator is <> 0
+
+    stop           ctrl      100 (4)  stop the cpu
+
+<HR align="CENTER" color="#800080" noshade>                             
+
+:notes:
+
+--------
+
+
+
+	this cpu has 2 8bits registers: 1 accumulator and 1 index.
+
+	
+
+	it has a total memory of 256 bytes.
+
+	
+
+		the first 32 bytes of memory are used to store inmediates. So, the total amount of diferent
+
+	inmediates in a program are 32. Every opcode is coded in just 1 byte, the opcodes that works
+
+	with inmediates, don¥t have the inmediate in the byte, they only have an index to the first 32 bytes
+
+	Do you understand?.
+
+
+
+		We have 8 different opcodes. So we need only 3 bits of opcodes. We use the rest 5 bits to code the
+
+	index to the inmediates zone.
+
+
+
+		Putting an index to inmediates zone in an opcode that doesn¥t use index (like the stop) causes
+
+	not effect.
+
+	
+
+	After the cpu is powered on, the initial program counter is just after the inmediate¥s zone.
+
+	
+
+<HR align="CENTER" color="#800080" noshade>    
+
+:example protection in the asm code of the emulated cpu:
+
+--------------------------------------------------------
+
+
+
+    mov  idx,messini      ;point idx to message
+
+print1:
+
+    load                  ;load a byte from message
+
+    sub  acc,key0         ;decode byte of message
+
+    inc  idx              ;to get next byte
+
+    output                ;print the char in the screen
+
+    jnz  print1           ;loop
+
+
+
+    mov idx,pass          
+
+    input                 ;get a string from keyboard
+
+
+
+    load                  ;get char
+
+    sub acc,key1          ;sub key1
+
+    jnz bad               ;it¥s <>0 then is bad, 
+
+    inc idx
+
+
+
+    load 
+
+    sub acc,key2          ;etc..
+
+    jnz bad
+
+    inc idx
+
+
+
+    load
+
+    sub acc,key3
+
+    jnz bad
+
+    inc idx
+
+
+
+    load
+
+    sub acc,key4
+
+    jnz bad
+
+    inc idx
+
+
+
+    load
+
+    sub acc,key5           ;we¥ll put 1 check for every letter in the password
+
+    jnz bad
+
+    inc idx
+
+
+
+    mov idx,messok         ;right password
+
+print2:
+
+    load
+
+    inc  idx
+
+    sub  acc,key6          ;print message
+
+    output
+
+    jnz  print2
+
+    stop                   ;stop cpu
+
+bad:
+
+    mov idx,messbad        ;bad password
+
+    jnz print2
+
+<HR align="CENTER" color="#800080" noshade>
+
+:emulation:
+
+-----------
+
+
+
+    notes: - bx points to the position 0 of the emulated ram
+
+           - al contains the actual opcode to be emulated
+
+           - ip of the emulated cpu is hold in si
+
+
+
+	The inner working of this emulation is very easy.
+
+	
+
+	Main loop of the emulator:
+
+	
+
+				start:
+
+			    mov bx,offset ram        ;points bx to emulated ram 
+
+			    mov si,offset ram+32d    ;initial ip
+
+			run:
+
+			    lodsb     			    ;load opcode
+
+			    mov di,ax
+
+			    and di,0111b 	        ;get instruction
+
+			    shl di,1
+
+			    add di,offset optable
+
+			    call [di]               ;emulate!
+
+			endemul:
+
+			    jmp run					;get next opcode
+
+	
+
+
+
+	The procedures use to emulated the different opcodes are:
+
+	
+
+			movidx:
+
+			    shr al,3
+
+			    xlat				;al=bx+al, with this we get an inmediate	
+
+			    mov idx,al
+
+			    ret
+
+			
+
+			load:
+
+			    mov al,idx
+
+			    xlat
+
+			    mov acc,al
+
+			    ret
+
+			
+
+			subacc:
+
+			    shr al,3
+
+			    xlat
+
+			    sub acc,al
+
+			    ret
+
+			
+
+			incidx:
+
+			    inc idx
+
+			    ret
+
+			
+
+			output:
+
+			    mov dl,acc
+
+			    mov ah,02
+
+			    int 21h
+
+			    ret
+
+			
+
+			input:
+
+			    mov dx,offset buffer
+
+			    mov ah,0ah
+
+			    int 21h
+
+			    mov al,idx
+
+			    sub ah,ah
+
+			    mov di,ax
+
+			    add di,bx
+
+			    xchg ax,si
+
+			    mov si,offset buffer+2
+
+			    xor cx,cx
+
+			    mov cl,[buffer+1]
+
+			    rep movsb
+
+			    xchg ax,si
+
+			    ret
+
+			
+
+			jnzlabel:
+
+			   cmp acc,0
+
+			   jne jump
+
+			   ret
+
+			jump:
+
+			   sub ah,ah
+
+			   shr al,3
+
+			   xlat
+
+			   mov si,ax
+
+			   add si,bx
+
+			   ret
+
+			
+
+			stop:
+
+			    pop ax
+
+			    ret
+
+
+
+<HR align="CENTER" color="#800080" noshade>
+
+	Ok, i wish you understand all.
+
+	
+
+		The only thing that is missing it¥s how we are going to compile the protection, and how to use
+
+	the language.
+
+
+
+	Well, very simple, we¥ll use macros in turbo assembler to build the opcodes in memory.
+
+	
+
+	Look at this:
+
+	
+
+	; opcode macronization :)
+
+
+
+			_inc_idx macro
+
+			      db 0							;opcode=0
+
+			endm
+
+			
+
+			_load macro
+
+			      db 1							;opcode=0
+
+			endm
+
+			
+
+			_mov_idx macro idx_inm
+
+			      db 2 or (idx_inm shl 3)		;opcode=2 + index
+
+			endm
+
+			
+
+			_sub_acc macro idx_inm
+
+			      db 3 or (idx_inm shl 3)		;opcode=3 + index
+
+			endm
+
+			
+
+			_stop macro
+
+			      db 4							;opcode=4
+
+			endm
+
+			
+
+			_output macro
+
+			      db 5							;opcode=5
+
+			endm
+
+			
+
+			_input macro
+
+			      db 6							;opcode=6
+
+			endm
+
+			
+
+			_jnz macro idx_inm
+
+			      db 7 or (idx_inm shl 3)		;opcode=7 + index 
+
+			endm
+
+
+
+	
+
+	This is complete source code. Just do tasm /m2 stup8cpu.asm and a tlink /t stup8cpu.obj to compile it.
+
+	
+
+<HR align="CENTER" color="#800080" noshade>
+
+; ------------------------------------------------------------------------
+
+;  project: stup8cpu
+
+;  code: anormal/loki/kindergarten/trkitzr
+
+;
+
+;  rev: 0.000 : Sun 02-08-1998 : initial code, not debug
+
+;  rev: 0.001 : Sun 02-15-1998 : some fixes, some debugging
+
+;  rev: 0.002 : Sun 02-22-1998 : +debugging
+
+;                                i was getting a stupid error due to the use of si without initializating
+
+;  time: 0.000 : 1:30
+
+;  time: 0.001 : 1:10
+
+;  time: 0.002 : 2:10
+
+
+
+
+
+
+
+c0de segment
+
+assume cs:c0de,ds:c0de
+
+org 100h
+
+.486
+
+
+
+
+
+; opcode macronization :)
+
+
+
+_inc_idx macro
+
+      db 0
+
+endm
+
+
+
+_load macro
+
+      db 1
+
+endm
+
+
+
+_mov_idx macro idx_inm
+
+      db 2 or (idx_inm shl 3)
+
+endm
+
+
+
+_sub_acc macro idx_inm
+
+      db 3 or (idx_inm shl 3)
+
+endm
+
+
+
+_stop macro
+
+      db 4
+
+endm
+
+
+
+_output macro
+
+      db 5
+
+endm
+
+
+
+_input macro
+
+      db 6
+
+endm
+
+
+
+_jnz macro idx_inm
+
+      db 7 or (idx_inm shl 3)
+
+endm
+
+
+
+start:
+
+    mov bx,offset ram
+
+    mov si,offset ram+32d    ;initial ip
+
+run:
+
+    lodsb         ;load opcode
+
+    mov di,ax
+
+    and di,0111b      ;get instruction
+
+    shl di,1
+
+    call [di+offset optable]
+
+endemul:
+
+    jmp run
+
+
+
+db 0bfh
+
+movidx:
+
+    shr al,3
+
+    xlat
+
+    mov idx,al
+
+    ret
+
+
+
+db 0bah
+
+load:
+
+    mov al,idx
+
+    xlat
+
+    mov acc,al
+
+    ret
+
+
+
+db 0eah
+
+subacc:
+
+    shr al,3
+
+    xlat
+
+    sub acc,al
+
+    ret
+
+
+
+db 0bah
+
+incidx:
+
+    inc idx
+
+    ret
+
+
+
+db 0cdh
+
+output:
+
+    mov dl,acc
+
+    mov ah,02
+
+    int 21h
+
+    ret
+
+
+
+acc db 0
+
+input:
+
+    mov dx,offset buffer
+
+    mov ah,0ah
+
+    int 21h
+
+    mov al,idx
+
+    sub ah,ah
+
+    mov di,ax
+
+    add di,bx
+
+    xchg ax,si
+
+    mov si,offset buffer+2
+
+    xor cx,cx
+
+    mov cl,[buffer+1]
+
+    rep movsb
+
+    xchg ax,si
+
+    ret
+
+
+
+idx db 0
+
+
+
+jnzlabel:
+
+   cmp acc,0
+
+   jne jump
+
+   ret
+
+db 0b2h
+
+jump:
+
+   sub ah,ah
+
+   shr al,3
+
+   xlat
+
+   mov si,ax
+
+   add si,bx
+
+   ret
+
+
+
+db 0b8h
+
+stop:
+
+    pop ax
+
+    ret
+
+
+
+buffer db 20h,0
+
+       db 20h dup (0)
+
+
+
+db 0eah
+
+optable dw incidx,load,movidx,subacc,stop,output,input,jnzlabel
+
+
+
+;ram!!!
+
+;vector of pointers to real inmediates
+
+ram   db iniMess-ram     ;0
+
+      db imprime-ram     ;1
+
+let_o db 'o'             ;2
+
+      db pass-ram        ;3
+
+      db badtry-ram      ;4
+
+let_u db 'u'             ;5
+
+      db okMess-ram      ;6
+
+      db badMess-ram     ;7
+
+let_l db 'l'             ;8
+
+      db imprime2-ram    ;9
+
+let_r db 'r'             ;10
+
+let_p db 'p'             ;11
+
+
+
+      db 32-12 dup(0)
+
+
+
+   _mov_idx 0
+
+imprime:
+
+   _load
+
+   _sub_acc 10    ;decode message
+
+   _inc_idx
+
+   _output
+
+   _jnz 1         ;must be 'r' terminated, so 'r'-'r'=0 and the loop ends
+
+
+
+   _mov_idx 3
+
+   _input
+
+
+
+   _load			;the algorithm for checking the password is very, very, very, very simple :)
+
+   _sub_acc 8		;well, it really is pure crap
+
+   _jnz 4			;we only compare letter to letter, if not is equal then go_beggar! :)
+
+   _inc_idx
+
+
+
+   _load
+
+   _sub_acc 5
+
+   _jnz 4
+
+   _inc_idx
+
+
+
+   _load
+
+   _sub_acc 11
+
+   _jnz 4
+
+   _inc_idx
+
+
+
+   _load
+
+   _sub_acc 5
+
+   _jnz 4
+
+   _inc_idx
+
+
+
+   _load
+
+   _sub_acc 8
+
+   _jnz 4
+
+   _inc_idx
+
+
+
+   _load
+
+   _sub_acc 2
+
+   _jnz 4
+
+   _inc_idx
+
+
+
+   _mov_idx 6
+
+imprime2:
+
+   _load
+
+   _inc_idx
+
+   _sub_acc 8
+
+   _output
+
+   _jnz 9
+
+   _stop
+
+
+
+badtry:
+
+   _mov_idx 7
+
+   _jnz 9
+
+
+
+pass:
+
+   db 23,93,83,25,73,83,91   ;just some trash
+
+
+
+;we could encode this strings with a irp or irpc macro in tasm, but i¥ve prefered to do it so for the sake
+
+;of clarity, just use a good editor with columns to fill all that. One of my favorites is Boxer 7.5.
+
+iniMess:
+
+    db 0ah + 'r'
+
+    db 0dh + 'r'
+
+    db 's' + 'r'
+
+    db 't' + 'r'
+
+    db 'u' + 'r'
+
+    db 'p' + 'r'
+
+    db '8' + 'r'
+
+    db 'C' + 'r'
+
+    db 'P' + 'r'
+
+    db 'U' + 'r'
+
+    db ' ' + 'r'
+
+    db 'b' + 'r'
+
+    db 'y' + 'r'
+
+    db ' ' + 'r'
+
+    db 'a' + 'r'
+
+    db 'n' + 'r'
+
+    db 'o' + 'r'
+
+    db 'r' + 'r'
+
+    db 'm' + 'r'
+
+    db 'a' + 'r'
+
+    db 'l' + 'r'
+
+    db '/' + 'r'
+
+    db 'k' + 'r'
+
+    db 'i' + 'r'
+
+    db 'd' + 'r'
+
+    db 'e' + 'r'
+
+    db 'r' + 'r'
+
+    db 'g' + 'r'
+
+    db 'a' + 'r'
+
+    db 'r' + 'r'
+
+    db 't' + 'r'
+
+    db 'e' + 'r'
+
+    db 'n' + 'r'
+
+    db ' ' + 'r'
+
+    db '-' + 'r'
+
+    db ' ' + 'r'
+
+    db 'f' + 'r'
+
+    db 'e' + 'r'
+
+    db 'b' + 'r'
+
+    db '-' + 'r'
+
+    db '9' + 'r'
+
+    db '8' + 'r'
+
+    db 0ah + 'r'
+
+    db 0dh + 'r'
+
+    db 'E' + 'r'
+
+    db 'n' + 'r'
+
+    db 't' + 'r'
+
+    db 'e' + 'r'
+
+    db 'r' + 'r'
+
+    db ' ' + 'r'
+
+    db 'p' + 'r'
+
+    db 'a' + 'r'
+
+    db 's' + 'r'
+
+    db 's' + 'r'
+
+    db 'w' + 'r'
+
+    db 'o' + 'r'
+
+    db 'r' + 'r'
+
+    db 'd' + 'r'
+
+    db ':' + 'r'
+
+    db ' ' + 'r'
+
+    db 'r'      ;terminator
+
+
+
+okMess:
+
+    db 0ah + 'l'
+
+    db 0dh + 'l'
+
+    db 'n' + 'l'
+
+    db 'i' + 'l'
+
+    db 'c' + 'l'
+
+    db 'e' + 'l'
+
+    db '!' + 'l'
+
+    db '!' + 'l'
+
+    db '!' + 'l'
+
+    db '!' + 'l'
+
+    db ',' + 'l'
+
+    db ' ' + 'l'
+
+    db 'e' + 'l'
+
+    db 'm' + 'l'
+
+    db 'a' + 'l'
+
+    db 'i' + 'l'
+
+    db 'l' + 'l'
+
+    db ' ' + 'l'
+
+    db 'm' + 'l'
+
+    db 'e' + 'l'
+
+    db ' ' + 'l'
+
+    db 'n' + 'l'
+
+    db 'o' + 'l'
+
+    db 'w' + 'l'
+
+    db '!' + 'l'
+
+    db '!' + 'l'
+
+    db ' ' + 'l'
+
+    db 't' + 'l'
+
+    db 'o' + 'l'
+
+    db ' ' + 'l'
+
+    db 'a' + 'l'
+
+    db 'n' + 'l'
+
+    db 'o' + 'l'
+
+    db 'r' + 'l'
+
+    db 'm' + 'l'
+
+    db 'a' + 'l'
+
+    db 'l' + 'l'
+
+    db '@' + 'l'
+
+    db 'x' + 'l'
+
+    db 'x' + 'l'
+
+    db 'x' + 'l'
+
+    db 'x' + 'l'
+
+    db 'x' + 'l'
+
+    db 'x' + 'l'
+
+    db 'x' + 'l'
+
+    db '.' + 'l'
+
+    db 'c' + 'l'
+
+    db 'o' + 'l'
+
+    db 'm' + 'l'
+
+    db 0ah + 'l'
+
+    db 0dh + 'l'
+
+    db 'l'      ;terminator
+
+
+
+badMess:
+
+    db 0ah + 'l'
+
+    db 0dh + 'l'
+
+    db 'w' + 'l'
+
+    db 'r' + 'l'
+
+    db 'o' + 'l'
+
+    db 'n' + 'l'
+
+    db 'g' + 'l'
+
+    db '!' + 'l'
+
+    db ',' + 'l'
+
+    db ' ' + 'l'
+
+    db 't' + 'l'
+
+    db 'r' + 'l'
+
+    db 'y' + 'l'
+
+    db ' ' + 'l'
+
+    db 'a' + 'l'
+
+    db 'g' + 'l'
+
+    db 'a' + 'l'
+
+    db 'i' + 'l'
+
+    db 'n' + 'l'
+
+    db ' ' + 'l'
+
+    db 'm' + 'l'
+
+    db 'a' + 'l'
+
+    db 'n' + 'l'
+
+    db '!' + 'l'
+
+    db '.' + 'l'
+
+    db '.' + 'l'
+
+    db '.' + 'l'
+
+    db 0ah + 'l'
+
+    db 0dh + 'l'
+
+    db 'l'      ;terminator
+
+
+
+c0de ends
+
+end start
+
+</PRE>
+
+
+
+<HR align="CENTER" color="#800080" noshade>
+
+<BR>
+
+<FONT size="+2"><A name="index3"><U>3. second example: memoCPU</U></A></FONT>
+
+<BR><BR>
+
+&nbsp;&nbsp;&nbsp;&nbsp;Ok. Are you ready for the second example?, open your eyes because this is a bit more complicated than the first one.<BR><BR>
+
+
+
+&nbsp;&nbsp;&nbsp;&nbsp;This cpu is a bit special. It only has memory. No registers. Why?, well, i don¥t know, i just designed so. Call it inspiration or whatever you want.<BR><BR>
+
+
+
+<PRE>
+
+memory
+
+--------
+
+   0ffh bytes
+
+   
+
+   after cpu reset, i.e. at startup, the initial program counter will be 0.
+
+   so we¥ll put our code at beginning of ram.
+
+   
+
+registers
+
+----------
+
+
+
+   sorry, no registers.
+
+   in fact, the only problem will be how to implement indexes, this is solved through the mov opcode.
+
+<HR align="CENTER" color="#800080" noshade>   
+
+opcodes
+
+-------
+
+
+
+ 	   an opcode is 4 bytes long, formed by opcode,param1,param2,next_ip
+
+	
+
+       opcode is the number of the opcode.
+
+	
+
+	   param1, param2 are parameters of the opcode.
+
+	
+
+	   and next_ip??, hehehe, this is feature i added after reading one of the apendixes in the nice
+
+	"The jargon file", a compendium of words related to hacker (sub)culture, read it to get true
+
+	knowledge from the real ancient masters.
+
+		let me explain, next_ip is the position of the next opcode to be executed, eh?, yeah, in the x86 
+
+	architecture, the next opcode is the next after the actual opcode. but my cpu is crazy like rats, so
+
+	it let you to expecify the next opcode. Think a bit on this, we could create a web execution, a
+
+	labyrinth of opcodes, jumping up and down though memory. A total knigtmare for the cracker!!!.
+
+	
+
+		in the examples i haven¥t used this feature, i don¥t want you to get crazy. Just know that
+
+	feature and use it when you want.
+
+	
+
+opcode  pnemonic	param1	param2	 next_ip	meaning
+
+--------------------------------------------------------------------------------
+
+  0		xor  		orig1  ,dorig2  ,next_ip    xors dorig2 with contents of orig1
+
+  2		add  		orig1  ,dorig2  ,next_ip    adds contents of orig1 to dorig2
+
+  4		inp  		dest,  ,cnt     ,next_ip    input cnt bytes from keyboard and put them in dest, 
+
+  												cnt is updated with the number of bytes read
+
+  6		out  		orig   ,nil     ,next_ip    display char in orig
+
+  8		mov  		@orig  ,dest    ,next_ip    movs uses at double indirection, done so to implement
+
+  												indexes, mov contents of address pointed by orig to dest
+
+  a		stp  		nil    ,nil     ,nil        stop cpu
+
+  c		jnz  		orig1  ,next_ip1,next_ip2   if contents of orig1<>0 jmp to ip1 else to ip2
+
+
+
+	i am sure you understood all the opcodes, if not reread them.
+
+	
+
+<HR align="CENTER" color="#800080" noshade>
+
+
+
+	this is the initialization and main loop of the emulator:
+
+	
+
+    sub  eax,eax
+
+    sub  cx,cx
+
+    sub  dx,dx
+
+    mov  si,offset memory	;si will be used like program counter, initially points to position 0
+
+    mov  di,si				;di is used to acces the memory, 
+
+    sub  bx,bx
+
+
+
+nextCycle:
+
+      mov  eax,[si]         ;get opcode from next_ip
+
+      mov  bl,al
+
+      call [bx+offset opcodeTable]
+
+      shr  eax,8            ;the next_ip is in the 1st byte of eax
+
+      mov  si,ax            ;si=next_ip
+
+      add  si,di            ;+initial offset
+
+    jmp  nextCycle
+
+	
+
+
+
+		very simple, just get an opcode in eax, and call the emulation procedure for that opcode.
+
+	after returning from the call, the hi word of eax will be in ax, so shr eax,8 puts the next_ip 
+
+	opcode in al, we put it in si and loop!
+
+	
+
+<HR align="CENTER" color="#800080" noshade>	
+
+
+
+	let¥s see the emulation procedures of each opcode, and the associated table of offsets to them.
+
+	
+
+;emulation procedures ----------------------------------------------------
+
+opXor:
+
+    mov  bl,ah       ;get orig1
+
+    mov  cl,[bx+di]  ;get value of orig1, remember di is always pointing to begining of memory
+
+    shr  eax,16		 ;to get orig2, and next_ip
+
+    mov  bl,al       ;get orig2
+
+xorit:
+
+    xor  [bx+di],cl  ;xor it
+
+ret
+
+
+
+opAdd:
+
+    ;let's do it automodifying the code of opXor
+
+    mov  byte ptr [xorit],bh         ;bh is always 0, 0 is the opcode for add :)
+
+    call opXor
+
+    mov  byte ptr [xorit],30h        ;restore the value of the xor opcode = 30h
+
+ret
+
+
+
+opInp:
+
+    mov  cl,ah                ;get dest
+
+    shr  eax,16
+
+    mov  bl,al
+
+    push bx                   ;saves ptr to maxcnt
+
+    mov  al,[bx+di]           ;get max counter
+
+    mov  maxcnt,al
+
+    mov  dx,offset maxcnt	  ;we¥ll read bytes with int 21h
+
+    push ax
+
+    mov  ah,0ah
+
+    int  21h
+
+    pop  ax
+
+    mov  bl,cl              ;restore dest
+
+    mov  cl,cnt
+
+    mov  si,offset buffer
+
+copy:
+
+    mov  al,[si]			;copy bytes from the x86 memory to memoCPU 
+
+    mov  [bx+di],al
+
+    inc  si
+
+    inc  bx
+
+    dec  cl
+
+    jnz  copy
+
+    pop  bx
+
+    mov  cl,cnt
+
+    mov  [bx+di],cl        ;updates maxcnt
+
+    ret
+
+ret
+
+
+
+opOut:
+
+    mov bl,ah				;nothing interesting here
+
+    mov dl,[bx+di]
+
+    mov ah,02
+
+    int 21h
+
+    shr  eax,16
+
+ret
+
+
+
+opMov:
+
+    mov  bl,ah       		;get orig1
+
+    mov  bl,[bx+di]  		;get pointer to value of orig1
+
+    mov  cl,[bx+di]  		;get value of orig1
+
+    shr  eax,16
+
+    mov  bl,al       		;get orig2
+
+    mov  [bx+di],cl  		;xor it
+
+ret
+
+
+
+
+
+opStp:
+
+    pop  ax                  ;pop the return address to the main loop
+
+ret
+
+
+
+
+
+opJnz:
+
+    mov  bl,ah
+
+    shr  eax,16
+
+    cmp  [bx+di],bh    ;remember bh is always 0, is orig1=0?
+
+    je   not0
+
+    mov  ah,al         ;change the nextip
+
+not0:
+
+ret
+
+
+
+opcodeTable dw offset opXor,offset opAdd,offset opInp,offset opOut
+
+            dw offset opMov,offset opStp,offset opJnz
+
+
+
+<HR align="CENTER" color="#800080" noshade>	
+
+
+
+	this is the protection coded in the assembler of the memoCPU:
+
+	
+
+	the algorithm used is:
+
+							read password
+
+							make hash value of password
+
+							if calculated hash=key
+
+								nice
+
+							else
+
+								go_beggar
+
+
+
+	the hash function is very easy, due to the fact that only one byte is used, the final hash space
+
+	is very reduced, only 255 possible values, so, in theory 1 of each 255 strings will collide to the
+
+	same value, you could test this yourself and see what i mean.
+
+
+
+	i used this program to calculate the hash value:
+
+
+
+code segment
+
+org 100h
+
+assume cs:code,ds:code
+
+
+
+start:
+
+
+
+    mov si,offset pass
+
+next:
+
+      lodsb
+
+      xor var1,al				;first xors every letter of password, from the first to the last one
+
+      or al,al
+
+    jne next
+
+
+
+    std
+
+    dec si
+
+    dec si
+
+next2:
+
+      lodsb						
+
+      add var1,al				;second adds every letter with calculated xor, from last to first
+
+      or al,al
+
+    jne next2
+
+    int 20h
+
+
+
+     db 0
+
+pass db 'password',0
+
+var1 db 0
+
+code ends
+
+end start
+
+<HR align="CENTER" color="#800080" noshade>	
+
+	
+
+	the protection coded in the assembler language of the memoCPU
+
+	
+
+	look carefully in the the data zone for an explanation of all the strange numbers
+
+
+
+buc1:										<THIS is position 0 of memory
+
+   _mov 141,142,4    ;getchar from string
+
+   _xor 143,142,8    ;xorit with key
+
+   _add 145,143,12   ;inc key1
+
+   _out 142    ,16   ;print
+
+   _add 144,140,20   ;dec length
+
+   _add 145,141,24   ;inc ptr
+
+   _jnz 140,0,28     ;if length<>0 repeat
+
+
+
+   _inp 162,146,32   ;get 8max bytes pass
+
+   _mov 158,157,36   ;saves maxcnt
+
+buc2:
+
+   _mov 148,142,40   ;getchar from pass
+
+   _xor 142,149,44   ;xor var2 with var1
+
+   _add 144,146,48   ;dec length pass
+
+   _add 145,148,52   ;inc ptr
+
+   _jnz 146, 36,56   ;if length<>0 repeat
+
+
+
+   _add 144,148,60   ;dec ptr
+
+   _add 144,157,64   ;dec maxcnt2
+
+   _mov 148,142,68   ;get last char from pass
+
+   _add 142,149,72   ;var2+=last char from pass
+
+   _jnz 157, 56,76
+
+
+
+   _add 150,149,80   ;add -result to var2
+
+   _jnz 149, 96,84
+
+yes:
+
+   _mov 160,151,88   ;ptr to st2=ptr to st3
+
+   _mov 159,154,92   ;key3=key2
+
+   _mov 161,152,96   ;length bad=length ok
+
+no:
+
+   _mov 151,142,100  ;getchar
+
+   _xor 154,142,104  ;xorit with key
+
+   _add 145,154,108  ;inc key3
+
+   _out 142    ,112  ;print
+
+   _add 144,152,116  ;dec length
+
+   _add 145,151,120  ;inc ptr
+
+   _jnz 152,96 ,124  ;if length<>0 repeat
+
+   _stp
+
+
+
+; data zone, begins at 140 decimal								
+
+dat db lst1                                   ;140=length of st1
+
+    db (offset st1-offset dat)+140            ;141=ptr to st1
+
+    db 00                                     ;142=var1
+
+    db 'r'                                    ;143=key1
+
+    db 0ffh                                   ;144=-1
+
+    db 1                                      ;145=1
+
+mxc db 8                                      ;146=8
+
+    db 143                                    ;147=143
+
+    db 162                                    ;148=ptr to pass
+
+    db 0                                      ;149=0             ;var2
+
+    db -0f0h                                  ;150=-result
+
+    db (offset st2-offset dat)+140            ;151=ptr to st2
+
+    db lst2                                   ;152=length of st2
+
+    db 'u'                                    ;153=key2
+
+    db 'v'                                    ;154=key3
+
+    db lst3                                   ;155=length of st3
+
+    db (offset st3-offset dat)+140            ;156=ptr to st3
+
+    db 00                                     ;157=maxcnt2
+
+    db (offset mxc-offset dat)+140            ;158=ptr to maxcnt
+
+    db 153                                    ;159=ptr to key2
+
+    db 156                                    ;160=ptr to ptr to st2
+
+    db 155                                    ;161=ptr to length st3
+
+pas db 19,87,83,71,15,23,84,27,89,58          ;162=pass (initializated with garbage)
+
+    db 'apocalypse'                           ;    rest of pass, hehehe
+
+st1 db 0ah xor 'r'                            ;st1 xor key1
+
+<HR align="CENTER" color="#800080" noshade>	
+
+
+
+	okey man, get the point?, hehe
+
+	
+
+	finally the complete listing in assembler, to compile it do a tasm memocpu.asm /m4, tlink /t memocpu
+
+	
+
+	enjoy it!!!
+
+	
+
+;-------------------------------------------------------------------------
+
+;-------------------------------------------------------------------------
+
+; project name: memoCPU
+
+; coder: anormal/kindergarten
+
+; notes: just another CPU emulator designed with protection in mind
+
+;
+
+; ver: 0.001 : Mon 04-06-1998 : initial
+
+; ver: 0.002 : Tue 04-07-1998 : +opcodes & macros
+
+; ver: 0.003 : Wed 04-08-1998 : +emulated code
+
+;                               +start debugging, tons (really) of fixes :)
+
+;                               +and finished :)
+
+;                               *1st working version
+
+; time: 0.001 : 1:15
+
+; time: 0.002 : 0:50
+
+; time: 0.003 : 2:10
+
+;
+
+;
+
+;-------------------------------------------------------------------------
+
+;-------------------------------------------------------------------------
+
+code segment
+
+org 100h
+
+assume cs:code,ds:code
+
+
+
+; opcodes macros
+
+_xor macro orig1,orig2,next_ip
+
+    db   0,orig1,orig2,next_ip
+
+endm
+
+
+
+_add macro orig1,orig2,next_ip
+
+    db   2,orig1,orig2,next_ip
+
+endm
+
+
+
+_inp macro dest,cnt,next_ip
+
+    db   4,dest,cnt,next_ip
+
+endm
+
+
+
+_out macro orig1,next_ip
+
+    db   6,orig1,0,next_ip
+
+endm
+
+
+
+_mov macro orig1,dest,next_ip
+
+    db 8,orig1,dest,next_ip
+
+endm
+
+
+
+_stp macro
+
+    dd 0000000ah
+
+endm
+
+
+
+_jnz macro orig1,ip1,ip2
+
+    db 0ch,orig1,ip1,ip2
+
+endm
+
+;--------------------------------------------------------------------------
+
+start:
+
+.386
+
+    sub  eax,eax
+
+    sub  cx,cx
+
+    sub  dx,dx
+
+    mov  si,offset memory
+
+    mov  di,si
+
+    sub  bx,bx
+
+
+
+nextCycle:
+
+      mov  eax,[si]         ;get opcode from next_ip
+
+      mov  bl,al
+
+      call [bx+offset opcodeTable]
+
+      shr  eax,8            ;the next_ip is in the 1st byte of eax
+
+      mov  si,ax            ;si=next_ip
+
+      add  si,di            ;+initial offset
+
+    jmp  nextCycle
+
+
+
+;emulation procedures ----------------------------------------------------
+
+opXor:
+
+    mov  bl,ah       ;get orig1
+
+    mov  cl,[bx+di]  ;get value of orig1
+
+    shr  eax,16
+
+    mov  bl,al       ;get orig2
+
+xorit:
+
+    xor  [bx+di],cl  ;xor it
+
+ret
+
+
+
+opAdd:
+
+    ;let's do it automodifying the code of opXor
+
+    mov  byte ptr [xorit],bh         ;bh is always 0, 0 is the opcode for add :)
+
+    call opXor
+
+    mov  byte ptr [xorit],30h        ;restore the value of the xor opcode = 30
+
+ret
+
+
+
+opInp:
+
+    mov  cl,ah                ;get dest
+
+    shr  eax,16
+
+    mov  bl,al
+
+    push bx                   ;saves ptr to maxcnt
+
+    mov  al,[bx+di]           ;get max counter
+
+    mov  maxcnt,al
+
+    mov  dx,offset maxcnt
+
+    push ax
+
+    mov  ah,0ah
+
+    int  21h
+
+    pop  ax
+
+    mov  bl,cl              ;restore dest
+
+    mov  cl,cnt
+
+    mov  si,offset buffer
+
+copy:
+
+    mov  al,[si]
+
+    mov  [bx+di],al
+
+    inc  si
+
+    inc  bx
+
+    dec  cl
+
+    jnz  copy
+
+    pop  bx
+
+    mov  cl,cnt
+
+    mov  [bx+di],cl        ;updates maxcnt
+
+    ret
+
+ret
+
+
+
+
+
+opOut:
+
+    mov bl,ah
+
+    mov dl,[bx+di]
+
+    mov ah,02
+
+    int 21h
+
+    shr  eax,16
+
+ret
+
+
+
+opMov:
+
+    mov  bl,ah       ;get orig1
+
+    mov  bl,[bx+di]  ;get pointer to value of orig1
+
+    mov  cl,[bx+di]  ;get value of orig1
+
+    shr  eax,16
+
+    mov  bl,al       ;get orig2
+
+    mov  [bx+di],cl  ;xor it
+
+ret
+
+
+
+
+
+opStp:
+
+    pop  ax                  ;pop the return address to the main loop
+
+ret
+
+
+
+
+
+opJnz:
+
+    mov  bl,ah
+
+    shr  eax,16
+
+    cmp  [bx+di],bh    ;remember bh is always 0
+
+    je   not0
+
+    mov  ah,al         ;change the nextip
+
+not0:
+
+ret
+
+
+
+opcodeTable dw offset opXor,offset opAdd,offset opInp,offset opOut
+
+            dw offset opMov,offset opStp,offset opJnz
+
+
+
+;begin of emulated code --------------------------------------------------
+
+
+
+memory:
+
+buc1:
+
+   _mov 141,142,4    ;getchar from string
+
+   _xor 143,142,8    ;xorit with key
+
+   _add 145,143,12   ;inc key1
+
+   _out 142    ,16   ;print
+
+   _add 144,140,20   ;dec length
+
+   _add 145,141,24   ;inc ptr
+
+   _jnz 140,0,28     ;if length<>0 repeat
+
+
+
+   _inp 162,146,32   ;get 8max bytes pass
+
+   _mov 158,157,36   ;saves maxcnt
+
+buc2:
+
+   _mov 148,142,40   ;getchar from pass
+
+   _xor 142,149,44   ;xor var2 with var1
+
+   _add 144,146,48   ;dec length pass
+
+   _add 145,148,52   ;inc ptr
+
+   _jnz 146, 36,56   ;if length<>0 repeat
+
+
+
+   _add 144,148,60   ;dec ptr
+
+   _add 144,157,64   ;dec maxcnt2
+
+   _mov 148,142,68   ;get last char from pass
+
+   _add 142,149,72   ;var2+=last char from pass
+
+   _jnz 157, 56,76
+
+
+
+   _add 150,149,80   ;add -result to var2
+
+   _jnz 149, 96,84
+
+yes:
+
+   _mov 160,151,88   ;ptr to st2=ptr to st3
+
+   _mov 159,154,92   ;key3=key2
+
+   _mov 161,152,96   ;length bad=length ok
+
+no:
+
+   _mov 151,142,100  ;getchar
+
+   _xor 154,142,104  ;xorit with key
+
+   _add 145,154,108  ;inc key3
+
+   _out 142    ,112  ;print
+
+   _add 144,152,116  ;dec length
+
+   _add 145,151,120  ;inc ptr
+
+   _jnz 152,96 ,124  ;if length<>0 repeat
+
+   _stp
+
+
+
+filler db 140-(offset filler - offset memory) dup (0)
+
+
+
+; begins at 140 decimal
+
+dat db lst1                                   ;140=length of st1
+
+    db (offset st1-offset dat)+140            ;141=ptr to st1
+
+    db 00                                     ;142=var1
+
+    db 'r'                                    ;143=key1
+
+    db 0ffh                                   ;144=-1
+
+    db 1                                      ;145=1
+
+mxc db 8                                      ;146=8
+
+    db 143                                    ;147=143
+
+    db 162                                    ;148=ptr to pass
+
+    db 0                                      ;149=0             ;var2
+
+    db -0f0h                                  ;150=-result
+
+    db (offset st2-offset dat)+140            ;151=ptr to st2
+
+    db lst2                                   ;152=length of st2
+
+    db 'u'                                    ;153=key2
+
+    db 'v'                                    ;154=key3
+
+    db lst3                                   ;155=length of st3
+
+    db (offset st3-offset dat)+140            ;156=ptr to st3
+
+    db 00                                     ;157=maxcnt2
+
+    db (offset mxc-offset dat)+140            ;158=ptr to maxcnt
+
+    db 153                                    ;159=ptr to key2
+
+    db 156                                    ;160=ptr to ptr to st2
+
+    db 155                                    ;161=ptr to length st3
+
+pas db 19,87,83,71,15,23,84,27,89,58          ;162=pass (initializated with garbage)
+
+    db 'apocalypse'                           ;    rest of pass, hehehe
+
+st1 db 0ah xor 'r'                            ;st1[1] xor key1
+
+    db 0dh xor ('r'+01)						  ;st1[2] xor key1+1, etc...
+
+    db 'm' xor ('r'+02)
+
+    db 'e' xor ('r'+03)
+
+    db 'm' xor ('r'+04)
+
+    db 'o' xor ('r'+05)
+
+    db 'C' xor ('r'+06)
+
+    db 'P' xor ('r'+07)
+
+    db 'U' xor ('r'+08)
+
+    db ' ' xor ('r'+09)
+
+    db 'b' xor ('r'+10)
+
+    db 'y' xor ('r'+11)
+
+    db ' ' xor ('r'+12)
+
+    db 'a' xor ('r'+13)
+
+    db 'n' xor ('r'+14)
+
+    db 'o' xor ('r'+15)
+
+    db 'r' xor ('r'+16)
+
+    db 'm' xor ('r'+17)
+
+    db 'a' xor ('r'+18)
+
+    db 'l' xor ('r'+19)
+
+    db '/' xor ('r'+20)
+
+    db 'k' xor ('r'+21)
+
+    db 'i' xor ('r'+22)
+
+    db 'n' xor ('r'+23)
+
+    db 'd' xor ('r'+24)
+
+    db 'e' xor ('r'+25)
+
+    db 'r' xor ('r'+26)
+
+    db 'g' xor ('r'+27)
+
+    db 'a' xor ('r'+28)
+
+    db 'r' xor ('r'+29)
+
+    db 't' xor ('r'+30)
+
+    db 'e' xor ('r'+31)
+
+    db 'n' xor ('r'+32)
+
+    db 0ah xor ('r'+33)
+
+    db 0dh xor ('r'+34)
+
+    db 'E' xor ('r'+35)
+
+    db 'n' xor ('r'+36)
+
+    db 't' xor ('r'+37)
+
+    db 'e' xor ('r'+38)
+
+    db 'r' xor ('r'+39)
+
+    db ' ' xor ('r'+40)
+
+    db 'p' xor ('r'+41)
+
+    db 'a' xor ('r'+42)
+
+    db 's' xor ('r'+43)
+
+    db 's' xor ('r'+44)
+
+    db 'w' xor ('r'+45)
+
+    db 'o' xor ('r'+46)
+
+    db 'r' xor ('r'+47)
+
+    db 'd' xor ('r'+48)
+
+    db ':' xor ('r'+49)
+
+    db ' ' xor ('r'+50)
+
+    lst1 = $-offset st1
+
+st2 db 0ah xor 'v'                            ;1xx=st2 xor key3
+
+    db 0dh xor ('v'+01)
+
+    db 'B' xor ('v'+02)
+
+    db 'a' xor ('v'+03)
+
+    db 'd' xor ('v'+04)
+
+    db '!' xor ('v'+05)
+
+    db '!' xor ('v'+06)
+
+    lst2 = $-offset st2
+
+st3 db 0ah xor ('u')                            ;1xx=st2  xor key2
+
+    db 0dh xor ('u'+01)
+
+    db 'G' xor ('u'+02)
+
+    db 'o' xor ('u'+03)
+
+    db 'o' xor ('u'+04)
+
+    db 'd' xor ('u'+05)
+
+    db '!' xor ('u'+06)
+
+    db '!' xor ('u'+07)
+
+    lst3 = $-offset st3
+
+;end of emulated code ----------------------------------------------------
+
+
+
+maxcnt db 12                    ;this 12 don¥t means nothing is just some trash
+
+cnt    db 82                    ;more trash
+
+buffer db 'heavensfacility'     ;more trash, hehehe, nice for lamers
+
+
+
+code ends
+
+end start
+
+</PRE>
+
+
+
+<BR>
+
+<HR align="CENTER" color="#800080" noshade>
+
+<BR>
+
+<FONT size="+2"><A name="index4"><U>4. closing words: greetings, stupid things, etc...</U></A></FONT>
+
+<BR><BR>
+
+
+
+&nbsp;&nbsp;&nbsp;&nbsp;Some final words:<BR><BR>
+
+
+
+&nbsp;&nbsp;&nbsp;&nbsp;I only expect that some of this notes could serve to anyone :).
+
+
+
+&nbsp;&nbsp;&nbsp;&nbsp;First of all i want to give thanks to solar_designer, for giving me hi file hackme.com (the one and only intelligent, original and portable crackme!!). This is the best "clever" protection scheme i¥ve seen in many time. This file,hackme.com, is a TRUE hardwork, a cpu emulated with NOR gates.<BR><BR>
+
+&nbsp;&nbsp;&nbsp;&nbsp;Hey solar!!: wherever you are, thanks!.<BR><BR>
+
+
+
+&nbsp;&nbsp;&nbsp;&nbsp;Second, i want to give thanks to fravia for maintaining so astounding site, he has done of the HCU project a reality.<BR><BR>
+
+
+
+&nbsp;&nbsp;&nbsp;&nbsp;I also want to greets to lord_byte for the initial testx series, the guys at #cracking, #ucf200, #pc, #revolt. Even when 80% all them are just a bunch of arrogant inmature kids... :)<BR><BR>
+
+
+
+&nbsp;&nbsp;&nbsp;&nbsp;ejemm... enough greets... <BR><BR>
+
+
+
+&nbsp;&nbsp;&nbsp;&nbsp;If you have better ideas than myself (this is very easy), then write an essay and send it to fravia, @:]<BR><BR>
+
+&nbsp;&nbsp;&nbsp;&nbsp;Finally, a stupid poem:<BR>
+
+
+
+<FONT size="+1" color="#000080"><BR>&nbsp;&nbsp;&nbsp;&nbsp;Soul nopper</FONT>
+
+<BR>
+
+<BR>&nbsp;&nbsp;&nbsp;&nbsp;NOPS in the middle of your code,
+
+<BR>&nbsp;&nbsp;&nbsp;&nbsp;suddenly a 75h becomes a EBh,
+
+<BR>&nbsp;&nbsp;&nbsp;&nbsp;INTs 1, 0CChs, SMIs in my screen,
+
+
+
+<BR>
+
+<BR>&nbsp;&nbsp;&nbsp;&nbsp;all i can afford, all i can forget,
+
+<BR>
+
+<BR>&nbsp;&nbsp;&nbsp;&nbsp;the ctrl+d firing the ice in the bus...
+
+<BR>&nbsp;&nbsp;&nbsp;&nbsp;the F12 PRETing until the end of the world ...
+
+<BR>&nbsp;&nbsp;&nbsp;&nbsp;the BMSG shouting your voices...
+
+
+
+<BR>
+
+<BR>&nbsp;&nbsp;&nbsp;&nbsp;and the only thing i can't crack...
+
+<BR>
+
+<BR>&nbsp;&nbsp;&nbsp;&nbsp;the scent you left behind,
+
+<BR>&nbsp;&nbsp;&nbsp;&nbsp;it's so long to XT, so long to BPM R,
+
+<BR>&nbsp;&nbsp;&nbsp;&nbsp;<CODE>IF</CODE> i BPIO 378h <CODE>THEN</CODE> you will hang.
+
+<BR>
+
+<BR>&nbsp;&nbsp;&nbsp;&nbsp;so,
+
+<BR>
+
+<BR>&nbsp;&nbsp;&nbsp;&nbsp;my dreams and your smile,
+
+<BR>&nbsp;&nbsp;&nbsp;&nbsp;my screen and your traps,
+
+<BR>&nbsp;&nbsp;&nbsp;&nbsp;dust in the wind, clouds in the sky.
+
+<BR>
+
+<BR>
+
+<I>(booarrrgg: you can vomit now :)</I><BR><BR>
+
+
+
+<HR align="CENTER" color="#800080" noshade>
+
+<BR>
+
+&nbsp;&nbsp;&nbsp;&nbsp;You can reach me at <A href="javascript:if(confirm('http://129.105.116.5/fravia/rvu@bigfoot.com  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://129.105.116.5/fravia/rvu@bigfoot.com'" tppabs="http://129.105.116.5/fravia/rvu@bigfoot.com">anormal1@yahoo.com</A><BR>
+
+<BR>
+
+<HR align="CENTER" color="#800080" noshade>
+
+<BR>
+
+&copy; all rights reserved anormal/kindergarten, 1998.<BR>
+
+Release to the public domain for free use and abuse to all cracking community, you could not use portions, or full algorithms of this page for commercial applications without written permission. Microsoft could buy a license to use this schemes in its products after paying to me, the author, a license of $1,000,000. Hey billy, thanks for all the blue screens.<BR>
+
+</BODY>
+
+</HTML>
+
+
+

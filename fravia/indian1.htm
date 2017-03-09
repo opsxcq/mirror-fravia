@@ -1,0 +1,672 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>indian1.htm</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+<CENTER><FONT size="+3">BEGINNERS: Slowly cracking a paranoid protection</FONT>
+
+<BR>(The importance of a methodological approach and an 'hidden file' scheme)<BR>
+
+  <BR>
+
+    
+
+
+
+<H4>by Indian_Trail<BR> 
+
+<BR>
+
+(20 November 1997)</H4>
+
+<HR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">Courtesy of fravia's page 
+
+of reverse engineering<BR>
+
+<BR><I>Well, a very interesting lesson for beginners: serial, time, CRC... a nasty little protection scheme on a completely useless target. I may add that some of the 'minor' shareware games offer very interesting overprotections: some of these shareware authors have devised count downs, smearing techniques, annoying nags all over the place in order to protect programs that nobody in his right mind would ever come to the idea to use (not to mention the idea to register them). This is GOOD: beginners are well advised to buy a couple of magazine cd-roms with MANY of these pathetically programmed 'readers contributions'... they will have a LOT of crack material for next to nothing. For beginners there is nothing better, to flex reversing muscles, than these tiny overprotected programs :-)</I></CENTER><HR size="6"> 
+
+<PRE>
+
+<FONT size="+2">
+
+Slowly cracking a paranoid protection 
+
+</FONT>
+
+
+
+Serial numbers are very easy to crack. this is well known by most
+
+programmer so therefore they do everything they can do bore the cracker
+
+to death, making him fall asleep before he has fished anything. New
+
+shareware programs also utilize time limits more than serial number and
+
+some have hidden the registration dialogue so it must be enabled before
+
+registering the program. 
+
+
+
+A friend asked me if I could crack a game for him that was protected
+
+with a username/regcode protection and it turned out to be quite
+
+an overbloated protection scheme, with a lot of string altering. 
+
+I used another approach than the usual bpx GetDlgItemText. 
+
+This method is very logical, yet it can take a while, for the beginners 
+
+among you, to figure out that you can use other approaches.
+
+
+
+The Target is Sink Sub Pro written by Anders Wihlborg. 
+
+Available from: 
+
+
+
+<A href="javascript:if(confirm('http://www.gamesdomain.ru/directd/pc/windows/arcade/sspro.html  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.gamesdomain.ru/directd/pc/windows/arcade/sspro.html'" tppabs="http://www.gamesdomain.ru/directd/pc/windows/arcade/sspro.html">http://www.gamesdomain.ru/directd/pc/windows/arcade/sspro.html</A> 
+
+
+
+This is a simple (but quite fun) arcade game where you shall sink
+
+submarines with a Swedish patrol boat. It doesn't offer deadly graphic
+
+but it's a nice waste of time.
+
+
+
+ The first thing we'll do is to run sink sub and look for clues. A nag
+
+screen pops up in the beginning reminding us of registering the
+
+software. It also tells us that we can &quot;Evaluate&quot; sink sub for 30 days.
+
+Here we have two buttons one is OK and the other one is Register. We
+
+press ok for now. Lets look in the help file. Here we can read that it
+
+besides the time limit also have disabled some levels. If we pay for our
+
+license we can play 50 levels and get the highest rank. Its also says
+
+under registering that we will receive a code based on our name after we
+
+have paid our license, that will unlock the crippled features. 
+
+
+
+
+
+Before we proceed we must know some basics about debugging windows. In
+
+dos we had interrupts that we put breakpoints on in windows we have API
+
+function which we can breakpoint on. This means that we'll have to study
+
+the Windows API reference to know what we can breakpoint on. If you have
+
+any compiler for windows programming like Borland's C++ or Microsoft
+
+Visual C++ you probably already have it. If you dont It's available from
+
+the net AND from Micro$oft's Homepage. 
+
+
+
+
+
+Lets Register this Game:
+
+
+
+As you can see when you choose register you are given two dialog boxes.
+
+One for your name and one for your regcode. When we press ok the text we
+
+entered in these boxes are passed to windows by some API function. A
+
+quick glimpse in the API Reference we find that Getdlgitemtext(A) and
+
+getwindowtext(A) can be used for that purpose. The (A) is used for 32Bit
+
+programs. Sink Sub is 16Bit. OK let enter Softice and put a breakpoint
+
+on Getdlgitemtext. If this doesn't work we will try getwindow text,
+
+should that fail too we could try HmemCpy. Just study the API Reference
+
+all you questions will be answered. 
+
+
+
+Bpx getdlgitemtext
+
+
+
+As you read in the API REF some parameters are passed to getdlgitemtext
+
+one of them is the address of the buffer where the text are passed. Enter
+
+some words in the Name Box and some numbers in the Regcode box. Now when
+
+Softice breaks we will be in the GetDlgItemText function to get out of
+
+it we press f11. 
+
+
+
+6A65                   push 0065
+
+16                     push ss
+
+8D46D4                 lea ax, [bp-2C]		;Username Stored Here
+
+50                     push ax
+
+6A28                   push 0028
+
+9AFFFF0000             call USER.GETDLGITEMTEXT
+
+57                     push di			;Ice pops up Here!!
+
+6A66                   push 0066
+
+16                     push ss
+
+8D46C0                 lea ax, [bp-40]		;Reg code Stored Here
+
+50                     push ax
+
+6A14                   push 0014
+
+9AFFFF0000             call USER.GETDLGITEMTEXT
+
+16                     push ss
+
+68FD09                 push 09FD
+
+16                     push ss
+
+68B002                 push 02B0
+
+16                     push ss
+
+8D46D4                 lea ax, [bp-2C]
+
+50                     push ax
+
+16                     push ss
+
+68FE56                 push 56FE
+
+
+
+As you see you'll need to scroll up a bit to see the parameter passed to
+
+GetDlgItemText. Now dump the address where the regcode is stored.
+
+
+
+D bp-40
+
+
+
+You should see your code. The normal approach would be to breakpoint on
+
+that adress and see what's done with it and look for the real serial
+
+number that the computer calculated for us. That approach is what I call
+
+'Serialnumber fishing'. We could try that approach. Here's what happens.
+
+
+
+
+
+Our code is copied from ds:7B40 to ds:7A9C
+
+Our code is changed from numbers to letters by a routine which writes the
+
+new calculated code at ds:7A9C
+
+The length is calculated at least five times.
+
+The new code consisting of letters are changed to a new number
+
+etc
+
+etc
+
+
+
+I personally got bored to death using this method. You'll grow old and
+
+ugly before you'll get to the compare where the real serial number is
+
+displayed. There are at least four different codes made from our input
+
+which is being transferred all over the town and the length of every code
+
+is being calculated at least three times. I'm kinda lazy and eager to
+
+crack this program. when I have cracked it I can relax and study the
+
+protection and break it down to pieces, but until then I just want to
+
+overview the scheme to get a hum of what is going on. I think that the
+
+author did this to confuse the cracker and make him bored. Guess what he
+
+succeeded. what we see here is the two locks on the front door, lets see
+
+if the backdoor is open.
+
+
+
+
+
+Disable all breakpoints and you'll be staring at messagebox telling you
+
+that you have entered an invalid serial number. Aha! That's the programmer's
+
+mistake (as you are about to see). Lets put a breakpoint on the API
+
+function MESSAGEBOX. Enter some new values in the boxes and press ok.
+
+Softice pops up in the API function MESSAGEBOX step out of it and scroll
+
+up a bit 'til you see this.
+
+
+
+56                     push si
+
+16                     push ss
+
+68BF11                 push 11BF	;Registration Failed.....
+
+16                     push ss
+
+683E12                 push 123E	
+
+6A10                   push 0010
+
+9AFFFF0000             call USER.MESSAGEBOX
+
+EB1A                   jmp 382D
+
+
+
+
+
+
+
+If you dump ss:11BF you'll see the message the Messagebox told us. As
+
+you can see there is a lot of messagebox functions. Here is the whole
+
+routine:
+
+
+
+9AFFFF0000             call USER.DIALOGBOX
+
+0BC0                   or ax, ax
+
+7466                   je 382D
+
+833E4A5600             cmp word ptr [564A], 0000 ;A Flag
+
+7412                   je 37E0			 ; correct code entered if 
+
+56                     push si			 ; jump to beggar off
+
+16                     push ss
+
+68DD10                 push 10DD
+
+16                     push ss
+
+681E11                 push 111E		;Registration Successful
+
+6A40                   push 0040
+
+9AFFFF0000             call USER.MESSAGEBOX
+
+EB4D                   jmp 382D
+
+6A09                   push 0009
+
+E8DFDE                 call 16C4
+
+83C402                 add sp, 0002
+
+833E485600             cmp word ptr [5648], 0000
+
+7412                   je 3801
+
+56                     push si
+
+16                     push ss
+
+683811                 push 1138
+
+16                     push ss
+
+68A911                 push 11A9
+
+6A10                   push 0010
+
+9AFFFF0000             call USER.MESSAGEBOX
+
+EB2C                   jmp 382D
+
+56                     push si
+
+16                     push ss
+
+68BF11                 push 11BF
+
+16                     push ss
+
+683E12                 push 123E
+
+6A10                   push 0010
+
+9AFFFF0000             call USER.MESSAGEBOX
+
+EB1A                   jmp 382D  ;Here's where you 	land
+
+Look at this. A flag is compared with 0. If the value at [564A] is not
+
+zero we will get alot of evil messsages. Alright Lets see where this
+
+flag is set.
+
+
+
+BPMB SS:564A
+
+
+
+We will land here:
+
+
+
+		       lea ax, [bp-48]	;Our code
+
+50                     push ax
+
+16                     push ss
+
+8D46A4                 lea ax, [bp-5C]	;correct code
+
+50                     push ax
+
+9AFFFF0000             call USER.LSTRCMPI ;who could have figured?
+
+F7D8                   neg ax		  ; returns zero if match
+
+1BC0                   sbb ax, ax
+
+40                     inc ax
+
+A34A56                 mov [564A], ax
+
+833E4A5600             cmp word ptr [564A], 0000
+
+7403                   je 1D50
+
+E99400                 jmp 1DE4
+
+
+
+Look what we found! An echo of the correct Code (HIP HIp HURRAY). Isn't
+
+this 
+
+odd. A programmer that tries so hard to confuse the cracker by coping
+
+and altering our input string and then he use A simple LSTRCMPI function
+
+to determine if our strings are correct. I Must admit I never thought he
+
+could be that Stupid. It could perhaps be that He never thought we would 
+
+try a bpx LSTRCMPI. Well Well... you learn as long as you live. 
+
+Let's try to use the correct code as regcode. 
+
+I was as surprised as you, it doesn't work.
+
+Hmmn!
+
+
+
+Let us put a breakpoint on the line above call USER.LSTRCMPI. Run anew
+
+and see what [bp-48] is.
+
+
+
+D bp-48
+
+
+
+Strange it's our fake code, but we entered the correct code. Ok lets
+
+change the Neg AX and SBB AX to NOP's. I know it's not a good idea to
+
+use NOP's but we are just doing it to check if we get registered.
+
+There's probably some mirror checks so lets keep our BPMB ss:564A. As
+
+you'll discover there are six mirrors check, just change the NEG AX and
+
+SBB AX,AX where needed and continue execution.  Look we got registered. 
+
+So lets change  the exe file.
+
+
+
+When you try to run the patched file you'll get an evil message that
+
+claims one of sspro files has been damaged. Where did he get that
+
+from??!??. Oh well it seems that there is a patch check as well that has
+
+to be cracked. Man this programmer must be paranoid.  Oh well lets go to
+
+work.
+
+
+
+BPX on MessageBox. Here is where you'll land:
+
+
+
+55                     push bp
+
+8BEC                   mov bp, sp
+
+FF7604                 push word ptr [bp+04]
+
+16                     push ss
+
+684460                 push 6044
+
+16                     push ss
+
+68824C                 push 4C82
+
+6A10                   push 0010
+
+9AFFFF0000             call USER.MESSAGEBOX
+
+C606446000             mov byte ptr [6044], 00 ;We are here (after F11)
+
+5D                     pop bp
+
+C3                     ret
+
+
+
+So this was a small routine and it must be called from somewhere. We
+
+trace further and proceed with ret. 
+
+
+
+56                     push si
+
+E8CD0D                 call 1431	;????
+
+83C402                 add sp, 0002
+
+0BC0                   or ax, ax
+
+7538                   jne 06A3		;well if ax is non zero we skip the
+
+16                     push ss		;error routine
+
+687903                 push 0379
+
+E84EB0                 call B6C0
+
+83C404                 add sp, 0004
+
+6A00                   push 0000
+
+E82AB0                 call B6A4	;display error message
+
+83C402                 add sp, 0002
+
+
+
+
+
+As you see we have a JNZ after a call 1431. If ax is zero we get the
+
+error message. Lets take a look at the call 1431. The first conditional
+
+jump is right after a call, very suspicious.
+
+
+
+E85A1E                 call 32B3
+
+0BC0                   or ax, ax
+
+7504                   jne 1461	;ax non zero and we are good guys
+
+33C0                   xor ax, ax
+
+EB79                   jmp 14DA	;this jump takes us out of the 				                      ;routine without setting AX to 0001
+
+The JNZ 1461 make us leave the routine with ax set to 0001. This is
+
+good, lets invert that jump, change it to a JMP 1461. And let the
+
+program run. Wow it worked we didn't get the error message and we are
+
+registered. 
+
+
+
+Ok now I am Relaxed, now I can go for a correct serial number and see why
+
+it didn't work. I'll spare you unnecessarily code. What I did was that
+
+I put a breakpoint on bp-48 which was the address where our input was
+
+stored for the LSTRCMPI. 
+
+I found out That it got that code from a file in my window directory 
+
+called queparam.inf. 
+
+Looking at that file with a texteditor I saw the first change from 
+
+my input to letters (the first altering with the input code). 
+
+So I simply erased that code in queparam.inf. 
+
+Changed back sspro.exe to an uncracked file and tried again to register 
+
+it with the serial number found at bp-5C. 
+
+It worked fine.  
+
+Greetings and thanks to the +HCU and +ORC
+
+</PRE>
+
+<FONT color="green">(c) Indian_Trail 1997. All rights reversed</FONT>
+
+<HR ALIGN="CENTER" WIDTH="100%" SIZE="3">
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</I></CENTER>
+
+<BR><CENTER>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut CGI-scripts</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering legal?</A></CENTER>
+
+<CENTER><HR ALIGN="CENTER" WIDTH="100%" SIZE="2"></CENTER>
+
+</BODY>
+
+</HTML>
+

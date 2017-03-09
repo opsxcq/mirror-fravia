@@ -1,0 +1,1308 @@
+<HTML>
+
+<HEAD>
+
+<META Name="Voluntary Content Rating" content="great!">
+
+
+
+
+
+<TITLE>hutquest.htm  THE QUEST: Building the launch pad</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR=#C0C0C0 TEXT=#001010 VLINK=#405040>
+
+<CENTER><A href="papers.htm" tppabs="http://www.anticrack.de/fravia/papers.htm"><IMG SRC="papers.gif" tppabs="http://www.anticrack.de/fravia/papers.gif" ALT="papers" ALIGN=BOTTOM WIDTH=114 
+
+EIGHT=43 BORDER=0 VSPACE=0 HSPACE=0></A><BR><FONT color=gray>+HCU papers</FONT>
+
+
+
+<HR>
+
+courtesy of fravia's page of reverse engineering<BR><BR>
+
+
+
+
+
+"<FONT color=purple>Here is where your feet touch the ground, the connection between the API
+
+ level code that you have written and how it looks in assembler notation.
+
+ As it is your copyright code, you can do what you like with it, hack it,
+
+ edit it in HEX or more importantly, learn from it</FONT>"
+
+</CENTER>
+
+<HR size=6>
+
+<PRE>   SLH
+
+
+
+
+
+
+
+> THE QUEST
+
+>
+
+> Building the launch pad
+
+>
+
+> Popular legend tells us that Richard the Lionheart undertook a quest to
+
+> free the Holy Lands of infidels who were threatening the Holy City yet the
+
+> annals of history tell us a different story.
+
+>
+
+> After plundering his way through the eastern end of the Meditteranean, he
+
+> joined others who were conducting a seige on the city of Acra. When the
+
+> city eventually fell, Richard held the survivors to ransom and did a deal
+
+> for payment of the ransom and the possession of a religious relic called
+
+> the "True Cross".
+
+>
+
+> When the ransom did not arrive on time, Richard had the 2700 survivors
+
+> massacred without regard to the difficulties in raising the ransom or the
+
+> agreement that he had made with his opponent, the revered Salah al-Din.
+
+>
+
+> History shows us that Salah al-Din (Saladin) eventually freed the area of
+
+> the barbarians who had occupied the country for about eighty years and was
+
+> perhaps the only one who ever took possession of Jerusalem that did not
+
+> leave the place knee deep in dead bodies.
+
+>
+
+> Legend has it that Salah al-Din used to drag the relic through the streets
+
+> as revenge for the massacre of the survivors of Acra. The programmer who
+
+> comes looking for the lost power of low level tools also undertakes a quest
+
+> that is demanding and subject to the distortions of popular legend.
+
+>
+
+> Popular legend has it that you no longer need to use low level tools and
+
+> techniques to write software, just know how to use a mouse to draw your
+
+> interface and know how to paste the right bit of example code into the
+
+> right window and you have a program that will compile just by pushing the
+
+> button.
+
+>
+
+> The problems from this approach are twofold, it works OK but the things
+
+> that can be done that way are of little use without having to write extra
+
+> code and it is here where these RAD environments often fall down. The other
+
+> of course is the size of compiled file before it has any application code
+
+> written into it.
+
+>
+
+> The best available tools to undertake the quest are the compilers that are
+
+> still available from different vendors.
+
+>
+
+> Both Microsoft and Borland have genuine C compilers hidden beneath the GUI
+
+> front ends. VB users will have to look to a small Californian company called
+
+> Power Basic for a basic compiler called PBDLL50 that has enough grunt to do
+
+> the job.
+
+>
+
+> While all of the compilers mentioned will write inline assembler, the
+
+> capacity to write direct API front ends is an area where any decent
+
+> compiler earns its living in 32 bit windows. The other thing that is
+
+> imperative is the 12 meg M$ helpfile called WIN32.HLP. Its sheer size tends
+
+> to make it a conceptual nigthtmare but it where the action is in APIs.
+
+>
+
+> This presents some difficulty for programmers with a different background
+
+> to C as windows APIs are fundamentally C function calls. With the compilers
+
+> available, C works with APIs as native functions and the dialect of basic
+
+> has the correct data types to do the same.
+
+>
+
+> Programming in direct APIs is a very efficient way to write code in terms of
+
+> both size and speed so in this area there is not much reason to write the
+
+> call directly in assembler, this comes when you are writing application
+
+> code.
+
+>
+
+>   A common function like,
+
+>
+
+>   rv = SendMessage( hWnd, WM_PAINT, hDC, 0)
+
+>
+
+>   is translated to something like,
+
+>
+
+>         push 0
+
+>         push hDC
+
+>         push WM_PAINT
+
+>         push hWnd
+
+>         call SendMessage
+
+>         mov  rv, eax
+
+>
+
+>   by most compilers.
+
+>
+
+> Noting the reverse order of parameter passing with STDCALL which pushes the
+
+> last parameter first back down to the first parameter last so that when the
+
+> call arrives down in the guts of M$ in noddy land (Win Doze) the parameters
+
+> are popped of the stack in the right order.
+
+>
+
+> Operating system overview.
+
+> ~~~~~~~~~~~~~~~~~~~~~~~~~
+
+> In comparison to 16 bit windows, Win 95 has actually simplified similar
+
+> capacity coding. There is no longer any need for the multi-instance code at
+
+> startup as this is handled by the operating system. There are additional
+
+> styles that can be used by calling the extended version of CreateWindowEx
+
+> which frame the client area without the need to write a graphics routine
+
+> to do it.
+
+>
+
+> To provide the operating system with the services needed to do the
+
+> additional interface design, there are additional functions that did not
+
+> exist in the old version that make interface design much easier for the
+
+> application programmer.
+
+>
+
+> The stumbling block for most contemplating an API front end is the startup
+
+> code necessary to get it going. There is a simple solution to the problem,
+
+> cheat, have a look around in the samples directory that came with the
+
+> compiler for a project with a name something like GENERIC or HELLOWIN or
+
+> whatever you can find.
+
+>
+
+> For the basic gang, there is a generic template attached at the end of this
+
+> document that does the same thing. Particularly for those with a basic
+
+> background, using a compiler simplifies the API calls that you will make.
+
+>
+
+> With a windows header file loaded, all of the API calls can be made without
+
+> the usual messing around associated with declarations in VB.
+
+>
+
+> Hatching the plot
+
+> ~~~~~~~~~~~~~~~~~
+
+> A WinMain function is different to other functions that you write, you don't
+
+> call it, windows does. It supplies the function parameters to the
+
+> application for its internal use.
+
+> ---------------------------------------------------------------------------
+
+> int WINAPI WinMain(HINSTANCE hInstance,      // handle to current instance
+
+>                    HINSTANCE hPrevInstance,  // unused parameter in win 95
+
+>                    LPSTR lpCmdLine,          // pointer to command line
+
+>                    int nCmdShow);            // show state of window
+
+> {
+
+>   code ...
+
+>   code ...
+
+>   code ...
+
+>     return (msg.wParam);
+
+> }
+
+> ---------------------------------------------------------------------------
+
+> Don't be concerned about the names of the data types, if you look in the
+
+> windows header file, the four data types are defined as DWORD, DWORD, DWORD
+
+> & DWORD. Takes a lot of the mystery out of it. The important thing is to
+
+> know the size of the data and to use the types that the compiler requires.
+
+>
+
+> The next function is another that you do not call, it is the WndProc
+
+> function. You advise windows where its address is and windows sends the
+
+> messages that are associated with the window to it. No prizes for guessing
+
+> the data sizes for the four parameters passed to it, DWORD, DWORD, DWORD &
+
+> DWORD. Even though the third parameter is called [ wParam ] it is 4 bytes
+
+> long, a 32 bit DWORD size data type.
+
+> ---------------------------------------------------------------------------
+
+> LRESULT CALLBACK WndProc(HWND hWnd, UINT message,
+
+>                          WPARAM wParam, LPARAM lParam)
+
+>
+
+>         switch (message) {
+
+>                 case WM_COMMAND:   etc .......
+
+>
+
+>
+
+>     return (DefWindowProc(hWnd, message, wParam, lParam));
+
+> ---------------------------------------------------------------------------
+
+> This function gives you the capacity to intercept messages as they are
+
+> being sent to the window and respond according to your application's
+
+> requirements. Any that you do not need to touch are passed back to windows
+
+> which does the default processing for you.
+
+>
+
+> The rest of building your launch pad for miniature skyrocket applications
+
+> is simply a matter of calling the right set of functions. From your header
+
+> file, you set up a WNDCLASSEX data type in whatever you language requires,
+
+>
+
+>   in C,
+
+>     WNDCLASSEX  wc;
+
+>
+
+>   in basic,
+
+>     LOCAL wc as WndClassEx
+
+>
+
+>   and you put the following in your WinMain function. This creates a CLASS
+
+> for your window that is needed by the CreateWindow function.
+
+>
+
+> The example below is in Basic.
+
+> ---------------------------------------------------------------------------
+
+>     szClassName      = "My_Launch_Pad_Class"
+
+>
+
+>     wc.cbSize        = SIZEOF(wc)
+
+>     wc.style         = %CS_HREDRAW or %CS_VREDRAW or _
+
+>                        %CS_BYTEALIGNCLIENT or %CS_BYTEALIGNWINDOW
+
+>     wc.lpfnWndProc   = CODEPTR(WndProc)
+
+>     wc.cbClsExtra    = 0
+
+>     wc.cbWndExtra    = 0
+
+>     wc.hInstance     = hInstance
+
+>     wc.hIcon         = LoadIcon(hInstance,"BIGICON")
+
+>     wc.hCursor       = LoadCursor(%NULL,ByVal %IDC_ARROW)
+
+>     wc.hbrBackground = GetStockObject(%LTGRAY_BRUSH)
+
+>     wc.lpszMenuName  = %NULL
+
+>     wc.lpszClassName = VarPtr(szClassName)
+
+>     wc.hIconSm       = LoadIcon(hInstance,"SMALLICO")
+
+> ---------------------------------------------------------------------------
+
+>
+
+> The [ wc.lpfnWndProc ] member of the WNDCLASSEX structure is where you tell
+
+> windows where your message handling function is. In C it is written,
+
+>
+
+>         wc.lpfnWndProc = (WNDPROC)WndProc;
+
+>
+
+> Next you register the class,
+
+>
+
+>         return RegisterClass(&wc);
+
+>
+
+> then you create your window. ( In Basic )
+
+>
+
+>   hWnd = CreateWindowEx(%WS_EX_OVERLAPPEDWINDOW, _
+
+>                         szClassName, _           ' window class name
+
+>                         ByCopy DisplayName$, _   ' window title
+
+>                         %WS_OVERLAPPEDWINDOW, _  ' window style
+
+>                         Sw&\2-(Wid&\2), _        ' initial x position
+
+>                         Sh&\2-(Hgt&\2), _        ' initial y position
+
+>                         Wid&, _                  ' initial x size
+
+>                         Hgt&, _                  ' initial y size
+
+>                         %NULL, _                 ' parent window handle
+
+>                         %NULL, _                 ' window menu handle
+
+>                         hInstance, _             ' program instance handle
+
+>                         ByVal %NULL)             ' creation parameters
+
+>
+
+> Load your menu from the resource file and set it as the windows menu,
+
+>
+
+>     hMnu&=LoadMenu( hInstance,"MENU1")
+
+>     SetMenu hWnd, hMnu&
+
+>
+
+> Display the window, ( C )
+
+>
+
+>     ShowWindow(hWnd, nCmdShow); // nCmdShow will be a constant like SW_SHOW
+
+>     UpdateWindow(hWnd);
+
+>
+
+>   and all you have left to do is the message loop.
+
+>
+
+>         while (GetMessage(&msg, NULL, 0, 0))
+
+>             {
+
+>             TranslateMessage(&msg);
+
+>             DispatchMessage(&msg);
+
+>             }
+
+>
+
+> This is where your app will keep returning until your app sends a WM_QUIT
+
+> message to the window. GetMessage() will then return 0 and the application
+
+> will exit the loop. This is done with the PostQuitMessage() function.
+
+>
+
+> The rest is basic housekeeping, produce your resources and compile them with
+
+> a resource compiler. Some languages come with resource editors that make
+
+> this task reasonably easy so check out the documentation with your compiler.
+
+>
+
+> The things that can go wrong are simple things like having the wrong IDs
+
+> for the resources or menu functions, having the wrong address for the
+
+> WndProc function will almost certainly cause a GP fault if it gets past the
+
+> compiler. Win Doze does not like it if you tell it the wrong address to pass
+
+> messages to and sends them to the wrong place resulting in a CRASH.
+
+>
+
+> As always, be careful with the data types, you can sometimes get away with
+
+> a blunder but it may come back and haunt you further down the track where
+
+> it is much harder to find.
+
+>
+
+> Compile it and it should turn into an executable of about 10k. This will
+
+> vary depending on the compiler but that is about the size of a bare front
+
+> end written in APIs. Make sure you turn off the debug options in your
+
+> compiler to compile this test piece or it will be much larger.
+
+>
+
+> There is good reason to hone this template up into a well optimised piece
+
+> of code as you will get to see it many times in your later developments.
+
+>
+
+> Knowing how to do the adjustments will give you full advantage of the extra
+
+> work that you have done in getting it to work.
+
+>
+
+> The window style WS_OVERLAPPEDWINDOW is a general purpose sizable window
+
+> with a system menu, a minimise button and a maximise button. When you need
+
+> other combinations for a window style, you refer to either CreateWindow or
+
+> CreateWindowEx in the big M$ help file and look up the list of styles.
+
+>
+
+> There is a very elegant method of combining these styles, instead of some
+
+> messy pile of parameters, you "or" the styles together and pass them as a
+
+> single parameter.
+
+>
+
+> If you need a different style you would write the code as follows,
+
+>
+
+> WS_VISIBLE | WS_BORDER | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX
+
+>
+
+> In basic you use,
+
+>
+
+> %WS_VISIBLE or %WS_BORDER or %WS_CAPTION or %WS_SYSMENU or %WS_MINIMIZEBOX
+
+>
+
+> If a list starts to get very long which can happen when you are setting the
+
+> styles for some of the new controls, you simply split the code across a
+
+> number of lines,
+
+>
+
+>         PreviousParameter,_
+
+>         %WS_VISIBLE or %WS_BORDER or _
+
+>         %WS_CAPTION or %WS_SYSMENU or %WS_MINIMIZEBOX,_
+
+>         NextParameter,_
+
+>
+
+> This is a notation convention that varies from language to language so
+
+> check in you documentation to see how it is done.
+
+>
+
+> However you end up crafting the code for a windows API front end, in which
+
+> ever language you prefer, what you have is a basic win 32 template that is
+
+> the launching pad for nearly anything you want to write from miniature
+
+> missiles to multi-megabyte monsters.
+
+>
+
+> The important thing with code of this type is writing it clearly so that
+
+> you can "REUSE" it. The idea of code reuse will become very clear as you
+
+> continue to expand your code base. Do it the wrong way and you are starting
+
+> to look all over the place for things like handles, device contexts and so
+
+> on.
+
+>
+
+> Write it in a tidy manner and you just call your function, pass it the
+
+> required parameters and off it goes. It means that you don't have to keep
+
+> re-inventing your own wheel. The other thing is to format and indent your
+
+> code so that when you come back to it in 6 months time, you won't be faced
+
+> with the "Wot the Ph##k is going on here" problem.
+
+>
+
+> Commenting is a matter of taste, over comment code and it looks like a
+
+> cluttered mess, don't bother and you have to carefully trace your way back
+
+> through the code to find out what is going on. The balance will be whatever
+
+> works for you so that you can re-read it and understand what you wrote.
+
+>
+
+> The longer you write, the less commenting you will use as your eye tunes
+
+> into the code type and the commenting starts to get in the way. When you are
+
+> satisfied with the template, dis-assemble the EXE and have a look at how the
+
+> compiler has written the code in ASM. A very nice toy for doing that is
+
+> Clive Turvey's "DumpPE v 1.21".
+
+>
+
+> Use the command line [ dumppe -disasm myrocket.exe > textfile.txt ]
+
+>
+
+> It will give you a very clear picture of your app's imports and exports, the
+
+> full PE header data and an ASM listing of your code. The trick to finding
+
+> where you code starts is to use text search on the name of an API near the
+
+> start of your code. This will jump over the WinMain startup code that is
+
+> written in ASM into the code that you have written in your own language.
+
+>
+
+> Here is where your feet touch the ground, the connection between the API
+
+> level code that you have written and how it looks in assembler notation.
+
+> As it is your copyright code, you can do what you like with it, hack it,
+
+> edit it in HEX or more importantly, learn from it.
+
+>
+
+> The connection from what you have written in your own language to what it
+
+> looks like in assembler is very useful to you when you start to develop your
+
+> rocket into a usable application. Each API function tht you call will look
+
+> different in that you will have a reasonably good idea of what it will look
+
+> like in assembler.
+
+>
+
+> Takeoff
+
+> ~~~~~~~
+
+> The fun starts once you have you launch pad built. The modern RAD
+
+> environments may be "front end" friendly in terms of drawing up the
+
+> interface but most of them could only be described as "back end" unfriendly
+
+> when you have to do something with them.
+
+>
+
+> You construct the "so called" event driven code by using the messaging
+
+> capacity that starts in the WndProc function. If you want a "MouseDown"
+
+> event, you process the WM_LBUTTONDOWN message and write a function to do
+
+> what you want from that "event".
+
+>
+
+> The messaging is a very powerful feature of low level languages that allow
+
+> you to construct an enormous variation in the events that you may wish to
+
+> handle.
+
+>
+
+> A very useful example is writing HEX into an edit control. If you want an
+
+> edit control to only accept HEX, you write a message handling procedure for
+
+> the edit control that is very much like the WndProc is for the WinMain
+
+> function and process a WM_CHAR message.
+
+>
+
+> Using a Switch Block or a basic Select Case, you write the code that only
+
+> accepts 0 to 9, A to F, convert the lowercase a to f to uppercase by
+
+> subtracting 32 from the value, the backspace key and throws the rest away.
+
+>
+
+> If this was on a data entry form using a text control, it is simple to write
+
+> the code to capitalise characters as the words are being typed in. This
+
+> makes data entry faster and simpler for your client and you don't have to
+
+> call some junkheap runtime DLL to do it.
+
+>
+
+> In the commercial world, the jargon of self reinforcing mediocrity keep
+
+> saying that the new way is EASY and FAST but they do not tell you that its
+
+> performance is buggy, leaky, slow and bloated. If you understand the notion
+
+> of rhetoric to cover up the unhappy facts, you will also understand why.
+
+>
+
+> Software houses in the small to medium size range are the vulnerable ones
+
+> who desperately need to sell the idea of NEW and EASY and the LATEST to
+
+> cover up what is actually the case, the cutting of labour costs by not
+
+> employing highly skilled software engineers, the use of RAD software to
+
+> get the throughput, bugs and all, and the hope that it will just keep
+
+> happening so that they can keep up the payments on the BMW and live in a
+
+> fancy apartment and so on.
+
+>
+
+> This is the "dead in the water" phenomenon, big slow and sloppy while living
+
+> on the hope that it will just keep on going. The new generation of software
+
+> engineers are faster, smarter and more efficient and are not afraid to do
+
+> the hard yards necessary to get their products up and going.
+
+>
+
+> Low level programmers with a commercial bent are like a submarine commander
+
+> roaming the seas looking for his enemy. Finding an old style software house
+
+> is like raising the periscope and finding a big, fat oil tanker travelling
+
+> so slow that you can't miss it.
+
+>
+
+> The developer who writes high precision, properly optimised software has
+
+> the capacity to build the torpedo that will hit the oil tanker "smack in
+
+> the guts" without even needing to watch it go BOOM.
+
+>
+
+> It comes as no surprise that many of the developers of the eighties are
+
+> the taxi drivers of the nineties, perhaps it was the experience driving
+
+> expensive "yuppie" cars in the eighties that ideally qualify them for the
+
+> job.
+
+>
+
+> The lessons of history tell us many things, The rise and expansion of the
+
+> Roman Empire over a couple of hundred years put it in a position where
+
+> it was almost invincible. The up side of this rise to power was roads,
+
+> law, architecture and amenity.
+
+>
+
+> The down side was slavery and endless military campaigns to suppress
+
+> resistence and exploit others by force. One of the telling factors towards
+
+> the end of the Western Empire was the silver mines in Spain has started to
+
+> run out of ore.
+
+>
+
+> The decline came as a multitude of factors, over extended, under funded as
+
+> the silver ran out and desparately hated by those it had conquered and
+
+> enslaved. It also got fat, lazy and vulnerable to the fierce and fast
+
+> people came down from the north and put it to the torch.
+
+>
+
+> Many models across history tell the same unhappy story, great power during
+
+> the rise, consolidation of the conquests into institutions of power, the
+
+> gradual decline as they grew fat and lazy and the lamentations as it
+
+> collapsed.
+
+>
+
+> The commercial reality is that most software houses were built on the dead
+
+> bodies of their predecessors that got too slow and sloppy to "cut the
+
+> mustard". For those who build their rockets with precision and elegance, the
+
+> message to the current crop of bloatware producers is,
+
+>
+
+>       Party on there folks,
+
+>       Oblivion is just around the corner.
+
+>
+
+> THE QUEST
+
+>
+
+> ---------------------------------------------------------------------------
+
+> This is the Power Basic code for a generic template.
+
+>
+
+> The following example compiles at 9k with an icon and simple menu.
+
+>
+
+> '##########################################################################
+
+>
+
+>     $COMPILE EXE
+
+>
+
+>     $INCLUDE "HEADER.INC"
+
+>
+
+> '##########################################################################
+
+>
+
+> FUNCTION WinMain (ByVal Instance      as LONG, _
+
+>                    ByVal hPrevInstance as LONG, _
+
+>                     lpszCmdLine         as ASCIIZ PTR, _
+
+>                      ByVal nCmdShow      as LONG) AS LONG
+
+>
+
+>     GLOBAL hInstance   as LONG
+
+>     GLOBAL hWnd        as LONG
+
+>     GLOBAL Sw&
+
+>     GLOBAL Sh&
+
+>     GLOBAL DisplayName$
+
+>     GLOBAL hMnu&
+
+>
+
+>     LOCAL  Msg         as tagMsg
+
+>     LOCAL  wc          as WndClassEx
+
+>     LOCAL  szClassName as ASCIIZ * 32
+
+>     LOCAL  Wid&
+
+>     LOCAL  Hgt&
+
+>     LOCAL  x&
+
+>
+
+>     hInstance=Instance
+
+>     DisplayName$="My Rocket"
+
+>
+
+>     szClassName      = "Rocket Window Class"
+
+>
+
+>     wc.cbSize        = SIZEOF(wc)
+
+>     wc.style         = %CS_HREDRAW or %CS_VREDRAW or _
+
+>                        %CS_BYTEALIGNCLIENT or %CS_BYTEALIGNWINDOW
+
+>     wc.lpfnWndProc   = CODEPTR(WndProc)
+
+>     wc.cbClsExtra    = 0
+
+>     wc.cbWndExtra    = 0
+
+>     wc.hInstance     = hInstance
+
+>     wc.hIcon         = LoadIcon(hInstance,"LROCKET")
+
+>     wc.hCursor       = LoadCursor(%NULL,ByVal %IDC_ARROW)
+
+>     wc.hbrBackground = GetStockObject(%LTGRAY_BRUSH)
+
+>     wc.lpszMenuName  = %NULL
+
+>     wc.lpszClassName = VarPtr(szClassName)
+
+>     wc.hIconSm       = LoadIcon(hInstance,"LROCKET")
+
+>
+
+>     RegisterClassEx wc
+
+>
+
+>     Sw&=GetSystemMetrics(%SM_CXSCREEN)
+
+>     Sh&=GetSystemMetrics(%SM_CYSCREEN)
+
+>
+
+>     Wid& = Sw& * .75   ' Set width & Height to percentage of screen size.
+
+>     Hgt& = Sh& * .70
+
+>
+
+>     hWnd = CreateWindowEx(%WS_EX_OVERLAPPEDWINDOW, _
+
+>                           szClassName, _           ' window class name
+
+>                           ByCopy DisplayName$, _   ' window title
+
+>                           %WS_OVERLAPPEDWINDOW, _  ' window style
+
+>                           Sw&\2-(Wid&\2), _        ' initial x position
+
+>                           Sh&\2-(Hgt&\2), _        ' initial y position
+
+>                           Wid&, _                  ' initial x size
+
+>                           Hgt&, _                  ' initial y size
+
+>                           %NULL, _                 ' parent window handle
+
+>                           %NULL, _                 ' window menu handle
+
+>                           hInstance, _             ' program instance handle
+
+>                           ByVal %NULL)             ' creation parameters
+
+>
+
+>     hMnu&=LoadMenu( hInstance,"MENU1")
+
+>     SetMenu hWnd, hMnu&
+
+>
+
+>     ShowWindow hWnd, nCmdShow
+
+>     UpdateWindow hWnd
+
+>
+
+>     MsgLoop:
+
+>         x&=GetMessage(Msg,%NULL,0,0)
+
+>         TranslateMessage Msg
+
+>         DispatchMessage  Msg
+
+>       ! cmp x&, 0                 ; Whoops, this wasn't supposed to
+
+>       ! jnz MsgLoop               ; have inline assembler in it !
+
+>
+
+>   FUNCTION = Msg.wParam
+
+>
+
+> END FUNCTION
+
+>
+
+> '##########################################################################
+
+>
+
+> FUNCTION WndProc(ByVal hWin as LONG, _
+
+>                   ByVal Msg   as LONG, _
+
+>                    ByVal wParam as LONG, _
+
+>                     ByVal lParam as LONG) EXPORT as LONG
+
+>
+
+>       LOCAL hDC       as LONG
+
+>       LOCAL Ps        as PaintStruct
+
+>       LOCAL Rct       as Rect
+
+>       LOCAL ConfirmExit&
+
+>
+
+>   Select Case Msg
+
+>
+
+>       Case %WM_COMMAND
+
+>         Select Case wParam
+
+>
+
+>           '<MENU commands >>
+
+>           Case 1000
+
+>             SendMessage hWin, %WM_SYSCOMMAND, %SC_CLOSE, lParam
+
+>
+
+>           Case 1100
+
+>           x&=ShellAbout(hWin,ByCopy "  About "+DisplayName$+"#Windows Template",_
+
+>                           ByCopy DisplayName$+" Copyright © 1998"+chr$(13,10)+_
+
+>                           "Fravia's Page of Reverse Engineering",_
+
+>                           LoadIcon(hInstance,"LROCKET"))
+
+>
+
+>         End Select
+
+>
+
+>       Case %WM_CREATE
+
+>
+
+>       Case %WM_SIZE
+
+>
+
+>       Case %WM_PAINT
+
+>           hDC = BeginPaint(hWin,Ps)
+
+>             GetClientRect hWin,Rct
+
+>               ' Call_Your_Paint_Proc_Here
+
+>             EndPaint hWin,Ps
+
+>           Function=0
+
+>           Exit Function
+
+>
+
+>       Case %WM_CLOSE
+
+>
+
+>       Case %WM_DESTROY
+
+>           PostQuitMessage 0
+
+>           Function=0
+
+>           Exit Function
+
+>
+
+>   END Select
+
+>
+
+>   FUNCTION = DefWindowProc(hWin,Msg,wParam,lParam)
+
+>
+
+> END FUNCTION
+
+>
+
+> '##########################################################################
+
+>
+
+ </PRE><CENTER>
+
+<HR>
+
+<A href="papers.htm" tppabs="http://www.anticrack.de/fravia/papers.htm"><IMG SRC="papers.gif" tppabs="http://www.anticrack.de/fravia/papers.gif" ALT="papers" ALIGN=BOTTOM WIDTH=114 
+
+EIGHT=43 BORDER=0 VSPACE=0 HSPACE=0></A><BR><FONT color=gray>+HCU papers</FONT>
+
+
+
+
+
+<HR size=5>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0> 
+
+<A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links </A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0>
+
+<A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity </A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN=BOTTOM
+
+BORDER=0 VSPACE=0 HSPACE=0 width="13" height="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC </A>
+
+
+
+<IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays </A>
+
+
+
+<IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database </A><BR>
+
+<IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut </A>
+
+
+
+<IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 
+
+VSPACE=0 HSPACE=0><A
+
+HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13
+
+BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13
+
+BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="javascri.htm" tppabs="http://www.anticrack.de/fravia/javascri.htm">javascript wars </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia </A><BR>
+
+
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering illegal? </A></CENTER>
+
+<HR size=4></FONT></CENTER></CENTER>
+
+
+
+</BODY>
+
+</HTML>
+
+
+
+
+

@@ -1,0 +1,493 @@
+<html>  <HTML>  
+
+<HEAD>  
+
+<TITLE>aescul5</TITLE>  
+
+</HEAD>  
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">  
+
+<CENTER><FONT size="+2">Brief Tutorial on CD Access Based Protection Schemes Under Windows<BR></FONT>
+
+<I>Cracking Virtua Fighter PC</I><BR>  
+
+ <BR>  
+
+<H4>by Aesculapius<BR>  
+
+<BR>  
+
+(27 August 1997)</H4>  
+
+<HR>  
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">Courtesy of Fravia's page   
+
+of reverse engineering<BR><BR><I>Well, a VERY welcome contribution by 
+
+our Aesculapius! It was time that somebody took care of the CD-ROM checks, 
+
+which btw, in general, are NOT very difficult to defeat. I hope that with 
+
+the help of this addition many +crackers will be stimulated and work 
+
+on such schemes,  
+
+bringing ahead this poor and neglected (yet important) project 4!</I></CENTER><HR size="7"><PRE>
+
+  
+
+  Brief Tutorial on CD Access Based Protection Schemes Under Windows
+
+                         Cracking Virtua Fighter PC 
+
+                               By Aesculapius
+
+
+
+	It should be beneficial for all of us to dedicate some time on CD 
+
+Access protection schemes reviewing, given the fact that ORC+ brilliant 
+
+tutorial on this matter isn't complete yet (check 
+
+<A href="tppmsgs/msgs2.htm#266" tppabs="http://www.anticrack.de/fravia/tppmsgs/msgs2.htm#266">http://207.30.50.126/fravia/howto51.htm</A>) and there are few essays (although 
+
+brilliant indeed) on this matter at the +HCU. Writing essays on DOS4GW 
+
+Extender + CD Check would be a great addition for the +HCU.
+
+
+
+	Theoretical digression: CD access based protection schemes are 
+
+relatively frequent. These Schemes will basically, prevent the user from 
+
+running the program if the original disk is not inside the CD drive. This 
+
+assures that only one copy of the program runs at a time. In many cases, 
+
+all information in the CD is copied to the hard drive at installation, 
+
+making the presence of the disk in the unit a matter of copyright 
+
+restriction, and being not strictly necessary from the technical point 
+
+of view. In some cases, much of the info required stays in the CD drive, 
+
+making impossible to dispense the original disk. Remember, we're dealing in 
+
+this essay with those cases in which all the program is transferred from the 
+
+disk to the hard drive; other cases would require further discussion.
+
+
+
+	These schemes work all in a very similar fashion. The presence of 
+
+certain 'I_didn't_do_it-looking' file inside the CD drive is checked every 
+
+time the application runs. Primitive schemes could simply check for the 
+
+presence of a CD-ROM drive in the system even if it is empty or the disk 
+
+inside is not the right one. As CD-ROM units have become an standard 
+
+peripheral in most basic PC configurations, this gadget has been abandoned 
+
+or combined with the checking of some sort of information inside the CD 
+
+itself.
+
+
+
+	Given these facts, defeating CD access schemes could be achieved 
+
+by means of several techniques. You could simply fool the program to believe 
+
+that your hard drive is a CD unit (faking and relocating the right 
+
+information to be read in your hard drive); altering the behavior of the 
+
+program by means of assembly code editing is another possibility; using 
+
+ready_to_use or made_by_yourself CD fakers. We will discuss the second 
+
+possibility as it can produce a higher rate of successes (in my 
+
+personal experience).
+
+
+
+	Today's scapegoat is Virtua Fighter PC, a cool looking, third person 
+
+3D fight game by SEGA. I'm not able to give you the trail of this program 
+
+location as the gamez 'panorama' in the internet is a whirlpool of changing 
+
+URL's. However the game is widely available in the shells.
+
+
+
+	To achieve this crack you'll need SoftICE 3.x and your 
+
+preferred Hex editor (Psedit 4.4 in my case). Earlier versions of 
+
+SofICE will also work, but some of the SoftICE commands in this essay 
+
+will apply to version 3.x only. (Note: Remember to load all necessary  
+
+SoftICE exports and remove Virtua Fighter Compact Disk from the CD unit 
+
+before proceeding any further). 
+
+
+
+	Load the main executable file: vfpc.exe in SoftICE's loader. After 
+
+SoftICE pops up, we should set a dense net (one at a time) of clever 
+
+breakpoints to catch the scheme in _flagrante delictum_. Most frequently 
+
+used Win32 application programming interface are:
+
+	<FONT color="blue">
+
+	GetDriveType
+
+	GetFileAttributesA **
+
+	GetFileSize
+
+	GetLogicalDrives
+
+	GetlogicalDriveStrings
+
+	GetLastError **
+
+	ReadFile
+
+	</FONT>
+
+	Any of these API's (and some others) can be used in one way or 
+
+another to query the presence and authenticity of a compact disk. In some 
+
+cases, the absence of the disk will force the API to return with an error 
+
+code. Almost all API's (in case of failed procedure) return with an error 
+
+code value of -1, 0xFFFFFFFF, equivalent to NULL. According to this, an 
+
+appropriate breakpoint on GetLastError API could be set.
+
+
+
+	In this particular case, SoftICE pops up when marked (**) 
+
+breakpoints in the list are set. Let's take a closer look of the snippet 
+
+where SoftICE pops up after pressing F12 one time:
+
+
+
+
+
+* CALLs at Addresses:004AC3E6, :004AC42A ; As you can see, there is a double check!
+
+|
+
+:00535317 FF742404                push [esp+04]
+
+
+
+* Reference To: KERNEL32.GetFileAttributesA, Ord:00D7h
+
+                                  |
+
+:0053531B FF155064C000            Call dword ptr [00C06450]
+
+:00535321 83F8FF                  cmp eax, FFFFFFFF; Procedure failed? 
+
+:00535324 7516                    jne 0053533C; No, then jump, otherwise
+
+						go on
+
+* Reference To: KERNEL32.GetLastError, Ord:00E1h 
+
+| 
+
+:00535326 FF15D463C000            Call dword ptr [00C063D4] ; Query error
+
+:0053532C 50                      push eax 		    ; in detail
+
+:0053532D E86E72FFFF              call 0052C5A0 
+
+:00535332 83C404                  add esp, 4 
+
+:00535335 B8FFFFFFFF              mov eax, FFFFFFFF ; Procedure failed
+
+:0053533A EB28                    jmp 00535364      ; Retr with EAX=FFFFFFFF
+
+
+
+		Some instructions eliminated!
+
+
+
+:00535362 33C0                    xor eax, eax ;Procedure Successful
+
+					                           ;Return with EAX=0
+
+		Some instructions eliminated!
+
+	
+
+:00535364 C3                      ret
+
+
+
+As you can see, a cleverly set breakpoint landed SoftICE right in the middle 
+
+of the protection scheme check. The first API is checking attributes of 
+
+certain hidden file located in the original compact disk, if the procedure 
+
+fails, it returns with EAX=-1, therefore EAX=FFFFFFFF (Valid compact disk 
+
+absent). If the API succeed, then EAX<>-1 and eventually EAX=0.
+
+
+
+	Now let's take a look at the two procedures that CALL these 
+
+API's
+
+
+
+			FIRST LOCATION
+
+			--------------
+
+:004AC3CF 689C72B500              push 00B5729C 
+
+:004AC3D4 8D45AC                  lea eax, dword ptr [ebp-54] 
+
+:004AC3D7 50                      push eax 
+
+:004AC3D8 E890C90700              call 00528D6D 
+
+:004AC3DD 83C410                  add esp, 00000010 
+
+:004AC3E0 6A00                    push 00000000 
+
+:004AC3E2 8D45AC                  lea eax, dword ptr [ebp-54] 
+
+:004AC3E5 50                      push eax 
+
+:004AC3E6 E82C8F0800              call 00535317 ; Check File on CD
+
+:004AC3EB 83C408                  add esp, 00000008 
+
+:004AC3EE 85C0                    test eax, eax ; EAX=0 Success
+
+:004AC3F0 0F850C000000            jne 004AC402  ; If Success then Jump
+
+:004AC3F6 33C0                    xor eax, eax  ; Otherwise erase EAX
+
+:004AC3F8 E953000000              jmp 004AC450  ; Beggar off! Display NAG
+
+:004AC3FD E94E000000              jmp 004AC450
+
+
+
+			SECOND LOCATION
+
+			---------------
+
+
+
+:004AC413 68A472B500              push 00B572A4 
+
+:004AC418 8D45AC                  lea eax, dword ptr [ebp-54] 
+
+:004AC41B 50                      push eax 
+
+:004AC41C E84CC90700              call 00528D6D 
+
+:004AC421 83C410                  add esp, 00000010 
+
+:004AC424 6A00                    push 00000000 
+
+:004AC426 8D45AC                  lea eax, dword ptr [ebp-54] 
+
+:004AC429 50                      push eax 
+
+:004AC42A E8E88E0800              call 00535317 ; Check file again
+
+:004AC42F 83C408                  add esp, 00000008 
+
+:004AC432 85C0                    test eax, eax ; EAX=0 Success
+
+:004AC434 0F850C000000            jne 004AC446  ; If Success jump
+
+:004AC43A 33C0                    xor eax, eax  ; Otherwise erase EAX
+
+:004AC43C E90F000000              jmp 004AC450  ; Beggar off! Display NAG
+
+:004AC441 E90A000000              jmp 004AC450
+
+
+
+
+
+	Needless to say, both locations are exact mirrors. The code 
+
+is self-explaining. Finally you can unveil the secret file by taking a 
+
+closer look at the GetFileAttributes API parameters. Simply, trace inside 
+
+the API and check all used memory locations. The file to be read is 
+
+X:\VFPC\vfrright.txt, where 'X:' means the drive letter of your CD unit.
+
+
+
+	Now that we know all the facts, let's discuss how the protection 
+
+scheme works: 1. There are two mirror locations that CALL the same code 
+
+segment where two API's will check the presence and authenticity of a certain 
+
+file on the compact disk. GetFileAttributesA checks the file, if any error 
+
+occurs, GetLastError API will query detailed information on that error. 
+
+Result from the query sets the Flag in EAX (which follows the standard API 
+
+convention, as EAX=FFFFFFFF is not successful). To crack this 
+
+scheme all we have to do is fake the API result.
+
+
+
+	
+
+	Change:
+
+
+
+:00535335 B8FFFFFFFF mov eax, FFFFFFFF 
+
+
+
+	To:
+
+
+
+:00535335 B800000000 mov eax, 00000000 
+
+
+
+	When the API fails to check the file, it'll try to return at 
+
+:0053533A with EAX=FFFFFFFF. If we change it to return with EAX=0, both 
+
+mirror locations of the protection scheme are deactivated because they use 
+
+the same common API's to accomplish their job.
+
+
+
+	As always, if you have any comment or question, don't hesitate to 
+
+write me.
+
+
+
+(Note: I tried to keep the essay as short as possible).
+
+
+
+
+
+						Aesculapius - August 97
+
+						aesculapius@cryogen.com
+
+						aesculapius.home.ml.org
+
+
+
+</PRE> 
+
+ <FONT color="green">Aesculapius 1997: All rights reversed</FONT>  
+
+<HR ALIGN="CENTER" WIDTH="100%" SIZE="3">  
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,    
+
+choose your way out:</I></CENTER>  
+
+<BR><CENTER>  
+
+  
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">  
+
+<A HREF="project4.htm" tppabs="http://www.anticrack.de/fravia/project4.htm">Back to Project 4</A><BR>  
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">  
+
+<A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#79'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#79">homepage </A>  
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">   
+
+<A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#53'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#53">links </A>   
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0">  
+
+<A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity </A>   
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC </A>  
+
+  
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#78'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#78">students' essays </A>  
+
+  
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database </A><BR>  
+
+  
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools </A>  
+
+  
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails </A>  
+
+  
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut CGI-scripts </A>  
+
+  
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms </A>  
+
+  
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia </A><BR>  
+
+  
+
+  
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering illegal? </A></CENTER>  
+
+<CENTER><HR ALIGN="CENTER" WIDTH="100%" SIZE="2"></CENTER>  
+
+</BODY>  
+
+</HTML> 

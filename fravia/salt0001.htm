@@ -1,0 +1,174 @@
+<HTML>
+
+<HEAD>
+
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=windows-1252">
+
+<TITLE>WebGenie Software's Downfall</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+<H2><CENTER>
+
+Use of the Win32 API(WebGenie Software's Downfall)<BR>
+
+   by Saltine, 28 May 1997<BR>
+
+
+
+<HR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><FONT SIZE="3"><I>Courtesy of fravia's page of reverse engineering<BR></H2>Saltine is a legend, and I'm 
+
+very happy that he has started contributing to this page :-)</I>
+
+</CENTER><H2>
+
+<HR size="3">
+
+
+
+<B><P ALIGN="CENTER">Title: Use of the Win32 API<BR>
+
+Subtitle: WebGenie Software's Downfall<BR>
+
+By Saltine [PC]</P>
+
+</B><FONT SIZE="2"><P ALIGN="JUSTIFY">&nbsp;</P>
+
+<P>Software: </FONT><A HREF="javascript:if(confirm('ftp://www.webgenie.com/pub/csp32.exe  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='ftp://www.webgenie.com/pub/csp32.exe'" tppabs="ftp://www.webgenie.com/pub/csp32.exe"><FONT SIZE="2">ftp://www.webgenie.com/pub/csp32.exe</FONT></A><FONT SIZE="2"> &#150; <B>CGI*Star Pro</B><BR>
+
+Or any of the software at </FONT><A HREF="javascript:if(confirm('http://www.webgenie.com/Software/download.html  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.webgenie.com/Software/download.html'" tppabs="http://www.webgenie.com/Software/download.html"><FONT SIZE="2">http://www.webgenie.com/Software/download.html</FONT></A><FONT SIZE="1"><BR>
+
+<BR>
+
+</FONT><FONT SIZE="2">Tools: SoftICE 2.0/Win95 or greater, a good WinAPI handbook and/or the API help files that ship with many programming languages<BR>
+
+<BR>
+
+Target audience: Intermediate cracker. Knowledge of the use of SI and the WinAPI required.<BR>
+
+<BR>
+
+<BR>
+
+I am writing this tutorial not because the subject matter is difficult or tricky, but because it is unique and I have not seen it before now. It will show you how an author can have a reasonably sound idea, but implement it poorly so that it is easily cracked. My method will show you step-by-step my approach to cracking this software. I am taking a somewhat of a long route with this, but I will show you a quicker way to crack this at the end, and that technique will further show you that the bulk of cracking is done outside of a debugger.</P>
+
+<P ALIGN="JUSTIFY">After installing, run it to get a feel for it and to see what kind of protection we are dealing with here. You should notice the nag, and the fact that it has a 30 day timebomb (easily cracked &#150; more on those later). Okay, now that you have it running, you will notice that it does have a registration dialog. Good. This part of cracking is critical, any cracker will tell you that. You must always first take a hard look at the program, it's operation, its files, before diving in with the debugger. The observation part is over, now phase II of cracking begins.</P>
+
+<P ALIGN="JUSTIFY">So you start the registration dialog and set a breakpoint for <B>GetDlgItemTextA</B> and <B>GetWindowTextA</B>. It is the latter that you end up using. As soon as you enter a code (I entered 12345) and click Register you end up in the debugger. Tracing through gets you nowhere. All that happens is that the code gets stored in <B>cspro.ini</B> in the windows directory. The validation is done at startup. Hmm&#133;.</P>
+
+<P ALIGN="JUSTIFY">So you open up <B>cspro.ini</B> and take a look. There, in the second line is the bogus code we entered. You should notice that this file is not in the normal INI format widely used by windows programs. There are no [section] blocks at all, so trapping <B>GetPrivateProfileStringA</B> will get you nowhere as well. Hmm&#133;at this point I get my usual &quot;Well, let's get to work&quot; mentality. Once I realize I won't crack a program in only a few minutes (most shareware programs are done in minutes, sadly), I get to work.</P>
+
+<P ALIGN="JUSTIFY">So now I think that breaking on <B>ReadFile</B> or <B>Lstrcmp</B> will probably get me in some applicable code. Set a breakpoint for <B>ReadFile</B> and run the program. 3 reads before the program starts, reading the <B>cspro.ini</B> file in chunks. Interesting, but not exactly what we are looking for, but is good knowledge to have should you have to go back to square one. Okay, the program must be comparing strings, so let&#146;s set a breakpoint for <B>Lstrcmp</B> and run it. Bingo! It checks several of the lines in the <B>cspro.ini</B> file. We need to find the code that is looking at our bogus registration code.</P>
+
+<P ALIGN="JUSTIFY">Enable the <B>Lstrcmp</B> breakpoint and run it again. The <B>CSPRO</B> module will call that API function at least 16 times. At each call you will see code similar to this:</P>
+
+<P>014F:00402E89	PUSH EAX<BR>
+
+014F:00402E8A	PUSH 00446BE4<BR>
+
+014F:00402E8F	CALL KERNEL32!LSTRCMP</P>
+
+<P ALIGN="JUSTIFY">You can check each of these calls by doing this, as an example only because the memory location will be a little different each time:</P>
+
+<P ALIGN="JUSTIFY">: d 00446BE4</P>
+
+<P ALIGN="JUSTIFY">By doing this you will see what the program is checking each time it calls Lstrcmp. Continue this until you see it check your registration code (12345). You will eventually see code similar to this:</P>
+
+<P>014F:00403724	PUSH ECX<BR>
+
+014F:00403725	PUSH EBX<BR>
+
+014F:00403726	CALL KERNEL32!LSTRCMP</P>
+
+<P ALIGN="JUSTIFY">Now by checking the contents of <B>EBX</B> you know that it contains your bogus registration code. We are at a very good point in the code at last. Set a breakpoint for that line (<B>Lstrcmp</B>), and disable all others.</P>
+
+<P ALIGN="JUSTIFY">But wait, underneath this last <B>Lstrcmp</B> call you see something odd &#150; a call to <B>IsCharAlphaA</B> (verifies that a character is a letter). Hmm&#133;interesting. Holding down the Ctrl key and paging down allows you to see more of these same calls, with some being to <B>IsCharAlphaNumericA</B> (verifies that a character is alphabetic or a number).</P>
+
+<P ALIGN="JUSTIFY">Wow! Could it be? Yes it is. Stepping through the code you will see it call one of these functions for each character in the registration code, bombing out if any portion of it fails. In between calls you will see it checking for dashes (- , 2Dh), with a <B>CMP EAX, 2D</B> check.</P>
+
+<P ALIGN="JUSTIFY">So you know at least 2 things at this point: The first character in the registration code must be a letter, and the code is going to have dashes in it.</P>
+
+<P ALIGN="JUSTIFY">Now, the only thing left to do is generate a code matrix for the registration code. Do this by holding down the Ctrl key and paging down through the code, writing down each character requirement as you go. You don&#146;t want to step through the code with F10, as it will just bomb out on you when it gets an incorrect character in the code. Don&#146;t forget to add the dashes where you see it checking for them. Technically, any letter would work for the places it calls <B>IsCharAlphaNumericA</B>, but I chose to use it as a required number field. So the final matrix is this:</P>
+
+<B><P ALIGN="JUSTIFY">AA####-AA###-AA#A#-#####-#######</P>
+
+</B><P>A = any letter<BR>
+
+# = any number (or letter)</P>
+
+<P ALIGN="JUSTIFY">Any code with this format will register the software. Simple huh? I was surprised too. Now you must be thinking about a key generator. I released one that simply generated random codes, using the required format for all of the software on the site. Each program there uses a variation on this idea, with slightly different code matrices.</P>
+
+<P ALIGN="JUSTIFY">Now, for the promised simple way to crack this:</P>
+
+<P ALIGN="JUSTIFY">Open up the executable in your favorite hex editor, search for kernel32.dll. You will find it once or twice, and below it in one of the areas you will see a list of API calls the program uses. Notice the IsCharAlphaA and IsCharAlphaNumericA strings? These declarations, from my experience, are unusual, and gave me a quick entry into the registration checking code. This is always a good method to use to see what API calls a program may use. Furthermore, searching for &quot;.key&quot;, &quot;.reg&quot;, &quot;.dat&quot;, or &quot;.lic&quot; will help you out sometimes. So all you have to do now is set a breakpoint for <B>IsCharAlphaA</B> or <B>IsCharAlphaNumericA</B> and you are instantly in applicable code. I <B>always</B> take a look inside an executable or dynamic linked library before I try to crack them. You never know what you might find; even registration codes sometimes.<BR>
+
+<BR>
+
+Lessons learned: Authors are lazy, stupid people sometimes. As you know by now, the author properly used rule #1 when it comes to key registration systems - never compare a valid key to the entered key in memory. He adhered to this rule, but then he used the API, in what I am sure he thought to be a most excellent protection system. Had he coded it out himself, this would have been slightly (only slightly, it still would have been easily cracked) more difficult. I've talked to many authors via e-mail and that is a point I always stress - do it the hard way. If it's hard for you, or inconvenient, then surely it will be difficult for the crackers.</P>
+
+<P ALIGN="JUSTIFY">This protection is not difficult. Most protection schemes are not. That is exactly my point - do not ever think that you cannot crack something, because you probably can, regardless of your experience, because authors take the easy way out far too often.</P>
+
+<P ALIGN="JUSTIFY">In my next tutorial I would like to cover trial software. You know, the 30 day timebombed stuff. There are many generic methods to crack these, and I will be discussing them in depth. You will see that those are the easiest programs in the world to crack and that it is pointless to try and limit software in that manner.</P>
+
+<P ALIGN="JUSTIFY">Well that&#146;s it for this tutorial. If any author or cracker has learned from this, then I am satisfied.</P>
+
+<P>Saltine [PC]<BR>
+
+T-001 : May 27, 1997</P></FONT>
+
+<CENTER><HR ALIGN="CENTER" WIDTH="100%" SIZE="3"><FONT SIZE="3">
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</I></CENTER>
+
+<BR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html"> homepage</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"> 
+
+<A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm"> links</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0">
+
+<A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm"> anonymity</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm"> +ORC</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="students.htm" tppabs="http://www.anticrack.de/fravia/students.htm"> student</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">
+
+<A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm"> tools</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">
+
+<A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm"> cocktails</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">
+
+<A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm"> search_forms</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">
+
+<A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm"> mailFraVia</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">
+
+<A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm"> Is reverse engineering illegal?</A>
+
+</CENTER>
+
+<CENTER><HR ALIGN="CENTER" WIDTH="100%" SIZE="2"></CENTER>
+
+<I>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">Fravia 28 May 1997
+
+</I>
+
+
+
+</BODY>
+
+</HTML>
+

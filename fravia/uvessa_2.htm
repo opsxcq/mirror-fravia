@@ -1,0 +1,1664 @@
+<HTML>
+
+<HEAD>
+
+   <META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=iso-8859-1">
+
+   <META NAME="GENERATOR" CONTENT="Mozilla/4.02 [en] (Win95; I) [Netscape]">
+
+   <META NAME="Author" CONTENT="UncleVan">
+
+   <META NAME="KeyWords" CONTENT="crack, powerdesk, unclevan, fravia, +orc">
+
+   <TITLE>uvessa_2: Encoded selfmodifying targets</TITLE>
+
+</HEAD>
+
+<BODY TEXT="#001010" BGCOLOR="#C0C0C0" VLINK="#405040">
+
+ 
+
+<TABLE BORDER="0" CELLPADDING="5">
+
+<TR>
+
+<TD VALIGN="CENTER" BGCOLOR="#898030">
+
+<CENTER><A HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html"><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" BORDER="0" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13"></A></CENTER>
+
+</TD>
+
+<TD BGCOLOR="#C0C0C0">
+
+<CENTER>
+
+<TABLE CELLPADDING="1" CELLSPACING="2" BORDER="1" HEIGHT="22" WIDTH="100%">
+
+<TR><TD>
+
+<CENTER><FONT SIZE="+2">Encoded selfmodifying targets</FONT><BR>
+
+        <FONT SIZE="+1">the Power Desk suite from Mijenix</FONT>
+
+</CENTER>
+
+    </TD>
+
+    <TD>
+
+<CENTER><A href="advanced.htm" tppabs="http://www.anticrack.de/fravia/advanced.htm"><IMG SRC="xtranio.gif" tppabs="http://www.anticrack.de/fravia/xtranio.gif" ALT="advanced" ALIGN="CENTER" WIDTH="114" HEIGHT="43" BORDER="0" VSPACE="0" HSPACE="0"></A>
+
+<BR>
+
+<FONT color="gray">Advanced cracking</FONT>
+
+</CENTER>
+
+</TD></TR></TABLE>
+
+by
+
+<FONT SIZE="+3">Uncle Van</FONT>, <FONT COLOR="#890000">1 January
+
+1998 </FONT><BR>(With an <A href="#anchoradda">add-on</A> by Marigold, 16 Jan 1998)</CENTER>
+
+</TD>
+
+</TR>
+
+
+
+<TR>
+
+<TD BGCOLOR="#898030"><FONT COLOR="#898030"><FONT SIZE="-1">f</FONT></FONT></TD>
+
+
+
+<TD BGCOLOR="#898030">
+
+<CENTER>Courtesy of Fravia's page of reverse engineering</CENTER>
+
+</TD>
+
+</TR>
+
+
+
+<TR>
+
+<TD VALIGN="CENTER" BGCOLOR="#898030">
+
+<CENTER><FONT COLOR="#FFFFFF"><FONT SIZE="-1">f</FONT></FONT></CENTER>
+
+</TD>
+
+
+
+<TD BGCOLOR="#C0C0C0"><I>As it seems, we have entered the &quot;new deal&quot;: we
+
+are beginning to produce our own tools (was about time: the whole +HCU
+
+1998 will be centered on some 'our own tools' projects :-)... yet you'll
+
+find a lot more inside this VERY GOOD essay by Uncle Van: self-correcting,
+
+real code hiding, how to adjust the PE header, Uncle Van's 'precracking',
+
+bypassing the WriteProcessMemory and a lot of other goodies... (I love
+
+Uncle Van's approach: <FONT COLOR="#0000FF">&quot;there will be really &quot;man
+
+against man&quot;, I see glorious days coming&quot;</FONT>... I agree totally! The
+
+more the protectionists learn, the more fun it is to crack their 'advanced'
+
+protections!)</I>
+
+<BR><I>Work well: you'll have a couple of days work just to <U>understand</U>
+
+what Uncle Van is explaining you... and that's the nice part of our trade!
+
+To learn! Knowledge is knowledge's reward! </I></TD>
+
+</TR>
+
+
+
+<TR>
+
+<TD BGCOLOR="#898030"><FONT COLOR="#898030"><FONT SIZE="-1">f</FONT></FONT></TD>
+
+
+
+<TD BGCOLOR="#898030">
+
+<CENTER><B>There is a crack, a crack in everything</B></CENTER>
+
+
+
+<CENTER><B>That's how the light gets in</B></CENTER>
+
+</TD>
+
+</TR>
+
+
+
+<TR>
+
+<TD VALIGN="CENTER" BGCOLOR="#2C142B">
+
+<CENTER><FONT COLOR="#FFFFFF"><FONT SIZE="-1">Rating</FONT></FONT></CENTER>
+
+</TD>
+
+
+
+<TD BGCOLOR="#C0C0C0"><FONT FACE="Courier New">( )<B>Beginner</B> ( )<B>Intermediate</B>
+
+(x)<B>Advanced</B> ( )<B>Expert</B> </FONT>
+
+<BR><I>An understanding of common advanced cracking techniques is a pre-requisite.
+
+Don't even try to follow this if you are a beginner (in that case come
+
+back later).</I> </TD>
+
+</TR>
+
+
+
+<TR>
+
+<TD VALIGN="CENTER" BGCOLOR="#890000">
+
+<CENTER><FONT COLOR="#FFFFFF"><FONT SIZE="-1">Title</FONT></FONT></CENTER>
+
+</TD>
+
+
+
+<TD BGCOLOR="#C0C0C0"><FONT SIZE="+2">Encoded selfmodifying targets - the
+
+Power Desk suite from Mijenix</FONT>
+
+<BR><FONT SIZE="+2">OK, I know it sounds pretty earnest but it hits the point
+
+of this essay. </FONT>
+
+<BR><FONT COLOR="#0B7FC1">Written by Uncle Van </FONT></TD>
+
+</TR>
+
+
+
+<TR>
+
+<TD VALIGN="CENTER" BGCOLOR="#FF7F21">
+
+<CENTER><FONT SIZE="-1">Intro</FONT></CENTER>
+
+</TD>
+
+
+
+<TD BGCOLOR="#C0C0C0">
+
+<H3>
+
+Impressum</H3>
+
+Well, this is the greatest discussion nowadays, concerning 
+
+the software protection - Is it possible under such &quot;allmighty&quot; 
+
+OS like windo$e (but also all other protected mode systems) to 
+
+write into one's own code in order to protect his product against 
+
+(banal) patches and unexpirienced cracker? 
+
+<BR>It's first necessary to know about memory protection, that 
+
+Intel's x86 line has two general modes - real and protected - and 
+
+furthermore in protected mode it can operate in 4 security 
+
+&quot;rings&quot; - ring 0 till ring 3. 
+
+<BR>Every ring corresponds to an appropriate privilege level 
+
+- the higher the number the lower the privilege level. This means, 
+
+that p.e. in ring 0 ALL opcodes are allowed and there is no 
+
+restriction in the terms of memory access, it's just like in old 
+
+&quot;real&quot; DOS, you can rampage everything you fancy ;=D. 
+
+<BR>But as you walk to the higher ring number more and more 
+
+restrictions appears: several opcodes get disabled, you are not 
+
+allowed to acces memory regions you not own, IN and OUT instructions 
+
+are getting &quot;controlled&quot;, and at least, you can't even write to your 
+
+own code segments because it is write protected too. (Here I'm not 
+
+so sure!) 
+
+<BR>You can &quot;jump&quot; from a ring with higher privilege to code in 
+
+rings with lower privilege, but not vice versa. 
+
+<BR>In the windo$e world applications run of course in the ring 
+
+3 mode ;-(, while the main part of the OS itself AND the drivers 
+
+(Vxd!) operate at ring 0. And as we already know from Fravias page, 
+
+overwriting the own code is essential for a good protection. 
+
+The most cool protections BTW were made in DOS real-mode times, 
+
+some of them are not cracked yet! 
+
+<BR>The main problem is how could a program overwtite its own code 
+
+on such OS? At this point I'll qoute +rcg from his First 
+
+Attempt:http://fravia.org/pro_rcg.htm 
+
+<PRE><FONT COLOR="#800080">&quot;.........  VxD. I know this is a big effort, but I'm sure we
+
+will be able to program them in a few months, so we will take
+
+again the control over the system (just like we did in Ms-Dos).&quot;</FONT></PRE>
+
+It must be really a big effort since we didn't hear something 
+
+new about this ;-) You can read Fravia's essay about VxDs too 
+
+in order to get a first impression about such a stuff. 
+
+<BR>I'll show you here how the guys from Mijenix solved this 
+
+problem. </TD>
+
+</TR>
+
+
+
+<TR>
+
+<TD VALIGN="CENTER" BGCOLOR="#B04A53">
+
+<CENTER><FONT SIZE="-1">Tools Required</FONT></CENTER>
+
+</TD>
+
+
+
+<TD BGCOLOR="#C0C0C0"><B>Debugger (SoftIce)</B>
+
+<BR><B>Hexeditor</B>
+
+<BR><B>Disassembler</B>
+
+<BR><B>ASCII dump importer (our own)</B>
+
+<BR><B>A textEditor which allows block selecting</B>
+
+<BR><B>Brain</B>
+
+
+
+<P>Of course, you may choose any other tools you like. </TD>
+
+</TR>
+
+
+
+<TR>
+
+<TD VALIGN="CENTER" BGCOLOR="#B600B6">
+
+<CENTER><FONT SIZE="-1">Program History</FONT></CENTER>
+
+</TD>
+
+
+
+<TD BGCOLOR="#C0C0C0">No history </TD>
+
+</TR>
+
+
+
+<TR>
+
+<TD VALIGN="CENTER" BGCOLOR="#888888">
+
+<CENTER><FONT COLOR="#C0C0C0"><FONT SIZE="+3">T</FONT></FONT></CENTER>
+
+
+
+<CENTER><FONT COLOR="#C0C0C0"><FONT SIZE="+3">H</FONT></FONT></CENTER>
+
+
+
+<CENTER><FONT COLOR="#C0C0C0"><FONT SIZE="+3">E</FONT></FONT></CENTER>
+
+
+
+<CENTER></CENTER>
+
+
+
+<CENTER><FONT COLOR="#C0C0C0"><FONT SIZE="+3">E</FONT></FONT></CENTER>
+
+
+
+<CENTER><FONT COLOR="#C0C0C0"><FONT SIZE="+3">S</FONT></FONT></CENTER>
+
+
+
+<CENTER><FONT COLOR="#C0C0C0"><FONT SIZE="+3">S</FONT></FONT></CENTER>
+
+
+
+<CENTER><FONT COLOR="#C0C0C0"><FONT SIZE="+3">A</FONT></FONT></CENTER>
+
+
+
+<CENTER><FONT COLOR="#C0C0C0"><FONT SIZE="+3">Y</FONT></FONT></CENTER>
+
+</TD>
+
+
+
+<TD VALIGN="TOP" BGCOLOR="#C0C0C0">
+
+<H3>
+
+Theme:</H3>
+
+<B>Power Desk eval v202</B>, to obtain from: <A HREF="javascript:if(confirm('http://www.mijenix.com/  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.mijenix.com/'" tppabs="http://www.mijenix.com/">http://www.mijenix.com</A> 
+
+
+
+<P>These are indeed a couple of utilities inluding an OLE container designed
+
+for the &quot;power user&quot; ;-) to maintain your desktop tasks etcetera. I'm concentrated
+
+on a program named Pdexplo.exe, an advanced explorer. I don't use such
+
+kind of stuff but some among you seem to like it (thanks Stefan for the
+
+interesting request!). 
+
+<BR>This a evaluating version and is limited to 30 day period. Then it
+
+starts a &quot;grace&quot; period of 10 days or so during that the user is supposed
+
+to realize what he is going to loose soon (also by playing sad songs to
+
+him!)- a new professional &quot;enslavement&quot; trick; look at Fravia's Enslavement
+
+techniques page. 
+
+<BR>The program creates some keys in the registry where the date of the
+
+installation is stored and proofs the current date on the system files
+
+(user.dat), you can check this by yourself, there is nothing unconvenient
+
+there. 
+
+<BR>You can easily find the protection code in the memory with SoftIce: 
+
+<PRE><FONT COLOR="#800080">...............
+
+0137:0044656C  8B3D54174500        MOV     EDI,[KERNEL32!GetLocalTime];&lt;==== !
+
+0137:00446572  C605C3A9440055      MOV     BYTE PTR [0044A9C3],55
+
+0137:00446579  C605C7A9440055      MOV     BYTE PTR [0044A9C7],55
+
+0137:00446580  C705C8A94400E8030000MOV     DWORD PTR [0044A9C8],000003E8
+
+0137:0044658A  FFD7                CALL    EDI ;    &lt;========= !!!!!!!!!!!!!!
+
+0137:0044658C  66817C2418CC07      CMP     WORD PTR [ESP+18],07CC
+
+0137:00446593  744E                JZ      004465E3 ;&gt;===================&gt;|
+
+0137:00446595  66817C2418CD07      CMP     WORD PTR [ESP+18],07CD         |
+
+0137:0044659C  7445                JZ      004465E3 ;&gt;===================&gt;|
+
+0137:0044659E  66817C2418CE07      CMP     WORD PTR [ESP+18],07CE         |
+
+0137:004465A5  743C                JZ      004465E3 ;&gt;===================&gt;|
+
+0137:004465A7  6A10                PUSH    10                             |
+
+0137:004465A9  FE0DC4A94400        DEC     BYTE PTR [0044A9C4]            |
+
+0137:004465AF  C605C6A9440009      MOV     BYTE PTR [0044A9C6],09         |
+
+.................</FONT></PRE>
+
+By slightly rejumping it we can start the target regardless of expired
+
+dates and periods, but the attempt to locate the checks with hexeditor
+
+or Wdasm fails. Disassembling the program we see at the above addresses: 
+
+<PRE><FONT COLOR="#800080">.................
+
+:0044656C 00000000000000000000    BYTE 10 DUP(0)
+
+:00446576 00000000000000000000    BYTE 10 DUP(0)
+
+:00446580 00000000000000000000    BYTE 10 DUP(0)
+
+..............</FONT></PRE>
+
+Really tough, eh? 
+
+<BR>Which tricks they have used to hide the real code until program start?
+
+The right assumption is that this piece of code is somewhere in the data
+
+area and is evntl. decoded and &quot;paste&quot; in the right place at run time. 
+
+<BR>How they do it? 
+
+<BR>Looking at the imported functions we see some with very meaningfull
+
+names like: 
+
+<PRE><FONT COLOR="#800080">...............
+
+KERNEL32.GetCurrentProcess
+
+KERNEL32.GetCurrentProcessId
+
+KERNEL32.OpenProcess
+
+KERNEL32.ReadProcessMemory
+
+KERNEL32.WriteProcessMemory
+
+...............</FONT></PRE>
+
+What you say? These could be the ones! 
+
+<BR>According to micro$oft manuals a process is a &quot;fundamental&quot; term in
+
+their(!) OS and 
+
+<PRE><FONT COLOR="#800080">&quot;..when You start a program from the disk it becames a process.&quot;</FONT></PRE>
+
+Aha! And in fact you can do many things with a process - getting its handle,
+
+opening it, reading from its memory AND WRITING TO IT, if you have the
+
+necessary rights; but when you <B><I>own</I></B> a process you have all
+
+rights as well! 
+
+<BR>So we BPX ReadProcessMemory in SoftIce and load the target. And BINGO! 
+
+<PRE><FONT COLOR="#800080">..................
+
+0137:00439FA0  81EC64010000        SUB     ESP,00000164
+
+0137:00439FA6  53                  PUSH    EBX
+
+0137:00439FA7  56                  PUSH    ESI
+
+0137:00439FA8  57                  PUSH    EDI
+
+0137:00439FA9  55                  PUSH    EBP
+
+0137:00439FAA  33FF                XOR     EDI,EDI
+
+0137:00439FAC  FF1578174500        CALL    [KERNEL32!GetCurrentProcessId]
+
+0137:00439FB2  50                  PUSH    EAX
+
+0137:00439FB3  57                  PUSH    EDI
+
+0137:00439FB4  6A38                PUSH    38
+
+0137:00439FB6  FF1530174500        CALL    [KERNEL32!OpenProcess]
+
+0137:00439FBC  8BF0                MOV     ESI,EAX
+
+0137:00439FBE  57                  PUSH    EDI
+
+0137:00439FBF  8D442440            LEA     EAX,[ESP+40]
+
+0137:00439FC3  6A40                PUSH    40
+
+0137:00439FC5  8B8C2480010000      MOV     ECX,[ESP+00000180]
+
+0137:00439FCC  50                  PUSH    EAX
+
+0137:00439FCD  51                  PUSH    ECX
+
+0137:00439FCE  56                  PUSH    ESI
+
+0137:00439FCF  FF1574174500        CALL    [KERNEL32!ReadProcessMemory]
+
+0137:00439FD5  8BAC2478010000      MOV     EBP,[ESP+00000178]
+
+0137:00439FDC  57                  PUSH    EDI
+
+0137:00439FDD  036C247C            ADD     EBP,[ESP+7C]
+
+0137:00439FE1  68F8000000          PUSH    000000F8
+
+0137:00439FE6  8D842484000000      LEA     EAX,[ESP+00000084]
+
+0137:00439FED  33DB                XOR     EBX,EBX
+
+0137:00439FEF  50                  PUSH    EAX
+
+0137:00439FF0  55                  PUSH    EBP
+
+0137:00439FF1  56                  PUSH    ESI
+
+0137:00439FF2  FF1574174500        CALL    [KERNEL32!ReadProcessMemory]
+
+0137:00439FF8  6639BC2482000000    CMP     [ESP+00000082],DI
+
+0137:0043A000  7641                JBE     0043A043
+
+0137:0043A002  8D442414            LEA     EAX,[ESP+14]
+
+0137:0043A006  6A00                PUSH    00
+
+0137:0043A008  6A28                PUSH    28
+
+0137:0043A00A  50                  PUSH    EAX
+
+0137:0043A00B  8D042F              LEA     EAX,[EBP+EDI]
+
+0137:0043A00E  05F8000000          ADD     EAX,000000F8
+
+0137:0043A013  50                  PUSH    EAX
+
+0137:0043A014  56                  PUSH    ESI
+
+0137:0043A015  FF1574174500        CALL    [KERNEL32!ReadProcessMemory]
+
+:
+
+:
+
+:
+
+</FONT><FONT COLOR="#FF0000">0137:0043A0D4  50                  PUSH    EAX ; &lt;== PCount = 0
+
+</FONT><FONT COLOR="#800080">0137:0043A0D5  83E103              AND     ECX,03
+
+0137:0043A0D8  F3AA                REPZ STOSB
+
+</FONT><FONT COLOR="#FF0000">0137:0043A0DA  8B542420            MOV     EDX,[ESP+20]
+
+0137:0043A0DE  A164E64400          MOV     EAX,[0044E664]
+
+0137:0043A0E3  8B4C2414            MOV     ECX,[ESP+14]
+
+0137:0043A0E7  52                  PUSH    EDX ; &lt;== Count = 1C4B bytes to read
+
+0137:0043A0E8  50                  PUSH    EAX ; &lt;= buffer in memory to save it
+
+0137:0043A0E9  51                  PUSH    ECX ; &lt;= address to read from = 445000h
+
+0137:0043A0EA  56                  PUSH    ESI ; &lt;== process ID 
+
+0137:0043A0EB  FF1574174500        CALL    [KERNEL32!ReadProcessMemory];&lt;=== !!!!!!!
+
+</FONT><FONT COLOR="#800080">0137:0043A0F1  A164E64400          MOV     EAX,[0044E664]
+
+0137:0043A0F6  83C002              ADD     EAX,02
+
+0137:0043A0F9  A354E64400          MOV     [0044E654],EAX
+
+0137:0043A0FE  668B10              MOV     DX,[EAX]
+
+0137:0043A101  A164E64400          MOV     EAX,[0044E664]
+
+0137:0043A106  83C004              ADD     EAX,04
+
+0137:0043A109  52                  PUSH    EDX
+
+0137:0043A10A  8B542420            MOV     EDX,[ESP+20]
+
+0137:0043A10E  A354E64400          MOV     [0044E654],EAX
+
+0137:0043A113  668B08              MOV     CX,[EAX]
+
+0137:0043A116  A164E64400          MOV     EAX,[0044E664]
+
+0137:0043A11B  83C006              ADD     EAX,06
+
+0137:0043A11E  A354E64400          MOV     [0044E654],EAX
+
+0137:0043A123  52                  PUSH    EDX
+
+0137:0043A124  0FB7C9              MOVZX   ECX,CX
+
+0137:0043A127  51                  PUSH    ECX
+
+</FONT><FONT COLOR="#FF0000">0137:0043A128  E823FEFFFF          CALL    00439F50 ;checks the area at 445000h
+
+</FONT><FONT COLOR="#800080">0137:0043A12D  8B442428            MOV     EAX,[ESP+28]
+
+0137:0043A131  83C40C              ADD     ESP,0C
+
+0137:0043A134  83C014              ADD     EAX,14
+
+</FONT><FONT COLOR="#FF0000">0137:0043A137  8B0D60E64400        MOV     ECX,[0044E660]
+
+0137:0043A13D  8B542410            MOV     EDX,[ESP+10]
+
+0137:0043A141  6A00                PUSH    00  ; &lt;== PCount = 0
+
+0137:0043A143  50                  PUSH    EAX ; &lt;== Count = 1C5F bytes to write
+
+0137:0043A144  51                  PUSH    ECX ; &lt;== buffer to read from
+
+0137:0043A145  52                  PUSH    EDX ; &lt;= address to write to = 445000
+
+0137:0043A146  56                  PUSH    ESI ; &lt;== process ID
+
+0137:0043A147  FF1570174500        CALL    [KERNEL32!WriteProcessMemory]
+
+</FONT><FONT COLOR="#800080">0137:0043A14D  8B54241C            MOV     EDX,[ESP+1C]
+
+0137:0043A151  8B3D60E64400        MOV     EDI,[0044E660]
+
+0137:0043A157  83C214              ADD     EDX,14
+
+0137:0043A15A  33C0                XOR     EAX,EAX
+
+0137:0043A15C  8BCA                MOV     ECX,EDX
+
+0137:0043A15E  C1E902              SHR     ECX,02
+
+0137:0043A161  F3AB                REPZ STOSD
+
+0137:0043A163  8BCA                MOV     ECX,EDX
+
+0137:0043A165  83E103              AND     ECX,03
+
+0137:0043A168  F3AA                REPZ STOSB
+
+0137:0043A16A  A164E64400          MOV     EAX,[0044E664]
+
+0137:0043A16F  50                  PUSH    EAX
+
+0137:0043A170  E8FB240000          CALL    0043C670
+
+0137:0043A175  83C404              ADD     ESP,04
+
+0137:0043A178  8B0D60E64400        MOV     ECX,[0044E660]
+
+0137:0043A17E  51                  PUSH    ECX
+
+0137:0043A17F  E8EC240000          CALL    0043C670
+
+0137:0043A184  83C404              ADD     ESP,04
+
+0137:0043A187  56                  PUSH    ESI
+
+0137:0043A188  FF15F0174500        CALL    [KERNEL32!CloseHandle]
+
+0137:0043A18E  8B8C247C010000      MOV     ECX,[ESP+0000017C]
+
+0137:0043A195  8B842478010000      MOV     EAX,[ESP+00000178]
+
+0137:0043A19C  51                  PUSH    ECX
+
+0137:0043A19D  50                  PUSH    EAX
+
+</FONT><FONT COLOR="#FF0000">0137:0043A19E  FF15E0A64400        CALL    [0044A6E0] ; &lt;== this leads us right
+
+</FONT><FONT COLOR="#800080">0137:0043A1A4  83C408              ADD     ESP,08     </FONT><FONT COLOR="#FF0000">;     to the decoded</FONT><FONT COLOR="#800080"> 
+
+0137:0043A1A7  5D                  POP     EBP        </FONT><FONT COLOR="#FF0000">;     protection scheme!
+
+</FONT><FONT COLOR="#800080">0137:0043A1A8  5F                  POP     EDI
+
+0137:0043A1A9  5E                  POP     ESI
+
+0137:0043A1AA  5B                  POP     EBX
+
+0137:0043A1AB  81C464010000        ADD     ESP,00000164
+
+0137:0043A1B1  C3                  RET
+
+.....................</FONT></PRE>
+
+I think this is clear enough: The firs few Reads are dealing with the &quot;hidden&quot;
+
+piece of code - reading and decoding it. The culprite in this scheme is
+
+the last Read, just before the final Write: It reads from the area where
+
+the code should be placed in and stores it in a buffer in memory (see your
+
+help reference for the parameters passed to both functions). Before the
+
+Write we have at memory location 00445000 following &quot;code salad&quot;: 
+
+<PRE><FONT COLOR="#800080">...............
+
+:00445000 AF                      scasd
+
+:00445001 DE00                    fiadd word ptr [eax]
+
+:00445003 00840E0F001203          add byte ptr [esi+ecx+0312000F], al
+
+:0044500A 2415                    and al, 15
+
+:0044500C 36                      BYTE 036h
+
+:0044500D 27                      daa
+
+:0044500E 3839                    cmp byte ptr [ecx], bh
+
+:00445010 6A7B                    push 0000007B
+
+:00445012 4C                      dec esp
+
+:00445013 9D                      popfd
+
+...............</FONT></PRE>
+
+But after that: 
+
+<PRE><FONT COLOR="#800080">..............
+
+0137:00445000  8B442408            MOV     EAX,[ESP+08]
+
+0137:00445004  81EC98000000        SUB     ESP,00000098
+
+0137:0044500A  3D10010000          CMP     EAX,00000110
+
+0137:0044500F  56                  PUSH    ESI
+
+0137:00445010  740C                JZ      0044501E
+
+0137:00445012  3D11010000          CMP     EAX,00000111
+
+0137:00445017  7468                JZ      00445081
+
+0137:00445019  E9C5000000          JMP     004450E3
+
+0137:0044501E  8BB424A0000000      MOV     ESI,[ESP+000000A0]
+
+0137:00445025  56                  PUSH    ESI
+
+0137:00445026  E8C5000000          CALL    004450F0
+
+0137:0044502B  83C404              ADD     ESP,04
+
+0137:0044502E  56                  PUSH    ESI
+
+0137:0044502F  FF1558194500        CALL    [USER32!SetForegroundWindow]
+
+0137:00445035  56                  PUSH    ESI
+
+0137:00445036  FF155C194500        CALL    [USER32!BringWindowToTop]
+
+0137:0044503C  A168E64400          MOV     EAX,[0044E668]
+
+..............</FONT></PRE>
+
+Then the call at 
+
+<PRE><FONT COLOR="#800080">0137:0043A128  E823FEFFFF          CALL    00439F50</FONT></PRE>
+
+reads the data FROM THE BUFFER and checks it against patches. The same
+
+routine uses some of the values there as pointers for further reads so
+
+when you change something in the .EXE the program crashes immediately due
+
+to an ugly PF. More on, a lot of jump-tables are set among the checks there
+
+accordingly to the read piece of code, which are necessary for the proper
+
+work of the program. 
+
+<H3>
+
+Preprocessing the target</H3>
+
+Now we have to summarize our approach: The idea is that cracking the protection
+
+itself should be rather banal and we can leave it for some later point.
+
+What we need first is to &quot;fix&quot; the code there and preserve it from the
+
+final Write, since it would destroy all our patches. This is a kind of
+
+&quot;crack before the crack&quot; which I called Precrack ;-). After that, you can
+
+analize it in a more relaxed way, maybe with your favorite cocktail in
+
+your hand... 
+
+<BR>To do this we can crack the check routine itself in order to make it
+
+set the jump tables and then bypass the WriteProcessMemory; this would
+
+probably work, but there are lots of checks, it would be the hell to trap
+
+them and we can never be sure that we have fixed them all. 
+
+<BR>It is allways better when we have to do with such complex encoding/decoding
+
+algorithms to try to fool them, making them believe that everything is
+
+OK, while our crack lurks in the background... This decreases the risk
+
+of evntl. further side effects too. 
+
+<BR>In this case I choosed following approach: 
+
+<UL TYPE="DISC">
+
+<LI>
+
+<FONT COLOR="#0000FF">we paste the decoded protection functions at their
+
+&quot;native&quot; location - 44400h in the .EXE or 00445000h in the process image
+
+(in memory at run time)</FONT></LI>
+
+
+
+<LI>
+
+<FONT COLOR="#0000FF">we copy the original content of that same location
+
+somewhere else in the .EXE</FONT></LI>
+
+
+
+<LI>
+
+<FONT COLOR="#0000FF">we pass then a pointer to the new location to the
+
+ReadProcessMemory function; since the check routine reads from the buffer,
+
+it should work properly and set the jumps for us just as if in the normal
+
+case</FONT></LI>
+
+
+
+<LI>
+
+<FONT COLOR="#0000FF">then we bypass the WriteProcessMemory and</FONT></LI>
+
+
+
+<LI>
+
+<FONT COLOR="#0000FF">...crack at least the &quot;preserved&quot; protection in some
+
+conventional way</FONT></LI>
+
+</UL>
+
+Now lets go one after another. 
+
+<BR>First we need of course the binary image of the protection scheme.
+
+This is best done with softice - we bpx at WriteProccesMemory and right
+
+after it we issue: 
+
+<PRE><FONT COLOR="#800080">d 004450000 L 1C5F</FONT></PRE>
+
+since we know that the code is already there at this point. Then GO and
+
+back in the SoftIce Loader we choose &quot;safe history to file&quot;. The hexdump
+
+of the memory with the protection is now in some file, p.e. dump.txt by
+
+me. 
+
+<BR>Now comes right the next problem: In the dump we have something like
+
+this: 
+
+<PRE><FONT COLOR="#800080">...................
+
+:d 445000 L 1cf5
+
+013F:00445000 8B 44 24 08 81 EC 98 00-00 00 3D 10 01 00 00 56  .D$.......=....V
+
+013F:00445010 74 0C 3D 11 01 00 00 74-68 E9 C5 00 00 00 8B B4  t.=....th.......
+
+013F:00445020 24 A0 00 00 00 56 E8 C5-00 00 00 83 C4 04 56 FF  $....V........V.
+
+013F:00445030 15 58 19 45 00 56 FF 15-5C 19 45 00 A1 68 E6 44  .X.E.V..\.E..h.D
+
+013F:00445040 00 8D 4C 24 04 50 68 00-AA 44 00 51 E8 9F 77 FF  ..L$.Ph..D.Q..w.
+
+013F:00445050 FF 8D 4C 24 10 83 C4 0C-51 68 36 A0 00 00 56 FF  ..L$....Qh6...V.
+
+013F:00445060 15 24 1A 45 00 A1 B0 A9-44 00 85 C0 74 75 6A 00  .$.E....D...tuj.
+
+013F:00445070 50 6A 30 68 39 A0 00 00-56 FF 15 FC 18 45 00 EB  Pj0h9...V....E..
+
+013F:00445080 62 66 8B 84 24 A8 00 00-00 66 3D 01 00 75 10 8B  bf..$....f=..u..
+
+013F:00445090 B4 24 A0 00 00 00 56 FF-15 68 19 45 00 EB 44 66  .$....V..h.E..Df
+
+..................</FONT></PRE>
+
+but this is still the ASCII representation of the memory content and we
+
+need it to be encoded back in bin format. Since no one of the HexEditors
+
+known by me offers such a feature like importing ASCII dump (or exporting
+
+its screen content to ASCII) we must help us ourself. I did it (once more!)
+
+for you this time. I modified the Skeleton program by Barry Kauler from
+
+his book <I>Windows Assembly Language and Systems Programming</I> (BTW
+
+a very interesting example of programing for windo$e in pure Assembly,
+
+you should study it!) by adding a menu item (Convert), a button with tooltip
+
+for it, some code to perform the convertion (Convert.asm) and named it
+
+<A HREF="javascript:if(confirm('http://www.geocities.com/BourbonStreet/Delta/3116/hexer.zip  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.geocities.com/BourbonStreet/Delta/3116/hexer.zip'" tppabs="http://www.geocities.com/BourbonStreet/Delta/3116/hexer.zip">Hexer</A>. 
+
+<BR>When you open a file the hexer reads its content in a buffer and when
+
+you press convert it converts it from ASCII dump in binary with consecutive
+
+saving it with the extension &quot;bin&quot;. The Hexer filters the input, thus throwing
+
+any characters that appear not to be a hex digit, otherwise it packs the
+
+consecutive hex digits pair-alike in a byte. 
+
+<BR>However you must strip both columns with the address information and
+
+the ASCII dump from your file, leaving this way only the relevant hex part
+
+in the middle; the hexer then takes care of the spaces and other non binary
+
+characters(-). You need for this a good TextEditor which allows block selecting,
+
+the <A HREF="javascript:if(confirm('http://www.textpad.com/  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.textpad.com/'" tppabs="http://www.textpad.com/">TextPad from Helios</A> is such a
+
+tool. 
+
+<BR>After doing all this you should have a file named XXX.bin which contains
+
+the whole protection scheme as it appears in the memory after the Write. 
+
+<BR>Now lets look for a place for the original code at that location -
+
+from 00445000 to 00446C60 (or 44400h to 46060h in the EXE), which, as we
+
+know is relevant for the checks before that. 
+
+<BR>With some experimenting you can see that the routine checks indeed
+
+only the non- zeroed part of it, these are 0E8Ah bytes of code - from 44400h
+
+to 4528Ah in the exe. From the bottom line in the code window in SoftIce
+
+we know that this section is called .etext and with pdump.exe we find out
+
+that it is 1E00 bytes long: 
+
+<PRE><FONT COLOR="#800080">.............
+
+  02 .etext    VirtSize: 00001C4B  VirtAddr:  00045000
+
+    raw data offs:   00044400  raw data size: 00001E00
+
+    relocation offs: 00000000  relocations:   00000000
+
+    line # offs:     00000000  line #'s:      00000000
+
+    characteristics: 60000020
+
+      CODE  MEM_EXECUTE  MEM_READ
+
+.............</FONT></PRE>
+
+The Virtual address above concerns the adresses in the process address
+
+space - when the program is loaded in memory (at run time), while the RAWs
+
+show the ofsets in the EXE file. 
+
+<BR>For our example we should need 1C4B+E8A=2AD5h bytes which goes beyond
+
+the .etext section's border. Right after the .etext is the data section
+
+what means that we cannot paste the E8Ah bytes content without destroying
+
+the data there. 
+
+<BR>What to do? Shold we give up? 
+
+<BR>Not at all! We must simply extend a section to the desired value. 
+
+<BR>This brings right two other problems: <B><I>Which section</I></B> should
+
+we extend, and <B><I>how to adjust the PE header</I></B> in order for the
+
+EXE to be properly loaded after that? 
+
+<BR>The .etext is the second section and there are still 5 of them, what
+
+means, when wee manipulate the size of the .etext we have to adjust all
+
+other that comes behind it which would be a hell job. So we look for the
+
+LAST section in this executable which happens to be the .reloc one: 
+
+<PRE><FONT COLOR="#800080">.............
+
+  07 .reloc    VirtSize: 0000572A  VirtAddr:  00072000
+
+    raw data offs:   0006A800  raw data size: 00005800
+
+    relocation offs: 00000000  relocations:   00000000
+
+    line # offs:     00000000  line #'s:      00000000
+
+    characteristics: 42000040
+
+      INITIALIZED_DATA  MEM_DISCARDABLE  MEM_READ
+
+............</FONT></PRE>
+
+As we can see it has 572A bytes initialized data (data we should NOT touch!)
+
+and is at offset 6A8000 in the file. With our piece of code the size increases
+
+to: 
+
+<PRE>        <FONT COLOR="#0000FF">572A+0E8A=65B4h</FONT></PRE>
+
+what we round up to 6600h (must be so for systems reason) for both virtual
+
+and raw size. The offset in the EXE where we should place our code is calculated
+
+so: 
+
+<PRE>        <FONT COLOR="#0000FF">6A800+572A=6FF2Ah</FONT></PRE>
+
+coze the actual data ordinals in the segment run from 0 to 5729h. 
+
+<BR>What leaves is the new virtual address that we will pass to the ReadProcessMemory
+
+function. We calculate it so: 
+
+<PRE>        <FONT COLOR="#0000FF">VirtAddr+OldVirtSize+ImageBase </FONT><FONT COLOR="#000000">what means:
+
+</FONT><FONT COLOR="#0000FF">        72000+572A+400000=47772Ah</FONT></PRE>
+
+We proceed further so: 
+
+<UL>
+
+<LI>
+
+<FONT COLOR="#0000FF">Open the Pdexplo.exe with your Hexeditor and go to
+
+location 44400h (Virt 445000)</FONT></LI>
+
+
+
+<LI>
+
+<FONT COLOR="#0000FF">Copy the content from 44400h to 4528A (E8A bytes,
+
+one less or more is not so relevant!)</FONT></LI>
+
+
+
+<LI>
+
+<FONT COLOR="#0000FF">Go to location 6FF2A (this should the .reloc section)
+
+and insert the copied bytes there; be sure to NOT only OVERWRITE the old
+
+content in the .reloc - Hedit and HexWorkShop have different behavior at
+
+this point!</FONT></LI>
+
+
+
+<LI>
+
+<FONT COLOR="#0000FF">Go back to 44400h and REPLACE the 1CF5 bytes there
+
+with our .bin file made by the Hexer</FONT></LI>
+
+</UL>
+
+Now it is time for the second problem. 
+
+<BR>We have to adjust the size of the .reloc in order to avoid wrong file
+
+format complain by the loader and to make sure the WHOLE new segment will
+
+be loaded. For this we open the Pdexplo.exe with the Hexeditor and search
+
+for the string &quot;.reloc&quot;. There are two occurences, the first in the header,
+
+right at the beginning of the exe, and the second where the actual segment
+
+starts. We need the first one since there the size and the offset are stored: 
+
+<PRE><FONT COLOR="#800080">..............
+
+00000260  00 00 00 40 00 00 40 2E 72 65 6C 6F 63 00 00  ....@..@.reloc..
+
+00000270  2A 57 00 00 20 07 00 00 58 00 00 00 A8 06 00  *W... ...X......
+
+..............</FONT></PRE>
+
+One can easely see where both - virtual and raw - data size are stored
+
+(in reverse order!): at 00000270 - Raw Size; and 00000277 - Virtual Size.
+
+So we must change them so: 
+
+<PRE><FONT COLOR="#800080">..............
+
+00000260  00 00 00 40 00 00 40 2E 72 65 6C 6F 63 00 00  
+
+00000270  00 66 00 00 20 07 00 00 66 00 00 00 A8 06 00  
+
+..............</FONT></PRE>
+
+I didn't adjust the data size coze it runs so, but you can do it if you
+
+have any loader problems, you can find it after the PE initials. 
+
+<BR>Now to the next problem. To make all work properly we must pass our
+
+new offset to the ReadProcessMemory. Lets look at the code there: 
+
+<PRE><FONT COLOR="#800080">..............
+
+0137:0043A0DA  8B542420            MOV     EDX,[ESP+20]
+
+0137:0043A0DE  A164E64400          MOV     EAX,[0044E664]
+
+0137:0043A0E3  8B4C2414            MOV     ECX,[ESP+14]; &lt;= address to read from
+
+0137:0043A0E7  52                  PUSH    EDX 
+
+0137:0043A0E8  50                  PUSH    EAX 
+
+0137:0043A0E9  51                  PUSH    ECX 
+
+0137:0043A0EA  56                  PUSH    ESI 
+
+               = 17 bytes
+
+0137:0043A0EB  FF1574174500        CALL    [KERNEL32!ReadProcessMemory]
+
+..............</FONT></PRE>
+
+You see that the address to read from is passed via the stack. The stack
+
+points in this section of code to a region with useful system info about
+
+the exe, the hell knows how this data get there! We don't want to crack
+
+deeper so we change it to: 
+
+<PRE><FONT COLOR="#800080">............
+
+0137:0043A0DA  8B542420            MOV     EDX,[ESP+20]
+
+0137:0043A0DE  A164E64400          MOV     EAX,[0044E664]
+
+0137:0043A0E3  52                  PUSH    EDX ; &lt;== Count, doesn't matter!
+
+0137:0043A0E4  50                  PUSH    EAX
+
+0137:0043A0E5  682A774700          PUSH    0047772A ; &lt;=== our new location
+
+0137:0043A0EA  56                  PUSH    ESI
+
+               = 17 bytes!
+
+0137:0043A0EB  FF1574174500        CALL    [KERNEL32!ReadProcessMemory]
+
+............</FONT></PRE>
+
+and everything will be OK. 
+
+<BR>You haven't forgotten that we have to bypass the WriteProcessMemory
+
+function too, since we don't want it to overwrite our decoded protection
+
+with the future cracks there. In the original we have: 
+
+<PRE><FONT COLOR="#800080">............
+
+0137:0043A141  6A00                PUSH    00
+
+0137:0043A143  50                  PUSH    EAX
+
+0137:0043A144  51                  PUSH    ECX
+
+0137:0043A145  52                  PUSH    EDX
+
+0137:0043A146  56                  PUSH    ESI
+
+0137:0043A147  FF1570174500        CALL    [KERNEL32!WriteProcessMemory]
+
+0137:0043A14D  8B54241C            MOV     EDX,[ESP+1C]
+
+............</FONT></PRE>
+
+which we change to: 
+
+<PRE><FONT COLOR="#800080">............
+
+
+
+0137:0043A141  EB0A                JMP     0043A14D
+
+0137:0043A143  50                  PUSH    EAX
+
+0137:0043A144  51                  PUSH    ECX
+
+0137:0043A145  52                  PUSH    EDX
+
+0137:0043A146  56                  PUSH    ESI
+
+0137:0043A147  FF1570174500        CALL    [KERNEL32!WriteProcessMemory]
+
+0137:0043A14D  8B54241C            MOV     EDX,[ESP+1C]
+
+..........</FONT></PRE>
+
+So. 
+
+<H3>
+
+Cracking the target</H3>
+
+Now you can start the modified target and if you did everything OK it should
+
+present to you its usual screen. 
+
+<BR>The part with the protection routines is at its native location - 44400h
+
+in the exe, 445000 in the Wdasm - and you can crack it as you fancy, I'm
+
+not going to do it this time for you! If you are so newbee or so lazy there
+
+is on my site the full <FONT COLOR="#0000FF"><A HREF="javascript:if(confirm('http://www.geocities.com/BourbonStreet/Delta/3116/uvpack.zip  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.geocities.com/BourbonStreet/Delta/3116/uvpack.zip'" tppabs="http://www.geocities.com/BourbonStreet/Delta/3116/uvpack.zip">uvpack.zip</A></FONT>:
+
+UncleVan's X-mas pack with the listings, the dump.txt and dump.bin files,
+
+pedump.exe and &quot;my&quot; version of the Pdexplo.exe. 
+
+<BR>The other few exe's should v'been protected in a similar manner, you
+
+must find out this by yourself. If you find that this is not worth the
+
+effort and you still can't life without it you better go to the local airport
+
+and carry the baggage of the business class passengers for few hours, then
+
+you have the necessary money for buying it ;-) </TD>
+
+</TR>
+
+
+
+<TR>
+
+<TD VALIGN="CENTER" BGCOLOR="#00B645">
+
+<CENTER><FONT SIZE="-1">Ob duh</FONT></CENTER>
+
+</TD>
+
+
+
+<TD BGCOLOR="#C0C0C0"><I>I wont even bother explaining you that you should
+
+BUY this target program if you intend to use it for a longer period than
+
+the allowed one. Should you want to STEAL this software instead, you don't
+
+need to crack its protection scheme at all: you'll find it on most Warez
+
+sites, complete and already regged, farewell.</I> </TD>
+
+</TR>
+
+
+
+<TR>
+
+<TD VALIGN="CENTER" BGCOLOR="#2AB6B6">
+
+<CENTER><FONT SIZE="-1">Final<BR>Notes</FONT></CENTER>
+
+</TD>
+
+
+
+<TD BGCOLOR="#C0C0C0">
+
+<H3>
+
+Recapitulation:</H3>
+
+Which conclusions can we make from this protection? 
+
+<BR>Well, they are getting better. This target is even harder to crack
+
+as some dongle protected ones. We still got the advantage of the assembly
+
+and cracking knowledge we obtained from our gurus, but there is only one
+
+little step remaining to the modifying &quot;on the fly&quot;, I wonder how they
+
+didn't make it yet; and they should, if they have read thoroughly enough
+
+Fravias page... ;-) the solution is shown there months ago! 
+
+<BR>Then we will have to do with fully different protection techniques
+
+and at the end there will be really &quot;man against man&quot;, I see glorious days
+
+coming... 
+
+
+
+<P>That was all for now. I hope you had a nice X-mas and wish you good
+
+luck and more cracks in the 
+
+<CENTER><B><FONT COLOR="#FF0000"><FONT SIZE="+1">Happy New Year - 1998!</FONT></FONT></B></CENTER>
+
+
+
+<CENTER>Greetings:</CENTER>
+
+
+
+<CENTER>Thanks +ORC and all of you who emailed me!</CENTER>
+
+Please send your questions/comments/offences/crack requests to <FONT COLOR="#3333FF"><A HREF="mailto:unclevan@geocities.com">me</A></FONT>! 
+
+
+
+<P><FONT COLOR="#008000">(c)</FONT> <FONT COLOR="#191970">UncleVan </FONT><FONT COLOR="#008000">1997
+
+All rights reserved</FONT> 
+
+
+
+<P>P.S. 
+
+<BR>Hey, just read a interesting add-on to my first essay, concerning a
+
+VB5 target named Icon Edit Pro - from Squirlle (Lord, how is this spoken
+
+out?): 
+
+<PRE><FONT COLOR="#663366">.........
+
+But what is this, lo, the proggie is the right
+
+versions, but the codes is all wrong. 
+
+........</FONT></PRE>
+
+I've done it for first in Oct, then when I wrote the essay in mid. November
+
+and there were still the same addresses as shown in the essay. The autor
+
+hadn't at this time a www page, so we can never be sure which the actual
+
+version is. But Squirlle can post me his download ftp and I will take a
+
+look at this one. 
+
+<BR><FONT COLOR="#191970">UncleVan</FONT> 
+
+<HR width="99%"></TD>
+
+</TR>
+
+
+
+<TR>
+
+<TD VALIGN="CENTER" BGCOLOR="#10A675">
+
+<CENTER><FONT SIZE="-1"></A>Add-on</FONT></CENTER>
+
+</TD>
+
+
+
+<TD BGCOLOR="#C0C0C0"><A name="anchoradda"><FONT size="+2">Marigold's add-on</FONT> (16 January 1998)<BR>
+
+<I>This is the second part of a very interesting letter by Marigold. The first 
+
+part deals with Timelock 3 protections and can be 
+
+read <A href="marigold.htm" tppabs="http://www.anticrack.de/fravia/marigold.htm">here</A>. I received it on 16 January 1998</I>
+
+<PRE>
+
+I confess now that the real reason to write this letter was the 
+
+essay by Uncle Van on Mijenix's target. I love Mijenix 
+
+protections! I cannot forget the acute pleasure their cracking 
+
+gave me! So, it is jealousy after all... 
+
+Uncle Van is wrong at least in one point: This program has a 
+
+history. For +ORC student it is quite a mistake...
+
+
+
+For me this history began with version 2.0, installed by 
+
+Pdeval20.exe. I think this version, though obsolete, is still 
+
+available. Its protection is as follows: application creates a 
+
+temporary file pdthkxx.tmp, decrypts and writes into it a .dll 
+
+code. Then it does LoadLibrary and GetProcAddress for all four 
+
+exported functions in it. Nothing special till now... The real 
+
+trick is that a call to one of the functions is inside the 
+
+message loop of the application. And this function contains 
+
+TranslateMessage and DispatchMessage, so it actually closes the 
+
+loop (only if all checks are satisfied). What to do? Patching of 
+
+encrypted DLL's code is unpractical, if only possible... Other 
+
+calls to protection functions are avoidable and the only real 
+
+problem is how to close the message loop. So, let's close it! The 
+
+application itself does not import TranslateMessage and 
+
+DispatchMessage; thus necessary steps include:
+
+1 GetModuleHandle for USER32,
+
+2 GetProcAddress for TranslateMessage and DispatchMessage,
+
+3 Create a short function which calls them and 
+
+4 Redirect call inside a message loop to this new function. 
+
+
+
+PowerDesk Suit includes five executables; in all cases &quot;gross 
+
+weight&quot; of patching does not exceed ~100 bytes, and we have a lot 
+
+of space to do it as we do not need now all that protectionist&#146;s 
+
+junk which creates and runs temporary DLL.
+
+
+
+A new generation of Mijenix's products (PowerDesk upgrades to 
+
+versions 2.0x, ZipMagic 1.0 Trial) uses &quot;improved&quot; protection. 
+
+Now it does not create a temporary DLL but decrypts a part of 
+
+application code &quot;in flight&quot;. (As rightly described in Uncle's 
+
+Van essay.) All other features of protection preserved intact! So 
+
+why shouldn't we use the same solution as before? The 
+
+installation procedure for PowerDesk upgrade to version 2.0x 
+
+checks (in its &quot;secret&quot; part) if the previous version is not 
+
+trial but purchased. If so, it continues (and closes the message 
+
+loop). So, it is all the same but easier to crack because this 
+
+application imports TranslateMessage and DispatchMessage 
+
+(steps 1 and 2 of above are unnecessary here). Patching 
+
+in this case is only ~20 bytes long. It is longer for two 
+
+ZipMagic's executables but quite similar. 
+
+
+
+Once having been understood, Mijenix's trick does not look 
+
+very tough either, but I would rather place it higher than 
+
+the tricks of TimeLock 3.03.
+
+
+
+I hope this letter will be of some interest to you. And, please, 
+
+don't call my favorite approach &quot;brute force&quot;. It is not brute, 
+
+as applications work better after that... they do not need to do 
+
+many foolish things.
+
+
+
+     Many kisses,
+
+
+
+      Marigold.
+
+
+
+mari-g(at)usa(point)net</PRE></TD>
+
+</TR>
+
+
+
+
+
+
+
+<TR>
+
+<TD VALIGN="CENTER" BGCOLOR="#898030">
+
+<CENTER><FONT COLOR="#FFFFFF"><FONT SIZE="-1">way out</FONT></FONT></CENTER>
+
+</TD>
+
+
+
+<TD BGCOLOR="#C0C0C0">
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering, choose
+
+your way out:</I></CENTER>
+
+
+
+<CENTER><A HREF="javascript:if(confirm('http://www.fravia.org/advanced.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.fravia.org/advanced.htm'" tppabs="http://www.fravia.org/advanced.htm"><IMG SRC="xtranio.gif" tppabs="http://www.anticrack.de/fravia/xtranio.gif" ALT="advanced" BORDER="0" HEIGHT="43" WIDTH="114" ALIGN="CENTER"></A> </CENTER>
+
+
+
+<CENTER><FONT COLOR="#808080">Back to advanced cracking</FONT> 
+
+<HR width="33%"><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" BORDER="0" HEIGHT="13" WIDTH="13" ALIGN="BOTTOM"><A HREF="javascript:if(confirm('http://www.fravia.org/index.html  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.fravia.org/index.html'" tppabs="http://www.fravia.org/index.html">homepage</A> <IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" BORDER="0" HEIGHT="13" WIDTH="13" ALIGN="BOTTOM"><A HREF="javascript:if(confirm('http://www.fravia.org/links.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.fravia.org/links.htm'" tppabs="http://www.fravia.org/links.htm">links</A> <IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" BORDER="0" HEIGHT="13" WIDTH="13" ALIGN="BOTTOM"><A HREF="javascript:if(confirm('http://www.fravia.org/noanon.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.fravia.org/noanon.htm'" tppabs="http://www.fravia.org/noanon.htm">anonymity</A> <IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" BORDER="0" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13"><A HREF="javascript:if(confirm('http://www.fravia.org/orc.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.fravia.org/orc.htm'" tppabs="http://www.fravia.org/orc.htm">+ORC</A> <IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" BORDER="0" HEIGHT="13" WIDTH="13" ALIGN="BOTTOM"><A HREF="javascript:if(confirm('http://www.fravia.org/student.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.fravia.org/student.htm'" tppabs="http://www.fravia.org/student.htm">students'
+
+essays</A> <IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" BORDER="0" HEIGHT="13" WIDTH="13" ALIGN="BOTTOM"><A HREF="javascript:if(confirm('http://www.fravia.org/academy.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.fravia.org/academy.htm'" tppabs="http://www.fravia.org/academy.htm">academy
+
+database</A> </CENTER>
+
+
+
+<CENTER><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" BORDER="0" HEIGHT="13" WIDTH="13" ALIGN="BOTTOM"><A HREF="javascript:if(confirm('http://www.fravia.org/tools.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.fravia.org/tools.htm'" tppabs="http://www.fravia.org/tools.htm">tools</A> <IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" BORDER="0" HEIGHT="13" WIDTH="13" ALIGN="BOTTOM"><A HREF="javascript:if(confirm('http://www.fravia.org/cocktail.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.fravia.org/cocktail.htm'" tppabs="http://www.fravia.org/cocktail.htm">cocktails</A> <IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" BORDER="0" HEIGHT="13" WIDTH="13" ALIGN="BOTTOM"><A HREF="javascript:if(confirm('http://www.fravia.org/ideale.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.fravia.org/ideale.htm'" tppabs="http://www.fravia.org/ideale.htm">antismut
+
+CGI-scripts</A> <IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" BORDER="0" HEIGHT="13" WIDTH="13" ALIGN="BOTTOM"><A HREF="javascript:if(confirm('http://www.fravia.org/searengi.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.fravia.org/searengi.htm'" tppabs="http://www.fravia.org/searengi.htm">search_forms</A> <IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" BORDER="0" HEIGHT="13" WIDTH="13" ALIGN="BOTTOM"><A HREF="javascript:if(confirm('http://www.fravia.org/info.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.fravia.org/info.htm'" tppabs="http://www.fravia.org/info.htm">mail_fravia+</A> </CENTER>
+
+
+
+<CENTER><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" BORDER="0" HEIGHT="13" WIDTH="13" ALIGN="BOTTOM"><A HREF="javascript:if(confirm('http://www.fravia.org/legal.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.fravia.org/legal.htm'" tppabs="http://www.fravia.org/legal.htm">Is
+
+reverse engineering legal?</A> </CENTER>
+
+</TD>
+
+</TR>
+
+</TABLE>
+
+ 
+
+</BODY>
+
+</HTML>
+

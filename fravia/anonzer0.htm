@@ -1,0 +1,1442 @@
+<html>
+
+<head>
+
+   <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+
+   <meta name="GENERATOR" content="Mozilla/4.5 [en] (Win95; I) [Netscape]">
+
+   <meta name="Author" content="zer0plus">
+
+   <title>anonzer0.htm: Making an anonymous mailer</title>
+
+</head>
+
+<body text="#001010" bgcolor="#C0C0C0" vlink="#405040">
+
+&nbsp;
+
+<table BORDER CELLSPACING="2" WIDTH="100%" HEIGHT="22">
+
+<tr>
+
+<td></td>
+
+
+
+<td><!-- Choose  a TITLE and a subtitle, choose well! -->
+
+<center><font size="+2">Making an anonymous mailer</font>
+
+<br><font size="+1">Messing with data structures</font></center>
+
+</td>
+
+
+
+<td><center><a href="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm"><img SRC="anon1.gif" tppabs="http://www.anticrack.de/fravia/anon1.gif" ALT="noanon" ALIGN="BOTTOM" WIDTH="114" HEIGHT="43" BORDER="0" VSPACE="0" HSPACE="0"></a>
+
+<br><font color="gray">Fravia's Anonymity Academy</font><br></center></td>
+
+</tr>
+
+
+
+<tr>
+
+<td BGCOLOR="#FFFFEA">
+
+<center><!-- CHOOSE A DATE (will probably be changed) --><font color="#890000">23
+
+September 1999</font></center>
+
+</td>
+
+
+
+<td BGCOLOR="#FFFFEA">
+
+<center>by&nbsp;<!-- CHOOSE A HANDLE , i.e. your pseudo (wont be changed) --><font size="+3">Zer0+</font></center>
+
+</td>
+
+<td VALIGN="CENTER" BGCOLOR="#FFFFEA">
+
+<a href="hcu98_3.htm" tppabs="http://www.anticrack.de/fravia/hcu98_3.htm"><img SRC="hcu1.gif" tppabs="http://www.anticrack.de/fravia/hcu1.gif" ALT="+cracker" ALIGN="BOTTOM" WIDTH="114" HEIGHT="43" BORDER="0" VSPACE="0" HSPACE="0"></a>
+
+</td>
+
+</tr>
+
+
+
+<tr>
+
+<td>
+
+<center><a href="index.html" tppabs="http://www.anticrack.de/fravia/index.html"><img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" BORDER="0" align="BOTTOM" WIDTH="13" HEIGHT="13"></a></center>
+
+</td>
+
+
+
+<td BGCOLOR="#898030">
+
+<center>Courtesy of Fravia's page of reverse engineering
+
+<br>and the Immortal Descendants, Inc.</center>
+
+</td>
+
+
+
+<td BGCOLOR="#898030">
+
+<center><!-- Your truly+ will edit only if really necessary -->slightly
+
+edited&nbsp;
+
+<br>by fravia+&nbsp;</center>
+
+</td>
+
+</tr>
+
+
+
+<tr>
+
+<td><font color="#C4C0CF">fra_00xx</font>
+
+<br><font color="#C4C0CF">980924</font>
+
+<br><font color="#C4C0CF">Zer0+</font>
+
+<br><font color="#C4C0CF">0100</font>
+
+<br><font color="#C4C0CF">NA</font>
+
+<br><font color="#C4C0CF">PC</font></td>
+
+
+
+<td>
+
+<center><i>Heya! Zer0+ is back with an extremely interesting essay about 
+
+anonymizing your mail (and reversing data structures as well :-)<br>I believe this to be 
+
+a very important 
+
+paper for my anonimity section, and I wish others would contribute on these same lines... 
+
+BTW, if Zer0+ agrees (and if he or any other +student has the time to take care of that), 
+
+I believe 
+
+we could as well publish, now, the 
+
+anonymity &quot;tricks&quot; that 
+
++Alistair teached us in 1998...</i></center>
+
+</td>
+
+</tr>
+
+
+
+<tr>
+
+<td></td>
+
+
+
+<td BGCOLOR="#898030">
+
+<center><b>There is a crack, a crack in everything That's how the light
+
+gets in</b></center>
+
+<!-- Leonard Coehn's old song, because we are poets, not only crackers --></td>
+
+
+
+<td></td>
+
+</tr>
+
+
+
+<tr>
+
+<td VALIGN="CENTER" BGCOLOR="#C6E7C6">
+
+<center><font color="#0000FF">Rating</font></center>
+
+</td>
+
+
+
+<td VALIGN="CENTER" BGCOLOR="#C6E7C6">
+
+<center><font color="#0000FF">( )<b>Beginner</b> (x)<b>Intermediate</b>
+
+( )<b>Advanced</b> ( )<b>Expert</b></font></center>
+
+</td>
+
+
+
+<td></td>
+
+</tr>
+
+</table>
+
+<!-- END HEAD  -->
+
+<br><!-- CORPUS  --><!-- CHOOSE A COMMENT (may be changed)  -->
+
+<br><tt>This essay shows how to modify data structures in a program, and
+
+shows</tt>
+
+<br><tt>how to send anonymous emails easily.</tt>
+
+<p>
+
+<hr>
+
+<center><!-- Repeat your TITLE  --><font size="+2">Modifying NetMail95 to
+
+exploit a Sendmail bug</font>
+
+<br><!-- Repeat your SUBTITLE -->Using long strings as domain name
+
+<br><!-- REPEAT YOUR CHOSEN HANDLE HERE --><font color="#0B7FC1">Written
+
+by Zer0+</font></center>
+
+<!-- INTRO STARTS HERE -->
+
+<table BORDER CELLSPACING="2" WIDTH="100%" HEIGHT="22">
+
+<tr>
+
+<td BGCOLOR="#C6E7C6">
+
+<center><font color="#0000FF"><font size="+2">Introduction</font></font></center>
+
+</td>
+
+</tr>
+
+</table>
+
+<!-- PASTE HERE YOUR INTRODUCTION -->
+
+<br><tt>There is a well documented bug in Sendmail 8.8.x (described <a href="javascript:if(confirm('http://csclub.stthomas.edu/~bugtraq/1998/msg00897.html  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://csclub.stthomas.edu/~bugtraq/1998/msg00897.html'" tppabs="http://csclub.stthomas.edu/~bugtraq/1998/msg00897.html">here</a>)</tt>
+
+<br><tt>which can be used to erase all relevant information about the sender
+
+from</tt>
+
+<br><tt>the header of the email. The exploit is based on the fact that
+
+the buffer</tt>
+
+<br><tt>where the information on the origin of the mail is stored can be</tt>
+
+<br><tt>overwritten with a 1kb string which is passed to Sendmail as the
+
+argument</tt>
+
+<br><tt>of the HELO command. For the meaning of HELO and the description
+
+of the</tt>
+
+<br><tt>whole SMTP protocol please read <a href="javascript:if(confirm('ftp://ftp.rz.uni-kiel.de/pub/rz/dokumentation/netz/RFCs/RFC0821/  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='ftp://ftp.rz.uni-kiel.de/pub/rz/dokumentation/netz/RFCs/RFC0821/'" tppabs="ftp://ftp.rz.uni-kiel.de/pub/rz/dokumentation/netz/RFCs/RFC0821/">RFC821</a>.</tt>
+
+<br><tt>So to send an anon mail we want an email program to pass a 1kb
+
+string instead of our domain name when it says HELO to Sendmail.</tt>
+
+<p><!-- TOOLS STARTS HERE -->
+
+<table BORDER CELLSPACING="2" WIDTH="100%" HEIGHT="22">
+
+<tr>
+
+<td BGCOLOR="#C6E7C6">
+
+<center><font color="#0000FF"><font size="+2">Tools required</font></font></center>
+
+</td>
+
+</tr>
+
+</table>
+
+<!-- PASTE HERE YOUR REQUIRED TOOLS -->
+
+<br><tt>Wdasm</tt>
+
+<br><tt>Dumppe from Clive Turvey</tt>
+
+<br><tt>hexeditor</tt>
+
+<p><!-- TARGET URL STARTS HERE -->
+
+<table BORDER CELLSPACING="2" WIDTH="100%" HEIGHT="22">
+
+<tr>
+
+<td BGCOLOR="#C6E7C6">
+
+<center><font color="#0000FF"><font size="+2">Target's URL/FTP</font></font></center>
+
+</td>
+
+</tr>
+
+</table>
+
+<!-- DON'T FORGET TO PASTE HERE THE URL/FTP OF YOUR TARGET(S) -->
+
+<br><tt>NetMail 95 2.12 is all over the net as nm95_212.zip, you can find
+
+it</tt>
+
+<br><tt>for example <a href="javascript:if(confirm('ftp://ftp.bitcon.no/.4/winsite/win95/netutil/nm95_212.zip  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='ftp://ftp.bitcon.no/.4/winsite/win95/netutil/nm95_212.zip'" tppabs="ftp://ftp.bitcon.no/.4/winsite/win95/netutil/nm95_212.zip">here</a>.</tt>
+
+<p><!-- PROGRAM HISTORY STARTS HERE -->
+
+<table BORDER CELLSPACING="2" WIDTH="100%" HEIGHT="22">
+
+<tr>
+
+<td BGCOLOR="#C6E7C6">
+
+<center><font color="#0000FF"><font size="+2">Program History</font></font></center>
+
+</td>
+
+</tr>
+
+</table>
+
+<!-- PASTE HERE YOUR TARGET'S HISTORY (if any) -->
+
+<br><tt>Not relevant</tt>
+
+<p><!-- REAL ESSAY  STARTS HERE -->
+
+<table BORDER CELLSPACING="2" WIDTH="100%" HEIGHT="22">
+
+<tr>
+
+<td BGCOLOR="#C6E7C6">
+
+<center><font color="#0000FF"><font size="+2">Essay</font></font></center>
+
+</td>
+
+</tr>
+
+</table>
+
+<!-- PASTE HERE THE TEXT OF YOUR ESSAY     THIS IS OF COURSE THE MOST IMPORTANT PART     PLEASE CHECK THE MARGINS WHEN YOU ARE FINISHED!      SHOULD NOT BLAST OPERA'S MARGINS OUT! HAVE A LOOK INSIDE     YOUR OWN BROWSER WHEN YOU FINISH!  -->
+
+<br><tt>So we want our mailer to send a long string to the Sendmail SMTP
+
+server</tt>
+
+<br><tt>in the HELO command as a domain name.</tt>
+
+<p><tt>Unfortunately, not many mailers allow you to define the domain name
+
+they</tt>
+
+<br><tt>pass and even less capable to handle a 1kb string as a valid domain
+
+name.</tt>
+
+<br><tt>Of course, one can write his own mailer or modify an open source
+
+one, but</tt>
+
+<br><tt>I preferred to play with Netmail, which I am using currently.</tt>
+
+<p><tt>Netmail 95 2.12 (Nm95.exe 73728 bytes) is a free (but not open source)</tt>
+
+<br><tt>win32 command line mailer which sends text files as emails and
+
+puts</tt>
+
+<br><tt>incoming emails into text files.</tt>
+
+<br><tt>It also comes with a gui configuration tool (Nm95cfg.exe 76800
+
+bytes) to</tt>
+
+<br><tt>set different parameters like incoming and outgoing directory,
+
+etc.</tt>
+
+<br><tt>Everything is as simple as can be, just the way I like it.</tt>
+
+<br><tt>It also lets you define the domain name to be used in the HELO
+
+command</tt>
+
+<br><tt>which is a good start. :)</tt>
+
+<p><b><tt>Cracking Nm95cfg.exe:</tt></b>
+
+<br><tt>Start Nm95cfg.exe create a new config file and fill in the relevant
+
+info.</tt>
+
+<br><tt>The first textbox on the server tab asks for the domain name, that's
+
+what</tt>
+
+<br><tt>we have to mess with. You also have to set the SMTP, POP server
+
+etc.</tt>
+
+<br><tt>All these info are saved into the freshly created Nm95.cfg file.</tt>
+
+<br><tt>Open and study the file, create a new one and study it too.</tt>
+
+<p><tt>The next conclusions can be drawn:</tt>
+
+<br><tt>- the file is 590 bytes long (all numbers are hexadecimal further
+
+on)</tt>
+
+<br><tt>- each entry is fixed length, so shorter strings are padded with
+
+zeros</tt>
+
+<br><tt>&nbsp; longer strings are trimmed</tt>
+
+<br><tt>- the order of entries and their offset from the beginning of the
+
+file:</tt>
+
+<p><tt>Entry&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+Offset(bytes)</tt>
+
+<br><tt>&quot;NetMail 20 CFG&quot; string&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+0</tt>
+
+<br><tt>domain name&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+10</tt>
+
+<br><tt>incoming folder&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+50</tt>
+
+<br><tt>outgoing folder&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+A0</tt>
+
+<br><tt>smtp server&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+F0</tt>
+
+<br><tt>pop server&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+130</tt>
+
+<br><tt>pop username&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+170</tt>
+
+<br><tt>pop password&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+1F0</tt>
+
+<br><tt>log file&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+230</tt>
+
+<br><tt>number of mail in inbox&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 280</tt>
+
+<br><tt>dialup connection name&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+284</tt>
+
+<br><tt>dial up user name&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+385</tt>
+
+<br><tt>dial up password&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+486</tt>
+
+<br><tt>flood protection&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+588</tt>
+
+<br><tt>delete large messages&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+58C</tt>
+
+<p><tt>It is clear that we have to modify Nm95.exe to make it handle a
+
+400 bytes</tt>
+
+<br><tt>long string as the domain name instead of the 40 bytes long we
+
+see here.</tt>
+
+<p><tt>Lets check how Nm95cfg.exe handles this file. Disassemble Nm95cfg.exe</tt>
+
+<br><tt>with wdasm and load the process. Set break points on ReadFile function</tt>
+
+<br><tt>calls (two locations) and let it run.</tt>
+
+<p><tt>We break at 403BC3 on the ReadFile call, and wdasm api viewer tells
+
+us</tt>
+
+<br><tt>what are the arguments of the call.</tt>
+
+<br><tt>arg1, file handle = 06</tt>
+
+<br><tt>arg2, address of buffer receiving the data = 660078</tt>
+
+<br><tt>arg3, number of bytes to read = 1000</tt>
+
+<br><tt>arg4, address of number of bytes actually read = 64Fd34</tt>
+
+<br><tt>arg5, address of overlapped data = 0 (not important now)</tt>
+
+<p><tt>The most important information here is, that the program is able
+
+to</tt>
+
+<br><tt>read 1000 bytes data which is much more than the original 590 plus</tt>
+
+<br><tt>the 400 extra bytes we would like to add to the cfg file, so</tt>
+
+<br><tt>we do not have to worry about the ReadFile function.</tt>
+
+<br><tt>It worth to note that all the data is read in one big chunk, meaning</tt>
+
+<br><tt>that must be a variable (a structure or a string) in the program
+
+which</tt>
+
+<br><tt>will hold all the data after the read is completed.</tt>
+
+<p><tt>After the read file function we single step with F8 through some
+
+error</tt>
+
+<br><tt>checks until we see that the program starts to copy the data from
+
+the</tt>
+
+<br><tt>input buffer at 660078 to its final location at 409C60. This happens</tt>
+
+<br><tt>at 40255A code position. Let it finish the copy and single step
+
+until</tt>
+
+<br><tt>you find the call which initiated the whole read process at 4010AE.</tt>
+
+<br><tt>Here is a code snippet from that location:</tt>
+
+<p><tt>:004010A0 and eax, 00000008</tt>
+
+<br><tt>:004010A3 add eax, 00000588&nbsp;&nbsp;&nbsp; ;8+588=590 !</tt>
+
+<br><tt>:004010A8 push eax&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+;push the length of the file = 590</tt>
+
+<br><tt>:004010A9 push 00409C60&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+;push the address where to read !</tt>
+
+<br><tt>:004010AE call 004024E0&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+;read the data</tt>
+
+<br><tt>:004010B3 add esp, 00000010</tt>
+
+<br><tt>:004010B6 cmp eax, 00000001&nbsp;&nbsp;&nbsp; ;successful?</tt>
+
+<br><tt>:004010B9 jne 00401374&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+;if not damaged config file</tt>
+
+<br><tt>:004010BF test ebx, ebx</tt>
+
+<br><tt>:004010C1 jne 004010DF&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+;old config file</tt>
+
+<br><tt>:004010C3 push 00000010</tt>
+
+<p><tt>* StringData Ref -&gt;&quot;NetMail95 20 CFG&quot;</tt>
+
+<br><tt>&nbsp;&nbsp; |</tt>
+
+<br><tt>:004010C5 push 00408094&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+;file title</tt>
+
+<br><tt>:004010CA push 00409C60&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+;beginning of data</tt>
+
+<br><tt>:004010CF call 004024A0&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+;check if the title is correct</tt>
+
+<br><tt>:004010D4 add esp, 0000000C</tt>
+
+<br><tt>:004010D7 test eax, eax</tt>
+
+<br><tt>:004010D9 jne 00401374&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+;if not damaged config file</tt>
+
+<br><tt>.</tt>
+
+<br><tt>.</tt>
+
+<br><tt>.&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+;start processing the individual entries</tt>
+
+<br><tt>:00401100 mov edi, 00409C70&nbsp;&nbsp;&nbsp; ;domain name string
+
+!</tt>
+
+<br><tt>:00401105 mov ecx, FFFFFFFF</tt>
+
+<br><tt>:0040110A sub eax, eax</tt>
+
+<br><tt>:0040110C repnz&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+;get the length</tt>
+
+<br><tt>:0040110D scasb</tt>
+
+<br><tt>:0040110E not ecx</tt>
+
+<br><tt>:00401110 sub edi, ecx</tt>
+
+<br><tt>:00401112 mov eax, ecx</tt>
+
+<br><tt>:00401114 shr ecx, 02</tt>
+
+<br><tt>:00401117 mov esi, edi</tt>
+
+<br><tt>:00401119 mov edi, 00409114&nbsp;&nbsp;&nbsp; ;address of the new
+
+string variable !</tt>
+
+<br><tt>:0040111E repz&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+;copy to the new variable</tt>
+
+<br><tt>:0040111F movsd</tt>
+
+<br><tt>:00401120 mov ecx, eax</tt>
+
+<br><tt>:00401122 and ecx, 00000003</tt>
+
+<br><tt>:00401125 repz</tt>
+
+<br><tt>:00401126 movsb</tt>
+
+<br><tt>:00401127 mov edi, 00409CB0&nbsp;&nbsp;&nbsp; ;continue with, incoming
+
+folder string .etc</tt>
+
+<p><tt>The important information here is that the program refers to the</tt>
+
+<br><tt>begining of the data by a fixed address 409C60 which means that</tt>
+
+<br><tt>a global structure holds our data. We can get the address of each</tt>
+
+<br><tt>entry by adding the offset of the entry we calculated previously</tt>
+
+<br><tt>from the Nm95.cfg file to 409C60. The domain name is at address</tt>
+
+<br><tt>409C70. In the source code the structure might have been looking</tt>
+
+<br><tt>like this:</tt>
+
+<p><tt>typedef struct</tt>
+
+<br><tt>{</tt>
+
+<br><tt>&nbsp; char title[10];</tt>
+
+<br><tt>&nbsp; char domain_name[40];</tt>
+
+<br><tt>&nbsp; char incoming_folder[50];</tt>
+
+<br><tt>&nbsp; .</tt>
+
+<br><tt>&nbsp; .</tt>
+
+<br><tt>&nbsp; .</tt>
+
+<br><tt>&nbsp; int del_large_mesage;</tt>
+
+<br><tt>} configdata;</tt>
+
+<p><tt>At 401100 the program starts to copy the members of the structure</tt>
+
+<br><tt>into individual variables which are associated with the text boxes</tt>
+
+<br><tt>on the form. The string variable containing the domain name is
+
+at</tt>
+
+<br><tt>409114 and the length of the string is stored at 409110 (already</tt>
+
+<br><tt>set to 40).</tt>
+
+<p><tt>We now know, how the data is read and put into string variables.</tt>
+
+<br><tt>We only have to find how where it is copied back into the structure</tt>
+
+<br><tt>before the config file is saved. We only have to search for the</tt>
+
+<br><tt>references to 409114 to find the important code pieces.</tt>
+
+<p><tt>Here the content of the textbox is copied into the string variable:</tt>
+
+<p><tt>:004017E8 push 00409114&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+;string variable !</tt>
+
+<br><tt>:004017ED push 00000104&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+;get 104 characters !</tt>
+
+<p><tt>* Reference To: USER32.SendDlgItemMessageA, Ord:01C4h</tt>
+
+<br><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+|</tt>
+
+<br><tt>:004017F2 mov esi, dword ptr [0040C1E4]&nbsp;&nbsp;&nbsp; ;send
+
+message</tt>
+
+<br><tt>:004017F8 push 0000000D&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+;WM_GETTEXT</tt>
+
+<p><tt>* Reference to Dialog: DialogID_006D, CONTROL_ID:04D6, &quot;&quot;</tt>
+
+<br><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+|</tt>
+
+<br><tt>:004017FA push 000004D6&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+;domain name textbox</tt>
+
+<br><tt>:004017FF push ebx&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+;parent window</tt>
+
+<br><tt>:00401800 call esi&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+;get the text</tt>
+
+<br>&nbsp;
+
+<p><tt>And here the data structure is filled from the variables before
+
+it</tt>
+
+<br><tt>gets saved into the config file:</tt>
+
+<p><tt>* StringData Ref -&gt;&quot;NetMail95 20 CFG&quot;</tt>
+
+<br><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+|</tt>
+
+<br><tt>:004013E0 mov eax, dword ptr [00408094]&nbsp;&nbsp;&nbsp; ;All
+
+these magic here is to put</tt>
+
+<br><tt>:004013E5 push esi&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+;the string &quot;NetMail 20 CFG&quot;</tt>
+
+<br><tt>:004013E6 mov esi, dword ptr [00408098]&nbsp;&nbsp;&nbsp; ;to address
+
+409C60 at the</tt>
+
+<br><tt>:004013EC mov dword ptr [00409C60], eax&nbsp;&nbsp;&nbsp; ;beginning
+
+of the structure</tt>
+
+<br><tt>:004013F1 mov eax, dword ptr [0040809C]</tt>
+
+<br><tt>:004013F6 mov dword ptr [00409C64], esi</tt>
+
+<br><tt>:004013FC push edi</tt>
+
+<p><tt>* StringData Ref -&gt;&quot;NetMail95 20 CFG&quot;</tt>
+
+<br><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+|</tt>
+
+<br><tt>:004013FD mov ecx, 00408094</tt>
+
+<br><tt>:00401402 mov dword ptr [00409C68], eax</tt>
+
+<br><tt>:00401407 mov edx, 00409C60</tt>
+
+<br><tt>:0040140C mov ecx, dword ptr [ecx+0C]</tt>
+
+<br><tt>:0040140F push 00000040&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+;finally, here take 40 bytes !</tt>
+
+<br><tt>:00401411 push 00409114&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+;of the domain name and !</tt>
+
+<br><tt>:00401416 mov dword ptr [edx+0C], ecx</tt>
+
+<br><tt>:00401419 push 00409C70&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+;copy it into the structure !</tt>
+
+<br><tt>:0040141E call 004013B0&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+;do it</tt>
+
+<br><tt>:00401423 add esp, 0000000C</tt>
+
+<br><tt>:00401426 push 00000050&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+;50 bytes of the incoming</tt>
+
+<br><tt>:00401428 push 00409420&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+;folder string is put</tt>
+
+<br><tt>:0040142D push 00409CB0&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+;into the structure, etc</tt>
+
+<br><tt>:00401432 call 004013B0&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+;do it</tt>
+
+<p><tt>Now, we can design our 'crack':</tt>
+
+<br><tt>- First, we have to make a new structure which has a 400 bytes
+
+long</tt>
+
+<br><tt>domain name entry instead of the original 40 bytes. We cannot just</tt>
+
+<br><tt>enlarge the structure at its original position because it would
+
+overwrite</tt>
+
+<br><tt>several other variables. We have to find a 950 bytes long empty
+
+space</tt>
+
+<br><tt>and put it there. Then we have to redirect all references to the
+
+old</tt>
+
+<br><tt>structure to the new one. (We have to modify all references to
+
+the</tt>
+
+<br><tt>size of the structure to the new size, too).</tt>
+
+<br><tt>- Second, we have to create a 400 bytes long string variable to
+
+hold</tt>
+
+<br><tt>the domain name and redirect every reference from the original
+
+string</tt>
+
+<br><tt>variable to this one. (Also every reference to the size of the
+
+string</tt>
+
+<br><tt>must be modified to be 400.)</tt>
+
+<br><tt>- Finally, we have to patch the code where the string is filled</tt>
+
+<br><tt>from the textbox to let it copy 400 bytes instead of 104.</tt>
+
+<p><tt>Where can we put the new 950 bytes long structure? We could create
+
+a new</tt>
+
+<br><tt>section to the program to hold our data, but it is not nice to
+
+increase</tt>
+
+<br><tt>the size of a nice compact program. Instead we can try to squeeze
+
+it</tt>
+
+<br><tt>into the padding space of the .data section. With Dumppe we get
+
+the</tt>
+
+<br><tt>next info: (for info on the PE header please see <a href="javascript:if(confirm('http://www.eccentrica.org/Mammon/pefile.html  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://www.eccentrica.org/Mammon/pefile.html'" tppabs="http://www.eccentrica.org/Mammon/pefile.html">here</a>.)</tt>
+
+<p><tt>03&nbsp; .data&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Virtual Address&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+00008000</tt>
+
+<br><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+Virtual Size&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+00003324</tt>
+
+<br><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+Raw Data Offset&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 00006000</tt>
+
+<br><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+Raw Data Size&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+00001000</tt>
+
+<br><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+Relocation Offset&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 00000000</tt>
+
+<br><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+Relocation Count&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 0000</tt>
+
+<br><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+Line Number Offset&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 00000000</tt>
+
+<br><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+Line Number Count&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 0000</tt>
+
+<br><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+Characteristics&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; C0000040</tt>
+
+<br><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+Initialized Data</tt>
+
+<br><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+Readable</tt>
+
+<br><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+Writeable</tt>
+
+<p><tt>It tells us that the section starts at 408000 (400000 is the image
+
+base)</tt>
+
+<br><tt>and 3324 bytes long so it lasts to 40B324 (both the original structure</tt>
+
+<br><tt>and the domain string are in this space). The sections are aligned
+
+to</tt>
+
+<br><tt>1000 so the next section starts at 40C000 therefore we have CDA
+
+byte long</tt>
+
+<br><tt>padding from 40B325 to 40BFFF. This is enough to hold our new 950
+
+bytes</tt>
+
+<br><tt>structure, but not enough for both the structure and the new 400
+
+bytes long</tt>
+
+<br><tt>string (D50 bytes). On the other hand we can use the original place
+
+of</tt>
+
+<br><tt>the old structure, which will not be used anymore to hold the string.</tt>
+
+<br><tt>This way we do not have to add more sections and increase the program
+
+size.</tt>
+
+<br><tt>We will put the new structure at 40B400 and the new string at 409D00.</tt>
+
+<br><tt>(This nice round numbers make calculations easy :)</tt>
+
+<p><tt>Here are the addresses of the structure we have to modify:</tt>
+
+<br><tt>Entry&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+old&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+new</tt>
+
+<br><tt>title&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+409C60&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 40B400</tt>
+
+<br><tt>domain name&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+409C70&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 40B410&nbsp;&nbsp;
+
+400 bytes now!</tt>
+
+<br><tt>incoming folder&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+409CB0&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 40B810</tt>
+
+<br><tt>outgoing folder&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+409D00&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 40B860</tt>
+
+<br><tt>smtp server&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+409D50&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 40B8B0</tt>
+
+<br><tt>pop server&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+409D90&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 40B8F0</tt>
+
+<br><tt>pop username&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+409DD0&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 40B930</tt>
+
+<br><tt>pop password&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+409E50&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 40B9B0</tt>
+
+<br><tt>log file&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+409E90&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 40B9F0</tt>
+
+<br><tt>number of mail in inbox&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 409EE0&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+40BA40</tt>
+
+<br><tt>dialup connection name&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 409EE4&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+40BA44</tt>
+
+<br><tt>dial up user name&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+409FE5&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 40BB45</tt>
+
+<br><tt>dial up password&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+40A0E6&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 40BC46</tt>
+
+<br><tt>flood protection&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+40A1E8&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 40BD48</tt>
+
+<br><tt>delete large messages&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+40A1EC&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 40BD4C</tt>
+
+<p><tt>additional references&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+409C64&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 40B404</tt>
+
+<br><tt>into this region&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+409C68&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 40B408</tt>
+
+<p><tt>All references in the program to these addresses have be modified.</tt>
+
+<br><tt>At code 4010A3 the reference to the size of the structure should
+
+be</tt>
+
+<br><tt>changed from 588 to 948 and at 40158C from 590 to 950. We are done</tt>
+
+<br><tt>with the structure.</tt>
+
+<p><tt>The domain name string references we have to modify:</tt>
+
+<br><tt>reference&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+old&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+new</tt>
+
+<br><tt>length&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+409110&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 409D00</tt>
+
+<br><tt>string&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+409114&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 409D04</tt>
+
+<p><tt>Again the reference to the size of the string at 40140F has to be</tt>
+
+<br><tt>set to 400. Because we need one extra byte to do this we have to</tt>
+
+<br><tt>rewrite this part of the code a bit.</tt>
+
+<br><tt>Here is the original code:</tt>
+
+<p><tt>* StringData Ref -&gt;&quot;NetMail95 20 CFG&quot;</tt>
+
+<br><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+|</tt>
+
+<br><tt>:004013FD B994804000&nbsp; mov ecx, 00408094&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+! here</tt>
+
+<br><tt>:00401402 A3689C4000&nbsp; mov dword ptr [00409C68], eax</tt>
+
+<br><tt>:00401407 BA609C4000&nbsp; mov edx, 00409C60</tt>
+
+<br><tt>:0040140C 8B490C&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; mov ecx, dword ptr
+
+[ecx+0C]&nbsp; ! here</tt>
+
+<br><tt>:0040140F 6A40&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; push 00000040</tt>
+
+<br><tt>:00401411 6814914000&nbsp; push 00409114</tt>
+
+<p><tt>The two lines marked with ! does nothing more, but moves the &quot; CFG&quot;</tt>
+
+<br><tt>string into ECX. We can get our extra byte if we replace these
+
+two</tt>
+
+<br><tt>instructions with one like this:</tt>
+
+<p><tt>:004013FD B920434647&nbsp; mov ecx, 47464320&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+;move &quot; CFG&quot; into ECX</tt>
+
+<br><tt>:00401402 A3689C4000&nbsp; mov dword ptr [00409C68], eax</tt>
+
+<br><tt>:00401407 BA609C4000&nbsp; mov edx, 00409C60</tt>
+
+<br><tt>:0040140F 6800040000&nbsp; push 00000400&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+;here we have 400 bytes</tt>
+
+<br><tt>:00401411 6814914000&nbsp; push 00409114</tt>
+
+<p><tt>Finally, at code 4017ED we have to modify the number of bytes read</tt>
+
+<br><tt>from the textbox into the string from 104 to 400.</tt>
+
+<br><tt>We are done, Nm95cfg.exe can handle a 400 bytes long string as
+
+domain</tt>
+
+<br><tt>name now.</tt>
+
+<p><b><tt>Cracking Nm95.exe</tt></b>
+
+<br><tt>To actually send an anonymous email we also have to patch Nm95.exe
+
+to</tt>
+
+<br><tt>make it capable to read and send the 400 bytes long domain name.</tt>
+
+<br><tt>Because the crack is exactly the same as before I only describe
+
+it</tt>
+
+<br><tt>in a nut shell. The structure is located at 411960 and we move
+
+it to</tt>
+
+<br><tt>413400.</tt>
+
+<p><tt>Entry&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+old&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+new</tt>
+
+<br><tt>title&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+411960&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 413400</tt>
+
+<br><tt>domain name&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+411970&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 413410&nbsp;&nbsp;
+
+400 bytes now!</tt>
+
+<br><tt>incoming folder&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+4119B0&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 413810</tt>
+
+<br><tt>outgoing folder&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+411A00&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 413860</tt>
+
+<br><tt>smtp server&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+411A50&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 4138B0</tt>
+
+<br><tt>pop server&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+411A90&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 4138F0</tt>
+
+<br><tt>pop username&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+411AD0&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 413930</tt>
+
+<br><tt>pop password&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+411B50&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 4139B0</tt>
+
+<br><tt>log file&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+411B90&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 4139F0</tt>
+
+<br><tt>number of mail in inbox&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 411BE0&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+413A40</tt>
+
+<br><tt>dialup connection name&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 411BE4&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+413A44</tt>
+
+<br><tt>dial up user name&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+411CE5&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 413B45</tt>
+
+<br><tt>dial up password&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+411DE6&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 413C46</tt>
+
+<br><tt>flood protection&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+411EE8&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 413D48</tt>
+
+<br><tt>delete large messages&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+411EEC&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 413D4C</tt>
+
+<p><tt>Length of the structure has to be changed at 4035AB and 403818 from</tt>
+
+<br><tt>590 to 950.</tt>
+
+<p><tt>The buffer where the domain name is combined with HELO is located
+
+at</tt>
+
+<br><tt>411000 and we move it into the place of the structure at 411960.</tt>
+
+<br><tt>(The buffer can hold 3E8 bytes of data, but that's not enough for
+
+us.) Because this is the main input-output buffer for socket communication,</tt>
+
+<br><tt>there are a lot of references to it all over the program, but we
+
+only</tt>
+
+<br><tt>have to change the two references connected with the HELO sending:</tt><tt></tt>
+
+<p><tt>:00401B7E push 00411970&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+;this we already changed to 00413410</tt>
+
+<br><tt>* StringData Ref -&gt;&quot;HELO %s&quot;</tt>
+
+<br><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+|</tt>
+
+<br><tt>:00401B83 push 0040E678</tt>
+
+<br><tt>:00401B88 push 00411000&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+;here, relocate the buffer to 00411960!</tt>
+
+<br><tt>:00401B8D call 00405227&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+;put HELO and domain name together</tt>
+
+<br><tt>:00401B92 mov ecx, dword ptr [00410DA0]</tt>
+
+<br><tt>:00401B98 push 00411000&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+;here, relocate the buffer to 00411960!</tt>
+
+<br><tt>:00401B9D push ecx</tt>
+
+<br><tt>:00401B9E call 004013A0&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+;send through socket</tt><tt></tt>
+
+<p><tt>We are now ready to send our anonymous email.</tt><tt></tt>
+
+<p><tt>Here is a header of an email sent by the modified Netmail through
+
+an</tt>
+
+<br><tt>SMTP server with Sendmail 8.8.5. when we specified the domain name</tt>
+
+<br><tt>as 400 bytes of dashes :): (Line breaks inserted by me.)</tt>
+
+<p><tt>Received: from deep-cover.mit.edu [18.251.3.197] by mx04</tt>
+
+<br><tt>via mtad (2.6) with ESMTP id 337DiqFhR0115M04;</tt>
+
+<br><tt>Fri, 17 Sep 1999 05:33:17 GMT</tt>
+
+<br><tt>Received: from -----------------------------------------</tt>
+
+<br><tt>--------------------------------------------------------</tt>
+
+<br><tt>--------------------------------------------------------</tt>
+
+<br><tt>--------- lots of dashes :)</tt>
+
+<br><tt>Date: Fri, 17 Sep 1999 01:33:12 -0400</tt>
+
+<br><tt>From: nobody@nowhere.net</tt>
+
+<br><tt>Message-Id: &lt;199909170533.BAA07671@deep-cover.mit.edu&gt;</tt>
+
+<br><tt>To: undisclosed-recipients:;</tt>
+
+<p><tt>Seems it is working :)</tt>
+
+<p><!-- FINAL NOTES STARTS HERE -->
+
+<table BORDER CELLSPACING="2" WIDTH="100%" HEIGHT="22">
+
+<tr>
+
+<td BGCOLOR="#C6E7C6">
+
+<center><tt><font color="#0000FF"><font size="+2">Final Notes</font></font></tt></center>
+
+</td>
+
+</tr>
+
+</table>
+
+<!-- PASTE HERE YOUR FINAL NOTES (if any) -->
+
+<br><tt>Finally, to send an anonymous email you have to find a server</tt>
+
+<br><tt>with Sendmail 8.8.x. If you do a search on altavista for example
+
+for the &quot;(8.8.5/&quot; string in recent documents you can fish a lot of servers,
+
+though not many of them willing to relay messages.</tt>
+
+<br><tt>Anyway, you can play with the deep-cover.mit.edu server. :)</tt>
+
+<p><tt>Zer0+</tt>
+
+<br><tt>Greetings to +everybody</tt>
+
+<br><!-- OB DUH STARTS HERE -->
+
+<table BORDER CELLSPACING="2" WIDTH="100%" HEIGHT="22">
+
+<tr>
+
+<td BGCOLOR="#C6E7C6">
+
+<center><font color="#0000FF"><font size="+2">Ob Duh</font></font></center>
+
+</td>
+
+</tr>
+
+</table>
+
+
+
+<center><i>I wont even bother explaining you that you should BUY this target
+
+program if you intend to use it for a longer period than the allowed one.
+
+Should you want to STEAL this software instead, you don't need to crack
+
+its protection scheme at all: you'll find it on most Warez sites, complete
+
+and already regged, farewell, don't come back.</i></center>
+
+<!-- WAY OUT STARTS HERE -->
+
+<hr>
+
+<center><i>You are deep inside fravia's page of reverse engineering, choose
+
+your way out:</i>
+
+<br>&nbsp;
+
+<br>&nbsp;
+
+<br>&nbsp;
+
+<p><!-- EITHER A NICE GIF LIKE THIS --><!-- <a href="project3.htm" tppabs="http://www.anticrack.de/fravia/project3.htm"><IMG SRC="project3.gif" tppabs="http://www.anticrack.de/fravia/project3.gif" ALT="projecT3" ALIGN=CENTER WIDTH=114 HEIGHT=43 BORDER=0 VSPACE=0 HSPACE=0></a><br><font color=gray>Back to project 3</FonT><br><bR>--><!-- OR JUST A LINK LIKE THIS --><!--<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A HREF="project1.htm" tppabs="http://www.anticrack.de/fravia/project1.htm">Back to Your_chosen_project</A> <hr width=33%>--><img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" BORDER="0" height="13" width="13" align="BOTTOM"><a href="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage<a href="index.html" tppabs="http://www.anticrack.de/fravia/index.html"><img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" BORDER="0" height="13" width="13" align="BOTTOM"></a></a><a href="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links<a href="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm"><img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" BORDER="0" height="13" width="13" align="BOTTOM"></a></a><a href="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms<a href="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm"><img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" BORDER="0" height="13" width="13" align="BOTTOM"></a></a><a href="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC<a href="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm"><img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" BORDER="0" height="13" width="13" align="BOTTOM"></a></a><a href="protec.htm" tppabs="http://www.anticrack.de/fravia/protec.htm">how
+
+to protect<a href="protec.htm" tppabs="http://www.anticrack.de/fravia/protec.htm"><img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" BORDER="0" height="13" width="13" align="BOTTOM"></a></a><a href="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy
+
+database</a>
+
+<br><img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" BORDER="0" height="13" width="13" align="BOTTOM"><a href="realicra.htm" tppabs="http://www.anticrack.de/fravia/realicra.htm">reality
+
+cracking<a href="realicra.htm" tppabs="http://www.anticrack.de/fravia/realicra.htm"><img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" BORDER="0" height="13" width="13" align="BOTTOM"></a></a><a href="howtosea.htm" tppabs="http://www.anticrack.de/fravia/howtosea.htm">how
+
+to search<a href="howtosea.htm" tppabs="http://www.anticrack.de/fravia/howtosea.htm"><img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" BORDER="0" height="13" width="13" align="BOTTOM"></a></a><a href="javascri.htm" tppabs="http://www.anticrack.de/fravia/javascri.htm">javascript
+
+wars</a>
+
+<br><img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" BORDER="0" height="13" width="13" align="BOTTOM"><a href="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools<a href="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm"><img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" BORDER="0" height="13" width="13" align="BOTTOM"></a></a><a href="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity
+
+academy<a href="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm"><img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" BORDER="0" height="13" width="13" align="BOTTOM"></a></a><a href="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails<a href="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm"><img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" BORDER="0" height="13" width="13" align="BOTTOM"></a></a><a href="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut
+
+CGI-scripts<a href="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm"><img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" BORDER="0" height="13" width="13" align="BOTTOM"></a></a><a href="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia+</a>
+
+<br><img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" BORDER="0" height="13" width="13" align="BOTTOM"><a href="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is
+
+reverse engineering legal?</a></center>
+
+
+
+<hr><!-- THAT'S ALL, THANKS A LOT this will allow automated retrieval -->
+
+</body>
+
+</html>
+

@@ -1,0 +1,426 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>ultrae2</TITLE>
+
+</HEAD>
+
+
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+<A NAME="anchortop"></A>
+
+<!-- HTML code by Fravia, Yeah, go ahead, steal my code, sucker -->
+
+
+
+<H2><CENTER>An interesting tool: BRW(32-bit reverse engineering)<BR><BR>
+
+   by Fravia+, MSRE, May 1997<BR><BR>
+
+<IMG SRC="hcu1.gif" tppabs="http://www.anticrack.de/fravia/hcu1.gif" ALT="HCU" ALIGN="BOTTOM" WIDTH="114" HEIGHT="43" BORDER="0" VSPACE="0" HSPACE="0"></H2>
+
+<HR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">
+
+<I>Courtesy of fravia's page of reverse engineering</I>
+
+</CENTER>
+
+<HR size="3">
+
+<PRE>You should use Courier New 8 in order to view and print correctly this essay
+
+
+
+<B>What's all about</B>
+
+In this short essay I will show you how quickly you can individuate 
+
+(and eventually crack) a protection scheme, or any other feature of a 
+
+Windows 32 bit program using BRW, Borland Resource Workshop, a mighty
+
+tool. 
+
+
+
+<B>The target: UEDIT32.EXE 560.640  13/02/96</B> 
+
+As &quot;target&quot; I have chosen for this essay a relatively &quot;old&quot; version 
+
+of Ultraedit32, By Ian Mead: Version 3.10a, from 1996. Should be easy 
+
+to find through the archies. Ultraedit is a fairly accettable Text editor, 
+
+which has also hex mode editing, unix text mode conversion and other 
+
+useful utilities. I'm not pirating anything at all of course: I have 
+
+used the program (in order to crack it) only one day out of the 45 
+
+allowed and have since deleted it from my hard disk, since I did not 
+
+found it worth 30 dollars (I prefer other -much more old and much more 
+
+powerful- programs for editing files). 
+
+BTW I may add that on my computer you would not find a single pirated 
+
+copy of software: there is no need for this! First of all I have a job, 
+
+therefore if I really like and find really useful a program (which happens 
+
+very seldom) I can afford to buy it, as I did with wdasm for instance, 
+
+secondly, when I need something, I simply and quickly fetch the last version 
+
+of it ftpmailed from the web (why download when you can ftpmail?).
+
+I crack the eventual protection, of course, and yet I use the program mostly 
+
+for less days than the allowed time (because usually this is more than enough 
+
+to get already to the date of release of the next version :-)
+
+
+
+<B>The protection scheme</B>
+
+This program has an annoying &quot;delayed&quot; nagscreen at the beginning, a 
+
+registration option of the usual name-code comparison algorithm and a 
+
+&quot;Cinderella&quot; type of protection, set at 45 days.
+
+
+
+<B>How we could have cracked it</B>
+
+Obviously we could have easily and quickly cracked the nagscreen 
+
+using +ORC's dead listing technique:
+
+
+
+:004010E4 833D0CE0450000  cmp dword ptr [0045E00C], 0 ;check if flagged
+
+:004010EB 7466            je 00401153		       ;0=not registered
+
+:004010ED 6A09            push 9 ;&quot;This copy of UltraEdit-32 is licensed to&quot;
+
+...
+
+...
+
+:00401153 6A08            push 8 ;&quot;This is an unregistered copy of UltraEdit&quot;
+
+...
+
+
+
+And we would also have quickly found the Cinderella protection as well, 
+
+using the same method:
+
+
+
+:00401E60 83F82D          cmp eax, 0000002D  ;0x2D = 45 :-)
+
+:00401E63 7EA5            jle 00401E0A	     ;not yet 45, continue
+
+:00401E65 E8E4F5FFFF      call 0040144E      ;check if registered
+
+:00401E6A 833D0CE0450000  cmp dword ptr [0045E00C], 0 ;check if flagged
+
+:00401E71 757F            jne 00401EF2	      ;it's a registered user!
+
+:00401E73 6830200000      push 00002030	      ;it's a luser, therefore
+
+:00401E78 682CE14600      push 0046E12C ;&quot;45 Day Evaluation time has expired&quot;
+
+
+
+BTW, I checked the more recent 4.3 version of Ultraedit: the protection 
+
+scheme is the same crap (lazy programmers):
+
+cmp 47500C,0 ;holy flag
+
+jne 004023E3 ;nagscreen
+
+and
+
+cmp eax, 0000002D  ;0x2D = 45 :-)
+
+
+
+<B>The aim of this script</B>
+
+But the aim of this essay is not to crack such a banale protection, but 
+
+to teach you how to use ANOTHER powerful reverse engineering tool, very 
+
+useful for windows programs disassembly: the &quot;magical&quot; BORLAND 
+
+RESOURCE WORKSHOP.
+
+I believe that a short digression about this tool is very well worth it:
+
+The Whitewater Resource Toolkit, that came with Borland C++ 4, was a 
+
+phantastic tool for windows (16 bit) 3.1 disassembling already, as all real 
+
+crackers know. Alas, the development died! In 1994 appeared the last known 
+
+version of it, ported to 32 bit and in the mean time called &quot;Borland Resources 
+
+Workshop&quot; (Version 4,5 for Borland C++ 4,5, the one you should fetch). 
+
+
+
+<B>It's a sad world</B>
+
+Unfortunately this tool was TOO powerful and too good, so they of course 
+
+simply killed it. Whitewater was on this purpose, bought by Symantec (Peter Norton) 
+
+and the product was no more commercialized. Version 4,5 (GET IT!) is the last one 
+
+I could find on the net, probably Borland had in 1994 still some rights on its 
+
+code and was able to publish it, alas for the last time. 
+
+It's a weird world, isn't it? Awful stupid and useless programs are updated 
+
+every two months and this real (and very powerful) Juwel has been purposedly 
+
+killed! 
+
+That does not wonder me: as we very well know, they do not wont people to 
+
+UNDERSTAND how a program works, they want only stupid morons that use their 
+
+(bugged and poor) applications without questioning, understanding or ameliorating 
+
+them.
+
+
+
+<B>Power at your fingers</B>
+
+Ok, fetch BRW.zip, it's a zipped 2,5 megabytes file, if you did not buy it (like 
+
+I did short after this essay: it appeared with THE COMPLETE Borland C++ 4,5, on 
+
+the CD-ROM of PCPlus n.38, a UK Computer magazine, August 1997 edition) anyway I 
+
+had it already, thanks to a good miner friend of mine, and now anyway it's vastly 
+
+available on the web.
+
+
+
+This are BRW commands:
+
+**	New Project: Ultraedit exe
+
+**	Dialog 110: (you see it's 110, because it APPEARS in the right window when you click 110, but)
+
+
+
+And this is the immediate answer from my beloved BRW:
+
+
+
+110 DIALOG 100, 70, 210, 163
+
+STYLE DS_MODALFRAME | WS_POPUP
+
+FONT 8, &quot;MS Sans Serif&quot;
+
+{
+
+ CONTROL &quot;This is an unregistered copy of UltraEdit-32.  Use of this program should be on a temporary basis (45 Days max) for evaluation purposes only.  If this program is to be used for purposes other than evaluation please register this program.&quot;, -1, &quot;STATIC&quot;, SS_LEFT | WS_CHILD | WS_VISIBLE | WS_GROUP, 34, 18, 151, 55
+
+ CONTROL &quot;Details for registration can be found in the READ.ME file and in the 'About' dialog box on the help menu.&quot;, 128, &quot;STATIC&quot;, SS_LEFT | WS_CHILD | WS_VISIBLE | WS_GROUP, 35, 76, 151, 35
+
+ CONTROL 2, -1, &quot;STATIC&quot;, SS_ICON | WS_CHILD | WS_VISIBLE, 5, 12, 18, 20
+
+ CONTROL &quot;You have&quot;, -1, &quot;STATIC&quot;, SS_LEFT | WS_CHILD | WS_VISIBLE | WS_GROUP, 36, 115, 40, 12
+
+ CONTROL &quot;&quot;, 130, &quot;EDIT&quot;, ES_LEFT | ES_AUTOHSCROLL | WS_CHILD | WS_VISIBLE | WS_DISABLED | WS_BORDER, 78, 114, 18, 12
+
+ CONTROL &quot;days left for evaluation.&quot;, -1, &quot;STATIC&quot;, SS_LEFT | WS_CHILD | WS_VISIBLE | WS_GROUP, 103, 115, 89, 12
+
+ CONTROL &quot;Enter Authorization code&quot;, 1, &quot;BUTTON&quot;, BS_DEFPUSHBUTTON | WS_CHILD | WS_VISIBLE | WS_TABSTOP, 49, 137, 113, 14
+
+}
+
+	  <FONT size="+1">
+
+<B>You wont believe it</B></FONT>
+
+Well what do you think you can do now? You found the nagscreen, so what? 
+
+You will not believe it: It's so easy that its scares me: just choose BRW option 
+
+&quot;DELETE&quot; (YES!) and simply DELETE dialog 110... 
+
+BRW recompiles the target on the fly and opla! There is no nagscreen there any more!
+
+The target runs without annoying us!
+
+
+
+Unbelivable? Try it... See? Now you begin to understand why BRW development has been 
+
+deemed &quot;not allowed&quot; :-)
+
+
+
+<B>More options</B>
+
+You can apply of course the same trick to EVERY PROGRAM of this planet. 
+
+As a matter of fact BRW is great fun for modifying all your software as you 
+
+fancy, allowing you quite a palette of options, from puerile to serious reverse 
+
+engineering of applications you do not have the source code of... 
+
+My copy of MS-Exchange, for instance, has (obviously) &quot;Micro$oft&quot; with the $ sign 
+
+and &quot;fravia's own&quot; all over it, various new functionalities that I have added 
+
+and no secret whatsoever any more for me (BRW-recompiling is easy if you do not 
+
+add functionalities and code and just hold to the same length of bytes... 
+
+if you add code and patch yor targets you should use BRW AND a good recompiler 
+
+at the same time).
+
+I leave to the brain and the mood of the reader to imagine what a good combination 
+
+between dead listing, eventual Winicing and BRWing windows 32 applications can 
+
+offer us :-): 
+
+TOTAL MASTERY OF ANY APPLICATION; 
+
+INFINITE POSSIBILITIES OF RESTRUCTURING APPLICATIONS; 
+
+IMMEDIATE DISCOVERY OF ANY BACKDOOR, HIDDEN TREASURE, ABORTED FUNCTIONS INSIDE 
+
+ANY PROGRAM... 
+
+and many many other related goodies. 
+
+And since this awful stupid Windows95/97/NT Os will -illogically but unfortunately- 
+
+spread and spread more and more, all future programs are -at least for a pretty 
+
+long time being- at your feet as well as at mine, my dear fellow crackers :-)
+
+
+
+Well, what d'you say? Did you like Fravia's little contribution to the cause?
+
+
+
+later
+
+fravia, MSRE (master of software reverse engineering :-)
+
+
+
+Post scriptum:
+
+I have been criticized for this, a reader telling me that in fact <U>there are</U> 
+
+new versions of BRW...
+
+
+
+	&quot;Resource Workshop wasn't killed as you state.
+
+	 Borland still offers it, but it has stopped being a stand alone
+
+       product from them. Instead it is included in Borland c++...
+
+	 Your conclusions are false&quot;
+
+
+
+And yet the best (stripped) version of it I could find or gather until now, even 
+
+writing to Borland, is still version 4,5. 
+
+If anyone has any newer version, please notify... but check first that it really is 
+
+a &quot;development&quot; of BRW, not just another copy of what we already know. (The reader 
+
+above apologized...)
+
+
+
+</PRE>
+
+<BR>
+
+<HR ALIGN="CENTER" WIDTH="100%" SIZE="3">
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</I></CENTER>
+
+<BR><CENTER>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html"> homepage</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"> 
+
+<A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm"> links</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0">
+
+<A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm"> anonymity</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm"> +ORC</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm"> students' essays</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm"> tools</A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm"> cocktails</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm"> search_forms</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm"> antismut CGI-scripts</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm"> mailFraVia</A><BR>
+
+
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm"> Is reverse engineering illegal?</A></CENTER>
+
+<CENTER><HR ALIGN="CENTER" WIDTH="100%" SIZE="2"></CENTER>
+
+</BODY>
+
+</HTML>
+
+
+
+
+

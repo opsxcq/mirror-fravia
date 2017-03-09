@@ -1,0 +1,486 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>sth1.htm</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+<CENTER><FONT size="+3">Visual Basic - VB40032.DLL comparison code</FONT>
+
+<BR>(Visual Basic 4.0 how-to additions to Razzia's writings and Softice BPX problems)<BR>
+
+  <BR>
+
+    
+
+
+
+<H4>by sth<BR>
+
+<BR>
+
+(21 October 1997)</H4>
+
+<HR>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">Courtesy of fravia's page 
+
+of reverse engineering<BR>
+
+<BR><I>Well, a welcome visual basic addition to Razzia's great tutorial.
+
+Now you can plunge straight into the VB40032.dll and reverse its 
+
+standard functions... The part of this essay about  common bpr breakpointing 
+
+problems with softice is also quite interesting. Enjoy it!
+
+
+
+</I></CENTER>
+
+<HR size="6"><PRE>
+
+I.SoftICE BPX problems
+
+II.Visual Basic 4.0 how-to additions to Razzia's writings
+
+
+
+First I want to say: THANK YOU to Razzia for his
+
+fantastic writing about Visual Basic.
+
+I just want to add a few lines to it but before this I
+
+would like to mention that all the commands here were
+
+and should be executed under Soft Ice (for Windows95)
+
+-&gt; the most/extremely powerful software I've ever met!
+
+<B>
+
+Part 1. About having problems with BPR (Break Point in Range) command</B>
+
+I think that every one has had problems with it. According
+
+to the SICE documentation it should mark a region for
+
+R/W/RW/T/TW checking. But sometimes I found that there
+
+is an action in the region, but the BPR does not work.
+
+Why? :--(
+
+After a few tests I finally understand what the BPR
+
+selector:offset sometimes causes the problem. Here is
+
+the hole story:
+
+	1.You stop the running program with Ctrl+D.
+
+	2.You find that the data you are interested in is between 
+
+          123f:00000001 and 123f:00000005.
+
+	3.You put 'BPR 123f:00000001 123f:00000005 R'.
+
+	4.You run the program further with F5.
+
+	5.-&gt;The program is running ....
+
+	6.-&gt;There is a read from within the range ...
+
+	7.-&gt;The program is running ..
+
+	8.The program finishes and you are damn sure that there WAS 
+
+          a reading!
+
+	9.You begin hating SICE (and Windows95, personally) !
+
+
+
+Now let's take a closer look at point 6. The reading
+
+was made but ... from within another selector:offset.
+
+This is quite normal. According to SICE documentation
+
+the BPR command selects a region and this region
+
+follows the data and code wherever it goes. Nice!
+
+But then why it does not want to follow this noughty data?
+
+Let's try to display the data from within the original
+
+selector:offset... Nothing?! ERROR?!
+
+We receive a message telling us that the selector does
+
+not exists! Ha! Here is the key from the tent! The
+
+selector is no longer used and SICE couldn't continue
+
+checking for the region!
+
+
+
+Now let's quickly solve the problem:--)
+
+	1. You stop the running program with Ctrl+D.
+
+	2. You find that the data you are interested in is again
+
+           between 123f:00000001 and 123f:00000005.
+
+	2a.You do <FONT color="blue">PAGE 123f:00000001</FONT>. You receive that the
+
+           Liner Address of this data is, for example 80812301.
+
+	3. You put 'BPR 030:80812301 030:80812305 R'.
+
+	4. You run the program further with F5.
+
+	5.-&gt;The program is running ....
+
+	6.-&gt;There is a read from within the range ... AND IT STOPS, 
+
+            because selector 030 always exist!
+
+	9. You begin loving again Windows95 (especially the SICE, 
+
+           personally) !
+
+<B>
+
+Part 2. Visual Basic 4.0 - 16 bit version</B>
+
+As Razzia already wrote there are only few places
+
+where VB4 compares. But in the previous writing there
+
+is not a word about VB40016.DLL. I find exactly where
+
+it compares and <U>here is the code</U>:
+
+
+
+: 8BF8                MOV     DI,AX
+
+: 8EC2                MOV     ES,DX
+
+: 1E                  PUSH    DS
+
+: C5760E              LDS     SI,[BP+0E]
+
+: 33C0                XOR     AX,AX
+
+: F3A6                REPZ CMPSB        ; <FONT color="red">#0</FONT>  here the strings in ds:si
+
+: 7405                JZ      2667      ; and es:di are compared
+
+: 1BC0                SBB     AX,AX
+
+: 1DFFFF              SBB     AX,FFFF
+
+
+
+And now - let's try it:
+
+Name	: RADIUS TACACS SERVER 3.5
+
+Where 	: http://ns.sblc.af.mil/ras/radtac35.exe
+
+Size	: RADTAC.EXE = 377 376 bytes (main executable
+
+module)
+
+Protection	: uses VB40016.DLL and a MD5UTIL.DLL
+
+(Borland C++ RTL)
+
+
+
+Let's try with some test data first:
+
+Registration name	: sth
+
+Registration number	: 1997
+
+Registration checksum	: 1234567890123456
+
+
+
+This is a program for Internet Service Providers. It
+
+takes care about all the modem PPP logins through
+
+TCP/IP and it's very useful.
+
+
+
+The whole task is to stay tuned to point #0. First the
+
+program checks every digit from the CheckSum if it is
+
+space (0x20) or dash. After checking all of them it
+
+checks if the checksum is correct :--). So the correct
+
+one (in my case ) is:
+
+Registration checksum	: d2976c2d50c3abc8
+
+
+
+
+
+Part 3. Visual Basic 4.0 - 32 bit version
+
+Visual Basic 4.0 - 32 bit version uses wide char format
+
+to all its string operations. According to Razzia's
+
+writing most of the programs uses 'MultiByteToWideChar'
+
+function before comparing stings. In most cases it is
+
+true!
+
+But I met a program which uses a little bit different
+
+way to check the registration code.
+
+
+
+Name	: Shiva AccessManager 2.0 - evaluation copy
+
+Where 	: http://www.shiva.com/remote/radius/sam20.exe
+
+Size	: RADTAC.EXE = 1 116 160 bytes (main executable
+
+module)
+
+Protection	: uses VB40032.DLL and a
+
+UNET32.DLL(Microsoft Visual C++ RTL)
+
+
+
+The requested information is:
+
+Registration name	: Test
+
+Product Code	: 1212
+
+Serial Number	: 3434
+
+ID Address of a computer	: 200.200.100.201
+
+Number of users	: 5000
+
+Registration code	: 1234567890123456 &lt;-not the correct one!
+
+
+
+The program reads all the input information you entered
+
+and converts it to Wide Char format. Then the
+
+UNET32.DLL calculates the requested 'Registration
+
+code'. This is actually a check sum and it is based on
+
+all the user entered fields except the 'Registration code' 
+
+entry. The program writes it to Wide Char format. 
+
+Finally it compares the requested code with the
+
+one you entered in such way that if the code it
+
+requests is:
+
+	0x12 0x34 0x56 .... Then you have to enter: 123456...
+
+
+
+If you put a breakpoint in 'MultiByteToWideChar'
+
+function then you will not find the final comparison 
+
+string because it is done by 'WideCharToMultiByte'
+
+conversion.
+
+
+
+It was written about the function 'MultiByteToWideChar'
+
+(#1a) that it converts strings to  Wide Char format.
+
+The next function 'WideCharToMultiByte' (#1b) is the
+
+opposite. Here I gave a little more information:
+
+
+
+KERNEL32!MultiByteToWideChar
+
+: 2bd2                sub     edx,edx			<#1A : 68c7e2f9bf push bff9e2c7 : 64ff32 push dword ptr fs:[edx] : 648922 mov fs:[edx],esp : 8b4c2414 mov ecx,[esp+14] : 8a01 mov al,[ecx] : 648f02 pop dword ptr fs:[edx] : 83c404 add esp,04 : e9644c0000 jmp bff7c8d8 KERNEL32!WideCharToMultiByte : 2bd2 sub edx,edx <- #1b : 68dde2f9bf push bff9e2dd : 64ff32 push dword ptr fs:[edx] : 648922 mov fs:[edx],esp : 8b4c2414 mov ecx,[esp+14] : 668b01 mov ax,[ecx] : 8b4c2424 mov ecx,[esp+24] : e302 jecxz bff77c90 : 8a01 mov al,[ecx] : 8b4c2428 mov ecx,[esp+28] : e302 jecxz bff77c98 : 8b01 mov eax,[ecx] : 648f02 pop dword ptr fs:[edx] : 83c404 add esp,04 : e93b320000 jmp bff7aede If you put a break point: BPX MultiByteToWideChar (#1a) and/or BPX WideCharToMultiByte (#1b) and the program you are running stops there then you'll have in Double Word (DW) format the following information: 1. In ss:esp you have the length of the SOURCE string; 2. In ss:esp+4 you have the RESULT's string offset (where the result will be put); 3. In ss:esp+c you have the SOURCE's string offset (where the source string is). Then if you type AFTER the break point: 'dd ss:esp+c' and then 'db ds:xxxxxxxx' (where xxxxxxxx is the value which resides in 'ss:esp+c') you'll see the source string. KERNEL32!CompareStringA : 2bd2 sub edx,edx #1c : 68c7e2f9bf push bff9e2c7 : 64ff32 push dword ptr fs:[edx] : 648922 mov fs:[edx],esp : 8b4c2414 mov ecx,[esp+14] If you put a break point: BPX CompareStringA (#1c) and the program you are running stops there then you'll have in Double Word (DW) format the following information: 1. In ss:esp+c you have the SOURCE's string offset (where the source string is). 2. In ss:esp+10 you have the SOURCE's length. 3. In ss:esp+14 you have the TARGET's string offset (where the target string is). 4. In ss:esp+18 you have the TARGET's length. Then if you type AFTER the break point: 'dd ss:esp+c' and then 'db ds:xxxxxxxx' (where xxxxxxxx is the value which resides in 'ss:esp+c') you'll see the source string. Then if you type AFTER the break point: 'dd ss:esp+18' and then 'db ds:xxxxxxxx' (where xxxxxxxx is the value which resides in 'ss:esp+18') you'll see the target string. If you recognise that the source string is the 'Registration code' you entered then go and see the Target string and length and THIS IS YOUR REGISTRATION CODE! ;-) At the beginning the program compares in 'CompareStringA' short strings (1-3 bytes long), where the offset is usually the same. Suddenly there is a comparison, where the target length is 0x08. This is the Registration Code! Just wait there for it! Finally, <u>here is the part form VB40032.DLL where the comparison is made</U>:
+
+
+
+: 6a00                push    00
+
+: 6a00                push    00
+
+: 56                  push    esi                  #2a - length
+
+: 57                  push    edi                  #2b - result's offset
+
+: ff7514              push    dword ptr [ebp+14]
+
+: ff7510              push    dword ptr [ebp+10]   #2c - source's offset
+
+: 6a00                push    00
+
+: 6a00                push    00
+
+: ff1530c27b0f        call    [KERNEL32!WideCharToMultiByte]  #2x
+
+: 8bf0                mov     esi,eax
+
+: 6a00                push    00
+
+: 6a00                push    00
+
+: ff75fc              push    dword ptr [ebp-04]    #3a - length
+
+: 53                  push    ebx	#3b - result's offset
+
+: ff751c              push    dword ptr [ebp+1c]
+
+: ff7518              push    dword ptr [ebp+18]    #3c - target's offset
+
+: 6a00                push    00
+
+: 6a00                push    00
+
+: ff1530c27b0f        call    [KERNEL32!WideCharToMultiByte]  #3x
+
+: 85f6                test    esi,esi
+
+: 0f8427010000        jz      0f789121
+
+: 85c0                test    eax,eax
+
+: 0f841f010000        jz      0f789121
+
+: 50                  push    eax                    #4a - length.target
+
+: 53                  push    ebx                    #4b - target's offset
+
+: 56                  push    esi                    #4c - length.source
+
+: 57                  push    edi                    #4d - source's offset
+
+: ff750c              push    dword ptr [ebp+0c]	
+
+: ff7508              push    dword ptr [ebp+08]	
+
+: ff15f8c17b0f        call    [KERNEL32!CompareStringA]	#4x
+
+
+
+As +ORC says: That's (nice music for us! Let's have) a
+
+(deep look at these) pretty data!
+
+#2 - the first string ( #2x - executes the first conversion )
+
+#3 - the second string ( #3x - executes the second conversion )
+
+#4x - the program compares them! That's why it does not use 
+
+'MultiByteToWideChar' but only 'WideCharToMultiByte' translation!
+
+
+
+Special thanks to Razzia &amp; fravia+
+
+
+
+By sth
+
+
+
+</PRE>
+
+<FONT color="green">(c)  sth 1997. All rights reversed</FONT>
+
+<HR ALIGN="CENTER" WIDTH="100%" SIZE="3">
+
+<CENTER><I>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</I></CENTER>
+
+<BR><CENTER>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="project8.htm" tppabs="http://www.anticrack.de/fravia/project8.htm">Back to the +HCU Visual basic project</A><HR width="33%">
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#84'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#84">homepage</A>
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#73'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#73">links</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity</A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="javascript:if(confirm('http://fravia.org/tppmsgs/msgs0.htm  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://fravia.org/tppmsgs/msgs0.htm#82'" tppabs="http://fravia.org/tppmsgs/msgs0.htm#82">students' essays</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut CGI-scripts</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms</A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia</A><BR>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering legal?</A></CENTER>
+
+<CENTER><HR ALIGN="CENTER" WIDTH="100%" SIZE="2"></CENTER>
+
+</BODY>
+
+</HTML>
+

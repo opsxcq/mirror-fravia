@@ -1,0 +1,538 @@
+<HTML>
+
+
+
+        
+
+                 <H1><HEAD>
+
+                 <TITLE>redirect.htm: Defeating File Integrity Checks Through Redirection</TITLE>
+
+                 </HEAD></H1>
+
+
+
+                 <BODY bgcolor=#C0C0C0 text=#001010 vlink=#405040>
+
+
+
+                 <CENTER>
+
+
+
+                
+
+<H2>Defeating File Integrity Checks Through Redirection</H2>
+
+by    Victor Porguen<BR>
+
+25 November 1998<BR>
+
+<HR>Courtesy of fravia's pages of reverse engineering ~  Slightly edited by fravia+<BR><BR>
+
+<I>Well, what can I say: read and enjoy! Thanks Victor: viral research applied to 
+
+reversing has quite <U>a lot</U> to offer... hope you'll send more!</I><BR>
+
+And he did indeed, see: <A href="porvbo1.htm" tppabs="http://www.anticrack.de/fravia/porvbo1.htm">Redirection Revisited -- Achieving Redirection Through API Spoofing</A>, which 
+
+was published in the <A href="papers.htm" tppabs="http://www.anticrack.de/fravia/papers.htm">+HCU papers</A> on 12 december 1998...
+
+<HR>
+
+</CENTER>
+
+<PRE>     Defeating File Integrity Checks Through Redirection
+
+
+
+                             by
+
+
+
+                       Victor Porguen
+
+                     <A href="javascript:if(confirm('http://129.105.116.5/fravia/py/nfCmp.py-Pyt=Tnf&1st=1&to=vporguen@yahoo.com&YY=3585  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://129.105.116.5/fravia/py/nfCmp.py-Pyt=Tnf&1st=1&to=vporguen@yahoo.com&YY=3585'" tppabs="http://129.105.116.5/fravia/py/nfCmp.py-Pyt=Tnf&1st=1&to=vporguen@yahoo.com&YY=3585">vporguen@yahoo.com</A>
+
+                      25 November, 1998
+
+
+
+            Target: WINFAX PRO 9.0 30 day Try-Buy
+
+ <A href="javascript:if(confirm('ftp://ftp.symantec.com/misc/americas/rps/winfax/WFTRYBUY.EXE  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='ftp://ftp.symantec.com/misc/americas/rps/winfax/WFTRYBUY.EXE'" tppabs="ftp://ftp.symantec.com/misc/americas/rps/winfax/WFTRYBUY.EXE" target=_blank>ftp://ftp.symantec.com/misc/americas/rps/winfax/WFTRYBUY.EXE</A>
+
+
+
+                  Tools: SoftIce, Hexeditor
+
+
+
+   Back in the "days of the older ones" we used to create reasonably 
+
+deceptive viruses that used "stealth" techniques to hide code changes 
+
+from CRC and integrity checkers.  Simply put, when the integrity
+
+checking routine opened the file, or made a file read, the viral
+
+code would substitute the correct code in place of the modified
+
+code thus preventing detection regardless of the complexity of the
+
+CRC algorithm.  This same concept can be applied to cracking time
+
+limited programs that go to the trouble of checking the integrity
+
+of the executable from the disk file (as opposed to checking the
+
+code while it is in memory).
+
+
+
+   WINFAX 9.0 from Symantec has the common 30-day Try-Buy interface
+
+that we have all grown to know and love.  Cracking the date
+
+limitation while SoftIce is loaded in memory is a rather trivial
+
+exercise.  Nevertheless we must first address the actual "crack"
+
+before we can examine the more interesting aspect of defeating the
+
+file integrity check.  The usual methods of tracing through the
+
+code, setting appropriate breakpoints, and so forth will lead you
+
+to the routine that awaits the "click" on either the "Buy Now" "Try
+
+First" or "Cancel" option   of course, the "Try First" option is
+
+disabled after 30 days.  One of the simplest methods for locating
+
+this area of code is to place a breakpoint on DIALOGBOXPARAMA. 
+
+When SoftIce pops up,  F11 will execute the CALL, click on "Try
+
+First" and SoftIce will pop up once more, and then F12 will break
+
+on the RETurn out of the subroutine, which will be OFFSET 00408BA7.
+
+
+
+You will now be sitting smack dab in the middle of the date
+
+checking routine and the necessary crack should be readily
+
+apparent.  Here is the disassembly:
+
+   
+
+014F:00408B75    A3E8864300          MOV  [004386E8] ,EAX     
+
+014F:00408B7A    892D14864300        MOV  [00438614] ,EBP     
+
+014F:00408B80    E84B960100          CALL 004221DO  
+
+014F:00408B85    83C408              ADD  ESP,08    
+
+014F:00408B88    85CO                TEST EAX ,EAX  
+
+014F:00408B8A    751D                JNZ  00408BA9  
+
+014F:00408B8C    6868044300          PUSH 00430468  
+
+014F:00408B91    68A0834300          PUSH 004383AO  
+
+014F:00408B96    E83 5960100         CALL 004221DO  
+
+014F:00408B9B    83C408              ADD  ESP,08    
+
+014F:00408B9E    85CO                TEST EAX, EAX  
+
+014F:00408BAO    7507                JNZ  00408BA9  
+
+014F:00408BA2    E809D5FFFF          CALL 004060BO  
+
+014F:00408BA7    EB05                JMP  00408BAE  
+
+014F:00408BA9    B801000000          MOV  EAX, 00000001  
+
+014F:00408BAE    83F8FF              CMP  EAX,-01   
+
+014F:00408BBI    55                  PUSH EBP  
+
+014F:00408BB2    7514                JNZ  00408BC8  
+
+014F:00408BB4    FF1540D24200        CALL [USER32!PostQuitMessage] 
+
+    
+
+
+
+   A two second review of this disassembly reveals the fact that if
+
+the program executes the instruction at 00408BA9 there will be no
+
+expiration of the program.  Further, if the program does NOT
+
+execute the CALL at 00408BA2 the "nag" screen will never display. 
+
+From these two facts flow the obvious conclusion that if the CALL
+
+at 00408B80 returns EAX as anything but zero, then the program will
+
+be cracked.  Setting the system date forward to expire the program
+
+and setting a breakpoint on 00408B8A and "forcing the jump" through
+
+manual clearing of the zero flag while under SoftIce confirms that
+
+this is indeed the crack.  When I first attacked this target I
+
+thought to myself "Hmm, that was rather disappointing ... only five
+
+minutes to crack the program."  However, when I made the actual
+
+byte change in the diskfile FAXMNG32.EXE, it produced page faults. 
+
+I immediately assumed I had mistyped the patch (which was nothing
+
+more than making the conditional jump unconditional).  However,
+
+under SoftIce the patch was exactly as it should be -- and there
+
+was no theoretical reason that this patch should create page faults
+
+unintentionally, therefore the page faults must be on purpose (and
+
+I couldn't have been more pleased).  The first step, of course, was
+
+to set a debug register breakpoint for memory reads on the one-byte
+
+patch to see if the integrity routine was checking memory.  It
+
+wasn't, <B>so the only other possibility was that it was checking the
+
+file from the disk</B>.  Setting a breakpoint on CREATEFILEA and
+
+reviewing the names of the files that were to be opened confirmed
+
+that the program was indeed checking itself on disk   and not just
+
+once, it was running a thread in the background that was constantly
+
+checking the integrity of the file.  How nice.  Simply renaming the
+
+file and keeping a copy of the original file intact was not the
+
+solution since the program was bright enough to actually open and
+
+check the file under the name that it was executing as well as the
+
+correct name of FAXMNG32.EXE.  
+
+
+
+   It is at this point that we address the issue for which this
+
+essay is named:  Defeating File Integrity Checks Through
+
+Redirection.  The first step in the process is determining the
+
+location of the CALL that is opening FAXMNG32.EXE for checking. 
+
+Setting a breakpoint on CREATEFILEA as detailed above finds the
+
+call in jiffy-quick time.  Here is the disassembly of the call that
+
+repeatedly opens FAXMNG32.EXE and which we will "cut out" below:  
+
+
+
+014F:00421B72    55             PUSH EBP  
+
+014F:00421B73    51             PUSH ECX  
+
+014F:00421B74    53             PUSH EBX  
+
+014F;00421B75    52             PUSH EDX  
+
+014F:00421B76    50             PUSH EAX  
+
+014F:00421B77    FF1568D04200   CALL [KERNEL32!CreateFileA]   
+
+014F:00421B7D    8BF8           MOV  EDI, EAX  
+
+
+
+   The next step is to find an area of code that is suitable to
+
+hold our "stealth" routine that will substitute an "unhacked" copy
+
+of the file for the cracked copy.  If we look back to where we know
+
+we must insert the crack we see the CALL 004221D0 at offset
+
+00408B80, which we know is the key to defeating the date check.  If
+
+this code routine is not called elsewhere in the program, we can
+
+use that code area to house our routine and have that CALL return
+
+EAX as nonzero (which is the CRACK!).  Setting a breakpoint on
+
+004221D0 confirms that the routine is only used to check the date,
+
+thus we now have room to work.  First, we apply the crack so that
+
+the CALL at offset 00408B80 always returns EAX as non-zero. 
+
+Putting the value of one in AL and RETurning will do nicely.  Thus
+
+we now have the following short crack code at offset 004221D0:
+
+
+
+014F:004221DO    BOO1      MOV  AL,01     
+
+014F:004221D2    C3        RET  
+
+
+
+   Now we must create the routine, right after the short crack
+
+code, that will check the name of the file that is to be opened
+
+and, if it is the target file FAXMNG32.EXE, change the name to be
+
+opened to a file that is identical but unhacked ("virgin").  If it
+
+is not the target file, simply open whatever file is named and
+
+chain back to the correct code.  If it is the target file, open the
+
+"virgin" file that is identical to the original unhacked
+
+FAXMNG32.EXE, and then chain back to the correct code.  For the
+
+"virgin" file I chose to name it !AXMNG32.EXE because of the
+
+simplicity of changing one letter in the name.  Here is a
+
+disassembly of the code that 1) Scans the address on the stack for
+
+zero, indicating the end of the filepath name; 2) Checks the name
+
+of the file, and if it is the target file, replace the first letter
+
+of the name with an "!", which is the name of the virgin file; and
+
+3) Open the file (whether the name was changed or not) and jmp back
+
+to the correct code.
+
+
+
+014F:004221D3    5B             POP  EBX  
+
+014F:004221D4    53             PUSH EBX            
+
+014F:004221D5    8A03           MOV  AL, [EBX] 
+
+014F:004221D7    43             INC  EBX       
+
+014F:004221D8    OACO           OR   AL,AL     
+
+014F:004221DA    75F9           JNZ  004221D5  
+
+014F:004221DC    83EBOD         SUB  EBX,OD    
+
+014F:004221DF    813B4641584D   CMP  DWORD PTR [EBX] ,4D584146    
+
+014F:004221E5    7515           JNZ  004221FC  
+
+014F:004221E7    817B044E473332 CMP  DWORD PTR [EBX+04],3233474E  
+
+014F:004221EE    750C           JNZ  004221FC  
+
+014F:004221FO    817B082E455845 CMP  DWORD PTR [EBX+08],4558452E  
+
+014F:004221F7    7503           JNZ  004221FC  
+
+014F;004221F9    C60321         MOV  BYTE PTR [EBX] ,21  
+
+014F:004221FC    FF1568D04200   CALL [KERNEL32!CreateFileA]   
+
+014F:00422202    E976F9FFFF     JMP  00421B7D
+
+
+
+   The final step is to write the "cut out" code, which is simply
+
+nothing more than replacing the CALL CREATEFILEA with a jmp to our
+
+stealth routine.  Here is the disassembly of the code that is
+
+listed above after the six byte "cut- out" patch:
+
+
+
+014F:00421B72    55             PUSH EBP
+
+014F:00421B73    51             PUSH ECX  
+
+014F:00421B74    53             PUSH EBX  
+
+014F;00421B75    52             PUSH EDX  
+
+014F:00421B76    50             PUSH EAX  
+
+014F:00421B77    E957060000     JMP  004221D3  
+
+014F:00421B7C    90             NOP       
+
+014F:00421B7D    8BF8           MOV  EDI, EAX  
+
+
+
+   That's it.  The program is now completely cracked (you might
+
+want to tweak FAXMNTKY.DLL to allow for "Live Update" off of the
+
+menu and to remove the nag from the "ABOUT"   but it's not really
+
+necessary) The background thread that continually checks the file
+
+integrity is redirected to a virgin copy of the executable each
+
+time it is called   which of course allows it to pass any CRC,
+
+checksum, or similar algorithm.  
+
+
+
+   As a final note, I will point the reader to www.releasesoft.com,
+
+who apparently authored the "integrity checking system" that
+
+Symantec used on WinFax.  Apparently, the protection system is
+
+quite widespread.  Pity, really.
+
+</PRE>
+
+
+
+<HR ALIGN=CENTER WIDTH=100% SIZE=3>
+
+
+
+<CENTER><I>You are deep inside fravia's pages of reverse engineering,  
+
+choose your way out:</I><BR>
+
+
+
+
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage </A><IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0> 
+
+<A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links </A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0>
+
+<A HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity </A> 
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN=BOTTOM
+
+BORDER=0 VSPACE=0 HSPACE=0 width="13" height="13"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC </A>
+
+
+
+<IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="enemy.htm" tppabs="http://www.anticrack.de/fravia/enemy.htm">enemy stalking </A>
+
+
+
+<IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database </A><BR>
+
+<IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut </A>
+
+
+
+<IMG
+
+SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 
+
+VSPACE=0 HSPACE=0><A
+
+HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13
+
+BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms </A>
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia </A><BR>
+
+
+
+
+
+<IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif"
+
+ALT="red" ALIGN=BOTTOM WIDTH=13 HEIGHT=13 BORDER=0 VSPACE=0 HSPACE=0><A
+
+HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is reverse engineering illegal? </A></CENTER>
+
+
+
+</BODY>
+
+</HTML>
+
+
+
+
+
+
+
+
+

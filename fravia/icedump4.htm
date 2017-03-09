@@ -1,0 +1,262 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>icedump4.htm: TheOwl's winice dumper (version 4)</TITLE>
+
+</HEAD>
+
+<BODY BGCOLOR=#C0C0C0 TEXT=#001010 VLINK=#405040>
+
+<CENTER><A href="ourtools.htm" tppabs="http://www.anticrack.de/fravia/ourtools.htm"><IMG SRC="ourtools.gif" tppabs="http://www.anticrack.de/fravia/ourtools.gif" 
+
+ALT="Our Tools" ALIGN=BOTTOM WIDTH=114 HEIGHT=43 BORDER=0 
+
+VSPACE=0 HSPACE=0></A>
+
+<BR><FONT color= gray>Our Tools</FONT><P><FONT size=+3>TheOwl's winice dumper (version 4)</FONT><BR>
+
+<FONT size=+2>Source code, program, everything you need...</FONT>
+
+<H2>by <FONT color=#5500AA>TheOwl</FONT></H2>
+
+<H4>(16 September 1998)</H4><HR></CENTER>
+
+<I>Well, once more an Outstanding (and generous) wizard sends us a tool that will 
+
+improve your work tremendously... I wonder if the smartasses at Numega are already 
+
+using it (they are... :-) and wish you all GOOD WORK, or as our (disappeared ?) 
+
++Master would say: "work well"  with this incredible tool... Long live TheOwl, a 
+
+Master cracker that should deserve much more recognition...</I><HR>
+
+
+
+<PRE>
+
+           this is beta release 4 of my winice dumper.
+
+      
+
+           download it <A href="javascript:if(confirm('http://129.105.116.5/fravia/zipped/icedump4.zip  \n\nThis file was not retrieved by Teleport Pro, because it is addressed on a domain or path outside the boundaries set for its Starting Address.  \n\nDo you want to open it from the server?'))window.location='http://129.105.116.5/fravia/zipped/icedump4.zip'" tppabs="http://129.105.116.5/fravia/zipped/icedump4.zip">here</A>
+
+
+
+
+
+   news.
+
+
+
+   - commented source code included, although putting it into winice.exe is
+
+     another art itself... anyway, you can get a general idea on how it works.
+
+     suggested order of reading: init, parser, dumper.
+
+
+
+   - emulation of PAGEIN when invoked with old syntax: "PAGEIN &lt;address>"
+
+     this works in all modes now (V86, ring-3/16, ring-3/32, ring-0/32).
+
+
+
+   - parser and dumper are more fool-proof (e.g. dumping not committed memory
+
+     won't result in a system crash).
+
+
+
+   - ring transitions from both PM and V86 mode have been enhanced by directly
+
+     hacking the client CS:(E)IP registers. this also means that the dumper is 
+
+     less intrusive and detectable.
+
+
+
+   - support for paged out memory in V86 mode (previous versions would crash
+
+     when one tried to dump paged out memory in V86 mode).
+
+
+
+   - patcher included for both v3.22 and v3.23 of winice.
+
+
+
+
+
+   usage.
+
+
+
+   the syntax is as follows:
+
+
+
+        PAGEIN &lt;address> [&lt;length> &lt;file name>]
+
+
+
+   if only &lt;address> is specified, the old behaviour will be emulated, but this
+
+   time 16 bit modes (V86 and PM) will be supported as well. in fact, ring-3/32
+
+   support is somewhat better as well since the client's stack not longer has
+
+   to be present (unlike for the old PAGEIN).
+
+
+
+   both &lt;address> and &lt;length> can be any valid expressions. &lt;address> has to
+
+   evaluate to a flat address. e.g. CS:IP will NOT result in a flat address if
+
+   used in 16 bit modes, you have to use the flat() operator.
+
+
+
+   &lt;file name> can be any valid name with drive/path. file will be created or
+
+   overwritten if it already exists.
+
+
+
+
+
+   notes.
+
+
+
+   of course, the entire memory block you're about to dump should have been
+
+   previously allocated and committed. nonetheless, trying to dump non-committed
+
+   memory pages won't crash the system, but will instead write garbage into
+
+   the dump file... well, if you don't know what you dump, you will get it ;-).
+
+   the size of the dump file will be smaller than that of the block you
+
+   specified if at the end of the block there are non-committed pages. if the
+
+   entire block is not committed, you will end up with an empty file.
+
+
+
+   trying to dump from an address context other than the one you popped up in
+
+   won't work (this may be supported in the distant future, but you would have
+
+   to come up with strong arguments to convince me to invest my time into it).
+
+
+
+   interrupts must be enabled. you can try to change IF manually, but chances
+
+   are that you will lock up your machine only.
+
+
+
+   IFSMgr mustn't be reentered when dumping from ring-0 mode. this normally
+
+   means, that you won't have a chance to dump while inside file system driver
+
+   code. not that if many of you would ever debug FSDs... ;-). generally, be
+
+   very careful when dumping from ring-0 mode, there're many circumstances when
+
+   it just won't work. one rule of thumb is that if you see the client call
+
+   other VxD services then it's probably also safe to invoke the dumper as well
+
+   (since it does nothing else but invokes VxD services, those of IFSMgr).
+
+
+
+   PAGEIN should only be invoked AFTER the DEVICE_INIT phase of the static VxD
+
+   initialization procedure. if you're in ring-0 mode, then you can use it
+
+   earlier as well, but only with the OLD syntax (i.e. no file dumping while
+
+   VxDs are being initialized). hmmm, does it make any sense to page in anything
+
+   before DEVICE_INIT at all? ;-)
+
+
+
+   "ver ice" (v3.22) and "ver sio" (v3.23) had to be killed... oh well
+
+
+
+
+
+   greets and thanks.
+
+
+
+   Acp,Animadei,Domnar,Fossil,Gij,G-Rom,Groo,Ice-Man,LiuTaoTao,Lordbyte,MadMax,
+
+   Marquis,Mave,Pain,tHeRaiN,Randall Flagg,Razzi,Regor,Slava,Xoanon,Zenix</PRE>
+
+
+
+<HR size="3">
+
+<CENTER>
+
+ <IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" HEIGHT="13" WIDTH="13" ALT="red"><A HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage</A>
+
+ <IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" HEIGHT="13" WIDTH="13" ALT="red"><A HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links</A>
+
+ <IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" HEIGHT="13" WIDTH="13" ALT="red"><A HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC</A>
+
+ <IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" HEIGHT="13" WIDTH="13" ALT="red"><A HREF="startbot.htm" tppabs="http://www.anticrack.de/fravia/startbot.htm">bots wars</A>
+
+ <IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" HEIGHT="13" WIDTH="13" ALT="red"><A HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays</A>
+
+ <IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" HEIGHT="13" WIDTH="13" ALT="red"><A HREF="coumes.htm" tppabs="http://www.anticrack.de/fravia/coumes.htm">counter measures</A>
+
+<BR>
+
+ <IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" HEIGHT="13" WIDTH="13" ALT="red"><A HREF="botstart.htm" tppabs="http://www.anticrack.de/fravia/botstart.htm">bots wars</A>
+
+ <IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" HEIGHT="13" WIDTH="13" ALT="red"><A HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut CGI tricks</A>
+
+ <IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" HEIGHT="13" WIDTH="13" ALT="red"><A HREF="academy.htm" tppabs="http://www.anticrack.de/fravia/academy.htm">academy database</A>
+
+ <IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" HEIGHT="13" WIDTH="13" ALT="red"><A HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools</A>
+
+ <IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" HEIGHT="13" WIDTH="13" ALT="red"><A HREF="javascri.htm" tppabs="http://www.anticrack.de/fravia/javascri.htm">javascript tricks</A>
+
+<BR> 
+
+ <IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" HEIGHT="13" WIDTH="13" ALT="red"><A HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails</A>
+
+ <IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" HEIGHT="13" WIDTH="13" ALT="red"><A HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms</A>
+
+ <IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" HEIGHT="13" WIDTH="13" ALT="red"><A HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mail_fravia+</A>
+
+<BR>
+
+ <IMG SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" HEIGHT="13" WIDTH="13" ALT="red"><A HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">Is software reverse engineering illegal?</A>
+
+</CENTER>
+
+<!-- End mover -->
+
+<HR>
+
+
+
+
+
+</BODY>
+
+</HTML>
+

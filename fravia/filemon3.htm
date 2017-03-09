@@ -1,0 +1,1420 @@
+<html><head>
+
+<title>filemon3</title>
+
+</head>
+
+<body BGCOLOR="#C0C0C0" TEXT="#001010" VLINK="#405040">
+
+<center><font size="+3">How to reverse engineer a Windows 95 target</font><br>
+
+<font size="+2">
+
+REVERSE ENGINEERING EXERCISES FOR THE MASSES - (5)</font>
+
+
+
+<br>
+
+<font Size="+2">by fravia+ (MSRE), August 1997<br><br>
+
+<img SRC="hcu1.gif" tppabs="http://www.anticrack.de/fravia/hcu1.gif" ALT="HCU" ALIGN="BOTTOM" WIDTH="114" HEIGHT="43" BORDER="0" VSPACE="0" HSPACE="0">
+
+<br>(Part C: Filemon reversed - 07 August 1997)</font>
+
+
+
+<hr>
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13">
+
+Courtesy of Fravia's page of reverse engineering<br>
+
+<hr>
+
+<br>
+
+<font size="+1"><i>Well, a very interesting essay... I wrote it myself! :-)
+
+This essay will be divided in 
+
+four (or more) parts:</i><pre>A = Introduction to filemon
+
+B = reverse engineering without source code 
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><u><b>C = Filemon reversed </b></u> 
+
+D = VXD vagaries and mysteries</pre><i>
+
+Although already disponible, this essay is still under construction
+
+and will be modified and ameliorated until the wording below will disappear (I reckon 
+
+until mid-september)</i></font>
+
+<br><br><font size="+3"><font color="magenta">UNDER CONSTRUCTION</font></font><br>
+
+</center>
+
+<hr size="2">
+
+<center>
+
+<font size="+2">
+
+REVERSE ENGINEERING EXERCISES FOR THE MASSES - (5)<br>
+
+</font><font size="+1">
+
+How to reverse engineer a Windows 95 program<br>
+
+Filemon.exe Version 2<br><font><font size="+1">(Part C: Filemon discovered)<br>
+
+by Fravia (MSRE), August 1997<br><br></center>
+
+</font><hr>
+
+<i>
+
+Well, in the first part of this essay we have got an &quot;introduction&quot; to the structure 
+
+of filemon.exe, in the second one we have reversed quite a lot of code without using 
+
+the C source... let's finish our job.
+
+</i>
+
+<hr>
+
+<font size="+2"><b>The remaining functions</b></font><br>
+
+<br>
+
+We have closed the second part of this essay wondering about the identity of the <u>messages</u> that our target uses in its ListAppend and UpdateStatistics functions.<br>
+
+UpdateStatistics began at 1A40... the next function begins at 1B50, let's have a look (of course WITHOUT using the C source code). As you'll see, this function &quot;prepares&quot; the window used by filemon for its activity with a CreateWindowEx function<pre>
+
+
+
+Called from 124A... that's MainWndProc, as we have seen 
+
+|
+
+:00401B50 83EC30        sub esp, 00000030 ;correct stack
+
+:00401B53 53            push ebx          ;will pop
+
+:00401B54 56            push esi          ;will pop
+
+:00401B55 57            push edi          ;will pop
+
+:00401B56 55            push ebp          ;will pop
+
+:00401B57 FF15C4B14400  Call dword ptr [0044B1C4] COMCTL32:NoName0000, Ord:0011h</pre>
+
+So, this is a &quot;NoName&quot; call without any parameter, since the preceding pushes will be popped at end... sounds like an InitTask function..., may be the Initfunction for COMCTL32?... That is the &quot;common control&quot; dll, the &quot;Custom Controls Library&quot; of Micro$oft<pre>
+
+:00401B5D 8D442410           lea eax, [esp + 10]  ;get rectangle structure address
+
+:00401B61 8B742444           mov esi, [esp + 44]  ;hWnd for above client coordinates 
+
+:00401B65 50                 push eax   ;address of rectangle structure
+
+:00401B66 56                 push esi   ;hWnd
+
+:00401B67 FF15ACB24400       Call dword ptr [0044B2AC] ;USER32.GetClientRect
+
+:00401B6D 6A00               push 00000000 ;lpvCreateParams
+
+:00401B6F A1E8994000         mov eax, [004099E8] ;InitInstance created mainwnd
+
+:00401B74 50                 push eax      ;hInst, Identifies the instance
+
+:00401B75 68E8030000         push 000003E8 ;hMenu handle of Menu
+
+:00401B7A 8B442428           mov eax, [esp + 28] ;get Height
+
+:00401B7E 56                 push esi      ;hwndparent
+
+:00401B7F 2B442424           sub eax, [esp + 24] ;adjust Height
+
+:00401B83 50                 push eax      ;nHeight      
+
+:00401B84 8B44242C           mov eax, [esp + 2C] ;get Width
+
+:00401B88 2B442424           sub eax, [esp + 24] ;adjust it
+
+:00401B8C 50                 push eax      ;nWidth
+
+:00401B8D 6A00               push 00000000 ;y=0
+
+:00401B8F 6A00               push 00000000 ;x=0
+
+:00401B91 6801028050         push 50800201 ;WS_choice for window (dwstyle)
+
+:00401B96 686C814000         push 0040816C ;pointer to Null terminated name
+
+:00401B9B 68C0814000         push 004081C0 ;&quot;SysListView32&quot;
+
+:00401BA0 6A00               push 00000000 ;Style 0
+
+:00401BA2 FF15E8B24400       Call dword ptr [0044B2E8] ;USER32.CreateWindowExA</pre>
+
+The CreateWindowEx function creates an overlapped, pop-up, or child window with an extended style; otherwise, this function is identical to the CreateWindow function.<br>
+
+HWND CreateWindowEx(dwExStyle, lpszClassName, lpszWindowName, dwStyle, x, y, nWidth, nHeight, hwndParent, hmenu, hinst, lpvCreateParams).<br>
+
+The return value identifies the new window if the function is successful. Otherwise, it is NULL.
+
+<pre>
+
+:00401BA8 8BD8               mov ebx, eax
+
+:00401BAA 85DB               test ebx, ebx ;was it null?
+
+:00401BAC 750A               jne 00401BB8  ;continue if Window created
+
+:00401BAE 33C0               xor eax, eax  ;return value=FALSE
+
+:00401BB0 5D                 pop ebp       ;popall
+
+:00401BB1 5F                 pop edi
+
+:00401BB2 5E                 pop esi
+
+:00401BB3 5B                 pop ebx
+
+:00401BB4 83C430             add esp, 30   ;adjust stack
+
+:00401BB7 C3                 ret
+
+
+
+: continue if Window created
+
+:00401BB8 33ED               xor ebp, ebp  ;make sure bp=0
+
+:00401BBA BF7C804000         mov edi, 0040807C ;&quot;#&quot;=0x23=35: first *edi
+
+:00401BBF 8D742420           lea esi, [esp + 20]
+
+:00401BC3 896C2424           mov [esp + 24], ebp
+
+:00401BC7 C74424200F000000   mov [esp + 20], F
+
+
+
+:loop_1BCF_SendMessage_101B
+
+:00401BCF 8B07           mov eax, [edi]      ;get columnwidth in ax
+
+:00401BD1 8B4FFC         mov ecx, [edi-04]   ;get ecx
+
+:00401BD4 896C2434       mov [esp + 34], ebp ;save ebp
+
+:00401BD8 56             push esi            ;push fourth param
+
+:00401BD9 8944242C       mov [esp + 2C], eax ;save width
+
+:00401BDD 55             push ebp            ;push third param
+
+:00401BDE 894C2434       mov [esp + 34], ecx ;save ecx
+
+:00401BE2 681B100000     push 0000101B       ;push msg
+
+:00401BE7 53             push ebx            ;push hWnd
+
+:00401BE8 FF15D8B24400   Call dword ptr [0044B2D8] ;SendMessage (bx,101B,ebp,esi)
+
+:00401BEE 83F8FF         cmp eax, FFFFFFFF   ;is it -1?
+
+:00401BF1 7416           je 00401C09         ;if ax=-1 exit loop with FALSE
+
+:00401BF3 83C70C         add edi, C          ;edi=edi+C get next value for pointer
+
+:00401BF6 45             inc ebp             ;ebp++
+
+:00401BF7 81FFC4804000   cmp edi, 004080C4   ;loop until no more widths
+
+:00401BFD 72D0           jb 00401BCF         ;loop_1BCF_SEndMessage_101B</pre>
+
+<font size="+2"><b>Sniffing the data area</b></font><br>
+
+<br>
+
+This SendMessage_101B is BUILDING the activity window of our target, with the six predetermined column width and column labels, which are taken from the data area.<br>This is the 
+
+Time to have a first look at the DATA of our target (Data Offset = 6200, Data Size = 1600), the data begin at 4080000, and show some interesting findings in relation with the function we are investigating:<br><pre>
+
+408020 0000000000000000   ........
+
+408028 0000000000000000   ........
+
+408030 4F74686572000000   Other...  ;these are the 6
+
+408038 526573756C740000   Result..  ;&quot;titles&quot;
+
+408040 5061746800000000   Path....  ;of the target's
+
+408048 5265717565737400   Request.  ;six columns
+
+408050 50726F6365737300   Process.  ;as you can
+
+408058 2300000000000000   #.......  ;see
+
+408060 FFFFFFFF01000000   ........
+
+408068 0100000000000000
+
+408070 0000000000000000            ;this at 807C is
+
+408078 5880400023000000   ....#... ;the first
+
+408080 0000000050804000            ;width: 0x23=35
+
+408088 6400000000000000   d....... ;next value: 0x64=100
+
+408090 4880400078000000   .....x...;next: 0x78=120 
+
+408098 0000000040804000
+
+4080A0 C800000000000000   !........;next: 0xC8=200
+
+4080A8 3880400046000000   .....F...;next: 0x46=70
+
+4080B0 0000000030804000
+
+4080B8 AA00000000000000   @........;next: 0xAA=170
+
+4080C0 66696C656D6F6E00   filemon. 
+
+4080C8 66696C656D6F6E43   filemonC
+
+4080D0 6C61737300000000   lass....</pre>
+
+Obviously the headers for our window column are taken from these data, in reverse order, starting from 408058 and ending at 408030 with a column without data... let's try to modify them... let's write at 408058 &quot;Num&quot; instead of &quot;#&quot;, and let's have a look at the result!<br> The columnwidth values have been set in the data area at a distance of 12 bytes one from another. The loop above picks these values from the data area until 4080C0, wich is the area where we have the &quot;filemon&quot; string for the ABORT function. You want to modify the widths of the columns? Go ahead!<br>
+
+The return value of CreateWindowEx identifies the new window if the function is successful. Otherwise, it is NULL. 
+
+<pre>
+
+: exit loop with CreateWindowEx return value
+
+:00401BFF 8BC3                    mov eax, ebx        ;get return value
+
+:00401C01 5D                      pop ebp
+
+:00401C02 5F                      pop edi
+
+:00401C03 5E                      pop esi
+
+:00401C04 5B                      pop ebx
+
+:00401C05 83C430                  add esp, 00000030
+
+:00401C08 C3                      ret
+
+
+
+: exit loop with CreateWindowEx FALSE
+
+:00401C09 33C0         xor eax, eax ;prepare FALSE return value
+
+:00401C0B 5D           pop ebp      ;popall
+
+:00401C0C 5F           pop edi
+
+:00401C0D 5E           pop esi
+
+:00401C0E 5B           pop ebx
+
+:00401C0F 83C430       add esp, 30  ;correct stack
+
+:00401C12 C3           ret</pre>
+
+Time to follow a little what happens with this value. The following code snippet is the part of MainWndProc that calls and uses the above CreateMainWindow function<pre>
+
+:00401244 56            push esi             ;push hWnd parameter
+
+:00401245 A3BC964000    mov [004096BC], eax  ;save eax in 96BC
+
+:0040124A E801090000    call 00401B50=CreateMainWindow (hWnd)
+
+:0040124F 83C404        add esp, 4           ;correct stack
+
+:00401252 A3B8964000    mov 96B8_SaveFileSecondPar, eax  ;save return value in 96B8
+
+                        ;wich happens to be our good old SaveFileSecondPar
+
+:00401257 85C0          test eax, eax        ;check if it is FALSE
+
+:00401259 7511          jne 0040126C         ;CREATED, continue
+
+:0040125B 6A00          push 00000000        ;MB_OK
+
+:0040125D 6A00          push 00000000        ;no title
+
+:0040125F 6874814000    push 00408174        ;&quot;List not created!&quot;
+
+:00401264 6A00          push 00000000        ;no parent window
+
+:00401266 FF1590B24400  Call dword ptr [0044B290];MessageBox(NULL,List..., NULL,OK)
+
+:continue, create a filter, open the VXD device driver, let it filter...
+
+:0040126C 6870814000    push 00408170      ;&quot;*&quot;</pre>
+
+<font size="+2"><b>The return of an old friend</b></font><br>
+
+<br>
+
+Well, we see that the value is saved in 96B8... 
+
+Most adequate! You would not have remembered it any more, probably, if we had not performed our search and replace substitutions... we have seen at the beginning of this essay two of these locations: This is the 96B8_SaveFileSecondPar! Therefore the Savefile function is called with SaveFile(hWnd, hwndMain, BOOLEAN). Let's go on with the next function. Since it is exactly the SaveFile one, that we found as first function and that we'll now investigate:<br><br>
+
+<font size="+2"><b>The SaveFile function</b></font><br>
+
+<br><pre>
+
+:00401C20 81EC7C060000            sub esp, 0000067C
+
+:00401C26 A06C814000              mov al, [0040816C]  ;get value al
+
+:00401C2B 8844247C                mov [esp + 7C], al  ;save it here
+
+:00401C2F 53                      push ebx            ;will pop
+
+:00401C30 56                      push esi            ;will pop
+
+:00401C31 33C0                    xor eax, eax        ;zero ax
+
+:00401C33 57                      push edi            ;will pop
+
+:00401C34 B93F000000              mov ecx, 3F         ;ecx=63
+
+:00401C39 8DBC2489000000          lea edi, [esp + 89] ;get edi
+
+:00401C40 55                      push ebp            ;will pop
+
+:00401C41 F3                      repz     ;prepare string
+
+:00401C42 AB                      stosd 
+
+:00401C43 66AB                    stosw
+
+:00401C45 AA                      stosb
+
+:00401C46 38842498060000          cmp [esp + 698], al ;Called as Saveas (1)?
+
+:00401C4D 753D                    jne 00401C8C ;get SaveData array
+
+:00401C4F 380570804000            cmp [00408070], al ;Flagged as Save (0)?
+
+:00401C55 7435                    je 00401C8C  ;get SaveData array
+
+:00401C57 BFC0964000              mov edi, 004096C0 ;If not Saveas
+
+:00401C5C B9FFFFFFFF              mov ecx, FFFFFFFF ;prepare counter
+
+:00401C61 2BC0                    sub eax, eax
+
+:00401C63 F2                      repnz             ;prepare string
+
+:00401C64 AE                      scasb
+
+:00401C65 F7D1                    not ecx           ;perform count
+
+:00401C67 2BF9                    sub edi, ecx
+
+:00401C69 8BC1                    mov eax, ecx
+
+:00401C6B C1E902                  shr ecx, 02
+
+:00401C6E 8BF7                    mov esi, edi
+
+:00401C70 8DBC248C000000          lea edi, [esp + 0000008C]
+
+:00401C77 F3                      repz              ;prepare string
+
+:00401C78 A5                      movsd
+
+:00401C79 8BC8                    mov ecx, eax
+
+:00401C7B 83E103                  and ecx, 00000003
+
+:00401C7E F3                      repz              ;prepare string
+
+:00401C7F A4                      movsb
+
+:00401C80 8BB42490060000          mov esi, [esp + 00000690]
+
+:00401C87 E98D000000              jmp 00401D19 ;go after data array fill</pre>
+
+<font size="+2"><b>Useful Arrays</b></font><br>
+
+<br>
+
+Well, a lot of repz/movs string functions... as usual in SaveFile operations, we'll find the ones for the saveas operation below... now we will assist to the &quot;filling&quot; of a typical &quot;ARRAY&quot; block of variables, you'll find many such blocks inside your targets, they can often give us valuable indications about the variables used by a target... as usual many array elements are loaded with NULL. Since we find below the  function <font color="blue">BOOL GetSaveFileName(lpofn)</font> we know already that we have to do with a <font color="blue">OPENFILENAME FAR* lpofn;</font> data structure, This array structure contains information used to initialize the dialog box. When the GetSaveFileName function returns, this structure will contain information about the user's file selection. This structure has most of the time (programmers may obviously use, like here, different compilers or even &quot;home-made&quot; variants) a structure similar to the following:<pre>
+
+typedef struct tagOPENFILENAME { /* ofn */
+
+    DWORD     lStructSize;
+
+    HWND      hwndOwner;
+
+    HINSTANCE hInstance;
+
+    LPCSTR    lpstrFilter;    --- &quot;File Data...&quot;
+
+    LPSTR     lpstrCustomFilter;
+
+    DWORD     nMaxCustFilter;
+
+    DWORD     nFilterIndex;
+
+    LPSTR     lpstrFile;
+
+    DWORD     nMaxFile;       --- 256
+
+    LPSTR     lpstrFileTitle; --- &quot;Save File Info...&quot;
+
+    DWORD     nMaxFileTitle;
+
+    LPCSTR    lpstrInitialDir;
+
+    LPCSTR    lpstrTitle;
+
+    DWORD     Flags;
+
+    UINT      nFileOffset;
+
+    UINT      nFileExtension;
+
+    LPCSTR    lpstrDefExt;
+
+    LPARAM    lCustData;
+
+    UINT      (CALLBACK* lpfnHook) (HWND, UINT, WPARAM, LPARAM);
+
+    LPCSTR    lpTemplateName;
+
+} OPENFILENAME;	
+
+</pre>
+
+You understand how important the above is from a reverse engineering point of view, dont' you? Every time you find inside your target a call to GetFileName (and almost always you will) you can IMMEDIATELY understand and tag quite a lot of memory locations... be careful when you re-order the esp relocation, though.<br>Let's go on with our SaveFile function.
+
+<pre>
+
+:Get_Save_Data
+
+:00401C8C 8BB42490060000          mov esi, [esp + 690]     ;get+1C value
+
+:00401C93 A1E8994000              mov eax, [004099E8]      ;get+20 value
+
+:00401C98 8974241C                mov [esp + 1C], esi      ;[esp+690]
+
+:00401C9C 89442420                mov [esp + 20], eax      ;[99E8]
+
+:00401CA0 33C0                    xor eax, eax             ;ax=NULL now
+
+:00401CA2 8D8C248C000000          lea ecx, [esp + 8C]      ;get+34value
+
+:00401CA9 89442428                mov [esp + 28], eax      ;NULL
+
+:00401CAD 8944242C                mov [esp + 2C], eax      ;NULL
+
+:00401CB1 C74424184C000000        mov [esp + 18], 4C       ;4C
+
+:00401CB9 894C2434                mov [esp + 34], ecx      ;[esp+8C]
+
+:00401CBD 8944243C                mov [esp + 3C], eax      ;NULL
+
+:00401CC1 89442440                mov [esp + 40], eax      ;NULL
+
+:00401CC5 89442444                mov [esp + 44], eax      ;NULL
+
+:00401CC9 C744242418824000        mov [esp + 24], 00408218 ;&quot;File Data (*.FIL)&quot;
+
+:00401CD1 C744243001000000        mov [esp + 30], 00000001 ;1
+
+:00401CD9 C744243800010000        mov [esp + 38], 00000100 ;256 (typical Max value)
+
+:00401CE1 6689442450              mov [esp + 50], ax       ;NULL
+
+:00401CE6 8944245C                mov [esp + 5C], eax      ;NULL
+
+:00401CEA 6689442452              mov [esp + 52], ax       ;NULL
+
+:00401CEF 8D542418                lea edx, [esp + 18]      ;edx=4C
+
+:00401CF3 C744244804824000        mov [esp + 48], 00408204 ;&quot;Save File Info...&quot;
+
+:00401CFB C7442454FC814000        mov [esp + 54], 004081FC ;&quot;*.fil&quot;
+
+:00401D03 C744244C04002000        mov [esp + 4C], 00200004 ;200004
+
+:00401D0B 52                      push edx                 ;initialis_Data address 
+
+:00401D0C E8BB040000              Call 004021CC ;GetSaveFileNameA
+
+:00401D11 85C0                    test eax, eax ;return value?
+
+:00401D13 0F84AC010000            je 00401EC5   ;zero, error or user 
+
+                                                ;hit cancel: return home
+
+:continue after data array
+
+:00401D19 8D84248C000000      lea eax, [esp + 0000008C]  ;get file size
+
+:00401D20 68F8814000          push 004081F8 ;&quot;w&quot;         ;push write 
+
+:00401D25 50                  push eax                   ;push file size
+
+:00401D26 E8D5060000          call 00402400              ;what's this?</pre>
+
+You'll investigate this routine later using the &quot;tree climbing&quot; trick explained below, anyway the pushed &quot;w&quot; should give you an easy hint... it's the &quot;fopen&quot; file open routine, which in c has following characteristics: FILE *fopen(path, type)... here we have a slight variation with file size instead, yet the &quot;w&quot; type parameter is thoroughly characteristic: opens an empty file for writing, if the given file already exists, its contents are destroyed.<pre>
+
+:00401D2B 89442418            mov [esp + 18], eax
+
+:00401D2F 83C408              add esp, 00000008
+
+:00401D32 85C0                test eax, eax  ;bad return value?
+
+:00401D34 751F                jne 00401D55   ;good return value, continue
+
+:00401D36 6A10                push 00000010  ;BAD return value!
+
+:00401D38 68EC814000          push 004081EC  ;&quot;Save Error&quot;
+
+:00401D3D 68D8814000          push 004081D8  ;&quot;Create File Failed.&quot;
+
+:00401D42 6A00                push 00000000
+
+:00401D44 FF1590B24400        Call dword ptr [0044B290] ;MessageBox	_Error
+
+:00401D4A 5D                  pop ebp        ;popall
+
+:00401D4B 5F                  pop edi
+
+:00401D4C 5E                  pop esi
+
+:00401D4D 5B                  pop ebx
+
+:00401D4E 81C47C060000        add esp, 67C
+
+:00401D54 C3                  ret
+
+
+
+:good return value, we may save, continue and show hourglass
+
+:00401D55 56                push esi
+
+:00401D56 FF15B4B24400      Call dword ptr [0044B2B4] ;SetCapture
+
+:00401D5C A1B0964000        mov eax, [96B0]=cursor    ;here hourglass, of course
+
+:00401D61 50                push eax                  ;ampersand
+
+:00401D62 FF15B8B24400      Call dword ptr [0044B2B8] ;USER32.SetCursor
+
+:00401D68 6A00              push 00000000             ;NULL
+
+:00401D6A A3BC964000        mov [004096BC], eax       ;return value in 96BC
+
+:00401D6F 8B842498060000    mov eax, [esp + 00000698] ;get hWnd
+
+:00401D76 6A00              push 00000000             ;NULL
+
+:00401D78 6804100000        push 00001004             ;msg 1004
+
+:00401D7D 33DB              xor ebx, ebx              ;bx=0
+
+:00401D7F 50                push eax                  ;hWnd
+
+:00401D80 FF15D8B24400      Call dword ptr [0044B2D8] ;SendMessage_1004 
+
+:00401D86 89442414          mov [esp + 14], eax       ;save return value
+
+:00401D8A 3BC3              cmp eax, ebx              ;was it error?
+
+:00401D8C 0F8EE3000000      jle 00401E75              ;yes, do not loop
+
+
+
+:Major_loop_1D92
+
+:00401D92 C684248C02000000  mov byte ptr [esp + 0000028C], 00
+
+:00401D9A 33ED              xor ebp, ebp              ;ebp=0
+
+
+
+:Minor_loop_1D9C
+
+:00401D9C 8D84248C010000    lea eax, [esp + 0000018C]
+
+:00401DA3 8D4C2464          lea ecx, [esp + 64]
+
+:00401DA7 8B942494060000    mov edx, [esp + 00000694]
+
+:00401DAE 51                push ecx
+
+:00401DAF 896C2470          mov [esp + 70], ebp
+
+:00401DB3 53                push ebx
+
+:00401DB4 89842480000000          mov [esp + 00000080], eax
+
+:00401DBB 682D100000              push 0000102D
+
+:00401DC0 C684249801000000        mov byte ptr [esp + 00000198], 00
+
+:00401DC8 C784248800000000010000  mov dword ptr [esp + 00000088], 100
+
+:00401DD3 52                      push edx
+
+:00401DD4 FF15D8B24400      Call dword ptr [0044B2D8] ;SendMessage_102D 
+
+:00401DDA 8DBC248C010000    lea edi, [esp + 0000018C]
+
+:00401DE1 B9FFFFFFFF        mov ecx, FFFFFFFF  ;counter ready
+
+:00401DE6 2BC0              sub eax, eax
+
+:00401DE8 F2                repnz              ;prepare string
+
+:00401DE9 AE                scasb
+
+:00401DEA F7D1              not ecx            ;count
+
+:00401DEC 2BF9              sub edi, ecx
+
+:00401DEE 8BD1              mov edx, ecx
+
+:00401DF0 8BF7              mov esi, edi
+
+:00401DF2 B9FFFFFFFF        mov ecx, FFFFFFFF  ;counter ready
+
+:00401DF7 8DBC248C020000    lea edi, [esp + 0000028C]
+
+:00401DFE 2BC0              sub eax, eax
+
+:00401E00 F2                repnz              ;prepare string
+
+:00401E01 AE                scasb
+
+:00401E02 4F                dec edi
+
+:00401E03 8BCA              mov ecx, edx
+
+:00401E05 C1E902            shr ecx, 02
+
+:00401E08 F3                repz               ;prepare string
+
+:00401E09 A5                movsd
+
+:00401E0A 8BCA              mov ecx, edx
+
+:00401E0C 83E103            and ecx, 00000003
+
+:00401E0F F3                repz               ;prepare string
+
+:00401E10 A4                movsb
+
+:00401E11 BFD4814000        mov edi, 004081D4
+
+:00401E16 B9FFFFFFFF        mov ecx, FFFFFFFF  ;counter ready
+
+:00401E1B 2BC0              sub eax, eax
+
+:00401E1D F2                repnz              ;prepare string
+
+:00401E1E AE                scasb
+
+:00401E1F F7D1              not ecx            ;count
+
+:00401E21 2BF9              sub edi, ecx
+
+:00401E23 8BD1              mov edx, ecx
+
+:00401E25 8BF7              mov esi, edi
+
+:00401E27 B9FFFFFFFF        mov ecx, FFFFFFFF  ;counter ready
+
+:00401E2C 8DBC248C020000    lea edi, [esp + 0000028C]
+
+:00401E33 2BC0              sub eax, eax
+
+:00401E35 F2                repnz              ;prepare string
+
+:00401E36 AE                scasb
+
+:00401E37 4F                dec edi
+
+:00401E38 8BCA              mov ecx, edx
+
+:00401E3A C1E902            shr ecx, 02
+
+:00401E3D 45                inc ebp   ;ebp++ (this is the loop counter)
+
+:00401E3E F3                repz               ;prepare string
+
+:00401E3F A5                movsd
+
+:00401E40 8BCA              mov ecx, edx
+
+:00401E42 83E103            and ecx, 3
+
+:00401E45 F3                repz               ;prepare string
+
+:00401E46 A4                movsb
+
+:00401E47 83FD06            cmp ebp, 6   ;minor_loop five times (five 
+
+:00401E4A 0F8C4CFFFFFF      jl 00401D9C  ;columns) until ebp = 6
+
+:00401E50 8D84248C020000    lea eax, [esp + 0000028C]
+
+:00401E57 8B4C2410          mov ecx, [esp + 10]
+
+:00401E5B 50                push eax
+
+:00401E5C 43                inc ebx
+
+:00401E5D 68D0814000        push 004081D0 ;&quot;%s&quot;
+
+:00401E62 51                push ecx
+
+:00401E63 E828050000        call 00402390</pre>
+
+<font size="+2"><b>Climbing the tree: subroutines investigation</b></font><br>
+
+<br>
+
+Well... how do we understand what the cuckoo a call means (without looking at the c source code, that is :-)<br>
+
+We just need to use a little ZEN-feeling, and in a savefile function, preceded like here by the pushing of the parameter &quot;%s&quot;, you don't need actually much zen-feeling... this smells  like a call to printf from far far away.<br>
+
+Anyway, for more common mortals, I'll teach you how to perform a subroutines  investigation, climbing their &quot;tree&quot;... i.e. how to quickly check <u>WHAT</u> a nested subroutine calls (through an automated wordprocessor macro, of course), until you hit payload... here it is: This routine 2390 calls three routines:3580/2800/3620. The macro must investigate each called subroutine until if finds some NAMES! Names are the alpha and Omega of little windows reverse engineers, don't forget it! Never!<font color="blue"><pre>
+
+[2390-23D0]:3580/2800/3620
+
+           [3580-3620]:5080/3B60
+
+                      [5080-50A9]-|
+
+                      [3B60-3B80]:3B80
+
+                                 [3B80-3BD0]:3BD0/62E0
+
+                                            [3BD0-3C10]:5690/<u>Heapalloc</u>
+
+                                            [62E0-6310]:ecx_4096AC
+
+           [2800-31B0]:3280/31B0/32B0/51A0
+
+                      [3280-3290]-|
+
+                      [31B0-3200]:26B0
+
+                      [32B0-32C0]-|
+
+                      [51A0-5240]:<u>WideCharToMultiByte</u>
+
+           [3620-3670]:3470
+
+                      [3470-34E0]:4D40
+
+                      [4D40-4F70]:4F7O/<u>Writefile</u></pre></font>
+
+As you can see, this simple &quot;macro-search&quot; of mine, although imperfect, it's enough to understand what our extremely nested call to 2390 does: Heapalloc, WidecharToMultiByte and Writefile... these are usual calls for stream routine which write formatted data to a stream (well, yes, you should study a little c my dear), these routines (here fprintf) usually return the number of characters printed, let's have a look at what happens next...<pre>
+
+:00401E68 83C40C            add esp, 0000000C      ;correct stack
+
+:00401E6B 3B5C2414          cmp ebx, [esp + 14]    ;are we done?
+
+:00401E6F 0F8C1DFFFFFF      jl 00401D92  ;major_loop until bx = [esp+14]
+
+
+
+:after_major_loop
+
+:00401E75 8B442410                mov eax, [esp + 10]
+
+:00401E79 50                      push eax
+
+:00401E7A E8A1040000              call 00402320 ;whats'this routine?</pre>
+
+Once more a subroutine that we should identify, I'll leave you this task, you'll notice, climbing this tree, that this call is connected with the previous (not investigated) one at :00401D26 (call 00402400)...  OK, we are almost finished with this SaveFile function, a little more strcpy activity follows...            
+
+<pre>
+
+:00401E7F 8DBC2490000000          lea edi, [esp + 00000090]
+
+:00401E86 83C404                  add esp, 00000004
+
+:00401E89 B9FFFFFFFF              mov ecx, FFFFFFFF  ;counter
+
+:00401E8E 2BC0                    sub eax, eax
+
+:00401E90 F2                      repnz              ;prepare string
+
+:00401E91 AE                      scasb
+
+:00401E92 F7D1                    not ecx            ;count
+
+:00401E94 2BF9                    sub edi, ecx
+
+:00401E96 8BC1                    mov eax, ecx
+
+:00401E98 C1E902                  shr ecx, 02
+
+:00401E9B 8BF7                    mov esi, edi
+
+:00401E9D BFC0964000              mov edi, 004096C0
+
+:00401EA2 F3                      repz               ;prepare string
+
+:00401EA3 A5                      movsd
+
+:00401EA4 8BC8                    mov ecx, eax
+
+:00401EA6 83E103                  and ecx, 00000003
+
+:00401EA9 F3                      repz               ;prepare string
+
+:00401EAA A4                      movsb
+
+:00401EAB C6057080400001          mov byte ptr [00408070], 01 ;flag 8070 TRUE
+
+:00401EB2 8B0DBC964000            mov ecx, [004096BC] ;getcursor
+
+:00401EB8 51                      push ecx
+
+:00401EB9 FF15B8B24400            Call dword ptr [0044B2B8] ;USER32.SetCursor 
+
+:00401EBF FF15C4B24400            Call dword ptr [0044B2C4] ;USER32.ReleaseCapture 
+
+
+
+:return_home_from_SaveFile
+
+:00401EC5 5D                      pop ebp       ;pop them all
+
+:00401EC6 5F                      pop edi
+
+:00401EC7 5E                      pop esi
+
+:00401EC8 5B                      pop ebx
+
+:00401EC9 81C47C060000            add esp, 67C  ;we subbed 67C at the beginning
+
+:00401ECF C3                      ret           ;bye</pre>
+
+<font size="+2"><b>Missing routines? NO! Routines with own windows!</b></font><br>
+
+<br>
+
+Well, that was a big chunk of code, we went through... are we finished? No, we have two more functions, both of them interesting, because they will highlight some other aspects of reverse engineering... let's swallow the first one... hey! The next one at 21CC, is the GetSaveFileName from the previous function at 1D0C... we are already out of the main functions... OK, let's advance with the other method: We have seen until now:<br>
+
+01)	FUNCTION Abort <font color="blue">;This, as we have already seen, dwells between 1000-1020</font> <br>
+
+02)	FUNCTION WinMain  <font color="blue">;This, as we have already seen, dwells between 1020-10B0</font><br> 
+
+03)	FUNCTION InitApplication <font color="blue">;This, as we have already seen, dwells between 10B0-1130</font><br>
+
+04)	FUNCTION InitInstance <font color="blue">;This, as we have already seen, dwells between 1130-1190</font><br>
+
+05)	FUNCTION MainWndProc <font color="blue">;This, as we have already seen, dwells between 1190-1750</font> <br>
+
+06)	FUNCTION Split<font color="blue">;This, as we have already seen, dwells between 1750-1790</font> <br>
+
+07)	FUNCTION ListAppend <font color="blue">;This, as we have already seen, dwells between 1790-1A40</font> <br>
+
+08)	FUNCTION UpdateStatistics <font color="blue">;This, as we have already seen, dwells between 1A40-1B50</font> <br>
+
+09)	FUNCTION CreateListView<font color="blue">;This, as we have already seen, dwells between 1B50-1C20</font> <br>
+
+10)	FUNCTION SaveFile <font color="blue">;This, as we have already seen, dwells between 1C20-</font><font color="red"><u>1ED0</u></font><br>
+
+11)	FUNCTION FilterProc<br>
+
+12)	FUNCTION About<br>
+
+And at 21CC we are already out of the &quot;functions&quot; part of our target's code... therefore let's just check the code that begins at 1ED0 and follow the last function we have examined, the SaveFile one, even if it does not &quot;seem&quot; to be called by anybody in our dead listing... as a matter of fact the next two functions (filter and about) create their own windows, and therefore follow a DIFFERENT calling system... note that they are both at the end of the &quot;normal&quot; c functions...<pre>
+
+:00401ED0 8B442408                mov eax, [esp + 08] ;get WM_ param
+
+:00401ED4 81EC2C020000            sub esp, 22C        ;correct stack
+
+:00401EDA 83F810                  cmp eax, 10         ;is it WM_CLOSE?
+
+:00401EDD 53                      push ebx            ;will pop
+
+:00401EDE 56                      push esi            ;will pop
+
+:00401EDF 57                      push edi            ;will pop
+
+:00401EE0 7417                    je 00401EF9  ;ax=WM_CLOSE
+
+:00401EE2 3D10010000              cmp eax, 110
+
+:00401EE7 742A                    je 00401F13  ;ax=WM_INITDIALOG
+
+:00401EE9 3D11010000              cmp eax, 111
+
+:00401EEE 0F8480000000            je 00401F74  ;ax=WM_COMMAND
+
+:00401EF4 E97E020000              jmp 00402177 ;return with FALSE
+
+
+
+:WM_CLOSE_block: destroy dialogbox and return
+
+:00401EF9 8B9C243C020000          mov ebx, [esp + 23C] ;get hwndDlg
+
+:00401F00 6A01                    push 1               ;value to return
+
+:00401F02 53                      push ebx  ;dialog box to be destroyed.
+
+:00401F03 FF15A0B24400            Call dword ptr [0044B2A0] ;EndDialog
+
+:00401F09 B801000000              mov eax, 1   ;flag TRUE
+
+:00401F0E E966020000              jmp 00402179 ;return with TRUE
+
+
+
+:WM_INITDIALOG_block:Prepare Dialogbox
+
+:00401F13 8B9C243C020000  mov ebx, [esp + 23C]
+
+:00401F1A 68C0974000      push 004097C0  ;Process
+
+:00401F1F 68E8030000      push 3E8 ;filter &quot;&quot; 1000
+
+:00401F24 8B35A4B24400    mov esi, [0044B2A4] ;SetDlgItemText
+
+:00401F2A 53              push ebx
+
+:00401F2B FFD6            call esi  ;call SetDlgItemText (ebx, &quot;&quot;, 4097C0)
+
+:00401F2D 68E0974000      push 004097E0   ;PathInclude
+
+:00401F32 68E9030000      push 3E9 ;filter &quot;&quot;
+
+:00401F37 53              push ebx
+
+:00401F38 FFD6            call esi  ;call SetDlgItemText ebx, &quot;&quot;, 4097E0)
+
+:00401F3A 68E0984000      push 004098E0   ;PathExclude
+
+:00401F3F 68EA030000      push 3EA ;filter &quot;&quot;
+
+:00401F44 53              push ebx
+
+:00401F45 FFD6            call esi  ;call SetDlgItemText(ebx, &quot;&quot;, 4098E0)
+
+:00401F47 A1E0994000      mov eax, [004099E0]
+
+:00401F4C 8B35A8B24400    mov esi, [0044B2A8] ;CheckDlgButton
+
+:00401F52 50              push eax
+
+:00401F53 68EB030000      push 3EB ;filter &quot;Reads&quot;
+
+:00401F58 53              push ebx ;places a check mark next to it
+
+:00401F59 FFD6            call esi ;call CheckDlgButton(ebx, &quot;Reads&quot;, 4099E0)
+
+:00401F5B 8B0DE4994000    mov ecx, [004099E4] 
+
+:00401F61 51              push ecx
+
+:00401F62 68EC030000      push 3EC ;filter &quot;Writes&quot;
+
+:00401F67 53              push ebx ;places a check mark next to it
+
+:00401F68 FFD6            call esi ; call CheckDlgButton(ebx, &quot;Writes&quot;, 4099E4)
+
+:00401F6A B801000000      mov eax, 1     ;flag TRUE and 
+
+:00401F6F E905020000      jmp 00402179   ;return TRUE</pre>
+
+To understand the code above and below we need an IMAGE of our filter Dialog Box:here it is<center><img SRC="filter.gif" tppabs="http://www.anticrack.de/fravia/filter.gif" WIDTH="0" HEIGHT="0"></center>As you can see (for instance editing this dialogbox through BRW) there are two &quot;BS_AUTOCHECKBOXes: &quot;Reads&quot; and &quot;Writes&quot; (1003 and 1004) and three edit &quot;&quot; ES_AUTOHSCROLLs (1000,1001 and 1002), and three BS_PUSHBUTTONs (&quot;Apply is actually default choice and therefore BS_DEFPUSHBUTTON)1=Apply, 2=Cancel and 3=Reset... there are also three static definitions: &quot;Process&quot;, &quot;Path include&quot; and &quot;Path Exclude&quot;. Hey! We have also a caption (&quot;NTFilemon Filter&quot;) and a font! (MS Sans Serif 8). Let's see how all this fits together<pre>
+
+:WM_COMMAND block
+
+:00401F74 668B842444020000 mov ax, [esp + 244] ;get new ax
+
+:00401F7C 663D0100         cmp ax, 1           ;is it 1? (IDOK)
+
+:00401F80 0F85ED000000     jne 00402073        ;no, continue elsewhere
+
+:00401F86 8B9C243C020000   mov ebx, [esp + 23C]
+
+:00401F8D 6A20             push 20
+
+:00401F8F 68C0974000       push 004097C0
+
+:00401F94 8B3598B24400     mov esi, [0044B298] ; SetDlgItemText
+
+:00401F9A 68E8030000       push 3E8 ; edit field&quot;&quot; 1000, Process
+
+:00401F9F 53               push ebx
+
+:00401FA0 FFD6             call esi ;call SetDlgItemText(ebx,Process,97C0,20)
+
+:00401FA2 6800010000       push 100
+
+:00401FA7 68E0974000       push 004097E0
+
+:00401FAC 68E9030000       push 3E9 ;edit field&quot;&quot; 1001, PathIncl
+
+:00401FB1 53               push ebx
+
+:00401FB2 FFD6             call esi ;call SetDlgItemText(ebx,PathIncl,97C0,100)
+
+:00401FB4 6800010000       push 100
+
+:00401FB9 68E0984000       push 004098E0
+
+:00401FBE 68EA030000       push 3EA ;edit field&quot;&quot; 1002, PathExcl
+
+:00401FC3 53               push ebx
+
+:00401FC4 FFD6             call esi ;call SetDlgItemText(ebx,PathExcl,4098E0,100)
+
+:00401FC6 68EB030000       push 3EB ; filter &quot;Reads&quot;
+
+:00401FCB 8B359CB24400     mov esi, [0044B29C] ;CheckDlgButton
+
+:00401FD1 53               push ebx
+
+:00401FD2 FFD6             call esi ;call CheckDlgButton(ebx,&quot;Reads&quot;)
+
+:00401FD4 68EC030000       push 3EC          ; filter &quot;Writes&quot;=1004
+
+:00401FD9 A3E0994000       mov [004099E0], eax ;save ax
+
+:00401FDE 53               push ebx
+
+:00401FDF FFD6             call esi  ;call CheckDlgButton(ebx,&quot;Writes&quot;)
+
+:00401FE1 BEC0974000       mov esi, 004097C0
+
+:00401FE6 8D7C2410         lea edi, [esp + 10]
+
+:00401FEA B98A000000       mov ecx, 8A
+
+:00401FEF A3E4994000       mov [004099E4], eax
+
+:00401FF4 F3               repz      ;prepare string
+
+:00401FF5 A5               movsd
+
+:00401FF6 8D442410         lea eax, [esp + 10]
+
+:00401FFA 50               push eax
+
+:00401FFB E820040000       call 00402420; what will this be?</pre>
+
+<font size="+2"><b>Uppercasing strings</b></font><br>
+
+<br>
+
+Here we have another mysterious subroutine... let's see what happens at 2420...<br>
+
+<b>[2420-24E0]</b>:Have a look, there is a loop comparing between Ox61 (which is &quot;a&quot;) and 0x7A (which is &quot;z&quot;), with an instruction sub cl, 20 (at 2445) very very typical of uppercasing routines... in fact the ASCII characters table is so made that every lowercase letter is exactly its uppercased correspondent+0x20... routine 2420, is therefore called three times only in order to uppercase our three edit strings, we do not want stupid users mixing lowercase and uppercase characters in their input fields, do we?<pre>
+
+:00402000 8D442434         lea eax, [esp + 34]
+
+:00402004 83C404           add esp, 4
+
+:00402007 50               push eax
+
+:00402008 E813040000       call 00402420=uppercase
+
+:0040200D 8D842434010000   lea eax, [esp + 00000134]
+
+:00402014 83C404           add esp, 00000004
+
+:00402017 50               push eax
+
+:00402018 E803040000       call 00402420=uppercase
+
+:0040201D 8D442410         lea eax, [esp + 10]
+
+:00402021 83C404           add esp, 00000004
+
+:00402024 8D4C2410         lea ecx, [esp + 10]
+
+:00402028 6A00             push 00000000
+
+:0040202A 50               push eax
+
+:0040202B 8B1560804000     mov edx, [00408060]
+
+:00402031 6A00             push 00000000
+
+:00402033 6A00             push 00000000
+
+:00402035 6828020000       push 228
+
+:0040203A 51               push ecx
+
+:0040203B 6A05             push 5
+
+:0040203D 52               push edx
+
+:0040203E FF15E4B14400     Call dword ptr [0044B1E4] ;DeviceIoControl</pre>
+
+Wow! The DeviceIoControl function! We are communicating with our VxD device! Telling him that we have got a new filter, not to use the default any more! Let's hope the device is okay and well, let's see<pre>
+
+
+
+:00402044 85C0             test eax, eax  ;check if successful
+
+:00402046 7518             jne 00402060   ;ok, continue
+
+:00402048 6814814000       push 00408114 ;Couldn't access device driver&quot;
+
+:0040204D 53               push ebx
+
+:0040204E E8ADEFFFFF       call 00401000 ;call ABORT function!
+
+:00402053 83C408           add esp, 8    ;correct stack
+
+:00402056 B801000000       mov eax, 1    ;and flag TRUE
+
+:0040205B E919010000       jmp 00402179  ;return TRUE
+
+
+
+:OK,DeviceIOcontrol successful
+
+:00402060 6A01          push 1     ;TRUE
+
+:00402062 53            push ebx   ;dialogbox returns 1
+
+:00402063 FF15A0B24400  Call dword ptr [0044B2A0] ; EndDialog
+
+:00402069 B801000000    mov eax, 1   ;flag TRUE
+
+:0040206E E906010000    jmp 00402179 ;ret TRUE... This was IDOK!
+
+
+
+:Was not IDOK at 111_block
+
+:00402073 663D0200        cmp ax, 0002  ;is it IDCANCEL?
+
+:00402077 7515            jne 0040208E  ;no continue
+
+:00402079 8B9C243C020000  mov ebx, [esp + 0000023C]
+
+:00402080 6A01            push 1        ;TRUE
+
+:00402082 53              push ebx      ;dialogbox returns 1
+
+:00402083 FF15A0B24400    Call dword ptr [0044B2A0] ;EndDialog,
+
+:00402089 E9E9000000      jmp 00402177   ;ret FALSE... This was IDCANCEL
+
+
+
+:It's not OK and it's not CANCEL
+
+:0040208E 663D0300         cmp ax, 3     ;is it RESET?
+
+:00402092 0F85DF000000     jne 00402177  ;knows the cuckoo, ret FALSE</pre>
+
+OK, I'll spare you the long &quot;reset&quot; code snippet that follows here, it would only bore us... we have already seen the same code (with insignificant variations) above, where it did actually change the filter... here it's only resetting filter to default value and ending at 402175, here:<pre>
+
+:00402175 FFD6      call esi ;CheckDlgButton (ebx, &quot;Writes&quot;, 4099E4)</pre>
+
+We are almost finished... observe the various &quot;happy endings&quot; of this routine:<pre>
+
+:return_FALSE
+
+:00402177 33C0                    xor eax, eax
+
+
+
+:popall and return with ax you have got already
+
+:00402179 5F                      pop edi
+
+:0040217A 5E                      pop esi
+
+:0040217B 5B                      pop ebx
+
+:0040217C 81C42C020000            add esp, 22C
+
+:00402182 C21000                  ret 0010
+
+
+
+:various returns
+
+:00402190 8B442408         mov eax, [esp + 08]
+
+:00402194 3D10010000       cmp eax, 110 ;was it WM_INITDIALOG?
+
+:00402199 740C             je 004021A7 ;110=return TRUE
+
+:0040219B 3D11010000       cmp eax, 111 ;was it WM_COMMAND?
+
+:004021A0 740D             je 004021AF ;111: check and endDialog
+
+
+
+:return_FALSE
+
+:004021A2 33C0                    xor eax, eax  ;return FALSE
+
+:004021A4 C21000                  ret 0010
+
+
+
+:return_TRUE
+
+:004021A7 B801000000              mov eax, 1    ;return TRUE
+
+:004021AC C21000                  ret 0010
+
+
+
+:check and return true_or false after EndDialog
+
+:004021AF 66837C240C01            cmp [esp + 0C], 0001
+
+:004021B5 75EB                    jne 004021A2 ;return false
+
+:004021B7 8B442404                mov eax, [esp + 04]
+
+:004021BB 6A01                    push 1
+
+:004021BD 50                      push eax
+
+:004021BE FF15A0B24400            Call dword ptr [0044B2A0] ;EndDialog,
+
+:004021C4 B801000000              mov eax, 1                ;RETURN TRUE
+
+:004021C9 C21000                  ret 0010</pre>
+
+<font size="+2"><b>Filemon's about function and WM_COMMAND</b></font><br>
+
+<br>
+
+Wow... we understand (almost) everything now, don't we? We have revrsed the FilterProc function: [1ED0-21C9]... We miss one last function, though... a typical short ABOUT function... let's have a look: As before we have a starting check for the message value: if it is 110 it's a WM_INITDIALOG message, if it is 111 it's a WM_COMMAND message... The WM_INITDIALOG message is sent to a dialog box procedure immediately before the dialog box is displayed. The WM_COMMAND message is sent to a window when the user selects an item from a menu, when a control sends a notification message to its parent window, or when an accelerator keystroke has been translated.<pre>
+
+:00402190 8B442408                mov eax, [esp + 08] ;get value
+
+:00402194 3D10010000              cmp eax, 110 ;was it 110? (WM_INITDIALOG)
+
+:00402199 740C                    je 004021A7  ;return TRUE
+
+:0040219B 3D11010000              cmp eax, 111 ;was it 111? (WM_COMMAND)
+
+:004021A0 740D                    je 004021AF  ;continue something happened
+
+
+
+:return FALSE                     ;Hey! WM_ neither INIT nor COMMAND?
+
+:004021A2 33C0                    xor eax, eax  ;return FISHY
+
+:004021A4 C21000                  ret 0010
+
+
+
+:return TRUE
+
+:004021A7 B801000000              mov eax, 1    ;return TRUE
+
+:004021AC C21000                  ret 0010
+
+
+
+:it was WM_COMMAND: something happened
+
+:004021AF 66837C240C01            cmp [esp + 0C], 1 ;if not IDOK
+
+:004021B5 75EB                    jne 004021A2      ;return FALSE 
+
+:004021B7 8B442404                mov eax, [esp + 04]
+
+:004021BB 6A01                    push 1
+
+:004021BD 50                      push eax
+
+:004021BE FF15A0B24400            Call dword ptr [0044B2A0] ;EndDialog,
+
+:004021C4 B801000000              mov eax, 1 ;return TRUE
+
+:004021C9 C21000                  ret 0010</pre>
+
+Well, that was it... we have completely reversed filemon... we would NOT need it source code any more to modify whatever we want inside it... ahh! This tremendous feeling of power... yet we have another little investigation still pending: the virtual driver reverse engineering... But let's have another cocktail, (may I suggest a  <a href="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">traitor</a>?)... we'll better tackle elusive virtual driver roaming around in the memory voids...
+
+<hr>
+
+<font color="blue">(c) fravia+ 1997.</font> All rights reserved.<br> 
+
+
+
+<hr ALIGN="CENTER" WIDTH="100%" SIZE="3">
+
+<center><i>You are deep inside fravia's page of reverse engineering,  
+
+choose your way out:</i><br><img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><a href="filemon1.htm" tppabs="http://www.anticrack.de/fravia/filemon1.htm">filemon1</a> 
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><a href="filemon2.htm" tppabs="http://www.anticrack.de/fravia/filemon2.htm">filemon2</a> 
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><a href="filemon4.htm" tppabs="http://www.anticrack.de/fravia/filemon4.htm">filemon4</a>
+
+<br>
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><a HREF="index.html" tppabs="http://www.anticrack.de/fravia/index.html">homepage </a><img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"> 
+
+<a HREF="links.htm" tppabs="http://www.anticrack.de/fravia/links.htm">links </a> 
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALT="red" ALIGN="BOTTOM" WIDTH="13" HEIGHT="13" BORDER="0" VSPACE="0" HSPACE="0">
+
+<a HREF="noanon.htm" tppabs="http://www.anticrack.de/fravia/noanon.htm">anonymity </a> 
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><a HREF="orc.htm" tppabs="http://www.anticrack.de/fravia/orc.htm">+ORC </a>
+
+
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><a HREF="student.htm" tppabs="http://www.anticrack.de/fravia/student.htm">students' essays </a>
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><a HREF="tools.htm" tppabs="http://www.anticrack.de/fravia/tools.htm">tools </a><img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><a HREF="cocktail.htm" tppabs="http://www.anticrack.de/fravia/cocktail.htm">cocktails </a><br>
+
+
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><a HREF="ideale.htm" tppabs="http://www.anticrack.de/fravia/ideale.htm">antismut </a>
+
+
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><a HREF="searengi.htm" tppabs="http://www.anticrack.de/fravia/searengi.htm">search_forms </a>
+
+
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><a HREF="info.htm" tppabs="http://www.anticrack.de/fravia/info.htm">mailFraVia </a><br>
+
+
+
+<img SRC="bulletr.gif" tppabs="http://www.anticrack.de/fravia/bulletr.gif" ALIGN="BOTTOM" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="13" HEIGHT="13"><a HREF="legal.htm" tppabs="http://www.anticrack.de/fravia/legal.htm">is reverse engineering legal? </a></center>
+
+<center><hr ALIGN="CENTER" WIDTH="100%" SIZE="2"></center>
+
+
+
+</body>
+
+</html>
+
