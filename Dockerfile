@@ -1,5 +1,5 @@
 FROM strm/apache
 
-MAINTAINER opsxcq <opsxcq@thestorm.com.br>
+LABEL maintainer "opsxcq@strm.sh"
 
 COPY fravia/* /www/
